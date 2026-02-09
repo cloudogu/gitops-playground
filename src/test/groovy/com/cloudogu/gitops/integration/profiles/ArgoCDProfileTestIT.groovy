@@ -1,20 +1,27 @@
 package com.cloudogu.gitops.integration.profiles
 
-import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
-import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
+
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.KubernetesClientException
+import org.awaitility.Awaitility
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
+import java.util.concurrent.TimeUnit
+
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.fail
 
 /**
  * This tests can only be successfull, if one of theses profiles used.
+ *
+ * To run locally: add -Dmicronaut.environments=full to your execute configuration
  */
 
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
-class ArgoCDProfileTestIT extends KubenetesApiTestSetup {
+class ArgoCDProfileTestIT extends ProfileTestSetup{
 
     String namespace = 'argocd'
 
@@ -25,45 +32,55 @@ class ArgoCDProfileTestIT extends KubenetesApiTestSetup {
 
     @Test
     void ensureNamespaceExists() {
-        def namespaces = api.listNamespace().execute()
-        assertThat(namespaces).isNotNull()
-        assertThat(namespaces.getItems().isEmpty()).isFalse()
-        def namespace = namespaces.getItems().find { namespace.equals(it.getMetadata().name) }
-        assertThat(namespace).isNotNull()
+
+        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+
+            def argocdNamespace = client.namespaces().withName(namespace).get()
+
+            assertThat(argocdNamespace).isNotNull()
+
+        } catch (KubernetesClientException ex) {
+            // Handle exception
+            assert fail("not expected exception was thrown. ", ex)
+        }
+
     }
 
     /**
-     * ArgoCD uses 7 pods. All have to run*/
+     * chechs that ArgoCD pods running **/
     @Test
-    void ensureArgoCDIsOnlineAndRunning() {
-        def expectedSumOfArgoPods = 6
+    void ensureArgoCDIsOnlineAndPodsAreRunning() {
+        String expectedPod1 = "argocd-application-controller"
+        String expectedPod2 = "argocd-applicationset-controller"
+//        String expectedPod3 = "argocd-notifications-controller" // not stable
+        String expectedPod4 = "argocd-redis"
+        String expectedPod5 = "argocd-repo-server"
+        String expectedPod6 = "argocd-server"
 
-        V1PodList list = api.listNamespacedPod(namespace )
-                .execute()
-        List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-        assertThat(argoPods.size()).isGreaterThanOrEqualTo(expectedSumOfArgoPods) // 6 or 7 depends on operator
+        List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
 
-        for (V1Pod pod : argoPods) {
-            if (!pod.status.phase.equals("Succeeded"))  {  // TODO: remove and clearify why Succeeded is found
-                assertThat(pod.status.phase).isEqualTo("Running")
+
+        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+            Awaitility.await().atMost(5, TimeUnit.MINUTES).untilAsserted {
+                def actualPods = client.pods().inNamespace(namespace).list().getItems()
+
+                // 1. Verify all expected pods are present
+                def missingPods = expectedPods.findAll { prefix ->
+                    !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
+                }
+                assert missingPods.isEmpty() : "Missing these pods in argocd: ${missingPods}"
+
+                // 2. Verify all relevant pods are in 'Running' phase
+                def notRunningPods = actualPods.findAll { pod ->
+                    expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
+                }.findAll { pod ->
+                    pod.getStatus().getPhase() != "Running"
+                }
+
+                assert notRunningPods.isEmpty() : "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
             }
+        } catch (KubernetesClientException ex) {
+            fail("Unexpected Kubernetes exception", ex)
         }
-
-    }
-
-    @Override
-    boolean isReadyToStartTests() {
-        V1PodList list = api.listPodForAllNamespaces()
-                .execute()
-        if (list && !list.items.isEmpty()) {
-
-            List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-
-            if (argoPods.size() >= 6)
-            {
-                return "Running".equals(argoPods.get(0).status.phase)
-            }
-        }
-        return false
     }
 }
