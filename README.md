@@ -1044,7 +1044,7 @@ There also is a `--username` parameter, which is ignored for argocd. That is, fo
 Argo CD is installed in a production-ready way that allows for operating Argo CD with Argo CD, using GitOps and
 providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repo-per-team).
 
-## Repositories and layout
+#### Repositories and layout
 
 When installing the GitOps playground, the following Git repositories are created and initialized:
 
@@ -1054,9 +1054,9 @@ When installing the GitOps playground, the following Git repositories are create
 Argo CD’s own management and configuration, which previously lived in a dedicated argocd repository, 
 is now part of the cluster-resources repo under apps/argocd:
 
-![example of argocd repo structure](docs/argocd.svg)
+![example of argocd repo structure](docs/argocd.png)
 
-## Bootstrapping Argo CD
+#### Bootstrapping Argo CD
 When the GitOps playground is installed, Argo CD is bootstrapped as follows:
 1. Argo CD is installed imperatively via a Helm chart.
 2. Two resources are applied imperatively to the cluster:
@@ -1066,7 +1066,7 @@ When the GitOps playground is installed, Argo CD is bootstrapped as follows:
 
 From there, everything is managed via GitOps.
 
-## How Argo CD manages itself
+#### How Argo CD manages itself
 The following Argo CD Applications live in apps/argocd/applications:
 
 * The bootstrap application manages the apps/argocd/applications folder (including itself).
@@ -1085,59 +1085,86 @@ The following Argo CD Applications live in apps/argocd/applications:
     * cluster-resources (platform admins, more cluster permissions)
     * example-apps (application developers, fewer permissions)
 
-## Multi-source Applications for features
+#### Multi-source Applications for features
 Feature deployments (for example, monitoring, ingress, or other GOP features) are modeled as multi-source Argo CD Applications instead of using an App-of-Apps pattern.
 
 For some features, the GitOps Playground Operator (GOP):
 1. Writes values files into the cluster-resources repository under:
-   apps/<feature>/
-     <feature>-gop-helm.yaml
-     <feature>-user-values.yaml
+   ```powershell
+       apps/<feature>/
+          <feature>-gop-helm.yaml
+          <feature>-user-values.yaml
+   ```
+   The *-gop-helm.yaml file is managed by GOP, while *-user-values.yaml is intended for user overrides and is not overwritten.
 
+2. Generates an Argo CD Application in apps/argocd/applications/<feature>.yaml that uses two sources:
+  * Helm source (external chart)
+    * repoURL: the external Helm repository
+    * chart or path: the chart to deploy
+    * targetRevision: the chart version
+    * helm.valueFiles: includes the values from the cluster-resources repo via $values/...
+      (for example $values/apps/<feature>/<feature>-gop-helm.yaml and
+      $values/apps/<feature>/<feature>-user-values.yaml)
+  * Git source (values and additional manifests)
+    * repoURL: the cluster-resources repo
+    * targetRevision: typically main
+    * ref: set to values so the Helm source can reference $values/...
+    * path: apps/<feature>
+    * optional directory.recurse: true to pick up additional manifests in the feature folder
 
-1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
-   With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys
-   other apps ([App Of Apps pattern](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/cluster-bootstrapping.md?plain=1))
-2. The `argocd` application manages the folder `argocd` which contains Argo CD's resources as an umbrella helm chart.  
-   The [umbrella chart pattern](https://github.com/helm/helm-www/blob/d2543/content/en/docs/howto/charts_tips_and_tricks.md#complex-charts-with-many-dependencies)
-   allows describing the actual values in `values.yaml` and deploying additional resources (such as secrets and
-   ingresses) via the `templates` folder. The actual ArgoCD chart is declared in the `Chart.yaml`
-3. The `Chart.yaml` contains the Argo CD helm chart as `dependency`. It points to a deterministic version of the Chart
-   (pinned via `Chart.lock`) that is pulled from the Chart repository on the internet.  
-   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/cluster-resources/apps/argocd/README.md)
-   for details.
-4. The `projects` application manages the `projects` folder, that contains the following `AppProjects`:
-    * the `argocd` project, used for bootstrapping
-    * the built-in `default` project (which is restricted to [eliminate threats to security](https://github.com/argoproj/argo-cd/blob/ce8825ad569bf961178606acc5f3842532148093/docs/threat_model.pdf))
-    * one project per team (to implement least privilege and also notifications per team):
-        * `cluster-resources` (for platform admin, needs more access to cluster) and
-        * `example-apps` (for developers, needs less access to cluster)
-5. The `cluster-resources` application points to the `cluster-resources` git repository (`argocd` folder), which
-   has the typical folder structure of a GitOps repository (explained in the next step). This way, the platform admins
-   use GitOps in the same way as their "customers" (the developers) and can provide better support.
-6. The `example-apps` application points to the `example-apps` git repository (`argocd` folder again). Like the
-   `cluster-resources`, it also has the typical folder structure of a GitOps repository:
-    * `apps` - contains the kubernetes resources of all applications (the actual YAML)
-    * `argocd` - contains Argo CD `Applications` that point to subfolders of `apps` (App Of Apps pattern, again)
-    * `misc` - contains kubernetes resources, that do not belong to specific applications (namespaces, RBAC,
-      resources used by multiple apps, etc.)
-7. The `misc` application points to the `misc` folder
-8. The `my-app-staging` application points to the `apps/my-app/staging` folder within the same repo. This provides a
-   folder structure for release promotion. The `my-app-*` applications implement the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app).
-   This pattern allows each application to have its own environments, e.g. production and staging or none at all.
-   Note that the actual YAML here could either be pushed manually or using the CI server.
-   The [applications](#example-applications) contain examples that push config changes from the app repo to the GitOps
-   repo using the CI server. This implementation mixes the [Repo per Team and Repo per App patterns](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repository-structure)
-9. The corresponding production environment is realizing using the `my-app-production` application, that points to the
-   `apps/my-app/production` folder within the same repo.  
-   Note that it is recommended to protect the `production` folders from manual access, if supported by the SCM of your choice.  
-   Alternatively, instead of different YAMLs files as used in the diagram, these applications could be realized as
-    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
-    * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications
-      within different namespaces (implemented in the playground, see
-      [Argo CD's values.yaml](argocd/cluster-resources/apps/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
-    * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
-      (not used in GitOps playground, yet)
+Argo CD merges these sources, so each feature application is defined by:
+  * the external Helm chart (versioned and reproducible), and
+  * Git-managed configuration and manifests in the cluster-resources repo.
+
+This multi-source pattern replaces the previous App-of-Apps based approach for feature deployments while still following the repo-per-team model.
+
+#### Application repo: example-apps
+The example-apps repository demonstrates how application teams can structure their own GitOps repositories. Its layout looks like this:
+
+![example of example-apps repo structure](docs/examples.png)
+
+  * The folder apps/argocd/applications contains Argo CD Application manifests for the example workloads:
+    * nginx-helm-jenkins.yaml
+    * nginx-helm-umbrella.yaml
+    * petclinic-helm.yaml
+    * petclinic-plain.yaml
+  * Each application implements the Environment-per-App pattern:
+    * separate folders for staging and production
+    * optional generatedResources/ subfolders where CI pipelines can write generated manifests (for example, templated messages or index files)
+
+For example:
+* apps/spring-petclinic-plain/production and apps/spring-petclinic-plain/staging contain 
+  plain Kubernetes manifests (deployment.yaml, service.yaml, ingress.yaml) plus generated resources.
+* apps/nginx-helm-jenkins shows how Helm-based applications can be combined with generated resources 
+  and release metadata (applicationRelease.yaml).
+
+A typical Argo CD `Application` such as `my-app-staging` points to the `apps/my-app/staging` folder within the same repo.  
+This provides a folder structure for release promotion. The corresponding `my-app-*` applications implement the
+[Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app):
+each application can have its own environments (for example, production and staging, or none at all).
+
+The actual YAML in these folders can either be pushed manually or generated by a CI server.  
+The [applications](#example-applications) contain examples that push config changes from the app repo to the GitOps
+repo using the CI server. This implementation mixes the
+[Repo per Team and Repo per App patterns](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repository-structure).
+
+The corresponding production environment is realized by a `my-app-production` application that points to the
+`apps/my-app/production` folder within the same repo. It is recommended to protect the `production` folders from manual
+access, if supported by the SCM of your choice.
+
+Alternatively, instead of separate YAML files as used in the diagram, these applications could also be realized as:
+
+- two applications in the same YAML (implemented in the playground, see e.g.
+  [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
+- two applications with the same name in different namespaces, when Argo CD is enabled to search for applications
+  within different namespaces (implemented in the playground, see
+  [Argo CD's values.yaml](argocd/cluster-resources/apps/argocd/argocd/values.ftl.yaml) – `application.namespaces` setting)
+- one `ApplicationSet`, using the
+  [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
+  (not used in GitOps playground, yet)
+
+The `example-apps` repo is thus a reference for how product teams can structure their GitOps repositories while
+still integrating cleanly with Argo CD and the multi-source pattern used by the platform.
 
 To keep things simpler, the GitOps playground only uses one kubernetes cluster, effectively implementing the [Standalone](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#standalone)
 pattern. However, the repo structure could also be used to serve multiple clusters, in a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
