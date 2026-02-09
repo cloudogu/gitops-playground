@@ -161,7 +161,7 @@ grafana:
   service:
     type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
 <#if monitoring?? && monitoring?is_hash && monitoring.grafana?? && monitoring.grafana.host?has_content>
-    ingress:
+  ingress:
     enabled: true
     hosts: [${monitoring.grafana.host}]
 </#if>
