@@ -603,9 +603,9 @@ skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --
 * Creating a specific example config file for two registries 
 ```
 # Copy content of config.yaml from line one till the last list element under namespaces
-awk '1; /example-apps-staging/ {exit}' examples/example-apps-via-content-loader/config.yaml > examples/example-apps-via-content-loader/two-registries.yaml
+awk '1; /example-apps-staging/ {exit}' examples/example-apps-via-content-loader/config.yaml > scripts/local/two-registries.yaml
 # Append following lines to the config file file
-cat <<EOF >> examples/example-apps-via-content-loader/two-registries.yaml
+cat <<EOF >> scripts/local/two-registries.yaml
   variables:
     petclinic:
       baseDomain: "petclinic.localhost"
@@ -629,7 +629,7 @@ EOF
 # Create a docker container or use an available immage from a registry
 # docker build -t gop:dev .
 GOP_IMAGE=gop:ingress
-PATH_TWO_REGISTRIES=examples/example-apps-via-content-loader/two-registries.yaml #Adjust to path above
+PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
