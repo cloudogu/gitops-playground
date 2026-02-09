@@ -1061,7 +1061,8 @@ When the GitOps playground is installed, Argo CD is bootstrapped as follows:
 1. Argo CD is installed imperatively via a Helm chart.
 2. Two resources are applied imperatively to the cluster:
       * an AppProject called argocd
-      * an Application called bootstrap 
+      * an Application called bootstrap
+
    Both are stored in the cluster-resources repository under apps/argocd/applications.
 
 From there, everything is managed via GitOps.
