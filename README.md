@@ -1044,19 +1044,56 @@ There also is a `--username` parameter, which is ignored for argocd. That is, fo
 Argo CD is installed in a production-ready way that allows for operating Argo CD with Argo CD, using GitOps and
 providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repo-per-team).
 
-When installing the GitOps playground, the following steps are performed to bootstrap Argo CD:
+## Repositories and layout
 
-* The following repos are created and initialized:
-    * `argocd` (management and config of Argo CD itself),
-    * `example-apps` (example for a developer/application team's GitOps repo) and
-    * `cluster-resources` (example for a cluster admin or infra/platform team's repo; see below for details)
-* Argo CD is installed imperatively via a helm chart.
-* Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called
-  `bootstrap`. These are also contained within the `argocd` repository.
+When installing the GitOps playground, the following Git repositories are created and initialized:
 
-From there, everything is managed via GitOps. This diagram shows how it works.
+* example-apps – example GitOps repository for a developer / application team
+* cluster-resources – example GitOps repository for a cluster admin or infra / platform team
 
-[![](docs/argocd-repos.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/argocd-repos.svg "View full size")
+Argo CD’s own management and configuration, which previously lived in a dedicated argocd repository, 
+is now part of the cluster-resources repo under apps/argocd:
+
+![example of argocd repo structure](docs/argocd.svg)
+
+## Bootstrapping Argo CD
+When the GitOps playground is installed, Argo CD is bootstrapped as follows:
+1. Argo CD is installed imperatively via a Helm chart.
+2. Two resources are applied imperatively to the cluster:
+    * an AppProject called argocd
+    * an Application called bootstrap 
+    Both are stored in the cluster-resources repository under apps/argocd/applications.
+
+From there, everything is managed via GitOps.
+
+## How Argo CD manages itself
+The following Argo CD Applications live in apps/argocd/applications:
+
+* The bootstrap application manages the apps/argocd/applications folder (including itself).
+  This allows changes to the bootstrap application and further application manifests to be managed via GitOps.
+* The argocd application manages the folder apps/argocd/argocd, which contains Argo CD’s resources as an umbrella Helm chart.
+  * The umbrella chart pattern allows us to:
+    * describe configuration in values.yaml
+    * deploy additional resources (such as secrets and ingresses) via the templates folder
+  * Chart.yaml declares the Argo CD Helm chart as a dependency.
+  * Chart.lock pins the chart to a deterministic version from the upstream chart repository.
+  * This mechanism can be used to upgrade Argo CD via GitOps (by updating the chart version and syncing).
+* The projects application manages the folder apps/argocd/projects, which contains the following AppProject resources:
+  * the argocd project (used for bootstrapping)
+  * the built-in default project (restricted for security)
+  * one project per team, for example:
+    * cluster-resources (platform admins, more cluster permissions)
+    * example-apps (application developers, fewer permissions)
+
+## Multi-source Applications for features
+Feature deployments (for example, monitoring, ingress, or other GOP features) are modeled as multi-source Argo CD Applications instead of using an App-of-Apps pattern.
+
+For some features, the GitOps Playground Operator (GOP):
+1. Writes values files into the cluster-resources repository under:
+   apps/<feature>/
+     <feature>-gop-helm.yaml
+     <feature>-user-values.yaml
+
 
 1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
    With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys
