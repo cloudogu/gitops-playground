@@ -235,17 +235,21 @@ def executeProfileTestStages(def profiles) {
     profiles.each  { profile ->
         clusterName = createClusterName()
 
-        startK3d(clusterName)
+        try {
+            startK3d(clusterName)
 
-        if (profile.startsWith('operator')) {
-            stageInstallArgoCDOperator(clusterName, profile)
+            if (profile.startsWith('operator')) {
+                stageInstallArgoCDOperator(clusterName, profile)
+            }
+
+            stageStartGOPWithProfile(clusterName, profile)
+
+            stageIntegrationTests(clusterName, profile)
+        } finally {
+            // close in every case!
+            stageDeleteK3dCluster(clusterName)
         }
 
-        stageStartGOPWithProfile(clusterName, profile)
-
-        stageIntegrationTests(clusterName, profile)
-
-        stageDeleteK3dCluster(clusterName)
 
     }
 }
