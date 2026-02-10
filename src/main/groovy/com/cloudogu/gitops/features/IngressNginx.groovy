@@ -66,7 +66,6 @@ class IngressNginx extends Feature implements FeatureWithImage {
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying IngressNginx from local git repo")
 

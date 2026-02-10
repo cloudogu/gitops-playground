@@ -160,6 +160,13 @@
       <version>2.14.0</version>
     </dependency>
 
+      <!-- Source: https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on -->
+      <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk18on</artifactId>
+          <version>1.83</version>
+      </dependency>
+
       <!--Used for BCrypt functions-->
       <dependency>
         <groupId>org.springframework.security</groupId>

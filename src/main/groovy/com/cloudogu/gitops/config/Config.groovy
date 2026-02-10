@@ -410,6 +410,10 @@ class Config {
         @Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
         String profile
 
+        @Option(names = ['--licensefile'], description = LICENSEFILE_DESCRIPTION)
+        @JsonPropertyDescription(LICENSEFILE_DESCRIPTION)
+        String licensefile = ''
+
         static class NamespaceSchema {
             LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
             LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()

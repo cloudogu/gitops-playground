@@ -93,7 +93,7 @@ interface ConfigConstants {
     String CLUSTER_ADMIN_DESCRIPTION = 'Binds ArgoCD controllers to cluster-admin ClusterRole'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
     String APPLICATION_PROFIL = 'Use predefined profile (full, only-argocd, operator-mandants aso.)'
-
+    String LICENSEFILE_DESCRIPTION = 'Lincense File Path to license the product'
     // group metrics
     String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'
     String MONITORING_ENABLE_DESCRIPTION = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources'
