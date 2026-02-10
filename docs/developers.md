@@ -247,9 +247,9 @@ docker run --rm -t -u $(id -u) \
  -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
-      --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx
+      --base-url="http://localhost:808$INSTANCE" --argocd --ingress
 
-echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
+echo "Once Argo CD has deployed the traefik-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
 ```
 
 ### Access local docker network
@@ -291,14 +291,14 @@ repository so need to be upgraded regularly.
   * ArgoCD Helm Chart
   * Grafana + Prometheus Helm Charts
   * Vault + ExternalSerets Operator Helm Charts
-  * Ingress-nginx Helm Charts
+  * Ingress Helm Charts
   * Cert-Manager
   * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`
   * ces-build-lib
   * Spring PetClinic
-  * NGINX Helm Chart
+  * Traefik Helm Chart
 * Dockerfile
   * Alpine
   * GraalVM
@@ -396,7 +396,7 @@ docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
-   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress-nginx --mail --monitoring --vault=dev --url-separator-hyphen
+   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress --mail --monitoring --vault=dev --url-separator-hyphen
 
 # Create localhost entries with hyphens
 echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}') | sudo tee -a /etc/hosts
@@ -575,7 +575,7 @@ skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy123
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
+skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
 
 # Monitoring
 # Using latest will lead to failure with
@@ -600,16 +600,43 @@ skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --
 
 ```
 
+* Creating a specific example config file for two registries 
+```bash
+# Copy content of config.yaml from line one till the last list element under namespaces
+awk '1; /example-apps-staging/ {exit}' ../examples/example-apps-via-content-loader/config.yaml > ../scripts/local/two-registries.yaml
+# Append following lines to the config file file
+cat <<EOF >> ../scripts/local/two-registries.yaml
+  variables:
+    petclinic:
+      baseDomain: "petclinic.localhost"
+    nginx:
+      baseDomain: "nginx.localhost"
+    images:
+      kubectl: "localhost:30000/proxy/kubectl:1.29"
+      helm: "localhost:30000/proxy/helm:3.16.4-1"
+      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
+      nginx: ""
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      maven: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+EOF
+```
+
 * Deploy playground:
 
 ```bash
-GOP_IMAGE=gitops-playground:dev # Non-local alternative: ghcr.io/cloudogu/gitops-playground
+# Create a docker container or use an available immage from a registry
+# docker build -t gop:dev .
+GOP_IMAGE=gop:ingress
+PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+   -v ${PATH_TWO_REGISTRIES}:/home/two-registries.yaml \
     --net=host \
     ${GOP_IMAGE} -x \
-    --yes --argocd --ingress-nginx --base-url=http://localhost \
+    --yes --argocd --ingress --base-url=http://localhost \
     --vault=dev --monitoring --mailhog --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
@@ -621,27 +648,11 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --kubectl-image=localhost:30000/proxy/bitnamilegacy/kubectl:1.29 \
-    --helm-image=localhost:30000/proxy/helm:latest \
-    --helmkubeval-image=localhost:30000/proxy/helm:latest \
-    --kubeval-image=localhost:30000/proxy/helm:latest \
-    --yamllint-image=localhost:30000/proxy/yamllint:latest \
-    --petclinic-image=localhost:30000/proxy/eclipse-temurin:17-jre-alpine \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
-    --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --ingress-nginx-image=localhost:30000/proxy/ingress-nginx:latest \
-    --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
-    --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
-    --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
-    --prometheus-image=localhost:30000/proxy/prometheus:latest \
-    --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
-    --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
-    --grafana-image=localhost:30000/proxy/grafana:latest \
-    --grafana-sidecar-image=localhost:30000/proxy/k8s-sidecar:latest \
-# Or with config file --config-file=/config/gitops-playground.yaml 
+    --config-file=/home/two-registries.yaml
+    
+    # Or with config file --config-file=/config/gitops-playground.yaml
 ```
 
 ## Testing Network Policies locally
@@ -676,12 +687,12 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${prefix}ingress-nginx
+              kubernetes.io/metadata.name: ${prefix}traefik
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: controller
-              app.kubernetes.io/instance: ingress-nginx
-              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: traefik
+              app.kubernetes.io/name: traefik
 ---
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
@@ -764,7 +775,7 @@ IMAGE_PATTERNS=('external-secrets' \
   'prometheus' \
   'grafana' \
   'sidecar' \
-  'nginx')
+  'traefik')
 BASIC_SRC_IMAGES=$(
   kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
   | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
@@ -814,7 +825,7 @@ docker run -it -u $(id -u) \
       --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
       --vault-image localhost:30002/library/vault:1.12.0 \
-      --ingress-nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
+      --ingress-image localhost:30002/library/traefik:3.6.7
 ```
 
 In a different shell start this script, that waits for Argo CD and then goes offline.
@@ -985,39 +996,19 @@ We have to install the ingress-controller manually:
 
 
 ```shell
-cat <<'EOF' | helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
   --version 4.12.1 \
-  --namespace ingress-nginx \
+  --namespace traefik \
   --create-namespace \
-  -f -
-controller:
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-  watchIngressWithoutClass: true
-  admissionWebhooks:
-    enabled: false
-  kind: Deployment
-  service:
-    externalTrafficPolicy: Local
-  replicaCount: 2
-  resources: null
-  ingressClassResource:
-    enabled: true
-    default: true
-  config:
-    use-gzip: "true"
-    enable-brotli: "true"
-    log-format-upstream: >
-      $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
-      "$http_referer" "$http_user_agent" "$host" $request_length $request_time
-      [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr
-      $upstream_response_length $upstream_response_time $upstream_status $req_id
+  -f -  
+  
 EOF
 ```
 
 If the helm repos are not present or up-to-date:
 
 ```shell
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add traefik https://traefik.github.io/charts
 helm repo update
+helm install traefik traefik/traefik --version 39.0.0
 ```

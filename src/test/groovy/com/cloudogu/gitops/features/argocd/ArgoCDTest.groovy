@@ -44,7 +44,7 @@ class ArgoCDTest {
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
                     namespaces          : [
-                            dedicatedNamespaces: ["argocd", "monitoring", "ingress-nginx", "secrets"],
+                            dedicatedNamespaces: ["argocd", "monitoring", "traefik", "secrets"],
                             tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                     ]
             ],
@@ -92,7 +92,7 @@ class ArgoCDTest {
                                     version: '42.0.3'
                             ]
                     ],
-                    ingressNginx: [
+                    ingress: [
                             active: true
                     ],
                     secrets     : [
@@ -278,17 +278,17 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
+    void 'When ingress disabled: Does not push monitoring dashboard resources'() {
         config.features.monitoring.active = true
-        config.features.ingressNginx.active = false
+        config.features.ingress.active = false
 
         def argocd = createArgoCD()
         argocd.install()
         repoLayout = argocd.repoLayout()
 
         assertThat(new File(repoLayout.monitoringDir())).exists()
-        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard.yaml")).doesNotExist()
-        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
+        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/traefik-dashboard.yaml")).doesNotExist()
+        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/traefik-dashboard-requests-handling.yaml")).doesNotExist()
     }
 
     @Test
@@ -793,7 +793,7 @@ class ArgoCDTest {
         LinkedHashSet<String> expectedNamespaces = [
                 "testPrefix-monitoring",
                 "testPrefix-secrets",
-                "testPrefix-ingress-nginx",
+                "testPrefix-traefik",
                 "testPrefix-example-apps-staging",
                 "testPrefix-example-apps-production"
         ]
@@ -801,7 +801,7 @@ class ArgoCDTest {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet<String>([
                 "monitoring",
                 "secrets",
-                "ingress-nginx",
+                "traefik",
                 "example-apps-staging",
                 "example-apps-production"
         ])
@@ -1331,14 +1331,14 @@ class ArgoCDTest {
                 'https://charts.external-secrets.io',
                 'https://codecentric.github.io/helm-charts',
                 'https://prometheus-community.github.io/helm-charts',
-                'https://kubernetes.github.io/ingress-nginx',
+                'https://traefik.github.io/charts',
                 'https://helm.releases.hashicorp.com',
                 'https://charts.jetstack.io'
         )
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
@@ -1347,7 +1347,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
@@ -1369,7 +1369,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
@@ -1378,7 +1378,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
@@ -1400,7 +1400,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
-                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
@@ -1424,7 +1424,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
-                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
@@ -1433,7 +1433,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
@@ -1456,7 +1456,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
@@ -1465,7 +1465,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'

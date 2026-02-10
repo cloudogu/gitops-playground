@@ -18,14 +18,14 @@ spec:
 <#if config.application.mirrorRepos>
   - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/kube-prometheus-stack.git<#else>/repo/3rd-party-dependencies/kube-prometheus-stack</#if>
   - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/mailhog.git<#else>/repo/3rd-party-dependencies/mailhog</#if>
-  - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/ingress-nginx.git<#else>/repo/3rd-party-dependencies/ingress-nginx</#if>
+  - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/traefik.git<#else>/repo/3rd-party-dependencies/traefik</#if>
   - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/external-secrets.git<#else>/repo/3rd-party-dependencies/external-secrets</#if>
   - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/vault.git<#else>/repo/3rd-party-dependencies/vault</#if>
   - ${scm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/cert-manager.git<#else>/repo/3rd-party-dependencies/cert-manager</#if>
 <#else>
   - https://prometheus-community.github.io/helm-charts
   - https://codecentric.github.io/helm-charts
-  - https://kubernetes.github.io/ingress-nginx
+  - https://traefik.github.io/charts
   - https://helm.releases.hashicorp.com
   - https://charts.external-secrets.io
   - https://charts.jetstack.io

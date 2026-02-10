@@ -1,32 +1,47 @@
 #!/bin/bash
 
 cat <<EOF > values.yaml
-controller:
-  annotations:
+deployment:
+  kind: Deployment
+  podAnnotations:
     ingressclass.kubernetes.io/is-default-class: "true"
-  watchIngressWithoutClass: true
+  podLabels:
+    traefik.http.middlewares.gzip.compress: "true"
   admissionWebhooks:
     enabled: false
-  kind: Deployment
   service:
     externalTrafficPolicy: Local
+  ports:
+    websecure:
+      proxyProtocol:
+        trustedIPs:
+          - "127.0.0.1/32"
+          - "172.18.0.0/12"
+      forwardedHeaders:
+        trustedIPs:
+          - "127.0.0.1/32"
+          - "172.18.0.0/12"
   replicaCount: 2
-  resources: null
-  ingressClassResource:
+  resources:
+    general:
+      level: INFO
+    access:
+      enabled: true
+  global:
+    checknewversion: false
+    sendAnonymousUsage: false
+providers:
+  kubernetesGateway:
     enabled: true
-    default: true
-  config:
-    use-gzip: "true"
-    enable-brotli: "true"
-    log-format-upstream: >
-      \$remote_addr - \$remote_user [\$time_local] "\$request" \$status \$body_bytes_sent
-      "\$http_referer" "\$http_user_agent" "\$host" \$request_length \$request_time
-      [\$proxy_upstream_name] [\$proxy_alternative_upstream_name] \$upstream_addr
-      \$upstream_response_length \$upstream_response_time \$upstream_status \$req_id
+gatewayClass:
+  enabled: true
+  name: "traefik"
+gateway:
+  enabled: true
 EOF
 
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --version 4.12.1 \
-  --namespace ingress-nginx \
+helm upgrade --install traefik traefik/traefik \
+  --version 39.0.0 \
+  --namespace ingress \
   --create-namespace \
   -f values.yaml && rm ./values.yaml
