@@ -601,11 +601,11 @@ skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --
 ```
 
 * Creating a specific example config file for two registries 
-```
+```bash
 # Copy content of config.yaml from line one till the last list element under namespaces
-awk '1; /example-apps-staging/ {exit}' examples/example-apps-via-content-loader/config.yaml > scripts/local/two-registries.yaml
+awk '1; /example-apps-staging/ {exit}' ../examples/example-apps-via-content-loader/config.yaml > ../scripts/local/two-registries.yaml
 # Append following lines to the config file file
-cat <<EOF >> scripts/local/two-registries.yaml
+cat <<EOF >> ../scripts/local/two-registries.yaml
   variables:
     petclinic:
       baseDomain: "petclinic.localhost"
