@@ -245,7 +245,7 @@ content:
       type: FOLDER_BASED
       overwriteMode: UPGRADE
       createJenkinsJob: true
-      crededeials:
+      credentials:
         username: 'abc'
         password: 'ey...'
 ```
