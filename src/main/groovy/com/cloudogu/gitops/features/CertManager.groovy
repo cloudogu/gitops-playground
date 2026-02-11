@@ -71,33 +71,7 @@ class CertManager extends Feature implements FeatureWithImage {
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
         def helmConfig = config.features.certManager.helm
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying certManager from local git repo")
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.certManager.helm)
-
-            String certManagerVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    gitHandler.getResourcesScm().repoUrl(repoNamespaceAndName),
-                    'cert-manager',
-                    '.',
-                    certManagerVersion,
-                    namespace,
-                    'cert-manager',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'cert-manager',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'cert-manager',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }
