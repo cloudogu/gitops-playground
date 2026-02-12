@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
@@ -63,7 +64,8 @@ class ExternalSecretsOperatorTest {
                 '0.9.16',
                 'foo-secrets',
                 'external-secrets',
-                temporaryYamlFile
+                temporaryYamlFile,
+                RepoType.HELM
         )
 
         assertThat(parseActualYaml()).doesNotContainKeys('resources')
@@ -142,7 +144,7 @@ class ExternalSecretsOperatorTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-                'external-secrets', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'external-secrets', temporaryYamlFile, RepoType.GIT)
     }
 
     @Test
