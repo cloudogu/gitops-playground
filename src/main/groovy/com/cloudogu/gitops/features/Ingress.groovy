@@ -66,34 +66,6 @@ class Ingress extends Feature implements FeatureWithImage {
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying Ingress from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.ingress.helm as Config.HelmConfig)
-
-            String ingressVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'traefik',
-                    '.',
-                    ingressVersion,
-                    namespace,
-                    'traefik',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL as String,
-                    'traefik',
-                    helmConfig.chart as String,
-                    helmConfig.version as String,
-                    namespace,
-                    'traefik',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('traefik', 'traefik', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }
