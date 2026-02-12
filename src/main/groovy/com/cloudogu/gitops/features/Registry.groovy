@@ -4,6 +4,8 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
@@ -29,6 +31,8 @@ class Registry extends Feature {
     private FileSystemUtils fileSystemUtils
     private Path tmpHelmValues
     private K8sClient k8sClient
+    private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     Registry(
             Config config,
@@ -71,15 +75,7 @@ class Registry extends Feature {
             log.trace("Helm yaml to be applied: ${yaml}")
 
 
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'registry',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'docker-registry',
-                    tempValuesPath
-            )
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port
@@ -101,16 +97,6 @@ class Registry extends Feature {
                         config.registry.internalPort,
                         'docker-registry-internal-port')
             }
-
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'registry',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'docker-registry',
-                    tempValuesPath
-            )
         }
     }
 }

@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
@@ -56,7 +57,7 @@ class CertManagerTest {
 
         verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
                 'cert-manager', chartVersion, 'cert-manager',
-                'cert-manager', temporaryYamlFile)
+                'cert-manager', temporaryYamlFile, RepoType.HELM)
     }
 
     @Test
@@ -106,7 +107,7 @@ class CertManagerTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'cert-manager', '.', chartVersion, 'cert-manager',
-                'cert-manager', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'cert-manager', temporaryYamlFile, RepoType.GIT)
     }
 
     @Test
