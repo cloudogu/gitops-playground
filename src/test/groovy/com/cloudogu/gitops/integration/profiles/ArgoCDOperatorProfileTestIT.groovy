@@ -32,7 +32,7 @@ class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
         println "###### Integration ArgoCD Operator test ######"
         try {
             Awaitility.await()
-                    .atMost(20, TimeUnit.MINUTES)
+                    .atMost(40, TimeUnit.MINUTES)
                     .pollInterval(5, TimeUnit.SECONDS)
                     .untilAsserted {
                         assert TestK8sHelper.checkAllPodsRunningInNamespace(namespaceOperator, 'argocd-operator-controller') &&

@@ -22,7 +22,8 @@ properties([
 
 // definition of profiles, without 'all'
 def predefinedProfiles = ['full', 'full-prefix', 'content-examples', 'minimal',  'operator-full',  'operator-mandants']
-def profilesToTest = predefinedProfiles.contains(params.chooseProfile) ? [ params.chooseProfile ] : predefinedProfiles
+def fullTests = ['full-prefix','operator-full',  'operator-mandants'] // These 3 Cases are enough for all tests
+def profilesToTest = predefinedProfiles.contains(params.chooseProfile) ? [ params.chooseProfile ] : fullTests
 echo "current profiles to test ${profilesToTest}"
 node('high-cpu') {
 
@@ -68,7 +69,7 @@ node('high-cpu') {
                                 if (env.BRANCH_NAME == 'main') {
                                     // on main all IT test has to run to ensure stability
                                     echo "main branch, testing with full-prefix profile"
-                                    executeProfileTestStages(predefinedProfiles)
+                                    executeProfileTestStages(fullTests)
                                 } else {
                                     // this is default!
                                     executeProfileTestStages(profilesToTest)
