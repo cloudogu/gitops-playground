@@ -36,12 +36,12 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 FROM alpine AS downloader
 RUN apk add curl grep
 # When updating,
-# * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
+# * also update the checksum found at https://dl.k8s.io/release/v1.36.0-alpha.1/bin/linux/amd64/kubectl.sha256
 # * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.35.1
-ARG KUBECTL_CHECKSUM=36e2f4ac66259232341dd7866952d64a958846470f6a9a6a813b9117bd965207
+ARG K8S_VERSION=1.36.0-alpha.1
+ARG KUBECTL_CHECKSUM=39c4b08639bca4ad4d8d5f504f5c15e0866a725cf873160e45149fc616be0a7c
 # When updating, also upgrade helm image in Config
 ARG HELM_VERSION=4.1.1
 # bash curl unzip required for Jenkins downloader
