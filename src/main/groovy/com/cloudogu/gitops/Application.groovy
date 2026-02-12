@@ -2,6 +2,7 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.TemplatingEngine
+import com.cloudogu.gitops.utils.license.Paywall
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -24,9 +25,7 @@ class Application {
 
     def start() {
         log.debug("Starting Application")
-
         setNamespaceListToConfig(config)
-
         features.forEach(feature -> {
             feature.validate()
         })

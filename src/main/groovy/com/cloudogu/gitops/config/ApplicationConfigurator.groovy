@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.license.Paywall
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -16,7 +17,7 @@ class ApplicationConfigurator {
      * Sets dynamic fields and validates params
      */
     Config initConfig(Config newConfig) {
-
+        new Paywall(newConfig.application.licensefile)
         addAdditionalApplicationConfig(newConfig)
         addNamePrefix(newConfig)
 
