@@ -10,8 +10,6 @@
   <parent>
     <groupId>io.micronaut.platform</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <!-- When updating, also update and graal version in dockerfile -->
-    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.0.1 -->
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
     <version>4.10.7</version>
   </parent>
@@ -359,13 +357,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- GraalVM only -->
-    <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-      <!-- Version set by micronaut -->
-      <scope>provided</scope>
-    </dependency>
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
