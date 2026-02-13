@@ -1,3 +1,4 @@
+
 package com.cloudogu.gitops.utils.license
 
 import groovy.json.JsonSlurper
@@ -7,46 +8,45 @@ import java.security.KeyFactory
 import java.security.PublicKey
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Slf4j
 class LicenseValidator {
 
     static void main(String[] args) {
-
-
-
     }
 
-    static boolean verifyLicense(String licenseFile) {
-
+    /**
+     * Parses and verifies the license file content.
+     * @return a valid License object, or null if invalid/expired/tampered.
+     */
+    static License parseLicense(String licenseFile) {
         if (!licenseFile) {
-            return false
+            return null
         }
 
-        String publicKeyBase64 = "MCowBQYDK2VwAyEAZUm7N1tqxr2WXFHMgxP9PJ+tDG573dYb5iz+G/Fz3pE="
+        String publicKeyBase64 = "MCowBQYDK2VwAyEAcQHZTZa+2zPmGCJaoiPERiu4YqP2JZ6jCl2x3TUgFAg="
 
-        def json = new JsonSlurper().parseText(licenseFile)
+        def json = new JsonSlurper().parseText(licenseFile) as Map
 
         if (!json.signature) {
-            println "Keine Signatur gefunden!"
-            return false
+            log.warn("Keine Signatur gefunden!")
+            return null
         }
 
-        String expires = json.license?.expires
-        if (!expires) {
-            println "Kein Ablaufdatum gefunden!"
-            return false
+        License license = License.fromMap(json)
+
+        if (license.expires == null) {
+            log.warn("Kein Ablaufdatum gefunden!")
+            return null
         }
 
-        LocalDate expiryDate = LocalDate.parse(expires, DateTimeFormatter.ISO_DATE)
-        if (LocalDate.now().isAfter(expiryDate)) {
-            println "Lizenz abgelaufen!"
-            return false
+        if (license.isExpired()) {
+            log.warn("Lizenz abgelaufen!")
+            return null
         }
 
-        String signatureBase64 = json.remove('signature')
+        // Verify signature
+        String signatureBase64 = json.remove('signature') as String
         byte[] signatureBytes = Base64.getDecoder().decode(signatureBase64)
 
         String jsonWithoutSignature = groovy.json.JsonOutput.toJson(json)
@@ -59,7 +59,19 @@ class LicenseValidator {
         Signature sig = Signature.getInstance("Ed25519")
         sig.initVerify(publicKey)
         sig.update(jsonBytes)
-        return sig.verify(signatureBytes)
+
+        if (!sig.verify(signatureBytes)) {
+            log.warn("Signatur ungültig!")
+            return null
+        }
+        log.debug("License gültig!")
+        return license
     }
 
+    /**
+     * Backwards-compatible: returns true if license is valid.
+     */
+    static boolean verifyLicense(String licenseFile) {
+        return parseLicense(licenseFile) != null
+    }
 }

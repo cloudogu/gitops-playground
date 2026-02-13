@@ -30,9 +30,9 @@ class LicenseGenerator {
 
         PrivateKey privateKey = loadEd25519PrivateKey(base64Key)
 
-        def licenseData = [
+        Map<String, Object> licenseData = [
                 license: [
-                        name    : "Max Mustermann",
+                        name    : "Thomas Mustermann",
                         product : "GOP",
                         expires : "2026-12-31",
                         features: ["test", "test1"],

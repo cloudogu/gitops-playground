@@ -6,22 +6,23 @@ import groovy.util.logging.Slf4j
 class Paywall {
 
     Boolean isLicensed = false
+    License license
 
     String licenseFile
 
     Paywall(String licenseFilePath) {
         readLicenseFile(licenseFilePath)
-        isLicensed = LicenseValidator.verifyLicense(this.licenseFile)
+        this.license = LicenseValidator.parseLicense(this.licenseFile)
+        this.isLicensed = (this.license != null)
         printPayWall()
     }
 
-    void readLicenseFile(licenseFilePath) {
+    void readLicenseFile(String licenseFilePath) {
         try {
             this.licenseFile = new File(licenseFilePath).text
         } catch (Exception exception) {
-            log.error("Error parsing licenseFile!")
+            log.error("Error parsing licenseFile!", exception)
         }
-
     }
 
     void printPayWall() {
@@ -41,10 +42,9 @@ Please contact sales@cloudogu.com
             System.exit(1)
         }
         if (isLicensed) {
-            log.info("License File is valid!")
+            log.info("License File is valid! {}", license)
         }
     }
-
 
     static boolean isUpdate() {
         //for testing
