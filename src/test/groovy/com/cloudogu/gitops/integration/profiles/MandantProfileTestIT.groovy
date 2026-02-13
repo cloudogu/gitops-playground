@@ -8,6 +8,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException
 import org.awaitility.Awaitility
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 import java.util.concurrent.TimeUnit
@@ -29,6 +30,8 @@ class MandantProfileTestIT extends ProfileTestSetup {
     static final String RUNNING = "Running"
     static final String TENANT_POD_FOR_CONDITION = 'argocd-application-controller'
     static final String TENANT_NAMESPACE_ARGOCD = 'tenant1-argocd'
+    static final String TENANT_NAMESPACE_REGISTRY = 'tenant1-registry'
+    static final String TENANT_NAMESPACE_SCM = 'tenant1-scm-manager'
 
     @BeforeAll
     static void labelMyTest() {
@@ -39,11 +42,13 @@ class MandantProfileTestIT extends ProfileTestSetup {
     private static void waitUntilTenantIsReady() {
         // tenant is created very late after running GOP twice!
         Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
-            assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, "argocd-application-controller") &&
-                    TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, 'argocd-repo-server') &&
-                    TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, 'argocd-notifications-controller')
+            assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, "docker-registry") &&
+                    TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
         }
     }
+
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+    // just local
     @Test
     void ensureJenkinsPodIsStartedOnTenant() {
         TestK8sHelper.checkAllPodsRunningInNamespace('tenant1-jenkins', 'jenkins')
@@ -54,6 +59,8 @@ class MandantProfileTestIT extends ProfileTestSetup {
         TestK8sHelper.checkAllPodsRunningInNamespace('tenant1-registry', 'docker-registry')
     }
 
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+    // just local
     @Test
     void ensureArgocdPodsAreStartedOnTenant() {
         def argocdNamespace = TENANT_NAMESPACE_ARGOCD
@@ -64,6 +71,8 @@ class MandantProfileTestIT extends ProfileTestSetup {
         TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
     }
 
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+    // just local
     @Test
     void ensureArgocdPodsAreStartedOnCentral() {
         def argocdNamespace = 'argocd'
@@ -80,6 +89,8 @@ class MandantProfileTestIT extends ProfileTestSetup {
         TestK8sHelper.checkAllPodsRunningInNamespace('scm-manager')
     }
 
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+    // just local
     @Test
     void ensureNamespacesExists() {
         List<String> expectedNamespaces = ["argocd",
