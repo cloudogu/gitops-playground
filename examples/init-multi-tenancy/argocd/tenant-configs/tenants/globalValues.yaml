@@ -1,5 +1,5 @@
 image:
-  tag: latest
+  tag: 876c25ea
 config:
   application:
     baseUrl: "http://localhost"
