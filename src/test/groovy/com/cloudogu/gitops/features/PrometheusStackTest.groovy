@@ -298,7 +298,7 @@ policies:
 
         createStack(scmManagerMock).install()
 
-        def serviceYaml = parseActualYaml()['grafana']['service']
+        def serviceYaml = parseActualYaml()['grafana']['ingress']
         assertThat(serviceYaml['enabled']).isEqualTo(true)
         assertThat((serviceYaml['hosts'] as List)[0]).isEqualTo('grafana.local')
     }
