@@ -3,6 +3,7 @@ package com.cloudogu.gitops.kubernetes.api
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
@@ -144,6 +145,7 @@ class K8sClient {
             }
         }
 
+
     }
 
     private boolean exists(String namespace) {
@@ -203,7 +205,6 @@ class K8sClient {
         )
         return output
     }
-
 
     /**
      * Idempotent create, i.e. overwrites if exists.

@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
+import org.apache.http.client.CredentialsProvider
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -136,11 +138,8 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
-            @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
-            String username = ''
-
-            @JsonPropertyDescription(CONTENT_REPO_PASSWORD_DESCRIPTION)
-            String password = ''
+            @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+            Credentials credentials
 
             @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
             Boolean templating = false
@@ -157,6 +156,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
+
         }
     }
 

@@ -66,4 +66,30 @@ class K8sJavaApiClient {
                 .resource(service)
                 .create()
     }
+
+    /**
+     * Gets login credentials from a K8s secret
+     */
+    Credentials getCredentialsFromSecret(Credentials credentials) {
+        try {
+            Secret secret = this.client.secrets()
+                    .inNamespace(credentials.secretNamespace)
+                    .withName(credentials.secretName)
+                    .get()
+
+            def secretData = secret.getData()
+            def usernameEncoded = secretData[credentials.usernameKey]
+            String username = usernameEncoded != null
+                    ? new String(Base64.decoder.decode(usernameEncoded))
+                    : credentials.username
+            String password = new String(Base64.getDecoder().decode(secretData[credentials.passwordKey]))
+            Credentials credentialsNew = new Credentials(credentials)
+            credentialsNew.username = username
+            credentialsNew.password = password
+
+            return credentialsNew
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${credentials.secretName} in namespace ${credentials.secretNamespace}", e)
+        }
+    }
 }
