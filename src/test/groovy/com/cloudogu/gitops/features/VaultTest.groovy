@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
@@ -186,7 +187,8 @@ class VaultTest {
                 '42.23.0',
                 'foo-secrets',
                 'vault',
-                temporaryYamlFile
+                temporaryYamlFile,
+                RepoType.HELM
         )
 
         assertThat(parseActualYaml()).doesNotContainKey('global')
@@ -222,7 +224,7 @@ class VaultTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'vault', '.', '1.2.3', 'foo-secrets',
-                'vault', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'vault', temporaryYamlFile, RepoType.GIT)
     }
 
     @Test

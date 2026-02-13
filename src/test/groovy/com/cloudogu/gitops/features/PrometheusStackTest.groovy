@@ -418,7 +418,7 @@ policies:
 
         verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack',
                 'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-                'kube-prometheus-stack', temporaryYamlFilePrometheus)
+                'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
         /* This corresponds to
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +

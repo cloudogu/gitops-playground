@@ -66,17 +66,17 @@ function createCluster() {
   K3D_ARGS=(
     # Allow services to bind to portBindings < 30000 > 32xxx
     # This makes is easier to match for example --bind-registry-port=0 on ci or use lower ports for development
-    "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
+    "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:*"
     # Used by Jenkins Agents pods
-    '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
+    '-v /var/run/docker.sock:/var/run/docker.sock@server:*'
     # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
-    '-v /etc/group:/etc/group@server:0'
+    '-v /etc/group:/etc/group@server:*'
     # Persists the cache of Jenkins agents pods for faster builds
-    '-v /tmp:/tmp@server:0'
+    '-v /tmp:/tmp@server:*'
     # Pin k8s version via k3s image
     "--image=$K3S_VERSION"
     # Disable traefik (we roll our own ingress-controller)
-    '--k3s-arg=--disable=traefik@server:0'
+    '--k3s-arg=--disable=traefik@server:*'
   )
     
   REGISTRIES=""
@@ -104,13 +104,13 @@ EOF
       # in the example application's Jenkins Jobs.
       K3D_ARGS+=(
         # Note that binding to 127.0.0.1 (instead of the default 0.0.0.0, i.e. ALL networks) is much more secure!
-        "-p 127.0.0.1:${BIND_REGISTRY_PORT}:30000@server:0"
+        "-p 127.0.0.1:${BIND_REGISTRY_PORT}:30000@loadbalancer"
       )
     else
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
       K3D_ARGS+=(
-       '-p 127.0.0.1::30000@server:0'
+       '-p 127.0.0.1::30000@loadbalancer'
       )
     fi
     
@@ -120,11 +120,11 @@ EOF
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
       K3D_ARGS+=(
-       '-p 127.0.0.1::80@server:0'
+       '-p 127.0.0.1::80@loadbalancer'
       )
     elif [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
         K3D_ARGS+=(
-            "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@server:0"
+            "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@loadbalancer"
             )
     fi
     
@@ -135,7 +135,7 @@ EOF
       
       for portBinding in "${portBindings[@]}"; do
           K3D_ARGS+=(
-              "-p 127.0.0.1:${portBinding}@server:0"
+              "-p 127.0.0.1:${portBinding}@loadbalancer"
               )
       done
     fi

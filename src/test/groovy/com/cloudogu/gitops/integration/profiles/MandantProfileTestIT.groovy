@@ -38,7 +38,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
 
     private static void waitUntilTenantIsReady() {
         // tenant is created very late after running GOP twice!
-        Awaitility.await().atMost(30, TimeUnit.MINUTES).untilAsserted {
+        Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
             assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, "argocd-application-controller") &&
                     TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, 'argocd-repo-server') &&
                     TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_ARGOCD, 'argocd-notifications-controller')

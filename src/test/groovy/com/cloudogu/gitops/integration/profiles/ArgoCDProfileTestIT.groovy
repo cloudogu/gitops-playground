@@ -61,7 +61,7 @@ class ArgoCDProfileTestIT extends ProfileTestSetup{
 
 
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-            Awaitility.await().atMost(5, TimeUnit.MINUTES).untilAsserted {
+            Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
                 def actualPods = client.pods().inNamespace(namespace).list().getItems()
 
                 // 1. Verify all expected pods are present

@@ -7,7 +7,6 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.awaitility.Awaitility
 import org.awaitility.core.ConditionTimeoutException
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
@@ -28,7 +27,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
     static String argocdNs = 'my-prefix-argocd'
     String scmManagerNs = 'my-prefix-scm-manager'
     String registryNs = 'my-prefix-registry'
-    String ingressNginxNs = 'my-prefix-ingress-nginx' /* Jenking can not start ingress*/
+    String ingressNs = 'my-prefix-ingress' /* Jenking can not start ingress*/
     static String certManagerNs = 'my-prefix-cert-manager'
     String jenkinsNs = 'my-prefix-jenkins'
     static String monitoringNs = 'my-prefix-monitoring'
@@ -75,7 +74,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
                 argocdNs,
                 scmManagerNs,
                 registryNs,
-                ingressNginxNs,
+                ingressNs,
                 certManagerNs,
                 jenkinsNs,
                 monitoringNs,

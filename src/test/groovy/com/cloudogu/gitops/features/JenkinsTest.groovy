@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
@@ -21,6 +22,7 @@ import org.mockito.Mock
 
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
@@ -79,7 +81,7 @@ me:x:1000:''')
 
         verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
                 'jen-chart', '4.8.1', 'jenkins',
-                'jenkins', temporaryYamlFile)
+                'jenkins', temporaryYamlFile, RepoType.HELM)
         verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
         verify(k8sClient).labelRemove('node', '--all', '', 'node')
         verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',

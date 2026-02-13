@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -79,33 +80,6 @@ class Mailhog extends Feature implements FeatureWithImage {
 
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying mailhog from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.mail.helm as Config.HelmConfig)
-
-            String mailhogVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    "${this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)}",
-                    'mailhog',
-                    '.',
-                    mailhogVersion,
-                    namespace,
-                    'mailhog',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'mailhog',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'mailhog',
-                    tempValuesPath)
-        }
+        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }

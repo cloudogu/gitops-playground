@@ -126,34 +126,6 @@ class Vault extends Feature implements FeatureWithImage {
         log.trace("Helm yaml to be applied: ${templatedMap}")
         def tempValuesPath = fileSystemUtils.writeTempFile(templatedMap)
 
-        if (config.application.mirrorRepos) {
-            log.debug('Mirroring repos: Deploying vault from local git repo')
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.secrets.vault.helm as Config.HelmConfig)
-
-            String vaultVersion =
-                    new YamlSlurper().parse(Path.of(config.application.localHelmChartFolder + '/' + helmConfig.chart,
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'vault',
-                    '.',
-                    vaultVersion,
-                    namespace,
-                    'vault',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT
-            )
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'vault',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'vault',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('vault', 'vault', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }

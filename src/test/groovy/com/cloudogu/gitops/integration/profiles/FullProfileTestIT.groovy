@@ -98,7 +98,7 @@ class FullProfileTestIT extends ProfileTestSetup {
                                            "default",
                                            "example-apps-production",
                                            "example-apps-staging",
-                                           "ingress-nginx",
+                                           "ingress",
                                            "kube-node-lease",
                                            "kube-public",
                                            "kube-system",
@@ -127,7 +127,7 @@ class FullProfileTestIT extends ProfileTestSetup {
  * tests searches for ingress services and ensure ingress is used as loadbalancer*/
     @Test
     void ensureNginxIsOnline() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('ingress-nginx', 'ingress')
+        TestK8sHelper.checkAllPodsRunningInNamespace('ingress', 'traefik')
     }
 
     @Test

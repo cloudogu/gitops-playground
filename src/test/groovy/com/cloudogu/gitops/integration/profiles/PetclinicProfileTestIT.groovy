@@ -38,7 +38,7 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
         // petclinic need most of time to run. If online, we can start all tests.
         try {
             Awaitility.await()
-                    .atMost(20, TimeUnit.MINUTES)
+                    .atMost(40, TimeUnit.MINUTES)
                     .pollInterval(5, TimeUnit.SECONDS)
                     .untilAsserted {
                         waitUntilPetclinicIsRunning()

@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
@@ -56,7 +57,7 @@ class IngressTest {
 
         verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
                 config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-                'traefik', temporaryYamlFile)
+                'traefik', temporaryYamlFile, RepoType.HELM)
         assertThat(parseActualYaml()['deployment']['metrics']).isNull()
         assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
         assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -126,7 +127,7 @@ class IngressTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-                'traefik', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'traefik', temporaryYamlFile, RepoType.GIT)
     }
 
     @Test
