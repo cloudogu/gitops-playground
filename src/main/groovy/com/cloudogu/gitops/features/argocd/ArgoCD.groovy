@@ -128,16 +128,13 @@ class ArgoCD extends Feature {
         ArgoCDRepoLayout repoLayout = repoLayout()
 
         if (config.multiTenant.useDedicatedInstance) {
-            //Bootstrapping dedicated instance
-            k8sClient.applyYaml(repoLayout.dedicatedTenantProject())
-            k8sClient.applyYaml(repoLayout.dedicatedBootstrapApp())
+            k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "tenant.yaml").toString())
+            k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
 
-            //Bootstrapping tenant Argocd projects
             ArgoCDRepoLayout tenantRepoLayout = tenantRepoLayout()
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
-            // Bootstrap root application
             k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
         }
@@ -232,7 +229,8 @@ class ArgoCD extends Feature {
             log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}, tenant=${repoLayout.multiTenantDir()}/tenant")
             FileSystemUtils.deleteDir repoLayout.applicationsDir()
             FileSystemUtils.deleteDir repoLayout.projectsDir()
-            FileSystemUtils.deleteDir repoLayout.multiTenantDir() + "/tenant"
+            fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(repoLayout.multiTenantDir()  + "/central"), Path.of(repoLayout.argocdRoot()))
+            FileSystemUtils.deleteDir repoLayout.multiTenantDir()
         } else {
             log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
             FileSystemUtils.deleteDir repoLayout.multiTenantDir()

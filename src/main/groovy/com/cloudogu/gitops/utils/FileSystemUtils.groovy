@@ -10,6 +10,7 @@ import org.apache.commons.io.FileUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.regex.Pattern
 
 @Slf4j
@@ -238,6 +239,56 @@ class FileSystemUtils {
             }
         }
     }
+
+    /**
+     * Moves all direct children of sourceDir into an existing targetDir.
+     * Conflicts are overwritten.
+     * Directories are merged recursively.
+     */
+    void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
+        if (!Files.exists(targetDir)) {
+            Files.createDirectories(targetDir.parent)
+            // fast path: try moving the whole directory
+            try {
+                Files.move(sourceDir, targetDir)
+                return
+            } catch (IOException ignored) {
+                // fallback to merge logic
+                Files.createDirectories(targetDir)
+            }
+        } else if (!Files.isDirectory(targetDir)) {
+            // target exists as file -> overwrite it with directory
+            Files.delete(targetDir)
+            Files.createDirectories(targetDir)
+        }
+
+        Files.list(sourceDir).forEach { Path child ->
+            Path dest = targetDir.resolve(child.fileName.toString())
+            if (Files.isDirectory(child)) {
+                moveDirectoryMergeOverwrite(child, dest)
+            } else {
+                moveFileOverwrite(child, dest)
+            }
+        }
+
+        // remove empty source dir
+        try {
+            Files.deleteIfExists(sourceDir)
+        } catch (IOException ignored) {}
+    }
+
+    private void moveFileOverwrite(Path sourceFile, Path targetFile) {
+        Files.createDirectories(targetFile.parent)
+
+        try {
+            Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING)
+        } catch (IOException moveFailed) {
+            // cross-device fallback
+            Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING)
+            Files.delete(sourceFile)
+        }
+    }
+
 
     /**
      * This filter can be used to copy whole directories without .git folder.
