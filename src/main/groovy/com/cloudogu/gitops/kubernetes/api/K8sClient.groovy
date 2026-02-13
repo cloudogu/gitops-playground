@@ -322,13 +322,9 @@ class K8sClient {
             return []
         }
 
-        result.stdOut.split("\n").collect {
-            def parts = it.split(",")
-
-            def prefix = configProvider.get().application.namePrefix
-            assert (parts[0].startsWith(prefix))
-
-            return new CustomResource(parts[0].substring(prefix.length()), parts[1])
+        return result.stdOut.split('\n').collect { line ->
+            def parts = line.split(',')
+            new CustomResource(parts[0].trim(), parts[1].trim())
         }
     }
 

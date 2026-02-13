@@ -133,34 +133,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying prometheus from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.monitoring.helm as Config.HelmConfig)
-
-            String prometheusVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'prometheusstack',
-                    '.',
-                    prometheusVersion,
-                    namespace,
-                    'kube-prometheus-stack',
-                    tempValuesPath, RepoType.GIT)
-        } else {
-
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'prometheusstack',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'kube-prometheus-stack',
-                    tempValuesPath)
-        }
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 
     private Map<String, Object> buildTemplateValues(Config config, String uid) {

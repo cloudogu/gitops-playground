@@ -29,13 +29,6 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
   - [Use a different ingress port](#use-a-different-ingress-port)
   - [Access local docker network](#access-local-docker-network)
 - [Implicit + explicit dependencies](#implicit--explicit-dependencies)
-- [GraalVM](#graalvm)
-  - [Graal package](#graal-package)
-  - [Dockerfile](#dockerfile)
-  - [Create Graal native image config](#create-graal-native-image-config)
-  - [JGit](#jgit)
-  - [FAQ](#faq)
-    - [SAM conversion problem](#sam-conversion-problem)
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
@@ -247,9 +240,9 @@ docker run --rm -t -u $(id -u) \
  -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
-      --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx
+      --base-url="http://localhost:808$INSTANCE" --argocd --ingress
 
-echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
+echo "Once Argo CD has deployed the traefik-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
 ```
 
 ### Access local docker network
@@ -291,103 +284,20 @@ repository so need to be upgraded regularly.
   * ArgoCD Helm Chart
   * Grafana + Prometheus Helm Charts
   * Vault + ExternalSerets Operator Helm Charts
-  * Ingress-nginx Helm Charts
+  * Ingress Helm Charts
   * Cert-Manager
   * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`
   * ces-build-lib
   * Spring PetClinic
-  * NGINX Helm Chart
+  * Traefik Helm Chart
 * Dockerfile
   * Alpine
-  * GraalVM
   * JDK
   * Groovy
   * musl & zlib
   * Packages installed using apk, gu, microdnf
-
-## GraalVM
-
-The playground started up as a collection of ever-growing shell scripts. Once we realized that the playground is here to stay, we started looking into alternatives to keep our code base in a maintainable state.
-
-Our requirements:
-* a scriptable language, so we could easily explore new features at customers (see [Dev image](#development-image)),
-* the possibility of generating a native binary, in order to get a more lightweight (in terms of vulnerabilities) resulting image.
-
-As the team at the time had a strong Java background and was already profound in groovy, e.g. from `Jenkinsfiles`, we decided to use groovy.
-We added Micronaut, because it promised good support for CLI, groovy and GraalVM for creating a static image.
-It turned out that Micronaut did not support GraalVM native images for groovy. In order to get this to work some more
-hacking was necessary. See [`graal` package](../src/main/groovy/com/cloudogu/gitops/graal) and also the `native-image` stage in [`Dockerfile`](../Dockerfile).
-
-### Graal package
-
-In order to make Groovy's dynamic magic work in a Graal native image, we use some classes from the [clockwork-project](https://github.com/croz-ltd/klokwrk-project) (see this [package](../src/main/groovy/com/cloudogu/gitops/graal/groovy)). Theses are picked during `native-image` compilation via Annotations.
-The native image compilation is done during `docker build`. See `Dockerfile`.
-
-### Dockerfile
-
-The `native-image` stage takes the `playground.jar` and packs it into a statically executable binary.
-
-Some things are a bit special for the playground:
-* We compile groovy code, which requires some parameters (e.g. `initialize-at-run-time`)
-* We want to run the static image on alpine, so we need to compile it against libmusl instead of glibc.
-  * For that we need to download and compile musl and its dependency zlib 😬 (as stated in [this issue](https://github.com/oracle/graal/issues/2824))
-  * See also [Graal docs](https://github.com/oracle/graal/blob/vm-ce-22.2.0.1/docs/reference-manual/native-image/guides/build-static-and-mostly-static-executable.md)
-* We run the playground jar with the native-image-agent attached a couple of times (see bellow)
-* We use the JGit library, which is not exactly compatible with GraalVM (see bellow)
-
-### Create Graal native image config
-
-The `RUN java -agentlib:native-image-agent` instructions in `Dockerfile` execute the `playground.jar` with the agent attached.
-These runs create static image config files for some dynamic reflection things.
-These files are later picked up by the `native-image`.
-This is done to reduce the chance of `ClassNotFoundException`s, `MethodNotFoundException`s, etc. at runtime.
-
-In the future we could further improve this by running unit test with the graal agent to get even more execution paths.
-
-However, this leads to some mysterious error `Class initialization of com.oracle.truffle.js.scriptengine.GraalJSEngineFactory failed.` 🤷‍♂️
-Also, a lot of failing test with `FileNotFoundException` (due to `user.dir`?).
-If more Exceptions should turn up in the future we might follow up on this.
-Then, we might want to add an env var that actually calls JGit (instead of the mock) in order to execute JGit code with
-the agent attached.
-```shell
-./mvnw test "-DargLine=-agentlib:native-image-agent=config-output-dir=conf" --fail-never
-```
-At the moment this does not seem to be necessary, though.
-
-### JGit
-
-JGit seems to cause [a lot](https://bugs.eclipse.org/bugs/show_bug.cgi?id=546175) [of](https://github.com/quarkusio/quarkus/issues/21372) [trouble](https://github.com/miguelaferreira/issue-micronaut-graalvm-jgit) with GraalVM.  
-Unfortunately for the playground, JGit is a good choice: The only(?) actively developed native Java library for git.
-In the long run, we want to get rid of the shell-outs and the `git` binary in the playground image in order to reduce
-attack surface and complexity. So we need JGit.
-
-So - how do we get JGit to work with GraalVM?
-
-Fortunately, Quarkus provides [an extension to make JGit work with GraalVM](https://github.com/quarkiverse/quarkus-jgit/tree/3.0.0).
-Unfortunately, the playground uses Micronaut and can't just add this extension as a dependency.
-That's why we picked some classes into the Graal package (see this [package](../src/main/groovy/com/cloudogu/gitops/graal/jgit)).
-Those are picked up by `native-image` binary in `Dockerfile`.
-In addition, we had to add some more parameters (`initialize-at-run-time` and `-H:IncludeResourceBundles`) to `native-image`.
-
-For the moment this works and hopefully some day JGit will have support for GraalVM built-in.
-Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus
-extension provides solutions. 🤞 Good luck 🍀.
-
-### FAQ
-
-#### SAM conversion problem
-
-```
-org.codehaus.groovy.runtime.typehandling.GroovyCastException: 
-Cannot cast object '[...]closure1@27aa43a9' 
-with class '[...]closure1' 
-to class 'java.util.function.Predicate'
-```
-
-Implicit closure-to-SAM conversions will not always happen.
-You can configure an explicit list in [resources/proxy-config.json](../src/main/resources/proxy-config.json) and [resources/reflect-config.json](../src/main/resources/reflect-config.json).
 
 
 ## Testing URL separator hyphens
@@ -396,7 +306,7 @@ docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
-   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress-nginx --mail --monitoring --vault=dev --url-separator-hyphen
+   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress --mail --monitoring --vault=dev --url-separator-hyphen
 
 # Create localhost entries with hyphens
 echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}') | sudo tee -a /etc/hosts
@@ -575,7 +485,7 @@ skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy123
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
+skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
 
 # Monitoring
 # Using latest will lead to failure with
@@ -600,16 +510,43 @@ skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --
 
 ```
 
+* Creating a specific example config file for two registries 
+```bash
+# Copy content of config.yaml from line one till the last list element under namespaces
+awk '1; /example-apps-staging/ {exit}' ../examples/example-apps-via-content-loader/config.yaml > ../scripts/local/two-registries.yaml
+# Append following lines to the config file file
+cat <<EOF >> ../scripts/local/two-registries.yaml
+  variables:
+    petclinic:
+      baseDomain: "petclinic.localhost"
+    nginx:
+      baseDomain: "nginx.localhost"
+    images:
+      kubectl: "localhost:30000/proxy/kubectl:1.29"
+      helm: "localhost:30000/proxy/helm:3.16.4-1"
+      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
+      nginx: ""
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      maven: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+EOF
+```
+
 * Deploy playground:
 
 ```bash
-GOP_IMAGE=gitops-playground:dev # Non-local alternative: ghcr.io/cloudogu/gitops-playground
+# Create a docker container or use an available immage from a registry
+# docker build -t gop:dev .
+GOP_IMAGE=gop:ingress
+PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+   -v ${PATH_TWO_REGISTRIES}:/home/two-registries.yaml \
     --net=host \
     ${GOP_IMAGE} -x \
-    --yes --argocd --ingress-nginx --base-url=http://localhost \
+    --yes --argocd --ingress --base-url=http://localhost \
     --vault=dev --monitoring --mailhog --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
@@ -621,27 +558,11 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --kubectl-image=localhost:30000/proxy/bitnamilegacy/kubectl:1.29 \
-    --helm-image=localhost:30000/proxy/helm:latest \
-    --helmkubeval-image=localhost:30000/proxy/helm:latest \
-    --kubeval-image=localhost:30000/proxy/helm:latest \
-    --yamllint-image=localhost:30000/proxy/yamllint:latest \
-    --petclinic-image=localhost:30000/proxy/eclipse-temurin:17-jre-alpine \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
-    --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --ingress-nginx-image=localhost:30000/proxy/ingress-nginx:latest \
-    --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
-    --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
-    --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
-    --prometheus-image=localhost:30000/proxy/prometheus:latest \
-    --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
-    --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
-    --grafana-image=localhost:30000/proxy/grafana:latest \
-    --grafana-sidecar-image=localhost:30000/proxy/k8s-sidecar:latest \
-# Or with config file --config-file=/config/gitops-playground.yaml 
+    --config-file=/home/two-registries.yaml
+    
+    # Or with config file --config-file=/config/gitops-playground.yaml
 ```
 
 ## Testing Network Policies locally
@@ -676,12 +597,12 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${prefix}ingress-nginx
+              kubernetes.io/metadata.name: ${prefix}traefik
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: controller
-              app.kubernetes.io/instance: ingress-nginx
-              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: traefik
+              app.kubernetes.io/name: traefik
 ---
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
@@ -764,7 +685,7 @@ IMAGE_PATTERNS=('external-secrets' \
   'prometheus' \
   'grafana' \
   'sidecar' \
-  'nginx')
+  'traefik')
 BASIC_SRC_IMAGES=$(
   kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
   | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
@@ -814,7 +735,7 @@ docker run -it -u $(id -u) \
       --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
       --vault-image localhost:30002/library/vault:1.12.0 \
-      --ingress-nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
+      --ingress-image localhost:30002/library/traefik:3.6.7
 ```
 
 In a different shell start this script, that waits for Argo CD and then goes offline.
@@ -985,39 +906,19 @@ We have to install the ingress-controller manually:
 
 
 ```shell
-cat <<'EOF' | helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
   --version 4.12.1 \
-  --namespace ingress-nginx \
+  --namespace traefik \
   --create-namespace \
-  -f -
-controller:
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-  watchIngressWithoutClass: true
-  admissionWebhooks:
-    enabled: false
-  kind: Deployment
-  service:
-    externalTrafficPolicy: Local
-  replicaCount: 2
-  resources: null
-  ingressClassResource:
-    enabled: true
-    default: true
-  config:
-    use-gzip: "true"
-    enable-brotli: "true"
-    log-format-upstream: >
-      $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
-      "$http_referer" "$http_user_agent" "$host" $request_length $request_time
-      [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr
-      $upstream_response_length $upstream_response_time $upstream_status $req_id
+  -f -  
+  
 EOF
 ```
 
 If the helm repos are not present or up-to-date:
 
 ```shell
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add traefik https://traefik.github.io/charts
 helm repo update
+helm install traefik traefik/traefik --version 39.0.0
 ```

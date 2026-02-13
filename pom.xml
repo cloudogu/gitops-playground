@@ -10,10 +10,8 @@
   <parent>
     <groupId>io.micronaut.platform</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <!-- When updating, also update and graal version in dockerfile -->
-    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.0.1 -->
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-    <version>4.10.7</version>
+    <version>4.10.8</version>
   </parent>
 
   <properties>
@@ -21,12 +19,12 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
-
+    
     <!--suppress UnresolvedMavenProperty -->
     <!-- git is provided by git-commit-id-maven-plugin -->
     <versionName>${git.tags} (${git.commit.id.abbrev}, ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-
+    
     <versionNameVersion>2.2.0</versionNameVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
@@ -294,13 +292,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.offbytwo.jenkins</groupId>
-      <artifactId>jenkins-client</artifactId>
-      <version>0.3.8</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-test</artifactId>
       <scope>test</scope>
@@ -359,13 +350,13 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- GraalVM only -->
     <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-      <!-- Version set by micronaut -->
-      <scope>provided</scope>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.3.0</version>
+      <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
@@ -391,7 +382,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>3.2.5</version>
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
           <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>

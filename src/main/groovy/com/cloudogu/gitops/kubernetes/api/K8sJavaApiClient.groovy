@@ -1,7 +1,10 @@
 package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
+import io.fabric8.kubernetes.api.model.IntOrString
 import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.Service
+import io.fabric8.kubernetes.api.model.ServiceBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 
@@ -30,5 +33,37 @@ class K8sJavaApiClient {
         } catch (Exception e) {
             throw new RuntimeException("Couldn't parse credentials from K8s secret: ${secretname} in namespace ${namespace}", e)
         }
+    }
+
+    Service createNodePortService(
+            String namespace,
+            String serviceName,
+            Map<String, String> selector,
+            Integer port,
+            Integer nodePort,
+            String portName = 'custom-port'
+    ) {
+
+        def service = new ServiceBuilder()
+                .withNewMetadata()
+                    .withName(serviceName)
+                    .withNamespace(namespace)
+                .endMetadata()
+                .withNewSpec()
+                    .withType("NodePort")
+                    .addToSelector(selector)
+                    .addNewPort()
+                        .withName(portName)
+                        .withPort(port)
+                        .withTargetPort(new IntOrString(port))
+                        .withNodePort(nodePort)
+                .endPort()
+                .endSpec()
+                .build()
+
+        client.services()
+                .inNamespace(namespace)
+                .resource(service)
+                .create()
     }
 }

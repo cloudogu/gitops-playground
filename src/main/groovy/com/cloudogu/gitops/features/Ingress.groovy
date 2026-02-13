@@ -20,11 +20,11 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(150)
-class IngressNginx extends Feature implements FeatureWithImage {
+class Ingress extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-nginx-helm-values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}ingress-nginx"
+    String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
     Config config
     K8sClient k8sClient
 
@@ -33,7 +33,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
     private GitHandler gitHandler
 
-    IngressNginx(
+    Ingress(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
@@ -51,7 +51,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features.ingressNginx.active
+        return config.features.ingress.active
     }
 
     @Override
@@ -62,38 +62,10 @@ class IngressNginx extends Feature implements FeatureWithImage {
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])
-        def helmConfig = config.features.ingressNginx.helm
+        def helmConfig = config.features.ingress.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying IngressNginx from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.ingressNginx.helm as Config.HelmConfig)
-
-            String ingressNginxVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'ingress-nginx',
-                    '.',
-                    ingressNginxVersion,
-                    namespace,
-                    'ingress-nginx',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL as String,
-                    'ingress-nginx',
-                    helmConfig.chart as String,
-                    helmConfig.version as String,
-                    namespace,
-                    'ingress-nginx',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('traefik', 'traefik', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }

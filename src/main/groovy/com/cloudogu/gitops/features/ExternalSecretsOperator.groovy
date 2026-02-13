@@ -67,35 +67,6 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying externalSecretsOperator from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.secrets.externalSecrets.helm as Config.HelmConfig)
-
-            String externalSecretsVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    "external-secrets",
-                    '.',
-                    externalSecretsVersion,
-                    namespace,
-                    'external-secrets',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT
-            )
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    "externalsecretsoperator",
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'external-secrets',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
     }
 }

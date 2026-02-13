@@ -1,0 +1,93 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.features.ingress.helm.image?has_content>
+<#assign imageObject = DockerImageParser.parse(config.features.ingress.helm.image)>
+image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+  # Changing the image will change digest, so don't use the default.
+  # A digest can also be appended to the tag
+  digest: null
+  </#if>
+
+deployment:
+  kind: Deployment  
+  <#if config.registry.createImagePullSecrets == true>
+  imagePullSecrets:
+    - name: proxy-registry
+  </#if>
+
+  podAnnotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+  podLabels:
+    traefik.http.middlewares.gzip.compress: "true"
+
+  admissionWebhooks:
+    enabled: false
+
+    <#if config.application.netpols == true>
+  networkPolicy:
+    enabled: true
+    </#if>
+  service:
+    # Preserve client ip address
+    # https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    externalTrafficPolicy: Local
+
+  ports:
+    websecure:
+      proxyProtocol:
+        trustedIPs:
+          - "127.0.0.1/32"
+          - "172.18.0.0/12"
+      forwardedHeaders:
+        trustedIPs:
+          - "127.0.0.1/32"
+          - "172.18.0.0/12"
+
+  replicaCount: 2
+  resources:
+    # Be generous to our Single Point of failure
+    limits:
+      cpu: '1'
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 90Mi
+
+logs:
+  general:
+    level: INFO
+    access:
+      enabled: true
+      # Traefik default access log format format: "common"
+      # <remote_IP_address> - <client_user_name_if_available> [<timestamp>] "<request_method> <request_path> <request_protocol>" <HTTP_status> <content-length>  "<request_referrer>" "<request_user_agent>" <number_of_requests_received_since_Traefik_started>  "<Traefik_router_name>" "<Traefik_server_URL>" <request_duration_in_ms>ms  logs:
+
+global:
+  checknewversion: false
+  sendAnonymousUsage: false
+
+<#if config.features.monitoring.active == true>
+metrics:
+  enabled: true
+  prometheus:
+    enabled: true
+    service:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: ${config.application.namePrefix}monitoring
+      additionalLabels:
+        release: kube-prometheus-stack
+</#if>
+
+# Enable Kubernetes Gateway API
+providers:
+  kubernetesGateway:
+    enabled: true
+
+gatewayClass:
+  enabled: true
+  name: "traefik"
+
+gateway:
+  enabled: true

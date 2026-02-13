@@ -37,6 +37,7 @@ class Jenkins extends Feature {
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
     private GitHandler gitHandler
+    private AirGappedUtils airGappedUtils
 
     Jenkins(
             Config config,
@@ -105,15 +106,7 @@ class Jenkins extends Feature {
             def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
             String releaseName = "jenkins"
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'jenkins',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    releaseName,
-                    tempValuesPath
-            )
+            deployHelmChart('jenkins', releaseName, namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
 
             // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
             String serviceName = releaseName

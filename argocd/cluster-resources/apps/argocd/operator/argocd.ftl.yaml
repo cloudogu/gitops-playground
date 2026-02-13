@@ -138,9 +138,9 @@ spec:
     - name: codecentric
       type: helm
       url: https://codecentric.github.io/helm-charts
-    - name: ingress-nginx
+    - name: traefik
       type: helm
-      url: https://kubernetes.github.io/ingress-nginx
+      url: https://traefik.github.io/charts
 </#if>
     - name: example-apps
       url: ${scm.repoUrl}argocd/example-apps.git

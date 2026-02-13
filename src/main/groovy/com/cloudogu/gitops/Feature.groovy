@@ -1,9 +1,17 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.Deployer
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 
 /**
  * A single tool to be deployed by GOP.
@@ -66,6 +74,46 @@ abstract class Feature {
             return [:]
         }
         return new YamlSlurper().parseText(hydratedString) as Map
+    }
+
+    protected void deployHelmChart(
+            String featureName,
+            String releaseName,
+            String namespace,
+            Config.HelmConfig helmConfig,
+            Path tempValuesPath,
+            Config config,
+            DeploymentStrategy deployer,
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
+    ) {
+        String repoURL = helmConfig.repoURL
+        String chartOrPath = helmConfig.chart
+        String version = helmConfig.version
+        RepoType repoType = RepoType.HELM
+
+        if (config.application.mirrorRepos) {
+            log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
+
+            String repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(helmConfig)
+            repoURL = gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
+            chartOrPath = '.'
+            repoType = RepoType.GIT
+            version = new YamlSlurper()
+                    .parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
+                            'Chart.yaml'))['version']
+        }
+
+        log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
+        deployer.deployFeature(
+                repoURL,
+                featureName,
+                chartOrPath,
+                version,
+                namespace,
+                releaseName,
+                tempValuesPath,
+                repoType)
     }
 
     abstract boolean isEnabled()
