@@ -29,7 +29,6 @@ class Registry extends Feature {
     private Config config
     private DeploymentStrategy deployer
     private FileSystemUtils fileSystemUtils
-    private Path tmpHelmValues
     private K8sClient k8sClient
     private AirGappedUtils airGappedUtils
     private GitHandler gitHandler
@@ -60,22 +59,15 @@ class Registry extends Feature {
     void enable() {
 
         if (config.registry.internal) {
-
-            def helmConfig = config.registry.helm
-
-            Map yaml = [
+            Map configParameters = [
                     service: [
                             nodePort: Config.DEFAULT_REGISTRY_PORT,
                             type    : 'NodePort'
                     ]
             ]
-            def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
 
-            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-            log.trace("Helm yaml to be applied: ${yaml}")
-
-
-            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+            def helmConfig = config.registry.helm
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", configParameters, config, deployer, airGappedUtils, gitHandler)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port

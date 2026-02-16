@@ -57,15 +57,13 @@ class Ingress extends Feature implements FeatureWithImage {
     @Override
     void enable() {
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        Map configParameters = [
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
-        def helmConfig = config.features.ingress.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
+        ]
 
-        deployHelmChart('traefik', 'traefik', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        def helmConfig = config.features.ingress.helm
+        deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
     }
 }

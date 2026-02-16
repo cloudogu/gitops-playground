@@ -72,9 +72,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
         Map<String, Object> templateModel = buildTemplateValues(config, uid)
 
-        def values = templateToMap(HELM_VALUES_PATH, templateModel)
         def helmConfig = config.features.monitoring.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
@@ -131,9 +129,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, templateModel, config, deployer, airGappedUtils, gitHandler)
     }
 
     private Map<String, Object> buildTemplateValues(Config config, String uid) {

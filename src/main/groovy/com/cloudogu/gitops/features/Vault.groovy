@@ -57,12 +57,12 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        Map configParameters =  [
                 host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
+        ]
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -81,7 +81,7 @@ class Vault extends Feature implements FeatureWithImage {
             k8sClient.createNamespace(namespace)
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.absolutePath)
 
-            templatedMap = MapUtils.deepMerge(
+            configParameters = MapUtils.deepMerge(
                     [
                             server: [
                                     dev         : [
@@ -122,10 +122,6 @@ class Vault extends Feature implements FeatureWithImage {
                     ], templatedMap)
         }
 
-        templatedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        log.trace("Helm yaml to be applied: ${templatedMap}")
-        def tempValuesPath = fileSystemUtils.writeTempFile(templatedMap)
-
-        deployHelmChart('vault', 'vault', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
     }
 }

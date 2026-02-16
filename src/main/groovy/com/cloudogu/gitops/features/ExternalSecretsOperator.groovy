@@ -57,16 +57,13 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
     @Override
     void enable() {
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        Map configParameters = [
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
+        ]
 
         def helmConfig = config.features.secrets.externalSecrets.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
-        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
     }
 }

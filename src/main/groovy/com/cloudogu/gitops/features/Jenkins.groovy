@@ -93,20 +93,17 @@ class Jenkins extends Feature {
                     new Tuple2('jenkins-admin-password', config.jenkins.password))
 
             def helmConfig = config.jenkins.helm
-            def templatedMap = templateToMap(HELM_VALUES_PATH,
-                    [
+            Map configParameters = [
                             dockerGid: findDockerGid(),
                             config   : config,
                             // Allow for using static classes inside the templates
                             statics  : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
                                     .getStaticModels(),
-                    ])
+                    ]
 
-            def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
             String releaseName = "jenkins"
-            deployHelmChart('jenkins', releaseName, namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+            deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
 
             // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
             String serviceName = releaseName

@@ -1,10 +1,10 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -81,7 +81,8 @@ abstract class Feature {
             String releaseName,
             String namespace,
             Config.HelmConfig helmConfig,
-            Path tempValuesPath,
+            String helm_values_path,
+            Map configParameters,
             Config config,
             DeploymentStrategy deployer,
             AirGappedUtils airGappedUtils,
@@ -91,6 +92,11 @@ abstract class Feature {
         String chartOrPath = helmConfig.chart
         String version = helmConfig.version
         RepoType repoType = RepoType.HELM
+        if (helm_values_path) {
+            configParameters = templateToMap(helm_values_path, configParameters)
+        }
+        Map mergedMap = MapUtils.deepMerge(helmConfig.values, configParameters)
+        Path tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
         if (config.application.mirrorRepos) {
             log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
@@ -105,6 +111,8 @@ abstract class Feature {
         }
 
         log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
+        log.debug("Yaml to be deployed: ${mergedMap}")
+
         deployer.deployFeature(
                 repoURL,
                 featureName,
