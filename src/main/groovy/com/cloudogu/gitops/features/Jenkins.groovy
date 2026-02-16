@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType

@@ -2,18 +2,12 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton

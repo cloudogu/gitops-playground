@@ -7,13 +7,11 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
+import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -52,12 +50,12 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        Map configParameters =  [
+        Map configParameters =  templateToMap(HELM_VALUES_PATH, [
                 host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config : config,
                 // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ]
+                statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+        ])
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -117,6 +115,6 @@ class Vault extends Feature implements FeatureWithImage {
                     ], configParameters)
         }
 
-        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
+        deployHelmChart('vault', 'vault', namespace, helmConfig, "", configParameters, config)
     }
 }

@@ -96,6 +96,7 @@ abstract class Feature {
         String version = helmConfig.version
         RepoType repoType = RepoType.HELM
         if (helm_values_path) {
+            log.debug("got helm_value_path, rendering values template")
             configParameters = templateToMap(helm_values_path, configParameters)
         }
         Map mergedMap = MapUtils.deepMerge(helmConfig.values, configParameters)

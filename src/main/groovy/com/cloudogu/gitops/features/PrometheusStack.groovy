@@ -11,13 +11,8 @@ import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 @Slf4j
 @Singleton
