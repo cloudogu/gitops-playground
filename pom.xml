@@ -385,7 +385,7 @@
         <version>3.2.5</version>
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
-          <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+          <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
           <systemProperties>
             <property>
               <name>ROOT_LOG_LEVEL</name>
@@ -399,6 +399,55 @@
 
         </configuration>
       </plugin>
+      <plugin>
+          <!-- Source: https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.14</version>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>prepare-agent</goal>
+                  </goals>
+                  <phase>initialize</phase>
+              </execution>
+              <execution>
+                  <id>report</id>
+                  <phase>test</phase>
+                  <goals>
+                      <goal>report</goal>
+                  </goals>
+              </execution>
+              <execution>
+                  <id>jacoco-check</id>
+                  <phase>test</phase>
+                  <goals>
+                      <goal>check</goal>
+                  </goals>
+                  <configuration>
+                      <reportFormats>
+                          <reportFormat>html</reportFormat>
+                          <reportFormat>xml</reportFormat>
+                      </reportFormats>
+                      <rules>
+                          <rule>
+                              <element>PACKAGE</element>
+                              <limits>
+                                  <limit>
+                                      <counter>LINE</counter>
+                                      <value>COVEREDRATIO</value>
+                                  </limit>
+                              </limits>
+                          </rule>
+                      </rules>
+                      <excludes>
+                          <exclude>**/*Test.class</exclude>
+                      </excludes>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.2.0</version>

@@ -331,7 +331,9 @@ def stageBuildClI() {
 
     mvn 'clean test -Dmaven.test.failure.ignore=true'
     junit testResults: '**/target/surefire-reports/TEST-*.xml'
+    archiveArtifacts artifacts: "**/target/site/jacoco/index.html"
 }
+
 /**
     * Stage for installing ArgoCD Operator in the k3d cluster.
     * @param clusterName Name of the k3d cluster.
