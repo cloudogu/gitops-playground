@@ -26,11 +26,6 @@ class Vault extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
-
     Vault(
             Config config,
             FileSystemUtils fileSystemUtils,
@@ -119,9 +114,9 @@ class Vault extends Feature implements FeatureWithImage {
                                                     "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
                                     ],
                             ]
-                    ], templatedMap)
+                    ], configParameters)
         }
 
-        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
     }
 }

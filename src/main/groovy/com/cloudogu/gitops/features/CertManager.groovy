@@ -24,13 +24,9 @@ class CertManager extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
 
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
     final K8sClient k8sClient
     final Config config
     final String namespace = "${config.application.namePrefix}cert-manager"
-    GitHandler gitHandler
 
     CertManager(
             Config config,
@@ -64,6 +60,6 @@ class CertManager extends Feature implements FeatureWithImage {
                 ]
 
         def helmConfig = config.features.certManager.helm
-        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
     }
 }

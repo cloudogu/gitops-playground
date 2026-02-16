@@ -28,11 +28,6 @@ class Ingress extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
-
     Ingress(
             Config config,
             FileSystemUtils fileSystemUtils,
@@ -64,6 +59,7 @@ class Ingress extends Feature implements FeatureWithImage {
         ]
 
         def helmConfig = config.features.ingress.helm
-        deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
+        Map helmValues = helmConfig.values
+        deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
     }
 }

@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -40,6 +41,11 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 
 @Slf4j
 abstract class Feature {
+
+    protected FileSystemUtils fileSystemUtils
+    protected DeploymentStrategy deployer
+    protected AirGappedUtils airGappedUtils
+    protected GitHandler gitHandler
 
     boolean install() {
         if (isEnabled()) {
@@ -80,13 +86,10 @@ abstract class Feature {
             String featureName,
             String releaseName,
             String namespace,
-            Config.HelmConfig helmConfig,
+            Config.HelmConfigWithValues helmConfig,
             String helm_values_path,
             Map configParameters,
-            Config config,
-            DeploymentStrategy deployer,
-            AirGappedUtils airGappedUtils,
-            GitHandler gitHandler
+            Config config
     ) {
         String repoURL = helmConfig.repoURL
         String chartOrPath = helmConfig.chart
@@ -96,13 +99,13 @@ abstract class Feature {
             configParameters = templateToMap(helm_values_path, configParameters)
         }
         Map mergedMap = MapUtils.deepMerge(helmConfig.values, configParameters)
-        Path tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
+        Path tempValuesPath = this.fileSystemUtils.writeTempFile(mergedMap)
 
         if (config.application.mirrorRepos) {
             log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
-            String repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(helmConfig)
-            repoURL = gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
+            String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
+            repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
             chartOrPath = '.'
             repoType = RepoType.GIT
             version = new YamlSlurper()
@@ -111,9 +114,9 @@ abstract class Feature {
         }
 
         log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
-        log.debug("Yaml to be deployed: ${mergedMap}")
+        log.debug("helm values used: ${mergedMap}")
 
-        deployer.deployFeature(
+        this.deployer.deployFeature(
                 repoURL,
                 featureName,
                 chartOrPath,

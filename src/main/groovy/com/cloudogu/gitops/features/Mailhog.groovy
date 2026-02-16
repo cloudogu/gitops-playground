@@ -3,21 +3,17 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.springframework.security.crypto.bcrypt.BCrypt
 
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -32,10 +28,6 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     private String username
     private String password
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     Mailhog(
             Config config,
@@ -76,6 +68,6 @@ class Mailhog extends Feature implements FeatureWithImage {
         ]
 
         def helmConfig = config.features.mail.helm
-        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH,configParameters, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
     }
 }

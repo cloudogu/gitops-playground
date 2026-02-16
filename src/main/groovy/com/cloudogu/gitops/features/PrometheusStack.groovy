@@ -33,10 +33,6 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     K8sClient k8sClient
 
     private GitRepoFactory scmRepoProvider
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     PrometheusStack(
             Config config,
@@ -129,7 +125,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, templateModel, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, templateModel, config)
     }
 
     private Map<String, Object> buildTemplateValues(Config config, String uid) {

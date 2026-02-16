@@ -27,11 +27,7 @@ class Registry extends Feature {
 
     String namespace
     private Config config
-    private DeploymentStrategy deployer
-    private FileSystemUtils fileSystemUtils
     private K8sClient k8sClient
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     Registry(
             Config config,
@@ -67,7 +63,7 @@ class Registry extends Feature {
             ]
 
             def helmConfig = config.registry.helm
-            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", configParameters, config, deployer, airGappedUtils, gitHandler)
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", configParameters, config)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port

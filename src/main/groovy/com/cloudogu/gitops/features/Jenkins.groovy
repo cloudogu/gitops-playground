@@ -28,16 +28,12 @@ class Jenkins extends Feature {
     String namespace
     private Config config
     private CommandExecutor commandExecutor
-    private FileSystemUtils fileSystemUtils
     private GlobalPropertyManager globalPropertyManager
     private JobManager jobManager
     private UserManager userManager
     private PrometheusConfigurator prometheusConfigurator
-    private DeploymentStrategy deployer
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
-    private GitHandler gitHandler
-    private AirGappedUtils airGappedUtils
 
     Jenkins(
             Config config,
@@ -103,7 +99,7 @@ class Jenkins extends Feature {
 
 
             String releaseName = "jenkins"
-            deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, configParameters, config, deployer, airGappedUtils, gitHandler)
+            deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
 
             // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
             String serviceName = releaseName
