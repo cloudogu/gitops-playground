@@ -1,5 +1,5 @@
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-ui: 
+ui:
   enabled: true
   externalPort: 80
 <#if config.application.remote>
@@ -16,7 +16,8 @@ global:
 </#if>
 <#if config.features.secrets.vault.helm.image?has_content 
   || host?has_content 
-  || config.application.podResources == true>
+  || config.application.podResources == true
+  || dev?has_content>
 server:
 </#if>
 <#if config.features.secrets.vault.helm.image?has_content>
@@ -30,6 +31,24 @@ server:
     enabled: true
     hosts:
       - host: ${host}
+</#if>
+<#if dev?has_content>
+  dev:
+    enabled: true
+    devRootToken: ${dev.rootToken}
+  volumes:
+  - name: ${dev.vaultPostStartVolume}
+    configMap:
+      name: ${dev.vaultPostStartConfigMap}
+      defaultMode: 0774
+  volumeMounts:
+  - mountPath: /var/opt/scripts
+    name: ${dev.vaultPostStartVolume}
+    readOnly : true
+  postStart:
+    - /bin/sh
+    - -c
+    - USERNAME=${config.application.username} PASSWORD=${config.application.password} ARGOCD=${config.features.argocd.active?c} /var/opt/scripts/${dev.postStartScriptName} 2>&1 ${"|"} tee /tmp/dev-post-start.log
 </#if>
 
 <#if config.application.podResources == true>
