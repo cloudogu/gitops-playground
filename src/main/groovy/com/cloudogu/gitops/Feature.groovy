@@ -10,6 +10,7 @@ import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
@@ -87,20 +88,26 @@ abstract class Feature {
             String releaseName,
             String namespace,
             Config.HelmConfigWithValues helmConfig,
-            String helm_values_path,
-            Map configParameters,
+            String helmValuesTemplatePath,
+            Map helmValuesTemplateData,
             Config config
     ) {
         String repoURL = helmConfig.repoURL
         String chartOrPath = helmConfig.chart
         String version = helmConfig.version
         RepoType repoType = RepoType.HELM
-        if (helm_values_path) {
+
+        /* If we get a helmValuesTemplatePath we render the Template with the given Data.
+         * Some Features might not use a values template and thus passing no helmValuesTemplatePath, in that
+         * case we simply treat helmValuesTemplateData directly as helmValuesData */
+        Map helmValuesData = helmValuesTemplateData
+        if (helmValuesTemplatePath) {
             log.debug("got helm_value_path, rendering values template")
-            configParameters = templateToMap(helm_values_path, configParameters)
+            helmValuesData = templateToMap(helmValuesTemplatePath, helmValuesTemplateData)
         }
-        Map mergedMap = MapUtils.deepMerge(helmConfig.values, configParameters)
-        Path tempValuesPath = this.fileSystemUtils.writeTempFile(mergedMap)
+
+        helmValuesData = MapUtils.deepMerge(helmConfig.values, helmValuesData)
+        Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData)
 
         if (config.application.mirrorRepos) {
             log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
@@ -115,7 +122,7 @@ abstract class Feature {
         }
 
         log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
-        log.debug("helm values used: ${mergedMap}")
+        log.debug("helm values used: ${helmValuesData}")
 
         this.deployer.deployFeature(
                 repoURL,
