@@ -112,7 +112,6 @@ abstract class Feature {
         Map helmValuesData = this.helmValuesTemplateData
         if (helmValuesTemplatePath) {
             log.debug("got helm_value_path, rendering values template")
-            log.debug("got this helmValues to work with: ${this.helmValuesTemplateData}")
             helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
         }
 
