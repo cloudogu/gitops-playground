@@ -7,8 +7,6 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
-import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -50,12 +48,7 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        Map configParameters =  [
-                host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
-                config : config,
-                // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
-        ]
+        addHelmValuesData("host", config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '')
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -74,14 +67,14 @@ class Vault extends Feature implements FeatureWithImage {
             k8sClient.createNamespace(namespace)
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.absolutePath)
 
-            configParameters["dev"] = [
-                        rootToken: UUID.randomUUID(),
-                        vaultPostStartConfigMap: vaultPostStartConfigMap,
-                        vaultPostStartVolume: vaultPostStartVolume,
-                        postStartScriptName: postStartScript.name
-                    ]
+            addHelmValuesData("dev", [
+                    rootToken: UUID.randomUUID(),
+                    vaultPostStartConfigMap: vaultPostStartConfigMap,
+                    vaultPostStartVolume: vaultPostStartVolume,
+                    postStartScriptName: postStartScript.name
+            ])
         }
 
-        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
+        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

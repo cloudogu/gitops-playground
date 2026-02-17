@@ -49,15 +49,13 @@ class Registry extends Feature {
     void enable() {
 
         if (config.registry.internal) {
-            Map configParameters = [
-                    service: [
-                            nodePort: Config.DEFAULT_REGISTRY_PORT,
-                            type    : 'NodePort'
-                    ]
-            ]
+            addHelmValuesData("service", [
+                    nodePort: Config.DEFAULT_REGISTRY_PORT,
+                    type    : 'NodePort'
+            ])
 
             def helmConfig = config.registry.helm
-            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", configParameters, config)
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port

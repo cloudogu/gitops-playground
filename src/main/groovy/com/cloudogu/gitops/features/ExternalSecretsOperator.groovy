@@ -48,14 +48,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-
-        Map configParameters = [
-                config : config,
-                // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ]
-
         def helmConfig = config.features.secrets.externalSecrets.helm
-        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
+        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

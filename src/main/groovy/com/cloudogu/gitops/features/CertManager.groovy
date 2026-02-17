@@ -47,15 +47,8 @@ class CertManager extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-
-        Map configParameters = [
-                        config : config,
-                        // Allow for using static classes inside the templates
-                        statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-                                .getStaticModels(),
-                ]
-
         def helmConfig = config.features.certManager.helm
-        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
+
+        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

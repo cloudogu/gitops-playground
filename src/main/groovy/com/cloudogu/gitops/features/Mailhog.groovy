@@ -56,18 +56,13 @@ class Mailhog extends Feature implements FeatureWithImage {
     void enable() {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 
-        Map configParameters = [
-                mail         : [
-                        // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
-                ],
-                passwordCrypt: bcryptMailhogPassword,
-                config       : config,
-                // Allow for using static classes inside the templates
-                statics      : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ]
+        addHelmValuesData("passwordCrypt", bcryptMailhogPassword)
+        addHelmValuesData("mail", [
+                // Note that passing the URL object here leads to problems in Graal Native image, see Git history
+                host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
+        ])
 
         def helmConfig = config.features.mail.helm
-        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
+        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

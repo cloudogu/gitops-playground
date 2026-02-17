@@ -61,7 +61,11 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             uid = findValidOpenShiftUid()
         }
 
-        Map<String, Object> templateModel = buildTemplateValues(config, uid)
+        addHelmValuesData("monitoring",  [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]])
+        addHelmValuesData("namespaces", (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
+        addHelmValuesData("scm", scmConfigurationMetrics())
+        addHelmValuesData("jenkins", jenkinsConfigurationMetrics())
+        addHelmValuesData("uid", uid)
 
         def helmConfig = config.features.monitoring.helm
 
@@ -120,22 +124,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, templateModel, config)
-    }
-
-    private Map<String, Object> buildTemplateValues(Config config, String uid) {
-        def model = [
-                monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
-                namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
-                scm      : scmConfigurationMetrics(),
-                jenkins   : jenkinsConfigurationMetrics(),
-                uid       : uid,
-                config    : config,
-                // Allow for using static classes inside the templates
-                statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ] as Map<String, Object>
-
-        return model
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 
     private Map scmConfigurationMetrics() {

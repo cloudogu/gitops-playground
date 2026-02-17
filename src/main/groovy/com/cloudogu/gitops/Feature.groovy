@@ -7,6 +7,8 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
@@ -47,6 +49,11 @@ abstract class Feature {
     protected DeploymentStrategy deployer
     protected AirGappedUtils airGappedUtils
     protected GitHandler gitHandler
+    protected Map<String, Object> helmValuesTemplateData = [:]
+
+    protected void addHelmValuesData(String key, Object value) {
+       this.helmValuesTemplateData[key] = value
+    }
 
     boolean install() {
         if (isEnabled()) {
@@ -89,7 +96,6 @@ abstract class Feature {
             String namespace,
             Config.HelmConfigWithValues helmConfig,
             String helmValuesTemplatePath,
-            Map helmValuesTemplateData,
             Config config
     ) {
         String repoURL = helmConfig.repoURL
@@ -97,13 +103,17 @@ abstract class Feature {
         String version = helmConfig.version
         RepoType repoType = RepoType.HELM
 
+        this.addHelmValuesData("config", config)
+        this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
+
         /* If we get a helmValuesTemplatePath we render the Template with the given Data.
          * Some Features might not use a values template and thus passing no helmValuesTemplatePath, in that
          * case we simply treat helmValuesTemplateData directly as helmValuesData */
-        Map helmValuesData = helmValuesTemplateData
+        Map helmValuesData = this.helmValuesTemplateData
         if (helmValuesTemplatePath) {
             log.debug("got helm_value_path, rendering values template")
-            helmValuesData = templateToMap(helmValuesTemplatePath, helmValuesTemplateData)
+            log.debug("got this helmValues to work with: ${this.helmValuesTemplateData}")
+            helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
         }
 
         helmValuesData = MapUtils.deepMerge(helmConfig.values, helmValuesData)
