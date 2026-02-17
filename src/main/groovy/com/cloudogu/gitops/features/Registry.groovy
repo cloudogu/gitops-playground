@@ -2,18 +2,12 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -27,12 +21,7 @@ class Registry extends Feature {
 
     String namespace
     private Config config
-    private DeploymentStrategy deployer
-    private FileSystemUtils fileSystemUtils
-    private Path tmpHelmValues
     private K8sClient k8sClient
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     Registry(
             Config config,
@@ -60,22 +49,13 @@ class Registry extends Feature {
     void enable() {
 
         if (config.registry.internal) {
+            addHelmValuesData("service", [
+                    nodePort: Config.DEFAULT_REGISTRY_PORT,
+                    type    : 'NodePort'
+            ])
 
             def helmConfig = config.registry.helm
-
-            Map yaml = [
-                    service: [
-                            nodePort: Config.DEFAULT_REGISTRY_PORT,
-                            type    : 'NodePort'
-                    ]
-            ]
-            def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
-
-            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-            log.trace("Helm yaml to be applied: ${yaml}")
-
-
-            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port

@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
@@ -12,8 +11,6 @@ import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
-import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -28,16 +25,12 @@ class Jenkins extends Feature {
     String namespace
     private Config config
     private CommandExecutor commandExecutor
-    private FileSystemUtils fileSystemUtils
     private GlobalPropertyManager globalPropertyManager
     private JobManager jobManager
     private UserManager userManager
     private PrometheusConfigurator prometheusConfigurator
-    private DeploymentStrategy deployer
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
-    private GitHandler gitHandler
-    private AirGappedUtils airGappedUtils
 
     Jenkins(
             Config config,
@@ -93,20 +86,10 @@ class Jenkins extends Feature {
                     new Tuple2('jenkins-admin-password', config.jenkins.password))
 
             def helmConfig = config.jenkins.helm
-            def templatedMap = templateToMap(HELM_VALUES_PATH,
-                    [
-                            dockerGid: findDockerGid(),
-                            config   : config,
-                            // Allow for using static classes inside the templates
-                            statics  : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-                                    .getStaticModels(),
-                    ])
-
-            def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
             String releaseName = "jenkins"
-            deployHelmChart('jenkins', releaseName, namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+            addHelmValuesData("dockerGid", findDockerGid())
+
+            deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config)
 
             // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
             String serviceName = releaseName

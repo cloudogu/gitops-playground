@@ -8,14 +8,10 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -27,11 +23,6 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
     String namespace = "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
-
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     ExternalSecretsOperator(
             Config config,
@@ -56,17 +47,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                config : config,
-                // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
-
         def helmConfig = config.features.secrets.externalSecrets.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
-        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

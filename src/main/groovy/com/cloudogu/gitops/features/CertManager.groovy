@@ -8,14 +8,9 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -24,13 +19,9 @@ class CertManager extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
 
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
     final K8sClient k8sClient
     final Config config
     final String namespace = "${config.application.namePrefix}cert-manager"
-    GitHandler gitHandler
 
     CertManager(
             Config config,
@@ -55,23 +46,8 @@ class CertManager extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-
-        def templatedMap = templateToMap(HELM_VALUES_PATH,
-                [
-                        config : config,
-                        // Allow for using static classes inside the templates
-                        statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-                                .getStaticModels(),
-                ]) as Map
-
-        def valuesFromConfig = config.features.certManager.helm.values
-
-        def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
-
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
         def helmConfig = config.features.certManager.helm
 
-        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, tempValuesPath, config, deployer, airGappedUtils, gitHandler)
+        deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

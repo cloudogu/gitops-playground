@@ -1,14 +1,18 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
@@ -40,6 +44,16 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 
 @Slf4j
 abstract class Feature {
+
+    protected FileSystemUtils fileSystemUtils
+    protected DeploymentStrategy deployer
+    protected AirGappedUtils airGappedUtils
+    protected GitHandler gitHandler
+    protected Map<String, Object> helmValuesTemplateData = [:]
+
+    protected void addHelmValuesData(String key, Object value) {
+       this.helmValuesTemplateData[key] = value
+    }
 
     boolean install() {
         if (isEnabled()) {
@@ -80,23 +94,35 @@ abstract class Feature {
             String featureName,
             String releaseName,
             String namespace,
-            Config.HelmConfig helmConfig,
-            Path tempValuesPath,
-            Config config,
-            DeploymentStrategy deployer,
-            AirGappedUtils airGappedUtils,
-            GitHandler gitHandler
+            Config.HelmConfigWithValues helmConfig,
+            String helmValuesTemplatePath,
+            Config config
     ) {
         String repoURL = helmConfig.repoURL
         String chartOrPath = helmConfig.chart
         String version = helmConfig.version
         RepoType repoType = RepoType.HELM
 
+        this.addHelmValuesData("config", config)
+        this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
+
+        /* If we get a helmValuesTemplatePath we render the Template with the given Data.
+         * Some Features might not use a values template and thus passing no helmValuesTemplatePath, in that
+         * case we simply treat helmValuesTemplateData directly as helmValuesData */
+        Map helmValuesData = this.helmValuesTemplateData
+        if (helmValuesTemplatePath) {
+            log.debug("got helm_value_path, rendering values template")
+            helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
+        }
+
+        helmValuesData = MapUtils.deepMerge(helmConfig.values, helmValuesData)
+        Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData)
+
         if (config.application.mirrorRepos) {
             log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
-            String repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(helmConfig)
-            repoURL = gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
+            String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
+            repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
             chartOrPath = '.'
             repoType = RepoType.GIT
             version = new YamlSlurper()
@@ -105,7 +131,9 @@ abstract class Feature {
         }
 
         log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
-        deployer.deployFeature(
+        log.debug("helm values used: ${helmValuesData}")
+
+        this.deployer.deployFeature(
                 repoURL,
                 featureName,
                 chartOrPath,
