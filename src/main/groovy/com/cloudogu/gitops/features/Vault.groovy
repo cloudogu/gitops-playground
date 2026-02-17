@@ -56,12 +56,6 @@ class Vault extends Feature implements FeatureWithImage {
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
         ]
-//        Map configParameters =  templateToMap(HELM_VALUES_PATH, [
-//                host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
-//                config : config,
-//                // Allow for using static classes inside the templates
-//                statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
-//        ])
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -80,51 +74,12 @@ class Vault extends Feature implements FeatureWithImage {
             k8sClient.createNamespace(namespace)
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.absolutePath)
 
-            configParameters["dev"] = [:]
-            configParameters["dev"]["rootToken"] = UUID.randomUUID()
-            configParameters["dev"]["vaultPostStartConfigMap"] = vaultPostStartConfigMap
-            configParameters["dev"]["vaultPostStartVolume"] = vaultPostStartVolume
-            configParameters["dev"]["postStartScriptName"] = postStartScript.name
-
-//            configParameters = MapUtils.deepMerge(
-//                    [
-//                            server: [
-//                                    dev         : [
-//                                            enabled     : true,
-//                                            // Don't create fixed devRootToken token (more secure when remote cluster)
-//                                            // -> Root token can be found on the log if needed
-//                                            devRootToken: UUID.randomUUID()
-//                                    ],
-//                                    // Mount init script via config-map
-//                                    volumes     : [
-//                                            [
-//                                                    name     : vaultPostStartVolume,
-//                                                    configMap: [
-//                                                            name       : vaultPostStartConfigMap,
-//                                                            // Make executable
-//                                                            defaultMode: 0774
-//                                                    ]
-//                                            ]
-//                                    ],
-//                                    volumeMounts: [
-//                                            [
-//                                                    mountPath: '/var/opt/scripts',
-//                                                    name     : vaultPostStartVolume,
-//                                                    readOnly : true
-//                                            ]
-//                                    ],
-//                                    // Execute init script as post start hook
-//                                    postStart   : [
-//                                            '/bin/sh',
-//                                            '-c',
-//                                            "USERNAME=${config.application.username} " +
-//                                                    "PASSWORD=${config.application.password} " +
-//                                                    "ARGOCD=${config.features.argocd.active} " +
-//                                                    // Write script output to file for easier debugging
-//                                                    "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
-//                                    ],
-//                            ]
-//                    ], configParameters)
+            configParameters["dev"] = [
+                        rootToken: UUID.randomUUID(),
+                        vaultPostStartConfigMap: vaultPostStartConfigMap,
+                        vaultPostStartVolume: vaultPostStartVolume,
+                        postStartScriptName: postStartScript.name
+                    ]
         }
 
         deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, configParameters, config)
