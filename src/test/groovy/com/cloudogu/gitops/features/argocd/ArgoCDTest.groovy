@@ -276,20 +276,7 @@ class ArgoCDTest {
         }
     }
 
-//    //TODO move to PromtheusStack unit test
-//    @Test
-//    void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
-//        config.features.monitoring.active = true
-//        config.features.ingressNginx.active = false
-//
-//        def argocd = createArgoCD()
-//        argocd.install()
-//        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-//
-//        assertThat(new File(clusterResourcesRepoLayout.monitoringDir())).exists()
-//        assertThat(new File(clusterResourcesRepoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard.yaml")).doesNotExist()
-//        assertThat(new File(clusterResourcesRepoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
-//    }
+
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
@@ -482,32 +469,6 @@ class ArgoCDTest {
                 'https://prometheus-community.github.io/helm-charts')
     }
 
-    //TODO move to PrometheusStack unit test
-//    @Test
-//    void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
-//        config.features.monitoring.active = true
-//        config.application.mirrorRepos = true
-//
-//        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-//        config.application.localHelmChartFolder = rootChartsFolder.toString()
-//
-//        Path crdPath = rootChartsFolder.resolve('kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml')
-//        Files.createDirectories(crdPath)
-//
-//        createArgoCD().install()
-//
-//        k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
-//    }
-
-    //TODO move to PrometheusStack unit test
-//    @Test
-//    void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
-//        config.features.monitoring.active = true
-//
-//        createArgoCD().install()
-//
-//        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
-//    }
 
     @Test
     void 'Pushes repos with empty name-prefix'() {
@@ -568,15 +529,6 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
     }
-
-    //TODO move to PrometheusStack test
-//    @Test
-//    void 'disables serviceMonitor, when monitoring not active'() {
-//        config.application.skipCrds = true
-//        createArgoCD().createMonitoringCrd()
-//
-//        k8sCommands.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
-//    }
 
     @Test
     void 'Write maven mirror into jenkinsfiles'() {

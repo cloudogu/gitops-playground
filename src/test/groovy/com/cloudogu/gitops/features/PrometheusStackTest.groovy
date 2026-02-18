@@ -292,6 +292,8 @@ policies:
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('ClusterIP')
     }
 
+
+
     @Test
     void 'uses ingress if enabled'() {
         config.features.monitoring.grafanaUrl = 'http://grafana.local'
@@ -308,6 +310,75 @@ policies:
         createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana'] as Map).doesNotContainKey('ingress')
+    }
+
+    @Test
+    void 'cleanupUnusedDashboards removes all dashboards for disabled features'() {
+        config.features.monitoring.active = true
+        config.features.ingressNginx.active = false
+        config.jenkins.active = false
+        config.scm.scmManager.url = null   // triggers scmm dashboard cleanup
+
+        createStack(scmManagerMock).install()
+
+        File dashboardDir = new File(clusterResourcesRepoDir, "apps/prometheusstack/misc/dashboard")
+
+        assertThat(new File(dashboardDir, "ingress-nginx-dashboard.yaml")).doesNotExist()
+        assertThat(new File(dashboardDir, "ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
+        assertThat(new File(dashboardDir, "jenkins-dashboard.yaml")).doesNotExist()
+        assertThat(new File(dashboardDir, "scmm-dashboard.yaml")).doesNotExist()
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
+        // Arrange
+        config.features.monitoring.active = true
+        config.application.mirrorRepos = true
+        config.application.skipCrds = false
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
+
+        Path crdFile = rootChartsFolder.resolve(
+                "${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml"
+        )
+        Files.createDirectories(crdFile.parent)
+        Files.writeString(crdFile, "dummy") // content can be anything for this test
+
+        Path chartYaml = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/Chart.yaml")
+        Files.createDirectories(chartYaml.parent)
+        Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n")
+
+        createStack(scmManagerMock).install()
+        k8sCommandExecutor.assertExecuted("kubectl apply -f ${crdFile}")
+
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
+        config.features.monitoring.active = true
+        config.application.mirrorRepos = false      // optional, but makes intent explicit
+        config.application.skipCrds = false         // optional, but makes intent explicit
+
+        createStack(scmManagerMock).install()
+
+        k8sCommandExecutor.assertExecuted(
+                "kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
+                        "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
+                        "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+        )
+    }
+
+    @Test
+    void 'does not apply ServiceMonitor CRD when monitoring is disabled'() {
+        config.features.monitoring.active = false     // important
+        config.application.skipCrds = false           // so it would apply if enabled
+        config.application.mirrorRepos = false        // avoid local chart access
+
+        createStack(scmManagerMock).install()
+
+        // no CRD apply should happen at all
+        k8sCommandExecutor.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
     }
 
     @Test
@@ -630,6 +701,15 @@ matchExpressions:
             GitRepo getRepo(String repoTarget,GitProvider scm) {
                 def repo = super.getRepo(repoTarget, scmManagerMock)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+                // Create dummy dashboards so cleanupUnusedDashboards can delete them
+                def dashboardDir = new File(clusterResourcesRepoDir, "apps/prometheusstack/misc/dashboard")
+                dashboardDir.mkdirs()
+
+                new File(dashboardDir, "ingress-nginx-dashboard.yaml").text = "dummy"
+                new File(dashboardDir, "ingress-nginx-dashboard-requests-handling.yaml").text = "dummy"
+                new File(dashboardDir, "jenkins-dashboard.yaml").text = "dummy"
+                new File(dashboardDir, "scmm-dashboard.yaml").text = "dummy"
 
                 return repo
             }

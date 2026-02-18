@@ -257,7 +257,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
     }
 
-    private void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
+    protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
         String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
         String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
 
