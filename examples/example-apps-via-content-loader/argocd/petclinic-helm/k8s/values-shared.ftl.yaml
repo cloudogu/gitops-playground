@@ -3,7 +3,7 @@ extraEnv: |
     value: Europe/Berlin
 
 service:
-  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
+  type: ClusterIP
 
 ingress:
   enabled: <#if config.content.variables.petclinic.baseDomain?has_content>true<#else>false</#if>

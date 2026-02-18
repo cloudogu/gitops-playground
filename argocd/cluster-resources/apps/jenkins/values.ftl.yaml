@@ -12,7 +12,7 @@ controller:
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
 
-  serviceType: <#if config.application.remote>LoadBalancer<#else>NodePort</#if>
+  serviceType: NodePort
   servicePort: 80
 
   jenkinsUrl: ${config.jenkins.url}

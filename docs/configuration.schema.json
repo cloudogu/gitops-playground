@@ -98,10 +98,6 @@
           "type" : [ "boolean", "null" ],
           "description" : "Write kubernetes resource requests and limits on each pod"
         },
-        "remote" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Expose services as LoadBalancers"
-        },
         "skipCrds" : {
           "type" : [ "boolean", "null" ],
           "description" : "Skip installation of CRDs. This requires prior installation of CRDs"
