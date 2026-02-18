@@ -16,7 +16,7 @@ class JsonSchemaGenerator {
                 new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
                 // Make the schema strict: Only allow our fields, warn when additional fields are passed
                         .with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT)
-                // Exception to the above: For Maps allow additional fields. 
+                // Exception to the above: For Maps allow additional fields.
                 // We use this to allow inline helm values without having to validate them
                         .with(Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES)
                 // All fields can be set to null to use the default

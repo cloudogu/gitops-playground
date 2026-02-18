@@ -35,7 +35,7 @@ class GitopsPlaygroundCliMainScriptedTest {
     )
 
     /**
-     * This test makes sure that we don't forget to add new {@link Feature} classes to 
+     * This test makes sure that we don't forget to add new {@link Feature} classes to
      * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(Config, io.micronaut.context.ApplicationContext)}
      * so they also work in the dev image.
      */

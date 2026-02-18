@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 class CommandExecutorTest {
 
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    
+
     @Test
     void aggregatesEnvironment() {
         def additionalEnv = [someKey: 'someValue']

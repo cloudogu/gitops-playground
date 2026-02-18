@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.config.schema
 
 
-import static groovy.test.GroovyAssert.shouldFail 
+import static groovy.test.GroovyAssert.shouldFail
 
 import java.util.stream.Stream
 

@@ -2,7 +2,7 @@ package com.cloudogu.gitops.utils
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern 
+import java.util.regex.Pattern
 
 import groovy.yaml.YamlSlurper
 
@@ -41,7 +41,7 @@ class TemplatingEngine {
     /**
      * Recursively templates all .ftl files in <code>path</code>.
      *
-     * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.  
+     * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.
      */
     void replaceTemplates(File path, Map parameters, Pattern filepathMatches = ~/\.ftl/) {
         Files.walk(path.toPath())
@@ -68,15 +68,15 @@ class TemplatingEngine {
 
         return targetFile
     }
-    
-    
+
+
 
     String template(File templateFile, Map parameters) {
         Template template = prepareTemplate(templateFile)
 
         StringWriter writer = new StringWriter()
         template.process(parameters, writer)
-        
+
         return writer.toString()
     }
 
@@ -97,6 +97,6 @@ class TemplatingEngine {
         def template = engine.getTemplate(templateFile.name)
         template
     }
-    
-    
+
+
 }

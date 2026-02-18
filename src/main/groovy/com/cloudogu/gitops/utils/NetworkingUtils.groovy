@@ -79,9 +79,9 @@ class NetworkingUtils {
     /**
      * Legacy function with misleading name. Returns the part after the protocol of an URL.
      * e.g.
-     * http://host:42/path returns host:42/path 
+     * http://host:42/path returns host:42/path
      *
-     * @return the part after http:///https://. Otherwise returns the input url. Works for urls without protocol, 
+     * @return the part after http:///https://. Otherwise returns the input url. Works for urls without protocol,
      * but not for outer protocols like ftp:// 😬 Good enough for here, but should be removed anyway.
      */
     @Deprecated

@@ -19,9 +19,9 @@ import org.apache.commons.io.FileUtils
 class FileSystemUtils {
 
     /**
-     * Replaces text in files. If you want to change a YAML field, better use 
+     * Replaces text in files. If you want to change a YAML field, better use
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)} 
+     * {@link #writeYaml(java.util.Map, java.io.File)}
      */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
@@ -130,7 +130,7 @@ class FileSystemUtils {
     static void makeWritable(File directory) {
         if (!directory.exists()) {
             return
-        } 
+        }
         directory.eachFileRecurse { file ->
             if (!file.canWrite()) {
                 file.setWritable(true)

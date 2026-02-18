@@ -13,10 +13,10 @@ class PrometheusConfigurator {
     void enableAuthentication() {
         def result = apiClient.runScript("""
             import org.jenkinsci.plugins.prometheus.config.*
-            
+
             def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)
             config.setUseAuthenticatedEndpoint(true)
-            
+
             print(config.useAuthenticatedEndpoint)
         """)
 

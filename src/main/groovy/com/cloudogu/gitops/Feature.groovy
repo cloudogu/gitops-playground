@@ -16,17 +16,17 @@ import com.cloudogu.gitops.utils.TemplatingEngine
 
 /**
  * A single tool to be deployed by GOP.
- * 
- * Typically, this is a helm chart (see {@link com.cloudogu.gitops.features.deployment.DeploymentStrategy} and 
+ *
+ * Typically, this is a helm chart (see {@link com.cloudogu.gitops.features.deployment.DeploymentStrategy} and
  * {@code downloadHelmCharts.sh}) with its own section in the config
  * (see {@link com.cloudogu.gitops.config.schema.Schema#features}).<br/><br/>
- * 
+ *
  * In the config, features typically set their default helm chart coordinates and provide options to
  * <ul>
  *   <li>configure images</li>
  *   <li>overwrite default helm values</li>
  * </ul><br/>
- * 
+ *
  * In addition to their own config, features react to several generic GOP config options.<br/>
  * Here are some typical examples:
  * <ul>
@@ -45,7 +45,7 @@ abstract class Feature {
     boolean install() {
         if (isEnabled()) {
             log.info("Installing Feature ${getClass().getSimpleName()}")
-            
+
             if (this instanceof FeatureWithImage) {
                 (this as FeatureWithImage).createImagePullSecret()
             }

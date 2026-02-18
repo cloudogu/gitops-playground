@@ -9,7 +9,7 @@ import okhttp3.Response
 
 /**
  * Retries request on specific status codes as well as timeouts.
- * Both error codes (like temporary (!) 500 or 401/403) and timeouts occur often during our jenkins initialization, 
+ * Both error codes (like temporary (!) 500 or 401/403) and timeouts occur often during our jenkins initialization,
  * due to necessary restarts, e.g. after plugin installs.
  */
 @Slf4j

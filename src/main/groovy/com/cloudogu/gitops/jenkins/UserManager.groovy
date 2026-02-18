@@ -17,7 +17,7 @@ class UserManager {
 
     void createUser(String username, String password) {
         log.debug("Add user $username to jenkins")
-        
+
         @Language("Groovy")
         def script = """
             def realm = Jenkins.getInstance().getSecurityRealm()
@@ -25,7 +25,7 @@ class UserManager {
 
             print(user)
         """
-        
+
         def result = apiClient.runScript(script)
 
         if (result != username) {

@@ -34,7 +34,7 @@ class AirGappedUtils {
 
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
-     * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
+     * As helm does not provide an option for changing them interactively, we push the charts into a separate repo.
      * We alter these repos to resolve dependencies locally from SCM.
      *
      * @return the repo namespace and name
@@ -119,7 +119,7 @@ class AirGappedUtils {
 
     Map findByName(List<Map> list, String name) {
         if (!list) return [:]
-        // Note that list.find{} does not work in GraalVM native image: 
+        // Note that list.find{} does not work in GraalVM native image:
         // UnsupportedFeatureError: Runtime reflection is not supported
         list.stream()
                 .filter(map -> map.name == name)

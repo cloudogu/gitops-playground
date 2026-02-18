@@ -357,7 +357,7 @@ class ContentLoader extends Feature {
             throw new RuntimeException("Reference '${repoConfig.ref}' not found in content repository '${repoConfig.url}'")
         }
 
-        // Jgit only checks out remote branches when they start in origin/ 🙄 
+        // Jgit only checks out remote branches when they start in origin/ 🙄
         return potentialRef.replace('refs/heads/', 'origin/')
     }
 
@@ -449,7 +449,7 @@ class ContentLoader extends Feature {
 
             // In mirror mode, we mainly need the .git folder to push the whole git history, branches and tags.
             // So copying source to target repo, .git folders are merged.
-            // git pack files are typically read-only, leading to  
+            // git pack files are typically read-only, leading to
             // IllegalArgumentException: File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
             // Workaround: make .git writable.
             // Note: Setting target remote in source repo and pushing from there causes other problems like

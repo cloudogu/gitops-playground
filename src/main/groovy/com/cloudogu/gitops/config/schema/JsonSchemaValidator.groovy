@@ -11,7 +11,7 @@ import com.networknt.schema.SpecVersionDetector
 class JsonSchemaValidator {
 
     private static ObjectMapper objectMapper = new ObjectMapper()
-    
+
     static void validate(Map yaml) {
             def json = objectMapper.convertValue(yaml, JsonNode)
             def schemaNode = JsonSchemaGenerator.createSchema()

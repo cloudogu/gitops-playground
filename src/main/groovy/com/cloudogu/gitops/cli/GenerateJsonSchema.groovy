@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.cli
 
-import io.micronaut.context.ApplicationContext 
+import io.micronaut.context.ApplicationContext
 
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 

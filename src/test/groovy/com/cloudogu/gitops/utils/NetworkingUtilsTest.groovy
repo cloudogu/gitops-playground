@@ -68,7 +68,7 @@ class NetworkingUtilsTest {
         assertThat(NetworkingUtils.getHost("http://example.com")).isEqualTo("example.com")
         assertThat(NetworkingUtils.getHost("")).isEqualTo("")
         assertThat(NetworkingUtils.getHost("example.com")).isEqualTo("example.com")
-        
+
         // Legacy! The function is misleading.
         //assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com")
         //assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com")

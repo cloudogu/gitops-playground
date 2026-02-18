@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.cloudogu</groupId>
-  <artifactId>gitops-playground-cli</artifactId>
-  <version>0.1</version>
-  <packaging>${packaging}</packaging>
 
   <parent>
     <groupId>io.micronaut.platform</groupId>
@@ -13,18 +8,43 @@
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
     <version>4.10.8</version>
   </parent>
+  <groupId>com.cloudogu</groupId>
+  <artifactId>gitops-playground-cli</artifactId>
+  <version>0.1</version>
+  <packaging>${packaging}</packaging>
+
+  <inceptionYear>2020</inceptionYear>
+
+  <organization>
+    <name>Cloudogu GmbH</name>
+    <url>https://www.cloudogu.com/</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>GNU AFFERO GENERAL PUBLIC LICENSE, Version 3</name>
+      <url>https://github.com/cloudogu/gitops-playground/blob/main/LICENSE</url>
+      <comments>Copyright 2020 - present Cloudogu GmbH</comments>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/cloudogu/gitops-playground.git</connection>
+    <developerConnection>scm:git:git@github.com:cloudogu/gitops-playground.git</developerConnection>
+    <url>https://github.com/cloudogu/gitops-playground</url>
+  </scm>
 
   <properties>
     <packaging>jar</packaging>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
-    
+
     <!--suppress UnresolvedMavenProperty -->
     <!-- git is provided by git-commit-id-maven-plugin -->
     <versionName>${git.tags} (${git.commit.id.abbrev}, ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-    
+
     <versionNameVersion>2.2.0</versionNameVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
@@ -35,39 +55,18 @@
     <wiremock.version>3.13.2</wiremock.version>
   </properties>
 
-  <scm>
-    <connection>scm:git:https://github.com/cloudogu/gitops-playground.git</connection>
-    <developerConnection>scm:git:git@github.com:cloudogu/gitops-playground.git</developerConnection>
-    <url>https://github.com/cloudogu/gitops-playground</url>
-  </scm>
-
-  <licenses>
-    <license>
-      <name>GNU AFFERO GENERAL PUBLIC LICENSE, Version 3</name>
-      <comments>Copyright 2020 - present Cloudogu GmbH</comments>
-      <url>https://github.com/cloudogu/gitops-playground/blob/main/LICENSE</url>
-    </license>
-  </licenses>
-
-  <inceptionYear>2020</inceptionYear>
-
-  <organization>
-    <name>Cloudogu GmbH</name>
-    <url>https://www.cloudogu.com/</url>
-  </organization>
-
-    <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-bom</artifactId>
-                <version>11.0.26</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+  <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>11.0.26</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -77,10 +76,10 @@
 
     <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
     <dependency>
-        <groupId>io.micronaut.reactor</groupId>
-        <artifactId>micronaut-reactor</artifactId>
-        <version>3.9.1</version>
-        <scope>runtime</scope>
+      <groupId>io.micronaut.reactor</groupId>
+      <artifactId>micronaut-reactor</artifactId>
+      <version>3.9.1</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -158,17 +157,17 @@
       <version>2.14.0</version>
     </dependency>
 
-      <!--Used for BCrypt functions-->
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-crypto</artifactId>
-        <version>7.0.2</version>
-      </dependency>
+    <!--Used for BCrypt functions-->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+      <version>7.0.2</version>
+    </dependency>
 
-      <dependency>
-        <groupId>org.eclipse.jgit</groupId>
-        <artifactId>org.eclipse.jgit</artifactId>
-        <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
       <version>7.2.1.202505142326-r</version>
     </dependency>
 
@@ -234,17 +233,17 @@
 
     <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
     <dependency>
-        <groupId>io.fabric8</groupId>
-        <artifactId>kubernetes-server-mock</artifactId>
-        <version>${kubernetes.fabric8.java.version}</version>
-        <scope>test</scope>
+      <groupId>io.fabric8</groupId>
+      <artifactId>kubernetes-server-mock</artifactId>
+      <version>${kubernetes.fabric8.java.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
     <dependency>
-        <groupId>io.fabric8</groupId>
-        <artifactId>kubernetes-client</artifactId>
-        <version>${kubernetes.fabric8.java.version}</version>
+      <groupId>io.fabric8</groupId>
+      <artifactId>kubernetes-client</artifactId>
+      <version>${kubernetes.fabric8.java.version}</version>
     </dependency>
 
     <dependency>
@@ -378,6 +377,8 @@
 
   </dependencies>
 
+  <pluginRepositories></pluginRepositories>
+
   <build>
     <plugins>
       <plugin>
@@ -400,52 +401,52 @@
         </configuration>
       </plugin>
       <plugin>
-          <!-- Source: https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.14</version>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>prepare-agent</goal>
-                  </goals>
-                  <phase>initialize</phase>
-              </execution>
-              <execution>
-                  <id>report</id>
-                  <phase>test</phase>
-                  <goals>
-                      <goal>report</goal>
-                  </goals>
-              </execution>
-              <execution>
-                  <id>jacoco-check</id>
-                  <phase>test</phase>
-                  <goals>
-                      <goal>check</goal>
-                  </goals>
-                  <configuration>
-                      <reportFormats>
-                          <reportFormat>html</reportFormat>
-                          <reportFormat>xml</reportFormat>
-                      </reportFormats>
-                      <rules>
-                          <rule>
-                              <element>PACKAGE</element>
-                              <limits>
-                                  <limit>
-                                      <counter>LINE</counter>
-                                      <value>COVEREDRATIO</value>
-                                  </limit>
-                              </limits>
-                          </rule>
-                      </rules>
-                      <excludes>
-                          <exclude>**/*Test.class</exclude>
-                      </excludes>
-                  </configuration>
-              </execution>
-          </executions>
+        <!-- Source: https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.14</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+          <execution>
+            <id>report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>test</phase>
+          </execution>
+          <execution>
+            <id>jacoco-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>test</phase>
+            <configuration>
+              <reportFormats>
+                <reportFormat>html</reportFormat>
+                <reportFormat>xml</reportFormat>
+              </reportFormats>
+              <rules>
+                <rule>
+                  <element>PACKAGE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+              <excludes>
+                <exclude>**/*Test.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -462,6 +463,10 @@
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
         <version>4.0.1</version>
+        <configuration>
+          <configScript>compiler.groovy</configScript>
+          <targetBytecode>17</targetBytecode>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -469,14 +474,10 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <configScript>compiler.groovy</configScript>
-          <targetBytecode>17</targetBytecode>
-        </configuration>
       </plugin>
 
       <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
-            So we delete the responsible files -->
+			So we delete the responsible files -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>truezip-maven-plugin</artifactId>
@@ -525,6 +526,12 @@
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
         <version>9.0.1</version>
+        <configuration>
+          <includeOnlyProperties>
+            <includeOnlyProperty>^git.tags$</includeOnlyProperty>
+            <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+          </includeOnlyProperties>
+        </configuration>
         <executions>
           <execution>
             <id>get-the-git-infos</id>
@@ -534,12 +541,6 @@
             <phase>initialize</phase>
           </execution>
         </executions>
-        <configuration>
-          <includeOnlyProperties>
-            <includeOnlyProperty>^git.tags$</includeOnlyProperty>
-            <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
-          </includeOnlyProperties>
-        </configuration>
       </plugin>
 
       <plugin>
@@ -547,37 +548,46 @@
         <version>3.3.0</version>
       </plugin>
 
-       <plugin>
-           <groupId>com.diffplug.spotless</groupId>
-           <artifactId>spotless-maven-plugin</artifactId>
-           <version>3.2.1</version>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>3.2.1</version>
+        <configuration>
+          <groovy>
+            <removeSemicolons></removeSemicolons>
+            <importOrder>
+              <order>java|javax|jakarta,groovy,org|io,com.cloudogu.gitops,#</order>
+            </importOrder>
+            <trimTrailingWhitespace></trimTrailingWhitespace>
+            <endWithNewline></endWithNewline>
+            <!-- files must end with a newline -->
 
-           <configuration>
-               <groovy>
-                   <includes>
-                       <include>src/main/groovy/**/*.groovy</include>
-                       <include>src/test/groovy/**/*.groovy</include>
-                   </includes>
-
-                   <removeSemicolons/>
-                   <importOrder>
-                       <order>java|javax|jakarta,groovy,org|io,com.cloudogu.gitops,#</order>
-                   </importOrder>
-               </groovy>
-           </configuration>
-
-           <executions>
-               <execution>
-                   <goals>
-                       <goal>check</goal>
-                       <goal>apply</goal>
-                   </goals>
-               </execution>
-           </executions>
-       </plugin>
+            <indent>
+              <spaces>true</spaces>
+              <spacesPerTab>4</spacesPerTab>
+            </indent>
+              <extra>
+                  <regexp>
+                      <find>\n{2,}</find> <!-- Findet doppelte (oder mehr) Leerzeilen -->
+                      <replace>\n</replace> <!-- Ersetzt sie mit nur einer Leerzeile -->
+                  </regexp>
+              </extra>
+          </groovy>
 
 
-        <plugin>
+        </configuration>
+
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+              <goal>apply</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
         <version>1.0.0</version>
@@ -604,9 +614,6 @@
 
     </plugins>
   </build>
-
-  <pluginRepositories>
-  </pluginRepositories>
   <profiles>
     <profile>
       <id>default</id>
@@ -642,7 +649,8 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>**/*IT</include> <!-- this includes LongIT, too. Just to clearify. -->
+                <include>**/*IT</include>
+                <!-- this includes LongIT, too. Just to clearify. -->
               </includes>
             </configuration>
           </plugin>

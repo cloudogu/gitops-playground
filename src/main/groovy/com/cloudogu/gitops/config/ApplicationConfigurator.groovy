@@ -85,11 +85,11 @@ class ApplicationConfigurator {
             newConfig.registry.internal = false
             newConfig.registry.active = true
         } else if (newConfig.registry.active) {
-            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
+            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on
                docker push in the example application's Jenkins Jobs.
                Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
                So, always use localhost.
-               Allow overriding the port, in case multiple playground instance run on a single host in different 
+               Allow overriding the port, in case multiple playground instance run on a single host in different
                k3d clusters. */
             newConfig.registry.internal = true
             newConfig.registry.url = "localhost:${newConfig.registry.internalPort}"

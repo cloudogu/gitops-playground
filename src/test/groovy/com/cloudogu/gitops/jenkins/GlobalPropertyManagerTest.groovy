@@ -20,21 +20,21 @@ class GlobalPropertyManagerTest {
             instance = Jenkins.getInstance()
             globalNodeProperties = instance.getGlobalNodeProperties()
             envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
-            
+
             def newEnvVarsNodeProperty
             def envVars
-            
+
             if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
                 newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty()
                 globalNodeProperties.add(newEnvVarsNodeProperty)
                 envVars = newEnvVarsNodeProperty.getEnvVars()
             } else {
                 envVars = envVarsNodePropertyList.get(0).getEnvVars()
-            
+
             }
-            
+
             envVars.put("the-key", "the-value")
-            
+
             instance.save()
             print("Done")
         """)
@@ -62,13 +62,13 @@ class GlobalPropertyManagerTest {
             def instance = Jenkins.getInstance()
             def globalNodeProperties = instance.getGlobalNodeProperties()
             def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
-            
+
             if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {
                 print("Nothing to do")
                 return
             }
-            
-            envVars = envVarsNodePropertyList.get(0).getEnvVars()            
+
+            envVars = envVarsNodePropertyList.get(0).getEnvVars()
             envVars.remove("the-key")
             print("Done")
         """)

@@ -89,11 +89,11 @@ class Vault extends Feature implements FeatureWithImage {
                             server: [
                                     dev         : [
                                             enabled     : true,
-                                            // Don't create fixed devRootToken token (more secure when remote cluster) 
+                                            // Don't create fixed devRootToken token (more secure when remote cluster)
                                             // -> Root token can be found on the log if needed
                                             devRootToken: UUID.randomUUID()
                                     ],
-                                    // Mount init script via config-map 
+                                    // Mount init script via config-map
                                     volumes     : [
                                             [
                                                     name     : vaultPostStartVolume,

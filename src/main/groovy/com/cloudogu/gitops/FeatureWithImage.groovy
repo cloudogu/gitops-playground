@@ -12,7 +12,7 @@ import com.cloudogu.gitops.kubernetes.api.K8sClient
 trait FeatureWithImage {
 
     final Logger log = LoggerFactory.getLogger(this.class)
-    
+
     void createImagePullSecret() {
         if (config.registry.createImagePullSecrets) {
 
@@ -20,7 +20,7 @@ trait FeatureWithImage {
             String url = config.registry.proxyUrl ?: config.registry.url
             String user = config.registry.proxyUsername ?: config.registry.readOnlyUsername ?: config.registry.username
             String password = config.registry.proxyPassword ?: config.registry.readOnlyPassword ?: config.registry.password
-            
+
             k8sClient.createNamespace(this.namespace)
             k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
         }

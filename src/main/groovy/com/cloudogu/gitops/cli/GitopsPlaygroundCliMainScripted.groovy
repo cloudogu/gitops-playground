@@ -26,9 +26,9 @@ import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
 
 /**
- * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
+ * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy
  * scripting/interpretation (without prior compilation).
- * The purpose of our -dev image is exactly that: allow groovy scripting inside the image, to shorten the dev cycle on 
+ * The purpose of our -dev image is exactly that: allow groovy scripting inside the image, to shorten the dev cycle on
  * air-gapped customer envs.
  *
  * To make this work the dev image gets it's own main() method that explicitly creates instances of the groovy classes.

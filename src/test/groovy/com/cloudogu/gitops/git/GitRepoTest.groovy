@@ -161,7 +161,7 @@ class GitRepoTest {
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
         assertThat(tags.size()).isEqualTo(1)
         assertThat(tags[0].name).isEqualTo("refs/tags/$expectedTag".toString())
-        // It would be a good idea to check if the git tag is set on the commit. 
+        // It would be a good idea to check if the git tag is set on the commit.
         // However, it's extremely complicated with jgit
         // The "official" example code throws an exception here: Ref peeledRef = repository.getRefDatabase().peel(ref)
         // https://github.com/centic9/jgit-cookbook/blob/d923e18b2ce2e55761858fd2e8e402dd252e0766/src/main/java/org/dstadler/jgit/porcelain/ListTags.java

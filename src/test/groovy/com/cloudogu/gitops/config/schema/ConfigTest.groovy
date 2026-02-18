@@ -32,7 +32,7 @@ registry:
   active: false
 """)
     }
-    
+
     @Test
     void 'creates from schema overwriting only Map values, ignoring null values'() {
         Config expectedValues = new Config(
@@ -45,9 +45,9 @@ registry:
                         namePrefix: "aPrefix"),
                 // Overwrites a default Integer
                 registry: new RegistrySchema(internalPort: 42))
-        
+
         def actualValues = fromMap(expectedValues.toMap())
-        
+
         assertThat(actualValues.application.username).isEqualTo(expectedValues.application.username)
         assertThat(actualValues.application.yes).isEqualTo(expectedValues.application.yes)
         assertThat(actualValues.application.namePrefix).isEqualTo(expectedValues.application.namePrefix)

@@ -29,7 +29,7 @@ import picocli.CommandLine.Option
  *
  * Also used to create the schema for the configuration file or map, which is used to validate the passed YAML file.
  *
- * Note that all properties marked with 
+ * Note that all properties marked with
  * * {@link JsonPropertyDescription} (written into the Config for config file and config map)
  * * {@link Option} (CLI Options)
  *
@@ -243,14 +243,14 @@ class Config {
 
     static class JenkinsSchema {
         Boolean internal = true
-        /* When installing via Docker we have to distinguish jenkins.url (which is a local IP address) from 
+        /* When installing via Docker we have to distinguish jenkins.url (which is a local IP address) from
            the Jenkins URL used by SCMM.
-           
+
            This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
            See addJenkinsConfig() and the comment at scmm.urlForJenkins */
         String urlForScm = ''
         String ingress = ''
-        // Bash image used with internal Jenkins only 
+        // Bash image used with internal Jenkins only
         String internalBashImage = 'bash:5'
         /* Docker client image, downloaded on internal Jenkins only
           For updating, delete pvc jenkins-docker-client

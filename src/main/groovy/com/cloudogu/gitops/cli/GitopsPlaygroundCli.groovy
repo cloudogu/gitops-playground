@@ -259,7 +259,7 @@ class GitopsPlaygroundCli {
   | Please find the URLs of the individual applications in our README:
   | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
   |
-  | A good starting point might also be the services or ingresses inside your cluster:  
+  | A good starting point might also be the services or ingresses inside your cluster:
   | kubectl get svc -A
   | Or (depending on your config)
   | kubectl get ing -A

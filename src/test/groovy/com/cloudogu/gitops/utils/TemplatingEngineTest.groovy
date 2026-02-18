@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.utils
 
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,7 +48,7 @@ class TemplatingEngineTest {
         def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
         def barTarget = new File(tmpDir.absolutePath, "bar.txt")
         barTemplate.text = "Hello \${name}"
-        
+
         def engine = new TemplatingEngine()
         engine.template(barTemplate, barTarget, [
                 name: "Playground",
@@ -70,7 +70,7 @@ class TemplatingEngineTest {
 
         assertThat(result).isEqualTo("Hello Playground")
     }
-    
+
     @Test
     void 'Templates from string to string'() {
         def fooTemplate = "Hello \${name}"
@@ -82,7 +82,7 @@ class TemplatingEngineTest {
 
         assertThat(result).isEqualTo("Hello Playground")
     }
-    
+
     @Test
     void 'Ignores templates without variables'() {
         def fooTemplate = "Hello name"
@@ -100,7 +100,7 @@ class TemplatingEngineTest {
         barTemplate.text = 'foo: ${prefix}suffix'
         def barTarget = new File(tmpDir.absolutePath, "subdirectory/keep-this-way.yaml")
         barTarget.text = 'thiswont: ${prefix}-be-replaced'
-        
+
         def engine = new TemplatingEngine()
         engine.replaceTemplates(tmpDir, [prefix: "myteam-"])
 

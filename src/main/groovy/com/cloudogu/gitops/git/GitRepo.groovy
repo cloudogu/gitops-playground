@@ -64,7 +64,7 @@ class GitRepo {
     String getRepoTarget() {
         return repoTarget
     }
-    
+
     boolean createRepositoryAndSetPermission(String description, boolean initialize = true) {
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
         if (gitProvider.getGitOpsUsername()) {

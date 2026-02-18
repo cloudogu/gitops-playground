@@ -70,13 +70,13 @@ class JobManager {
         }
         return true
     }
-    
+
     boolean jobExists(String name) {
         def response= apiClient.postRequestWithCrumb("job/$name")
 
         return response.code() == 200
     }
-    
+
     void deleteJob(String name) {
         if (name.contains("'")) {
             throw new RuntimeException('Job name cannot contain quotes.')

@@ -111,7 +111,7 @@ class JenkinsApiClient {
     protected  void setMaxRetries(int retries) {
         this.maxRetries = retries
     }
-    
+
     protected setWaitPeriodInMs(int waitPeriodInMs) {
         this.waitPeriodInMs = waitPeriodInMs
     }

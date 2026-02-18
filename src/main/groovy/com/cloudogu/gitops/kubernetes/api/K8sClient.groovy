@@ -449,7 +449,7 @@ class K8sClient {
 
         JsonBuilder json = new JsonBuilder(kubectlJson)
         log.debug("${debugPrefix} JSON pretty printed:\n${json.toPrettyString()}")
-        // Note that toPrettyString() will lead to empty results in some shell, e.g. plain sh 🧐 
+        // Note that toPrettyString() will lead to empty results in some shell, e.g. plain sh 🧐
         return json.toString()
     }
 

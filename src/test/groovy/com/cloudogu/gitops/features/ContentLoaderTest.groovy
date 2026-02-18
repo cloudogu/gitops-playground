@@ -452,7 +452,7 @@ class ContentLoaderTest {
 
     @Test
     void 'Handles multiple mirrors of the same repo with different refs, where one is not pushed'() {
-        // This test case does not make too much sense but used to cause git problems when we merged all content repos into a single folder, like 
+        // This test case does not make too much sense but used to cause git problems when we merged all content repos into a single folder, like
         // TransportException: Missing unknown 5bcf50f0537bf4d2719a82e9b0950fbac92b3ecc
         def repoToMirror = createContentRepo('copyRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
@@ -563,7 +563,7 @@ class ContentLoaderTest {
             assertOnlyBranch(git, 'main')
         }
 
-        // Mirroring commit references is not supported 
+        // Mirroring commit references is not supported
         config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
 
         def exception = shouldFail(RuntimeException) {

@@ -45,7 +45,7 @@ class ArgoCDRepoLayout {
         // "cluster-resources/argocd/operator/argocd.yaml"
         Path.of(operatorDir(), "argocd.yaml").toString()
     }
-    
+
     String helmValuesFile() {
         // "cluster-resources/apps/argocd/argocd/values.yaml"
         Path.of(helmDir(), "values.yaml").toString()
@@ -103,7 +103,7 @@ class ArgoCDRepoLayout {
         APPS_INGRESS_REL
     }
     static String mailhogSubdirRel() {
-        APPS_MAILHOG_REL 
+        APPS_MAILHOG_REL
     }
     static String scmManagerSubdirRel() {
         APPS_SCMMANAGER_REL
