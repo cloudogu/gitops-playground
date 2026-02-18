@@ -2,12 +2,8 @@
 ui:
   enabled: true
   externalPort: 80
-<#if config.application.remote>
-  serviceType: LoadBalancer
-<#else>
   serviceType: ClusterIP
-</#if>
-injector: 
+injector:
   enabled: false
 <#if config.registry.createImagePullSecrets == true>
 global:

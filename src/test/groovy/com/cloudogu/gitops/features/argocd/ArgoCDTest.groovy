@@ -35,7 +35,6 @@ class ArgoCDTest {
     Config config = Config.fromMap(
             application: [
                     openshift           : false,
-                    remote              : false,
                     insecure            : false,
                     password            : '123',
                     username            : 'something',
@@ -192,34 +191,6 @@ class ArgoCDTest {
         // Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
         assertThat(argocdYaml['spec']['source']['path'] as String)
                 .isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
-    }
-
-    @Test
-    void 'Installs argoCD for remote and external Scmm'() {
-        config.application.remote = true
-        config.scm.scmManager.internal = false
-        config.scm.scmManager.url = "https://abc"
-        config.features.argocd.url = 'https://argo.cd'
-        String scmmUrlInternal = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
-
-        def argocd = createArgoCD()
-        argocd.install()
-        repoLayout = argocd.repoLayout()
-        // check values.yaml
-        List filesWithInternalSCMM = findFilesContaining(
-                new File(repoLayout.rootDir()),
-                scmmUrlInternal
-        )
-        assertThat(filesWithInternalSCMM).isEmpty()
-        List filesWithExternalSCMM = findFilesContaining(new File(repoLayout.rootDir()), "https://abc")
-        assertThat(filesWithExternalSCMM).isNotEmpty()
-
-        this.actualHelmValuesFile = "${repoLayout.helmDir()}/values.yaml"
-        def valuesYaml = parseActualYaml(actualHelmValuesFile)
-        assertThat(valuesYaml['argo-cd']['server']['service']['type']).isEqualTo('LoadBalancer')
-        assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
-        assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
-        assertThat(valuesYaml['argo-cd']['server']['ingress']['hostname']).isEqualTo('argo.cd')
     }
 
     @Test

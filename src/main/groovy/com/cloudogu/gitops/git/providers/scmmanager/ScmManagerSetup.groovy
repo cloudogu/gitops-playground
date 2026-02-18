@@ -55,7 +55,6 @@ class ScmManagerSetup {
 
         def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [
                 host       : this.scmManager.scmmConfig.ingress,
-                remote     : this.scmManager.config.application.remote,
                 username   : this.scmManager.scmmConfig.credentials.username,
                 password   : this.scmManager.scmmConfig.credentials.password,
                 helm       : this.scmManager.scmmConfig.helm,

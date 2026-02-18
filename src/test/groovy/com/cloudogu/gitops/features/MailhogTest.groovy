@@ -50,22 +50,6 @@ class MailhogTest {
     }
 
     @Test
-    void 'service type LoadBalancer when run remotely'() {
-        config.application.remote = true
-        createMailhog().install()
-
-        assertThat(parseActualYaml()['service']['type']).isEqualTo('LoadBalancer')
-    }
-
-    @Test
-    void 'service type ClusterIP when not run remotely'() {
-        config.application.remote = false
-        createMailhog().install()
-
-        assertThat(parseActualYaml()['service']['type']).isEqualTo('ClusterIP')
-    }
-
-    @Test
     void 'uses ingress if enabled'() {
         config.features.mail.mailhogUrl = 'http://mailhog.local'
         createMailhog().install()

@@ -69,7 +69,6 @@ interface ConfigConstants {
     String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
 
     // group remote
-    String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
 
     // group tool configuration

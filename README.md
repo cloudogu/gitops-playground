@@ -299,7 +299,6 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--output-config-file`   | `application.outputConfigFile`     | `false` | Boolean  | Output configuration file                                                     |
 | `-v, --version`          | `application.versionInfoRequested` | `false` | Boolean  | Display version and license info                                              |
 | `-h, --help`             | `application.usageHelpRequested`   | `false` | Boolean  | Display help message                                                          |
-| `--remote`               | `application.remote`               | `false` | Boolean  | Expose services as LoadBalancers                                              |
 | `--insecure`             | `application.insecure`             | `false` | Boolean  | Sets insecure-mode in cURL which skips cert validation                        |
 | `--openshift`            | `application.openshift`            | `false` | Boolean  | When set, openshift specific resources and configurations are applied         |
 | `--username`             | `application.username`             | `'admin'` | String   | Set initial admin username                                                    |
