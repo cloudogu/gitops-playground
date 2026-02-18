@@ -498,13 +498,13 @@ class Config {
 
         Boolean active = false
 
-        @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
+        @Option(names = ['--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
         @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
         Boolean mailhog = false
 
-        @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
+        @Option(names = ['--mail-url'], description = MAILHOG_URL_DESCRIPTION)
         @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
-        String mailhogUrl = ''
+        String mailUrl = ''
 
         @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
         @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)

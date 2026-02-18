@@ -8,27 +8,26 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.springframework.security.crypto.bcrypt.BCrypt
 
-
 @Slf4j
 @Singleton
 @Order(200)
-class Mailhog extends Feature implements FeatureWithImage {
+@CompileStatic
+class Mail extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/mailhog/templates/mailhog-helm-values.ftl.yaml"
+    final static private String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/mail/templates/mail-helm-values.ftl.yaml'
+    final private String password
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
 
-    private String username
-    private String password
-
-    Mailhog(
+    Mail(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
@@ -45,7 +44,6 @@ class Mailhog extends Feature implements FeatureWithImage {
         this.gitHandler = gitHandler
     }
 
-
     @Override
     boolean isEnabled() {
         return config.features.mail.mailhog
@@ -55,13 +53,12 @@ class Mailhog extends Feature implements FeatureWithImage {
     void enable() {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 
-        addHelmValuesData("passwordCrypt", bcryptMailhogPassword)
-        addHelmValuesData("mail", [
+        addHelmValuesData('passwordCrypt', bcryptMailhogPassword)
+        addHelmValuesData('mail', [
                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
+                host: config.features.mail.mailUrl ? new URL(config.features.mail.mailUrl).host : '',
         ])
 
-        def helmConfig = config.features.mail.helm
-        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH, config)
+        deployHelmChart('mailhog', 'mailhog', namespace, config.features.mail.helm, HELM_VALUES_PATH, config)
     }
 }

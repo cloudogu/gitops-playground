@@ -265,7 +265,7 @@ class ApplicationConfiguratorTest {
         Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd.localhost")
-        assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog.localhost")
+        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("http://mail.localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
         assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm.localhost")
@@ -285,7 +285,7 @@ class ApplicationConfiguratorTest {
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd-localhost")
-        assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog-localhost")
+        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("http://mail-localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
         assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm-localhost")
@@ -325,7 +325,7 @@ class ApplicationConfiguratorTest {
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo('')
-        assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo('')
+        assertThat(actualConfig.features.mail.mailUrl).isEqualTo('')
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo('')
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo('')
     }
@@ -340,14 +340,14 @@ class ApplicationConfiguratorTest {
         testConfig.features.secrets.active = true
 
         testConfig.features.argocd.url = 'argocd'
-        testConfig.features.mail.mailhogUrl = 'mailhog'
+        testConfig.features.mail.mailUrl = 'mail'
         testConfig.features.monitoring.grafanaUrl = 'grafana'
         testConfig.features.secrets.vault.url = 'vault'
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("argocd")
-        assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("mailhog")
+        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("mail")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("grafana")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("vault")
     }

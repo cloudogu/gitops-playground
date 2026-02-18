@@ -195,9 +195,9 @@ class ApplicationConfigurator {
             argocd.url = injectSubdomain("argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
         }
-        if (mail.mailhog && !mail.mailhogUrl) {
-            mail.mailhogUrl = injectSubdomain('mailhog', baseUrl, urlSeparatorHyphen)
-            log.debug("Setting Mail URL ${mail.mailhogUrl}")
+        if (mail.mailhog && !mail.mailUrl) {
+            mail.mailUrl = injectSubdomain('mail', baseUrl, urlSeparatorHyphen)
+            log.debug("Setting Mail URL ${mail.mailUrl}")
         }
         if (monitoring.active && !monitoring.grafanaUrl) {
             monitoring.grafanaUrl = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)

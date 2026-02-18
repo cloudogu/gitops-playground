@@ -9,7 +9,7 @@ class ArgoCDRepoLayout {
     private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
     private static final String APPS_JENKINS_REL        = 'apps/jenkins'
     private static final String APPS_INGRESS_REL        = 'apps/ingress'
-    private static final String APPS_MAILHOG_REL        = 'apps/mailhog'
+    private static final String APPS_MAILHOG_REL        = 'apps/mail'
     private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
     private static final String APPS_ARGOCD_REL         = 'apps/argocd'
 

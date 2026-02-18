@@ -60,7 +60,7 @@ features:
     emailToAdmin: "infra@example.org"
   mail:
     mailhog: false
-    mailhogUrl: ""
+    mailUrl: ""
     smtpAddress: ""
     smtpPort: 22222
     smtpUser: ""
