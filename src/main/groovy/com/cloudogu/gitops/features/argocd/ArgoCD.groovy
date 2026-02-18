@@ -32,7 +32,7 @@ class ArgoCD extends Feature {
     private final GitHandler gitHandler
     private final String password
 
-    private ArgoCDRepoContext repoContext
+    private ArgoCDRepoSetup repoSetup
     private RepoLayout clusterResourcesRepo
 
 
@@ -82,15 +82,13 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        this.repoContext = ArgoCDRepoContext.create(config, repoProvider, gitHandler)
-        this.clusterResourcesRepo = repoContext.clusterRepoLayout()
+        this.repoSetup = ArgoCDRepoSetup.create(config, fileSystemUtils, repoProvider, gitHandler)
+        this.clusterResourcesRepo = repoSetup.clusterRepoLayout()
 
         log.debug('Cloning Repositories')
-        repoContext.initLocalRepos()
-
-        prepareGitOpsRepos()
-
-        repoContext.commitAndPushAll('Initial Commit')
+        repoSetup.initLocalRepos()
+        repoSetup.prepareClusterResourcesRepo()
+        repoSetup.commitAndPushAll('Initial Commit')
 
         log.debug('Installing Argo CD')
         installArgoCd()
@@ -137,7 +135,7 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(clusterResourcesRepo.dedicatedBootstrapApp())
 
             //Bootstrapping tenant Argocd projects
-            RepoLayout tenantRepoLayout = repoContext.tenantRepoLayout()
+            RepoLayout tenantRepoLayout = repoSetup.tenantRepoLayout()
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
@@ -151,32 +149,6 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-    }
-
-    private void prepareGitOpsRepos() {
-        if (config.features.argocd.operator) {
-            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${clusterResourcesRepo.helmDir()}")
-            FileSystemUtils.deleteDir clusterResourcesRepo.helmDir()
-
-        } else {
-            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${clusterResourcesRepo.operatorDir()}")
-            FileSystemUtils.deleteDir clusterResourcesRepo.operatorDir()
-        }
-
-        if (config.multiTenant.useDedicatedInstance) {
-            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${clusterResourcesRepo.applicationsDir()}, projects=${clusterResourcesRepo.projectsDir()}, tenant=${clusterResourcesRepo.multiTenantDir()}/tenant")
-            FileSystemUtils.deleteDir clusterResourcesRepo.applicationsDir()
-            FileSystemUtils.deleteDir clusterResourcesRepo.projectsDir()
-            FileSystemUtils.deleteDir clusterResourcesRepo.multiTenantDir() + "/tenant"
-        } else {
-            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${clusterResourcesRepo.multiTenantDir()}")
-            FileSystemUtils.deleteDir clusterResourcesRepo.multiTenantDir()
-        }
-
-        if (!config.application.netpols) {
-            log.debug("Deleting argocd netpols at ${clusterResourcesRepo.netpolFile()}")
-            FileSystemUtils.deleteFile clusterResourcesRepo.netpolFile()
-        }
     }
 
     private void deployWithOperator() {
@@ -283,7 +255,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(repoContext.clusterResources.repo)
+                        .withRepo(repoSetup.clusterResources.repo)
                         .withSubfolder(clusterResourcesRepo.operatorRbacTenantSubfolder())
                         .generate()
             }
@@ -299,7 +271,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(repoContext.clusterResources.repo)
+                        .withRepo(repoSetup.clusterResources.repo)
                         .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
                         .generate()
             }
@@ -313,7 +285,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(repoContext.clusterResources.repo)
+                        .withRepo(repoSetup.clusterResources.repo)
                         .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
                         .generate()
             }
@@ -327,7 +299,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(repoContext.clusterResources.repo)
+                        .withRepo(repoSetup.clusterResources.repo)
                         .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
                         .generate()
             }
@@ -368,6 +340,10 @@ class ArgoCD extends Feature {
         )
         k8sClient.label('secret', secretName, ns,
                 new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
+    }
+
+    protected ArgoCDRepoSetup getRepoSetup() {
+        return this.repoSetup
     }
 
 }

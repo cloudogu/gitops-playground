@@ -4,26 +4,34 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.utils.FileSystemUtils
 
 /**
  * Holds ArgoCD-related repo initialization actions (cluster-resources + optional tenant bootstrap)
  * and encapsulates the initialization logic (single-instance vs. dedicated instance).
  */
-class ArgoCDRepoContext {
+class ArgoCDRepoSetup {
 
     final RepoInitializationAction clusterResources
     final RepoInitializationAction tenantBootstrap   // may be null
     final List<RepoInitializationAction> allRepos
 
-    private ArgoCDRepoContext(RepoInitializationAction clusterResources,
-                              RepoInitializationAction tenantBootstrap,
-                              List<RepoInitializationAction> allRepos) {
+    private final Config config
+    private final FileSystemUtils fileSystemUtils
+
+    private ArgoCDRepoSetup(Config config,
+                            FileSystemUtils fileSystemUtils,
+                            RepoInitializationAction clusterResources,
+                            RepoInitializationAction tenantBootstrap,
+                            List<RepoInitializationAction> allRepos) {
+        this.config = config
+        this.fileSystemUtils = fileSystemUtils
         this.clusterResources = clusterResources
         this.tenantBootstrap = tenantBootstrap
         this.allRepos = allRepos
     }
 
-    static ArgoCDRepoContext create(Config config, GitRepoFactory repoFactory, GitHandler gitHandler) {
+    static ArgoCDRepoSetup create(Config config, FileSystemUtils fileSystemUtils, GitRepoFactory repoFactory, GitHandler gitHandler) {
         RepoInitializationAction cluster
         RepoInitializationAction tenant
         List<RepoInitializationAction> all = []
@@ -57,19 +65,7 @@ class ArgoCDRepoContext {
         // Configure which subdirectories should be copied into the cluster-resources repo
         cluster.subDirsToCopy = determineClusterResourceSubDirs(config)
 
-        return new ArgoCDRepoContext(cluster, tenant, all)
-    }
-
-    boolean hasTenantBootstrap() {
-        tenantBootstrap != null
-    }
-
-    void initLocalRepos() {
-        allRepos.each { it.initLocalRepo() }
-    }
-
-    void commitAndPushAll(String message) {
-        allRepos.each { it.repo.commitAndPush(message) }
+        return new ArgoCDRepoSetup(config, fileSystemUtils, cluster, tenant, all)
     }
 
     RepoLayout clusterRepoLayout() {
@@ -77,10 +73,40 @@ class ArgoCDRepoContext {
     }
 
     RepoLayout tenantRepoLayout() {
-        if (!hasTenantBootstrap()) {
+        if (tenantBootstrap == null) {
             throw new IllegalStateException("tenantBootstrap repo is not initialized (single-instance mode).")
         }
         new RepoLayout(tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
+    }
+
+    void initLocalRepos() {
+        allRepos.each { it.initLocalRepo() }
+    }
+
+    void prepareClusterResourcesRepo() {
+        RepoLayout layout = clusterRepoLayout()
+
+        if (config.features.argocd.operator) {
+            fileSystemUtils.deleteDir(layout.helmDir())
+        } else {
+            fileSystemUtils.deleteDir(layout.operatorDir())
+        }
+
+        if (config.multiTenant.useDedicatedInstance) {
+            fileSystemUtils.deleteDir(layout.applicationsDir())
+            fileSystemUtils.deleteDir(layout.projectsDir())
+            fileSystemUtils.deleteDir(layout.multiTenantDir() + "/tenant")
+        } else {
+            fileSystemUtils.deleteDir(layout.multiTenantDir())
+        }
+
+        if (!config.application.netpols) {
+            fileSystemUtils.deleteFile(layout.netpolFile())
+        }
+    }
+
+    void commitAndPushAll(String message) {
+        allRepos.each { it.repo.commitAndPush(message) }
     }
 
     private static Set<String> determineClusterResourceSubDirs(Config config) {
