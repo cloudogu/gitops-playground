@@ -1,21 +1,18 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.utils.*
+import static ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
+
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.SecretBuilder
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
@@ -27,16 +24,21 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
+import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.SecretBuilder
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 
-import static ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.config.Config.OverwriteMode
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 
 @Slf4j
 @EnableKubernetesMockClient(crud=true)
@@ -926,7 +928,7 @@ class ContentLoaderTest {
 
     private static String findRoot(List<RepoCoordinate> repos) {
         def result = new File(repos.get(0).getClonedContentRepo().getParent()).getParent()
-        return result;
+        return result
 
     }
 

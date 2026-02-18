@@ -1,12 +1,14 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat 
+
+import groovy.yaml.YamlSlurper
+
+import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 
 class K8sClientTest {
 
@@ -625,7 +627,7 @@ class K8sClientTest {
         // call k8s
         def result = k8sClient.getAnnotation('namespace', 'monitoring', 'openshift.io/sa.scc.uid-range')
         assertThat(commandExecutor.actualCommands[0]).isEqualTo("kubectl get namespace monitoring -o jsonpath={.metadata.annotations}")
-        assertThat(result).isEqualTo("1000920000/10000");
+        assertThat(result).isEqualTo("1000920000/10000")
     }
 
 

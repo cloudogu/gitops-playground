@@ -1,12 +1,13 @@
 package com.cloudogu.gitops.integration.features
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import groovy.util.logging.Slf4j
-import io.kubernetes.client.openapi.models.V1Pod
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-
-import static org.assertj.core.api.Assertions.assertThat
+import io.kubernetes.client.openapi.models.V1Pod
 
 /**
  * This class checks if cert-manager is started well.

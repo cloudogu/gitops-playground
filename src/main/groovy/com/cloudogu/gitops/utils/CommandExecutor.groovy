@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.utils
 
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
-import org.apache.commons.io.output.TeeOutputStream
-
 import java.util.concurrent.TimeUnit
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+
+import org.apache.commons.io.output.TeeOutputStream
 
 @Slf4j
 @Singleton

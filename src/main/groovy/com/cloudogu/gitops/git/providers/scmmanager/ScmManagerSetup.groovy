@@ -1,11 +1,12 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
+import groovy.util.logging.Slf4j
+
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerUser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.util.logging.Slf4j
 
 @Slf4j
 class ScmManagerSetup {

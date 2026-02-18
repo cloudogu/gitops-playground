@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
 
+import org.jetbrains.annotations.NotNull
+
 import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.jetbrains.annotations.NotNull
 
 class AuthorizationInterceptor implements Interceptor {
     private String username

@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.destroy
 
+import jakarta.inject.Singleton
+
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 @Singleton
 @Order(300)

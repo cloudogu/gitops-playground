@@ -1,13 +1,13 @@
 package com.cloudogu.gitops.config.schema
 
 
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import static groovy.test.GroovyAssert.shouldFail 
 
 import java.util.stream.Stream
 
-import static groovy.test.GroovyAssert.shouldFail 
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 class JsonConfigValidatorTest {
     static Stream<Arguments> validSchemas() {

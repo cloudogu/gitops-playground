@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.Feature
 import groovy.util.logging.Slf4j
+
+import com.cloudogu.gitops.Feature
 
 @Slf4j
 class CommonFeatureConfig extends Feature {

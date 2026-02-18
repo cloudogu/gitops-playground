@@ -1,9 +1,10 @@
 package com.cloudogu.gitops
 
+import org.junit.jupiter.api.Test 
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
-import org.junit.jupiter.api.Test 
 
 class FeatureTest {
     Config config = new Config(

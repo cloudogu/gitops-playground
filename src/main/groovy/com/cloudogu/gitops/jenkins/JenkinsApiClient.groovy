@@ -1,10 +1,13 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.config.Config
-import groovy.json.JsonSlurper
-import groovy.util.logging.Slf4j
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+
+import groovy.json.JsonSlurper
+import groovy.util.logging.Slf4j
+
+import com.cloudogu.gitops.config.Config
+
 import okhttp3.*
 
 @Slf4j

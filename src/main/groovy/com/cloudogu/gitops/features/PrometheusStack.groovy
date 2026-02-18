@@ -1,5 +1,15 @@
 package com.cloudogu.gitops.features
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
+
+import java.nio.file.Path
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
+
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
@@ -9,15 +19,8 @@ import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
+
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 @Slf4j
 @Singleton

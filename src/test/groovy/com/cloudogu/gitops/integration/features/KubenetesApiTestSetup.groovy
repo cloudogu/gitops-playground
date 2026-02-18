@@ -1,19 +1,19 @@
 package com.cloudogu.gitops.integration.features
 
-import io.kubernetes.client.openapi.ApiClient
-import io.kubernetes.client.openapi.Configuration
-import io.kubernetes.client.openapi.apis.CoreV1Api
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.KubeConfig
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.fail
 
 import java.time.Duration
 import java.time.Instant
 import java.util.function.Supplier
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.fail
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.Configuration
+import io.kubernetes.client.openapi.apis.CoreV1Api
+import io.kubernetes.client.util.ClientBuilder
+import io.kubernetes.client.util.KubeConfig
 
 abstract class KubenetesApiTestSetup {
     static String kubeConfigPath

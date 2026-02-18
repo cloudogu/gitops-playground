@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.okhttp
 
 import groovy.util.logging.Slf4j
+
+import org.jetbrains.annotations.NotNull
+
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.jetbrains.annotations.NotNull
 
 /**
  * Retries request on specific status codes as well as timeouts.

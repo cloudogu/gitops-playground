@@ -1,28 +1,30 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
+
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.yaml.YamlSlurper
+
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 
 class AirGappedUtilsTest {
 

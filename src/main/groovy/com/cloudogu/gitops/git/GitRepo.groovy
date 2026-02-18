@@ -1,15 +1,7 @@
 package com.cloudogu.gitops.git
 
-import com.cloudogu.gitops.cli.Version
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
-import com.cloudogu.gitops.git.providers.AccessRole
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.RepoUrlScope
-import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.PushCommand
@@ -23,6 +15,16 @@ import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
+
+import com.cloudogu.gitops.cli.Version
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
+import com.cloudogu.gitops.git.providers.AccessRole
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.RepoUrlScope
+import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 
 @Slf4j
 class GitRepo {

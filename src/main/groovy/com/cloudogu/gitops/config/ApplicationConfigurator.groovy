@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
+
+import com.cloudogu.gitops.utils.FileSystemUtils
 
 @Slf4j
 class ApplicationConfigurator {

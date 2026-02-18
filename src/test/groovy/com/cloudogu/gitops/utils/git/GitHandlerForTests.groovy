@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.utils.git
 
+import static org.mockito.Mockito.mock
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
@@ -7,8 +9,6 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.NetworkingUtils
-
-import static org.mockito.Mockito.mock
 
 class GitHandlerForTests extends GitHandler {
     private final GitProvider tenantProvider

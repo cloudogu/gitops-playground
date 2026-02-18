@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.destroy
 
-import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
 
 @Singleton
 @Slf4j

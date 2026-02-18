@@ -1,25 +1,27 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.config.Config
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension
-import io.micronaut.context.ApplicationContext
-import okhttp3.FormBody
-import okhttp3.JavaNetCookieJar
-import okhttp3.OkHttpClient
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
-
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
+import io.micronaut.context.ApplicationContext
+
+import com.cloudogu.gitops.config.Config
+
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import okhttp3.FormBody
+import okhttp3.JavaNetCookieJar
+import okhttp3.OkHttpClient
 
 class JenkinsApiClientTest {
 

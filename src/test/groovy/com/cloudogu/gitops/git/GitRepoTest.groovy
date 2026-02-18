@@ -1,20 +1,21 @@
 package com.cloudogu.gitops.git
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.AccessRole
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.providers.AccessRole
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 
 class GitRepoTest {
 

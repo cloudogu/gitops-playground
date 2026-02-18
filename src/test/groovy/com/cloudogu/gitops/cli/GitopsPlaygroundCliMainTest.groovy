@@ -1,11 +1,12 @@
 package com.cloudogu.gitops.cli
 
-import com.github.stefanbirkner.systemlambda.SystemLambda
+import static org.assertj.core.api.Assertions.assertThat
+
 import org.junit.jupiter.api.Test
+
+import com.github.stefanbirkner.systemlambda.SystemLambda
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-
-import static org.assertj.core.api.Assertions.assertThat
 
 class GitopsPlaygroundCliMainTest {
 

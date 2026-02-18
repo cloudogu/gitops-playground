@@ -1,19 +1,21 @@
 package com.cloudogu.gitops.integration.profiles
 
-import com.cloudogu.gitops.integration.TestK8sHelper
+import static org.assertj.core.api.Assertions.fail
+
+import java.util.concurrent.TimeUnit
+
 import groovy.util.logging.Slf4j
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
+
 import org.awaitility.Awaitility
 import org.awaitility.core.ConditionTimeoutException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.KubernetesClientException
 
-import java.util.concurrent.TimeUnit
-
-import static org.assertj.core.api.Assertions.fail
+import com.cloudogu.gitops.integration.TestK8sHelper
 
 /**
  * This tests can only be successfull, if one of theses profiles used.

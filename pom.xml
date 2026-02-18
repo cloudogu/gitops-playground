@@ -547,7 +547,37 @@
         <version>3.3.0</version>
       </plugin>
 
-      <plugin>
+       <plugin>
+           <groupId>com.diffplug.spotless</groupId>
+           <artifactId>spotless-maven-plugin</artifactId>
+           <version>3.2.1</version>
+
+           <configuration>
+               <groovy>
+                   <includes>
+                       <include>src/main/groovy/**/*.groovy</include>
+                       <include>src/test/groovy/**/*.groovy</include>
+                   </includes>
+
+                   <removeSemicolons/>
+                   <importOrder>
+                       <order>java|javax|jakarta,groovy,org|io,com.cloudogu.gitops,#</order>
+                   </importOrder>
+               </groovy>
+           </configuration>
+
+           <executions>
+               <execution>
+                   <goals>
+                       <goal>check</goal>
+                       <goal>apply</goal>
+                   </goals>
+               </execution>
+           </executions>
+       </plugin>
+
+
+        <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
         <version>1.0.0</version>
@@ -571,6 +601,7 @@
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 

@@ -24,6 +24,3 @@ class TestGitProvider {
         return [tenant: tenant, central: central]
     }
 }
-
-
-

@@ -1,29 +1,31 @@
 package com.cloudogu.gitops.cli
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.core.ConsoleAppender
-import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import io.micronaut.context.ApplicationContext
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
+
+import java.util.concurrent.TimeUnit
+
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.slf4j.LoggerFactory
+import io.micronaut.context.ApplicationContext
 
-import java.util.concurrent.TimeUnit
+import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.core.ConsoleAppender
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 
 // Avoids blocking if input is read by error
 @Timeout(value = 10, unit = TimeUnit.SECONDS)
@@ -313,7 +315,7 @@ class GitopsPlaygroundCliTest {
         configFile.text = toYaml(fileConfig)
 
         cli.run("--config-file=${configFile}", "--yes")
-        def myconfig = cli.lastSchema;
+        def myconfig = cli.lastSchema
         assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
         assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
         assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden

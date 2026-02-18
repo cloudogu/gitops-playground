@@ -1,5 +1,20 @@
 package com.cloudogu.gitops.features
 
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+
+import org.apache.commons.io.FileUtils
+import org.eclipse.jgit.api.CloneCommand
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.Ref
+import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
@@ -7,25 +22,14 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
+
 import com.fasterxml.jackson.annotation.JsonIgnore
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
-import org.apache.commons.io.FileUtils
-import org.eclipse.jgit.api.CloneCommand
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Ref
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
 @Slf4j
 @Singleton

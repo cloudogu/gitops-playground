@@ -1,19 +1,21 @@
 package com.cloudogu.gitops.integration.profiles
 
-import com.cloudogu.gitops.integration.TestK8sHelper
+import static org.assertj.core.api.Assertions.fail
+
+import java.util.concurrent.TimeUnit
+
 import groovy.util.logging.Slf4j
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
+
 import org.awaitility.Awaitility
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.KubernetesClientException
 
-import java.util.concurrent.TimeUnit
-
-import static org.assertj.core.api.Assertions.fail
+import com.cloudogu.gitops.integration.TestK8sHelper
 
 /**
  * This test ensures all Pods and Namespaces are available, runnning at a startet GOP with - more or less - defaulöt values.

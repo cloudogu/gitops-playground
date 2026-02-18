@@ -1,11 +1,14 @@
 package com.cloudogu.gitops.cli
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.ConsoleAppender
+import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
+import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
+
+import org.slf4j.LoggerFactory
+import io.micronaut.context.ApplicationContext
+
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
@@ -13,17 +16,17 @@ import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import io.micronaut.context.ApplicationContext
-import org.slf4j.LoggerFactory
-import picocli.CommandLine
 
-import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
+import picocli.CommandLine
 
 /**
  * Provides the entrypoint to the application as well as all config parameters.

@@ -1,5 +1,15 @@
 package com.cloudogu.gitops.cli
 
+import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Fail.fail
+
+import org.junit.jupiter.api.Test
+import io.github.classgraph.ClassGraph
+import io.github.classgraph.ClassInfo
+import io.micronaut.context.ApplicationContext
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
@@ -7,15 +17,6 @@ import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.destroy.DestructionHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
-import io.github.classgraph.ClassGraph
-import io.github.classgraph.ClassInfo
-import io.micronaut.context.ApplicationContext
-import io.micronaut.core.annotation.Order
-import org.junit.jupiter.api.Test
-
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Fail.fail
-import static com.cloudogu.gitops.config.Config.*
 
 /**
  * It is difficult to test if *all* classes are instantiated.

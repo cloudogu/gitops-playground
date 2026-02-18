@@ -1,12 +1,12 @@
 package com.cloudogu.gitops.integration.features
 
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-
-import static org.assertj.core.api.Assertions.assertThat
 
 /**
  * This class checks if Prometheus is started well.
@@ -33,7 +33,7 @@ class PrometheusStackTestIT extends KubenetesApiTestSetup {
                 return "Running".equals(grafanaPod.status.phase)
             }
         }
-        return false;
+        return false
     }
 
     @BeforeAll

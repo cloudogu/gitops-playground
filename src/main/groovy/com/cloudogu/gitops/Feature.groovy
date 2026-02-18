@@ -1,17 +1,18 @@
 package com.cloudogu.gitops
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+
+import java.nio.file.Path
+
+import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 
 /**
  * A single tool to be deployed by GOP.

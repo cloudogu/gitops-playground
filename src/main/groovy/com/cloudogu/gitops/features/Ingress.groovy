@@ -1,21 +1,24 @@
 package com.cloudogu.gitops.features
 
+import java.nio.file.Path
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
+
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
-import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
-import java.nio.file.Path
+import freemarker.template.DefaultObjectWrapperBuilder
 
 @Slf4j
 @Singleton

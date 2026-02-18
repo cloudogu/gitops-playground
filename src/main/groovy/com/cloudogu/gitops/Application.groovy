@@ -1,11 +1,14 @@
 package com.cloudogu.gitops
 
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.TemplatingEngine
+
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton

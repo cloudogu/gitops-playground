@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.utils
 
-import freemarker.template.Configuration
+import static org.junit.jupiter.api.Assertions.*
+
 import org.junit.jupiter.api.Test
 
-import static org.junit.jupiter.api.Assertions.*
+import freemarker.template.Configuration
 
 class AllowlistFreemarkerObjectWrapperTest {
 

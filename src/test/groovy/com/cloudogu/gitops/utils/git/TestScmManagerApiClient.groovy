@@ -1,20 +1,22 @@
 package com.cloudogu.gitops.utils.git
 
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.when
+
+import org.mockito.ArgumentMatchers
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
+
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
-import org.mockito.ArgumentMatchers
 import retrofit2.Call
 import retrofit2.Response
-
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
 
 class TestScmManagerApiClient extends ScmManagerApiClient {
 

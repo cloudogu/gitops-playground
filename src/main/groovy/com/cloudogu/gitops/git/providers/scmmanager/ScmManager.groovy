@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
+import groovy.util.logging.Slf4j
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -12,7 +14,7 @@ import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-import groovy.util.logging.Slf4j
+
 import retrofit2.Response
 
 @Slf4j

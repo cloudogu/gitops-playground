@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.jenkins
 
 import jakarta.inject.Singleton
+
 import org.intellij.lang.annotations.Language
 
 @Singleton

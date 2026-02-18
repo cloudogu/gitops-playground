@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Config
-import org.junit.jupiter.api.Test
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+
+import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
 
 class NetworkingUtilsTest {
 
@@ -84,10 +85,10 @@ class NetworkingUtilsTest {
 
     @Test
     void 'get protocols'() {
-        assertThat(NetworkingUtils.getProtocol("https://example.com")).isEqualTo("https");
-        assertThat(NetworkingUtils.getProtocol("http://example.com")).isEqualTo("http");
-        assertThat(NetworkingUtils.getProtocol("ftp://example.com")).isEqualTo("");
-        assertThat(NetworkingUtils.getProtocol("example.com")).isEqualTo("");
+        assertThat(NetworkingUtils.getProtocol("https://example.com")).isEqualTo("https")
+        assertThat(NetworkingUtils.getProtocol("http://example.com")).isEqualTo("http")
+        assertThat(NetworkingUtils.getProtocol("ftp://example.com")).isEqualTo("")
+        assertThat(NetworkingUtils.getProtocol("example.com")).isEqualTo("")
         assertThat(NetworkingUtils.getProtocol("")).isEqualTo("")
     }
 }

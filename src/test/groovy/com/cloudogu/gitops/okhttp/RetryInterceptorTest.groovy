@@ -1,23 +1,24 @@
 package com.cloudogu.gitops.okhttp
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
+import static com.github.tomakehurst.wiremock.client.WireMock.*
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import static org.assertj.core.api.Assertions.assertThat
 
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import java.util.concurrent.TimeUnit
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import static org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
+
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class RetryInterceptorTest {
 

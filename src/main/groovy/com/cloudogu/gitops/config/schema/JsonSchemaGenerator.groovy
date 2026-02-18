@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.config.schema
 
+import jakarta.inject.Singleton
+
 import com.cloudogu.gitops.config.Config
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.victools.jsonschema.generator.*
 import com.github.victools.jsonschema.module.jackson.JacksonModule
-import jakarta.inject.Singleton
 
 @Singleton
 class JsonSchemaGenerator {

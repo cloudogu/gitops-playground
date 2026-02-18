@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.config.Config
-import io.micronaut.context.ApplicationContext
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import io.micronaut.context.ApplicationContext
+
+import com.cloudogu.gitops.config.Config
 
 class DestroyerDependencyInjectionTest {
     @Test

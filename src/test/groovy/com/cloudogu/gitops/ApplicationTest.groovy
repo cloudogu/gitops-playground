@@ -1,11 +1,12 @@
 package com.cloudogu.gitops
 
+import static org.assertj.core.api.Assertions.assertThat
+
+import org.junit.jupiter.api.Test
+import io.micronaut.context.ApplicationContext
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import io.micronaut.context.ApplicationContext
-import org.junit.jupiter.api.Test
-
-import static org.assertj.core.api.Assertions.assertThat
 
 class ApplicationTest {
 

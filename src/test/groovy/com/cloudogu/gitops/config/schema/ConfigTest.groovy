@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.config.schema
 
-import com.cloudogu.gitops.config.Config
+import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
+
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
-import static com.cloudogu.gitops.config.Config.*
+import com.cloudogu.gitops.config.Config
 
 class ConfigTest {
     Config testConfig = new Config(registry: new RegistrySchema(

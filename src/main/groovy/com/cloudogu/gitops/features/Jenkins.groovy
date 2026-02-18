@@ -1,5 +1,11 @@
 package com.cloudogu.gitops.features
 
+import jakarta.inject.Singleton
+
+import groovy.util.logging.Slf4j
+
+import io.micronaut.core.annotation.Order
+
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
@@ -12,11 +18,9 @@ import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
+
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton

@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.git
 
+import jakarta.inject.Singleton
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
-import jakarta.inject.Singleton
 
 @Singleton
 class GitRepoFactory {

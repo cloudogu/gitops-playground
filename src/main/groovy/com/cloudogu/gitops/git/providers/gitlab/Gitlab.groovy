@@ -1,13 +1,9 @@
 package com.cloudogu.gitops.git.providers.gitlab
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.git.providers.AccessRole
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.RepoUrlScope
-import com.cloudogu.gitops.git.providers.Scope
+import java.util.logging.Level
+
 import groovy.util.logging.Slf4j
+
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.GitLabApiException
 import org.gitlab4j.api.models.AccessLevel
@@ -15,7 +11,13 @@ import org.gitlab4j.api.models.Group
 import org.gitlab4j.api.models.Project
 import org.gitlab4j.api.models.Visibility
 
-import java.util.logging.Level
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.git.config.util.GitlabConfig
+import com.cloudogu.gitops.git.providers.AccessRole
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.RepoUrlScope
+import com.cloudogu.gitops.git.providers.Scope
 
 @Slf4j
 class Gitlab implements GitProvider {

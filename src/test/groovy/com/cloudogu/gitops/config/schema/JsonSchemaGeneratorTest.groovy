@@ -1,11 +1,12 @@
 package com.cloudogu.gitops.config.schema
 
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
 class JsonSchemaGeneratorTest {
     @Test

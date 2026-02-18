@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils
 
-import org.junit.jupiter.api.Test
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+
+import org.junit.jupiter.api.Test
 
 class DockerImageParserTest {
     @Test

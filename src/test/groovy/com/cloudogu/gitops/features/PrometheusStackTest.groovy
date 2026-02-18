@@ -1,25 +1,27 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.*
-import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.mockito.ArgumentCaptor
-
-import java.nio.file.Files
-import java.nio.file.Path
-
 import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
+
+import java.nio.file.Files
+import java.nio.file.Path
+
+import groovy.yaml.YamlSlurper
+
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 
 class PrometheusStackTest {
     Config config = Config.fromMap(
