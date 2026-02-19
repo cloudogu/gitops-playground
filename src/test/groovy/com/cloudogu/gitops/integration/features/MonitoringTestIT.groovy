@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat
  *  - prometheus-stack
  */
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
-class PrometheusStackTestIT extends KubenetesApiTestSetup {
+class MonitoringTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'monitoring'
     String grafanaPod = 'prometheus-stack-grafana'
@@ -77,7 +77,7 @@ class PrometheusStackTestIT extends KubenetesApiTestSetup {
 
     @Disabled("not start on jenkins")
     @Test
-    void ensurePrometheusStackIsStarted() {
+    void ensureMonitoringIsStarted() {
 
         def pods = api.listNamespacedPod(namespace).execute()
         assertThat(pods).isNotNull()

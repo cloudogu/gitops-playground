@@ -89,7 +89,7 @@ class GitopsPlaygroundCliMainScripted {
                         new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
+                        new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
                         new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),
