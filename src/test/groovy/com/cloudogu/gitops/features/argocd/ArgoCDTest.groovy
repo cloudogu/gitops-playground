@@ -1532,25 +1532,10 @@ class ArgoCDTest {
             return getRepoSetup().clusterResources?.repo
         }
 
-        GitRepo getTenantBootstrapRepo() {
-            return getRepoSetup().tenantBootstrap.repo
-        }
-
         RepoLayout getClusterRepoLayout() {
             return getRepoSetup().clusterRepoLayout()
         }
 
-        RepoLayout getTenantRepoLayout() {
-            def setup = getRepoSetup()
-            if (setup?.tenantBootstrap == null) {
-                return null
-            }
-            return setup.tenantRepoLayout()
-        }
-
-        String getArgocdDirInClusterResources() {
-            return getClusterRepoLayout().argocdRoot()
-        }
     }
 
 
