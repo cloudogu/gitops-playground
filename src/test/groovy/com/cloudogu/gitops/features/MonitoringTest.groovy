@@ -703,11 +703,11 @@ matchExpressions:
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 // Create dummy dashboards so cleanupUnusedDashboards can delete them
-                def dashboardDir = new File(clusterResourcesRepoDir, "apps/prometheusstack/misc/dashboard")
+                def dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
                 dashboardDir.mkdirs()
 
-                new File(dashboardDir, "ingress-nginx-dashboard.yaml").text = "dummy"
-                new File(dashboardDir, "ingress-nginx-dashboard-requests-handling.yaml").text = "dummy"
+                new File(dashboardDir, "traefik-dashboard.yaml").text = "dummy"
+                new File(dashboardDir, "traefik-dashboard-requests-handling.yaml").text = "dummy"
                 new File(dashboardDir, "jenkins-dashboard.yaml").text = "dummy"
                 new File(dashboardDir, "scmm-dashboard.yaml").text = "dummy"
 

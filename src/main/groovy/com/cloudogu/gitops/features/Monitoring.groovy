@@ -47,7 +47,6 @@ class Monitoring extends Feature implements FeatureWithImage {
         this.airGappedUtils = airGappedUtils
         this.scmRepoProvider = scmRepoProvider
         this.gitHandler = gitHandler
-        this.namespace = "${config.application.namePrefix}monitoring"
     }
 
     @Override
@@ -68,9 +67,9 @@ class Monitoring extends Feature implements FeatureWithImage {
         addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
         addHelmValuesData('uid', uid)
 
-        createMonitoringCrd()
         // Create secrets imperatively here instead of values.yaml, because we don't want credentials to be visible in the Git repo
         setupMonitoringSecrets()
+        createMonitoringCrd()
 
         GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
         clusterResourcesRepo.cloneRepo()
