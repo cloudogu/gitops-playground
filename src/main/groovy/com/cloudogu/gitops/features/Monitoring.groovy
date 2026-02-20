@@ -83,7 +83,7 @@ class Monitoring extends Feature implements FeatureWithImage {
         cleanupUnusedDashboards(clusterResourcesRepo)
 
         clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
+        deployHelmChart('monitoring', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
     }
 
     private void setupMonitoringSecrets() {
