@@ -119,16 +119,6 @@ class RepoLayout {
         APPS_ARGOCD_DIR
     }
 
-    // --- dedicated instance bootstrap ---
-
-    String dedicatedTenantProject() {
-        Path.of(argocdRoot(), MULTITENANT_DIR, "central/projects/tenant.yaml").toString()
-    }
-
-    String dedicatedBootstrapApp() {
-        Path.of(argocdRoot(), MULTITENANT_DIR, "central/applications/bootstrap.yaml").toString()
-    }
-
     // --- relative subfolders for RBAC (passed to RbacDefinition.withSubfolder) ---
     static String operatorRbacSubfolder() {
         // "argocd/operator/rbac"

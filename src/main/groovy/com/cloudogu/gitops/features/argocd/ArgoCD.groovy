@@ -131,8 +131,8 @@ class ArgoCD extends Feature {
 
         if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
-            k8sClient.applyYaml(clusterResourcesRepo.dedicatedTenantProject())
-            k8sClient.applyYaml(clusterResourcesRepo.dedicatedBootstrapApp())
+            k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "tenant.yaml").toString())
+            k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
 
             //Bootstrapping tenant Argocd projects
             RepoLayout tenantRepoLayout = repoSetup.tenantRepoLayout()
