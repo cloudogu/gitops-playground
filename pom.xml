@@ -167,6 +167,14 @@
             <version>7.0.2</version>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/org.codenarc/CodeNarc -->
+        <dependency>
+            <groupId>org.codenarc</groupId>
+            <artifactId>CodeNarc</artifactId>
+            <version>3.7.0</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
