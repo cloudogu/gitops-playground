@@ -2,16 +2,16 @@ package com.cloudogu.gitops.features.argocd
 
 import java.nio.file.Path
 
-class ArgoCDRepoLayout {
-    private static final String APPS_MONITORING_REL     = 'apps/monitoring'
-    private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
-    private static final String APPS_VAULT_REL          = 'apps/vault'
-    private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
-    private static final String APPS_JENKINS_REL        = 'apps/jenkins'
-    private static final String APPS_INGRESS_REL        = 'apps/ingress'
-    private static final String APPS_MAILHOG_REL        = 'apps/mail'
-    private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
-    private static final String APPS_ARGOCD_REL         = 'apps/argocd'
+class RepoLayout {
+    private static final String APPS_MONITORING_DIR     = 'apps/monitoring'
+    private static final String APPS_SECRETS_DIR        = 'apps/external-secrets'
+    private static final String APPS_VAULT_DIR          = 'apps/vault'
+    private static final String APPS_CERTMANAGER_DIR    = 'apps/cert-manager'
+    private static final String APPS_JENKINS_DIR        = 'apps/jenkins'
+    private static final String APPS_INGRESS_DIR        = 'apps/ingress'
+    private static final String APPS_MAILHOG_DIR        = 'apps/mail'
+    private static final String APPS_SCMMANAGER_DIR     = 'apps/scm-manager'
+    private static final String APPS_ARGOCD_DIR         = 'apps/argocd'
 
     private static final String OPERATOR_DIR       = 'operator'
     private static final String MULTITENANT_DIR    = 'multiTenant'

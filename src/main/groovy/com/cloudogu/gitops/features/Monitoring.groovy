@@ -68,31 +68,23 @@ class Monitoring extends Feature implements FeatureWithImage {
         addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
         addHelmValuesData('uid', uid)
 
-        // Create secrets imperatively here instead of values.yaml
-        // because we don't want credentials to be visible in the Git repo
+        createMonitoringCrd()
+        // Create secrets imperatively here instead of values.yaml, because we don't want credentials to be visible in the Git repo
         setupMonitoringSecrets()
 
+        GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
+        clusterResourcesRepo.cloneRepo()
+
         if (config.application.namespaceIsolation || config.application.netpols) {
-            GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
-            clusterResourcesRepo.cloneRepo()
             if (config.application.namespaceIsolation) { generateNamespaceIsolationRBAC(clusterResourcesRepo) }
             if (config.application.netpols) { generateNetpols(clusterResourcesRepo) }
-            clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
+        // Remove dashboards for features that are not enabled
+        cleanupUnusedDashboards(clusterResourcesRepo)
+
+        clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
         deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
-    }
-
-    private static URI baseUriJenkins(Config config) {
-        if (config.jenkins.internal) {
-            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
-        }
-        String urlString = config.jenkins?.url?.strip() ?: ''
-        if (!urlString) {
-            throw new IllegalArgumentException('config.jenkins.url must be set when config.jenkins.internal = false')
-        }
-        URI url = URI.create(urlString)
-        return url.toString().endsWith('/') ? url : URI.create(url.toString() + '/')
     }
 
     private void setupMonitoringSecrets() {
@@ -156,7 +148,7 @@ class Monitoring extends Feature implements FeatureWithImage {
         ]
     }
 
-    private before(){
+    protected void createMonitoringCrd() {
         if (!config.application.skipCrds) {
             def serviceMonitorCrdYaml
             if (config.application.mirrorRepos) {
@@ -174,51 +166,6 @@ class Monitoring extends Feature implements FeatureWithImage {
                     "Applying from path ${serviceMonitorCrdYaml}")
             k8sClient.applyYaml(serviceMonitorCrdYaml)
         }
-
-        // Adjust GitOps repo content (RBAC / network policies / dashboards)
-        GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', gitHandler.resourcesScm)
-        clusterResourcesRepo.cloneRepo()
-
-        if (config.application.namespaceIsolation || config.application.netpols) {
-            for (String currentNamespace : config.application.namespaces.activeNamespaces) {
-
-                if (config.application.namespaceIsolation) {
-                    def rbacYaml = new TemplatingEngine().template(
-                            new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-                            [
-                                    namespace : currentNamespace,
-                                    namePrefix: namePrefix,
-                                    config    : config
-                            ]
-                    )
-                    clusterResourcesRepo.writeFile(
-                            "apps/prometheusstack/misc/rbac/${currentNamespace}.yaml",
-                            rbacYaml
-                    )
-                }
-
-                if (config.application.netpols) {
-                    def netpolsYaml = new TemplatingEngine().template(
-                            new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
-                            [
-                                    namespace : currentNamespace,
-                                    namePrefix: namePrefix
-                            ]
-                    )
-
-                    clusterResourcesRepo.writeFile(
-                            "apps/prometheusstack/misc/netpols/${currentNamespace}.yaml",
-                            netpolsYaml
-                    )
-                }
-            }
-        }
-
-        // Remove dashboards for features that are not enabled
-        cleanupUnusedDashboards(clusterResourcesRepo)
-        clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, config)
-
     }
 
     private Map jenkinsConfigurationMetrics() {
@@ -267,8 +214,6 @@ class Monitoring extends Feature implements FeatureWithImage {
         if (!config.jenkins.active) {
             fileSystemUtils.deleteFile("${dashboardRoot}/jenkins-dashboard.yaml")
         }
-
-        throw new NoSuchElementException('Could not find a valid UID! Really running on openshift?')
 
         if (!config.scm.scmManager?.url) {
             fileSystemUtils.deleteFile("${dashboardRoot}/scmm-dashboard.yaml")
