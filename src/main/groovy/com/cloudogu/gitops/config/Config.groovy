@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
-import org.apache.http.client.CredentialsProvider
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -498,13 +496,14 @@ class Config {
 
         Boolean active = false
 
-        @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
-        @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
-        Boolean mailhog = false
+        @Option(names = ['--mail'], description = MAILSERVER_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
+        @JsonPropertyDescription(MAILSERVER_ENABLE_DESCRIPTION)
+        Boolean mailServer = false
 
-        @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
-        @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
-        String mailhogUrl = ''
+
+        @Option(names = ['--mail-url'], description = MAIL_URL_DESCRIPTION)
+        @JsonPropertyDescription(MAIL_URL_DESCRIPTION)
+        String mailUrl = ''
 
         @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
         @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
@@ -530,7 +529,7 @@ class Config {
                 version: '5.0.1')
 
         static class MailHelmSchema extends HelmConfigWithValues {
-            @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+            @Option(names = ['--mail-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = 'ghcr.io/cloudogu/mailhog:v1.0.1'
         }

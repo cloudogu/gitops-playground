@@ -33,7 +33,7 @@ bash <(curl -s \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
-# More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
+# More IDP-features: --mail --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
 
@@ -425,19 +425,19 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Mail
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--mailhog, --mail` | `features.mail.mailhog` | `false` | Boolean | Installs Mailhog as email testing tool |
-| `--mailhog-url` | `features.mail.mailhogUrl` | `''` | String | The url of your external mailhog |
-| `--smtp-address` | `features.mail.smtpAddress` | `''` | String | SMTP server address |
-| `--smtp-port` | `features.mail.smtpPort` | `null` | Integer | SMTP server port |
-| `--smtp-user` | `features.mail.smtpUser` | `''` | String | SMTP username |
-| `--smtp-password` | `features.mail.smtpPassword` | `''` | String | SMTP password |
-| `--mailhog-image` | `features.mail.helm.image` | `'ghcr.io/cloudogu/mailhog:v1.0.1'` | String | Mailhog container image |
-| - | `features.mail.helm.chart` | `'mailhog'` | String | Name of the Helm chart |
+| CLI | Config                       | Default | Type | Description                                                 |
+|-----|------------------------------|---------|------|-------------------------------------------------------------|
+| `--mail` | `features.mail.mailServer`   | `false` | Boolean | Installs a dedicated mail server                            |
+| `--mail-url` | `features.mail.mailUrl`      | `''` | String | The url of the mail server's frontend                       |
+| `--smtp-address` | `features.mail.smtpAddress`  | `''` | String | SMTP server address                                         |
+| `--smtp-port` | `features.mail.smtpPort`     | `null` | Integer | SMTP server port                                            |
+| `--smtp-user` | `features.mail.smtpUser`     | `''` | String | SMTP username                                               |
+| `--smtp-password` | `features.mail.smtpPassword` | `''` | String | SMTP password                                               |
+| `--mail-image` | `features.mail.helm.image`   | `'ghcr.io/cloudogu/mailhog:v1.0.1'` | String | Container image to use for the mail server                  |
+| - | `features.mail.helm.chart`   | `'mailhog'` | String | Name of the Helm chart                                      |
 | - | `features.mail.helm.repoURL` | `'https://codecentric.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.mail.helm.version` | `'5.0.1'` | String | The version of the Helm chart to be installed |
-| - | `features.mail.helm.values` | `[:]` | Map | Helm values of the chart |
+| - | `features.mail.helm.version` | `'5.0.1'` | String | The version of the Helm chart to be installed               |
+| - | `features.mail.helm.values`  | `[:]` | Map | Helm values of the chart                                    |
 
 ###### Monitoring
 
@@ -661,7 +661,7 @@ It is possible to deploy `Ingress` objects for all components. You can either
 --argocd-url https://argocd.example.com 
 --grafana-url https://grafana.example.com 
 --vault-url https://vault.example.com 
---mailhog-url https://mailhog.example.com 
+--mail-url https://mail.example.com 
 --petclinic-base-domain petclinic.example.com 
 --nginx-base-domain nginx.example.com
 ```
@@ -836,18 +836,18 @@ The gitops-playground uses MailHog to showcase notifications.
 Alternatively, you can configure an external mailserver.
 
 Note that you can't use both at the same time.   
-If you set either `--mailhog` or `--mail` parameter, MailHog will be installed  
+If you set `--mail` parameter, MailHog will be installed  
 If you set `--smtp-*` parameters, a external Mailserver will be used and MailHog will not be deployed.
 
 ##### MailHog
-Set the parameter `--mailhog` to enable MailHog.
+Set the parameter `--mail` to enable MailHog.
 
 This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.  
 Sender and recipient email addresses can be set via parameters in some applications, e.g. `--grafana-email-from` or `--argocd-email-to-user`.
 
 Parameters:
-* `--mailhog`: Activate MailHog as internal Mailserver
-* `--mailhog-url`: Specify domain name (ingress) under which MailHog will be served
+* `--mail`: Activate MailHog as internal Mailserver
+* `--mail-url`: Specify domain name (ingress) under which MailHog will be served
 
 ##### External Mailserver
 If you want to use an external Mailserver you can set it with these parameters

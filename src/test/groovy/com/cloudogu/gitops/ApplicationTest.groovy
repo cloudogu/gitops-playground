@@ -2,6 +2,7 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import groovy.transform.CompileStatic
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 
@@ -9,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class ApplicationTest {
 
-    Config config = new Config()
+    private Config config = new Config()
 
     @Test
     void 'feature\'s ordering is correct'() {
@@ -18,7 +19,7 @@ class ApplicationTest {
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
 
-        assertThat(features).isEqualTo(["Registry", "GitHandler" ,"Jenkins", "ArgoCD", "Ingress", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault", "ContentLoader"])
+        assertThat(features).isEqualTo(['Registry', 'GitHandler' ,'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Mail', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
     }
 
     @Test
