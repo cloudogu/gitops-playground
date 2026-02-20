@@ -315,7 +315,7 @@ policies:
     @Test
     void 'cleanupUnusedDashboards removes all dashboards for disabled features'() {
         config.features.monitoring.active = true
-        config.features.ingressNginx.active = false
+        config.features.ingress.active = false
         config.jenkins.active = false
         config.scm.scmManager.url = null   // triggers scmm dashboard cleanup
 
@@ -323,8 +323,8 @@ policies:
 
         File dashboardDir = new File(clusterResourcesRepoDir, "apps/prometheusstack/misc/dashboard")
 
-        assertThat(new File(dashboardDir, "ingress-nginx-dashboard.yaml")).doesNotExist()
-        assertThat(new File(dashboardDir, "ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
+        assertThat(new File(dashboardDir, "traefik-dashboard.yaml")).doesNotExist()
+        assertThat(new File(dashboardDir, "traefik-dashboard-requests-handling.yaml")).doesNotExist()
         assertThat(new File(dashboardDir, "jenkins-dashboard.yaml")).doesNotExist()
         assertThat(new File(dashboardDir, "scmm-dashboard.yaml")).doesNotExist()
     }

@@ -824,7 +824,6 @@ class ArgoCDTest {
         k8sCommands.assertNotExecuted("kubectl patch service argocd-server -n argocd")
     }
 
-    //TODO mover to Prometheusstack?
     @Test
     void 'check if external_secrets_io and monitoring_coreos_com is set'() {
 
@@ -836,9 +835,9 @@ class ArgoCDTest {
 
         def argocd = setupOperatorTest(openshift: true)
         argocd.install()
-        repoLayout = argocd.repoLayout()
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
-        def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
+        def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
 
         def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
 
@@ -857,9 +856,9 @@ class ArgoCDTest {
 
         def argocd = setupOperatorTest(openshift: true)
         argocd.install()
-        repoLayout = argocd.repoLayout()
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
-        def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
+        def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
 
         def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
 

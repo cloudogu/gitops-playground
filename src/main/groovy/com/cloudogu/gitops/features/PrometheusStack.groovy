@@ -12,6 +12,7 @@ import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -61,7 +62,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             uid = findValidOpenShiftUid()
         }
 
-        addHelmValuesData("monitoring",  [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]])
+        addHelmValuesData("monitoring", [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]])
         addHelmValuesData("namespaces", (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
         addHelmValuesData("scm", scmConfigurationMetrics())
         addHelmValuesData("jenkins", jenkinsConfigurationMetrics())
@@ -157,7 +158,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
         deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, config)
 
-        private Map scmConfigurationMetrics() {
+    }
+    private Map scmConfigurationMetrics() {
         def uri = gitHandler.resourcesScm.prometheusMetricsEndpoint()
         [
                 protocol: uri?.scheme ?: "",
@@ -204,9 +206,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
         String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
 
-        if (!config.features.ingressNginx.active) {
-            fileSystemUtils.deleteFile("${dashboardRoot}/ingress-nginx-dashboard.yaml")
-            fileSystemUtils.deleteFile("${dashboardRoot}/ingress-nginx-dashboard-requests-handling.yaml")
+        if (!config.features.ingress.active) {
+            fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")
+            fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard-requests-handling.yaml")
         }
 
         if (!config.jenkins.active) {

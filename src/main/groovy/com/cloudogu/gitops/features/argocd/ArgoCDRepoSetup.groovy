@@ -5,11 +5,15 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+import groovy.util.logging.Slf4j
+
+import java.nio.file.Path
 
 /**
  * Holds ArgoCD-related repo initialization actions (cluster-resources + optional tenant bootstrap)
  * and encapsulates the initialization logic (single-instance vs. dedicated instance).
  */
+@Slf4j
 class ArgoCDRepoSetup {
 
     final RepoInitializationAction clusterResources
@@ -93,9 +97,11 @@ class ArgoCDRepoSetup {
         }
 
         if (config.multiTenant.useDedicatedInstance) {
-            fileSystemUtils.deleteDir(layout.applicationsDir())
-            fileSystemUtils.deleteDir(layout.projectsDir())
-            fileSystemUtils.deleteDir(layout.multiTenantDir() + "/tenant")
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${clusterRepoLayout().applicationsDir()}, projects=${clusterRepoLayout().projectsDir()}, tenant=${clusterRepoLayout().multiTenantDir()}/tenant")
+            FileSystemUtils.deleteDir clusterRepoLayout().applicationsDir()
+            FileSystemUtils.deleteDir clusterRepoLayout().projectsDir()
+            fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(clusterRepoLayout().multiTenantDir()  + "/central"), Path.of(clusterRepoLayout().argocdRoot()))
+            FileSystemUtils.deleteDir clusterRepoLayout().multiTenantDir()
         } else {
             fileSystemUtils.deleteDir(layout.multiTenantDir())
         }
@@ -117,7 +123,7 @@ class ArgoCDRepoSetup {
         if (config.features.certManager.active) {
             clusterResourceSubDirs.add(RepoLayout.certManagerSubdirRel())
         }
-        if (config.features.ingressNginx.active) {
+        if (config.features.ingress.active) {
             clusterResourceSubDirs.add(RepoLayout.ingressSubdirRel())
         }
         if (config.jenkins.active) {

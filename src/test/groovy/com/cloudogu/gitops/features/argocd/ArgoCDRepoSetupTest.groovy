@@ -48,7 +48,7 @@ class ArgoCDRepoSetupTest {
                                 namespace: 'argocd'
                         ],
                         certManager : [active: false],
-                        ingressNginx: [active: true],
+                        ingress: [active: true],
                         monitoring  : [active: true, helm: [chart: 'kube-prometheus-stack', version: '42.0.3']],
                         mail        : [active: false],
                         secrets     : [active: true],
@@ -134,7 +134,7 @@ class ArgoCDRepoSetupTest {
     }
 
     @Test
-    void 'prepareClusterResourcesRepo in dedicated mode deletes applications, projects and multiTenant tenant folder'() {
+    void 'prepareClusterResourcesRepo in dedicated mode deletes multiTenant folder'() {
         config.features.argocd.operator = false
         config.multiTenant.useDedicatedInstance = true
         config.application.netpols = true
@@ -146,10 +146,9 @@ class ArgoCDRepoSetupTest {
 
         def clusterRepoLayout = setup.clusterRepoLayout()
 
-        assertThat(Path.of(clusterRepoLayout.applicationsDir())).doesNotExist()
-        assertThat(Path.of(clusterRepoLayout.projectsDir())).doesNotExist()
-        assertThat(Path.of(clusterRepoLayout.multiTenantDir() + "/tenant")).doesNotExist()
-        assertThat(Path.of(clusterRepoLayout.multiTenantDir())).exists()
+        assertThat(Path.of(clusterRepoLayout.applicationsDir())).exists()
+        assertThat(Path.of(clusterRepoLayout.projectsDir())).exists()
+        assertThat(Path.of(clusterRepoLayout.multiTenantDir())).doesNotExist()
     }
 
     @Test
@@ -182,7 +181,7 @@ class ArgoCDRepoSetupTest {
 
     @Test
     void 'create() sets subDirsToCopy based on enabled features'() {
-        config.features.ingressNginx.active = true
+        config.features.ingress.active = true
         config.features.monitoring.active = false
         config.features.secrets.active = false
         config.jenkins.active = false

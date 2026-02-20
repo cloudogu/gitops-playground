@@ -19,7 +19,6 @@ class RepoLayout {
     private static final String PROJECTS_DIR       = 'projects'
     private static final String HELM_DIR           = 'argocd'          // argocd/argocd
     private static final String NETPOL_YAML = 'templates/allow-namespaces.yaml'
-    private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
 
     private final String repoRootDir
 
@@ -42,12 +41,12 @@ class RepoLayout {
     }
 
     String operatorRbacDir() {
-        // "cluster-resources/argocd/operator/rbac"
+        // "cluster-resources/apps/argocd/operator/rbac"
         Path.of(operatorDir(), "rbac").toString()
     }
 
     String operatorConfigFile() {
-        // "cluster-resources/argocd/operator/argocd.yaml"
+        // "cluster-resources/apps/argocd/operator/argocd.yaml"
         Path.of(operatorDir(), "argocd.yaml").toString()
     }
 
