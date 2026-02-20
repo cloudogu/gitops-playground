@@ -776,6 +776,10 @@
           "type" : [ "string", "null" ],
           "description" : "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
         },
+        "proxyPath" : {
+          "type" : [ "string", "null" ],
+          "description" : "Optional when registry-proxy-url is set and the registry is running on a non root web path."
+        },
         "proxyUrl" : {
           "type" : [ "string", "null" ],
           "description" : "The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields."

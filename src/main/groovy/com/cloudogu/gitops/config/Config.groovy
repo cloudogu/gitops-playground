@@ -208,6 +208,10 @@ class Config {
         @JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
         String proxyUrl = ''
 
+        @Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
+        String proxyPath = ''
+
         @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
         String proxyUsername = ''

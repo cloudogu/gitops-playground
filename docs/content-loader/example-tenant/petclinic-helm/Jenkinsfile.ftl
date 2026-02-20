@@ -11,6 +11,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if config.registry.twoRegistries>
 String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_PATH }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 

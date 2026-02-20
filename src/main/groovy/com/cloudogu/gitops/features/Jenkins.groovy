@@ -146,6 +146,10 @@ class Jenkins extends Feature {
             globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL", config.registry.proxyUrl)
         }
 
+        if (config.registry.proxyPath) {
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_PATH", config.registry.proxyPath)
+        }
+
         if (config.jenkins.mavenCentralMirror) {
             globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR", config.jenkins.mavenCentralMirror)
         }

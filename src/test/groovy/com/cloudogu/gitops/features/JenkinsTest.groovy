@@ -182,6 +182,7 @@ me:x:1000:''')
         config.registry.username = 'reg-usr'
         config.registry.password = 'reg-pw'
         config.registry.proxyUrl = 'reg-proxy-url'
+        config.registry.proxyPath = 'reg-proxy-path'
         config.registry.proxyUsername = 'reg-proxy-usr'
         config.registry.proxyPassword = 'reg-proxy-pw'
         config.jenkins.internal = false
@@ -224,6 +225,7 @@ me:x:1000:''')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_URL'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
 
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
@@ -293,12 +295,14 @@ me:x:1000:''')
         config.registry.username = 'reg-usr'
         config.registry.password = 'reg-pw'
         config.registry.proxyUrl = 'reg-proxy-url'
+        config.registry.proxyPath = 'reg-proxy-path'
         config.registry.proxyUsername = 'reg-proxy-usr'
         config.registry.proxyPassword = 'reg-proxy-pw'
 
         createJenkins().install()
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL', 'reg-proxy-url')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_PATH', 'reg-proxy-path')
 
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())

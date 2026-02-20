@@ -16,6 +16,7 @@ interface ConfigConstants {
     String REGISTRY_PASSWORD_DESCRIPTION = 'Optional when registry-url is set'
 
     String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields.'
+    String REGISTRY_PROXY_PATH_DESCRIPTION = 'Optional when registry-proxy-url is set and the registry is running on a non root web path.'
     String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
     String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
 
