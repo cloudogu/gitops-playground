@@ -9,6 +9,7 @@ import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -17,11 +18,12 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(300)
-class PrometheusStack extends Feature implements FeatureWithImage {
+@CompileStatic
+class Monitoring extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/prometheusstack/templates/prometheus-stack-helm-values.ftl.yaml"
-    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/rbac/namespace-isolation-rbac.ftl.yaml"
-    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/netpols/prometheus-allow-scraping.ftl.yaml"
+    static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
+    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
+    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
@@ -29,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     private GitRepoFactory scmRepoProvider
 
-    PrometheusStack(
+    Monitoring(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
@@ -55,23 +57,45 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-        def namePrefix = config.application.namePrefix
-
-        String uid = ""
+        String uid = ''
         if (config.application.openshift) {
             uid = findValidOpenShiftUid()
         }
 
-        addHelmValuesData("monitoring", [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]])
-        addHelmValuesData("namespaces", (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
-        addHelmValuesData("scm", scmConfigurationMetrics())
-        addHelmValuesData("jenkins", jenkinsConfigurationMetrics())
-        addHelmValuesData("uid", uid)
-
-        def helmConfig = config.features.monitoring.helm
+        addHelmValuesData('monitoring',  [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : '']])
+        addHelmValuesData('namespaces', (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
+        addHelmValuesData('scm', scmConfigurationMetrics())
+        addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
+        addHelmValuesData('uid', uid)
 
         // Create secrets imperatively here instead of values.yaml
         // because we don't want credentials to be visible in the Git repo
+        setupMonitoringSecrets()
+
+        if (config.application.namespaceIsolation || config.application.netpols) {
+            GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
+            clusterResourcesRepo.cloneRepo()
+            if (config.application.namespaceIsolation) { generateNamespaceIsolationRBAC(clusterResourcesRepo) }
+            if (config.application.netpols) { generateNetpols(clusterResourcesRepo) }
+            clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
+        }
+
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
+    }
+
+    private static URI baseUriJenkins(Config config) {
+        if (config.jenkins.internal) {
+            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+        }
+        String urlString = config.jenkins?.url?.strip() ?: ''
+        if (!urlString) {
+            throw new IllegalArgumentException('config.jenkins.url must be set when config.jenkins.internal = false')
+        }
+        URI url = URI.create(urlString)
+        return url.toString().endsWith('/') ? url : URI.create(url.toString() + '/')
+    }
+
+    private void setupMonitoringSecrets() {
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-scmm',
@@ -95,7 +119,44 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     new Tuple2('password', config.features.mail.smtpPassword)
             )
         }
+    }
 
+    private void generateNamespaceIsolationRBAC(GitRepo repo) {
+        for (String currentNamespace : config.application.namespaces.activeNamespaces) {
+            String rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
+                    [namespace : currentNamespace,
+                     namePrefix: config.application.namePrefix,
+                     config    : config,])
+            repo.writeFile(
+                    "apps/monitoring/misc/rbac/${currentNamespace}.yaml",
+                    rbacYaml
+            )
+        }
+    }
+
+    private void generateNetpols(GitRepo repo) {
+        for (String currentNamespace : config.application.namespaces.activeNamespaces) {
+            String netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
+                    [namespace : currentNamespace,
+                     namePrefix: config.application.namePrefix,])
+
+            repo.writeFile(
+                    "apps/monitoring/misc/netpols/${currentNamespace}.yaml",
+                    netpolsYaml
+            )
+        }
+    }
+
+    private Map scmConfigurationMetrics() {
+        URI uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
+        return [
+                protocol: uri?.scheme ?: '',
+                host    : uri?.authority ?: '',
+                path    : uri?.path ?: '',
+        ]
+    }
+
+    private before(){
         if (!config.application.skipCrds) {
             def serviceMonitorCrdYaml
             if (config.application.mirrorRepos) {
@@ -159,22 +220,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, config)
 
     }
-    private Map scmConfigurationMetrics() {
-        def uri = gitHandler.resourcesScm.prometheusMetricsEndpoint()
-        [
-                protocol: uri?.scheme ?: "",
-                host    : uri?.authority ?: "",
-                path    : uri?.path ?: ""
-        ]
-    }
 
     private Map jenkinsConfigurationMetrics() {
-        def uri = baseUriJenkins(config).resolve("prometheus")
-        [
-                metricsUsername: config.jenkins.metricsUsername ?: "",
-                protocol       : uri.scheme ?: "",
-                host           : uri.authority ?: "",
-                path           : uri.path ?: ""
+        URI uri = baseUriJenkins(config).resolve('prometheus')
+        return [
+                metricsUsername: config.jenkins.metricsUsername ?: '',
+                protocol       : uri.scheme ?: '',
+                host           : uri.authority ?: '',
+                path           : uri.path ?: '',
         ]
     }
 
@@ -195,7 +248,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
         if (uidRange) {
             log.debug("found UID=${uidRange}")
-            String uid = uidRange.split("/")[0]
+            String uid = uidRange.split('/')[0]
             return uid
         } else {
             throw new RuntimeException("Could not find a valid UID! Really running on OpenShift?")
@@ -214,6 +267,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         if (!config.jenkins.active) {
             fileSystemUtils.deleteFile("${dashboardRoot}/jenkins-dashboard.yaml")
         }
+
+        throw new NoSuchElementException('Could not find a valid UID! Really running on openshift?')
 
         if (!config.scm.scmManager?.url) {
             fileSystemUtils.deleteFile("${dashboardRoot}/scmm-dashboard.yaml")
