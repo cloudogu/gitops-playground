@@ -40,6 +40,8 @@ gateway:
   enabled: true
 EOF
 
+helm repo add traefik https://traefik.github.io/charts
+
 helm upgrade --install traefik traefik/traefik \
   --version 39.0.0 \
   --namespace ingress \

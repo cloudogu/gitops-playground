@@ -13,6 +13,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -39,9 +40,9 @@ class Monitoring extends Feature implements FeatureWithImage {
             GitRepoFactory scmRepoProvider,
             GitHandler gitHandler
     ) {
-        this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
+        this.deployer = deployer
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
         this.scmRepoProvider = scmRepoProvider
@@ -66,30 +67,23 @@ class Monitoring extends Feature implements FeatureWithImage {
         addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
         addHelmValuesData('uid', uid)
 
-        // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
+        // Create secrets imperatively here instead of values.yaml, because we don't want credentials to be visible in the Git repo
         setupMonitoringSecrets()
+        createMonitoringCrd()
+
+        GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
+        clusterResourcesRepo.cloneRepo()
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
-            clusterResourcesRepo.cloneRepo()
             if (config.application.namespaceIsolation) { generateNamespaceIsolationRBAC(clusterResourcesRepo) }
             if (config.application.netpols) { generateNetpols(clusterResourcesRepo) }
-            clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
-        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
-    }
+        // Remove dashboards for features that are not enabled
+        cleanupUnusedDashboards(clusterResourcesRepo)
 
-    private static URI baseUriJenkins(Config config) {
-        if (config.jenkins.internal) {
-            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
-        }
-        String urlString = config.jenkins?.url?.strip() ?: ''
-        if (!urlString) {
-            throw new IllegalArgumentException('config.jenkins.url must be set when config.jenkins.internal = false')
-        }
-        URI url = URI.create(urlString)
-        return url.toString().endsWith('/') ? url : URI.create(url.toString() + '/')
+        clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
+        deployHelmChart('monitoring', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
     }
 
     private void setupMonitoringSecrets() {
@@ -153,6 +147,26 @@ class Monitoring extends Feature implements FeatureWithImage {
         ]
     }
 
+    protected void createMonitoringCrd() {
+        if (!config.application.skipCrds) {
+            def serviceMonitorCrdYaml
+            if (config.application.mirrorRepos) {
+                serviceMonitorCrdYaml = Path.of(
+                        "${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml"
+                ).toString()
+            } else {
+                serviceMonitorCrdYaml =
+                        "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
+                                "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
+                                "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+            }
+
+            log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
+                    "Applying from path ${serviceMonitorCrdYaml}")
+            k8sClient.applyYaml(serviceMonitorCrdYaml)
+        }
+    }
+
     private Map jenkinsConfigurationMetrics() {
         URI uri = baseUriJenkins(config).resolve('prometheus')
         return [
@@ -163,6 +177,18 @@ class Monitoring extends Feature implements FeatureWithImage {
         ]
     }
 
+    private static URI baseUriJenkins(Config config) {
+        if (config.jenkins.internal) {
+            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+        }
+        def urlString = config.jenkins?.url?.strip() ?: ""
+        if (!urlString) {
+            throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false")
+        }
+        def url = URI.create(urlString)
+        return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/")
+    }
+
     private String findValidOpenShiftUid() {
         String uidRange = k8sClient.getAnnotation('namespace', namespace, 'openshift.io/sa.scc.uid-range')
 
@@ -170,8 +196,41 @@ class Monitoring extends Feature implements FeatureWithImage {
             log.debug("found UID=${uidRange}")
             String uid = uidRange.split('/')[0]
             return uid
+        } else {
+            throw new RuntimeException("Could not find a valid UID! Really running on OpenShift?")
+        }
+    }
+
+    protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
+        String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
+        String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
+
+        if (!config.features.ingress.active) {
+            fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")
+            fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard-requests-handling.yaml")
         }
 
-        throw new NoSuchElementException('Could not find a valid UID! Really running on openshift?')
+        if (!config.jenkins.active) {
+            fileSystemUtils.deleteFile("${dashboardRoot}/jenkins-dashboard.yaml")
+        }
+
+        if (!config.scm.scmManager?.url) {
+            fileSystemUtils.deleteFile("${dashboardRoot}/scmm-dashboard.yaml")
+        }
+    }
+
+    @Override
+    String getNamespace() {
+        return namespace
+    }
+
+    @Override
+    K8sClient getK8sClient() {
+        return k8sClient
+    }
+
+    @Override
+    Config getConfig() {
+        return config
     }
 }
