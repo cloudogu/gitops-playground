@@ -8,7 +8,7 @@ Kubernetes clusters:
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
-* Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
+* Ingress Controller: [ingress](https://traefik.github.io/charts)
 * Certificate Management: [cert-manager](#certificate-management)
 * [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation.
   This allows for adding your own end-user or IDP apps, creating repos, adding Argo CD tenants, etc.
@@ -32,7 +32,7 @@ bash <(curl -s \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
 # More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
@@ -238,7 +238,7 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
   --serviceaccount=default:gitops-playground-job-executer
 
 # Then start apply the playground with the following command:
-# To access services on remote clusters, add either --remote or --ingress-nginx --base-url=$yourdomain
+# To access services on remote clusters, add either --remote or --ingress --base-url=$yourdomain
 kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
@@ -281,7 +281,7 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
     - [Mail](#mail)
     - [Monitoring](#monitoring)
     - [Secrets](#secrets)
-    - [Ingress Nginx](#ingress-nginx)
+    - [Ingress](#ingress)
     - [Cert Manager](#cert-manager)
 - [Content](#content)
 - [Multitenant](#multitenant)
@@ -474,16 +474,16 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `features.secrets.externalSecrets.helm.repoURL` | `'https://charts.external-secrets.io'` | String | Repository url from which the Helm chart should be obtained |
 | - | `features.secrets.externalSecrets.helm.version` | `'0.9.16'` | String | The version of the Helm chart to be installed |
 
-###### Ingress Nginx
+###### Ingress
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--ingress-nginx` | `features.ingressNginx.active` | `false` | Boolean | Install Ingress Nginx controller |
-| `--ingress-nginx-image` | `features.ingressNginx.helm.image` | `''` | String | Ingress Nginx controller image |
-| - | `features.ingressNginx.helm.chart` | `'ingress-nginx'` | String | Name of the Helm chart |
-| - | `features.ingressNginx.helm.repoURL` | `'https://kubernetes.github.io/ingress-nginx'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.ingressNginx.helm.version` | `'4.12.1'` | String | The version of the Helm chart to be installed |
-| - | `features.ingressNginx.helm.values` | `[:]` | Map | Helm values of the chart |
+| CLI | Config | Default                              | Type | Description |
+|-----|--------|--------------------------------------|------|-------------|
+| `--ingress` | `features.ingress.active` | `false`                              | Boolean | Install Ingress controller |
+| `--ingress-image` | `features.ingress.helm.image` | `''`                                 | String | Ingress controller image |
+| - | `features.ingress.helm.chart` | `'traefik'`                          | String | Name of the Helm chart |
+| - | `features.ingress.helm.repoURL` | `'https://traefik.github.io/charts'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.ingress.helm.version` | `'39.0.0'`                           | String | The version of the Helm chart to be installed |
+| - | `features.ingress.helm.values` | `[:]`                                | Map | Helm values of the chart |
 
 ###### Cert Manager
 
@@ -626,19 +626,19 @@ docker run -t --rm ghcr.io/cloudogu/gitops-playground --help
 
 In the default installation the GitOps-Playground comes without an Ingress-Controller.  
 
-We use Nginx as default Ingress-Controller.
-It can be enabled via the configfile or parameter `--ingress-nginx`.
+We use Traefik as default Ingress-Controller.
+It can be enabled via the configfile or parameter `--ingress`.
 
 In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
 
-The ingress controller is based on the helm chart [`ingress-nginx`](https://kubernetes.github.io/ingress-nginx).
+The ingress controller is based on the helm chart [`ingress`](https://traefik.github.io/charts/).
 
 Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](#configuration-file).
 
 Example:
 ```yaml
 features:
-  ingressNginx:
+  ingress:
     active: true
     helm:
       values:
@@ -648,8 +648,8 @@ features:
 In this Example we override the default `controller.replicaCount` (GOP's default is 2).
 
 This config file is merged with precedence over the defaults set by 
-* [the GOP](argocd/cluster-resources/apps/ingress/templates/ingress-nginx-helm-values.ftl.yaml) and
-* [the charts itself](https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml).
+* [the GOP](argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml) and
+* [the charts itself](https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml).
 
 ##### Deploy Ingresses
 
@@ -670,7 +670,7 @@ It is possible to deploy `Ingress` objects for all components. You can either
 Note: 
 * `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
 * In order to make use of the `Ingress` you need an ingress controller.
-  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
+  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress` parameter](#deploy-ingress-controller).
 * For this to work, you need to set an `*.example.com` DNS record to the externalIP of the ingress controller.
 
 Alternatively, [hyphen-separated ingresses](#subdomains-vs-hyphen-separated-ingresses) can be created,
@@ -915,7 +915,7 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 ### Running on Windows or Mac
 
 * In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
-* `--base-url=http://localhost --ingress-nginx` should work on both Windows and Mac.
+* `--base-url=http://localhost --ingress` should work on both Windows and Mac.
 * In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
 
 #### Mac and Windows WSL
@@ -933,7 +933,7 @@ bash <(curl -s \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
 # If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
 ```
 
@@ -996,7 +996,7 @@ k3d kubeconfig write gitops-playground
 docker run --rm -t --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
     --net=host `
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost:$ingress_port # more params go here
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost:$ingress_port # more params go here
 ```
 
 ## Stack
@@ -1010,14 +1010,14 @@ The stack is composed of multiple applications, where some of them can be access
 * Jenkins
 * SCM-Manager
 * Vault
-* Ingress-nginx
+* Ingress
 * Cert-Manager
 
 In addition, there are example applications that provide a turnkey solution for GitOps-Pipelines from a developer's
 point of view.
 See [Example Applications](#example-applications).
 
-We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+We recommend using the `--ingress` and `--base-url` Parameters.
 With these, the applications are made available as subdomains of `base-url`.
 
 For example, `--base-url=http://localhost` leads to `
@@ -1044,63 +1044,100 @@ There also is a `--username` parameter, which is ignored for argocd. That is, fo
 Argo CD is installed in a production-ready way that allows for operating Argo CD with Argo CD, using GitOps and
 providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repo-per-team).
 
-When installing the GitOps playground, the following steps are performed to bootstrap Argo CD:
+#### Repositories and layout
 
-* The following repos are created and initialized:
-    * `argocd` (management and config of Argo CD itself),
-    * `example-apps` (example for a developer/application team's GitOps repo) and
-    * `cluster-resources` (example for a cluster admin or infra/platform team's repo; see below for details)
-* Argo CD is installed imperatively via a helm chart.
-* Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called
-  `bootstrap`. These are also contained within the `argocd` repository.
+When installing the GitOps playground, the following Git repositories are created and initialized:
 
-From there, everything is managed via GitOps. This diagram shows how it works.
+* example-apps – example GitOps repository for a developer / application team
+* cluster-resources – example GitOps repository for a cluster admin or infra / platform team
 
-[![](docs/argocd-repos.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/argocd-repos.svg "View full size")
+Argo CD’s own management and configuration, which previously lived in a dedicated `argocd` repository, 
+is now part of the `cluster-resources` repo under `apps/argocd`:
 
-1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
-   With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys
-   other apps ([App Of Apps pattern](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/cluster-bootstrapping.md?plain=1))
-2. The `argocd` application manages the folder `argocd` which contains Argo CD's resources as an umbrella helm chart.  
-   The [umbrella chart pattern](https://github.com/helm/helm-www/blob/d2543/content/en/docs/howto/charts_tips_and_tricks.md#complex-charts-with-many-dependencies)
-   allows describing the actual values in `values.yaml` and deploying additional resources (such as secrets and
-   ingresses) via the `templates` folder. The actual ArgoCD chart is declared in the `Chart.yaml`
-3. The `Chart.yaml` contains the Argo CD helm chart as `dependency`. It points to a deterministic version of the Chart
-   (pinned via `Chart.lock`) that is pulled from the Chart repository on the internet.  
-   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/cluster-resources/apps/argocd/README.md)
-   for details.
-4. The `projects` application manages the `projects` folder, that contains the following `AppProjects`:
-    * the `argocd` project, used for bootstrapping
-    * the built-in `default` project (which is restricted to [eliminate threats to security](https://github.com/argoproj/argo-cd/blob/ce8825ad569bf961178606acc5f3842532148093/docs/threat_model.pdf))
-    * one project per team (to implement least privilege and also notifications per team):
-        * `cluster-resources` (for platform admin, needs more access to cluster) and
-        * `example-apps` (for developers, needs less access to cluster)
-5. The `cluster-resources` application points to the `cluster-resources` git repository (`argocd` folder), which
-   has the typical folder structure of a GitOps repository (explained in the next step). This way, the platform admins
-   use GitOps in the same way as their "customers" (the developers) and can provide better support.
-6. The `example-apps` application points to the `example-apps` git repository (`argocd` folder again). Like the
-   `cluster-resources`, it also has the typical folder structure of a GitOps repository:
-    * `apps` - contains the kubernetes resources of all applications (the actual YAML)
-    * `argocd` - contains Argo CD `Applications` that point to subfolders of `apps` (App Of Apps pattern, again)
-    * `misc` - contains kubernetes resources, that do not belong to specific applications (namespaces, RBAC,
-      resources used by multiple apps, etc.)
-7. The `misc` application points to the `misc` folder
-8. The `my-app-staging` application points to the `apps/my-app/staging` folder within the same repo. This provides a
-   folder structure for release promotion. The `my-app-*` applications implement the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app).
-   This pattern allows each application to have its own environments, e.g. production and staging or none at all.
-   Note that the actual YAML here could either be pushed manually or using the CI server.
-   The [applications](#example-applications) contain examples that push config changes from the app repo to the GitOps
-   repo using the CI server. This implementation mixes the [Repo per Team and Repo per App patterns](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repository-structure)
-9. The corresponding production environment is realizing using the `my-app-production` application, that points to the
-   `apps/my-app/production` folder within the same repo.  
-   Note that it is recommended to protect the `production` folders from manual access, if supported by the SCM of your choice.  
-   Alternatively, instead of different YAMLs files as used in the diagram, these applications could be realized as
-    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
-    * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications
-      within different namespaces (implemented in the playground, see
-      [Argo CD's values.yaml](argocd/cluster-resources/apps/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
-    * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
-      (not used in GitOps playground, yet)
+![example of argocd repo structure](docs/argocd.png)
+
+#### Bootstrapping Argo CD
+When the GitOps playground is installed, Argo CD is bootstrapped as follows:
+1. Argo CD is installed imperatively via a Helm chart.
+2. Two resources are applied imperatively to the cluster:
+      * an `AppProject` called `argocd`
+      * an `Application` called `bootstrap`
+
+   Both are stored in the `cluster-resources` repository under `apps/argocd/applications`.
+
+From there, everything is managed via GitOps.
+
+#### How Argo CD manages itself
+The following Argo CD Applications live in `apps/argocd/applications`:
+
+* The `bootstrap` application manages the `apps/argocd/applications` folder (including itself).
+  This allows changes to the bootstrap application and further application manifests to be managed via GitOps.
+* The `argocd` application manages the folder `apps/argocd/argocd`, which contains Argo CD’s resources as an umbrella Helm chart.
+  * The umbrella chart pattern allows us to:
+    * describe configuration in `values.yaml`
+    * deploy additional resources (such as secrets and ingresses) via the `templates` folder
+  * `Chart.yaml` declares the Argo CD Helm chart as a dependency.
+  * `Chart.lock` pins the chart to a deterministic version from the upstream chart repository.
+  * This mechanism can be used to upgrade Argo CD via GitOps (by updating the chart version and syncing).
+* The `projects` application manages the folder apps/argocd/projects, which contains the following `AppProject` resources:
+  * the `argocd` project (used for bootstrapping)
+  * the built-in default `project` (restricted for security)
+  * one project per team, for example:
+    * `cluster-resources` (platform admins, more cluster permissions)
+    * `example-apps` (application developers, fewer permissions)
+
+#### Multi-source applications for features
+Feature deployments (for example, monitoring, ingress, or other GOP features) are modeled as multi-source Argo CD Applications instead of using an App-of-Apps pattern.
+
+For some features, the GitOps Playground Operator (GOP):
+1. Writes values files into the `cluster-resources` repository under:
+   ```powershell
+       apps/<feature>/
+          <feature>-gop-helm.yaml
+          <feature>-user-values.yaml
+   ```
+   The `*-gop-helm.yaml` file is managed by GOP, while `*-user-values.yaml` is intended for user overrides and is not overwritten.
+
+2. Generates an Argo CD `Application` in `apps/argocd/applications/<feature>.yaml` that uses two sources:
+     * Helm source (external chart)
+       * `repoURL`: the external Helm repository
+       * `chart` or `path`: the chart to deploy
+       * `targetRevision`: the chart version
+       * `helm.valueFiles`: includes the values from the `cluster-resources` repo via `$values/...`
+         (for example `$values/apps/<feature>/<feature>-gop-helm.yaml` and
+         `$values/apps/<feature>/<feature>-user-values.yaml`)
+     * Git source (values and additional manifests)
+       * `repoURL`: the `cluster-resources` repo
+       * `targetRevision`: typically `main`
+       * `ref`: set to `values` so the Helm source can reference `$values/...`
+       * `path`: `apps/<feature>`
+       *  `directory.recurse: true` to pick up additional manifests in the feature folder
+       
+          If users create a `misc` subfolder under `apps/<feature>` (for example `apps/<feature>/misc`) and add additional Kubernetes manifests there, these manifests are automatically included and deployed as part of the feature.
+
+Argo CD merges these sources, so each feature application is defined by:
+  * the external Helm chart (versioned and reproducible), and
+  * Git-managed configuration and manifests in the `cluster-resources` repo.
+
+This multi-source pattern replaces the previous App-of-Apps based approach for feature deployments while still following the repo-per-team model.
+
+#### Application repo: example-apps
+The `example-apps` repository demonstrates how application teams can structure their own GitOps repositories. Its layout looks like this:
+
+![example of example-apps repo structure](docs/example.png)
+
+  * The folder `apps/argocd/applications` contains Argo CD `Application` manifests for the example workloads:
+    * `petclinic-plain.yaml`
+  * Each application implements the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app)::
+    * separate folders for `staging`and `production`
+    * optional `generatedResources/` subfolders where CI pipelines can write generated manifests (for example, templated messages or index files)
+
+For example:
+* `apps/spring-petclinic-plain/production` and `apps/spring-petclinic-plain/staging` contain 
+  plain Kubernetes manifests (`deployment.yaml`, `service.yaml`, `ingress.yaml`) plus generated resources.
+
+The `example-apps` repo is thus a reference for how product teams can structure their GitOps repositories while
+still integrating cleanly with Argo CD and the multi-source pattern used by the platform.
 
 To keep things simpler, the GitOps playground only uses one kubernetes cluster, effectively implementing the [Standalone](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#standalone)
 pattern. However, the repo structure could also be used to serve multiple clusters, in a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
@@ -1209,7 +1246,7 @@ Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.c
 via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 is being deployed including dashboards for 
 - ArgoCD
-- Ingress Nginx Controller
+- Traefik Ingress Controller
 - Prometheus
 - SCMManager
 - Jenkins.
@@ -1336,7 +1373,7 @@ deploying.
 Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 
 
-We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+We recommend using the `--ingress` and `--base-url` Parameters.
 With these, the applications are made available as subdomains of `base-url`.
 
 For example, `--base-url=http://localhost` leads to 

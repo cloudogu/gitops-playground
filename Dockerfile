@@ -5,9 +5,8 @@ ARG JDK_VERSION='17'
 
 FROM alpine:3 AS alpine
 
-# Keep in sync with the version in pom.xml
-FROM ghcr.io/graalvm/native-image-community:${JDK_VERSION}-muslib-ol8 AS graal
-FROM graal AS maven-cache
+FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine AS maven-base
+FROM maven-base AS maven-cache
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 WORKDIR /app
 COPY .mvn/ /app/.mvn/
@@ -15,7 +14,7 @@ COPY mvnw /app/
 COPY pom.xml /app/
 RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B
 
-FROM graal AS maven-build
+FROM maven-base AS maven-build
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
@@ -29,7 +28,6 @@ WORKDIR /app
 RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
     && rm GenerateJsonSchema.groovy \
     && rm GitopsPlaygroundCliMainScripted.groovy
-# Build native image without micronaut
 RUN ./mvnw package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
@@ -42,10 +40,10 @@ RUN apk add curl grep
 # * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.34.2
-ARG KUBECTL_CHECKSUM=9591f3d75e1581f3f7392e6ad119aab2f28ae7d6c6e083dc5d22469667f27253
+ARG K8S_VERSION=1.36.0-alpha.1
+ARG KUBECTL_CHECKSUM=39c4b08639bca4ad4d8d5f504f5c15e0866a725cf873160e45149fc616be0a7c
 # When updating, also upgrade helm image in Config
-ARG HELM_VERSION=4.0.2
+ARG HELM_VERSION=4.1.1
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -115,8 +113,7 @@ RUN mkdir /dist-dev
 # Remove uncessary code and allow changing code in dev mode, less secure, but the intention of the dev image
 # Execute bit is required to allow listing of dirs to everyone
 RUN mv /dist/app/src /dist-dev/src && \
-    chmod a=rwx -R /dist-dev/src && \
-    rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
+    chmod a=rwx -R /dist-dev/src
 COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
 # Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting.
 # Keep generated class Version, to avoid ClassNotFoundException.

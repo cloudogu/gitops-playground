@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
@@ -109,7 +110,9 @@ class MailhogTest {
                 '5.0.1',
                 'foo-monitoring',
                 'mailhog',
-                temporaryYamlFile
+                temporaryYamlFile,
+                RepoType.HELM
+
         )
 
         assertThat(parseActualYaml()).doesNotContainKey('resources')
@@ -193,7 +196,7 @@ class MailhogTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'mailhog', '.', '1.2.3', 'foo-monitoring',
-                'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'mailhog', temporaryYamlFile, RepoType.GIT)
     }
 
     @Test

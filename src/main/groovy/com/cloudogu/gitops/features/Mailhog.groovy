@@ -7,16 +7,12 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import freemarker.template.DefaultObjectWrapperBuilder
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.springframework.security.crypto.bcrypt.BCrypt
 
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -31,10 +27,6 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     private String username
     private String password
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     Mailhog(
             Config config,
@@ -63,49 +55,13 @@ class Mailhog extends Feature implements FeatureWithImage {
     void enable() {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                mail         : [
-                        // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
-                ],
-                passwordCrypt: bcryptMailhogPassword,
-                config       : config,
-                // Allow for using static classes inside the templates
-                statics      : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        addHelmValuesData("passwordCrypt", bcryptMailhogPassword)
+        addHelmValuesData("mail", [
+                // Note that passing the URL object here leads to problems in Graal Native image, see Git history
+                host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
         ])
 
         def helmConfig = config.features.mail.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying mailhog from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.mail.helm as Config.HelmConfig)
-
-            String mailhogVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    "${this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)}",
-                    'mailhog',
-                    '.',
-                    mailhogVersion,
-                    namespace,
-                    'mailhog',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'mailhog',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'mailhog',
-                    tempValuesPath)
-        }
+        deployHelmChart('mailhog', 'mailhog', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

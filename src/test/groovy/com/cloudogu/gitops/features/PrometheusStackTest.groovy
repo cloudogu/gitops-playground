@@ -82,7 +82,7 @@ class PrometheusStackTest {
                     secrets     : [
                             active: true
                     ],
-                    ingressNginx: [
+                    ingress: [
                             active: true
                     ],
                     mail        : [
@@ -489,7 +489,7 @@ policies:
 
         verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack',
                 'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-                'kube-prometheus-stack', temporaryYamlFilePrometheus)
+                'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
         /* This corresponds to
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
@@ -666,7 +666,7 @@ policies:
         config.application.namePrefix = "test1-"
         config.features.argocd.active = true
         config.features.secrets.active = true
-        config.features.ingressNginx.active = false
+        config.features.ingress.active = false
         LinkedHashSet<String> namespaceList = [
                 "test1-argocd",
                 "test1-monitoring",

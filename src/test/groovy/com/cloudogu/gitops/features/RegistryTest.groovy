@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -42,16 +42,6 @@ class RegistryTest {
         assertThat(helmCommands.actualCommands[1].trim()).contains("--values ${temporaryYamlFile}")
         assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-registry')
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
-    }
-
-    @Test
-    void 'creates an additional service when different port is set'() {
-        def expectedNodePort = DEFAULT_REGISTRY_PORT as int + 1
-        def registryConfig = new RegistrySchema(active: true, internalPort: expectedNodePort)
-        
-        createRegistry(registryConfig).install()
-
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")
     }
 
     @Test

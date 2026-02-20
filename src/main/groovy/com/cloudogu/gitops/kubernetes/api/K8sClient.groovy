@@ -1,6 +1,9 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
@@ -19,6 +22,7 @@ class K8sClient {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
+    public K8sJavaApiClient k8sJavaApiClient
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -28,8 +32,8 @@ class K8sClient {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
         this.configProvider = configProvider
+        this.k8sJavaApiClient = new K8sJavaApiClient()
     }
-
 
     private String waitForOutput(String[] command, String[] additionalCommand, String logMessage, String failureMessage, int maxTries = DEFAULT_RETRIES) {
         int tryCount = 0
@@ -202,7 +206,6 @@ class K8sClient {
         return output
     }
 
-
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
@@ -320,13 +323,9 @@ class K8sClient {
             return []
         }
 
-        result.stdOut.split("\n").collect {
-            def parts = it.split(",")
-
-            def prefix = configProvider.get().application.namePrefix
-            assert (parts[0].startsWith(prefix))
-
-            return new CustomResource(parts[0].substring(prefix.length()), parts[1])
+        return result.stdOut.split('\n').collect { line ->
+            def parts = line.split(',')
+            new CustomResource(parts[0].trim(), parts[1].trim())
         }
     }
 

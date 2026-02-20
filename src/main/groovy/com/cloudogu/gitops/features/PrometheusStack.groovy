@@ -7,16 +7,11 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 @Slf4j
 @Singleton
@@ -27,14 +22,11 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/rbac/namespace-isolation-rbac.ftl.yaml"
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/netpols/prometheus-allow-scraping.ftl.yaml"
 
-    private final Config config
-    private final K8sClient k8sClient
-    private final GitRepoFactory scmRepoProvider
-    private final FileSystemUtils fileSystemUtils
-    private final DeploymentStrategy deployer
-    private final AirGappedUtils airGappedUtils
-    private final GitHandler gitHandler
-    private final String namespace
+    String namespace = "${config.application.namePrefix}monitoring"
+    Config config
+    K8sClient k8sClient
+
+    private GitRepoFactory scmRepoProvider
 
     PrometheusStack(
             Config config,
@@ -69,11 +61,13 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             uid = findValidOpenShiftUid()
         }
 
-        Map<String, Object> templateModel = buildTemplateValues(config, uid)
+        addHelmValuesData("monitoring",  [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]])
+        addHelmValuesData("namespaces", (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
+        addHelmValuesData("scm", scmConfigurationMetrics())
+        addHelmValuesData("jenkins", jenkinsConfigurationMetrics())
+        addHelmValuesData("uid", uid)
 
-        def values = templateToMap(HELM_VALUES_PATH, templateModel)
         def helmConfig = config.features.monitoring.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
 
         // Create secrets imperatively here instead of values.yaml
         // because we don't want credentials to be visible in the Git repo
@@ -161,60 +155,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         // Remove dashboards for features that are not enabled
         cleanupUnusedDashboards(clusterResourcesRepo)
         clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
+        deployHelmChart('prometheusstack', 'kube-prometheus-stack', namespace, helmConfig, HELM_VALUES_PATH, config)
 
-        // Deploy the Helm chart using the merged values
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
-        if (config.application.mirrorRepos) {
-            log.debug("Mirroring repos: Deploying Prometheus from local git repo")
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.monitoring.helm as Config.HelmConfig)
-
-            String prometheusVersion =
-                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'prometheusstack',
-                    '.',
-                    prometheusVersion,
-                    namespace,
-                    'kube-prometheus-stack',
-                    tempValuesPath,
-                    RepoType.GIT
-            )
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'prometheusstack',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'kube-prometheus-stack',
-                    tempValuesPath
-            )
-        }
-    }
-
-    private Map<String, Object> buildTemplateValues(Config config, String uid) {
-        def model = [
-                monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
-                namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
-                scm      : scmConfigurationMetrics(),
-                jenkins   : jenkinsConfigurationMetrics(),
-                uid       : uid,
-                config    : config,
-                // Allow using static classes inside the templates
-                statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32)
-                        .build()
-                        .getStaticModels()
-        ] as Map<String, Object>
-
-        return model
-    }
-
-    private Map scmConfigurationMetrics() {
+        private Map scmConfigurationMetrics() {
         def uri = gitHandler.resourcesScm.prometheusMetricsEndpoint()
         [
                 protocol: uri?.scheme ?: "",

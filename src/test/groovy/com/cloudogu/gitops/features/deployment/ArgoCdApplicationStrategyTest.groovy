@@ -45,13 +45,13 @@ spec:
     helm:
       releaseName: "releaseName"
       valueFiles:
-      - "\$values/apps/repoName/misc/repoName-gop-helm.yaml"
-      - "\$values/apps/repoName/misc/repoName-user-values.yaml"
+      - "\$values/apps/repoName/repoName-gop-helm.yaml"
+      - "\$values/apps/repoName/repoName-user-values.yaml"
       ignoreMissingValueFiles: true
   - repoURL: "http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/cluster-resources.git"
     targetRevision: "main"
     ref: "values"
-    path: "apps/repoName/misc"
+    path: "apps/repoName"
     directory:
       recurse: true
   syncPolicy:

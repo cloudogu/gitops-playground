@@ -1,5 +1,5 @@
 image:
-  tag: latest
+  tag: 876c25ea
 config:
   application:
     baseUrl: "http://localhost"
@@ -19,5 +19,5 @@ config:
       operator: true
       env: [ ]
       resourceInclusionsCluster: "https://10.43.0.1:443"
-    ingressNginx:
+    ingress:
       active: false

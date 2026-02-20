@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
+import org.apache.http.client.CredentialsProvider
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -136,11 +138,8 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
-            @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
-            String username = ''
-
-            @JsonPropertyDescription(CONTENT_REPO_PASSWORD_DESCRIPTION)
-            String password = ''
+            @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+            Credentials credentials
 
             @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
             Boolean templating = false
@@ -157,6 +156,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
+
         }
     }
 
@@ -444,8 +444,8 @@ class Config {
         SecretsSchema secrets = new SecretsSchema()
 
         @Mixin
-        @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
-        IngressNginxSchema ingressNginx = new IngressNginxSchema()
+        @JsonPropertyDescription(INGRESS_DESCRIPTION)
+        IngressSchema ingress = new IngressSchema()
 
         @Mixin
         @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
@@ -646,24 +646,26 @@ class Config {
         }
     }
 
-    static class IngressNginxSchema {
+    static class IngressSchema {
 
-        @Option(names = ['--ingress-nginx'], description = INGRESS_NGINX_ENABLE_DESCRIPTION)
-        @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
+        @Option(names = ['--ingress'], description = INGRESS_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(INGRESS_ENABLE_DESCRIPTION)
         Boolean active = false
 
         @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
-                chart: 'ingress-nginx',
-                repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                version: '4.12.1'
+        IngressHelmSchema helm = new IngressHelmSchema(
+                chart: 'traefik',
+                repoURL: 'https://traefik.github.io/charts',
+                version: '39.0.0'
         )
-        static class IngressNginxHelmSchema extends HelmConfigWithValues {
-            @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+        static class IngressHelmSchema extends HelmConfigWithValues {
+            @Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ''
         }
+
+        String ingressNamespace = 'ingress'
     }
 
     static class CertManagerSchema {

@@ -3,14 +3,15 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
+import com.fasterxml.jackson.annotation.JsonIgnore
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -39,8 +40,13 @@ class ContentLoader extends Feature {
     private TemplatingEngine templatingEngine
     // used to clone repos in validation phase
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
-    private File mergedReposFolder
     private GitHandler gitHandler
+
+    protected File mergedReposFolder
+
+    //For security reasons we safe the credentialsProvider for each repo here and not in config pro each repo
+    @JsonIgnore
+    UsernamePasswordCredentialsProvider credentialsProvider
 
     ContentLoader(
             Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler
@@ -176,6 +182,14 @@ class ContentLoader extends Feature {
         def repoTmpDir = File.createTempDir('gitops-playground-content-repo-')
         log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
 
+
+        if (repoConfig.credentials?.username != null && repoConfig.credentials?.password != null) {
+            credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+        } else if (repoConfig.credentials?.secretName && repoConfig.credentials?.secretNamespace) {
+            Credentials credentials = this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
+            credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username, credentials.password)
+        }
+
         cloneToLocalFolder(repoConfig, repoTmpDir)
 
         def contentRepoDir = new File(repoTmpDir, repoConfig.path)
@@ -281,7 +295,6 @@ class ContentLoader extends Feature {
                             protocol: repo.gitProvider.protocol,
                             repoUrl : repo.gitProvider.repoPrefix(),
                     ],
-                    config : config,
                     // Allow for using static classes inside the templates
                     statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
                             new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()
@@ -291,23 +304,23 @@ class ContentLoader extends Feature {
 
     private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir) {
 
+
         def cloneCommand = gitClone()
                 .setURI(repoConfig.url)
                 .setDirectory(repoTmpDir)
-                .setNoCheckout(false) // Checkout default branch
+                .setNoCheckout(false)// Checkout default branch
 
-        if (repoConfig.username != null && repoConfig.password != null) {
-            cloneCommand.setCredentialsProvider(
-                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+        if (credentialsProvider) {
+            cloneCommand.setCredentialsProvider(credentialsProvider)
         }
 
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
             def fetch = git.fetch()
-            if (repoConfig.username != null && repoConfig.password != null) {
-                // fetch also needs CredentialProvider, jgit behaviour.
-                fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+
+            if (credentialsProvider) {
+                fetch.setCredentialsProvider(credentialsProvider)
             }
             fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
@@ -318,7 +331,7 @@ class ContentLoader extends Feature {
         }
     }
 
-    private static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
+    private  static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
         // Check if ref exists first to avoid InvalidRefNameException
         // Note that this works for commits and shortname tags but not shortname branches 🙄
         if (gitRepo.resolve(repoConfig.ref)) {
@@ -331,10 +344,6 @@ class ContentLoader extends Feature {
                 .setHeads(true)
                 .setTags(true)
 
-        if (repoConfig.username != null && repoConfig.password != null) {
-            remoteCommand.setCredentialsProvider(
-                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
-        }
         Collection<Ref> refs = remoteCommand.call()
         String potentialRef = refs.find { it.name.endsWith(repoConfig.ref) }?.name
 

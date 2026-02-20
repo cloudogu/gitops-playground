@@ -8,7 +8,7 @@ features:
   argocd:
     active: true
     operator: false
-  ingressNginx:
+  ingress:
     active: true
   monitoring:
     active: true

@@ -5,14 +5,11 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -24,11 +21,6 @@ class Vault extends Feature implements FeatureWithImage {
     String namespace = "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
-
-    private FileSystemUtils fileSystemUtils
-    private DeploymentStrategy deployer
-    private AirGappedUtils airGappedUtils
-    private GitHandler gitHandler
 
     Vault(
             Config config,
@@ -56,12 +48,7 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
-                config : config,
-                // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
+        addHelmValuesData("host", config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '')
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -80,79 +67,14 @@ class Vault extends Feature implements FeatureWithImage {
             k8sClient.createNamespace(namespace)
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.absolutePath)
 
-            templatedMap = MapUtils.deepMerge(
-                    [
-                            server: [
-                                    dev         : [
-                                            enabled     : true,
-                                            // Don't create fixed devRootToken token (more secure when remote cluster) 
-                                            // -> Root token can be found on the log if needed
-                                            devRootToken: UUID.randomUUID()
-                                    ],
-                                    // Mount init script via config-map 
-                                    volumes     : [
-                                            [
-                                                    name     : vaultPostStartVolume,
-                                                    configMap: [
-                                                            name       : vaultPostStartConfigMap,
-                                                            // Make executable
-                                                            defaultMode: 0774
-                                                    ]
-                                            ]
-                                    ],
-                                    volumeMounts: [
-                                            [
-                                                    mountPath: '/var/opt/scripts',
-                                                    name     : vaultPostStartVolume,
-                                                    readOnly : true
-                                            ]
-                                    ],
-                                    // Execute init script as post start hook
-                                    postStart   : [
-                                            '/bin/sh',
-                                            '-c',
-                                            "USERNAME=${config.application.username} " +
-                                                    "PASSWORD=${config.application.password} " +
-                                                    "ARGOCD=${config.features.argocd.active} " +
-                                                    // Write script output to file for easier debugging
-                                                    "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
-                                    ],
-                            ]
-                    ], templatedMap)
+            addHelmValuesData("dev", [
+                    rootToken: UUID.randomUUID(),
+                    vaultPostStartConfigMap: vaultPostStartConfigMap,
+                    vaultPostStartVolume: vaultPostStartVolume,
+                    postStartScriptName: postStartScript.name
+            ])
         }
 
-        templatedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        log.trace("Helm yaml to be applied: ${templatedMap}")
-        def tempValuesPath = fileSystemUtils.writeTempFile(templatedMap)
-
-        if (config.application.mirrorRepos) {
-            log.debug('Mirroring repos: Deploying vault from local git repo')
-
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.secrets.vault.helm as Config.HelmConfig)
-
-            String vaultVersion =
-                    new YamlSlurper().parse(Path.of(config.application.localHelmChartFolder + '/' + helmConfig.chart,
-                            'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'vault',
-                    '.',
-                    vaultVersion,
-                    namespace,
-                    'vault',
-                    tempValuesPath, DeploymentStrategy.RepoType.GIT
-            )
-        } else {
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'vault',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'vault',
-                    tempValuesPath
-            )
-        }
+        deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, config)
     }
 }

@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
@@ -9,7 +10,7 @@ import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
@@ -21,6 +22,7 @@ import org.mockito.Mock
 
 import java.nio.file.Path
 
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
@@ -69,7 +71,7 @@ class JenkinsTest {
         config.jenkins.internalBashImage = 'bash:42'
         config.jenkins.internalDockerClientVersion = '23'
 
-        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn('''
 root:x:0:
 daemon:x:1:
 docker:x:42:me
@@ -79,7 +81,7 @@ me:x:1000:''')
 
         verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
                 'jen-chart', '4.8.1', 'jenkins',
-                'jenkins', temporaryYamlFile)
+                'jenkins', temporaryYamlFile, RepoType.HELM)
         verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
         verify(k8sClient).labelRemove('node', '--all', '', 'node')
         verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
@@ -103,7 +105,7 @@ me:x:1000:''')
 
         ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any())
+        verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any(String[].class))
         assertThat(nameCaptor.value).startsWith('tmp-docker-gid-grepper-')
         List containers = overridesCaptor.value['spec']['containers'] as List
         assertThat(containers[0]['image'].toString()).isEqualTo('bash:42')

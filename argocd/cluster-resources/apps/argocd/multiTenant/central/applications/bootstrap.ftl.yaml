@@ -13,7 +13,7 @@ spec:
     namespace: ${config.application.namePrefix}argocd
   project: ${tenantName}
   source:
-    path: apps/argocd/multiTenant/central/applications/
+    path: apps/argocd/applications/
     repoURL: ${scm.centralScmUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:

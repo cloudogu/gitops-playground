@@ -2,16 +2,12 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-
-import java.nio.file.Path
 
 @Slf4j
 @Singleton
@@ -25,9 +21,6 @@ class Registry extends Feature {
 
     String namespace
     private Config config
-    private DeploymentStrategy deployer
-    private FileSystemUtils fileSystemUtils
-    private Path tmpHelmValues
     private K8sClient k8sClient
 
     Registry(
@@ -56,30 +49,13 @@ class Registry extends Feature {
     void enable() {
 
         if (config.registry.internal) {
+            addHelmValuesData("service", [
+                    nodePort: Config.DEFAULT_REGISTRY_PORT,
+                    type    : 'NodePort'
+            ])
 
             def helmConfig = config.registry.helm
-
-            Map yaml = [
-                    service: [
-                            nodePort: Config.DEFAULT_REGISTRY_PORT,
-                            type    : 'NodePort'
-                    ]
-            ]
-            def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
-
-            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-            log.trace("Helm yaml to be applied: ${yaml}")
-
-
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'registry',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'docker-registry',
-                    tempValuesPath
-            )
+            deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config)
 
             if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
                 /* Add additional node port
@@ -87,20 +63,20 @@ class Registry extends Feature {
                See "-p 30000" in init-cluster.sh
                e.g 32769 is needed so the kubelet can access the image inside the server-0 container
              */
-                k8sClient.createServiceNodePort('docker-registry-internal-port',
-                        CONTAINER_PORT, config.registry.internalPort.toString(),
-                        namespace)
-            }
 
-            deployer.deployFeature(
-                    helmConfig.repoURL,
-                    'registry',
-                    helmConfig.chart,
-                    helmConfig.version,
-                    namespace,
-                    'docker-registry',
-                    tempValuesPath
-            )
+               /* k8sClient.createServiceNodePort('docker-registry-internal-port',
+                        CONTAINER_PORT, config.registry.internalPort.toString(),
+                        namespace) */
+
+                Map<String, String> selector = new HashMap<>()
+                selector.put("app", "docker-registry")
+                k8sClient.k8sJavaApiClient.createNodePortService(namespace,
+                        'docker-registry-internal-port',
+                        selector,
+                        CONTAINER_PORT.toInteger(),
+                        config.registry.internalPort,
+                        'docker-registry-internal-port')
+            }
         }
     }
 }

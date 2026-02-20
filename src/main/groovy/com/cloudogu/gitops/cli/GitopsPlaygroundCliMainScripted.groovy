@@ -15,6 +15,8 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.jenkins.*
+import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -86,7 +88,7 @@ class GitopsPlaygroundCliMainScripted {
                         gitHandler,
                         jenkins,
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler),
-                        new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+                        new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),

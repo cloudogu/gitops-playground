@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -245,7 +246,6 @@ class K8sClientTest {
     void 'Gets custom resources with name prefix'() {
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', "namespace,name\nnamespace2,name2", 0))
         def result = k8sClient.getCustomResource('foo')
-
         assertThat(result).isEqualTo([new K8sClient.CustomResource('namespace', 'name'), new K8sClient.CustomResource('namespace2', 'name2')])
     }
 

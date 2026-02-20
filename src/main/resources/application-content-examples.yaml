@@ -6,7 +6,7 @@ features:
   argocd:
     active: true
     operator: false
-  ingressNginx:
+  ingress:
     active: true
 content:
   examples: true

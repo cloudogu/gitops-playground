@@ -138,9 +138,9 @@ spec:
     - name: codecentric
       type: helm
       url: https://codecentric.github.io/helm-charts
-    - name: ingress-nginx
+    - name: traefik
       type: helm
-      url: https://kubernetes.github.io/ingress-nginx
+      url: https://traefik.github.io/charts
 </#if>
     - name: example-apps
       url: ${scm.repoUrl}argocd/example-apps.git
@@ -224,6 +224,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
+  <#if config.features.secrets.active == true>
     - apiGroups:
       - "external-secrets.io"
       kinds:
@@ -232,6 +233,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
+  </#if>
     - apiGroups:
       - "argoproj.io"
       kinds:
@@ -239,6 +241,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
+  <#if config.features.monitoring.active == true>
     - apiGroups:
       - "monitoring.coreos.com"
       kinds:
@@ -252,4 +255,5 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
+  </#if>
 </#if>
