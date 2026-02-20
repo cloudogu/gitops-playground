@@ -558,7 +558,7 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --mailhog-image=localhost:30000/proxy/mailhog:latest \
+    --mail-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
     --config-file=/home/two-registries.yaml
     

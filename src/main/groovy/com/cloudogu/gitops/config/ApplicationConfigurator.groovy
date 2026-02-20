@@ -41,11 +41,11 @@ class ApplicationConfigurator {
         if (newConfig.features.secrets.vault.mode)
             newConfig.features.secrets.active = true
 
-        if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailhog)
+        if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailServer)
             newConfig.features.mail.active = true
-        if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailhog) {
-            newConfig.features.mail.mailhog = false
-            log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
+        if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailServer) {
+            newConfig.features.mail.mailServer = false
+            log.warn("Enabled both external Mailserver and in-cluster Mailserver! Implicitly deactivating in-cluster mailserver")
         }
 
         if (newConfig.features.ingress.active && !newConfig.application.baseUrl) {
@@ -195,7 +195,7 @@ class ApplicationConfigurator {
             argocd.url = injectSubdomain("argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
         }
-        if (mail.mailhog && !mail.mailUrl) {
+        if (mail.mailServer && !mail.mailUrl) {
             mail.mailUrl = injectSubdomain('mail', baseUrl, urlSeparatorHyphen)
             log.debug("Setting Mail URL ${mail.mailUrl}")
         }

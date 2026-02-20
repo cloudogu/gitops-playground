@@ -425,19 +425,19 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Mail
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--mail` | `features.mail.mailhog` | `false` | Boolean | Installs Mailhog as email testing tool |
-| `--mail-url` | `features.mail.mailUrl` | `''` | String | The url of your external mailhog |
-| `--smtp-address` | `features.mail.smtpAddress` | `''` | String | SMTP server address |
-| `--smtp-port` | `features.mail.smtpPort` | `null` | Integer | SMTP server port |
-| `--smtp-user` | `features.mail.smtpUser` | `''` | String | SMTP username |
-| `--smtp-password` | `features.mail.smtpPassword` | `''` | String | SMTP password |
-| `--mailhog-image` | `features.mail.helm.image` | `'ghcr.io/cloudogu/mailhog:v1.0.1'` | String | Mailhog container image |
-| - | `features.mail.helm.chart` | `'mailhog'` | String | Name of the Helm chart |
+| CLI | Config                       | Default | Type | Description                                                 |
+|-----|------------------------------|---------|------|-------------------------------------------------------------|
+| `--mail` | `features.mail.mailServer`   | `false` | Boolean | Installs a dedicated mail server                            |
+| `--mail-url` | `features.mail.mailUrl`      | `''` | String | The url of the mail server's frontend                       |
+| `--smtp-address` | `features.mail.smtpAddress`  | `''` | String | SMTP server address                                         |
+| `--smtp-port` | `features.mail.smtpPort`     | `null` | Integer | SMTP server port                                            |
+| `--smtp-user` | `features.mail.smtpUser`     | `''` | String | SMTP username                                               |
+| `--smtp-password` | `features.mail.smtpPassword` | `''` | String | SMTP password                                               |
+| `--mail-image` | `features.mail.helm.image`   | `'ghcr.io/cloudogu/mailhog:v1.0.1'` | String | Container image to use for the mail server                  |
+| - | `features.mail.helm.chart`   | `'mailhog'` | String | Name of the Helm chart                                      |
 | - | `features.mail.helm.repoURL` | `'https://codecentric.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.mail.helm.version` | `'5.0.1'` | String | The version of the Helm chart to be installed |
-| - | `features.mail.helm.values` | `[:]` | Map | Helm values of the chart |
+| - | `features.mail.helm.version` | `'5.0.1'` | String | The version of the Helm chart to be installed               |
+| - | `features.mail.helm.values`  | `[:]` | Map | Helm values of the chart                                    |
 
 ###### Monitoring
 

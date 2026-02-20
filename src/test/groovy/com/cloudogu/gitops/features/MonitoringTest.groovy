@@ -86,7 +86,7 @@ class MonitoringTest {
                             active: true
                     ],
                     mail        : [
-                            mailhog: true
+                            mailServer: true
                     ]
             ])
 
@@ -117,9 +117,9 @@ class MonitoringTest {
     }
 
     @Test
-    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
+    void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
@@ -127,7 +127,7 @@ class MonitoringTest {
     }
 
     @Test
-    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
+    void 'When mailServer enabled: Includes mail configurations into cluster resources'() {
         config.features.mail.active = true
         createStack(scmManagerMock).install()
         assertThat(parseActualYaml()['grafana']['notifiers']).isNotNull()
@@ -258,7 +258,7 @@ policies:
     @Test
     void 'When external Mailserver is NOT set'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 

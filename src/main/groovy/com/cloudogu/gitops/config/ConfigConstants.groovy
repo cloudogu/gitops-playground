@@ -108,8 +108,8 @@ interface ConfigConstants {
     String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
 
     String MAIL_DESCRIPTION = 'Config parameters for mail servers'
-    String MAILHOG_URL_DESCRIPTION = 'Sets url for MailHog'
-    String MAILHOG_ENABLE_DESCRIPTION = 'Installs MailHog as Mail server.'
+    String MAIL_URL_DESCRIPTION = 'Sets url for the mail server frontend'
+    String MAILSERVER_ENABLE_DESCRIPTION = 'Installs a dedicated mail server.'
 
     // group external Mailserver
     String SMTP_ADDRESS_DESCRIPTION = 'Sets smtp port of external Mailserver'

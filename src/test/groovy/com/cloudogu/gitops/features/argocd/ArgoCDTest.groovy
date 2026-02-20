@@ -83,7 +83,7 @@ class ArgoCDTest {
                             resourceInclusionsCluster: ''
                     ],
                     mail        : [
-                            mailhog: true,
+                            mailServer: true,
                     ],
                     monitoring  : [
                             active: true,
@@ -291,9 +291,9 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
+    void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = false
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
 
         def argocd = createArgoCD()
         argocd.install()
@@ -306,7 +306,7 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
+    void 'When mailServer enabled: Includes mail configurations into cluster resources'() {
         config.features.mail.active = true
 
         def argocd = createArgoCD()

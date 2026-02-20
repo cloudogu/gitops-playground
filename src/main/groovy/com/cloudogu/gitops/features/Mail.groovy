@@ -46,7 +46,7 @@ class Mail extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features.mail.mailhog
+        return config.features.mail.mailServer
     }
 
     @Override

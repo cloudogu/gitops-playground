@@ -59,7 +59,7 @@ features:
     emailToUser: "app-team@example.org"
     emailToAdmin: "infra@example.org"
   mail:
-    mailhog: false
+    mailServer: false
     mailUrl: ""
     smtpAddress: ""
     smtpPort: 22222

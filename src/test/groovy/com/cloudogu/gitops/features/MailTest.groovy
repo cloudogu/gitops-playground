@@ -29,7 +29,8 @@ class MailTest {
             ],
             features   : [
                     mail: [
-                            mailhog: true
+                            mailServer: true
+
                     ]
             ]
     ])
@@ -44,7 +45,7 @@ class MailTest {
 
     @Test
     void "is disabled via active flag"() {
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
         createMail().install()
         assertThat(temporaryYamlFile).isNull()
     }

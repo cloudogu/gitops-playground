@@ -258,7 +258,7 @@ class ApplicationConfiguratorTest {
         testConfig.application.baseUrl = 'http://localhost'
 
         testConfig.features.argocd.active = true
-        testConfig.features.mail.mailhog = true
+        testConfig.features.mail.mailServer = true
         testConfig.features.monitoring.active = true
         testConfig.features.secrets.active = true
 
@@ -278,7 +278,7 @@ class ApplicationConfiguratorTest {
         testConfig.application.urlSeparatorHyphen = true
 
         testConfig.features.argocd.active = true
-        testConfig.features.mail.mailhog = true
+        testConfig.features.mail.mailServer = true
         testConfig.features.monitoring.active = true
         testConfig.features.secrets.active = true
 
