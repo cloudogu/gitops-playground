@@ -467,7 +467,7 @@ policies:
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
 
-        verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack',
+        verify(deploymentStrategy).deployFeature('https://prom', 'monitoring',
                 'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
         /* This corresponds to
@@ -615,7 +615,7 @@ policies:
         assertThat(helmConfig.value.version).isEqualTo('19.2.2')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-                'prometheusstack', '.', '1.2.3', 'foo-monitoring',
+                'monitoring', '.', '1.2.3', 'foo-monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
     }
 
