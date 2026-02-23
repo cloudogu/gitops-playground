@@ -99,7 +99,7 @@ Now you're ready to apply the apps to the cluster.
 
 Note that to be able to access the services remotely you need to pass the
 `--ingress --base-url=$yourdomain` and either set a DNS record or `/etc/hosts` entries to the external IP of the
-ingress-nginx service. 
+ingress service. 
 
 ##### Clean up
 
