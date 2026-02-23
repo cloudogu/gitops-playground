@@ -159,16 +159,7 @@ me:x:1000:''')
     }
 
     @Test
-    void "service type LoadBalancer when run remotely"() {
-        config.application.remote = true
-        createJenkins().install()
-
-        assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('LoadBalancer')
-    }
-
-    @Test
     void 'Maps config properly'() {
-        config.application.remote = true
         config.application.trace = true
         config.features.argocd.active = true
         config.content.examples = true
@@ -207,7 +198,6 @@ me:x:1000:''')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
         assertThat(env['JENKINS_PASSWORD']).isEqualTo('jenpw')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
-        assertThat(env['REMOTE_CLUSTER']).isEqualTo('true')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
 

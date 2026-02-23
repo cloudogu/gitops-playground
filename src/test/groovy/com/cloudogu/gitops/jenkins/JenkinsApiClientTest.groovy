@@ -96,8 +96,9 @@ class JenkinsApiClientTest {
         wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
         wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
                 .withHeader("Jenkins-Crumb", equalTo("the-crumb"))
-                .withRequestBody(equalTo("key=value%20with%20spaces")))
-    }
+				.withFormParam("key", equalTo("value with spaces")))
+
+	}
 
     @Test
     void 'allows self-signed certificates when using insecure'() {
