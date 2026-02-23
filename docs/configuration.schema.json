@@ -416,13 +416,13 @@
               "additionalProperties" : false,
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
-            "mailhog" : {
+            "mailServer" : {
               "type" : [ "boolean", "null" ],
-              "description" : "Installs MailHog as Mail server."
+              "description" : "Installs a dedicated mail server."
             },
-            "mailhogUrl" : {
+            "mailUrl" : {
               "type" : [ "string", "null" ],
-              "description" : "Sets url for MailHog"
+              "description" : "Sets url for the mail server frontend"
             },
             "smtpAddress" : {
               "type" : [ "string", "null" ],

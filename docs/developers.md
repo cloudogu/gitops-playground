@@ -547,7 +547,7 @@ docker run --rm -t -u $(id -u) \
     --net=host \
     ${GOP_IMAGE} -x \
     --yes --argocd --ingress --base-url=http://localhost \
-    --vault=dev --monitoring --mailhog --cert-manager \
+    --vault=dev --monitoring --mail --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
     --registry-path=registry \
@@ -558,7 +558,7 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --mailhog-image=localhost:30000/proxy/mailhog:latest \
+    --mail-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
     --config-file=/home/two-registries.yaml
     
@@ -806,7 +806,7 @@ docker run --rm -it -u $(id -u) \
   --net=host \
   gitops-playground:dev --argocd --monitoring --vault=dev -x --yes \
   --argocd-url argocd.localhost --grafana-url grafana.localhost --vault-url vault.localhost \
-  --mailhog-url mailhog.localhost --petclinic-base-domain petclinic.localhost \
+  --mail-url mail.localhost --petclinic-base-domain petclinic.localhost \
   --nginx-base-domain nginx.localhost
 ```
 

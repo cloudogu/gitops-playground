@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-class MailhogTest {
+class MailTest {
 
     Config config = Config.fromMap([
             application: [
@@ -29,7 +29,8 @@ class MailhogTest {
             ],
             features   : [
                     mail: [
-                            mailhog: true
+                            mailServer: true
+
                     ]
             ]
     ])
@@ -44,24 +45,24 @@ class MailhogTest {
 
     @Test
     void "is disabled via active flag"() {
-        config.features.mail.mailhog = false
-        createMailhog().install()
+        config.features.mail.mailServer = false
+        createMail().install()
         assertThat(temporaryYamlFile).isNull()
     }
 
     @Test
     void 'uses ingress if enabled'() {
-        config.features.mail.mailhogUrl = 'http://mailhog.local'
-        createMailhog().install()
+        config.features.mail.mailUrl = 'http://mail.local'
+        createMail().install()
 
         def ingressYaml = parseActualYaml()['ingress']
         assertThat(ingressYaml['enabled']).isEqualTo(true)
-        assertThat((ingressYaml['hosts'] as List)[0]['host']).isEqualTo('mailhog.local')
+        assertThat((ingressYaml['hosts'] as List)[0]['host']).isEqualTo('mail.local')
     }
 
     @Test
     void 'does not use ingress by default'() {
-        createMailhog().install()
+        createMail().install()
 
         assertThat(parseActualYaml()).doesNotContainKey('ingress')
     }
@@ -72,7 +73,7 @@ class MailhogTest {
         String expectedPassword = '12345'
         config.application.username = expectedUsername
         config.application.password = expectedPassword
-        createMailhog().install()
+        createMail().install()
 
         String fileContents = parseActualYaml()['auth']['fileContents']
         String actualPasswordBcrypted = ((fileContents =~ /^[^:]*:(.*)$/)[0] as List)[1]
@@ -85,7 +86,7 @@ class MailhogTest {
     void 'When argocd disabled, mailhog is deployed imperatively via helm'() {
         config.features.argocd.active = false
 
-        createMailhog().install()
+        createMail().install()
 
         verify(deploymentStrategy).deployFeature(
                 'https://codecentric.github.io/helm-charts',
@@ -107,7 +108,7 @@ class MailhogTest {
     void 'Sets pod resource limits and requests'() {
         config.application.podResources = true
 
-        createMailhog().install()
+        createMail().install()
 
         assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
     }
@@ -116,14 +117,14 @@ class MailhogTest {
     void 'When argoCD enabled, mailhog is deployed natively via argoCD'() {
         config.features.argocd.active = true
 
-        createMailhog().install()
+        createMail().install()
     }
 
     @Test
     void 'Allows overriding the image'() {
         config.features.mail.helm.image = 'abc:42'
 
-        createMailhog().install()
+        createMail().install()
         assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
         assertThat(parseActualYaml()['image']['tag']).isEqualTo(42)
     }
@@ -132,12 +133,12 @@ class MailhogTest {
     void 'Image is optional'() {
         config.features.mail.helm.image = ''
 
-        createMailhog().install()
+        createMail().install()
         assertThat(parseActualYaml()['image']).isNull()
 
         config.features.mail.helm.image = null
 
-        createMailhog().install()
+        createMail().install()
         assertThat(parseActualYaml()['image']).isNull()
     }
 
@@ -150,7 +151,7 @@ class MailhogTest {
                         ]
                 ]
         ]
-        createMailhog().install()
+        createMail().install()
         assertThat(parseActualYaml()['containerPort'] as String).contains('9849003')
 
     }
@@ -170,7 +171,7 @@ class MailhogTest {
         Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-        createMailhog().install()
+        createMail().install()
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -190,7 +191,7 @@ class MailhogTest {
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
 
-        createMailhog().install()
+        createMail().install()
 
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-monitoring' +
@@ -201,16 +202,16 @@ class MailhogTest {
     @Test
     void 'empty security context in openshift'() {
         config.application.openshift = true
-        createMailhog().install()
+        createMail().install()
         assertThat(parseActualYaml()['securityContext']['fsGroup']).isEqualTo(null)
         assertThat(parseActualYaml()['securityContext']['runAsUser']).isEqualTo(null)
         assertThat(parseActualYaml()['securityContext']['runAsGroup']).isEqualTo(null)
     }
 
-    private Mailhog createMailhog() {
+    private Mail createMail() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        new Mailhog(config, new FileSystemUtils() {
+        new Mail(config, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mergeMap) {
                 def ret = super.writeTempFile(mergeMap)

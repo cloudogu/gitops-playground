@@ -3,13 +3,13 @@ package com.cloudogu.gitops.features.argocd
 import java.nio.file.Path
 
 class ArgoCDRepoLayout {
-    private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
+    private static final String APPS_MONITORING_REL     = 'apps/monitoring'
     private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
     private static final String APPS_VAULT_REL          = 'apps/vault'
     private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
     private static final String APPS_JENKINS_REL        = 'apps/jenkins'
     private static final String APPS_INGRESS_REL        = 'apps/ingress'
-    private static final String APPS_MAILHOG_REL        = 'apps/mailhog'
+    private static final String APPS_MAILHOG_REL        = 'apps/mail'
     private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
     private static final String APPS_ARGOCD_REL         = 'apps/argocd'
 

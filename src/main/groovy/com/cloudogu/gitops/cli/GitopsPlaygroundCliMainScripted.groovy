@@ -18,6 +18,7 @@ import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import jakarta.inject.Provider
@@ -32,10 +33,11 @@ import jakarta.inject.Provider
  * Yes, redundant and not beautiful, but not using dependency injection is worse.
  */
 @Slf4j
+@CompileStatic
 class GitopsPlaygroundCliMainScripted {
 
     static void main(String[] args) throws Exception {
-        new GitopsPlaygroundCliMain().exec(args, GitopsPlaygroundCliScripted.class)
+        new GitopsPlaygroundCliMain().exec(args, GitopsPlaygroundCliScripted)
     }
 
     static class GitopsPlaygroundCliScripted extends GitopsPlaygroundCli {
@@ -43,26 +45,24 @@ class GitopsPlaygroundCliMainScripted {
         protected void register(Config config, ApplicationContext context) {
             super.register(config, context)
 
-            def fileSystemUtils = new FileSystemUtils()
-            def executor = new CommandExecutor()
-            def networkingUtils = new NetworkingUtils()
-            def k8sClient = new K8sClient(executor, fileSystemUtils, new Provider<Config>() {
+            FileSystemUtils fileSystemUtils = new FileSystemUtils()
+            CommandExecutor executor = new CommandExecutor()
+            NetworkingUtils networkingUtils = new NetworkingUtils()
+
+            K8sClient k8sClient = new K8sClient(executor, fileSystemUtils, new Provider<Config>() {
                 @Override
                 Config get() {
                     return config
                 }
             })
-            def helmClient = new HelmClient(executor)
 
-            def httpClientFactory = new HttpClientFactory()
+            HelmClient helmClient = new HelmClient(executor)
+            HttpClientFactory httpClientFactory = new HttpClientFactory()
+            GitRepoFactory gitRepoFactory = new GitRepoFactory(config, fileSystemUtils)
+            HelmStrategy helmStrategy = new HelmStrategy(config, helmClient)
+            GitHandler gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
 
-            def gitRepoFactory = new GitRepoFactory(config, fileSystemUtils)
-
-            def helmStrategy = new HelmStrategy(config, helmClient)
-
-            def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
-
-            def jenkinsApiClient = new JenkinsApiClient(config,
+            JenkinsApiClient jenkinsApiClient = new JenkinsApiClient(config,
                     httpClientFactory.okHttpClientJenkins(config))
 
             context.registerSingleton(k8sClient)
@@ -71,16 +71,14 @@ class GitopsPlaygroundCliMainScripted {
                 context.registerSingleton(new Destroyer([
                         new ArgoCDDestructionHandler(config, k8sClient, gitRepoFactory, helmClient, fileSystemUtils, gitHandler),
                         new ScmmDestructionHandler(config),
-                        new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient))
+                        new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient)),
                 ]))
             } else {
-                def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
-
-                def airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
-
-                def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
+                Deployer deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
+                AirGappedUtils airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
+                Jenkins jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-                        new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils,gitHandler)
+                        new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils, gitHandler)
 
                 // make sure the order of features is in same order as the @Order values
                 context.registerSingleton(new Application(config, [
@@ -90,8 +88,8 @@ class GitopsPlaygroundCliMainScripted {
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler),
                         new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
+                        new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+                        new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
                         new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),

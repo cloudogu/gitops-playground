@@ -58,8 +58,8 @@ features:
     emailToUser: "app-team@example.org"
     emailToAdmin: "infra@example.org"
   mail:
-    mailhog: false
-    mailhogUrl: ""
+    mailServer: false
+    mailUrl: ""
     smtpAddress: ""
     smtpPort: 22222
     smtpUser: ""

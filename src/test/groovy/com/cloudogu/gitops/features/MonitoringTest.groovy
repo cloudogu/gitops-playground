@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-class PrometheusStackTest {
+class MonitoringTest {
     Config config = Config.fromMap(
             registry: [
                     internal              : true,
@@ -85,7 +85,7 @@ class PrometheusStackTest {
                             active: true
                     ],
                     mail        : [
-                            mailhog: true
+                            mailServer: true
                     ]
             ])
 
@@ -116,9 +116,9 @@ class PrometheusStackTest {
     }
 
     @Test
-    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
+    void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
@@ -126,7 +126,7 @@ class PrometheusStackTest {
     }
 
     @Test
-    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
+    void 'When mailServer enabled: Includes mail configurations into cluster resources'() {
         config.features.mail.active = true
         createStack(scmManagerMock).install()
         assertThat(parseActualYaml()['grafana']['notifiers']).isNotNull()
@@ -257,7 +257,7 @@ policies:
     @Test
     void 'When external Mailserver is NOT set'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailhog = false
+        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 
@@ -494,7 +494,7 @@ policies:
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
         for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-            def rbacYaml = new File("$clusterResourcesRepoDir/apps/prometheusstack/misc/rbac/${namespace}.yaml")
+            def rbacYaml = new File("$clusterResourcesRepoDir/apps/monitoring/misc/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
         }
@@ -517,7 +517,7 @@ policies:
         prometheusStack.install()
 
         for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-            def netPolsYaml = new File("$clusterResourcesRepoDir/apps/prometheusstack/misc/netpols/${namespace}.yaml")
+            def netPolsYaml = new File("$clusterResourcesRepoDir/apps/monitoring/misc/netpols/${namespace}.yaml")
             assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
         }
     }
@@ -603,7 +603,7 @@ matchExpressions:
         ))
     }
 
-    private PrometheusStack createStack(ScmManagerMock scmManagerMock) {
+    private Monitoring createStack(ScmManagerMock scmManagerMock) {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
         def configuration = config
@@ -618,7 +618,7 @@ matchExpressions:
 
         }
 
-        new PrometheusStack(configuration, new FileSystemUtils() {
+        new Monitoring(configuration, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mapValues) {
                 def ret = super.writeTempFile(mapValues)
