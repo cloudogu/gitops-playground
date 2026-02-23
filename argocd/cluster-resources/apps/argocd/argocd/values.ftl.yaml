@@ -17,7 +17,7 @@ argo-cd:
 </#if>
 
     service:
-      type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
+      type: ClusterIP
     metrics:
       enabled: true
 <#if config.features.monitoring.active == true>

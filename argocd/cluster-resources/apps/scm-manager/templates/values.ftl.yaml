@@ -13,11 +13,9 @@ extraEnv: |
   - name: SCM_WEBAPP_INITIALPASSWORD
     value: "${password}"
 
-<#if remote?? && !remote>
 service:
   type: NodePort
-  </#if>
-  
+
 <#if host?has_content>
 ingress:
   enabled: true

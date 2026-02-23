@@ -10,7 +10,7 @@ imagePullSecrets:
  - name: proxy-registry
 </#if>
 service:
-  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
+  type: ClusterIP
   port:
     http: 80
 auth:

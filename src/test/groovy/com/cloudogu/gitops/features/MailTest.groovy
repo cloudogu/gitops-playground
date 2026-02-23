@@ -51,22 +51,6 @@ class MailTest {
     }
 
     @Test
-    void 'service type LoadBalancer when run remotely'() {
-        config.application.remote = true
-        createMail().install()
-
-        assertThat(parseActualYaml()['service']['type']).isEqualTo('LoadBalancer')
-    }
-
-    @Test
-    void 'service type ClusterIP when not run remotely'() {
-        config.application.remote = false
-        createMail().install()
-
-        assertThat(parseActualYaml()['service']['type']).isEqualTo('ClusterIP')
-    }
-
-    @Test
     void 'uses ingress if enabled'() {
         config.features.mail.mailUrl = 'http://mail.local'
         createMail().install()

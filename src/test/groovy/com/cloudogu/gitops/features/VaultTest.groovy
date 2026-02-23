@@ -48,22 +48,6 @@ class VaultTest {
     }
 
     @Test
-    void 'when not run remotely, set type ClusterIP'() {
-        createVault().install()
-
-        assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('ClusterIP')
-    }
-
-    @Test
-    void 'when run remotely, use service type loadbalancer'() {
-        config.application.remote = true
-        createVault().install()
-
-        assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('LoadBalancer')
-        assertThat(parseActualYaml()['ui'] as Map).doesNotContainKey('serviceNodePort')
-    }
-
-    @Test
     void 'uses ingress if enabled'() {
         config.features.secrets.vault.url = 'http://vault.local'
         createVault().install()

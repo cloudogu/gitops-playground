@@ -112,8 +112,6 @@ class Jenkins extends Feature {
                 JENKINS_URL               : config.jenkins.url,
                 JENKINS_USERNAME          : config.jenkins.username,
                 JENKINS_PASSWORD          : config.jenkins.password,
-                // Used indirectly in utils.sh 😬
-                REMOTE_CLUSTER            : config.application.remote,
                 SCM_URL                 : this.gitHandler.tenant.url,
                 PREFIXED_SCM_URL : this.gitHandler.tenant.repoPrefix(),
                 SCM_PASSWORD             : this.gitHandler.tenant.credentials.password,

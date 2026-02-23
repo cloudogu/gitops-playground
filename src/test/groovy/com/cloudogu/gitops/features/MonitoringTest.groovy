@@ -41,7 +41,6 @@ class MonitoringTest {
             application: [
                     username          : 'abc',
                     password          : '123',
-                    remote            : false,
                     openshift         : false,
                     namePrefix        : 'foo-',
                     mirrorRepos       : false,
@@ -266,15 +265,6 @@ policies:
     }
 
     @Test
-    void "service type LoadBalancer when run remotely"() {
-        config.application.remote = true
-        createStack(scmManagerMock).install()
-
-        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
-        assertThat(parseActualYaml()['grafana']['service']['nodePort']).isNull()
-    }
-
-    @Test
     void "configures admin user if requested"() {
         config.application.username = "my-user"
         config.application.password = "hunter2"
@@ -282,14 +272,6 @@ policies:
 
         assertThat(parseActualYaml()['grafana']['adminUser']).isEqualTo('my-user')
         assertThat(parseActualYaml()['grafana']['adminPassword']).isEqualTo('hunter2')
-    }
-
-    @Test
-    void 'service type ClusterIP when not run remotely'() {
-        config.application.remote = false
-        createStack(scmManagerMock).install()
-
-        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('ClusterIP')
     }
 
     @Test

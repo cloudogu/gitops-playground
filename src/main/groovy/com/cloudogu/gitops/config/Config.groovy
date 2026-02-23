@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import groovy.transform.CompileStatic
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
 import picocli.CommandLine.Command
@@ -45,6 +46,7 @@ import static picocli.CommandLine.ScopeType
 @Singleton
 @MapConstructor(noArg = true, includeSuperProperties = true, includeFields = true)
 @Command(name = BINARY_NAME, description = APP_DESCRIPTION)
+@CompileStatic
 class Config {
 
     // When updating please also update in Dockerfile
@@ -332,10 +334,6 @@ class Config {
         // The param itself is not used, "usageHelp = true" leads to hel being printed
         @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
         Boolean usageHelpRequested = false
-
-        @Option(names = ['--remote'], description = REMOTE_DESCRIPTION)
-        @JsonPropertyDescription(REMOTE_DESCRIPTION)
-        Boolean remote = false
 
         @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
         @JsonPropertyDescription(INSECURE_DESCRIPTION)
