@@ -1,12 +1,11 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.kubernetes.api.HelmClient
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton

@@ -1,12 +1,7 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import retrofit2.Call
-import retrofit2.http.Body
-import retrofit2.http.Headers
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
 interface PluginApi {
     @POST("v2/plugins/available/{name}/install")

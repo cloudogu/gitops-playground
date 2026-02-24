@@ -1,17 +1,19 @@
 package com.cloudogu.gitops.features.deployment
 
+import org.junit.jupiter.api.Test
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+
 import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
 

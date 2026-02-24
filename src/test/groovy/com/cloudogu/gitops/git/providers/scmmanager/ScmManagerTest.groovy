@@ -1,5 +1,16 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
+import okhttp3.internal.http.RealResponseBody
+import okio.BufferedSource
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.function.Executable
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import retrofit2.Call
+import retrofit2.Response
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
@@ -11,20 +22,10 @@ import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-import okhttp3.internal.http.RealResponseBody
-import okio.BufferedSource
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import retrofit2.Call
-import retrofit2.Response
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
-import org.junit.jupiter.api.function.Executable
 
 @ExtendWith(MockitoExtension)
 class ScmManagerTest {

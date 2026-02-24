@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.kubernetes.api
 
-import com.cloudogu.gitops.config.Credentials
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -9,6 +8,7 @@ import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import com.cloudogu.gitops.config.Credentials
 
 @EnableKubernetesMockClient(crud = true)
 class K8sJavaApiTest {

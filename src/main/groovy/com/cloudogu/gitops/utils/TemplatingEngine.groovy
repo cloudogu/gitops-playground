@@ -3,11 +3,11 @@ package com.cloudogu.gitops.utils
 import freemarker.template.Configuration
 import freemarker.template.Template
 import freemarker.template.Version
-import groovy.yaml.YamlSlurper
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern 
+import java.util.regex.Pattern
+import groovy.yaml.YamlSlurper
 
 class TemplatingEngine {
     private Configuration engine

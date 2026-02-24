@@ -3,6 +3,7 @@ package com.cloudogu.gitops.git
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import jakarta.inject.Singleton
 
 @Singleton

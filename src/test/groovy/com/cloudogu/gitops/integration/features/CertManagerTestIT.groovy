@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.integration.features
 
-import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.models.V1Pod
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+
+import groovy.util.logging.Slf4j
 
 import static org.assertj.core.api.Assertions.assertThat
 

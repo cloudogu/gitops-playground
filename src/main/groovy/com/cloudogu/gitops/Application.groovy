@@ -1,12 +1,14 @@
 package com.cloudogu.gitops
 
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
-import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton

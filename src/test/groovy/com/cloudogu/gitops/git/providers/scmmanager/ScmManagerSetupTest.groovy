@@ -1,13 +1,14 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
+import org.junit.jupiter.api.Test
+import retrofit2.Call
+import retrofit2.Response
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApi
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
-import org.junit.jupiter.api.Test
-import retrofit2.Call
-import retrofit2.Response
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq

@@ -1,16 +1,18 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.config.Config
 import com.github.tomakehurst.wiremock.WireMockServer
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.when
 
 class JobManagerTest {
 

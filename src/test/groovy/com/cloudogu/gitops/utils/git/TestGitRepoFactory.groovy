@@ -1,15 +1,15 @@
 package com.cloudogu.gitops.utils.git
 
+import org.apache.commons.io.FileUtils
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
-import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.doAnswer
 import static org.mockito.Mockito.spy
-
 
 class TestGitRepoFactory extends GitRepoFactory {
     Map<String, GitRepo> repos = [:]

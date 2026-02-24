@@ -1,12 +1,14 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
+
+import groovy.yaml.YamlSlurper
+
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class K8sClientTest {
 

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.config
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
+
 import groovy.transform.ToString
 
 import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_REPO_CREDENTIALS_DESCRIPTION

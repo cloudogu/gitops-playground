@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Config
 import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat

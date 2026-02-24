@@ -1,17 +1,19 @@
 package com.cloudogu.gitops.features
 
+import org.junit.jupiter.api.Test
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.K8sClientForTest
-import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
-import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
+import java.nio.file.Path
+import groovy.yaml.YamlSlurper
+
 import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
 
 class RegistryTest {
 
