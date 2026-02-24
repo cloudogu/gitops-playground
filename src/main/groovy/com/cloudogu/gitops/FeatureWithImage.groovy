@@ -1,9 +1,10 @@
 package com.cloudogu.gitops
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 
 /**
  * A feature that relies on container images running inside the kubernetes cluster.

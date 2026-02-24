@@ -17,11 +17,16 @@ import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
+
+import io.micronaut.context.ApplicationContext
+
+import jakarta.inject.Provider
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider
 
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 

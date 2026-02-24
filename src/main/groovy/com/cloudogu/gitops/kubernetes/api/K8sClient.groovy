@@ -3,13 +3,13 @@ package com.cloudogu.gitops.kubernetes.api
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.config.Credentials
+
+import jakarta.inject.Provider
+import jakarta.inject.Singleton
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
-import jakarta.inject.Provider
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton

@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
+import org.junit.jupiter.api.Test
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows

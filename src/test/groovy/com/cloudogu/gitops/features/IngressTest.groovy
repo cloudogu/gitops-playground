@@ -1,5 +1,11 @@
 package com.cloudogu.gitops.features
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
@@ -7,20 +13,16 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentCaptor
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.yaml.YamlSlurper
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 @ExtendWith(MockitoExtension.class)
 class IngressTest {

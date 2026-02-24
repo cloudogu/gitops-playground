@@ -1,14 +1,15 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
-
-import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
-import groovy.util.logging.Slf4j
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
+
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
+
+import groovy.util.logging.Slf4j
 
 /**
  * Parent class for all SCMM Apis that lazily creates the APIs

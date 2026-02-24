@@ -1,16 +1,17 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Singleton
 @Slf4j

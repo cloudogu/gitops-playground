@@ -1,8 +1,10 @@
 package com.cloudogu.gitops.utils
 
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+
 import jakarta.inject.Provider
 
 class K8sClientForTest extends K8sClient {

@@ -1,18 +1,17 @@
 package com.cloudogu.gitops.dependencyinjection
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
-import com.cloudogu.gitops.okhttp.RetryInterceptor
-import groovy.transform.TupleConstructor
-import io.micronaut.context.annotation.Factory
-import jakarta.inject.Named
-import jakarta.inject.Singleton
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.annotations.NotNull
 import org.slf4j.LoggerFactory
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
+import com.cloudogu.gitops.okhttp.RetryInterceptor
+
+import io.micronaut.context.annotation.Factory
 
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
@@ -21,6 +20,9 @@ import javax.net.ssl.X509TrustManager
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import groovy.transform.TupleConstructor
 
 @Factory
 class HttpClientFactory {

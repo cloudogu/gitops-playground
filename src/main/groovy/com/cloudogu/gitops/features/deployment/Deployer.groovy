@@ -3,9 +3,9 @@ package com.cloudogu.gitops.features.deployment
 import com.cloudogu.gitops.config.Config
 
 import io.micronaut.context.annotation.Primary
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
 
 @Singleton
 @Primary

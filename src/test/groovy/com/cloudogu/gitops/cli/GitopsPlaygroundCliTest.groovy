@@ -4,19 +4,21 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
-import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.slf4j.LoggerFactory
+
+import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.kubernetes.api.K8sClient
+
+import io.micronaut.context.ApplicationContext
 
 import java.util.concurrent.TimeUnit
 

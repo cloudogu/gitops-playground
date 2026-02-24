@@ -1,13 +1,15 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.config.Config
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
-import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+
+import com.cloudogu.gitops.config.Config
+
+import io.micronaut.context.ApplicationContext
 
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory

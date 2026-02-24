@@ -1,18 +1,21 @@
 package com.cloudogu.gitops.features
 
+import org.springframework.security.crypto.bcrypt.BCrypt
+
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+
+import io.micronaut.core.annotation.Order
+
+import jakarta.inject.Singleton
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
-import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
 @Singleton

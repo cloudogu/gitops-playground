@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.jenkins
 
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 import org.intellij.lang.annotations.Language
+
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Singleton
 @Slf4j

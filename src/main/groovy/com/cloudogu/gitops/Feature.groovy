@@ -1,5 +1,8 @@
 package com.cloudogu.gitops
 
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
@@ -7,15 +10,12 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
+
+import java.nio.file.Path
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 /**
  * A single tool to be deployed by GOP.

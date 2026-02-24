@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
-import com.cloudogu.gitops.config.Credentials
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+
+import com.cloudogu.gitops.config.Credentials
 
 import javax.net.ssl.SSLHandshakeException
 

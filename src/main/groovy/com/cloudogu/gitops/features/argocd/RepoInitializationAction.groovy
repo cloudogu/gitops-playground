@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.features.argocd
 
+import freemarker.template.DefaultObjectWrapperBuilder
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
-import freemarker.template.DefaultObjectWrapperBuilder
+
 import groovy.util.logging.Slf4j
 
 @Slf4j

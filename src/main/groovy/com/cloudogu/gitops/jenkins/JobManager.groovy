@@ -1,13 +1,15 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.json.JsonOutput
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 import okhttp3.FormBody
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.intellij.lang.annotations.Language
+
+import com.cloudogu.gitops.utils.TemplatingEngine
+
+import jakarta.inject.Singleton
+import groovy.json.JsonOutput
+import groovy.util.logging.Slf4j
 
 @Singleton
 @Slf4j

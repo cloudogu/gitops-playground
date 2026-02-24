@@ -1,16 +1,14 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Config
-
 import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
 
 import java.nio.file.Path
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.never
-import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.*
 
 class DeployerTest {
     private ArgoCdApplicationStrategy argoCdStrat = mock(ArgoCdApplicationStrategy.class)

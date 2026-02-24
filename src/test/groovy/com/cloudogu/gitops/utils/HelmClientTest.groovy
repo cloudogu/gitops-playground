@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.kubernetes.api.HelmClient
 import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.kubernetes.api.HelmClient
+
 import static org.assertj.core.api.Assertions.assertThat
 
 class HelmClientTest {

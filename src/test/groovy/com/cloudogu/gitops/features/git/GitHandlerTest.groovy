@@ -1,19 +1,20 @@
 package com.cloudogu.gitops.features.git
 
+import org.junit.jupiter.api.Test
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.GitlabMock
 import com.cloudogu.gitops.utils.git.ScmManagerMock
-import org.junit.jupiter.api.Test
 
 import static org.junit.jupiter.api.Assertions.*
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.mock
 
 class GitHandlerTest {
 

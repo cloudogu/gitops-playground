@@ -1,22 +1,23 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.K8sClientForTest
-import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClientForTest
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.yaml.YamlSlurper
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*

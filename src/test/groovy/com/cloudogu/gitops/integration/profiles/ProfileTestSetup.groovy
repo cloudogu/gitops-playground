@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.integration.profiles
 
-import com.cloudogu.gitops.integration.TestK8sHelper
-import groovy.util.logging.Slf4j
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.extension.TestWatcher
+
+import com.cloudogu.gitops.integration.TestK8sHelper
+
+import groovy.util.logging.Slf4j
 
 /**
  * Common setup to dump K88s content after failing tests.

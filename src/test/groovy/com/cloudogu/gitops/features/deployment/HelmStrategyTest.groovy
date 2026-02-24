@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Config
-
-import com.cloudogu.gitops.kubernetes.api.HelmClient
 import org.junit.jupiter.api.Test
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -11,7 +11,7 @@ import java.nio.file.Path
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify 
+import static org.mockito.Mockito.verify
 
 class HelmStrategyTest {
 
