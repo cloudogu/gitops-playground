@@ -712,7 +712,9 @@ class ArgoCDTest {
                 'imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"'
         ]
         List twoRegistriesExpectedLines = [
-                'docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {']
+                'String proxyPathPrefix = !dockerRegistryProxyPath?.trim() ? "" : "${dockerRegistryProxyPath}/"',
+                'docker.withRegistry("https://${dockerRegistryProxyBaseUrl}/${proxyPathPrefix}", dockerRegistryProxyCredentials) {',
+        ]
 
         for (def petclinicRepo : petClinicRepos) {
             String jenkinsfile = new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text

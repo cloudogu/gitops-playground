@@ -83,7 +83,8 @@ node {
 </#noparse>
 <#if config.registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            String proxyPathPrefix = !dockerRegistryProxyPath?.trim() ? "" : "${dockerRegistryProxyPath}/"
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}/${proxyPathPrefix}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
