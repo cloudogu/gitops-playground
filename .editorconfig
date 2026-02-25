@@ -1,7 +1,7 @@
 [*]
 charset = utf-8
 end_of_line = lf
-indent_size = 4
+indent_size = 2
 indent_style = space
 insert_final_newline = false
 max_line_length = 180
@@ -1029,51 +1029,6 @@ ij_groovy_while_on_new_line = false
 ij_groovy_wrap_chain_calls_after_dot = false
 ij_groovy_wrap_long_lines = false
 
-[{*.har,*.jsb2,*.jsb3,*.json,*.jsonc,*.postman_collection,*.postman_collection.json,*.postman_environment,*.postman_environment.json,.babelrc,.eslintrc,.prettierrc,.stylelintrc,.ws-context,jest.config}]
-indent_size = 2
-ij_json_array_wrapping = split_into_lines
-ij_json_keep_blank_lines_in_code = 0
-ij_json_keep_indents_on_empty_lines = false
-ij_json_keep_line_breaks = true
-ij_json_keep_trailing_comma = false
-ij_json_object_wrapping = split_into_lines
-ij_json_property_alignment = do_not_align
-ij_json_space_after_colon = true
-ij_json_space_after_comma = true
-ij_json_space_before_colon = false
-ij_json_space_before_comma = false
-ij_json_spaces_within_braces = false
-ij_json_spaces_within_brackets = false
-ij_json_wrap_long_lines = false
-
-[{*.htm,*.html,*.sht,*.shtm,*.shtml}]
-ij_html_add_new_line_before_tags = body, div, p, form, h1, h2, h3
-ij_html_align_attributes = true
-ij_html_align_text = false
-ij_html_attribute_wrap = normal
-ij_html_block_comment_add_space = false
-ij_html_block_comment_at_first_column = true
-ij_html_do_not_align_children_of_min_lines = 0
-ij_html_do_not_break_if_inline_tags = title, h1, h2, h3, h4, h5, h6, p
-ij_html_do_not_indent_children_of_tags = html, body, thead, tbody, tfoot
-ij_html_enforce_quotes = false
-ij_html_inline_tags = a, abbr, acronym, b, basefont, bdo, big, br, cite, cite, code, dfn, em, font, i, img, input, kbd, label, q, s, samp, select, small, span, strike, strong, sub, sup, textarea, tt, u, var
-ij_html_keep_blank_lines = 2
-ij_html_keep_indents_on_empty_lines = false
-ij_html_keep_line_breaks = true
-ij_html_keep_line_breaks_in_text = true
-ij_html_keep_whitespaces = false
-ij_html_keep_whitespaces_inside = span, pre, textarea
-ij_html_line_comment_at_first_column = true
-ij_html_new_line_after_last_attribute = never
-ij_html_new_line_before_first_attribute = never
-ij_html_quote_style = double
-ij_html_remove_new_line_before_tags = br
-ij_html_space_after_tag_name = false
-ij_html_space_around_equality_in_attribute = false
-ij_html_space_inside_empty_tag = false
-ij_html_text_wrap = normal
-
 [{*.http,*.rest}]
 ij_continuation_indent_size = 4
 ij_http-request_call_parameters_wrap = normal
@@ -1183,24 +1138,6 @@ ij_kotlin_while_on_new_line = false
 ij_kotlin_wrap_elvis_expressions = 1
 ij_kotlin_wrap_expression_body_functions = 1
 ij_kotlin_wrap_first_method_in_call_chain = false
-
-[{*.markdown,*.md}]
-ij_markdown_force_one_space_after_blockquote_symbol = true
-ij_markdown_force_one_space_after_header_symbol = true
-ij_markdown_force_one_space_after_list_bullet = true
-ij_markdown_force_one_space_between_words = true
-ij_markdown_format_tables = true
-ij_markdown_insert_quote_arrows_on_wrap = true
-ij_markdown_keep_indents_on_empty_lines = false
-ij_markdown_keep_line_breaks_inside_text_blocks = true
-ij_markdown_max_lines_around_block_elements = 1
-ij_markdown_max_lines_around_header = 1
-ij_markdown_max_lines_between_paragraphs = 1
-ij_markdown_min_lines_around_block_elements = 1
-ij_markdown_min_lines_around_header = 1
-ij_markdown_min_lines_between_paragraphs = 1
-ij_markdown_wrap_text_if_long = true
-ij_markdown_wrap_text_inside_blockquotes = true
 
 [{*.pb,*.textproto,*.txtpb}]
 indent_size = 2
