@@ -1,22 +1,21 @@
 package com.cloudogu.gitops.jenkins
 
-
-import org.junit.jupiter.api.Test
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
+import org.junit.jupiter.api.Test
+
 class GlobalPropertyManagerTest {
-    @Test
-    void 'sets global property'() {
-        def client = mock(JenkinsApiClient)
-        def propertyManager = new GlobalPropertyManager(client)
+	@Test
+	void 'sets global property'() {
+		def client = mock(JenkinsApiClient)
+		def propertyManager = new GlobalPropertyManager(client)
 
-        when(client.runScript(anyString())).thenReturn("Done")
-        propertyManager.setGlobalProperty('the-key', 'the-value')
+		when(client.runScript(anyString())).thenReturn("Done")
+		propertyManager.setGlobalProperty('the-key', 'the-value')
 
-        verify(client).runScript("""
+		verify(client).runScript("""
             instance = Jenkins.getInstance()
             globalNodeProperties = instance.getGlobalNodeProperties()
             envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -38,27 +37,27 @@ class GlobalPropertyManagerTest {
             instance.save()
             print("Done")
         """)
-    }
+	}
 
-    @Test
-    void 'throws when there was an error when creating global property'() {
-        def client = mock(JenkinsApiClient)
-        when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+	@Test
+	void 'throws when there was an error when creating global property'() {
+		def client = mock(JenkinsApiClient)
+		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
-        shouldFail(RuntimeException) {
-            new GlobalPropertyManager(client).setGlobalProperty("the-key", "the-value")
-        }
-    }
+		shouldFail(RuntimeException) {
+			new GlobalPropertyManager(client).setGlobalProperty("the-key", "the-value")
+		}
+	}
 
-    @Test
-    void 'deletes global property'() {
-        def client = mock(JenkinsApiClient)
-        def propertyManager = new GlobalPropertyManager(client)
+	@Test
+	void 'deletes global property'() {
+		def client = mock(JenkinsApiClient)
+		def propertyManager = new GlobalPropertyManager(client)
 
-        when(client.runScript(anyString())).thenReturn("Nothing to do")
-        propertyManager.deleteGlobalProperty('the-key')
+		when(client.runScript(anyString())).thenReturn("Nothing to do")
+		propertyManager.deleteGlobalProperty('the-key')
 
-        verify(client).runScript("""
+		verify(client).runScript("""
             def instance = Jenkins.getInstance()
             def globalNodeProperties = instance.getGlobalNodeProperties()
             def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -72,15 +71,15 @@ class GlobalPropertyManagerTest {
             envVars.remove("the-key")
             print("Done")
         """)
-    }
+	}
 
-    @Test
-    void 'throws when there was an error when deleting global property'() {
-        def client = mock(JenkinsApiClient)
-        when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+	@Test
+	void 'throws when there was an error when deleting global property'() {
+		def client = mock(JenkinsApiClient)
+		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
-        shouldFail(RuntimeException) {
-            new GlobalPropertyManager(client).deleteGlobalProperty("the-key")
-        }
-    }
+		shouldFail(RuntimeException) {
+			new GlobalPropertyManager(client).deleteGlobalProperty("the-key")
+		}
+	}
 }

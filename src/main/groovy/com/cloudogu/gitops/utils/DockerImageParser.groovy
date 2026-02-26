@@ -1,70 +1,70 @@
 package com.cloudogu.gitops.utils
 
 class DockerImageParser {
-    static class Image {
-        public String registry
-        public String repository
-        public String tag
+	static class Image {
+		public String registry
+		public String repository
+		public String tag
 
-        Image(String registry, String repository, String tag) {
-            this.registry = registry
-            this.repository = repository
-            this.tag = tag
-        }
+		Image(String registry, String repository, String tag) {
+			this.registry = registry
+			this.repository = repository
+			this.tag = tag
+		}
 
-        String getRegistryAndRepositoryAsString() {
-            if (registry === "") {
-                return repository
-            }
+		String getRegistryAndRepositoryAsString() {
+			if (registry === "") {
+				return repository
+			}
 
-            return "$registry/$repository"
-        }
+			return "$registry/$repository"
+		}
 
-        String getRegistry() {
-            return registry
-        }
+		String getRegistry() {
+			return registry
+		}
 
-        String getRepository() {
-            return repository
-        }
+		String getRepository() {
+			return repository
+		}
 
-        String getTag() {
-            return tag
-        }
+		String getTag() {
+			return tag
+		}
 
-        @Override
-        String toString() {
-            return getRegistryAndRepositoryAsString() + ":$tag"
-        }
-    }
+		@Override
+		String toString() {
+			return getRegistryAndRepositoryAsString() + ":$tag"
+		}
+	}
 
-    static Image parse(String image) {
-        if (!image.contains(":")) {
-            // Most helm charts expect an explicit image tag, otherwise they use the version set by the app.
-            // This will likely be unexpected so force using a tag
-            throw new RuntimeException("Cannot set image '$image' due to missing tag. Must be the format '\$repository:\$tag'")
-        }
+	static Image parse(String image) {
+		if (!image.contains(":")) {
+			// Most helm charts expect an explicit image tag, otherwise they use the version set by the app.
+			// This will likely be unexpected so force using a tag
+			throw new RuntimeException("Cannot set image '$image' due to missing tag. Must be the format '\$repository:\$tag'")
+		}
 
-        // docker.io   /   foo/bar      :   latest
-        // ^ registry      ^ repository     ^ tag
-        // ^ ------------- image -----------------
-        def tuple = splitTag(image)
-        def imageWithoutTag = tuple.v1
-        def tag = tuple.v2
+		// docker.io   /   foo/bar      :   latest
+		// ^ registry      ^ repository     ^ tag
+		// ^ ------------- image -----------------
+		def tuple = splitTag(image)
+		def imageWithoutTag = tuple.v1
+		def tag = tuple.v2
 
-        def parts = imageWithoutTag.split("/")
-        def repository = parts.takeRight(2).join("/")
-        parts = parts.dropRight(2)
-        def registry = parts.join("/")
+		def parts = imageWithoutTag.split("/")
+		def repository = parts.takeRight(2).join("/")
+		parts = parts.dropRight(2)
+		def registry = parts.join("/")
 
-        return new Image(registry, repository, tag)
-    }
+		return new Image(registry, repository, tag)
+	}
 
-    private static Tuple2<String, String> splitTag(String image) {
-        String[] imageParts = image.split(":")
-        String tag = imageParts.last()
-        def imageWithoutTag = imageParts.dropRight(1).join(":")
+	private static Tuple2<String, String> splitTag(String image) {
+		String[] imageParts = image.split(":")
+		String tag = imageParts.last()
+		def imageWithoutTag = imageParts.dropRight(1).join(":")
 
-        return new Tuple2(imageWithoutTag, tag)
-    }
+		return new Tuple2(imageWithoutTag, tag)
+	}
 }

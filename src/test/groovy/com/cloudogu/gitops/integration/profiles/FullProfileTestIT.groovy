@@ -1,7 +1,12 @@
 package com.cloudogu.gitops.integration.profiles
 
+import static org.assertj.core.api.Assertions.fail
+
 import com.cloudogu.gitops.integration.TestK8sHelper
+
+import java.util.concurrent.TimeUnit
 import groovy.util.logging.Slf4j
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -9,10 +14,6 @@ import org.awaitility.Awaitility
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-
-import java.util.concurrent.TimeUnit
-
-import static org.assertj.core.api.Assertions.fail
 
 /**
  * This test ensures all Pods and Namespaces are available, runnning at a startet GOP with - more or less - defaulöt values.
@@ -24,158 +25,152 @@ import static org.assertj.core.api.Assertions.fail
 // operator can not load nginx
 class FullProfileTestIT extends ProfileTestSetup {
 
-    /**
-     * Gets path to kubeconfig */
-    static final String RUNNING = "Running"
-    static final String EXAMPLE_APPS_NAMESPACE = 'example-apps-staging'
-    static final String NGINX_POD = 'nginx-helm-jenkins'
+	/**
+	 * Gets path to kubeconfig */
+	static final String RUNNING = "Running"
+	static final String EXAMPLE_APPS_NAMESPACE = 'example-apps-staging'
+	static final String NGINX_POD = 'nginx-helm-jenkins'
 
-    @BeforeAll
-    static void labelMyTest() {
-        log.info '########### K8S SMOKE TESTS PROFILE full ###########'
-        waitUntilAllPodsRunning()
-    }
+	@BeforeAll
+	static void labelMyTest() {
+		log.info '########### K8S SMOKE TESTS PROFILE full ###########'
+		waitUntilAllPodsRunning()
+	}
 
+	private static void waitUntilAllPodsRunning() {
+		// if cert-manager is online, argocd is online, too!
+		Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
+			TestK8sHelper.checkAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, NGINX_POD)
+		}
+	}
 
-    private static void waitUntilAllPodsRunning() {
-        // if cert-manager is online, argocd is online, too!
-        Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
-            TestK8sHelper.checkAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, NGINX_POD)
-        }
-    }
+	@Test
+	void ensureJenkinsPodIsStarted() {
+		TestK8sHelper.checkAllPodsRunningInNamespace('jenkins', 'jenkins')
+	}
 
-    @Test
-    void ensureJenkinsPodIsStarted() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('jenkins', 'jenkins')
-    }
+	@Test
+	void ensureArgoCDIsOnlineAndPodsAreRunning() {
+		String expectedPod1 = "argocd-application-controller"
+		String expectedPod2 = "argocd-applicationset-controller"
+		//        String expectedPod3 = "argocd-notifications-controller" // not stable
+		String expectedPod4 = "argocd-redis"
+		String expectedPod5 = "argocd-repo-server"
+		String expectedPod6 = "argocd-server"
 
-    @Test
-    void ensureArgoCDIsOnlineAndPodsAreRunning() {
-        String expectedPod1 = "argocd-application-controller"
-        String expectedPod2 = "argocd-applicationset-controller"
-//        String expectedPod3 = "argocd-notifications-controller" // not stable
-        String expectedPod4 = "argocd-redis"
-        String expectedPod5 = "argocd-repo-server"
-        String expectedPod6 = "argocd-server"
+		List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
 
-        List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
+			def actualPods = client.pods().inNamespace('argocd').list().getItems()
 
-        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			// 1. Verify all expected pods are present
+			def missingPods = expectedPods.findAll { prefix -> !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
+			}
+			assert missingPods.isEmpty(): "Missing these pods in argocd: ${missingPods}"
 
-            def actualPods = client.pods().inNamespace('argocd').list().getItems()
+			// 2. Verify all relevant pods are in 'Running' phase
+			def notRunningPods = actualPods.findAll { pod -> expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
+			}.findAll { pod -> pod.getStatus().getPhase() != RUNNING
+			}
 
-            // 1. Verify all expected pods are present
-            def missingPods = expectedPods.findAll { prefix -> !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
-            }
-            assert missingPods.isEmpty(): "Missing these pods in argocd: ${missingPods}"
+			assert notRunningPods.isEmpty(): "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
 
-            // 2. Verify all relevant pods are in 'Running' phase
-            def notRunningPods = actualPods.findAll { pod -> expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
-            }.findAll { pod -> pod.getStatus().getPhase() != RUNNING
-            }
+		} catch (KubernetesClientException ex) {
+			fail("Unexpected Kubernetes exception", ex)
+		}
+	}
 
-            assert notRunningPods.isEmpty(): "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
+	@Test
+	void ensureScmmPodIsStarted() {
 
-        } catch (KubernetesClientException ex) {
-            fail("Unexpected Kubernetes exception", ex)
-        }
-    }
+		TestK8sHelper.checkAllPodsRunningInNamespace('scm-manager')
+	}
 
-    @Test
-    void ensureScmmPodIsStarted() {
+	@Test
+	void ensureNamespacesExists() {
+		List<String> expectedNamespaces = ["argocd",
+		                                   "cert-manager",
+		                                   "jenkins",
+		                                   "registry",
+		                                   "scm-manager",
+		                                   "default",
+		                                   "example-apps-production",
+		                                   "example-apps-staging",
+		                                   "ingress",
+		                                   "kube-node-lease",
+		                                   "kube-public",
+		                                   "kube-system",
+		                                   "monitoring",
+		                                   "secrets"] as List<String>
 
-        TestK8sHelper.checkAllPodsRunningInNamespace('scm-manager')
-    }
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
-    @Test
-    void ensureNamespacesExists() {
-        List<String> expectedNamespaces = ["argocd",
-                                           "cert-manager",
-                                           "jenkins",
-                                           "registry",
-                                           "scm-manager",
-                                           "default",
-                                           "example-apps-production",
-                                           "example-apps-staging",
-                                           "ingress",
-                                           "kube-node-lease",
-                                           "kube-public",
-                                           "kube-system",
-                                           "monitoring",
-                                           "secrets"] as List<String>
+			def currentNames = client.namespaces().list().getItems()
 
+			// 1. Verify all expected pods are present
+			def missingNamespace = expectedNamespaces.findAll { prefix -> !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
+			}
+			assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
 
-        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+		} catch (KubernetesClientException ex) {
+			fail("Unexpected Kubernetes exception", ex)
+		}
 
-            def currentNames = client.namespaces().list().getItems()
+	}
 
-            // 1. Verify all expected pods are present
-            def missingNamespace = expectedNamespaces.findAll { prefix -> !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
-            }
-            assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
+	/**
+	 * tests searches for ingress services and ensure ingress is used as loadbalancer*/
+	@Test
+	void ensureNginxIsOnline() {
+		TestK8sHelper.checkAllPodsRunningInNamespace('ingress', 'traefik')
+	}
 
+	@Test
+	void ensureCertManagerIsOnline() {
+		TestK8sHelper.checkAllPodsRunningInNamespace('cert-manager')
+	}
 
-        } catch (KubernetesClientException ex) {
-            fail("Unexpected Kubernetes exception", ex)
-        }
+	@Test
+	void ensureVaultIsOnline() {
+		TestK8sHelper.checkAllPodsRunningInNamespace('secrets', 'vault-0')
+	}
 
+	@Test
+	void ensureRegistryIsOnline() {
+		TestK8sHelper.checkAllPodsRunningInNamespace('registry', 'docker-registry')
+	}
 
-    }
+	@Test
+	void ensureExternalSecretsPodsRunning() {
 
-/**
- * tests searches for ingress services and ensure ingress is used as loadbalancer*/
-    @Test
-    void ensureNginxIsOnline() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('ingress', 'traefik')
-    }
+		String expectedPod1 = "external-secrets-webhook"
+		String expectedPod2 = "external-secrets-cert-controller"
 
-    @Test
-    void ensureCertManagerIsOnline() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('cert-manager')
-    }
+		List<String> expectedPods = [expectedPod1, expectedPod2]
 
-    @Test
-    void ensureVaultIsOnline() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('secrets', 'vault-0')
-    }
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
-    @Test
-    void ensureRegistryIsOnline() {
-        TestK8sHelper.checkAllPodsRunningInNamespace('registry', 'docker-registry')
-    }
+			def actualPods = client.pods().inNamespace('secrets').list().getItems()
 
-    @Test
-    void ensureExternalSecretsPodsRunning() {
+			// 1. Verify all expected pods are present
+			def missingPods = expectedPods.findAll { prefix -> !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
+			}
+			assert missingPods.isEmpty(): "Missing these pods in secrets: ${missingPods}"
 
-        String expectedPod1 = "external-secrets-webhook"
-        String expectedPod2 = "external-secrets-cert-controller"
+			// 2. Verify all relevant pods are in 'Running' phase
+			def notRunningPods = actualPods.findAll { pod -> expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
+			}.findAll { pod -> pod.getStatus().getPhase() != RUNNING
+			}
 
-        List<String> expectedPods = [expectedPod1, expectedPod2]
+			assert notRunningPods.isEmpty(): "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
 
-        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			// vault-0, external-secrets-webhook, external-secrets-<hash>, external-secrets-cert-controller
+			assert actualPods.size() == 4
 
-            def actualPods = client.pods().inNamespace('secrets').list().getItems()
-
-            // 1. Verify all expected pods are present
-            def missingPods = expectedPods.findAll { prefix -> !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
-            }
-            assert missingPods.isEmpty(): "Missing these pods in secrets: ${missingPods}"
-
-            // 2. Verify all relevant pods are in 'Running' phase
-            def notRunningPods = actualPods.findAll { pod -> expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
-            }.findAll { pod -> pod.getStatus().getPhase() != RUNNING
-            }
-
-            assert notRunningPods.isEmpty(): "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-
-            // vault-0, external-secrets-webhook, external-secrets-<hash>, external-secrets-cert-controller
-            assert actualPods.size() == 4
-
-        } catch (KubernetesClientException ex) {
-            fail("Unexpected Kubernetes exception", ex)
-        }
-    }
-
+		} catch (KubernetesClientException ex) {
+			fail("Unexpected Kubernetes exception", ex)
+		}
+	}
 
 }

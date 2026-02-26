@@ -1,85 +1,87 @@
 package com.cloudogu.gitops.utils
 
-import org.junit.jupiter.api.Test
+import static org.assertj.core.api.Assertions.assertThat
 
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
-import static org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
 class FileSystemUtilsTest {
 
-    FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    
-    @Test
-    void copiesToTempDir() {
-        def expectedText = 'someText'
-        
-        File someFile = File.createTempFile(getClass().getSimpleName(), '')
-        someFile.withWriter { {
-            it.println expectedText
-        }}
-        Path tmpFile = fileSystemUtils.copyToTempDir(someFile.absolutePath)
-        
-        assertThat(tmpFile.toAbsolutePath().toString()).isNotEqualTo(someFile.getAbsoluteFile())
-        assertThat(tmpFile.toFile().getText().trim()).isEqualTo(expectedText)
-    }
-    
-    @Test
-    void 'makes read-only folders writable recursively'() {
-        // Create temporary directory with nested structure
-        Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
+	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
-        // Create some regular files
-        File regularFile = new File(parentDir.toFile(), "regularFile.txt")
-        regularFile.createNewFile()
+	@Test
+	void copiesToTempDir() {
+		def expectedText = 'someText'
 
-        // Create nested directory
-        File nestedDir = new File(parentDir.toFile(), "nestedDir")
-        nestedDir.mkdir()
+		File someFile = File.createTempFile(getClass().getSimpleName(), '')
+		someFile.withWriter {
+			{
+				it.println expectedText
+			}
+		}
+		Path tmpFile = fileSystemUtils.copyToTempDir(someFile.absolutePath)
 
-        // Create read-only file in nested directory
-        File readOnlyFile = new File(nestedDir, "readOnlyFile.txt")
-        readOnlyFile.createNewFile()
-        readOnlyFile.setWritable(false)
+		assertThat(tmpFile.toAbsolutePath().toString()).isNotEqualTo(someFile.getAbsoluteFile())
+		assertThat(tmpFile.toFile().getText().trim()).isEqualTo(expectedText)
+	}
 
-        // Create another read-only file in parent directory
-        File anotherReadOnlyFile = new File(parentDir.toFile(), "anotherReadOnlyFile.txt")
-        anotherReadOnlyFile.createNewFile()
-        anotherReadOnlyFile.setWritable(false)
+	@Test
+	void 'makes read-only folders writable recursively'() {
+		// Create temporary directory with nested structure
+		Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
 
-        // Verify files are indeed read-only
-        assertThat(readOnlyFile.canWrite()).isFalse()
-        assertThat(anotherReadOnlyFile.canWrite()).isFalse()
+		// Create some regular files
+		File regularFile = new File(parentDir.toFile(), "regularFile.txt")
+		regularFile.createNewFile()
 
-        FileSystemUtils.makeWritable(parentDir.toFile())
+		// Create nested directory
+		File nestedDir = new File(parentDir.toFile(), "nestedDir")
+		nestedDir.mkdir()
 
-        // Verify all files are now writable
-        assertThat(regularFile.canWrite()).isTrue()
-        assertThat(readOnlyFile.canWrite()).isTrue()
-        assertThat(anotherReadOnlyFile.canWrite()).isTrue()
+		// Create read-only file in nested directory
+		File readOnlyFile = new File(nestedDir, "readOnlyFile.txt")
+		readOnlyFile.createNewFile()
+		readOnlyFile.setWritable(false)
 
-        // Clean up
-        parentDir.toFile().deleteDir()
-    }
-    
-    @Test
-    void 'deletes files except'() {
-        Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
-        for (i in 0..<3) {
-            def filePath = parentDir.resolve i.toString()
-            Files.write(filePath, i.toString().getBytes())
-        }
-        for (i in 3..<7) {
-            Path dirPath = parentDir.resolve(i.toString())
-            Files.createDirectories(dirPath)
-        }
-        
-        fileSystemUtils.deleteFilesExcept(parentDir.toFile(), '0', '3')
+		// Create another read-only file in parent directory
+		File anotherReadOnlyFile = new File(parentDir.toFile(), "anotherReadOnlyFile.txt")
+		anotherReadOnlyFile.createNewFile()
+		anotherReadOnlyFile.setWritable(false)
 
-        List<Path> chartSubFolders = Files.list(parentDir).collect(Collectors.toList())
-        assertThat(chartSubFolders).hasSize(2)
-        assertThat(chartSubFolders).contains(parentDir.resolve('0'), parentDir.resolve('3'))
-    }
+		// Verify files are indeed read-only
+		assertThat(readOnlyFile.canWrite()).isFalse()
+		assertThat(anotherReadOnlyFile.canWrite()).isFalse()
+
+		FileSystemUtils.makeWritable(parentDir.toFile())
+
+		// Verify all files are now writable
+		assertThat(regularFile.canWrite()).isTrue()
+		assertThat(readOnlyFile.canWrite()).isTrue()
+		assertThat(anotherReadOnlyFile.canWrite()).isTrue()
+
+		// Clean up
+		parentDir.toFile().deleteDir()
+	}
+
+	@Test
+	void 'deletes files except'() {
+		Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
+		for (i in 0..<3) {
+			def filePath = parentDir.resolve i.toString()
+			Files.write(filePath, i.toString().getBytes())
+		}
+		for (i in 3..<7) {
+			Path dirPath = parentDir.resolve(i.toString())
+			Files.createDirectories(dirPath)
+		}
+
+		fileSystemUtils.deleteFilesExcept(parentDir.toFile(), '0', '3')
+
+		List<Path> chartSubFolders = Files.list(parentDir).collect(Collectors.toList())
+		assertThat(chartSubFolders).hasSize(2)
+		assertThat(chartSubFolders).contains(parentDir.resolve('0'), parentDir.resolve('3'))
+	}
 }

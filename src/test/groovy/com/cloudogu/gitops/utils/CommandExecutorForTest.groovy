@@ -4,64 +4,63 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 
 class CommandExecutorForTest extends CommandExecutor {
-    List<String> actualCommands = []
+	List<String> actualCommands = []
 
-    Queue<Output> outputs = new LinkedList<Output>()
+	Queue<Output> outputs = new LinkedList<Output>()
 
-    void enqueueOutput(Output output) {
-        outputs.add(output)
-    }
+	void enqueueOutput(Output output) {
+		outputs.add(output)
+	}
 
-    void enqueueOutputs(Queue<Output> outputsQueue) {
-        outputs.addAll(outputsQueue)
-    }
-    
-    // This is actually only set when an env is passed to CommandExecutor
-    List<GString> environment = [] 
-    
-    @Override
-    protected Output getOutput(Process proc, String command, boolean failOnError) {
-        actualCommands += command
-        Output output = outputs.poll() ?: new Output('', '', 0)
+	void enqueueOutputs(Queue<Output> outputsQueue) {
+		outputs.addAll(outputsQueue)
+	}
 
-        if (failOnError && output.exitCode > 0) {
-            throw new RuntimeException("Executing command failed: ${command}")
-        }
+	// This is actually only set when an env is passed to CommandExecutor
+	List<GString> environment = []
 
-        return output
-    }
+	@Override
+	protected Output getOutput(Process proc, String command, boolean failOnError) {
+		actualCommands += command
+		Output output = outputs.poll() ?: new Output('', '', 0)
 
-    @Override
-    protected Process doExecute(String command) {
-        return mock(Process)
-    }
+		if (failOnError && output.exitCode > 0) {
+			throw new RuntimeException("Executing command failed: ${command}")
+		}
 
-    @Override
-    protected Process doExecute(String[] command) {
-        return mock(Process)
-    }
+		return output
+	}
 
-    @Override
-    protected Process doExecute(String command, List envp) {
-        environment = envp
-        return mock(Process)
-    }
+	@Override
+	protected Process doExecute(String command) {
+		return mock(Process)
+	}
 
-    String assertExecuted(String commandStartsWith) {
-        def actualCommand = actualCommands.find {
-            it.startsWith(commandStartsWith)
-        }
-        assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" +
-                "Actual commands:\n${actualCommands.join('\n')}")
-                .isNotNull()
-        return actualCommand
-    }
+	@Override
+	protected Process doExecute(String[] command) {
+		return mock(Process)
+	}
 
-    void assertNotExecuted(String commandStartsWith) {
-        def actualCommand = actualCommands.find {
-            it.startsWith(commandStartsWith)
-        }
-        assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
-                .isNull()
-    }
+	@Override
+	protected Process doExecute(String command, List envp) {
+		environment = envp
+		return mock(Process)
+	}
+
+	String assertExecuted(String commandStartsWith) {
+		def actualCommand = actualCommands.find {
+			it.startsWith(commandStartsWith)
+		}
+		assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" + "Actual commands:\n${actualCommands.join('\n')}")
+			.isNotNull()
+		return actualCommand
+	}
+
+	void assertNotExecuted(String commandStartsWith) {
+		def actualCommand = actualCommands.find {
+			it.startsWith(commandStartsWith)
+		}
+		assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
+			.isNull()
+	}
 }

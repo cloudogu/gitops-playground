@@ -1,0 +1,39 @@
+<component name="InspectionProjectProfileManager">
+    <profile version="1.0">
+        <option name="myName" value="Project Default"/>
+        <inspection_tool class="CodeNarc.BracesForTryCatchFinally" enabled="true" level="WARNING"
+                         enabled_by_default="true">
+            <option name="catchOnSameLineAsClosingBrace" value="true"/>
+            <option name="catchOnSameLineAsOpeningBrace" value="true"/>
+            <option name="finallyOnSameLineAsClosingBrace" value="true"/>
+            <option name="finallyOnSameLineAsOpeningBrace" value="true"/>
+        </inspection_tool>
+        <inspection_tool class="CodeNarc.BuilderMethodWithSideEffects" enabled="false" level="WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.CompileStatic" enabled="false" level="WARNING" enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.DuplicateStringLiteral" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false" editorAttributes="INFO_ATTRIBUTES"/>
+        <inspection_tool class="CodeNarc.FactoryMethodName" enabled="false" level="WARNING" enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.Indentation" enabled="false" level="WEAK WARNING" enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.LineLength" enabled="true" level="WARNING" enabled_by_default="true">
+            <option name="length" value="220"/>
+        </inspection_tool>
+        <inspection_tool class="CodeNarc.NoTabCharacter" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.ParameterCount" enabled="true" level="WARNING" enabled_by_default="true">
+            <option name="maxParameters" value="8"/>
+        </inspection_tool>
+        <inspection_tool class="CodeNarc.PublicMethodsBeforeNonPublicMethods" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.SpaceAfterCommentDelimiter" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.SpaceBeforeCommentDelimiter" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.StaticFieldsBeforeInstanceFields" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.StaticMethodsBeforeInstanceMethods" enabled="false" level="WEAK WARNING"
+                         enabled_by_default="false"/>
+        <inspection_tool class="CodeNarc.ThrowRuntimeException" enabled="false" level="WARNING"
+                         enabled_by_default="false"/>
+    </profile>
+</component>

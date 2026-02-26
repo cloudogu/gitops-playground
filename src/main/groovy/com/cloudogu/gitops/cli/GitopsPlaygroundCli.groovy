@@ -1,11 +1,8 @@
 package com.cloudogu.gitops.cli
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.ConsoleAppender
+import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
@@ -13,17 +10,23 @@ import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+
+import io.micronaut.context.ApplicationContext
+
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-import io.micronaut.context.ApplicationContext
+
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-
-import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
@@ -34,221 +37,219 @@ import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 @Slf4j
 class GitopsPlaygroundCli {
 
-    K8sClient k8sClient
-    ApplicationConfigurator applicationConfigurator
+	K8sClient k8sClient
+	ApplicationConfigurator applicationConfigurator
 
-    GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
-                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
-        this.k8sClient = k8sClient
-        this.applicationConfigurator = applicationConfigurator
-    }
+	GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
+		ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
+		this.k8sClient = k8sClient
+		this.applicationConfigurator = applicationConfigurator
+	}
 
-    ReturnCode run(String[] args) {
-        setLogging(args)
+	ReturnCode run(String[] args) {
+		setLogging(args)
 
-        log.debug("Reading initial CLI params")
-        def cliParams = new Config()
-        new CommandLine(cliParams).parseArgs(args)
+		log.debug("Reading initial CLI params")
+		def cliParams = new Config()
+		new CommandLine(cliParams).parseArgs(args)
 
-        if (cliParams.application.usageHelpRequested) {
-            // if help is requested picocli help is used and printed by execute automatically
-            new CommandLine(cliParams).execute(args)
-            return ReturnCode.SUCCESS
-        }
+		if (cliParams.application.usageHelpRequested) {
+			// if help is requested picocli help is used and printed by execute automatically
+			new CommandLine(cliParams).execute(args)
+			return ReturnCode.SUCCESS
+		}
 
-        def version = createVersionOutput()
-        if (cliParams.application.versionInfoRequested) {
-            println version
-            return ReturnCode.SUCCESS
-        }
+		def version = createVersionOutput()
+		if (cliParams.application.versionInfoRequested) {
+			println version
+			return ReturnCode.SUCCESS
+		}
 
-        def context = createApplicationContext()
-        Application app = context.getBean(Application)
+		def context = createApplicationContext()
+		Application app = context.getBean(Application)
 
-        def config = readConfigs(args)
-        runHook(app, 'preConfigInit', config)
+		def config = readConfigs(args)
+		runHook(app, 'preConfigInit', config)
 
-        if (config.application.outputConfigFile) {
-            println(config.toYaml(false))
-            return ReturnCode.SUCCESS
-        }
+		if (config.application.outputConfigFile) {
+			println(config.toYaml(false))
+			return ReturnCode.SUCCESS
+		}
 
-        // Set internal values in config after help/version/output because these should work without connecting to k8s
-        // eg a simple docker run .. --help should not fail with connection refused
-        config = applicationConfigurator.initConfig(config)
-        log.debug("Actual config: ${config.toYaml(true)}")
-        runHook(app, 'postConfigInit', config)
+		// Set internal values in config after help/version/output because these should work without connecting to k8s
+		// eg a simple docker run .. --help should not fail with connection refused
+		config = applicationConfigurator.initConfig(config)
+		log.debug("Actual config: ${config.toYaml(true)}")
+		runHook(app, 'postConfigInit', config)
 
-        context = createApplicationContext()
-        register(config, context)
+		context = createApplicationContext()
+		register(config, context)
 
-        if (config.application.destroy) {
-            log.info version
-            if (!confirm("Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config)) {
-                return ReturnCode.NOT_CONFIRMED
-            }
+		if (config.application.destroy) {
+			log.info version
+			if (!confirm("Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config)) {
+				return ReturnCode.NOT_CONFIRMED
+			}
 
-            Destroyer destroyer = context.getBean(Destroyer)
-            destroyer.destroy()
-        } else {
-            log.info version
-            if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
-                return ReturnCode.NOT_CONFIRMED
-            }
-            app = context.getBean(Application)
-            app.start()
+			Destroyer destroyer = context.getBean(Destroyer)
+			destroyer.destroy()
+		} else {
+			log.info version
+			if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
+				return ReturnCode.NOT_CONFIRMED
+			}
+			app = context.getBean(Application)
+			app.start()
 
-            printWelcomeScreen()
-        }
+			printWelcomeScreen()
+		}
 
-        return ReturnCode.SUCCESS
-    }
+		return ReturnCode.SUCCESS
+	}
 
-    protected String createVersionOutput() {
-        def versionName = Version.NAME.replace('\\n', '\n')
+	protected String createVersionOutput() {
+		def versionName = Version.NAME.replace('\\n', '\n')
 
-        if (versionName.trim().startsWith('(')) {
-            // When there is no git tag, print commit without parentheses
-            versionName = versionName.trim()
-                    .replace('(', '')
-                    .replace(')', '')
-        }
-        return "${APP_NAME} ${versionName}"
-    }
+		if (versionName.trim().startsWith('(')) {
+			// When there is no git tag, print commit without parentheses
+			versionName = versionName.trim()
+				.replace('(', '')
+				.replace(')', '')
+		}
+		return "${APP_NAME} ${versionName}"
+	}
 
-    /** Can be used as a hook by child classes */
-    @SuppressWarnings('GrMethodMayBeStatic')
-    // static methods cannot be overridden
-    protected void register(Config config, ApplicationContext context) {
-        context.registerSingleton(config)
-    }
+	/** Can be used as a hook by child classes */
+	@SuppressWarnings('GrMethodMayBeStatic')
+	// static methods cannot be overridden
+	protected void register(Config config, ApplicationContext context) {
+		context.registerSingleton(config)
+	}
 
-    private static boolean confirm(String message, Config config) {
-        if (config.application.yes) {
-            return true
-        }
+	private static boolean confirm(String message, Config config) {
+		if (config.application.yes) {
+			return true
+		}
 
-        log.info("\n${message}\nContinue? y/n [n]")
+		log.info("\n${message}\nContinue? y/n [n]")
 
-        def input = System.in.newReader().readLine()
+		def input = System.in.newReader().readLine()
 
-        return input == 'y'
-    }
+		return input == 'y'
+	}
 
-    /** Can be used as a hook by tests */
-    protected ApplicationContext createApplicationContext() {
-        ApplicationContext.run()
-    }
+	/** Can be used as a hook by tests */
+	protected ApplicationContext createApplicationContext() {
+		ApplicationContext.run()
+	}
 
-    private void setLogging(String[] args) {
-        Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
-        if (args.contains('--trace') || args.contains('-x')) {
-            log.info("Setting loglevel to trace")
-            logger.setLevel(Level.TRACE)
-            // log levels can be set via picocli.trace sys env - defaults to 'WARN'
-            System.setProperty("picocli.trace", "DEBUG")
-        } else if (args.contains('--debug') || args.contains('-d')) {
-            System.setProperty("picocli.trace", "INFO")
-            logger.setLevel(Level.DEBUG)
-            log.info("Setting loglevel to debug")
-        } else {
-            setSimpleLogPattern()
-        }
-    }
+	private void setLogging(String[] args) {
+		Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
+		if (args.contains('--trace') || args.contains('-x')) {
+			log.info("Setting loglevel to trace")
+			logger.setLevel(Level.TRACE)
+			// log levels can be set via picocli.trace sys env - defaults to 'WARN'
+			System.setProperty("picocli.trace", "DEBUG")
+		} else if (args.contains('--debug') || args.contains('-d')) {
+			System.setProperty("picocli.trace", "INFO")
+			logger.setLevel(Level.DEBUG)
+			log.info("Setting loglevel to debug")
+		} else {
+			setSimpleLogPattern()
+		}
+	}
 
-    /**
-     * Changes log pattern to a simpler one, to reduce noise for normal users
-     */
-    void setSimpleLogPattern() {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
-        def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
-        def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
-                .getEncoder() as PatternLayoutEncoder).pattern
+	/**
+	 * Changes log pattern to a simpler one, to reduce noise for normal users*/
+	void setSimpleLogPattern() {
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
+		def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
+		def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
+			.getEncoder() as PatternLayoutEncoder).pattern
 
-        // Avoid duplicate output by existing appender
-        rootLogger.detachAppender('STDOUT')
-        PatternLayoutEncoder encoder = new PatternLayoutEncoder()
-        // Remove less relevant details from log pattern
-        encoder.setPattern(defaultPattern
-                .replaceAll(" \\S*%thread\\S* ", " ")
-                .replaceAll(" \\S*%logger\\S* ", " "))
-        encoder.setContext(loggerContext)
-        encoder.start()
-        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
-        appender.setName('STDOUT')
-        appender.setContext(loggerContext)
-        appender.setEncoder(encoder)
-        appender.start()
-        rootLogger.addAppender(appender)
-    }
+		// Avoid duplicate output by existing appender
+		rootLogger.detachAppender('STDOUT')
+		PatternLayoutEncoder encoder = new PatternLayoutEncoder()
+		// Remove less relevant details from log pattern
+		encoder.setPattern(defaultPattern
+			.replaceAll(" \\S*%thread\\S* ", " ")
+			.replaceAll(" \\S*%logger\\S* ", " "))
+		encoder.setContext(loggerContext)
+		encoder.start()
+		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
+		appender.setName('STDOUT')
+		appender.setContext(loggerContext)
+		appender.setEncoder(encoder)
+		appender.start()
+		rootLogger.addAppender(appender)
+	}
 
-    private Config readConfigs(String[] args) {
-        def cliParams = new Config()
-        new CommandLine(cliParams).parseArgs(args)
+	private Config readConfigs(String[] args) {
+		def cliParams = new Config()
+		new CommandLine(cliParams).parseArgs(args)
 
-        // first evaluate profile for setting predefined values e.g. examples, if applicable
-        Config profileConfig = extractProfile(cliParams)
+		// first evaluate profile for setting predefined values e.g. examples, if applicable
+		Config profileConfig = extractProfile(cliParams)
 
-        Boolean contentExamples = cliParams.content.examples || profileConfig.content.examples
-        Boolean multiTenancyExamples = cliParams.content.multitenancyExamples || profileConfig.content.multitenancyExamples
+		Boolean contentExamples = cliParams.content.examples || profileConfig.content.examples
+		Boolean multiTenancyExamples = cliParams.content.multitenancyExamples || profileConfig.content.multitenancyExamples
 
-        List<Map> configFile = []
-        List<Map> configMap = []
-        Map contentExamplesFile = [:]
-        Map multiTenancyContentExamplesFile = [:]
+		List<Map> configFile = []
+		List<Map> configMap = []
+		Map contentExamplesFile = [:]
+		Map multiTenancyContentExamplesFile = [:]
 
-        for(String configFileItem : cliParams.application.configFiles) {
-            log.debug("Reading config file ${configFileItem}")
-            configFile.add(validateConfig(new File(configFileItem).text))
-        }
+		for (String configFileItem : cliParams.application.configFiles) {
+			log.debug("Reading config file ${configFileItem}")
+			configFile.add(validateConfig(new File(configFileItem).text))
+		}
 
-        for (String configMapItem : cliParams.application.configMaps) {
-            log.debug("Reading config map ${configMapItem}")
-            def configValues = k8sClient.getConfigMap(configMapItem, 'config.yaml')
-            configMap.add(validateConfig(configValues))
-        }
+		for (String configMapItem : cliParams.application.configMaps) {
+			log.debug("Reading config map ${configMapItem}")
+			def configValues = k8sClient.getConfigMap(configMapItem, 'config.yaml')
+			configMap.add(validateConfig(configValues))
+		}
 
-        if (contentExamples) {
-            String contentExamplesConfigPath = "examples/example-apps-via-content-loader/config.yaml"
-            log.debug("Adding example-apps-via-content-loader configuration from '${contentExamplesConfigPath}'")
-            contentExamplesFile = validateConfig(new File(contentExamplesConfigPath).text)
-        }
+		if (contentExamples) {
+			String contentExamplesConfigPath = "examples/example-apps-via-content-loader/config.yaml"
+			log.debug("Adding example-apps-via-content-loader configuration from '${contentExamplesConfigPath}'")
+			contentExamplesFile = validateConfig(new File(contentExamplesConfigPath).text)
+		}
 
-        if (multiTenancyExamples) {
-            String multiTenancyContentExamplesConfigPath = "examples/init-multi-tenancy/managementConfig.yaml"
-            log.debug("Adding multi tenancy example-apps config loader from '${multiTenancyContentExamplesConfigPath}'")
-            multiTenancyContentExamplesFile = validateConfig(new File(multiTenancyContentExamplesConfigPath).text)
-        }
+		if (multiTenancyExamples) {
+			String multiTenancyContentExamplesConfigPath = "examples/init-multi-tenancy/managementConfig.yaml"
+			log.debug("Adding multi tenancy example-apps config loader from '${multiTenancyContentExamplesConfigPath}'")
+			multiTenancyContentExamplesFile = validateConfig(new File(multiTenancyContentExamplesConfigPath).text)
+		}
 
 
-        // Last one takes precedence
-        def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
-        Map mergedConfigs = [:]
-        configPrecedence.flatten().each { element ->
-            deepMerge(element as Map, mergedConfigs)
-        }
+		// Last one takes precedence
+		def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
+		Map mergedConfigs = [:]
+		configPrecedence.flatten().each { element -> deepMerge(element as Map, mergedConfigs)
+		}
 
-        // DeepMerge with default Config values to keep the default values defined in Config.groovy
-        mergedConfigs = deepMerge(mergedConfigs, new Config().toMap())
+		// DeepMerge with default Config values to keep the default values defined in Config.groovy
+		mergedConfigs = deepMerge(mergedConfigs, new Config().toMap())
 
-        log.debug("Writing CLI params into config")
-        Config mergedConfig = Config.fromMap(mergedConfigs)
-        new CommandLine(mergedConfig).parseArgs(args)
+		log.debug("Writing CLI params into config")
+		Config mergedConfig = Config.fromMap(mergedConfigs)
+		new CommandLine(mergedConfig).parseArgs(args)
 
-        return mergedConfig
-    }
+		return mergedConfig
+	}
 
-    static Map validateConfig(String configValues) {
-        def map = new YamlSlurper().parseText(configValues)
-        if (!(map instanceof Map)) {
-            throw new RuntimeException("Could not parse YAML as map: $map")
-        }
-        JsonSchemaValidator.validate(map as Map)
-        return map as Map
-    }
+	static Map validateConfig(String configValues) {
+		def map = new YamlSlurper().parseText(configValues)
+		if (!(map instanceof Map)) {
+			throw new RuntimeException("Could not parse YAML as map: $map")
+		}
+		JsonSchemaValidator.validate(map as Map)
+		return map as Map
+	}
 
-    void printWelcomeScreen() {
-        log.info '''\n
+	void printWelcomeScreen() {
+		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!
   |----------------------------------------------------------------------------------------------|
@@ -264,37 +265,37 @@ class GitopsPlaygroundCli {
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   |----------------------------------------------------------------------------------------------|
 '''
-    }
+	}
 
-    static void runHook(Application app, String methodName, def config) {
-        ([new CommonFeatureConfig(), *app.features]).each { feature ->
-            // Executing only the method if the derived feature class has implemented the passed methodName
-            def mm = feature.metaClass.getMetaMethod(methodName, config)
-            if (mm && mm.declaringClass.theClass != Feature) {
-                log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
-                mm.invoke(feature, config)
-            }
-        }
-    }
+	static void runHook(Application app, String methodName, def config) {
+		([new CommonFeatureConfig(), *app.features]).each { feature ->
+			// Executing only the method if the derived feature class has implemented the passed methodName
+			def mm = feature.metaClass.getMetaMethod(methodName, config)
+			if (mm && mm.declaringClass.theClass != Feature) {
+				log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
+				mm.invoke(feature, config)
+			}
+		}
+	}
 
-    private static Config extractProfile(Config newConfig) {
+	private static Config extractProfile(Config newConfig) {
 
-        String profile = newConfig.application.profile
+		String profile = newConfig.application.profile
 
-        Config profileConfig = new Config()
-        if (profile) {
-            String profileName = "src/main/resources/application-${profile}.yaml"
-            log.debug("Loading profile '${profileName}'")
-            def file
-            try {
-                file = new File(profileName)
+		Config profileConfig = new Config()
+		if (profile) {
+			String profileName = "src/main/resources/application-${profile}.yaml"
+			log.debug("Loading profile '${profileName}'")
+			def file
+			try {
+				file = new File(profileName)
 
-            } catch (Exception e) {
-                throw new RuntimeException("Profile '${profileName}' does not exist.")
-            }
-            Map profileFile = validateConfig(file.text)
-            profileConfig =  Config.fromMap(profileFile)
-        }
-        return profileConfig
-    }
+			} catch (Exception e) {
+				throw new RuntimeException("Profile '${profileName}' does not exist.")
+			}
+			Map profileFile = validateConfig(file.text)
+			profileConfig = Config.fromMap(profileFile)
+		}
+		return profileConfig
+	}
 }
