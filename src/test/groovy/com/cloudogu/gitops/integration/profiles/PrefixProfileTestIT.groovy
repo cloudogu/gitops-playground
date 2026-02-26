@@ -1,5 +1,12 @@
 package com.cloudogu.gitops.integration.profiles
 
+import static org.assertj.core.api.Assertions.fail
+
+import com.cloudogu.gitops.integration.TestK8sHelper
+
+import java.util.concurrent.TimeUnit
+import groovy.util.logging.Slf4j
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -8,13 +15,6 @@ import org.awaitility.core.ConditionTimeoutException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-
-import com.cloudogu.gitops.integration.TestK8sHelper
-
-import java.util.concurrent.TimeUnit
-import groovy.util.logging.Slf4j
-
-import static org.assertj.core.api.Assertions.fail
 
 /**
  * This tests can only be successfull, if one of theses profiles used.
@@ -41,11 +41,11 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 
 		try {
 			Awaitility.await()
-					.atMost(40, TimeUnit.MINUTES)
-					.pollInterval(5, TimeUnit.SECONDS)
-					.untilAsserted {
-						waitUntilPetclinicIsRunning()
-					}
+				.atMost(40, TimeUnit.MINUTES)
+				.pollInterval(5, TimeUnit.SECONDS)
+				.untilAsserted {
+					waitUntilPetclinicIsRunning()
+				}
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.')

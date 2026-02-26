@@ -19,36 +19,34 @@ import groovy.util.logging.Slf4j
 @Order(150)
 class Ingress extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
-    Config config
-    K8sClient k8sClient
+	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
+	Config config
+	K8sClient k8sClient
 
-    Ingress(
-            Config config,
-            FileSystemUtils fileSystemUtils,
-            DeploymentStrategy deployer,
-            K8sClient k8sClient,
-            AirGappedUtils airGappedUtils,
-            GitHandler gitHandler
-    ) {
-        this.deployer = deployer
-        this.config = config
-        this.fileSystemUtils = fileSystemUtils
-        this.k8sClient = k8sClient
-        this.airGappedUtils = airGappedUtils
-        this.gitHandler = gitHandler
-    }
+	Ingress(Config config,
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler) {
+		this.deployer = deployer
+		this.config = config
+		this.fileSystemUtils = fileSystemUtils
+		this.k8sClient = k8sClient
+		this.airGappedUtils = airGappedUtils
+		this.gitHandler = gitHandler
+	}
 
-    @Override
-    boolean isEnabled() {
-        return config.features.ingress.active
-    }
+	@Override
+	boolean isEnabled() {
+		return config.features.ingress.active
+	}
 
-    @Override
-    void enable() {
-        def helmConfig = config.features.ingress.helm
-        deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, config)
-    }
+	@Override
+	void enable() {
+		def helmConfig = config.features.ingress.helm
+		deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, config)
+	}
 }

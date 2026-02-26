@@ -1,5 +1,13 @@
 package com.cloudogu.gitops.integration.profiles
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.fail
+
+import com.cloudogu.gitops.integration.TestK8sHelper
+
+import java.util.concurrent.TimeUnit
+import groovy.util.logging.Slf4j
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -9,14 +17,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-
-import com.cloudogu.gitops.integration.TestK8sHelper
-
-import java.util.concurrent.TimeUnit
-import groovy.util.logging.Slf4j
-
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.fail
 
 /**
  * This tests can only be successfull, if one of theses profiles used.
@@ -34,11 +34,11 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
 			Awaitility.await()
-					.atMost(40, TimeUnit.MINUTES)
-					.pollInterval(5, TimeUnit.SECONDS)
-					.untilAsserted {
-						waitUntilPetclinicIsRunning()
-					}
+				.atMost(40, TimeUnit.MINUTES)
+				.pollInterval(5, TimeUnit.SECONDS)
+				.untilAsserted {
+					waitUntilPetclinicIsRunning()
+				}
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
@@ -86,17 +86,17 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 			def nameOfServiceAndIngress = "spring-petclinic-plain"
 			// check Ingress
 			def ingress = client.network()
-					.v1()
-					.ingresses()
-					.inNamespace(exampleStagingNs)
-					.withName(nameOfServiceAndIngress)
-					.get()
+				.v1()
+				.ingresses()
+				.inNamespace(exampleStagingNs)
+				.withName(nameOfServiceAndIngress)
+				.get()
 
 			assert ingress != null: "Ingress '${nameOfServiceAndIngress}' not found in '${exampleStagingNs}'"
 
 			def hosts = (ingress.spec?.rules ?: [])
-					.collect { it?.host }
-					.findAll { it }
+				.collect { it?.host }
+				.findAll { it }
 
 			assert hosts.get(0).contains("petclinic") // in this case, petclinic do not care about prefix
 		} catch (KubernetesClientException ex) {
@@ -113,9 +113,9 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 			// Check Service
 			def nameOfServiceAndIngress = "spring-petclinic-plain"
 			def service = client.services()
-					.inNamespace(exampleStagingNs)
-					.withName(nameOfServiceAndIngress)
-					.get()
+				.inNamespace(exampleStagingNs)
+				.withName(nameOfServiceAndIngress)
+				.get()
 
 			assertThat(service).isNotNull()
 

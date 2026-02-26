@@ -1,65 +1,65 @@
 package com.cloudogu.gitops.cli
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.junit.jupiter.api.Test
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
-import static org.assertj.core.api.Assertions.assertThat
-
 class GitopsPlaygroundCliMainTest {
 
-    @Test
-    void 'application returns exit code 0 on success'() {
-        def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-        int status = SystemLambda.catchSystemExit(() -> {
-            gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
-        })
+	@Test
+	void 'application returns exit code 0 on success'() {
+		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
+		int status = SystemLambda.catchSystemExit(() -> {
+			gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
+		})
 
-        assertThat(status).isZero()
-    }
+		assertThat(status).isZero()
+	}
 
-    @Test
-    void 'application returns exit code 1 on exception'() {
-        def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-        int status = SystemLambda.catchSystemExit(() -> {
-            gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
-        })
+	@Test
+	void 'application returns exit code 1 on exception'() {
+		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
+		int status = SystemLambda.catchSystemExit(() -> {
+			gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
+		})
 
-        assertThat(status).isNotZero()
-    }
+		assertThat(status).isNotZero()
+	}
 
-    @Test
-    void 'application returns exit code != 0 on invalid param'() {
-        int status = SystemLambda.catchSystemExit(() -> {
-            GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
-                                          '--debug' // avoids changing default log pattern
-            ] as String[])
-        })
+	@Test
+	void 'application returns exit code != 0 on invalid param'() {
+		int status = SystemLambda.catchSystemExit(() -> {
+			GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
+			                              '--debug' // avoids changing default log pattern
+			] as String[])
+		})
 
-        assertThat(status).isNotZero()
-    }
+		assertThat(status).isNotZero()
+	}
 
-    static class ThrowingCommand extends MockedCommand {
-        @Override
-        ReturnCode run(String[] args) {
-            throw new RuntimeException("mock")
-        }
-    }
+	static class ThrowingCommand extends MockedCommand {
+		@Override
+		ReturnCode run(String[] args) {
+			throw new RuntimeException("mock")
+		}
+	}
 
-    @SuppressWarnings('unused')
-    // Used for annotations
-    static class MockedCommand extends GitopsPlaygroundCli {
+	@SuppressWarnings('unused')
+	// Used for annotations
+	static class MockedCommand extends GitopsPlaygroundCli {
 
-        @Override
-        ReturnCode run(String[] args) {
-            return ReturnCode.SUCCESS
-        }
+		@Override
+		ReturnCode run(String[] args) {
+			return ReturnCode.SUCCESS
+		}
 
-        @Command
-        void mockedCommand() {}
+		@Command
+		void mockedCommand() {}
 
-        @Option(names = ['--mock'])
-        private boolean mock
-    }
+		@Option(names = ['--mock'])
+		private boolean mock
+	}
 }

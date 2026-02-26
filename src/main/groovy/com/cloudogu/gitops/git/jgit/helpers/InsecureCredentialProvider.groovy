@@ -18,33 +18,32 @@ import org.eclipse.jgit.transport.URIish
  * @link https://archive.eclipse.org/jgit/site/4.10.0.201712302008-r/apidocs/org/eclipse/jgit/transport/CredentialsProvider.html
  */
 class InsecureCredentialProvider extends CredentialsProvider {
-    @Override
-    boolean isInteractive() {
-        return false
-    }
+	@Override
+	boolean isInteractive() {
+		return false
+	}
 
-    @Override
-    boolean supports(CredentialItem... items) {
-        def message = items.find { it instanceof CredentialItem.InformationalMessage }
-        if (message == null) {
-            return false
-        }
+	@Override
+	boolean supports(CredentialItem... items) {
+		def message = items.find { it instanceof CredentialItem.InformationalMessage }
+		if (message == null) {
+			return false
+		}
 
-        return message.promptText =~ /^A secure connection to .* could not be established/
-    }
+		return message.promptText =~ /^A secure connection to .* could not be established/
+	}
 
-    @Override
-    boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
-        items.findAll { it instanceof CredentialItem.YesNoType }.each {
-            if (it.promptText == "Skip SSL verification for this single git operation" ||
-                it.promptText =~ /^Skip SSL verification for git operations for repository/) {
-                (it as CredentialItem.YesNoType).setValue(true)
-            } else if (it.promptText == "Always skip SSL verification for this server from now on") {
-                // otherwise we would persistently overwrite our $HOME/.gitconfig
-                (it as CredentialItem.YesNoType).setValue(false)
-            }
-        }
+	@Override
+	boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
+		items.findAll { it instanceof CredentialItem.YesNoType }.each {
+			if (it.promptText == "Skip SSL verification for this single git operation" || it.promptText =~ /^Skip SSL verification for git operations for repository/) {
+				(it as CredentialItem.YesNoType).setValue(true)
+			} else if (it.promptText == "Always skip SSL verification for this server from now on") {
+				// otherwise we would persistently overwrite our $HOME/.gitconfig
+				(it as CredentialItem.YesNoType).setValue(false)
+			}
+		}
 
-        return true
-    }
+		return true
+	}
 }

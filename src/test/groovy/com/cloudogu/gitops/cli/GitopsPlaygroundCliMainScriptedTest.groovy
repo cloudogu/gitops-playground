@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.cli
 
-import io.github.classgraph.ClassGraph
-import io.github.classgraph.ClassInfo
-import org.junit.jupiter.api.Test
+import static com.cloudogu.gitops.config.Config.ApplicationSchema
+import static com.cloudogu.gitops.config.Config.JenkinsSchema
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Fail.fail
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
@@ -15,106 +16,98 @@ import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantC
 import io.micronaut.context.ApplicationContext
 import io.micronaut.core.annotation.Order
 
-import static com.cloudogu.gitops.config.Config.ApplicationSchema
-import static com.cloudogu.gitops.config.Config.JenkinsSchema
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Fail.fail
+import io.github.classgraph.ClassGraph
+import io.github.classgraph.ClassInfo
+import org.junit.jupiter.api.Test
 
 /**
  * It is difficult to test if *all* classes are instantiated.
  * Except for edge cases like outputConfigFile or delete,
  * the core logic of the application is to install all {@link Feature}s in the proper {@link Order}.
- * At least this we can test!
- */
+ * At least this we can test!*/
 class GitopsPlaygroundCliMainScriptedTest {
 
-    ApplicationContext applicationContext
-    GitopsPlaygroundCliScriptedForTest gitopsPlaygroundCliScripted = new GitopsPlaygroundCliScriptedForTest()
-    Config config = new Config(
-            jenkins: new JenkinsSchema(url: 'http://jenkins'),
-            scm: new ScmTenantSchema(
-                    scmManager: new ScmManagerTenantConfig(url: 'http://scmm'))
-    )
+	ApplicationContext applicationContext
+	GitopsPlaygroundCliScriptedForTest gitopsPlaygroundCliScripted = new GitopsPlaygroundCliScriptedForTest()
+	Config config = new Config(jenkins: new JenkinsSchema(url: 'http://jenkins'),
+		scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(url: 'http://scmm')))
 
-    /**
-     * This test makes sure that we don't forget to add new {@link Feature} classes to 
-     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(Config, io.micronaut.context.ApplicationContext)}
-     * so they also work in the dev image.
-     */
-    @Test
-    void 'all Feature classes are instantiated in the correct order'() {
-        gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(config, applicationContext)
+	/**
+	 * This test makes sure that we don't forget to add new {@link Feature} classes to
+	 * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(Config, io.micronaut.context.ApplicationContext)}
+	 * so they also work in the dev image.*/
+	@Test
+	void 'all Feature classes are instantiated in the correct order'() {
+		gitopsPlaygroundCliScripted.createApplicationContext()
+		gitopsPlaygroundCliScripted.register(config, applicationContext)
 
-        List<String> actualClasses = applicationContext.getBean(Application).features
-                .collect { it.class.simpleName }
+		List<String> actualClasses = applicationContext.getBean(Application).features
+			.collect { it.class.simpleName }
 
-        def expectedClasses = findAllChildClasses(Feature)
+		def expectedClasses = findAllChildClasses(Feature)
 
-        assertThat(actualClasses).containsExactlyElementsOf(expectedClasses)
-    }
+		assertThat(actualClasses).containsExactlyElementsOf(expectedClasses)
+	}
 
-    @Test
-    void 'all DestructionHandlers are instantiated in the correct order'() {
-        config = new Config(config.properties + [application: new ApplicationSchema(destroy: true)])
+	@Test
+	void 'all DestructionHandlers are instantiated in the correct order'() {
+		config = new Config(config.properties + [application: new ApplicationSchema(destroy: true)])
 
-        gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(config, applicationContext)
+		gitopsPlaygroundCliScripted.createApplicationContext()
+		gitopsPlaygroundCliScripted.register(config, applicationContext)
 
-        List<String> actualClasses = applicationContext.getBean(Destroyer).destructionHandlers
-                .collect { it.class.simpleName }
+		List<String> actualClasses = applicationContext.getBean(Destroyer).destructionHandlers
+			.collect { it.class.simpleName }
 
-        def expectedClasses = findAllChildClasses(DestructionHandler)
+		def expectedClasses = findAllChildClasses(DestructionHandler)
 
-        assertThat(actualClasses).containsExactlyElementsOf(expectedClasses)
-    }
+		assertThat(actualClasses).containsExactlyElementsOf(expectedClasses)
+	}
 
-    protected List<String> findAllChildClasses(Class<?> parentClass) {
-        boolean parentIsInterface = parentClass.isInterface()
+	protected List<String> findAllChildClasses(Class<?> parentClass) {
+		boolean parentIsInterface = parentClass.isInterface()
 
-        def featureClasses = []
+		def featureClasses = []
 
-        new ClassGraph()
-                .acceptPackages("com.cloudogu")
-                .enableClassInfo()
-                .enableAnnotationInfo()
-                .scan().withCloseable { scanResult ->
-            scanResult.getAllClasses().each { ClassInfo classInfo ->
-                if (classInfo.name.endsWith("Test") || classInfo.isAbstract() || !classInfo.hasAnnotation(jakarta.inject.Singleton)) {
-                    return
-                }
+		new ClassGraph()
+			.acceptPackages("com.cloudogu")
+			.enableClassInfo()
+			.enableAnnotationInfo()
+			.scan().withCloseable { scanResult ->
+			scanResult.getAllClasses().each { ClassInfo classInfo ->
+				if (classInfo.name.endsWith("Test") || classInfo.isAbstract() || !classInfo.hasAnnotation(jakarta.inject.Singleton)) {
+					return
+				}
 
-                if (classInfo.extendsSuperclass(parentClass) ||
-                        (parentIsInterface && classInfo.implementsInterface(parentClass))) {
+				if (classInfo.extendsSuperclass(parentClass) || (parentIsInterface && classInfo.implementsInterface(parentClass))) {
 
-                    // ignore test classes
-                    String location = classInfo.loadClass().protectionDomain?.codeSource?.location?.path ?: ""
-                    if (location == null) location = ""
-                    if (location =~ /[\\/]test-classes[\\/]/ || location =~ /[\\/]classes[\\/]java[\\/]test[\\/]/) {
-                        return
-                    }
+					// ignore test classes
+					String location = classInfo.loadClass().protectionDomain?.codeSource?.location?.path ?: ""
+					if (location == null) location = ""
+					if (location =~ /[\\/]test-classes[\\/]/ || location =~ /[\\/]classes[\\/]java[\\/]test[\\/]/) {
+						return
+					}
 
-                    def orderAnnotation = classInfo.getAnnotationInfo(Order)
-                    if (orderAnnotation) {
-                        def orderValue = orderAnnotation.getParameterValues().getValue('value') as int
-                        def clazz = classInfo.loadClass()
-                        featureClasses << [clazz: clazz, orderValue: orderValue]
-                    } else {
-                        fail("Class ${classInfo.name} does not have @Order annotation")
-                    }
-                }
-            }
-        }
+					def orderAnnotation = classInfo.getAnnotationInfo(Order)
+					if (orderAnnotation) {
+						def orderValue = orderAnnotation.getParameterValues().getValue('value') as int
+						def clazz = classInfo.loadClass()
+						featureClasses << [clazz: clazz, orderValue: orderValue]
+					} else {
+						fail("Class ${classInfo.name} does not have @Order annotation")
+					}
+				}
+			}
+		}
 
-        return featureClasses.sort { a, b ->
-            Integer.compare(a['orderValue'] as Integer, b['orderValue'] as Integer)
-        }.collect { it['clazz']['simpleName'] } as List<String>
-    }
+		return featureClasses.sort { a, b -> Integer.compare(a['orderValue'] as Integer, b['orderValue'] as Integer)
+		}.collect { it['clazz']['simpleName'] } as List<String>
+	}
 
-    class GitopsPlaygroundCliScriptedForTest extends GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted {
-        @Override
-        protected ApplicationContext createApplicationContext() {
-            applicationContext = super.createApplicationContext()
-        }
-    }
+	class GitopsPlaygroundCliScriptedForTest extends GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted {
+		@Override
+		protected ApplicationContext createApplicationContext() {
+			applicationContext = super.createApplicationContext()
+		}
+	}
 }

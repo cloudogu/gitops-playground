@@ -1,11 +1,6 @@
 package com.cloudogu.gitops.integration
 
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
-import io.fabric8.kubernetes.client.dsl.ExecListener
-import io.fabric8.kubernetes.client.dsl.ExecWatch
-import org.awaitility.Awaitility
+import static org.assertj.core.api.Assertions.fail
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CountDownLatch
@@ -13,7 +8,12 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import groovy.util.logging.Slf4j
 
-import static org.assertj.core.api.Assertions.fail
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.KubernetesClientException
+import io.fabric8.kubernetes.client.dsl.ExecListener
+import io.fabric8.kubernetes.client.dsl.ExecWatch
+import org.awaitility.Awaitility
 
 /**
  * This class contains helper methods for k8s communication.*/
@@ -44,7 +44,7 @@ class TestK8sHelper {
 					def restarts = (pod.status?.containerStatuses ?: []).sum { it?.restartCount ?: 0 } ?: 0
 
 					sb.append(String.format("  %-60s  phase=%-10s restarts=%-3s node=%-25s start=%s",
-							name, phase, restarts, node, startTime))
+						name, phase, restarts, node, startTime))
 					sb.append("\n")
 				}
 			}
@@ -62,10 +62,10 @@ class TestK8sHelper {
 	 * @return
 	 */
 	static String execAndGetStdout(KubernetesClient client,
-			String ns,
-			String pod,
-			String container,
-			String... cmd) {
+		String ns,
+		String pod,
+		String container,
+		String... cmd) {
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream()
 		ByteArrayOutputStream err = new ByteArrayOutputStream()
@@ -82,18 +82,18 @@ class TestK8sHelper {
 		}
 
 		try (ExecWatch watch = client.pods()
-				.inNamespace(ns)
-				.withName(pod)
-				.inContainer(container)
-				.writingOutput(out)
-				.writingError(err)
-				.usingListener(listener)
-				.exec(cmd)) {
+			.inNamespace(ns)
+			.withName(pod)
+			.inContainer(container)
+			.writingOutput(out)
+			.writingError(err)
+			.usingListener(listener)
+			.exec(cmd)) {
 
 			Awaitility.await()
-					.atMost(5, TimeUnit.MINUTES)
-					.pollInterval(500, TimeUnit.MILLISECONDS)
-					.until(() -> finished.getCount() == 0)
+				.atMost(5, TimeUnit.MINUTES)
+				.pollInterval(500, TimeUnit.MILLISECONDS)
+				.until(() -> finished.getCount() == 0)
 
 		} catch (Exception e) {
 			throw new RuntimeException("Exec failed/timeout for pod " + ns + "/" + pod, e)
