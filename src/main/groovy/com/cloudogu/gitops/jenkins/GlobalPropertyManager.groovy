@@ -1,20 +1,20 @@
 package com.cloudogu.gitops.jenkins
 
-import org.intellij.lang.annotations.Language
-
 import jakarta.inject.Singleton
+
+import org.intellij.lang.annotations.Language
 
 @Singleton
 class GlobalPropertyManager {
-    private JenkinsApiClient apiClient
+	private JenkinsApiClient apiClient
 
-    GlobalPropertyManager(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient
-    }
+	GlobalPropertyManager(JenkinsApiClient apiClient) {
+		this.apiClient = apiClient
+	}
 
-    void setGlobalProperty(String key, String value) {
-        @Language("groovy")
-        def script = """
+	void setGlobalProperty(String key, String value) {
+		@Language("groovy")
+		def script = """
             instance = Jenkins.getInstance()
             globalNodeProperties = instance.getGlobalNodeProperties()
             envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -37,15 +37,15 @@ class GlobalPropertyManager {
             print("Done")
         """
 
-        def result = apiClient.runScript(script)
-        if (result != 'Done') {
-            throw new RuntimeException("Could not create global property: $result")
-        }
-    }
+		def result = apiClient.runScript(script)
+		if (result != 'Done') {
+			throw new RuntimeException("Could not create global property: $result")
+		}
+	}
 
-    void deleteGlobalProperty(String key) {
-        @Language("groovy")
-        def script = """
+	void deleteGlobalProperty(String key) {
+		@Language("groovy")
+		def script = """
             def instance = Jenkins.getInstance()
             def globalNodeProperties = instance.getGlobalNodeProperties()
             def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -60,9 +60,9 @@ class GlobalPropertyManager {
             print("Done")
         """
 
-        def result = apiClient.runScript(script)
-        if (result != 'Nothing to do' && result != 'Done') {
-            throw new RuntimeException("Could not delete global property: $result")
-        }
-    }
+		def result = apiClient.runScript(script)
+		if (result != 'Nothing to do' && result != 'Done') {
+			throw new RuntimeException("Could not delete global property: $result")
+		}
+	}
 }

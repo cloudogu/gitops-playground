@@ -10,96 +10,92 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class RbacDefinition {
 
-    private final Role.Variant variant
-    private String name
-    private String namespace
-    private List<ServiceAccountRef> serviceAccounts = []
-    private String subfolder = "rbac"
-    private GitRepo repo
-    private Config config
+	private final Role.Variant variant
+	private String name
+	private String namespace
+	private List<ServiceAccountRef> serviceAccounts = []
+	private String subfolder = "rbac"
+	private GitRepo repo
+	private Config config
 
-    private final TemplatingEngine templater = new TemplatingEngine()
+	private final TemplatingEngine templater = new TemplatingEngine()
 
-    RbacDefinition(Role.Variant variant) {
-        this.variant = variant
-    }
+	RbacDefinition(Role.Variant variant) {
+		this.variant = variant
+	}
 
-    RbacDefinition withName(String name) {
-        this.name = name
-        return this
-    }
+	RbacDefinition withName(String name) {
+		this.name = name
+		return this
+	}
 
-    RbacDefinition withNamespace(String namespace) {
-        this.namespace = namespace
-        return this
-    }
+	RbacDefinition withNamespace(String namespace) {
+		this.namespace = namespace
+		return this
+	}
 
-    RbacDefinition withServiceAccounts(List<ServiceAccountRef> accounts) {
-        this.serviceAccounts = accounts
-        return this
-    }
+	RbacDefinition withServiceAccounts(List<ServiceAccountRef> accounts) {
+		this.serviceAccounts = accounts
+		return this
+	}
 
-    RbacDefinition withServiceAccountsFrom(String saNamespace, List<String> saNames) {
-        return withServiceAccounts(ServiceAccountRef.fromNames(saNamespace, saNames))
-    }
+	RbacDefinition withServiceAccountsFrom(String saNamespace, List<String> saNames) {
+		return withServiceAccounts(ServiceAccountRef.fromNames(saNamespace, saNames))
+	}
 
-    RbacDefinition withSubfolder(String subfolder) {
-        this.subfolder = subfolder
-        return this
-    }
+	RbacDefinition withSubfolder(String subfolder) {
+		this.subfolder = subfolder
+		return this
+	}
 
-    RbacDefinition withRepo(GitRepo repo) {
-        this.repo = repo
-        return this
-    }
+	RbacDefinition withRepo(GitRepo repo) {
+		this.repo = repo
+		return this
+	}
 
-    RbacDefinition withConfig(Config config) {
-        this.config = config
-        return this
-    }
+	RbacDefinition withConfig(Config config) {
+		this.config = config
+		return this
+	}
 
-    void generate() {
-        if (!repo) {
-            throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
-        }
+	void generate() {
+		if (!repo) {
+			throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
+		}
 
-        log.trace("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
+		log.trace("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
 
-        File outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()
-        outputDir.mkdirs()
+		File outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()
+		outputDir.mkdirs()
 
-        generateRole(outputDir)
+		generateRole(outputDir)
 
-        generateRoleBinding(outputDir)
-    }
+		generateRoleBinding(outputDir)
+	}
 
-    private void generateRole(File outputDir) {
-        if(variant == Role.Variant.CLUSTER_ADMIN) {
-            log.trace("Skipping creation of ClusterRole cluster-admin")
-            return
-        }
+	private void generateRole(File outputDir) {
+		if (variant == Role.Variant.CLUSTER_ADMIN) {
+			log.trace("Skipping creation of ClusterRole cluster-admin")
+			return
+		}
 
-        def role = new Role(name, namespace, variant, config)
+		def role = new Role(name, namespace, variant, config)
 
-        templater.template(
-                role.getTemplateFile(),
-                role.getOutputFile(outputDir),
-                role.toTemplateParams()
-        )
-    }
+		templater.template(role.getTemplateFile(),
+			role.getOutputFile(outputDir),
+			role.toTemplateParams())
+	}
 
-    private void generateRoleBinding(File outputDir) {
-        String roleName = name
-        if(variant == Role.Variant.CLUSTER_ADMIN) {
-            roleName = "cluster-admin"
-        }
-        def binding = new RoleBinding(name, namespace, roleName, serviceAccounts)
+	private void generateRoleBinding(File outputDir) {
+		String roleName = name
+		if (variant == Role.Variant.CLUSTER_ADMIN) {
+			roleName = "cluster-admin"
+		}
+		def binding = new RoleBinding(name, namespace, roleName, serviceAccounts)
 
-        templater.template(
-                binding.getTemplateFile(),
-                binding.getOutputFile(outputDir),
-                binding.toTemplateParams()
-        )
-    }
+		templater.template(binding.getTemplateFile(),
+			binding.getOutputFile(outputDir),
+			binding.toTemplateParams())
+	}
 
 }

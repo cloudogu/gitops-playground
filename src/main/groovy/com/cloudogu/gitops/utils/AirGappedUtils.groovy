@@ -16,112 +16,108 @@ import groovy.yaml.YamlSlurper
 @Singleton
 class AirGappedUtils {
 
-    private Config config
-    private GitRepoFactory repoProvider
-    private FileSystemUtils fileSystemUtils
-    private HelmClient helmClient
-    private GitHandler gitHandler
+	private Config config
+	private GitRepoFactory repoProvider
+	private FileSystemUtils fileSystemUtils
+	private HelmClient helmClient
+	private GitHandler gitHandler
 
-    AirGappedUtils(Config config, GitRepoFactory repoProvider,
-                   FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
-        this.config = config
-        this.repoProvider = repoProvider
-        this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
-        this.gitHandler = gitHandler
-    }
+	AirGappedUtils(Config config, GitRepoFactory repoProvider,
+		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
+		this.config = config
+		this.repoProvider = repoProvider
+		this.fileSystemUtils = fileSystemUtils
+		this.helmClient = helmClient
+		this.gitHandler = gitHandler
+	}
 
-    /**
-     * In air-gapped mode, the chart's dependencies can't be resolved.
-     * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
-     * We alter these repos to resolve dependencies locally from SCM.
-     *
-     * @return the repo namespace and name
-     */
-    String mirrorHelmRepoToGit(HelmConfig helmConfig) {
-        String repoName = helmConfig.chart
-        String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
-        String repoNamespaceAndName = "${namespace}/${repoName}"
-        String localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
+	/**
+	 * In air-gapped mode, the chart's dependencies can't be resolved.
+	 * As helm does not provide an option for changing them interactively, we push the charts into a separate repo.
+	 * We alter these repos to resolve dependencies locally from SCM.
+	 *
+	 * @return the repo namespace and name
+	 */
+	String mirrorHelmRepoToGit(HelmConfig helmConfig) {
+		String repoName = helmConfig.chart
+		String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
+		String repoNamespaceAndName = "${namespace}/${repoName}"
+		String localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
-        validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
+		validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
+		GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
 
-        repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
+		repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 
-        repo.cloneRepo()
+		repo.cloneRepo()
 
-        repo.copyDirectoryContents(localHelmChartFolder)
+		repo.copyDirectoryContents(localHelmChartFolder)
 
-        def chartYaml = localizeChartYaml(repo)
+		def chartYaml = localizeChartYaml(repo)
 
-        // Chart.lock contains pinned dependencies and digest.
-        // We either have to update or remove them. Take the easier approach.
-        new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
+		// Chart.lock contains pinned dependencies and digest.
+		// We either have to update or remove them. Take the easier approach.
+		new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
-        repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" +
-                "Source: ${helmConfig.repoURL}\n" +
-                "Dependencies localized to run in air-gapped environments", chartYaml.version as String)
-        return repoNamespaceAndName
-    }
+		repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" + "Source: ${helmConfig.repoURL}\n" +
+			"Dependencies localized to run in air-gapped environments", chartYaml.version as String)
+		return repoNamespaceAndName
+	}
 
-    private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
-        log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" +
-                "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
-        try {
-            helmClient.template(repoName, localHelmChartFolder)
-        } catch (RuntimeException e) {
-            throw new RuntimeException("Helm chart in folder ${localHelmChartFolder} seems invalid.", e)
-        }
-    }
+	private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
+		log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" + "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
+		try {
+			helmClient.template(repoName, localHelmChartFolder)
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Helm chart in folder ${localHelmChartFolder} seems invalid.", e)
+		}
+	}
 
-    private Map localizeChartYaml(GitRepo gitRepo) {
-        log.debug("Preparing repo ${gitRepo.repoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+	private Map localizeChartYaml(GitRepo gitRepo) {
+		log.debug("Preparing repo ${gitRepo.repoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
-        def chartYamlPath = Path.of(gitRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
+		def chartYamlPath = Path.of(gitRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
-        Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
-        Map chartLock = parseChartLockIfExists(gitRepo)
+		Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
+		Map chartLock = parseChartLockIfExists(gitRepo)
 
-        List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
-        for (Map chartYamlDep : dependencies) {
-            resolveDependencyVersion(chartLock, chartYamlDep, gitRepo)
+		List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
+		for (Map chartYamlDep : dependencies) {
+			resolveDependencyVersion(chartLock, chartYamlDep, gitRepo)
 
-            // Remove link to external repo, to force using local one
-            chartYamlDep.repository = ''
-        }
-        fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
-        return chartYaml
-    }
+			// Remove link to external repo, to force using local one
+			chartYamlDep.repository = ''
+		}
+		fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
+		return chartYaml
+	}
 
-    private static Map parseChartLockIfExists(GitRepo scmmRepo) {
-        def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
-        if (!chartLock.toFile().exists()) {
-            return [:]
-        }
-        new YamlSlurper().parse(chartLock) as Map
-    }
+	private static Map parseChartLockIfExists(GitRepo scmmRepo) {
+		def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
+		if (!chartLock.toFile().exists()) {
+			return [:]
+		}
+		new YamlSlurper().parse(chartLock) as Map
+	}
 
-    /**
-     * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
-     */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
-        def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
-        if (chartLockDep) {
-            chartYamlDep.version = chartLockDep.version
-        } else if ((chartYamlDep.version as String).contains('*')) {
-            throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
-        }
-    }
+	/**
+	 * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1*/
+	private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
+		def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
+		if (chartLockDep) {
+			chartYamlDep.version = chartLockDep.version
+		} else if ((chartYamlDep.version as String).contains('*')) {
+			throw new RuntimeException("Unable to determine proper version for dependency " + "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
+		}
+	}
 
-    Map findByName(List<Map> list, String name) {
-        if (!list) return [:]
-        // Note that list.find{} does not work in GraalVM native image: 
-        // UnsupportedFeatureError: Runtime reflection is not supported
-        list.stream()
-                .filter(map -> map.name == name)
-                .findFirst().orElse([:])
-    }
+	Map findByName(List<Map> list, String name) {
+		if (!list) return [:]
+		// Note that list.find{} does not work in GraalVM native image:
+		// UnsupportedFeatureError: Runtime reflection is not supported
+		list.stream()
+			.filter(map -> map.name == name)
+			.findFirst().orElse([:])
+	}
 }

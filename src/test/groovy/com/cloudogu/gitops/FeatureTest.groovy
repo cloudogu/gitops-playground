@@ -1,10 +1,10 @@
 package com.cloudogu.gitops
 
-import org.junit.jupiter.api.Test
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
+
+import org.junit.jupiter.api.Test
 
 class FeatureTest {
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
@@ -26,7 +26,7 @@ class FeatureTest {
 		createFeatureWithImage().install()
 
 		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-				' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 	}
 
 	protected FeatureWithImageForTest createFeatureWithImage() {
@@ -49,7 +49,7 @@ class FeatureTest {
 		createFeatureWithImage().install()
 
 		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-				' --docker-server url --docker-username ROuser --docker-password ROpw')
+			' --docker-server url --docker-username ROuser --docker-password ROpw')
 	}
 
 	@Test
@@ -62,7 +62,7 @@ class FeatureTest {
 		createFeatureWithImage().install()
 
 		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-				' --docker-server url --docker-username user --docker-password pw')
+			' --docker-server url --docker-username user --docker-password pw')
 	}
 
 	class FeatureWithImageForTest extends Feature implements FeatureWithImage {

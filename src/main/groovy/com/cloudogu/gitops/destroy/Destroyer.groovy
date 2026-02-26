@@ -7,22 +7,22 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class Destroyer {
 
-    final List<DestructionHandler> destructionHandlers
+	final List<DestructionHandler> destructionHandlers
 
-    Destroyer(List<DestructionHandler> destructionHandlers) {
-        this.destructionHandlers = destructionHandlers
-    }
+	Destroyer(List<DestructionHandler> destructionHandlers) {
+		this.destructionHandlers = destructionHandlers
+	}
 
-    void destroy() {
-        log.info("Start destroying")
-        for (def handler in destructionHandlers) {
-            log.info("Running handler $handler.class.simpleName")
-            handler.destroy()
-        }
-        log.info("Finished destroying")
-    }
+	void destroy() {
+		log.info("Start destroying")
+		for (def handler in destructionHandlers) {
+			log.info("Running handler $handler.class.simpleName")
+			handler.destroy()
+		}
+		log.info("Finished destroying")
+	}
 
-    List<DestructionHandler> getDestructionHandlers() {
-        return destructionHandlers
-    }
+	List<DestructionHandler> getDestructionHandlers() {
+		return destructionHandlers
+	}
 }

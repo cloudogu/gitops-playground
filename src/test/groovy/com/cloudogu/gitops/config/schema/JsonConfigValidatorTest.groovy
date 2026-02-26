@@ -1,74 +1,51 @@
 package com.cloudogu.gitops.config.schema
 
+import static groovy.test.GroovyAssert.shouldFail
+
+import java.util.stream.Stream
 
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
-import java.util.stream.Stream
-
-import static groovy.test.GroovyAssert.shouldFail 
-
 class JsonConfigValidatorTest {
-    static Stream<Arguments> validSchemas() {
-        Stream.Builder<Arguments> ret = Stream.builder()
+	static Stream<Arguments> validSchemas() {
+		Stream.Builder<Arguments> ret = Stream.builder()
 
-        ret.add(Arguments.of("multiple values", [
-                features: [
-                        argocd: [
-                                url: "http://localhost/argocd"
-                        ]
-                ]
-        ]))
+		ret.add(Arguments.of("multiple values", [features: [argocd: [url: "http://localhost/argocd"]]]))
 
-        return ret.build()
-    }
+		return ret.build()
+	}
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("validSchemas")
-    void 'test valid schemas'(String description, Map schema) {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("validSchemas")
+	void 'test valid schemas'(String description, Map schema) {
 
-        JsonSchemaValidator.validate(schema)
-    }
+		JsonSchemaValidator.validate(schema)
+	}
 
-    static Stream<Arguments> invalidSchemas() {
-        Stream.Builder<Arguments> ret = Stream.builder()
+	static Stream<Arguments> invalidSchemas() {
+		Stream.Builder<Arguments> ret = Stream.builder()
 
-        ret.add(Arguments.of("wrong type for registry.internalPort", [
-                registry: [
-                        internalPort: "this should be a number"
-                ]
-        ]))
+		ret.add(Arguments.of("wrong type for registry.internalPort", [registry: [internalPort: "this should be a number"]]))
 
-        ret.add(Arguments.of("invalid additional key within registry", [
-                registry: [
-                        url: "",
-                        unexpectedKey: "this should error"
-                ]
-        ]))
+		ret.add(Arguments.of("invalid additional key within registry", [registry: [url          : "",
+		                                                                           unexpectedKey: "this should error"]]))
 
-        ret.add(Arguments.of("invalid additional key on root level", [
-                registry: [
-                        url: "",
-                ],
-                unexpectedKey: "this should not exist"
-        ]))
+		ret.add(Arguments.of("invalid additional key on root level", [registry     : [url: "",],
+		                                                              unexpectedKey: "this should not exist"]))
 
-        ret.add(Arguments.of("specifying dynamic value", [
-                application: [
-                        namePrefix: "prefix",
-                        namePrefixForEnvVars: "prefix"
-                ],
-        ]))
+		ret.add(Arguments.of("specifying dynamic value", [application: [namePrefix          : "prefix",
+		                                                                namePrefixForEnvVars: "prefix"],]))
 
-        return ret.build()
-    }
+		return ret.build()
+	}
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("invalidSchemas")
-    void 'test invalid schemas'(String description, Map schema) {
-        shouldFail(RuntimeException) {
-            JsonSchemaValidator.validate(schema)
-        }
-    }
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("invalidSchemas")
+	void 'test invalid schemas'(String description, Map schema) {
+		shouldFail(RuntimeException) {
+			JsonSchemaValidator.validate(schema)
+		}
+	}
 }
