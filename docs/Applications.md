@@ -317,7 +317,7 @@ The applications implement a simple staging mechanism:
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
   (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
 
-[![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/app-repo-vs-gitops-repo.svg "View full size")
+[![app-repo-vs-gitops-repo](docs/images/app-repo-vs-gitops-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/app-repo-vs-gitops-repo.svg "View full size")
 
 Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like

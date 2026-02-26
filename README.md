@@ -2,7 +2,7 @@
 
 > "Mom, can we get an IDP?" - "We have an IDP in our local kubernetes cluster!" 
  
-[![Playground features](docs/gitops-playground-features.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-features.drawio.svg "View full size")
+[![Playground features](docs/images/gitops-playground-features.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-features.drawio.svg "View full size")
 
 Create a complete GitOps-based operational stack with all the tools you need for an internal developer platform, on your machine, in your datacenter or in the cloud! 
 
@@ -116,7 +116,7 @@ We compiled a few helpful documents for the most common use-cases/scenarios:
 
 ## Development
 
-See [docs/developers.md](docs/developers.md)
+See [docs/Developers.md](docs/Developers.md)
 
 
 ## License
