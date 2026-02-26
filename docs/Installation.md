@@ -20,7 +20,7 @@ Jenkins build agents spawned in the cloud.
 ### Overview
 | Playground on local machine                                                | Production environment with Cloudogu EcoSystem                                       |
 |----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [![Playground on local machine](docs/gitops-playground-local.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-local.drawio.svg "View full size") | [![A possible production environment](docs/gitops-playground-production.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-production.drawio.svg "View full size") |
+| [![Playground on local machine](docs/images/gitops-playground-local.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-local.drawio.svg "View full size") | [![A possible production environment](docs/images/gitops-playground-production.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-production.drawio.svg "View full size") |
 
 ### Create Cluster
 

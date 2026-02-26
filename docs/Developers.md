@@ -61,6 +61,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 3. Main Branch executes both, feature-branches only IT.
 
 ### Usage
+// TODO: laufen die wirklich? (tests sagen wir brauche noch -Dmicronaut.environments=full-prefix, aber selbst damit passiert bei mir lokal nichts)
 Runnable separately via maven.
 ``
 mvn failsafe:integration-test -f pom.xml
@@ -71,7 +72,7 @@ mvn failsafe:integration-test -f pom.xml -P long-running
 ``
 
 ### Options
-
+// TODO: Was hat's hiermit auf sich? wer? wie? was? wo?
 - `help` - Print this help text and exit
 - `url` - The Jenkins-URL to connect to
 - `user`- The Jenkins-User for login
@@ -98,18 +99,18 @@ Since solving this issue may require some additional deep dive into bash scripts
   * inspecting the logs of the jenkins-pod
   * jenkins-ui (http://localhost:9090/manage)
 
-![Jenkins-UI with broken plugins](example-plugin-install-fail.png)
+![Jenkins-UI with broken plugins](images/example-plugin-install-fail.png)
 
 * Fix conflicts by updating the plugins with compatible versions
   * Update all plugin versions via jenkins-ui (http://localhost:9090/pluginManager/) and restart
 
-![Jenkins-UI update plugins](update-all-plugins.png)
+![Jenkins-UI update plugins](images/update-all-plugins.png)
 
 * Verify the plugin installation
   * Check if jenkins starts up correctly and builds all example pipelines successfully
   * verify installation of all plugins via jenkins-ui (http://localhost:9090/script) executing the following command
 
-![Jenkins-UI plugin list](get-plugin-list.png)
+![Jenkins-UI plugin list](images/get-plugin-list.png)
 
 ```groovy
 Jenkins.instance.pluginManager.activePlugins.sort().each {
@@ -159,6 +160,7 @@ We should automate this!
 ## Local development
 
 * Run locally
+// TODO: welche Dependencies haben wir? 
   * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA
     Note: If you encounter `error=2, No such file or directory`,
     it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
@@ -216,6 +218,7 @@ docker run --rm -it  -u $(id -u) \
  # do your changes in src/main/groovy
 scripts/apply-ng.sh #params
 ```
+// TODO: Ich wuerde mir ueberlegen ob wir damit werben wollen, sehe wenig mehrwert
 
 ## Running multiple instances on one machine
 
@@ -272,6 +275,7 @@ repository so need to be upgraded regularly.
 * [k3d](../scripts/init-cluster.sh)
 * [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
 * Installed components, most versions are maintained in [Config.groovy](../src/main/groovy/com/cloudogu/gitops/config/Config.groovy)
+// TODO: what? ein pod 'tmp=docker-gid-grepper' ist eine abhaengigkeit? was soll mir das sagen?
   * Jenkins
     * Helm Chart
     * Plugins
@@ -292,6 +296,7 @@ repository so need to be upgraded regularly.
   * ces-build-lib
   * Spring PetClinic
   * Traefik Helm Chart
+// TODO: ha? fuer das Dockerfile brauche ich alpine? oder ist Alpine das base image? warum wird das hier aufgefuehrt, aber nicht die benotigte Java version?
 * Dockerfile
   * Alpine
   * JDK
@@ -301,6 +306,7 @@ repository so need to be upgraded regularly.
 
 
 ## Testing URL separator hyphens
+// TODO: what? jetzt testen wir URL-features? worum geht's hier eigentlich
 ```bash
 docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -316,6 +322,8 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 ```
 
 ## External registry for development
+// TODO: hier koennte man erwaehnen, das man nicht auf harbor angewiesen ist, sondern jede beliebige Image registry nehmen
+// koennte, wir uns aber fuer harbor entschieden haben.
 
 If you need to emulate an "external", private registry with credentials, use the following.
 
@@ -398,6 +406,7 @@ That is, for most helm charts, you'll need to set an individual value.
 ## Testing two registries
 
 ### Basic test
+// TODO: das setzt voraus, das ich den kram von oben durchgefuehrt habe, oder?
 * Start playground once,
 * then again with these parameters:  
   `--registry-url=localhost:30000 --registry-proxy-url=localhost:30000 --registry-proxy-username=Proxy --registry-proxy-password=Proxy12345`
@@ -415,6 +424,8 @@ That is, for most helm charts, you'll need to set an individual value.
   See [here](#Local-development) how to build it, or change `GOP_IMAGE` bellow to e.g. `ghcr.io/cloudogu/gitops-playground`
 
 **Setup**
+// TODO: fuer diese ganzen inline-shell scripts hier wuerde ich make oder just empfehlen, viel angenehmer zu verwenden als 
+// hier staendig irgendwas raus zu kopieren oder in der IDE sein zu muessen
 
 * Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with Port `30000`)
 
@@ -488,6 +499,7 @@ skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:
 skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
 
 # Monitoring
+// TODO: hier scheint irgendwie etwas Text abhanden gekommen zu sein
 # Using latest will lead to failure with
 # k describe prometheus -n monitoring
 #  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
@@ -506,9 +518,11 @@ skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds 
 skopeo copy docker://bitnamilegacy/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
 skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine
 skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
+skopeo copy docker://maven:3-eclipse-temurin-17-alpine  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine
 skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/yamllint:latest 
 
 ```
+// TODO: hier ueberall muessen die Images kontrolliert werden
 
 * Creating a specific example config file for two registries 
 ```bash
@@ -529,7 +543,7 @@ cat <<EOF >> ../scripts/local/two-registries.yaml
       yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
       nginx: ""
       petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
-      maven: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
 EOF
 ```
 
@@ -799,6 +813,8 @@ helper-pod-create-pvc-a3d2db89-5662-43c7-a945-22db6f52916d   0/1     ImagePullBa
 
 For testing (or because it's more convenient than remembering node ports) ingresses can be used.
 For that, k3d provides its own ingress controller traefik.
+// TODO: auch hier muss nochmal sichergestellt werden, dass nur korrekte parameter verwendet werden. z.B. nginx faellt hier 
+// direkt auf
 
 ```bash
 docker run --rm -it -u $(id -u) \
@@ -829,6 +845,7 @@ The `base-domain` parameters lead to URLs in the following schema:
 
 When requests are denied, there might be problems with the iptables/nftables config on your host.
 Using nft insert, to make sure the rule is on top.
+// TODO: dieser Befehl oeffnet port 80 global!  
 ```
 nft insert rule ip filter INPUT tcp dport 80 accept
 ```
@@ -863,6 +880,7 @@ On `main` branch:
 ````shell
 TAG=0.5.0
 
+// TODO: was sollen die [[ hier?
 git checkout main
 [[ $? -eq 0 ]] && git pull
 [[ $? -eq 0 ]] && git tag -s $TAG -m $TAG
@@ -906,6 +924,7 @@ We have to install the ingress-controller manually:
 
 
 ```shell
+// TODO: was soll das cat hier?
 cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
   --version 4.12.1 \
   --namespace traefik \
