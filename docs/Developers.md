@@ -79,7 +79,25 @@ java -version && mvn -version && docker version && k3d version && kubectl versio
 2. Long running tests are marked with 'LongIT'.
 3. Main Branch executes both, feature-branches only IT.
 
-### Usage
+### Unit-Tests
+
+```bash
+mvn clean test
+```
+
+### Integration-Tests
+
+```bash
+# first create a fresh new cluster to test on:
+./scripts/init-cluster.sh
+
+# then deploy the gop with a predefined profile:
+mvn exec:java -Dexec.arguments="--profile=full"
+
+# finally run the test
+mvn failsafe:integration-test -Dmicronaut.environments=full -P long-running
+```
+
 // TODO: laufen die wirklich? (tests sagen wir brauche noch -Dmicronaut.environments=full-prefix, aber selbst damit passiert bei mir lokal nichts)
 Runnable separately via maven.
 ``
