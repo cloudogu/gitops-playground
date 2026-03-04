@@ -54,6 +54,25 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
+## Prerequisites
+
+- Java 17
+- Groovy
+- Maven
+- Docker
+- [k3d](https://k3d.io/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Helm](https://helm.sh/docs/intro/install/)
+- [skopeo](https://github.com/containers/skopeo)
+- [Golang](https://go.dev/doc/install) (only if you plan to use argo-cd operator)
+- [yq](https://mikefarah.gitbook.io/yq/) (useful for debugging purposes)
+
+To check if you have all necessary tools installed, run the following command. If you don't see any error messages, you are good to go:
+```bash
+java -version && mvn -version && docker version && k3d version && kubectl version && helm version
+```
+
+
 ## Testing
 
 1. There are integration tests implemented by Junit. Classes marked with 'IT' and the end.
@@ -70,16 +89,6 @@ To run long living test, use maven with profile: long-running
 ``
 mvn failsafe:integration-test -f pom.xml -P long-running
 ``
-
-### Options
-// TODO: Was hat's hiermit auf sich? wer? wie? was? wo?
-- `help` - Print this help text and exit
-- `url` - The Jenkins-URL to connect to
-- `user`- The Jenkins-User for login
-- `password` - Jenkins-Password for login
-- `fail` - Exit on first build failure
-- `interval` - Interval for waits while scanning for builds
-- `debug` - Set log level to debug
 
 ## Jenkins plugin installation issues
 
@@ -160,7 +169,6 @@ We should automate this!
 ## Local development
 
 * Run locally
-// TODO: welche Dependencies haben wir? 
   * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA
     Note: If you encounter `error=2, No such file or directory`,
     it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
@@ -191,34 +199,6 @@ We should automate this!
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```
-
-## Development image
-
-An image containing groovy and the JDK for developing inside a container or cluster is provided for all image version
-with a `-dev` suffix.
-
-e.g.
-* ghcr.io/cloudogu/gitops-playground:dev
-* ghcr.io/cloudogu/gitops-playground:latest-dev
-* ghcr.io/cloudogu/gitops-playground:d67ec33-dev
-
-It can be built like so:
-
-```shell
-docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain . 
-```
-
-If you're running the dev image and want to try some changes in groovy instantly you can do the following:
-
-```shell
-docker run --rm -it  -u $(id -u) \
-    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-    --net=host --entrypoint bash \
-     ghcr.io/cloudogu/gitops-playground:dev
- # do your changes in src/main/groovy
-scripts/apply-ng.sh #params
-```
-// TODO: Ich wuerde mir ueberlegen ob wir damit werben wollen, sehe wenig mehrwert
 
 ## Running multiple instances on one machine
 
@@ -266,45 +246,6 @@ docker run --rm -t -u $(id -u) \
 xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  k3d-playground$INSTANCE-server-0):9091"
 ```
 
-## Implicit + explicit dependencies
-
-The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this
-repository so need to be upgraded regularly.
-
-* Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
-* [k3d](../scripts/init-cluster.sh)
-* [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
-* Installed components, most versions are maintained in [Config.groovy](../src/main/groovy/com/cloudogu/gitops/config/Config.groovy)
-// TODO: what? ein pod 'tmp=docker-gid-grepper' ist eine abhaengigkeit? was soll mir das sagen?
-  * Jenkins
-    * Helm Chart
-    * Plugins
-    * Pod `tmp-docker-gid-grepper`
-    * `dockerClientVersion`
-    * Init container `create-agent-working-dir`
-    * Agent Image
-  * SCM-Manager Helm Chart + Plugins
-  * Docker Registry Helm Chart
-  * ArgoCD Helm Chart
-  * Grafana + Prometheus Helm Charts
-  * Vault + ExternalSerets Operator Helm Charts
-  * Ingress Helm Charts
-  * Cert-Manager
-  * Mailhog
-* Applications
-  * GitOps-build-lib + `buildImages`
-  * ces-build-lib
-  * Spring PetClinic
-  * Traefik Helm Chart
-// TODO: ha? fuer das Dockerfile brauche ich alpine? oder ist Alpine das base image? warum wird das hier aufgefuehrt, aber nicht die benotigte Java version?
-* Dockerfile
-  * Alpine
-  * JDK
-  * Groovy
-  * musl & zlib
-  * Packages installed using apk, gu, microdnf
-
-
 ## Testing URL separator hyphens
 // TODO: what? jetzt testen wir URL-features? worum geht's hier eigentlich
 ```bash
@@ -325,51 +266,12 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 // TODO: hier koennte man erwaehnen, das man nicht auf harbor angewiesen ist, sondern jede beliebige Image registry nehmen
 // koennte, wir uns aber fuer harbor entschieden haben.
 
-If you need to emulate an "external", private registry with credentials, use the following.
-
-Write this `harbor-values.yaml`:
-
-```yaml
-expose:
-  type: nodePort
-  nodePort:
-    ports:
-      http:
-        # docker login localhost:$nodePort -u admin -p Harbor12345
-        # Web UI: http://localhost:nodePort
-        # !! When changing here, also change externalURL !!
-        nodePort: 30002
-
-  tls:
-    enabled: false
-
-externalURL: http://localhost:30002
-
-internalTLS:
-  enabled: false
-
-# Needs less resources but forces you to push images on every restart
-#persistence:
-#enabled: false
-
-chartMuseum:
-  enabled: false
-
-clair:
-  enabled: false
-
-trivy:
-  enabled: false
-
-notary:
-  enabled: false
-```
-
-Then install it like so:
+If you need to emulate an "external", private registry with credentials, then install it like so:
 ```bash
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.14.2 --namespace harbor --create-namespace
+helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
+
 Once it's up and running either create your own private project or just set the existing `library` to private:
 ```bash
 curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -H 'Content-Type: application/json' \
@@ -406,7 +308,6 @@ That is, for most helm charts, you'll need to set an individual value.
 ## Testing two registries
 
 ### Basic test
-// TODO: das setzt voraus, das ich den kram von oben durchgefuehrt habe, oder?
 * Start playground once,
 * then again with these parameters:  
   `--registry-url=localhost:30000 --registry-proxy-url=localhost:30000 --registry-proxy-username=Proxy --registry-proxy-password=Proxy12345`
@@ -424,105 +325,19 @@ That is, for most helm charts, you'll need to set an individual value.
   See [here](#Local-development) how to build it, or change `GOP_IMAGE` bellow to e.g. `ghcr.io/cloudogu/gitops-playground`
 
 **Setup**
-// TODO: fuer diese ganzen inline-shell scripts hier wuerde ich make oder just empfehlen, viel angenehmer zu verwenden als 
-// hier staendig irgendwas raus zu kopieren oder in der IDE sein zu muessen
-
-* Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with Port `30000`)
+* Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with "scripts/dev/two-registries.yaml" values file)
 
 ```shell
 scripts/init-cluster.sh
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values - <<EOF
-expose:
-  type: nodePort
-  nodePort:
-    ports:
-      http:
-        nodePort: 30000
-  tls:
-    enabled: false
-externalURL: http://localhost:30000
-internalTLS:
-  enabled: false
-chartMuseum:
-  enabled: false
-clair:
-  enabled: false
-trivy:
-  enabled: false
-notary:
-  enabled: false
-EOF
+helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values ./scripts/dev/two-registries.yaml
 ```
 
 * Create registries and base image:
 
 ```bash
-# Hit the API to see when harbor is ready
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:30000/api/v2.0/projects | grep -q "200"; do
-    echo "Waiting for harbor"
-    sleep 1
-done
-
-declare -A roles
-roles['maintainer']='4'
-roles['limited-guest']='5'
-
-operations=("Proxy" "Registry")
-readOnlyUser='RegistryRead'
-
-for operation in "${operations[@]}"; do
-
-    # Convert the operation to lowercase for the project name and email
-    lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
-    
-    echo "creating project ${lower_operation}"
-    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
-
-    echo creating user ${operation} with PW ${operation}12345
-    curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
-    
-    echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
-    curl --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['maintainer']},\"member_user\":{\"username\":\"$operation\"}}"
-done
-
-echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
-curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
-echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
-curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
-
-# When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
-skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/mailhog
-skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
-skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
-skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
-
-# Monitoring
-// TODO: hier scheint irgendwie etwas Text abhanden gekommen zu sein
-# Using latest will lead to failure with
-# k describe prometheus -n monitoring
-#  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
-skopeo copy docker://quay.io/prometheus/prometheus:v3.8.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus
-skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
-skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
-skopeo copy docker://docker.io/grafana/grafana:12.3.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
-skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:2.1.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
-
-# Cert Manager images
-skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
-skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
-skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
-
-# Needed for the builds to work with proxy-registry
-skopeo copy docker://bitnamilegacy/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
-skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine
-skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
-skopeo copy docker://maven:3-eclipse-temurin-17-alpine  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine
-skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/yamllint:latest 
-
+./scripts/dev/mirror_images_to_registry.sh
 ```
-// TODO: hier ueberall muessen die Images kontrolliert werden
 
 * Creating a specific example config file for two registries 
 ```bash
