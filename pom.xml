@@ -548,13 +548,24 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.6.3</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <mainClass>${exec.mainClass}</mainClass>
-          <arguments></arguments>
+          <systemPropertyVariables>
+            <micronaut.environments>${gop.profile}</micronaut.environments>
+          </systemPropertyVariables>
+          <includes>
+            <include>**/*IT</include>
+          </includes>
         </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -587,46 +598,44 @@
   <pluginRepositories>
   </pluginRepositories>
   <profiles>
+
     <profile>
-      <id>default</id>
+      <id>full</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>**/*LongIT</exclude>
-              </excludes>
-              <includes>
-                <include>**/*IT</include>
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
+      <properties>
+        <gop.profile>full</gop.profile>
+      </properties>
     </profile>
+
     <profile>
-      <id>long-running</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*IT</include> <!-- this includes LongIT, too. Just to clearify. -->
-              </includes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
+      <id>full-prefix</id>
+      <properties>
+        <gop.profile>full-prefix</gop.profile>
+      </properties>
     </profile>
+
+    <profile>
+      <id>content-examples</id>
+      <properties>
+        <gop.profile>content-examples</gop.profile>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operator-full</id>
+      <properties>
+        <gop.profile>operator-full</gop.profile>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operator-mandants</id>
+      <properties>
+        <gop.profile>operator-mandants</gop.profile>
+      </properties>
+    </profile>
+
   </profiles>
 </project>

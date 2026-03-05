@@ -88,25 +88,32 @@ mvn clean test
 ### Integration-Tests
 
 ```bash
+# build the gop tests
+./mvnw clean test-compile
+
 # first create a fresh new cluster to test on:
 ./scripts/init-cluster.sh
 
 # then deploy the gop with a predefined profile:
-mvn exec:java -Dexec.arguments="--profile=full"
+./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
 
 # finally run the test
-mvn failsafe:integration-test -Dmicronaut.environments=full -P long-running
+./mvnw integration-test -P <PROFILE>
 ```
 
-// TODO: laufen die wirklich? (tests sagen wir brauche noch -Dmicronaut.environments=full-prefix, aber selbst damit passiert bei mir lokal nichts)
-Runnable separately via maven.
-``
-mvn failsafe:integration-test -f pom.xml
-``
-To run long living test, use maven with profile: long-running 
-``
-mvn failsafe:integration-test -f pom.xml -P long-running
-``
+where <PROFILES> can be one of:
+- full
+- full-prefix
+
+- content-examples
+- operator-full
+- operator-mandants
+
+Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
+This can be done by running:
+```bash
+./scripts/local/install-argocd-operator.sh
+```
 
 ## Jenkins plugin installation issues
 
@@ -193,13 +200,8 @@ We should automate this!
   * From shell:  
     Run
       ```shell
-    ./mvnw package -DskipTests
-      java -classpath target/gitops-playground-cli-0.1.jar \
-        org.codehaus.groovy.tools.GroovyStarter \
-        --main groovy.ui.GroovyMain \
-        -classpath src/main/groovy \
-        src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy \
-        <yourParamsHere>
+     ./mvnw package -DskipTests
+     ./mvnw exec:java -Dexec.arguments="<gopParamsHere>"
        ```
 * Running inside the container:
   * Build and run dev Container:
@@ -265,7 +267,6 @@ xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAd
 ```
 
 ## Testing URL separator hyphens
-// TODO: what? jetzt testen wir URL-features? worum geht's hier eigentlich
 ```bash
 docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -281,8 +282,6 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 ```
 
 ## External registry for development
-// TODO: hier koennte man erwaehnen, das man nicht auf harbor angewiesen ist, sondern jede beliebige Image registry nehmen
-// koennte, wir uns aber fuer harbor entschieden haben.
 
 If you need to emulate an "external", private registry with credentials, then install it like so:
 ```bash
@@ -646,8 +645,6 @@ helper-pod-create-pvc-a3d2db89-5662-43c7-a945-22db6f52916d   0/1     ImagePullBa
 
 For testing (or because it's more convenient than remembering node ports) ingresses can be used.
 For that, k3d provides its own ingress controller traefik.
-// TODO: auch hier muss nochmal sichergestellt werden, dass nur korrekte parameter verwendet werden. z.B. nginx faellt hier 
-// direkt auf
 
 ```bash
 docker run --rm -it -u $(id -u) \
@@ -673,15 +670,6 @@ Where opening for example http://argocd.localhost in your browser should work.
 The `base-domain` parameters lead to URLs in the following schema:  
 `<stage>.<app-name>.<parameter>`, e.g.  
 `staging.nginx-helm.nginx.localhost`
-
-#### Troubleshooting
-
-When requests are denied, there might be problems with the iptables/nftables config on your host.
-Using nft insert, to make sure the rule is on top.
-// TODO: dieser Befehl oeffnet port 80 global!  
-```
-nft insert rule ip filter INPUT tcp dport 80 accept
-```
 
 ## Generate schema.json
 
@@ -713,13 +701,11 @@ On `main` branch:
 ````shell
 TAG=0.5.0
 
-// TODO: was sollen die [[ hier?
-git checkout main
-[[ $? -eq 0 ]] && git pull
-[[ $? -eq 0 ]] && git tag -s $TAG -m $TAG
-[[ $? -eq 0 ]] && git push --follow-tags
-
-[[ $? -eq 0 ]] && xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+git checkout main \
+&& git pull \
+&& git tag -s $TAG -m $TAG \
+&& git push --follow-tags \
+&& xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
 For now, please start a Jenkins Build of `main` manually.  
@@ -757,14 +743,7 @@ We have to install the ingress-controller manually:
 
 
 ```shell
-// TODO: was soll das cat hier?
-cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
-  --version 4.12.1 \
-  --namespace traefik \
-  --create-namespace \
-  -f -  
-  
-EOF
+helm upgrade --install traefik traefik/traefik --version 4.12.1 --namespace traefik --create-namespace 
 ```
 
 If the helm repos are not present or up-to-date:
