@@ -1,0 +1,23 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  insecure: true
+  namePrefix: my-prefix
+features:
+  argocd:
+    active: true
+    operator: false
+  ingress:
+    active: true
+
+content:
+  helmReleases:
+    - name: rabbitmq
+      repoURL: oci://registry-1.docker.io/bitnamicharts
+      chart: rabbitmq
+      version: "14.6.0"
+      namespace: my-prefix-rabbitmq
+      releaseName: rabbitmq
+registry:
+  active: true
