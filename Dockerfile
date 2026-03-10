@@ -18,9 +18,7 @@ FROM maven-base AS maven-build
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
-# Speed up build by not compiling tests
 COPY src/main /app/src/main
-COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app
@@ -105,7 +103,6 @@ RUN rm -r /dist/app/.git
 RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
-RUN rm /dist/app/compiler.groovy
 RUN rm -r /dist/app/src/test
 RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
