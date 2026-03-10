@@ -188,9 +188,8 @@ class Config {
             @JsonPropertyDescription()//
             String releaseName = ''        // optional override; if empty => use name
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
-            @JsonPropertyDescription()//
-            Map<String, Object> values = [:]
+            @JsonPropertyDescription()
+            String helmValuesPath = ""
         }
     }
 

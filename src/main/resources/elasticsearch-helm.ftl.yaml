@@ -1,0 +1,29 @@
+replicas: 1
+
+# Für kleine Demo-Cluster: ohne Security + ohne TLS (nur Demo!)
+esConfig:
+  elasticsearch.yml: |
+    xpack.security.enabled: false
+    xpack.security.http.ssl.enabled: false
+    xpack.security.transport.ssl.enabled: false
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 2Gi
+
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 10Gi
+
+service:
+  type: NodePort
+  nodePort: 30920
+  ports:
+    - name: http
+      port: 9200

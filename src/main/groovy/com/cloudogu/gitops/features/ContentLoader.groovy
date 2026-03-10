@@ -138,22 +138,19 @@ class ContentLoader extends Feature {
             return
         }
 
-
-        config.content.helmReleases.each { hr ->
-            // reuse Feature.deployHelmChart()
-            Config.HelmConfigWithValues hc = new Config.HelmConfigWithValues(
-                    repoURL: hr.repoURL,
-                    chart: hr.chart,
-                    version: hr.version,
-                    values: (hr.values ?: [:]) as Map<String, Object>
+        config.content.helmReleases.each { helmRelease ->
+            Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
+                    repoURL: helmRelease.repoURL,
+                    chart: helmRelease.chart,
+                    version: helmRelease.version
             )
 
             deployHelmChart(
-                    hr.name,                             // featureName (folder under apps/<name>)
-                    hr.releaseName ?: hr.name,           // releaseName
-                    hr.namespace,
-                    hc,
-                    null,                                // no values template here (values come from config)
+                    helmRelease.name,
+                    helmRelease.releaseName ?: helmRelease.name,
+                    helmRelease.namespace,
+                    helmConfig,
+                    helmRelease.helmValuesPath,
                     config
             )
         }

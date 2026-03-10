@@ -13,11 +13,29 @@ features:
 
 content:
   helmReleases:
-    - name: rabbitmq
-      repoURL: oci://registry-1.docker.io/bitnamicharts
-      chart: rabbitmq
-      version: "14.6.0"
-      namespace: my-prefix-rabbitmq
-      releaseName: rabbitmq
+    - name: harbor
+      repoURL: https://helm.goharbor.io
+      chart: harbor
+      version: "1.18.2"
+      namespace: my-prefix-harbor
+      releaseName: harbor
+      values:
+        expose:
+          type: ingress
+          tls:
+            enabled: false
+          ingress:
+            className: traefik
+            hosts:
+              core: core.harbor.domain
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: web
+              traefik.ingress.kubernetes.io/router.tls: "false"
+
+        externalURL: http://core.harbor.domain
+
+        harborAdminPassword: "Harbor12345"
+        secretKey: "change-me-please-16chars"
+
 registry:
   active: true

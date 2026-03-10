@@ -142,6 +142,10 @@
                 "type" : [ "string", "null" ],
                 "description" : ""
               },
+              "helmValuesPath" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
               "name" : {
                 "type" : [ "string", "null" ],
                 "description" : ""
@@ -156,10 +160,6 @@
               },
               "repoURL" : {
                 "type" : [ "string", "null" ],
-                "description" : ""
-              },
-              "values" : {
-                "$ref" : "#/$defs/Map(String,Object)-nullable",
                 "description" : ""
               },
               "version" : {
