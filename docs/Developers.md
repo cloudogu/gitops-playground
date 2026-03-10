@@ -98,7 +98,7 @@ mvn clean test
 ./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
 
 # finally run the test
-./mvnw integration-test -P <PROFILE>
+./mvnw integration-test -Dmicronaut.environments=<PROFILE>
 ```
 
 where <PROFILES> can be one of:
