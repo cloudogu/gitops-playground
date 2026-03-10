@@ -661,7 +661,7 @@ class Config {
 
 		@Option(names = ['--cert-manager-issuer'], description = CERTMANAGER_ENABLE_DESCRIPTION)
 		@JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
-		String issuer = 'selfsigned'
+		String issuer = 'cluster-selfsigned'
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)

@@ -14,10 +14,11 @@ argo-cd:
     ingress:
       enabled: true
       hostname: ${argocd.host}
-      <#if config.features.certManager.actice == true>
+
+<#if config.features.certManager.active!false>
       tls: true
       ingressClassName: traefik
-      </#if>
+</#if>
 </#if>
 
     service:

@@ -77,7 +77,6 @@ function createCluster() {
     "--image=$K3S_VERSION"
     # Disable traefik (we roll our own ingress-controller)
     '--k3s-arg=--disable=traefik@server:*'
-    "-p 127.0.0.1:443:443@loadbalancer"
   )
     
   REGISTRIES=""

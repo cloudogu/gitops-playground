@@ -1,9 +1,9 @@
 <#if config.features.certManager.issuer == 'cluster-letsencrypt-staging'>
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
-  namespace: cert-manager
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
@@ -14,13 +14,13 @@ spec:
           ingress:
             class: traefik
 </#if>
----
+
 <#if config.features.certManager.issuer == 'cluster-letsencrypt-prod'>
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-prod
-  namespace: cert-manager
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
@@ -31,8 +31,9 @@ spec:
           ingress:
             class: traefik
 </#if>
----
+
 <#if config.features.certManager.issuer == 'cluster-selfsigned'>
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
