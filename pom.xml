@@ -551,9 +551,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
-            <micronaut.environments>${gop.profile}</micronaut.environments>
-          </systemPropertyVariables>
           <includes>
             <include>**/*IT</include>
           </includes>
@@ -597,45 +594,4 @@
 
   <pluginRepositories>
   </pluginRepositories>
-  <profiles>
-
-    <profile>
-      <id>full</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <gop.profile>full</gop.profile>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>full-prefix</id>
-      <properties>
-        <gop.profile>full-prefix</gop.profile>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>content-examples</id>
-      <properties>
-        <gop.profile>content-examples</gop.profile>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>operator-full</id>
-      <properties>
-        <gop.profile>operator-full</gop.profile>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>operator-mandants</id>
-      <properties>
-        <gop.profile>operator-mandants</gop.profile>
-      </properties>
-    </profile>
-
-  </profiles>
 </project>
