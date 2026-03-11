@@ -3,11 +3,11 @@
 There a several options for running the GitOps playground
 
 * on a local k3d cluster
-  Works best on Linux, but is possible on [Windows and Mac](#windows-or-mac). 
+  Works best on Linux, but is possible on [Windows and Mac](./Running-on-Windows-Mac.md). 
 * on a remote k8s cluster
 * each with the option
     * to use an external Jenkins, SCM-Manager and registry
-      (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or
+      (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/ecosystem/funktionsweise)) or
     * to run everything inside the cluster (for demo only)
 
 The diagrams below show an overview of the playground's architecture and three scenarios for running the playground.
@@ -20,18 +20,17 @@ Jenkins build agents spawned in the cloud.
 ### Overview
 | Playground on local machine                                                | Production environment with Cloudogu EcoSystem                                       |
 |----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [![Playground on local machine](docs/images/gitops-playground-local.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-local.drawio.svg "View full size") | [![A possible production environment](docs/images/gitops-playground-production.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-production.drawio.svg "View full size") |
+| [![Playground on local machine](./images/gitops-playground-local.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-local.drawio.svg "View full size") | [![A possible production environment](./images/gitops-playground-production.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/gitops-playground-production.drawio.svg "View full size") |
 
 ### Create Cluster
 
 You can apply the GitOps playground to 
 
-* a local k3d cluster (see [docs](docs/k3d.md) or [script](scripts/init-cluster.sh) for more details):
+* a local k3d cluster (see [docs](./k3d.md) or [script](../scripts/init-cluster.sh) for more details):
   ```shell
   bash <(curl -s \
     https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh)
   ```
-* a remote k8s cluster on Google Kubernetes Engine (e.g. via Terraform, see our [docs](docs/gke.md)),
 * or almost any k8s cluster.  
   Note that if you want to deploy Jenkins inside the cluster, you either need Docker as container runtime or set Jenkins up to run its build on an agent that provides Docker.
 
@@ -67,7 +66,7 @@ There are several options for running the container:
 * For local k3d cluster, we recommend running the image as a local container via `docker`
 * For remote clusters (e.g. on GKE) you can run the image inside a pod of the target cluster via `kubectl`.
 
-All options offer the same parameters, see [below](#overview-of-all-cli-and-config-options).
+All options offer the same parameters, see [Configuration.md](./Configuration.md).
 
 #### Apply via Docker (local cluster)
 
@@ -100,7 +99,7 @@ docker exec -it \
 #### Apply via kubectl (remote cluster)
 
 For remote clusters it is easiest to apply the playground via kubectl.
-You can find info on how to install kubectl [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl).
+You can find info on how to install kubectl [here](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC.

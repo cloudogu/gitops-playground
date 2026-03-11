@@ -10,7 +10,7 @@ Create a complete GitOps-based operational stack with all the tools you need for
 * __Notifications__/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * __Pipelines__: Example applications using [Jenkins](docs/Applications.md#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](docs/Applications.md#scm-manager)
 * __Ingress__ Controller: [ingress](https://traefik.github.io/charts)
-* __Certificate__ Management: [cert-manager](docs/Applications.md#certificate-management)
+* __Certificate__ Management: [cert-manager](https://cert-manager.io/)
 * [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation.
   This allows for adding your own end-user or IDP apps, creating repos, adding Argo CD tenants, etc.
 * Runs on: 
@@ -45,7 +45,7 @@ bash <(curl -s \
 ```
 
 Note that on some linux distros like debian do not support subdomains of localhost.
-There you might have to use `--base-url=http://local.gd` (see [local ingresses](docs/Applications.md#local-ingresses)).
+There you might have to use `--base-url=http://local.gd` (see [local ingresses](docs/Deploy-Ingress-Controller.md#local-ingresses)).
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
@@ -100,7 +100,6 @@ If you want to delete k3d use `rm .local/bin/k3d`.
 
 We compiled a few helpful documents for the most common use-cases/scenarios:
 - [Deploying an ingress controller](docs/Deploy-Ingress-Controller.md)
-- [Deploy with a Cloudogu Ecosystem](docs/Deploy-with-CES.md)
 - [Running GOP on Windows or Mac](docs/Running-on-Windows-Mac.md)
 
 

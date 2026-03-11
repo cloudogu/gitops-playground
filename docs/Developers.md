@@ -163,8 +163,8 @@ workflow-aggregator # Pipelines plugin, used in example builds
 ```
 
 Note that, when running locally we also need `kubernetes` and `configuration-as-code` but these are contained in [our 
-jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile#L2) (extracted from the 
-[corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml#L406-L409)).
+jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile) (extracted from the 
+[corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml)).
 
 
 ### Updating all plugins 

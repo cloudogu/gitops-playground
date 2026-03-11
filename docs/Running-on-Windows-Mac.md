@@ -1,12 +1,12 @@
 # Running on Windows or Mac
 
-* In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
+* In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](./Deploy-Ingress-Controller.md).
 * `--base-url=http://localhost --ingress` should work on both Windows and Mac.
-* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
+* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [ingress controller](./Deploy-Ingress-Controller.md#local-ingresses).
 
 ## Mac and Windows WSL
 
-On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can just run our [TL;DR command](#tldr) after installing Docker.
+On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can just run our [TL;DR command](../README.md#tldr) after installing Docker.
 
 For Windows, we recommend using [Windows Subsystem for Linux version 2](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command) (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/engine/install/), because it's easier to set up and less prone to errors.
 
@@ -46,12 +46,12 @@ Cannot contact default-1bg7f: java.nio.file.NoSuchFileException: /tmp/gitops-pla
 
 Here is how you can start the playground from a Windows-native PowerShell console:
 
-* [Install k3d](https://k3d.io/#installation), see [init-cluster.sh](scripts/init-cluster.sh) for `K3D_VERSION`, e.g. using `winget`
+* [Install k3d](https://k3d.io/stable/#releases), see [init-cluster.sh](../scripts/init-cluster.sh) for `K3D_VERSION`, e.g. using `winget`
 ```powershell
 winget install k3d --version x.y.z
 ```
 * Create k3d cluster.
-  See `K3S_VERSION` in [init-cluster.sh](scripts/init-cluster.sh) for `$image`, then execute  
+  See `K3S_VERSION` in [init-cluster.sh](../scripts/init-cluster.sh) for `$image`, then execute  
 ```powershell
 $ingress_port = "80"
 $registry_port = "30000"

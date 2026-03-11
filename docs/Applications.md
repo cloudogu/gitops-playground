@@ -26,7 +26,7 @@ For example, `--base-url=http://localhost` leads to `
 * http://scmm.localhost
 * http://vault.localhost
 
-Of course, this would also work for production instances with proper domains, see [Deploy Ingresses](#deploy-ingresses).
+Of course, this would also work for production instances with proper domains, see [Deploy Ingresses](./Deploy-Ingress-Controller.md).
 
 All applications are deployed via GitOps and can be found in the `cluster-resources` repository.
 See [Argo CD](#argo-cd) for more details on the repository structure.
@@ -47,7 +47,7 @@ When installing the GitOps playground, the following Git repositories are create
 Argo CD’s own management and configuration, which previously lived in a dedicated `argocd` repository, 
 is now part of the `cluster-resources` repo under `apps/argocd`:
 
-![example of argocd repo structure](docs/argocd.png)
+![example of argocd repo structure](images/argocd.png)
 
 ### Bootstrapping Argo CD
 When the GitOps playground is installed, Argo CD is bootstrapped as follows:
@@ -117,7 +117,7 @@ This multi-source pattern replaces the previous App-of-Apps based approach for f
 ### Application repo: example-apps
 The `example-apps` repository demonstrates how application teams can structure their own GitOps repositories. Its layout looks like this:
 
-![example of example-apps repo structure](docs/example.png)
+![example of example-apps repo structure](images/example.png)
 
   * The folder `apps/argocd/applications` contains Argo CD `Application` manifests for the example workloads:
     * `petclinic-plain.yaml`
@@ -149,7 +149,7 @@ We fall back to using imperative helm installation as a kind of neutral ground.
 ## Jenkins
 
 You can set an external jenkins server via the following parameters when applying the playground.
-See [parameters](#overview-of-all-cli-and-config-options) for examples.
+See [parameters](./Configuration.md) for examples.
 
 * `--jenkins-url`,
 * `--jenkins-username`,
@@ -173,21 +173,21 @@ You can choose between the following Git providers:
 - SCM-Manager
 - GitLab
 
-For configuration details, see the CLI or configuration parameters above ([SCM](#scmtenant)).
+For configuration details, see the CLI or configuration parameters above ([SCM](./Configuration.md#multi-tenant)).
 
 ### GitLab
 
 When using GitLab, you must provide a valid **parent group ID**.
 This group will serve as the main group for the GOP to create and manage all required repositories.
 
-[![gitlab ParentID](docs/gitlab-parentid.png)](https://docs.gitlab.com/user/group/#find-the-group-id)
+[![gitlab ParentID](images/gitlab-parentid.png)](https://docs.gitlab.com/user/group/#find-the-group-id)
 
 To authenticate with Gitlab provide a token token as password. More information can be found [here](https://docs.gitlab.com/api/rest/authentication/)  or [here](https://docs.gitlab.com/user/profile/personal_access_tokens/)
 The username should remain 'oauth2.0' to access the API, unless stated otherwise by GitLab documentation.
 ### SCM-Manager
 
 You can set an external SCM-Manager via the following parameters when applying the playground.
-See [parameters](#overview-of-all-cli-and-config-options) for examples.
+    See [parameters](./Configuration.md) for examples.
 
 * `--scmm-url`,
 * `--scmm-username`,
@@ -261,7 +261,7 @@ When using `vault=prod` you'll have to initialize vault manually but on the othe
 If you want the example app to work, you'll have to manually
 * set up vault, unseal it and
 * authorize the `vault` service accounts in `argocd-production` and `argocd-staging` namspaces. See `SecretStore`s and
-  [dev-post-start.sh](system/secrets/vault/dev-post-start.sh) for an example.
+  [dev-post-start.sh](../argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh) for an example.
 
 
 ## Example app
@@ -282,7 +282,7 @@ while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; \
 ```
 
 This usually takes between a couple of seconds and 1-2 minutes.  
-This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
+This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically)
 (defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration))
 + cache propagation delay
 
@@ -315,9 +315,8 @@ The applications implement a simple staging mechanism:
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
-  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
 
-[![app-repo-vs-gitops-repo](docs/images/app-repo-vs-gitops-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/app-repo-vs-gitops-repo.svg "View full size")
+[![app-repo-vs-gitops-repo](images/app-repo-vs-gitops-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/images/app-repo-vs-gitops-repo.svg "View full size")
 
 Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
@@ -345,7 +344,7 @@ The `.petlinic.` part can be overridden using
 
 #### PetClinic with plain k8s resources
 
-[Jenkinsfile](examples/example-apps-via-content-loader/argocd/petclinic-plain/Jenkinsfile) for `plain` deployment
+[Jenkinsfile](../examples/example-apps-via-content-loader/argocd/petclinic-plain/Jenkinsfile.ftl) for `plain` deployment
 
 * Staging: http://staging.petclinic-plain.petclinic.localhost/
 * Production: http://production.petclinic-plain.petclinic.localhost/  
@@ -353,21 +352,8 @@ The `.petlinic.` part can be overridden using
 
 #### PetClinic with helm
 
-[Jenkinsfile](examples/example-apps-via-content-loader/argocd/petclinic-helm/Jenkinsfile) for `helm` deployment
+[Jenkinsfile](../examples/example-apps-via-content-loader/argocd/petclinic-helm/Jenkinsfile.ftl) for `helm` deployment
 
 * Staging: http://staging.petclinic-helm.petclinic.localhost/
 * Production: http://production.petclinic-helm.petclinic.localhost/  
    Note that you have to accept a [pull request](http://scmm.localhost/scm/repo/argocd/example-apps/pull-requests/) for deployment
-
-#### 3rd Party app (NGINX) with helm, templated in Jenkins
-
-[Jenkinsfile](applications/nginx/argocd/helm-jenkins/Jenkinsfile)
-
-* Staging: http://staging.nginx-helm.nginx.localhost/
-* Production: http://production.nginx-helm.nginx.localhost/  
-  Note that you have to accept a [pull request](http://scmm.localhost/scm/repo/argocd/example-apps/pull-requests/) for deployment
-
-
-#### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
-
-* http://production.nginx-helm-umbrella.nginx.localhost/

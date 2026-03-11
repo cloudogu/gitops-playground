@@ -5,11 +5,11 @@ In the default installation the GitOps-Playground comes without an Ingress-Contr
 We use Traefik as default Ingress-Controller.
 It can be enabled via the configfile or parameter `--ingress`.
 
-In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
+In order to make use of the ingress controller, it is recommended to use it in conjunction with `--base-url`, which will create `Ingress` objects for all components of the GitOps playground.
 
 The ingress controller is based on the helm chart [`ingress`](https://traefik.github.io/charts/).
 
-Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](#configuration-file).
+Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](./Configuration.md).
 
 Example:
 ```yaml
@@ -24,7 +24,7 @@ features:
 In this Example we override the default `controller.replicaCount` (GOP's default is 2).
 
 This config file is merged with precedence over the defaults set by 
-* [the GOP](argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml) and
+* [the GOP](../argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml) and
 * [the charts itself](https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml).
 
 # Deploy Ingresses
@@ -46,7 +46,7 @@ It is possible to deploy `Ingress` objects for all components. You can either
 Note: 
 * `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
 * In order to make use of the `Ingress` you need an ingress controller.
-  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress` parameter](#deploy-ingress-controller).
+  If your cluster does not provide one, the Playground can deploy one for you, via the `--ingress` parameter.
 * For this to work, you need to set an `*.example.com` DNS record to the externalIP of the ingress controller.
 
 Alternatively, [hyphen-separated ingresses](#subdomains-vs-hyphen-separated-ingresses) can be created,
@@ -68,8 +68,8 @@ like http://argocd-example.com
 The ingresses can also be used when running the playground on your local machine:
 
 * Ingresses might be easier to remember than arbitrary port numbers and look better in demos 
-* With ingresses, we can execute our [local clusters](docs/k3d.md) in higher isolation or multiple playgrounds concurrently
-* Ingresses are required [for running on Windows/Mac](#windows-or-mac).
+* With ingresses, we can execute our [local clusters](./k3d.md) in higher isolation or multiple playgrounds concurrently
+* Ingresses are required [for running on Windows/Mac](./Running-on-Windows-Mac.md).
 
 To use them locally, 
 * init your cluster (`init-cluster.sh`).
