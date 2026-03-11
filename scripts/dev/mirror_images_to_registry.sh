@@ -36,35 +36,25 @@ roles['limited-guest']='5'
 operations=("Proxy" "Registry")
 readOnlyUser='RegistryRead'
 
- for operation in "${operations[@]}"; do
+for operation in "${operations[@]}"; do
 
-     # Convert the operation to lowercase for the project name and email
-     lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
+    # Convert the operation to lowercase for the project name and email
+    lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
 
-     echo "creating project ${lower_operation}"
-     if [[ $(curl -s -o /dev/null -w "%{http_code}" -u admin:Harbor12345 http://localhost:30000/api/v2.0/projects?name=${lower_operation}) == "200" ]]
-     then
-         echo "project ${lower_operation}, already exists.."
-         continue
-     fi
+    echo "creating project ${lower_operation}"
+    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
 
-     projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
+    echo creating user ${operation} with PW ${operation}12345
+    curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
 
-     echo creating user ${operation} with PW ${operation}12345
-     curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
+    echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
+    curl --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['maintainer']},\"member_user\":{\"username\":\"$operation\"}}"
+done
 
-     echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
-     curl --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['maintainer']},\"member_user\":{\"username\":\"$operation\"}}"
- done
-
-if [[ -n "$projectId" ]]
-then
-
-    echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
-    curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
-    echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
-    curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
-fi
+echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
+curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
+echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
+curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
 
 
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"

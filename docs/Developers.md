@@ -17,18 +17,14 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Prerequisites](#prerequisites)
 - [Testing](#testing)
-  - [Usage](#usage)
-  - [Options](#options)
+  - [Unit-Tests](#unit-tests)
+  - [Integration-Tests](#integration-tests)
 - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
   - [Solution](#solution)
   - [Updating all plugins](#updating-all-plugins)
 - [Local development](#local-development)
-- [Development image](#development-image)
-- [Running multiple instances on one machine](#running-multiple-instances-on-one-machine)
-  - [Use a different ingress port](#use-a-different-ingress-port)
-  - [Access local docker network](#access-local-docker-network)
-- [Implicit + explicit dependencies](#implicit--explicit-dependencies)
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
@@ -37,20 +33,16 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 - [Testing Network Policies locally](#testing-network-policies-locally)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
-  - [Provide images needed by playground](#provide-images-needed-by-playground)
   - [Install the playground](#install-the-playground)
   - [Notifications / E-Mail](#notifications--e-mail)
   - [Troubleshooting](#troubleshooting)
   - [Using ingresses locally](#using-ingresses-locally)
-    - [Troubleshooting](#troubleshooting-1)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
 - [Installing ArgoCD Operator](#installing-argocd-operator)
   - [Prerequisites:](#prerequisites)
   - [Installation Script](#installation-script)
   - [Install ingress manually](#install-ingress-manually)
-- [Gitlab (Experimental)](#gitlab-experimental)
-  - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -92,7 +84,7 @@ mvn clean test
 ./mvnw clean test-compile
 
 # first create a fresh new cluster to test on:
-./scripts/init-cluster.sh
+./scripts/init-cluster
 
 # then deploy the gop with a predefined profile:
 ./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
@@ -220,52 +212,6 @@ We should automate this!
       docker rm -v $id
       ```
 
-## Running multiple instances on one machine
-
-Sometimes it makes sense to run more than one instance on your developer machine.
-For example, you might want to conduct multiple long-running tests in parallel, or 
-you might be interested to see how the latest stable version behaved in comparison to you local build.
-
-You have to options to do this
-
-1. Use a different ingress port
-2. Access local docker network (linux only)
-
-### Use a different ingress port
-
-```bash
-INSTANCE=2
-
-scripts/init-cluster.sh --bind-ingress-port="808$INSTANCE" \
-  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE"
-
-docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
-    --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
-      --base-url="http://localhost:808$INSTANCE" --argocd --ingress
-
-echo "Once Argo CD has deployed the traefik-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
-```
-
-### Access local docker network
-
-This will work on linux only
-
-```bash
-INSTANCE=3
-
-scripts/init-cluster.sh \
-  --cluster-name="gitops-playground$INSTANCE" --bind-ingress-port=- --bind-registry-port="3000$INSTANCE " 
-
-docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
-    --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x --argocd 
-
-xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  k3d-playground$INSTANCE-server-0):9091"
-```
-
 ## Testing URL separator hyphens
 ```bash
 docker run --rm -t  -u $(id -u) \
@@ -339,48 +285,15 @@ That is, for most helm charts, you'll need to set an individual value.
   Otherwise GOP deploys its own registry, leading to port conflicts:  
   `Service "harbor" is invalid: spec.ports[0].nodePort: Invalid value: 30000: provided port is already allocated`
 * By default, `docker run` relies on the `gitops-playground:dev` image.  
-  See [here](#Local-development) how to build it, or change `GOP_IMAGE` bellow to e.g. `ghcr.io/cloudogu/gitops-playground`
 
 **Setup**
-* Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with "scripts/dev/two-registries.yaml" values file)
 
+To set-up harbor with two projects, you can use the target "prepare-two-registries".
 ```shell
-scripts/init-cluster.sh
-helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values ./scripts/dev/two-registries.yaml
+make prepare-two-registries
 ```
 
-* Create registries and base image:
-
-```bash
-./scripts/dev/mirror_images_to_registry.sh
-```
-
-* Creating a specific example config file for two registries 
-```bash
-# Copy content of config.yaml from line one till the last list element under namespaces
-awk '1; /example-apps-staging/ {exit}' ../examples/example-apps-via-content-loader/config.yaml > ../scripts/local/two-registries.yaml
-# Append following lines to the config file file
-cat <<EOF >> ../scripts/local/two-registries.yaml
-  variables:
-    petclinic:
-      baseDomain: "petclinic.localhost"
-    nginx:
-      baseDomain: "nginx.localhost"
-    images:
-      kubectl: "localhost:30000/proxy/kubectl:1.29"
-      helm: "localhost:30000/proxy/helm:3.16.4-1"
-      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
-      nginx: ""
-      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
-      maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
-EOF
-```
-
-* Deploy playground:
-
+Afer that, deploy GOP with the generated config file:
 ```bash
 # Create a docker container or use an available immage from a registry
 # docker build -t gop:dev .
@@ -494,66 +407,20 @@ like images or helm charts.
 
 ### Setup cluster
 
+First of all, create a new default cluster with:
 ```bash
-scripts/init-cluster.sh --cluster-name=airgapped-playground
-# Note that at this point the cluster is not yet airgapped
-
-# Get the "nodeport" IP
-K3D_NODE=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-airgapped-playground-server-0)
- 
-# Now init some apps you want to have running (e.g. harbor) before going airgapped
-helm upgrade  -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --set externalURL=http://$K3D_NODE:30002 --create-namespace
+./scripts/init-cluster.sh
 ```
 
-Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.config/k3d/...`
+Then deploy the GOP with your desired settings, for example:
 ```bash
-sed -i -r "s/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g" ~/.config/k3d/kubeconfig-airgapped-playground.yaml
-```
-You can switch to the airgapped context in your current shell like so:
-```shell
-export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
+./mvnw exec:java -Dexec.arguments="--profile=full"
 ```
 
-TODO also replace in `~/.kube/config` for more convenience.
-In there, we need to be more careful, because there are other contexts. This makes it more difficult.
-
-### Provide images needed by playground
-
-First, let's import necessary images into harbor using `skopeo`.
-With `skopeo`, this process is much easier than with `docker` because we don't need to pull the images first.
-You can get a list of images from a running playground that is not airgapped.
-
+Now you can prepare the airgapped cluster, this step will remove the default 'gitops-playground' cluster
 ```bash
-# Add more images here, if you like
-# We're not adding registry, scmm, jenkins and argocd here, because we have to install them before we go offline (see bellow for details).
-IMAGE_PATTERNS=('external-secrets' \
-  'vault' \
-  'prometheus' \
-  'grafana' \
-  'sidecar' \
-  'traefik')
-BASIC_SRC_IMAGES=$(
-  kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
-  | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
-  | sed 's/docker\.io\///g' | sort | uniq)
-BASIC_DST_IMAGES=''
-
-# Switch context to airgapped cluster here, e.g.
-export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
-
-while IFS= read -r image; do
-  local dstImage=$K3D_NODE:30002/library/${image##*/}
-  echo pushing image $image to $dstImage
-  skopeo copy docker://$image --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://$dstImage
-  BASIC_DST_IMAGES+="${dstImage}\n"
-done <<< "$BASIC_SRC_IMAGES"
-echo $BASIC_DST_IMAGES
+make prepare-airgapped-cluster
 ```
-
-Note that we're using harbor here, because `k3d image import -c airgapped-playground $(echo $BASIC_IMAGES)` does not
-help because some pods follow the policy of always pulling the images.
-
-Note that even though the images are named `$K3D_NODE:30002/library/...`, these are available via `localhost:30002/library/...` in the k3d cluster.
 
 ### Install the playground
 
@@ -584,34 +451,6 @@ docker run -it -u $(id -u) \
       --ingress-image localhost:30002/library/traefik:3.6.7
 ```
 
-In a different shell start this script, that waits for Argo CD and then goes offline.
-
-```bash
-sudo id # cache sudo PW
-while true; do
-    pods=$(kubectl get pods -n argocd -o jsonpath="{range .items[*]}{.status.phase}{'\n'}{end}")
-    # Dont stop when there are no pods
-    [[ "$(kubectl get pods  -n argocd --output name | wc -l)" -gt 0 ]] && ready="True" || ready="False" 
-    while IFS= read -r pod; do
-        if [[ "$pod" != "Running" ]]; then
-            ready="False"
-        fi
-    done <<< "$pods"
-    if [[ "$ready" == "True" ]]; then
-        break
-    fi
-    echo "$(date '+%Y-%m-%d %H:%M:%S'): Waiting for ArgoCD pods to be ready. Status: $pods"
-    sleep 5
-done
-
-echo "$(date '+%Y-%m-%d %H:%M:%S'): Argo CD Ready, going offline"
-sudo iptables -I FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
-```
-
-If you want to go online again, use `-D`
-```bash
-sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
-```
 
 ### Notifications / E-Mail
 
