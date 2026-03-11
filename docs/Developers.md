@@ -295,7 +295,7 @@ make prepare-two-registries
 
 Afer that, deploy GOP with the generated config file:
 ```bash
-# Create a docker container or use an available immage from a registry
+# Create a docker container or use an available image from a registry
 # docker build -t gop:dev .
 GOP_IMAGE=gop:ingress
 PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
