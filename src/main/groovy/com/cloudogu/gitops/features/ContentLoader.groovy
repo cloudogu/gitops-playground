@@ -138,11 +138,19 @@ class ContentLoader extends Feature {
             return
         }
 
+
+
+
         config.content.helmReleases.each { helmRelease ->
+            String version = helmRelease.version?.trim()
+            if (!version) {
+                version = "*"
+            }
+
             Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
                     repoURL: helmRelease.repoURL,
                     chart: helmRelease.chart,
-                    version: helmRelease.version
+                    version: version
             )
 
             deployHelmChart(
