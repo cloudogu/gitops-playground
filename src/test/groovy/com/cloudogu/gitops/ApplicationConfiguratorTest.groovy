@@ -6,6 +6,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.ContentLoader
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
@@ -94,9 +95,11 @@ class ApplicationConfiguratorTest {
         HelmClient helmClient = Mockito.mock(HelmClient)
         GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
 
+        DeploymentStrategy deploymentStrategy = Mockito.mock(DeploymentStrategy)
+
 
         GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
-        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler))
+        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deploymentStrategy))
         featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
     }
 

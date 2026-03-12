@@ -132,7 +132,7 @@ class ContentLoader extends Feature {
         }
     }
 
-    private void deployHelmReleasesFromContent() {
+    protected void deployHelmReleasesFromContent() {
         if (!config.content?.helmReleases) {
             log.debug("No content.helmReleases configured - skipping.")
             return
