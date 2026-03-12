@@ -58,15 +58,27 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         // Feature-Name -> Ordner under apps/<feature>
         String featurePath    = "apps/${featureName}"
 
+        // --- ensure folders exist before writing files ---
+        String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
+        Path.of(repoRoot, featurePath).toFile().mkdirs()
 
-        String valuesRelPath = "${featurePath}/${featureName}-gop-helm.yaml"   // relative to repo-root
-        // inline values from tmpHelmValues file into ArgoCD Application YAML
+        // 1) GOP-managed values (may be overwritten each run)
+        String gopValuesPath = "${featurePath}/${featureName}-gop-helm.yaml" // relative to repo-root
         def inlineValues = helmValuesPath.toFile().text
-        clusterResourcesRepo.writeFile(valuesRelPath, inlineValues)
+        clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
-        //GOP should not overwrite this file
-        String userValuesRelPath = "${featurePath}/${featureName}-user-values.yaml"
-        clusterResourcesRepo.writeFile(userValuesRelPath, "")
+        // 2) User values (must NEVER be overwritten by GOP)
+        String userValuesPath = "${featurePath}/${featureName}-user-values.yaml"
+        Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
+        if (!userValuesAbsPath.toFile().exists()) {
+            clusterResourcesRepo.writeFile(userValuesPath, "")
+        } else {
+            log.debug("Keeping existing user values file (will not overwrite): ${userValuesPath}")
+        }
+
+        if (!version?.trim()) {
+            version = "*"
+        }
 
         // 1) helm source (external chart source)
         def helmSource = [
@@ -76,12 +88,17 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 helm                             : [
                         releaseName: releaseName,
                         valueFiles : [
-                                "\$values/${valuesRelPath}".toString(),
-                                "\$values/${userValuesRelPath}".toString()
+                                "\$values/${gopValuesPath}".toString(),
+                                "\$values/${userValuesPath}".toString()
                         ],
                         ignoreMissingValueFiles: true
                 ]
         ]
+
+        // only pin a version when provided; otherwise let ArgoCD/Helm pick latest
+        if (version?.trim()) {
+            helmSource.targetRevision = version.trim()
+        }
 
         // 2) Git source for values
         //   - repoURL: cluster-resources repo
@@ -133,6 +150,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         ])
 
         String appManifestPath="apps/argocd/applications/${releaseName}.yaml"
+
         clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +

@@ -132,6 +132,44 @@
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
         },
+        "helmReleases" : {
+          "description" : "",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "chart" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "helmValuesPath" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "name" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "namespace" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "releaseName" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "repoURL" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              },
+              "version" : {
+                "type" : [ "string", "null" ],
+                "description" : ""
+              }
+            },
+            "additionalProperties" : false
+          }
+        },
         "multitenancyExamples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"

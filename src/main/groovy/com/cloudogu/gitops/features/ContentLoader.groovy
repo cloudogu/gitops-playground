@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
@@ -23,6 +24,8 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+
+import java.nio.file.Path
 
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
@@ -49,13 +52,21 @@ class ContentLoader extends Feature {
     UsernamePasswordCredentialsProvider credentialsProvider
 
     ContentLoader(
-            Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler
+            Config config,
+            K8sClient k8sClient,
+            GitRepoFactory repoProvider,
+            Jenkins jenkins,
+            GitHandler gitHandler,
+            FileSystemUtils fileSystemUtils,
+            DeploymentStrategy deployer
     ) {
         this.config = config
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.jenkins = jenkins
         this.gitHandler = gitHandler
+        this.fileSystemUtils = fileSystemUtils
+        this.deployer = deployer
     }
 
     @Override
@@ -69,10 +80,9 @@ class ContentLoader extends Feature {
         clearCache()
         // clones repo to check valid configuration and reuse result for further step.
         cachedRepoCoordinates = cloneContentRepos()
-
         createImagePullSecrets()
-
         createContentRepos()
+        deployHelmReleasesFromContent()
     }
 
     @Override
@@ -119,6 +129,38 @@ class ContentLoader extends Feature {
                     }
                     break
             }
+        }
+    }
+
+    protected void deployHelmReleasesFromContent() {
+        if (!config.content?.helmReleases) {
+            log.debug("No content.helmReleases configured - skipping.")
+            return
+        }
+
+
+
+
+        config.content.helmReleases.each { helmRelease ->
+            String version = helmRelease.version?.trim()
+            if (!version) {
+                version = "*"
+            }
+
+            Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
+                    repoURL: helmRelease.repoURL,
+                    chart: helmRelease.chart,
+                    version: version
+            )
+
+            deployHelmChart(
+                    helmRelease.name,
+                    helmRelease.releaseName ?: helmRelease.name,
+                    helmRelease.namespace,
+                    helmConfig,
+                    helmRelease.helmValuesPath,
+                    config
+            )
         }
     }
 

@@ -30,6 +30,20 @@ spec:
   - https://charts.external-secrets.io
   - https://charts.jetstack.io
 </#if>
+<#-- NEW: allow Helm repos from content.helmReleases -->
+<#if config.content.helmReleases?? && (config.content.helmReleases?size > 0)>
+  <#assign seen = {} >
+  <#list config.content.helmReleases as hr>
+    <#if hr.repoURL?? && hr.repoURL?has_content>
+      <#-- normalize a bit (trim) -->
+      <#assign repo = hr.repoURL?trim>
+      <#if repo?has_content && !seen[repo]??>
+        <#assign seen = seen + { (repo): true } >
+  - ${repo}
+        </#if>
+      </#if>
+  </#list>
+</#if>
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:

@@ -100,6 +100,10 @@ class Config {
         @JsonPropertyDescription(CONTENT_REPO_DESCRIPTION)
         List<ContentRepositorySchema> repos = []
 
+        // ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
+        @JsonPropertyDescription()//(CONTENT_HELM_RELEASES_DESCRIPTION)
+        List<HelmReleaseSchema> helmReleases = []
+
         @JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
         Map<String, Object> variables = [:]
 
@@ -157,6 +161,35 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
 
+        }
+
+        static class HelmReleaseSchema {
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String name = ''               // featureName/apps/<name>, also default for releaseName
+
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String repoURL = ''            // helm repo url
+
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String chart = ''              // chart name
+
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String version = ''            // chart version
+
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String namespace = ''          // target namespace to deploy into
+
+//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
+            @JsonPropertyDescription()//
+            String releaseName = ''        // optional override; if empty => use name
+
+            @JsonPropertyDescription()
+            String helmValuesPath = ""
         }
     }
 
