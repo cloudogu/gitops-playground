@@ -24,9 +24,6 @@ pipeline {
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
-        K3D_NET_NAME = "k3d-gop-net-${env.BUILD_ID}"
-        K3D_VOL_NAME = "k3d-gop-vol-${env.BUILD_ID}"
-        K3D_IMAGE = "ghcr.io/k3d-io/k3d:latest"
     }
 
     stages {
@@ -75,12 +72,39 @@ pipeline {
                 stage('Integration tests') {
                     steps {
                         script {
-                            sh "KUBECONFIG=.kubeconfig.yaml yes | ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME} --bind-registry-port=0 --bind-ingress-port=0"
-                        }
-                    }
-                    post {
-                        always {
-                            sh "$HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
+                            def profiles = (env.BRANCH_NAME == 'feature/weekly-builds')
+                                ? ['full', 'full-prefix', 'content-example']
+                                : [params.chooseProfile]
+
+                            def dockerArgs = """
+                                -v ./.kubeconfig.yaml:/.kubeconfig.yaml
+                                -e KUBECONFIG=.kubeconfig.yaml
+                                -v /var/run/docker.sock:/var/run/docker.sock
+                                -u ${env.BUILD_USER}:${env.BUILD_GROUP}
+                                --network=host
+                                --entrypoint ''
+                            """
+
+                            def withK3dCluster = { body ->
+                                try {
+                                    sh "yes | KUBECONFIG=.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
+                                    body()
+                                } finally {
+                                    sh "KUBECONFIG=.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
+                                }}
+
+                            profiles.each { profile ->
+                                withK3dCluster {
+                                    docker.image("${env.FULL_IMAGE_TAG}").inside(dockerArgs) {
+                                        sh "/app/scripts/apply-ng.sh --profile=full"
+                                    }
+                                    docker.image("${env.MAVEN_IMAGE}").inside(dockerArgs) {
+                                        sh "mvn failsafe:integration-test -Dmaven.test.failure.ignore=true -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                    }
+                                }
+                                junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
+                                    allowEmptyResults: true
+                            }
                         }
                     }
                 }
