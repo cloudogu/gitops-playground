@@ -23,7 +23,7 @@ function main() {
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
     if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
-      echoHightlighted "WARNING: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
+      echo "WARNING: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
     fi
   fi
 
@@ -158,7 +158,7 @@ EOF
       --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound internal registry port 30000 to localhost port ${registryPort}."
-    echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+    echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
   
   if [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
@@ -167,7 +167,7 @@ EOF
       --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound ingress port to localhost:${ingressPort}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
+    echo "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -261,19 +261,6 @@ readParameters() {
     *) break ;;
     esac
   done
-}
-
-function echoHightlighted() {
-    # fallback to normal echo if TERM is not set
-    # because tput requires a valid terminal
-    if [ -z "$TERM" ] || ! command -v tput > /dev/null 2>&1; then
-        echo "$@"
-    else 
-      # Print to stdout in green
-      tput setaf 2
-      echo "$@"
-      tput sgr0
-    fi
 }
 
 main "$@"
