@@ -29,6 +29,13 @@ pipeline {
 
     stages {
 
+        stage('CleanWS & Checkout') {
+            steps {
+                cleanWs()
+                checkout scm
+            }
+        }
+
         stage('Build') {
 
             parallel {
