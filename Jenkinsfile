@@ -97,7 +97,7 @@ pipeline {
                                 ? ['operator-full']
                                 : [params.chooseProfile]
 
-                            if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0) {
+                            if ((currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0) || params.chooseProfile == ['all profiles']) {
                                 profiles = ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             }
 
