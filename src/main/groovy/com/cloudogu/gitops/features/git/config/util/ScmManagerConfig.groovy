@@ -12,7 +12,6 @@ interface ScmManagerConfig {
     String getNamespace()
     String getIngress()
     Config.HelmConfigWithValues getHelm()
-    String getRootPath()
     String getGitOpsUsername()
 
     Credentials getCredentials()

@@ -118,10 +118,6 @@ class ScmTenantSchema {
                 values: [:]
         )
 
-        @Option(names = ['--scmm-root-path'], description = SCMM_ROOT_PATH_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_ROOT_PATH_DESCRIPTION)
-        String rootPath = 'repo'
-
         /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
            the SCMM URL used by jenkins.
 

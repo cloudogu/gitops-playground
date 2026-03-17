@@ -66,10 +66,6 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--central-scmm-root-path'], description = CENTRAL_SCMM_PATH_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_PATH_DESCRIPTION)
-        String rootPath = 'repo'
-
         @Option(names = ['--central-scmm-namespace'], description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
         String namespace = 'scm-manager'
