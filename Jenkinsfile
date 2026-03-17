@@ -84,6 +84,10 @@ pipeline {
                                 ? ['operator-full']
                                 : [params.chooseProfile]
 
+                            if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0) {
+                                profiles = ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                            }
+
                             def dockerArgs = """
                                 -e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml
                                 -v maven-cache:/root/.m2
@@ -136,19 +140,17 @@ pipeline {
 
     post {
         always {
-            node('master') {
-                emailext(
-                    subject: "Job-Status: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                    body: """
-                        <p>weitere Infos hier: ${env.BUILD_URL}</p>
-                    """,
-                    mimeType: 'text/html',
-                    recipientProviders: [
-                        [$class: 'DevelopersRecipientProvider'],
-                        [$class: 'RequesterRecipientProvider']
-                    ]
-                )
-            }
+            emailext(
+                subject: "Job-Status: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                body: """
+                    <p>weitere Infos hier: ${env.BUILD_URL}</p>
+                """,
+                mimeType: 'text/html',
+                recipientProviders: [
+                    [$class: 'DevelopersRecipientProvider'],
+                    [$class: 'RequesterRecipientProvider']
+                ]
+            )
         }
     }
 }
