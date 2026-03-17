@@ -29,10 +29,16 @@ pipeline {
 
     stages {
 
-        stage('CleanWS & Checkout') {
+        stage('Checkout') {
             steps {
-                cleanWs()
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    extensions: scm.extensions + [
+                        [$class: 'CloneOption', tags: true, shallow: false]
+                    ],
+                    userRemoteConfigs: scm.userRemoteConfigs
+                ])
             }
         }
 
@@ -47,7 +53,7 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test'
+                        sh 'mvn -B clean test && chown $BUILD_USER:$BUILD_GROUP ./* -R'
                         junit testResults: '**/target/surefire-reports/TEST-*.xml'
                         archiveArtifacts artifacts: "**/target/site/jacoco/index.html"
                     }
@@ -125,7 +131,7 @@ pipeline {
                                         sh "/app/scripts/apply-ng.sh --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(dockerArgs) {
-                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
                                     }
                                 }
                                 junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
