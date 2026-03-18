@@ -26,4 +26,29 @@ cat <<EOF >> ./scripts/local/two-registries.yaml
       nginx: ""
       petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
       maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
+features:
+  argocd:
+  mail:
+    helm:
+      image: "localhost:30000/proxy/mailhog"
+  monitoring:
+    helm:
+      grafanaImage: "localhost:30000/proxy/grafana"
+      grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar"
+      prometheusImage: "localhost:30000/proxy/prometheus"
+      prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator"
+      prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader"
+  secrets:
+    externalSecrets:
+      helm:
+        image: "localhost:30000/proxy/external-secrets"
+    vault:
+      helm:
+        image: "localhost:30000/proxy/vault"
+  certManager:
+    helm:
+      image: "localhost:30000/proxy/cert-manager-controller"
+      webhookImage: "localhost:30000/proxy/cert-manager-webhook"
+      cainjectorImage: "localhost:30000/proxy/cert-manager-cainjector"
+
 EOF
