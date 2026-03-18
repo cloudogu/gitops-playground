@@ -53,7 +53,7 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test && chown $BUILD_USER:$BUILD_GROUP ./* -R'
+                        sh 'mvn -B clean test'
                         junit testResults: '**/target/surefire-reports/TEST-*.xml'
                         archiveArtifacts artifacts: "**/target/site/jacoco/index.html"
                     }
@@ -97,7 +97,9 @@ pipeline {
                                 ? ['operator-full']
                                 : [params.chooseProfile]
 
-                            if ((currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0) || params.chooseProfile == ['all profiles']) {
+                            def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
+
+                            if (isTriggeredByTimer || params.chooseProfile == ['all profiles']) {
                                 profiles = ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             }
 
@@ -144,6 +146,13 @@ pipeline {
         }
 
         stage('Push Image') {
+            when {
+                anyOf {
+                    branch 'main'
+                    buildingTag()
+                    expression { return params.forcePushImage}
+                }
+            }
             steps {
                 sh "echo push-image"
             }
