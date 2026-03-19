@@ -17,7 +17,10 @@ content:
       chart: elasticsearch
       version: "8.5.1"
       namespace: my-prefix-elasticsearch
-      helmValuesPath: "src/main/resources/elasticsearch-helm.ftl.yaml"
+      valuesFrom:
+        - repoURL: https://github.com/cloudogu/gitops-playground
+          ref: feature/helm_by_content_loader
+          path: src/main/resources/elasticsearch-helm.yaml
 
 registry:
   active: true

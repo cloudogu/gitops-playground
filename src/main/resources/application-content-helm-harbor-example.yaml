@@ -1,0 +1,28 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  insecure: true
+  namePrefix: my-prefix
+features:
+  argocd:
+    active: true
+  ingress:
+    active: true
+
+content:
+  helmReleases:
+    - name: harbor
+      repoURL: https://helm.goharbor.io
+      chart: harbor
+      version: "1.18.2"
+      namespace: my-prefix-harbor
+      releaseName: harbor
+
+      values:
+        expose:
+          tls:
+            enabled: false
+
+registry:
+  active: true

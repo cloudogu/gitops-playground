@@ -12,10 +12,9 @@ import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
-import java.nio.file.Files
 import java.nio.file.Path
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 /**
  * A single tool to be deployed by GOP.
@@ -111,8 +110,14 @@ abstract class Feature {
          * case we simply treat helmValuesTemplateData directly as helmValuesData */
         Map helmValuesData = this.helmValuesTemplateData
         if (helmValuesTemplatePath) {
-            log.debug("got helm_value_path, rendering values template")
-            helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
+            def helmValuesPath = helmValuesTemplatePath.toString()
+            if (helmValuesPath.contains(".ftl")) {
+                log.debug("Rendering helm values template from ${helmValuesTemplatePath}")
+                helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
+            } else {
+                log.debug("Reading plain helm values YAML from ${helmValuesTemplatePath}")
+                helmValuesData = fileSystemUtils.readYaml(Path.of(helmValuesTemplatePath)) as Map
+            }
         }
 
         helmValuesData = MapUtils.deepMerge(helmConfig.values, helmValuesData)

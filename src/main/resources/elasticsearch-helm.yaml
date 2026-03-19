@@ -1,6 +1,5 @@
 replicas: 1
 
-# Für kleine Demo-Cluster: ohne Security + ohne TLS (nur Demo!)
 esConfig:
   elasticsearch.yml: |
     xpack.security.enabled: false

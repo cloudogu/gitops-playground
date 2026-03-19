@@ -164,32 +164,37 @@ class Config {
         }
 
         static class HelmReleaseSchema {
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
             String name = ''               // featureName/apps/<name>, also default for releaseName
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
             String repoURL = ''            // helm repo url
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
             String chart = ''              // chart name
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
             String version = ''            // chart version
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
             String namespace = ''          // target namespace to deploy into
 
-//            @JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
-            @JsonPropertyDescription()//
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
             String releaseName = ''        // optional override; if empty => use name
 
-            @JsonPropertyDescription()
-            String helmValuesPath = ""
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
+            Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)
+
+            @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
+            ValuesFromSchema valuesFrom        // optional
+
+            static class ValuesFromSchema {
+                String repoURL = ''
+                String ref = 'main'
+                String path = ''
+                Credentials credentials            // optional (same type you already have)
+            }
+
         }
     }
 
