@@ -97,8 +97,8 @@ pipeline {
                 stage('Integration tests') {
                     steps {
                         script {
-                            def profiles = (env.BRANCH_NAME == 'feature/weekly-builds')
-                                ? ['operator-full']
+                            def profiles = (env.BRANCH_NAME == 'main')
+                                ? ['full-prefix', 'operator-mandants', 'operator-full']
                                 : [params.chooseProfile]
 
                             def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
