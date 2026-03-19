@@ -3,6 +3,10 @@ pipeline {
         label 'high-cpu'
     }
 
+    triggers {
+        cron(env.BRANCH_NAME == 'main' ? '0 19 * * 5' : '')
+    }
+
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
@@ -164,7 +168,7 @@ pipeline {
 
                         if (!params.forcePushImage) { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
-                            image.push('latest')
+                            //image.push('latest')
                             currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
                             currentBuild.description += "\nReleae: ${env.TAG_NAME}"
                         }
@@ -178,10 +182,8 @@ pipeline {
     post {
         always {
             emailext(
-                subject: "Job-Status: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                body: """
-                    <p>weitere Infos hier: ${env.BUILD_URL}</p>
-                """,
+                subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: '${SCRIPT, template="groovy-html.template"}',
                 mimeType: 'text/html',
                 recipientProviders: [
                     [$class: 'DevelopersRecipientProvider'],
