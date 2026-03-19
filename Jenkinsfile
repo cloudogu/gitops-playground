@@ -159,23 +159,14 @@ pipeline {
 
                     docker.withRegistry("https://${DOCKER_REGISTRY_BASE_URL}", 'cesmarvin-ghcr') {
 
-                        if (env.BRANCH_NAME == 'main') {
-                            images[0].push()
-                            images[0].push('main')
-                            currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
-                            currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:main"
-                        }
+                        currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
+                        image.push()
 
+                        if (!params.forcePushImage) { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
-                            image.push(env.TAG_NAME)
                             image.push('latest')
-                            currentBuild.description = "Image: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.TAG_NAME}"
                             currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
-                        }
-
-                        if (params.forcePushImage) {
-                            image.push()
-                            currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
+                            currentBuild.description += "\nReleae: ${env.TAG_NAME}"
                         }
                     }
                 }
