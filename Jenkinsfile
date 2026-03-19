@@ -25,6 +25,8 @@ pipeline {
         DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
         MAVEN_IMAGE = 'maven:3-eclipse-temurin-17'
         TRIVY_IMAGE = 'aquasec/trivy:0.69.3'
+        GRYPE_IMAGE = 'anchore/grype:v0.109.1'
+        SYFT_IMAGE = 'anchore/syft:v1.42.2'
         GOLANG_IMAGE = 'golang:1.25-alpine'
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
@@ -81,6 +83,17 @@ pipeline {
         stage('Security and Integration') {
 
             parallel {
+
+                stage('Generate SBOM') {
+                    steps {
+                        sh '''docker run --rm -v $WORKSPACE:/workspace \
+                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                                         -u :$BUILD_GROUP \
+                                         -e NO_COLOR=1 \
+                                         $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
+                        archiveArtifacts artifacts: 'sbom.*'
+                    }
+                }
 
                 stage('Trivy Scan') {
                     agent { docker {
