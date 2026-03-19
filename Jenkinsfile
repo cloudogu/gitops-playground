@@ -100,7 +100,7 @@ pipeline {
                             def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
                             if (isTriggeredByTimer || params.chooseProfile == ['all profiles']) {
-                                profiles = ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                                profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             }
 
                             def dockerArgs = """
