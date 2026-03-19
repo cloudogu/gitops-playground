@@ -72,12 +72,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
         if (!userValuesAbsPath.toFile().exists()) {
             clusterResourcesRepo.writeFile(userValuesPath, "")
-        } else {
-            log.debug("Keeping existing user values file (will not overwrite): ${userValuesPath}")
-        }
-
-        if (!version?.trim()) {
-            version = "*"
         }
 
         // 1) helm source (external chart source)
@@ -94,11 +88,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         ignoreMissingValueFiles: true
                 ]
         ]
-
-        // only pin a version when provided; otherwise let ArgoCD/Helm pick latest
-        if (version?.trim()) {
-            helmSource.targetRevision = version.trim()
-        }
 
         // 2) Git source for values
         //   - repoURL: cluster-resources repo

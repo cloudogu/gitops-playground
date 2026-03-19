@@ -144,7 +144,7 @@ class ContentLoader extends Feature {
             if (!version) version = "*"
 
             // 1) load values file (optional)
-            Map<String, Object> fileValues = loadValuesFromRepo(hr)
+            Map<String, Object> fileValues = null
 
             // 2) merge inline values on top (inline wins)
             Map<String, Object> mergedValues = MapUtils.deepMerge(fileValues ?: [:], (hr.values ?: [:]) as Map)
@@ -239,52 +239,52 @@ class ContentLoader extends Feature {
 
     }
 
-    protected Map<String, Object> loadValuesFromRepo(Config.ContentSchema.HelmReleaseSchema hr) {
-        def vf = hr.valuesFrom
-        if (!vf?.repoURL?.trim()) {
-            return [:]
-        }
-
-        File repoTmpDir = File.createTempDir('gitops-playground-values-repo-')
-
-        // Credentials similiar to createRepoCoordinates(...)
-        UsernamePasswordCredentialsProvider cp = null
-        if (vf.credentials?.username && vf.credentials?.password) {
-            cp = new UsernamePasswordCredentialsProvider(vf.credentials.username, vf.credentials.password)
-        } else if (vf.credentials?.secretName && vf.credentials?.secretNamespace) {
-            Credentials creds = k8sClient.k8sJavaApiClient.getCredentialsFromSecret(vf.credentials)
-            cp = new UsernamePasswordCredentialsProvider(creds.username, creds.password)
-        }
-
-        def cloneCommand = gitClone()
-                .setURI(vf.repoURL)
-                .setDirectory(repoTmpDir)
-                .setNoCheckout(false)
-
-        if (cp) {
-            cloneCommand.setCredentialsProvider(cp)
-        }
-
-        def git = cloneCommand.call()
-
-        if (vf.ref?.trim()) {
-            def actualRef = findRef(
-                    new Config.ContentSchema.ContentRepositorySchema(url: vf.repoURL, ref: vf.ref),
-                    git.repository
-            )
-            git.checkout().setName(actualRef).call()
-        }
-
-        File valuesFile = new File(repoTmpDir, vf.path ?: '')
-        if (!valuesFile.exists()) {
-            throw new RuntimeException("valuesFrom.path '${vf.path}' not found in repo '${vf.repoURL}' (ref: '${vf.ref}')")
-        }
-
-        def parsed = new groovy.yaml.YamlSlurper().parse(valuesFile)
-        repoTmpDir.deleteDir()
-
-        return (parsed instanceof Map) ? (parsed as Map<String, Object>) : [:]
-    }
+//    protected Map<String, Object> loadValuesFromRepo(Config.ContentSchema.HelmReleaseSchema hr) {
+//        def vf = hr.valuesFrom
+//        if (!vf?.repoURL?.trim()) {
+//            return [:]
+//        }
+//
+//        File repoTmpDir = File.createTempDir('gitops-playground-values-repo-')
+//
+//        // Credentials similiar to createRepoCoordinates(...)
+//        UsernamePasswordCredentialsProvider cp = null
+//        if (vf.credentials?.username && vf.credentials?.password) {
+//            cp = new UsernamePasswordCredentialsProvider(vf.credentials.username, vf.credentials.password)
+//        } else if (vf.credentials?.secretName && vf.credentials?.secretNamespace) {
+//            Credentials creds = k8sClient.k8sJavaApiClient.getCredentialsFromSecret(vf.credentials)
+//            cp = new UsernamePasswordCredentialsProvider(creds.username, creds.password)
+//        }
+//
+//        def cloneCommand = gitClone()
+//                .setURI(vf.repoURL)
+//                .setDirectory(repoTmpDir)
+//                .setNoCheckout(false)
+//
+//        if (cp) {
+//            cloneCommand.setCredentialsProvider(cp)
+//        }
+//
+//        def git = cloneCommand.call()
+//
+//        if (vf.ref?.trim()) {
+//            def actualRef = findRef(
+//                    new Config.ContentSchema.ContentRepositorySchema(url: vf.repoURL, ref: vf.ref),
+//                    git.repository
+//            )
+//            git.checkout().setName(actualRef).call()
+//        }
+//
+//        File valuesFile = new File(repoTmpDir, vf.path ?: '')
+//        if (!valuesFile.exists()) {
+//            throw new RuntimeException("valuesFrom.path '${vf.path}' not found in repo '${vf.repoURL}' (ref: '${vf.ref}')")
+//        }
+//
+//        def parsed = new groovy.yaml.YamlSlurper().parse(valuesFile)
+//        repoTmpDir.deleteDir()
+//
+//        return (parsed instanceof Map) ? (parsed as Map<String, Object>) : [:]
+//    }
 
     protected List<RepoCoordinate> cloneContentRepos() {
         mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')

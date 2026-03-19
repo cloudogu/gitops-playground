@@ -186,13 +186,19 @@ class Config {
             Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)
 
             @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
-            ValuesFromSchema valuesFrom        // optional
+            List<ValuesFromSchema> valuesFrom = []      // optional
 
+
+            @CompileStatic
             static class ValuesFromSchema {
+//                @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FROM_REPO_URL_DESCRIPTION)
                 String repoURL = ''
+
+//                @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FROM_REF_DESCRIPTION)
                 String ref = 'main'
-                String path = ''
-                Credentials credentials            // optional (same type you already have)
+
+//                @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FROM_PATH_DESCRIPTION)
+                String path = ''   // file path inside the repo
             }
 
         }
