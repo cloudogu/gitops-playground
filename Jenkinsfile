@@ -25,6 +25,7 @@ pipeline {
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
+        FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
     }
 
     stages {
@@ -62,7 +63,6 @@ pipeline {
                 stage("Build Image") {
                     steps {
                         script {
-                            env.FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
                             docker.build(env.FULL_IMAGE_TAG,
                                          "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
                                          "--build-arg VCS_REF='${env.GIT_COMMIT}' " +
@@ -154,7 +154,31 @@ pipeline {
                 }
             }
             steps {
-                sh "echo push-image"
+                script {
+                    def image = docker.image(env.FULL_IMAGE_TAG)
+
+                    docker.withRegistry("https://${DOCKER_REGISTRY_BASE_URL}", 'cesmarvin-ghcr') {
+
+                        if (env.BRANCH_NAME == 'main') {
+                            images[0].push()
+                            images[0].push('main')
+                            currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
+                            currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:main"
+                        }
+
+                        if (env.TAG_NAME) {
+                            image.push(env.TAG_NAME)
+                            image.push('latest')
+                            currentBuild.description = "Image: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.TAG_NAME}"
+                            currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
+                        }
+
+                        if (params.forcePushImage) {
+                            image.push()
+                            currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
+                        }
+                    }
+                }
             }
         }
 
