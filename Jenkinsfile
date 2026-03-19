@@ -156,6 +156,9 @@ pipeline {
                     buildingTag()
                     expression { return params.forcePushImage}
                 }
+                not {
+                    triggeredBy 'TimerTrigger'
+                }
             }
             steps {
                 script {
