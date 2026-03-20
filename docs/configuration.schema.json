@@ -162,12 +162,11 @@
                 "$ref": "#/$defs/Map(String,Object)-nullable",
                 "description": "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
               },
-              "valuesFrom": {
+              "valuesPath": {
                 "type": [
-                  "object",
+                  "string",
                   "null"
                 ],
-                "additionalProperties": false,
                 "description": "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
               },
               "version" : {

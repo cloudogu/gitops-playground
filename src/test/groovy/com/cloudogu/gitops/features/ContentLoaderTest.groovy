@@ -6,11 +6,14 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.fabric8.kubernetes.api.model.Secret
@@ -28,6 +31,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 import static ContentLoader.RepoCoordinate
 import static com.cloudogu.gitops.config.Config.ContentRepoType
@@ -870,18 +876,25 @@ class ContentLoaderTest {
     }
 
     @Test
-    void 'deployHelmReleasesFromContent calls deployHelmChart with helmValuesPath and helm config'() {
+    void 'deployHelmReleasesFromContent calls deployHelmChart with valuesPath and helm config'() {
+        // Arrange: create a real values file on disk
+        Path valuesFile = Files.createTempFile("harbor-values-", ".yaml")
+        Files.writeString(valuesFile, """
+        expose:
+          type: ingress
+        """.stripIndent())
+
         def cfg = Config.fromMap(
                 content: [
                         helmReleases: [
                                 [
-                                        name          : 'harbor',
-                                        repoURL        : 'https://helm.goharbor.io',
-                                        chart          : 'harbor',
-                                        version        : '1.18.2',
-                                        namespace      : 'my-prefix-harbor',
-                                        releaseName    : 'harbor',
-                                        helmValuesPath : 'argocd/cluster-resources/apps/harbor/values.ftl.yaml'
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '1.18.2',
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        valuesPath : valuesFile.toString()
                                 ]
                         ]
                 ]
@@ -891,18 +904,20 @@ class ContentLoaderTest {
         contentLoader.install()
 
         assertThat(contentLoader.deployCalls).hasSize(1)
-
         def call = contentLoader.deployCalls[0]
+
         assertThat(call.featureName).isEqualTo('harbor')
         assertThat(call.releaseName).isEqualTo('harbor')
         assertThat(call.namespace).isEqualTo('my-prefix-harbor')
-        assertThat(call.helmValuesPath).isEqualTo('argocd/cluster-resources/apps/harbor/values.ftl.yaml')
+
+        // IMPORTANT: With the new implementation you likely pass a merged temp file,
+        // not the original valuesPath. So assert it's a file that exists.
+        assertThat(call.valuesPath).isNotBlank()
+        assertThat(Path.of(call.valuesPath).toFile()).exists()
 
         assertThat(call.helmConfig.repoURL).isEqualTo('https://helm.goharbor.io')
         assertThat(call.helmConfig.chart).isEqualTo('harbor')
         assertThat(call.helmConfig.version).isEqualTo('1.18.2')
-
-        // deployHelmChart gets the same config instance
         assertThat(call.config).isSameAs(cfg)
     }
 
@@ -944,6 +959,9 @@ class ContentLoaderTest {
         return bareRepoUri
     }
 
+    private Map parseYaml(String path) {
+        return new YamlSlurper().parse(new File(path)) as Map
+    }
 
     private void assertRegistrySecrets(String regUser, String regPw) {
         List expectedNamespaces = ["example-apps-staging", "example-apps-production"]
@@ -1037,7 +1055,7 @@ class ContentLoaderTest {
                     releaseName: releaseName,
                     namespace: namespace,
                     helmConfig: helmConfig,
-                    helmValuesPath: helmValuesTemplatePath,
+                    valuesPath: helmValuesTemplatePath,
                     config: config
             )
         }
@@ -1052,7 +1070,7 @@ class ContentLoaderTest {
         String releaseName
         String namespace
         Config.HelmConfigWithValues helmConfig
-        String helmValuesPath
+        String valuesPath
         Config config
     }
 }

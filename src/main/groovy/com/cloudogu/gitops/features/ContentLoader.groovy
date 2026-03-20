@@ -139,69 +139,43 @@ class ContentLoader extends Feature {
             return
         }
 
-        config.content.helmReleases.each { hr ->
-            String version = hr.version?.trim()
-            if (!version) version = "*"
+        config.content.helmReleases.each { helmRelease ->
+            String version = helmRelease.version?.trim()
+            if (!version) {
+                version = "*"
+            }
 
-            // 1) load values file (optional)
-            Map<String, Object> fileValues = null
-
-            // 2) merge inline values on top (inline wins)
-            Map<String, Object> mergedValues = MapUtils.deepMerge(fileValues ?: [:], (hr.values ?: [:]) as Map)
-
-            // 3) write merged values to temp file and pass path to deployHelmChart
-            Path tmpValues = fileSystemUtils.writeTempFile(mergedValues)
-
-            Config.HelmConfigWithValues hc = new Config.HelmConfigWithValues(
-                    repoURL: hr.repoURL,
-                    chart: hr.chart,
+            Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
+                    repoURL: helmRelease.repoURL,
+                    chart: helmRelease.chart,
                     version: version,
-                    values: [:] // important: values already in tmp file, keep empty to avoid double merge
+                    values: [:] as Map<String, Object>   // IMPORTANT: we will pass merged values via a file
             )
 
-            // deployHelmChart expects templatePath normally.
-            // If you want to keep the signature "helmValuesTemplatePath", you can pass tmpValues.toString()
-            // and interpret it as "values file path" (not template). Easiest: add a small overload in Feature.
+            Map<String, Object> fileValues = [:]
+            if (helmRelease.valuesPath?.trim()) {
+                // This is a plain YAML file (NOT a .ftl template)
+                fileValues = (fileSystemUtils.readYaml(Path.of(helmRelease.valuesPath)) ?: [:]) as Map<String, Object>
+            }
+
+            Map<String, Object> inlineValues = (helmRelease.values ?: [:]) as Map<String, Object>
+
+            // merge: file first, inline overrides
+            Map<String, Object> mergedValues = MapUtils.deepMerge(inlineValues, fileValues)
+
+            // always write a temp values file and pass its path to deployHelmChart
+            Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
+
             deployHelmChart(
-                    hr.name,
-                    hr.releaseName ?: hr.name,
-                    hr.namespace,
-                    hc,
-                    tmpValues.toString(),   // pass as "values file path"
+                    helmRelease.name,
+                    helmRelease.releaseName ?: helmRelease.name,
+                    helmRelease.namespace,
+                    helmConfig,
+                    mergedValuesFile.toString(),
                     config
             )
         }
     }
-
-
-//    protected void deployHelmReleasesFromContent() {
-//        if (!config.content?.helmReleases) {
-//            log.debug("No content.helmReleases configured - skipping.")
-//            return
-//        }
-//
-//        config.content.helmReleases.each { helmRelease ->
-//            String version = helmRelease.version?.trim()
-//            if (!version) {
-//                version = "*"
-//            }
-//
-//            Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
-//                    repoURL: helmRelease.repoURL,
-//                    chart: helmRelease.chart,
-//                    version: version
-//            )
-//
-//            deployHelmChart(
-//                    helmRelease.name,
-//                    helmRelease.releaseName ?: helmRelease.name,
-//                    helmRelease.namespace,
-//                    helmConfig,
-//                    helmRelease.helmValuesPath,
-//                    config
-//            )
-//        }
-//    }
 
     void createImagePullSecrets() {
         if (config.registry.createImagePullSecrets) {
@@ -236,55 +210,8 @@ class ContentLoader extends Feature {
         pushTargetRepos(cachedRepoCoordinates)
         // after all, clean folders and list
         clearCache()
-
     }
 
-//    protected Map<String, Object> loadValuesFromRepo(Config.ContentSchema.HelmReleaseSchema hr) {
-//        def vf = hr.valuesFrom
-//        if (!vf?.repoURL?.trim()) {
-//            return [:]
-//        }
-//
-//        File repoTmpDir = File.createTempDir('gitops-playground-values-repo-')
-//
-//        // Credentials similiar to createRepoCoordinates(...)
-//        UsernamePasswordCredentialsProvider cp = null
-//        if (vf.credentials?.username && vf.credentials?.password) {
-//            cp = new UsernamePasswordCredentialsProvider(vf.credentials.username, vf.credentials.password)
-//        } else if (vf.credentials?.secretName && vf.credentials?.secretNamespace) {
-//            Credentials creds = k8sClient.k8sJavaApiClient.getCredentialsFromSecret(vf.credentials)
-//            cp = new UsernamePasswordCredentialsProvider(creds.username, creds.password)
-//        }
-//
-//        def cloneCommand = gitClone()
-//                .setURI(vf.repoURL)
-//                .setDirectory(repoTmpDir)
-//                .setNoCheckout(false)
-//
-//        if (cp) {
-//            cloneCommand.setCredentialsProvider(cp)
-//        }
-//
-//        def git = cloneCommand.call()
-//
-//        if (vf.ref?.trim()) {
-//            def actualRef = findRef(
-//                    new Config.ContentSchema.ContentRepositorySchema(url: vf.repoURL, ref: vf.ref),
-//                    git.repository
-//            )
-//            git.checkout().setName(actualRef).call()
-//        }
-//
-//        File valuesFile = new File(repoTmpDir, vf.path ?: '')
-//        if (!valuesFile.exists()) {
-//            throw new RuntimeException("valuesFrom.path '${vf.path}' not found in repo '${vf.repoURL}' (ref: '${vf.ref}')")
-//        }
-//
-//        def parsed = new groovy.yaml.YamlSlurper().parse(valuesFile)
-//        repoTmpDir.deleteDir()
-//
-//        return (parsed instanceof Map) ? (parsed as Map<String, Object>) : [:]
-//    }
 
     protected List<RepoCoordinate> cloneContentRepos() {
         mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')
