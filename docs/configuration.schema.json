@@ -132,6 +132,51 @@
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
         },
+        "helmReleases" : {
+          "description" : "",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "chart" : {
+                "type" : [ "string", "null" ],
+                "description": "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+              },
+              "name" : {
+                "type" : [ "string", "null" ],
+                "description": "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
+              },
+              "namespace" : {
+                "type" : [ "string", "null" ],
+                "description": "Kubernetes namespace to deploy the release into."
+              },
+              "releaseName" : {
+                "type" : [ "string", "null" ],
+                "description": "Helm release name. If empty, the value of 'name' is used."
+              },
+              "repoURL" : {
+                "type" : [ "string", "null" ],
+                "description": "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
+              },
+              "values": {
+                "$ref": "#/$defs/Map(String,Object)-nullable",
+                "description": "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
+              },
+              "valuesPath": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
+              },
+              "version" : {
+                "type" : [ "string", "null" ],
+                "description": "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
+              }
+            },
+            "additionalProperties" : false
+          }
+        },
         "multitenancyExamples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"

@@ -4,12 +4,14 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import com.fasterxml.jackson.annotation.JsonIgnore
 import freemarker.template.Configuration
@@ -23,6 +25,8 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+
+import java.nio.file.Path
 
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
@@ -49,13 +53,21 @@ class ContentLoader extends Feature {
     UsernamePasswordCredentialsProvider credentialsProvider
 
     ContentLoader(
-            Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler
+            Config config,
+            K8sClient k8sClient,
+            GitRepoFactory repoProvider,
+            Jenkins jenkins,
+            GitHandler gitHandler,
+            FileSystemUtils fileSystemUtils,
+            DeploymentStrategy deployer
     ) {
         this.config = config
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.jenkins = jenkins
         this.gitHandler = gitHandler
+        this.fileSystemUtils = fileSystemUtils
+        this.deployer = deployer
     }
 
     @Override
@@ -69,10 +81,9 @@ class ContentLoader extends Feature {
         clearCache()
         // clones repo to check valid configuration and reuse result for further step.
         cachedRepoCoordinates = cloneContentRepos()
-
         createImagePullSecrets()
-
         createContentRepos()
+        deployHelmReleasesFromContent()
     }
 
     @Override
@@ -122,6 +133,50 @@ class ContentLoader extends Feature {
         }
     }
 
+    protected void deployHelmReleasesFromContent() {
+        if (!config.content?.helmReleases) {
+            log.debug("No content.helmReleases configured - skipping.")
+            return
+        }
+
+        config.content.helmReleases.each { helmRelease ->
+            String version = helmRelease.version?.trim()
+            if (!version) {
+                version = "*"
+            }
+
+            Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(
+                    repoURL: helmRelease.repoURL,
+                    chart: helmRelease.chart,
+                    version: version,
+                    values: [:] as Map<String, Object>   // IMPORTANT: we will pass merged values via a file
+            )
+
+            Map<String, Object> fileValues = [:]
+            if (helmRelease.valuesPath?.trim()) {
+                // This is a plain YAML file (NOT a .ftl template)
+                fileValues = (fileSystemUtils.readYaml(Path.of(helmRelease.valuesPath)) ?: [:]) as Map<String, Object>
+            }
+
+            Map<String, Object> inlineValues = (helmRelease.values ?: [:]) as Map<String, Object>
+
+            // merge: file first, inline overrides
+            Map<String, Object> mergedValues = MapUtils.deepMerge(inlineValues, fileValues)
+
+            // always write a temp values file and pass its path to deployHelmChart
+            Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
+
+            deployHelmChart(
+                    helmRelease.name,
+                    helmRelease.releaseName ?: helmRelease.name,
+                    helmRelease.namespace,
+                    helmConfig,
+                    mergedValuesFile.toString(),
+                    config
+            )
+        }
+    }
+
     void createImagePullSecrets() {
         if (config.registry.createImagePullSecrets) {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
@@ -155,8 +210,8 @@ class ContentLoader extends Feature {
         pushTargetRepos(cachedRepoCoordinates)
         // after all, clean folders and list
         clearCache()
-
     }
+
 
     protected List<RepoCoordinate> cloneContentRepos() {
         mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')

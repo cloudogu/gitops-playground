@@ -2,14 +2,18 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.fabric8.kubernetes.api.model.Secret
@@ -27,6 +31,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 import static ContentLoader.RepoCoordinate
 import static com.cloudogu.gitops.config.Config.ContentRepoType
@@ -70,6 +77,8 @@ class ContentLoaderTest {
     Jenkins jenkins = mock(Jenkins.class)
     ScmManagerMock scmManagerMock = new ScmManagerMock()
     GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @TempDir
     File tmpDir
@@ -118,7 +127,7 @@ class ContentLoaderTest {
         config.registry.createImagePullSecrets = true
         config.content.namespaces = ['example-apps-staging', 'example-apps-production']
 
-        createContent().install()
+        createContent(config).install()
 
         assertRegistrySecrets('reg-user', 'reg-pw')
     }
@@ -131,7 +140,7 @@ class ContentLoaderTest {
         config.registry.readOnlyUsername = 'other-user'
         config.registry.readOnlyPassword = 'other-pw'
 
-        createContent().install()
+        createContent(config).install()
 
         assertRegistrySecrets('other-user', 'other-pw')
     }
@@ -154,7 +163,7 @@ class ContentLoaderTest {
         k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
         k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 1)) // Namespace not exit
 
-        createContent().install()
+        createContent(config).install()
 
         assertRegistrySecrets('reg-user', 'reg-pw')
 
@@ -173,7 +182,7 @@ class ContentLoaderTest {
 
         config.content.repos = contentRepos
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent(config).cloneContentRepos()
 
         expectedTargetRepos.each { expected ->
             assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repoName}/file")).exists().isFile()
@@ -201,7 +210,7 @@ class ContentLoaderTest {
         ]
         config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent(config).cloneContentRepos()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
@@ -215,7 +224,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo',  credentials: new Credentials('user', 'pw'))
         ]
 
-        def content = createContent()
+        def content = createContent(config)
         content.cloneContentRepos()
 
         ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
@@ -257,7 +266,7 @@ class ContentLoaderTest {
                         credentials: new Credentials(null,null,'secret-test-name','default'))
         ]
 
-        def content = createContent()
+        def content = createContent(config)
         content.cloneContentRepos()
 
         ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
@@ -275,7 +284,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', type: ContentRepoType.COPY, target: 'common/branch')
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent(config).cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
@@ -293,7 +302,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY),
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent(config).cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
@@ -307,7 +316,7 @@ class ContentLoaderTest {
         ]
 
         def exception = shouldFail(RuntimeException) {
-            createContent().cloneContentRepos()
+            createContent(config).cloneContentRepos()
         }
 
         assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
@@ -323,7 +332,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent(config).cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/repo/file").text).contains("copyRepo1")
         // Last repo "wins"
@@ -339,7 +348,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
@@ -368,7 +377,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
@@ -398,7 +407,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
@@ -431,7 +440,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         // From branch to branch or tag to tag
         assertTagAndReadme('mirror/tag', 'my-tag', "someTag")
@@ -461,7 +470,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
         // No exception means success
     }
 
@@ -479,7 +488,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
         // No exception means success
     }
 
@@ -488,7 +497,7 @@ class ContentLoaderTest {
 
         config.content.repos = contentRepos
 
-        def content = createContent()
+        def content = createContent(config)
 
         def actualTargetRepos = content.cloneContentRepos()
         def repos = actualTargetRepos
@@ -520,7 +529,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         def expectedRepo = 'copy/repo1'
         // clone target repo, to ensure, changes in remote repo.
@@ -565,7 +574,7 @@ class ContentLoaderTest {
         config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
 
         def exception = shouldFail(RuntimeException) {
-            createContent().install()
+            createContent(config).install()
         }
         assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
         assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
@@ -575,7 +584,7 @@ class ContentLoaderTest {
         config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d11', target: 'common/mirrorWithShortCommitRef')]
 
         exception = shouldFail(RuntimeException) {
-            createContent().install()
+            createContent(config).install()
         }
         assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
         assertThat(exception.message).endsWith('ref: 8bc1d11')
@@ -633,7 +642,7 @@ class ContentLoaderTest {
         def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
         scmManagerMock.initOnceRepo(repo.repoTarget)
-        createContent().install()
+        createContent(config).install()
 
         String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -658,7 +667,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
-        createContent().install()
+        createContent(config).install()
         scmManagerMock.clearInitOnce()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
@@ -693,7 +702,7 @@ class ContentLoaderTest {
 
         scmmApiClient.mockRepoApiBehaviour()
 
-        createContent().install()
+        createContent(config).install()
 
         def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
@@ -722,7 +731,7 @@ class ContentLoaderTest {
         ]
 
 
-        createContent().install()
+        createContent(config).install()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
         folderAfterReset.deleteOnExit()
@@ -756,7 +765,7 @@ class ContentLoaderTest {
         def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
         scmManagerMock.initOnceRepo(repo.repoTarget)
-        createContent().install()
+        createContent(config).install()
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -781,7 +790,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.INIT),
         ]
 
-        createContent().install()
+        createContent(config).install()
         scmManagerMock.clearInitOnce()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
@@ -815,7 +824,7 @@ class ContentLoaderTest {
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(true)
 
-        createContent().install()
+        createContent(config).install()
         verify(jenkins).createJenkinsjob(any(), any())
     }
 
@@ -834,7 +843,7 @@ class ContentLoaderTest {
         ]
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(false)
-        createContent().install()
+        createContent(config).install()
         verify(jenkins, never()).createJenkinsjob(any(), any())
     }
 
@@ -854,10 +863,207 @@ class ContentLoaderTest {
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(false)
 
-        createContent().install()
+        createContent(config).install()
         verify(jenkins, never()).createJenkinsjob(any(), any())
     }
 
+    @Test
+    void 'deployHelmReleasesFromContent skips when helmReleases missing or empty'() {
+        def contentLoader = createContent(config)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).isEmpty()
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent calls deployHelmChart with valuesPath and helm config'() {
+        // Arrange: create a real values file on disk
+        Path valuesFile = Files.createTempFile("harbor-values-", ".yaml")
+        Files.writeString(valuesFile, """
+        expose:
+          type: ingress
+        """.stripIndent())
+
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '1.18.2',
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        valuesPath : valuesFile.toString()
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+        def call = contentLoader.deployCalls[0]
+
+        assertThat(call.featureName).isEqualTo('harbor')
+        assertThat(call.releaseName).isEqualTo('harbor')
+        assertThat(call.namespace).isEqualTo('my-prefix-harbor')
+
+        // IMPORTANT: With the new implementation you likely pass a merged temp file,
+        // not the original valuesPath. So assert it's a file that exists.
+        assertThat(call.valuesPath).isNotBlank()
+        assertThat(Path.of(call.valuesPath).toFile()).exists()
+
+        assertThat(call.helmConfig.repoURL).isEqualTo('https://helm.goharbor.io')
+        assertThat(call.helmConfig.chart).isEqualTo('harbor')
+        assertThat(call.helmConfig.version).isEqualTo('1.18.2')
+        assertThat(call.config).isSameAs(cfg)
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent reads values file and inline values override file values'(@TempDir Path tempDir) {
+        // values file: replicas=1
+        Path valuesFile = tempDir.resolve("harbor-values.yaml")
+        Files.writeString(valuesFile, """
+        replicas: 1
+        service:
+          type: ClusterIP
+        """.stripIndent())
+
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '1.18.2',
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        valuesPath : valuesFile.toString(),
+                                        values     : [
+                                                replicas: 2, // override file
+                                                service : [type: 'NodePort'] // override nested
+                                        ]
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+
+        // IMPORTANT: valuesPath is a temp file created by writeTempFile(...)
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+
+        // inline overrides file
+        assertThat(mergedYaml['replicas']).isEqualTo(2)
+        assertThat(((Map) mergedYaml['service'])['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent uses values file when inline values are empty'(@TempDir Path tempDir) {
+        Path valuesFile = tempDir.resolve("values.yaml")
+        Files.writeString(valuesFile, """
+        replicas: 1
+        """.stripIndent())
+
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name      : 'elasticsearch',
+                                        repoURL   : 'https://helm.elastic.co',
+                                        chart     : 'elasticsearch',
+                                        version   : '8.5.1',
+                                        namespace : 'my-prefix-elasticsearch',
+                                        valuesPath: valuesFile.toString()
+                                        // no values
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+        assertThat(mergedYaml['replicas']).isEqualTo(1)
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent uses inline values when no helmValuesPath is set'() {
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name     : 'elasticsearch',
+                                        repoURL  : 'https://helm.elastic.co',
+                                        chart    : 'elasticsearch',
+                                        version  : '8.5.1',
+                                        namespace: 'my-prefix-elasticsearch',
+                                        values   : [
+                                                replicas: 2
+                                        ]
+                                        // helmValuesPath empty / missing
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+        assertThat(mergedYaml['replicas']).isEqualTo(2)
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent defaults chart version to wildcard when missing'() {
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '   ', // blank
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        values     : [foo: 'bar']
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+        def call = contentLoader.deployCalls[0]
+
+        assertThat(call.helmConfig.version).isEqualTo('*')
+    }
 
     static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
@@ -897,6 +1103,9 @@ class ContentLoaderTest {
         return bareRepoUri
     }
 
+    private Map parseYaml(String path) {
+        return new YamlSlurper().parse(new File(path)) as Map
+    }
 
     private void assertRegistrySecrets(String regUser, String regPw) {
         List expectedNamespaces = ["example-apps-staging", "example-apps-production"]
@@ -915,8 +1124,8 @@ class ContentLoaderTest {
         }
     }
 
-    private ContentLoaderForTest createContent() {
-        new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler)
+    private ContentLoaderForTest createContent(Config config) {
+        new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deploymentStrategy)
     }
 
     private static parseActualYaml(File pathToYamlFile) {
@@ -971,15 +1180,41 @@ class ContentLoaderTest {
     }
 
     class ContentLoaderForTest extends ContentLoader {
+        List<DeployCall> deployCalls = []
         CloneCommand cloneSpy
 
-        ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler) {
-            super(config, k8sClient, repoProvider, jenkins, gitHandler)
+        ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils, DeploymentStrategy deploymentStrategy) {
+            super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deploymentStrategy)
+        }
+
+        @Override
+        protected void deployHelmChart(String featureName,
+                                       String releaseName,
+                                       String namespace,
+                                       Config.HelmConfigWithValues helmConfig,
+                                       String helmValuesTemplatePath,
+                                       Config config) {
+            deployCalls << new DeployCall(
+                    featureName: featureName,
+                    releaseName: releaseName,
+                    namespace: namespace,
+                    helmConfig: helmConfig,
+                    valuesPath: helmValuesTemplatePath,
+                    config: config
+            )
         }
 
         @Override
         protected CloneCommand gitClone() {
             cloneSpy = spy(super.gitClone().setNoCheckout(true))
         }
+    }
+    static class DeployCall {
+        String featureName
+        String releaseName
+        String namespace
+        Config.HelmConfigWithValues helmConfig
+        String valuesPath
+        Config config
     }
 }
