@@ -26,7 +26,13 @@ ingress:
       paths:
         - path: "/"
           pathType: Prefix
+<#if config.features.certManager.active!false>
+  tls: true
+  annotations:
+      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+</#if>  
 </#if>
+
 <#if config.application.podResources == true>
 
 resources:

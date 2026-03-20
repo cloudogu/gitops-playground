@@ -69,7 +69,7 @@ prometheusOperator:
     enabled: false
   tls:
     # Avoids warning in operator log: server TLS client verification disabled
-    enabled: false
+    enabled: true
 <#if config.application.openshift == true>
   securityContext: 
     fsGroup: null
@@ -164,8 +164,16 @@ grafana:
   ingress:
     enabled: true
     hosts: [${monitoring.grafana.host}]
-
+<#if config.features.certManager.active == true>
+    annotations:
+      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+    tls:
+      - secretName: grafana-tls
+        hosts:
+        - ${monitoring.grafana.host}
 </#if>
+</#if>
+
 <#if config.features.monitoring.helm.grafanaImage?has_content>
 <#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
   image:

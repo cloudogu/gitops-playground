@@ -12,12 +12,15 @@ argo-cd:
   server:
 <#if argocd.host?has_content>
     ingress:
+<#if config.features.certManager.active == true>
+      annotations:
+        cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+</#if>
       enabled: true
       hostname: ${argocd.host}
 
 <#if config.features.certManager.active!false>
       tls: true
-      ingressClassName: traefik
 </#if>
 </#if>
 
