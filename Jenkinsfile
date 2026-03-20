@@ -15,7 +15,7 @@ pipeline {
 
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
-        choice(name: 'chooseProfile', choices: ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['minimal', 'all-profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -111,7 +111,7 @@ pipeline {
 
                             def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
-                            if (isTriggeredByTimer || params.chooseProfile == ['all profiles']) {
+                            if (isTriggeredByTimer || params.chooseProfile == 'all-profiles') {
                                 profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             }
 
