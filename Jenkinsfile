@@ -24,7 +24,6 @@ pipeline {
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
         DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
         MAVEN_IMAGE = 'maven:3-eclipse-temurin-17'
-        TRIVY_IMAGE = 'aquasec/trivy:0.69.3'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
         GOLANG_IMAGE = 'golang:1.25-alpine'
@@ -80,30 +79,26 @@ pipeline {
             }
         }
 
-        stage('Security and Integration') {
+        stage('Security & Integration') {
 
             parallel {
 
-                stage('Generate SBOM') {
+                stage('SBOM & Vulnerability Scan') {
                     steps {
                         sh '''docker run --rm -v $WORKSPACE:/workspace \
                                          -v /var/run/docker.sock:/var/run/docker.sock:ro \
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
                                          $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
-                        archiveArtifacts artifacts: 'sbom.*'
-                    }
-                }
-
-                stage('Trivy Scan') {
-                    agent { docker {
-                        image "${env.TRIVY_IMAGE}"
-                        args "--entrypoint='' -v /var/run/docker.sock:/var/run/docker.sock:ro -u ${env.BUILD_USER}:${env.BUILD_GROUP}"
-                        reuseNode true
-                    }}
-                    steps {
-                        sh "trivy image --cache-dir /tmp/.cache --format template --template @/contrib/html.tpl --output trivy_report.html --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db --db-repository public.ecr.aws/aquasecurity/trivy-db --quiet --ignore-unfixed ${env.FULL_IMAGE_TAG}"
-                        archiveArtifacts artifacts: 'trivy_report.html'
+                        sh '''docker run --rm -v $WORKSPACE:/workspace \
+                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                                         -u :$BUILD_GROUP \
+                                         -e NO_COLOR=1 \
+                                         $GRYPE_IMAGE sbom:/workspace/sbom.json \
+                                             --output table=/workspace/vulnerabilities.txt \
+                                             --output sarif=/workspace/vulnerabilities.sarif \
+                                             --quiet --sort-by severity --fail-on critical'''
+                        archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
                     }
                 }
 
@@ -184,7 +179,7 @@ pipeline {
 
                         if (!params.forcePushImage) { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
-                            //image.push('latest')
+                            image.push('latest')
                             currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
                             currentBuild.description += "\nReleae: ${env.TAG_NAME}"
                         }
@@ -196,7 +191,7 @@ pipeline {
     }
 
     post {
-        always {
+        changed {
             emailext(
                 subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: '${SCRIPT, template="groovy-html.template"}',
