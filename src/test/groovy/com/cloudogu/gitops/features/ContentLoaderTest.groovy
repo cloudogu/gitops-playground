@@ -921,6 +921,150 @@ class ContentLoaderTest {
         assertThat(call.config).isSameAs(cfg)
     }
 
+    @Test
+    void 'deployHelmReleasesFromContent reads values file and inline values override file values'(@TempDir Path tempDir) {
+        // values file: replicas=1
+        Path valuesFile = tempDir.resolve("harbor-values.yaml")
+        Files.writeString(valuesFile, """
+        replicas: 1
+        service:
+          type: ClusterIP
+        """.stripIndent())
+
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '1.18.2',
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        valuesPath : valuesFile.toString(),
+                                        values     : [
+                                                replicas: 2, // override file
+                                                service : [type: 'NodePort'] // override nested
+                                        ]
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+
+        // IMPORTANT: valuesPath is a temp file created by writeTempFile(...)
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+
+        // inline overrides file
+        assertThat(mergedYaml['replicas']).isEqualTo(2)
+        assertThat(((Map) mergedYaml['service'])['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent uses values file when inline values are empty'(@TempDir Path tempDir) {
+        Path valuesFile = tempDir.resolve("values.yaml")
+        Files.writeString(valuesFile, """
+        replicas: 1
+        """.stripIndent())
+
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name      : 'elasticsearch',
+                                        repoURL   : 'https://helm.elastic.co',
+                                        chart     : 'elasticsearch',
+                                        version   : '8.5.1',
+                                        namespace : 'my-prefix-elasticsearch',
+                                        valuesPath: valuesFile.toString()
+                                        // no values
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+        assertThat(mergedYaml['replicas']).isEqualTo(1)
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent uses inline values when no helmValuesPath is set'() {
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name     : 'elasticsearch',
+                                        repoURL  : 'https://helm.elastic.co',
+                                        chart    : 'elasticsearch',
+                                        version  : '8.5.1',
+                                        namespace: 'my-prefix-elasticsearch',
+                                        values   : [
+                                                replicas: 2
+                                        ]
+                                        // helmValuesPath empty / missing
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+
+        def call = contentLoader.deployCalls[0]
+        Path mergedTemp = Path.of(call.valuesPath)
+        assertThat(mergedTemp).exists()
+
+        def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
+        assertThat(mergedYaml['replicas']).isEqualTo(2)
+    }
+
+    @Test
+    void 'deployHelmReleasesFromContent defaults chart version to wildcard when missing'() {
+        def cfg = Config.fromMap(
+                content: [
+                        helmReleases: [
+                                [
+                                        name       : 'harbor',
+                                        repoURL    : 'https://helm.goharbor.io',
+                                        chart      : 'harbor',
+                                        version    : '   ', // blank
+                                        namespace  : 'my-prefix-harbor',
+                                        releaseName: 'harbor',
+                                        values     : [foo: 'bar']
+                                ]
+                        ]
+                ]
+        )
+
+        def contentLoader = createContent(cfg)
+        contentLoader.install()
+
+        assertThat(contentLoader.deployCalls).hasSize(1)
+        def call = contentLoader.deployCalls[0]
+
+        assertThat(call.helmConfig.version).isEqualTo('*')
+    }
+
     static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
