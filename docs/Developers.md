@@ -297,8 +297,8 @@ Afer that, deploy GOP with the generated config file:
 ```bash
 # Create a docker container or use an available image from a registry
 # docker build -t gop:dev .
-GOP_IMAGE=gop:ingress
-PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
+GOP_IMAGE=ghcr.io/cloudogu/gitops-playground
+PATH_TWO_REGISTRIES=./scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
