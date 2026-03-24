@@ -114,7 +114,7 @@ class ScmTenantSchema {
         Config.HelmConfigWithValues helm = new Config.HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.11.4',
+                version: '3.11.6',
                 values: [:]
         )
 

@@ -11,6 +11,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if config.registry.twoRegistries>
 String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_PATH }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
@@ -82,7 +83,8 @@ node {
 </#noparse>
 <#if config.registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            String proxyPathPrefix = !dockerRegistryProxyPath?.trim() ? "" : "${dockerRegistryProxyPath.trim()}/"
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}/${proxyPathPrefix}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>

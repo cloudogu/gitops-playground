@@ -320,24 +320,25 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Registry
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--registry` | `registry.active` | `false` | Boolean | Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication! |
-| `--internal-registry-port` | `registry.internalPort` | `30000` | Integer | Port of registry registry. Ignored when a registry*url params are set |
-| `--registry-url` | `registry.url` | `''` | String | The url of your external registry, used for pushing images |
-| `--registry-path` | `registry.path` | `''` | String | Optional when registry-url is set |
-| `--registry-username` | `registry.username` | `''` | String | Optional when registry-url is set |
-| `--registry-password` | `registry.password` | `''` | String | Optional when registry-url is set |
-| `--registry-proxy-url` | `registry.proxyUrl` | `''` | String | The url of your proxy-registry. Used in pipelines to authorize pull base images |
-| `--registry-proxy-username` | `registry.proxyUsername` | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
-| `--registry-proxy-password` | `registry.proxyPassword` | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
-| `--registry-username-read-only` | `registry.readOnlyUsername` | `''` | String | Optional alternative username for registry-url with read-only permissions |
-| `--registry-password-read-only` | `registry.readOnlyPassword` | `''` | String | Optional alternative password for registry-url with read-only permissions |
-| `--create-image-pull-secrets` | `registry.createImagePullSecrets` | `false` | Boolean | Create image pull secrets for registry and proxy-registry for all GOP namespaces |
-| - | `registry.helm.chart` | `'docker-registry'` | String | Name of the Helm chart |
-| - | `registry.helm.repoURL` | `'https://helm.twun.io'` | String | Repository url from which the Helm chart should be obtained |
-| - | `registry.helm.version` | `'2.2.3'` | String | The version of the Helm chart to be installed |
-| - | `registry.helm.values` | `[:]` | Map | Helm values of the chart |
+| CLI                             | Config                            | Default | Type | Description |
+|---------------------------------|-----------------------------------|---------|------|-------------|
+| `--registry`                    | `registry.active`                 | `false` | Boolean | Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication! |
+| `--internal-registry-port`      | `registry.internalPort`           | `30000` | Integer | Port of registry registry. Ignored when a registry*url params are set |
+| `--registry-url`                | `registry.url`                    | `''` | String | The url of your external registry, used for pushing images |
+| `--registry-path`               | `registry.path`                   | `''` | String | Optional when registry-url is set |
+| `--registry-username`           | `registry.username`               | `''` | String | Optional when registry-url is set |
+| `--registry-password`           | `registry.password`               | `''` | String | Optional when registry-url is set |
+| `--registry-proxy-url`          | `registry.proxyUrl`               | `''` | String | The url of your proxy-registry. Used in pipelines to authorize pull base images |
+| `--registry-proxy-path`         | `registry.proxyPath`              | `''` | String | Optional when registry-proxy-url is set and the registry is running on a non root web path. |
+| `--registry-proxy-username`     | `registry.proxyUsername`          | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
+| `--registry-proxy-password`     | `registry.proxyPassword`          | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
+| `--registry-username-read-only` | `registry.readOnlyUsername`       | `''` | String | Optional alternative username for registry-url with read-only permissions |
+| `--registry-password-read-only` | `registry.readOnlyPassword`       | `''` | String | Optional alternative password for registry-url with read-only permissions |
+| `--create-image-pull-secrets`   | `registry.createImagePullSecrets` | `false` | Boolean | Create image pull secrets for registry and proxy-registry for all GOP namespaces |
+| -                               | `registry.helm.chart`             | `'docker-registry'` | String | Name of the Helm chart |
+| -                               | `registry.helm.repoURL`           | `'https://helm.twun.io'` | String | Repository url from which the Helm chart should be obtained |
+| -                               | `registry.helm.version`           | `'2.2.3'` | String | The version of the Helm chart to be installed |
+| -                               | `registry.helm.values`            | `[:]` | Map | Helm values of the chart |
 
 ###### Jenkins
 

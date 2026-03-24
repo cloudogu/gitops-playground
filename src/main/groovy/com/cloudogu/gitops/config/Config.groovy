@@ -105,6 +105,10 @@ class Config {
 		@JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
 		Map<String, Object> variables = [:]
 
+        // ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
+        @JsonPropertyDescription()//(CONTENT_HELM_RELEASES_DESCRIPTION)
+        List<HelmReleaseSchema> helmReleases = []
+
 		@Option(names = ['--content-whitelist'], description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
 		@JsonPropertyDescription(CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
 		Boolean useWhitelist = false
@@ -158,6 +162,31 @@ class Config {
 			Boolean createJenkinsJob = false
 
 		}
+		static class HelmReleaseSchema {
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
+			String name = ''               // featureName/apps/<name>, also default for releaseName
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
+			String repoURL = ''            // helm repo url
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
+			String chart = ''              // chart name
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
+			String version = ''            // chart version
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
+			String namespace = ''          // target namespace to deploy into
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
+			String releaseName = ''        // optional override; if empty => use name
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
+			String valuesPath = ''   // optional local path, e.g. src/main/resources/foo/values.yaml
+
+			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
+			Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)
+		}
 	}
 
 	static class HelmConfig {
@@ -208,9 +237,13 @@ class Config {
 		@JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
 		String proxyUrl = ''
 
-		@Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
-		@JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
-		String proxyUsername = ''
+        @Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
+        String proxyPath = ''
+
+        @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
+        String proxyUsername = ''
 
 		@Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
 		@JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
