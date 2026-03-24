@@ -69,7 +69,7 @@ prometheusOperator:
     enabled: false
   tls:
     # Avoids warning in operator log: server TLS client verification disabled
-    enabled: true
+    enabled: false
 <#if config.application.openshift == true>
   securityContext: 
     fsGroup: null
