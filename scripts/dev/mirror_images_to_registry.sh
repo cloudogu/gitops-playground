@@ -29,7 +29,7 @@ HELM_IMAGE="docker://ghcr.io/cloudogu/helm:latest"
 MVN_IMAGE="docker://maven:3-eclipse-temurin-17-alpine"
 YAMLLINT_IMAGE="docker://cytopia/yamllint:1.25-0.7"
 
-# Hit the API to see when harbor is ready
+# Hit the API to see if harbor is ready
 until curl -s -o /dev/null -w "%{http_code}" $HARBOR_BASE_URL/api/v2.0/projects | grep -q "200"; do
     echo "Waiting for harbor"
     sleep 1
@@ -62,6 +62,8 @@ curl -s  --fail "$HARBOR_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -
 echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
 curl  --fail "$HARBOR_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
 
+# sleep 5 seconds just to make sure the registry is ready
+sleep 5
 
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
 skopeo copy $MAILHOG_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/proxy/mailhog
