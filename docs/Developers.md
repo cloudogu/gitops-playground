@@ -17,18 +17,14 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Prerequisites](#prerequisites)
 - [Testing](#testing)
-  - [Usage](#usage)
-  - [Options](#options)
+  - [Unit-Tests](#unit-tests)
+  - [Integration-Tests](#integration-tests)
 - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
   - [Solution](#solution)
   - [Updating all plugins](#updating-all-plugins)
 - [Local development](#local-development)
-- [Development image](#development-image)
-- [Running multiple instances on one machine](#running-multiple-instances-on-one-machine)
-  - [Use a different ingress port](#use-a-different-ingress-port)
-  - [Access local docker network](#access-local-docker-network)
-- [Implicit + explicit dependencies](#implicit--explicit-dependencies)
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
@@ -37,22 +33,37 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 - [Testing Network Policies locally](#testing-network-policies-locally)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
-  - [Provide images needed by playground](#provide-images-needed-by-playground)
   - [Install the playground](#install-the-playground)
   - [Notifications / E-Mail](#notifications--e-mail)
   - [Troubleshooting](#troubleshooting)
   - [Using ingresses locally](#using-ingresses-locally)
-    - [Troubleshooting](#troubleshooting-1)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
 - [Installing ArgoCD Operator](#installing-argocd-operator)
   - [Prerequisites:](#prerequisites)
   - [Installation Script](#installation-script)
   - [Install ingress manually](#install-ingress-manually)
-- [Gitlab (Experimental)](#gitlab-experimental)
-  - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Prerequisites
+
+- Java 17
+- Groovy
+- Maven
+- Docker
+- [k3d](https://k3d.io/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Helm](https://helm.sh/docs/intro/install/)
+- [skopeo](https://github.com/containers/skopeo)
+- [Golang](https://go.dev/doc/install) (only if you plan to use argo-cd operator)
+- [yq](https://mikefarah.gitbook.io/yq/) (useful for debugging purposes)
+
+To check if you have all necessary tools installed, run the following command. If you don't see any error messages, you are good to go:
+```bash
+java -version && mvn -version && docker version && k3d version && kubectl version && helm version
+```
+
 
 ## Testing
 
@@ -60,25 +71,41 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 2. Long running tests are marked with 'LongIT'.
 3. Main Branch executes both, feature-branches only IT.
 
-### Usage
-Runnable separately via maven.
-``
-mvn failsafe:integration-test -f pom.xml
-``
-To run long living test, use maven with profile: long-running 
-``
-mvn failsafe:integration-test -f pom.xml -P long-running
-``
+### Unit-Tests
 
-### Options
+```bash
+mvn clean test
+```
 
-- `help` - Print this help text and exit
-- `url` - The Jenkins-URL to connect to
-- `user`- The Jenkins-User for login
-- `password` - Jenkins-Password for login
-- `fail` - Exit on first build failure
-- `interval` - Interval for waits while scanning for builds
-- `debug` - Set log level to debug
+### Integration-Tests
+
+```bash
+# build the gop tests
+./mvnw clean test-compile
+
+# first create a fresh new cluster to test on:
+./scripts/init-cluster
+
+# then deploy the gop with a predefined profile:
+./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
+
+# finally run the test
+./mvnw integration-test -Dmicronaut.environments=<PROFILE>
+```
+
+where <PROFILES> can be one of:
+- full
+- full-prefix
+
+- content-examples
+- operator-full
+- operator-mandants
+
+Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
+This can be done by running:
+```bash
+./scripts/local/install-argocd-operator.sh
+```
 
 ## Jenkins plugin installation issues
 
@@ -98,18 +125,18 @@ Since solving this issue may require some additional deep dive into bash scripts
   * inspecting the logs of the jenkins-pod
   * jenkins-ui (http://localhost:9090/manage)
 
-![Jenkins-UI with broken plugins](example-plugin-install-fail.png)
+![Jenkins-UI with broken plugins](images/example-plugin-install-fail.png)
 
 * Fix conflicts by updating the plugins with compatible versions
   * Update all plugin versions via jenkins-ui (http://localhost:9090/pluginManager/) and restart
 
-![Jenkins-UI update plugins](update-all-plugins.png)
+![Jenkins-UI update plugins](images/update-all-plugins.png)
 
 * Verify the plugin installation
   * Check if jenkins starts up correctly and builds all example pipelines successfully
   * verify installation of all plugins via jenkins-ui (http://localhost:9090/script) executing the following command
 
-![Jenkins-UI plugin list](get-plugin-list.png)
+![Jenkins-UI plugin list](images/get-plugin-list.png)
 
 ```groovy
 Jenkins.instance.pluginManager.activePlugins.sort().each {
@@ -136,8 +163,8 @@ workflow-aggregator # Pipelines plugin, used in example builds
 ```
 
 Note that, when running locally we also need `kubernetes` and `configuration-as-code` but these are contained in [our 
-jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile#L2) (extracted from the 
-[corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml#L406-L409)).
+jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile) (extracted from the 
+[corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml)).
 
 
 ### Updating all plugins 
@@ -165,13 +192,8 @@ We should automate this!
   * From shell:  
     Run
       ```shell
-    ./mvnw package -DskipTests
-      java -classpath target/gitops-playground-cli-0.1.jar \
-        org.codehaus.groovy.tools.GroovyStarter \
-        --main groovy.ui.GroovyMain \
-        -classpath src/main/groovy \
-        src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy \
-        <yourParamsHere>
+     ./mvnw package -DskipTests
+     ./mvnw exec:java -Dexec.arguments="<gopParamsHere>"
        ```
 * Running inside the container:
   * Build and run dev Container:
@@ -190,116 +212,6 @@ We should automate this!
       docker rm -v $id
       ```
 
-## Development image
-
-An image containing groovy and the JDK for developing inside a container or cluster is provided for all image version
-with a `-dev` suffix.
-
-e.g.
-* ghcr.io/cloudogu/gitops-playground:dev
-* ghcr.io/cloudogu/gitops-playground:latest-dev
-* ghcr.io/cloudogu/gitops-playground:d67ec33-dev
-
-It can be built like so:
-
-```shell
-docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain . 
-```
-
-If you're running the dev image and want to try some changes in groovy instantly you can do the following:
-
-```shell
-docker run --rm -it  -u $(id -u) \
-    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-    --net=host --entrypoint bash \
-     ghcr.io/cloudogu/gitops-playground:dev
- # do your changes in src/main/groovy
-scripts/apply-ng.sh #params
-```
-
-## Running multiple instances on one machine
-
-Sometimes it makes sense to run more than one instance on your developer machine.
-For example, you might want to conduct multiple long-running tests in parallel, or 
-you might be interested to see how the latest stable version behaved in comparison to you local build.
-
-You have to options to do this
-
-1. Use a different ingress port
-2. Access local docker network (linux only)
-
-### Use a different ingress port
-
-```bash
-INSTANCE=2
-
-scripts/init-cluster.sh --bind-ingress-port="808$INSTANCE" \
-  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE"
-
-docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
-    --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
-      --base-url="http://localhost:808$INSTANCE" --argocd --ingress
-
-echo "Once Argo CD has deployed the traefik-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
-```
-
-### Access local docker network
-
-This will work on linux only
-
-```bash
-INSTANCE=3
-
-scripts/init-cluster.sh \
-  --cluster-name="gitops-playground$INSTANCE" --bind-ingress-port=- --bind-registry-port="3000$INSTANCE " 
-
-docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
-    --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x --argocd 
-
-xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  k3d-playground$INSTANCE-server-0):9091"
-```
-
-## Implicit + explicit dependencies
-
-The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this
-repository so need to be upgraded regularly.
-
-* Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
-* [k3d](../scripts/init-cluster.sh)
-* [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
-* Installed components, most versions are maintained in [Config.groovy](../src/main/groovy/com/cloudogu/gitops/config/Config.groovy)
-  * Jenkins
-    * Helm Chart
-    * Plugins
-    * Pod `tmp-docker-gid-grepper`
-    * `dockerClientVersion`
-    * Init container `create-agent-working-dir`
-    * Agent Image
-  * SCM-Manager Helm Chart + Plugins
-  * Docker Registry Helm Chart
-  * ArgoCD Helm Chart
-  * Grafana + Prometheus Helm Charts
-  * Vault + ExternalSerets Operator Helm Charts
-  * Ingress Helm Charts
-  * Cert-Manager
-  * Mailhog
-* Applications
-  * GitOps-build-lib + `buildImages`
-  * ces-build-lib
-  * Spring PetClinic
-  * Traefik Helm Chart
-* Dockerfile
-  * Alpine
-  * JDK
-  * Groovy
-  * musl & zlib
-  * Packages installed using apk, gu, microdnf
-
-
 ## Testing URL separator hyphens
 ```bash
 docker run --rm -t  -u $(id -u) \
@@ -317,51 +229,12 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 
 ## External registry for development
 
-If you need to emulate an "external", private registry with credentials, use the following.
-
-Write this `harbor-values.yaml`:
-
-```yaml
-expose:
-  type: nodePort
-  nodePort:
-    ports:
-      http:
-        # docker login localhost:$nodePort -u admin -p Harbor12345
-        # Web UI: http://localhost:nodePort
-        # !! When changing here, also change externalURL !!
-        nodePort: 30002
-
-  tls:
-    enabled: false
-
-externalURL: http://localhost:30002
-
-internalTLS:
-  enabled: false
-
-# Needs less resources but forces you to push images on every restart
-#persistence:
-#enabled: false
-
-chartMuseum:
-  enabled: false
-
-clair:
-  enabled: false
-
-trivy:
-  enabled: false
-
-notary:
-  enabled: false
-```
-
-Then install it like so:
+If you need to emulate an "external", private registry with credentials, then install it like so:
 ```bash
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.14.2 --namespace harbor --create-namespace
+helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
+
 Once it's up and running either create your own private project or just set the existing `library` to private:
 ```bash
 curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -H 'Content-Type: application/json' \
@@ -412,134 +285,20 @@ That is, for most helm charts, you'll need to set an individual value.
   Otherwise GOP deploys its own registry, leading to port conflicts:  
   `Service "harbor" is invalid: spec.ports[0].nodePort: Invalid value: 30000: provided port is already allocated`
 * By default, `docker run` relies on the `gitops-playground:dev` image.  
-  See [here](#Local-development) how to build it, or change `GOP_IMAGE` bellow to e.g. `ghcr.io/cloudogu/gitops-playground`
 
 **Setup**
 
-* Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with Port `30000`)
-
+To set-up harbor with two projects, you can use the target "prepare-two-registries".
 ```shell
-scripts/init-cluster.sh
-helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values - <<EOF
-expose:
-  type: nodePort
-  nodePort:
-    ports:
-      http:
-        nodePort: 30000
-  tls:
-    enabled: false
-externalURL: http://localhost:30000
-internalTLS:
-  enabled: false
-chartMuseum:
-  enabled: false
-clair:
-  enabled: false
-trivy:
-  enabled: false
-notary:
-  enabled: false
-EOF
+make prepare-two-registries
 ```
 
-* Create registries and base image:
-
-```bash
-# Hit the API to see when harbor is ready
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:30000/api/v2.0/projects | grep -q "200"; do
-    echo "Waiting for harbor"
-    sleep 1
-done
-
-declare -A roles
-roles['maintainer']='4'
-roles['limited-guest']='5'
-
-operations=("Proxy" "Registry")
-readOnlyUser='RegistryRead'
-
-for operation in "${operations[@]}"; do
-
-    # Convert the operation to lowercase for the project name and email
-    lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
-    
-    echo "creating project ${lower_operation}"
-    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
-
-    echo creating user ${operation} with PW ${operation}12345
-    curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
-    
-    echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
-    curl --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['maintainer']},\"member_user\":{\"username\":\"$operation\"}}"
-done
-
-echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
-curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
-echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
-curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
-
-# When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
-skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/mailhog
-skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
-skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
-skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
-
-# Monitoring
-# Using latest will lead to failure with
-# k describe prometheus -n monitoring
-#  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
-skopeo copy docker://quay.io/prometheus/prometheus:v3.8.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus
-skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
-skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
-skopeo copy docker://docker.io/grafana/grafana:12.3.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
-skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:2.1.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
-
-# Cert Manager images
-skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
-skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
-skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
-
-# Needed for the builds to work with proxy-registry
-skopeo copy docker://bitnamilegacy/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
-skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine
-skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
-skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/yamllint:latest 
-
-```
-
-* Creating a specific example config file for two registries 
-```bash
-# Copy content of config.yaml from line one till the last list element under namespaces
-awk '1; /example-apps-staging/ {exit}' ../examples/example-apps-via-content-loader/config.yaml > ../scripts/local/two-registries.yaml
-# Append following lines to the config file file
-cat <<EOF >> ../scripts/local/two-registries.yaml
-  variables:
-    petclinic:
-      baseDomain: "petclinic.localhost"
-    nginx:
-      baseDomain: "nginx.localhost"
-    images:
-      kubectl: "localhost:30000/proxy/kubectl:1.29"
-      helm: "localhost:30000/proxy/helm:3.16.4-1"
-      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
-      nginx: ""
-      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
-      maven: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
-EOF
-```
-
-* Deploy playground:
-
+Afer that, deploy GOP with the generated config file:
 ```bash
 # Create a docker container or use an available image from a registry
 # docker build -t gop:dev .
-GOP_IMAGE=gop:ingress
-PATH_TWO_REGISTRIES=scripts/local/two-registries.yaml #Adjust to path above
+GOP_IMAGE=ghcr.io/cloudogu/gitops-playground
+PATH_TWO_REGISTRIES=./scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -648,66 +407,20 @@ like images or helm charts.
 
 ### Setup cluster
 
+First of all, create a new default cluster with:
 ```bash
-scripts/init-cluster.sh --cluster-name=airgapped-playground
-# Note that at this point the cluster is not yet airgapped
-
-# Get the "nodeport" IP
-K3D_NODE=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-airgapped-playground-server-0)
- 
-# Now init some apps you want to have running (e.g. harbor) before going airgapped
-helm upgrade  -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --set externalURL=http://$K3D_NODE:30002 --create-namespace
+./scripts/init-cluster.sh
 ```
 
-Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.config/k3d/...`
+Then deploy the GOP with your desired settings, for example:
 ```bash
-sed -i -r "s/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g" ~/.config/k3d/kubeconfig-airgapped-playground.yaml
-```
-You can switch to the airgapped context in your current shell like so:
-```shell
-export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
+./mvnw exec:java -Dexec.arguments="--profile=full"
 ```
 
-TODO also replace in `~/.kube/config` for more convenience.
-In there, we need to be more careful, because there are other contexts. This makes it more difficult.
-
-### Provide images needed by playground
-
-First, let's import necessary images into harbor using `skopeo`.
-With `skopeo`, this process is much easier than with `docker` because we don't need to pull the images first.
-You can get a list of images from a running playground that is not airgapped.
-
+Now you can prepare the airgapped cluster, this step will remove the default 'gitops-playground' cluster
 ```bash
-# Add more images here, if you like
-# We're not adding registry, scmm, jenkins and argocd here, because we have to install them before we go offline (see bellow for details).
-IMAGE_PATTERNS=('external-secrets' \
-  'vault' \
-  'prometheus' \
-  'grafana' \
-  'sidecar' \
-  'traefik')
-BASIC_SRC_IMAGES=$(
-  kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
-  | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
-  | sed 's/docker\.io\///g' | sort | uniq)
-BASIC_DST_IMAGES=''
-
-# Switch context to airgapped cluster here, e.g.
-export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
-
-while IFS= read -r image; do
-  local dstImage=$K3D_NODE:30002/library/${image##*/}
-  echo pushing image $image to $dstImage
-  skopeo copy docker://$image --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://$dstImage
-  BASIC_DST_IMAGES+="${dstImage}\n"
-done <<< "$BASIC_SRC_IMAGES"
-echo $BASIC_DST_IMAGES
+make prepare-airgapped-cluster
 ```
-
-Note that we're using harbor here, because `k3d image import -c airgapped-playground $(echo $BASIC_IMAGES)` does not
-help because some pods follow the policy of always pulling the images.
-
-Note that even though the images are named `$K3D_NODE:30002/library/...`, these are available via `localhost:30002/library/...` in the k3d cluster.
 
 ### Install the playground
 
@@ -738,34 +451,6 @@ docker run -it -u $(id -u) \
       --ingress-image localhost:30002/library/traefik:3.6.7
 ```
 
-In a different shell start this script, that waits for Argo CD and then goes offline.
-
-```bash
-sudo id # cache sudo PW
-while true; do
-    pods=$(kubectl get pods -n argocd -o jsonpath="{range .items[*]}{.status.phase}{'\n'}{end}")
-    # Dont stop when there are no pods
-    [[ "$(kubectl get pods  -n argocd --output name | wc -l)" -gt 0 ]] && ready="True" || ready="False" 
-    while IFS= read -r pod; do
-        if [[ "$pod" != "Running" ]]; then
-            ready="False"
-        fi
-    done <<< "$pods"
-    if [[ "$ready" == "True" ]]; then
-        break
-    fi
-    echo "$(date '+%Y-%m-%d %H:%M:%S'): Waiting for ArgoCD pods to be ready. Status: $pods"
-    sleep 5
-done
-
-echo "$(date '+%Y-%m-%d %H:%M:%S'): Argo CD Ready, going offline"
-sudo iptables -I FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
-```
-
-If you want to go online again, use `-D`
-```bash
-sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
-```
 
 ### Notifications / E-Mail
 
@@ -825,14 +510,6 @@ The `base-domain` parameters lead to URLs in the following schema:
 `<stage>.<app-name>.<parameter>`, e.g.  
 `staging.nginx-helm.nginx.localhost`
 
-#### Troubleshooting
-
-When requests are denied, there might be problems with the iptables/nftables config on your host.
-Using nft insert, to make sure the rule is on top.
-```
-nft insert rule ip filter INPUT tcp dport 80 accept
-```
-
 ## Generate schema.json
 
 
@@ -863,12 +540,11 @@ On `main` branch:
 ````shell
 TAG=0.5.0
 
-git checkout main
-[[ $? -eq 0 ]] && git pull
-[[ $? -eq 0 ]] && git tag -s $TAG -m $TAG
-[[ $? -eq 0 ]] && git push --follow-tags
-
-[[ $? -eq 0 ]] && xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+git checkout main \
+&& git pull \
+&& git tag -s $TAG -m $TAG \
+&& git push --follow-tags \
+&& xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
 For now, please start a Jenkins Build of `main` manually.  
@@ -906,13 +582,7 @@ We have to install the ingress-controller manually:
 
 
 ```shell
-cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
-  --version 4.12.1 \
-  --namespace traefik \
-  --create-namespace \
-  -f -  
-  
-EOF
+helm upgrade --install traefik traefik/traefik --version 4.12.1 --namespace traefik --create-namespace 
 ```
 
 If the helm repos are not present or up-to-date:
