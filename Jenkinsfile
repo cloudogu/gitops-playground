@@ -31,22 +31,10 @@ pipeline {
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
+        TAG_NAME = sh(returnStdout: true, script: "git --no-pager tag --points-at HEAD").trim()
     }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: scm.branches,
-                    extensions: scm.extensions + [
-                        [$class: 'CloneOption', tags: true, shallow: false]
-                    ],
-                    userRemoteConfigs: scm.userRemoteConfigs
-                ])
-            }
-        }
 
         stage('Build') {
 
