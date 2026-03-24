@@ -27,10 +27,13 @@ ingress:
         - path: "/"
           pathType: Prefix
 <#if config.features.certManager.active!false>
-  tls: true
   annotations:
-      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
-</#if>  
+    cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+  tls:
+    - secretName: mail-tls
+      hosts:
+        - ${mail.host}
+</#if>   
 </#if>
 
 <#if config.application.podResources == true>
