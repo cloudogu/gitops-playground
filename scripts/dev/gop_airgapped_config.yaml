@@ -1,24 +1,23 @@
 features:
   argocd:
-  mail:
-    helm:
-      image: "localhost:30000/proxy/mailhog"
-  monitoring:
-    helm:
-      grafanaImage: "localhost:30000/proxy/grafana"
-      grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar"
-      prometheusImage: "localhost:30000/proxy/prometheus"
-      prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator"
-      prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader"
-  secrets:
-    externalSecrets:
-      helm:
-        image: "localhost:30000/proxy/external-secrets"
-    vault:
-      helm:
-        image: "localhost:30000/proxy/vault"
+  # monitoring:
+  #   active: true
+  #   helm:
+  #     grafanaImage: "172.18.0.2:30002/library/grafana:latest"
+  #     grafanaSidecarImage: "172.18.0.2:30002/library/k8s-sidecar:latest"
+  #     prometheusImage: "172.18.0.2:30002/library/prometheus:latest"
+  #     prometheusOperatorImage: "172.18.0.2:30002/library/prometheus-operator:latest"
+  #     prometheusConfigReloaderImage: "172.18.0.2:30002/library/prometheus-config-reloader:latest"
+  # secrets:
+  #   externalSecrets:
+  #     helm:
+  #       image: "172.18.0.2:30002/library/external-secrets:latest"
+  #   vault:
+  #     helm:
+  #       image: "172.18.0.2:30002/library/vault:latest"
   certManager:
+    active: true
     helm:
-      image: "localhost:30000/proxy/cert-manager-controller"
-      webhookImage: "localhost:30000/proxy/cert-manager-webhook"
-      cainjectorImage: "localhost:30000/proxy/cert-manager-cainjector"
+      image: "airgappedreg/library/cert-manager-controller:latest"
+      webhookImage: "airgappedreg/library/cert-manager-webhook:latest"
+      cainjectorImage: "airgappedreg/library/cert-manager-cainjector:latest"

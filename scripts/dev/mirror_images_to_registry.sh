@@ -73,9 +73,6 @@ skopeo copy $NGINX_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  
 skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/proxy/traefik
 
 # Monitoring
-# Using latest will lead to failure with
-# k describe prometheus -n monitoring
-#  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
 skopeo copy $PROMETHEUS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/proxy/prometheus
 skopeo copy $PROMETHEUS_OPERATOR_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/proxy/prometheus-operator
 skopeo copy $PROMETHEUS_OPERATOR_CONFIG_RELOADER --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/proxy/prometheus-config-reloader
@@ -93,3 +90,30 @@ skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false
 skopeo copy $HELM_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/proxy/helm:latest
 skopeo copy $MVN_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/proxy/maven:3-eclipse-temurin-17-alpine
 skopeo copy $YAMLLINT_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/proxy/yamllint:latest
+
+# also push the images to the public library
+# When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
+skopeo copy $MAILHOG_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/mailhog
+skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/external-secrets
+skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/vault
+skopeo copy $NGINX_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/nginx
+skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/traefik
+
+# Monitoring
+skopeo copy $PROMETHEUS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/prometheus
+skopeo copy $PROMETHEUS_OPERATOR_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/prometheus-operator
+skopeo copy $PROMETHEUS_OPERATOR_CONFIG_RELOADER --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/prometheus-config-reloader
+skopeo copy $GRAFANA_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/grafana
+skopeo copy $K8S_SIDECAR --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/k8s-sidecar
+
+# Cert Manager images
+skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/cert-manager-controller
+skopeo copy $CERT_MANAGER_CA_INJECTOR --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/cert-manager-cainjector
+skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds admin:Harbor12345 --dest-tls-verify=false $HARBOR_DOCKER_BASE_URL/library/cert-manager-webhook
+
+# Needed for the builds to work with proxy-registry
+skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/bitnami/kubectl:1.29
+skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/eclipse-temurin:17-jre-alpine
+skopeo copy $HELM_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/helm:latest
+skopeo copy $MVN_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/maven:3-eclipse-temurin-17-alpine
+skopeo copy $YAMLLINT_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $HARBOR_DOCKER_BASE_URL/library/yamllint:latest

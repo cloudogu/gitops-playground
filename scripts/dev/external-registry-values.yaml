@@ -6,7 +6,7 @@ expose:
         nodePort: 30002
   tls:
     enabled: false
-externalURL: http://localhost:30002
+externalURL: https://localhost:30002
 internalTLS:
   enabled: false
 chartMuseum:
