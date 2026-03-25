@@ -5,6 +5,11 @@ global:
     - name: proxy-registry
 </#if>
 
+ingressShim:
+  defaultIssuerName: ${config.features.certManager.issuer}
+  defaultIssuerKind: ClusterIssuer
+  defaultIssuerGroup: cert-manager.io
+
 <#if config.application.podResources == true>
 resources:
   limits:

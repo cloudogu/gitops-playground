@@ -21,7 +21,14 @@ controller:
   ingress:
     enabled: true
     hostName: ${config.jenkins.ingress}
-
+<#if config.features.certManager.active!false>
+    annotations:
+      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+    tls:
+      - secretName: jenkins-tls
+        hosts:
+          - ${config.jenkins.ingress}
+</#if>  
 </#if>
   # Don't use controller for builds
   numExecutors: 0

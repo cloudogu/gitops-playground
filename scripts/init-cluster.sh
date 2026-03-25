@@ -127,6 +127,20 @@ EOF
             "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@loadbalancer"
             )
     fi
+
+        # Bind ingress https port only when requested by parameter.
+        # On linux the pods can be reached without ingress via the k3d container's network address and the node port.
+        if [[ "${BIND_INGRESS_HTTPS_PORT}" == '0' ]]; then
+          # User wants us to choose an arbitrary port.
+          # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
+          K3D_ARGS+=(
+           '-p 127.0.0.1::443@loadbalancer'
+          )
+        elif [[ "${BIND_INGRESS_HTTPS_PORT}" != '-' ]]; then
+            K3D_ARGS+=(
+                "-p 127.0.0.1:${BIND_INGRESS_HTTPS_PORT}:443@loadbalancer"
+                )
+        fi
     
     if [[ -n "$BIND_PORTS" ]]; then
       IFS=","
@@ -235,6 +249,7 @@ readParameters() {
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=false
   BIND_INGRESS_PORT="80"
+  BIND_INGRESS_HTTPS_PORT="443"
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
   BIND_PORTS=""
@@ -250,6 +265,8 @@ readParameters() {
         # Allow passing portBindings with and without '=' 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ingress-https-port*) BIND_INGRESS_HTTPS_PORT=$(get_longopt_value "--bind-ingress-https-port" "$@")
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
