@@ -104,7 +104,7 @@ class ScmManagerUrlResolver {
     // ---------- Helpers ----------
 
     private String root() {
-        (scmm.rootPath ?: "repo").strip()
+        return 'repo'
     }
 
     private static URI ensureScm(URI u) {

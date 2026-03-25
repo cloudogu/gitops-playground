@@ -18,7 +18,6 @@ class RbacDefinitionTest {
                             password: 'pass',
                             protocol: 'http',
                             host    : 'localhost',
-                            rootPath: 'scm'
                     ],
             ],
             application: [

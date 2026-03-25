@@ -40,7 +40,6 @@ class ScmManagerSetupTest {
                                     version: "3.11.2",
                                     values : [:]
                             ],
-                            rootPath      : "repo",
                             urlForJenkins : "http://scmm.scm-manager.svc.cluster.local/scm",
                             ingress       : "scmm.master.localhost",
                             skipRestart   : false,

@@ -377,7 +377,6 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--scmm-url` | `scmm.url` | `''` | String | The host of your external scm-manager |
 | `--scmm-username` | `scmm.username` | `'admin'` | String | Mandatory when scmm-url is set |
 | `--scmm-password` | `scmm.password` | `'admin'` | String | Mandatory when scmm-url is set |
-| `--scm-root-path` | `scmm.rootPath` | `'repo'` | String | Sets the root path for the Git Repositories |
 | - | `scmm.helm.chart` | `'scm-manager'` | String | Name of the Helm chart |
 | - | `scmm.helm.repoURL` | `'https://packages.scm-manager.org/repository/helm-v2-releases/'` | String | Repository url from which the Helm chart should be obtained |
 | - | `scmm.helm.version` | `'3.10.2'` | String | The version of the Helm chart to be installed |
@@ -548,7 +547,6 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--central-scmm-url`         | `multiTenant.scmManager.url`        | `''`            | String  | URL for the centralized Management Repo                                              |
 | `--central-scmm-username`    | `multiTenant.scmManager.username`   | `''`            | String  | CENTRAL SCMM USERNAME                                                                |
 | `--central-scmm-password`    | `multiTenant.scmManager.password`   | `''`            | String  | CENTRAL SCMM Password                                                                |
-| `--central-scmm-root-path`   | `multiTenant.scmManager.rootPath`   | `'repo'`        | String  | Root path for SCM Manager                                                            |
 | `--central-scmm-namespace`   | `multiTenant.scmManager.namespace`  | `'scm-manager'` | String  | Namespace where to find the Central SCMM                                             |
 
 ##### Configuration file
