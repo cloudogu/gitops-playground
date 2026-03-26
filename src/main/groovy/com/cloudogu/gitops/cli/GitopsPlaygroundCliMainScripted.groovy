@@ -86,7 +86,7 @@ class GitopsPlaygroundCliMainScripted {
 				context.registerSingleton(new Application(config, [new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
 				                                                   gitHandler,
 				                                                   jenkins,
-				                                                   new ArgoCD(config, k8sClient, helmClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler),
+				                                                   new ArgoCD(config, k8sClient, helmClient, helmStrategy, fileSystemUtils, gitRepoFactory, gitHandler),
 				                                                   new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 				                                                   new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 				                                                   new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),

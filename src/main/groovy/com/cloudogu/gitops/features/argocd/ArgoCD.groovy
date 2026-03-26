@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.HelmClient
@@ -42,7 +42,7 @@ class ArgoCD extends Feature {
 			Config config,
 			K8sClient k8sClient,
 			HelmClient helmClient,
-			DeploymentStrategy deployer,
+			HelmStrategy deployer,
 			FileSystemUtils fileSystemUtils,
 			GitRepoFactory repoProvider,
 			GitHandler gitHandler) {
@@ -114,6 +114,7 @@ class ArgoCD extends Feature {
 
 		if (config.features.argocd.operator) {
 			generateRBAC()
+			installOperator()
 			deployWithOperator()
 		} else {
 			if (this.config.features.argocd?.values) {
@@ -151,18 +152,6 @@ class ArgoCD extends Feature {
 	}
 
 	private void deployWithOperator() {
-		def cmd = """
-git clone https://github.com/argoproj-labs/argocd-operator &&
-cd argocd-operator &&
-git checkout release-0.17 &&
-make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.17.0 &&
-rm -Rf ../argocd-operator/
-"""
-
-		def process = ["bash", "-c", cmd].execute()
-		process.in.eachLine { log.debug(it) }
-		process.err.eachLine { log.debug(it) }
-		process.waitFor()
 		// Apply argocd yaml from operator folder
 		String argocdConfigPath = clusterResourcesRepo.operatorConfigFile()
 		if (this.config.features.argocd?.values) {
@@ -201,9 +190,24 @@ rm -Rf ../argocd-operator/
 		k8sClient.applyYaml("${argocdRbacPath} --recursive")
 	}
 
+	private static void installOperator() {
+		def cmd = """
+git clone https://github.com/argoproj-labs/argocd-operator &&
+cd argocd-operator &&
+git checkout release-0.17 &&
+make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.17.0 &&
+rm -Rf ../argocd-operator/
+"""
+
+		def process = ["bash", "-c", cmd].execute()
+		process.in.eachLine { log.debug(it) }
+		process.err.eachLine { log.debug(it) }
+		process.waitFor()
+	}
+
 	private void deployWithHelm() {
 		addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
-		this.deployer.helm(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config)
+		deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config)
 
 		log.debug("Setting new argocd admin password")
 		// Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
