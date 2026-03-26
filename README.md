@@ -5,7 +5,7 @@
 Create a complete GitOps-based operational stack with all the tools you need for an internal developer platform, on your machine, in your datacenter or in the cloud! 
 
 * __Deployment__: GitOps via Argo CD with a ready-to-use [repo structure](docs/Applications.md#argo-cd)
-* __Monitoring: [Prometheus and Grafana](docs/Applications.md#monitoring-tools)
+* __Monitoring__: [Prometheus and Grafana](docs/Applications.md#monitoring-tools)
 * __Secrets__ Management:  [Vault and External Secrets Operator](docs/Applications.md#secrets-management-tools)
 * __Notifications__/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * __Pipelines__: Example applications using [Jenkins](docs/Applications.md#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](docs/Applications.md#scm-manager)
