@@ -1,23 +1,41 @@
+application:
+  baseUrl: "http://localhost"
+  insecure: true
 features:
   argocd:
-  # monitoring:
-  #   active: true
-  #   helm:
-  #     grafanaImage: "172.18.0.2:30002/library/grafana:latest"
-  #     grafanaSidecarImage: "172.18.0.2:30002/library/k8s-sidecar:latest"
-  #     prometheusImage: "172.18.0.2:30002/library/prometheus:latest"
-  #     prometheusOperatorImage: "172.18.0.2:30002/library/prometheus-operator:latest"
-  #     prometheusConfigReloaderImage: "172.18.0.2:30002/library/prometheus-config-reloader:latest"
-  # secrets:
-  #   externalSecrets:
-  #     helm:
-  #       image: "172.18.0.2:30002/library/external-secrets:latest"
-  #   vault:
-  #     helm:
-  #       image: "172.18.0.2:30002/library/vault:latest"
+    active: true
+  monitoring:
+    active: true
+    helm:
+      grafanaImage: "k3d-agreg:5000/library/grafana:latest"
+      grafanaSidecarImage: "k3d-agreg:5000/library/k8s-sidecar:latest"
+      prometheusImage: "k3d-agreg:5000/library/prometheus:latest"
+      prometheusOperatorImage: "k3d-agreg:5000/library/prometheus-operator:latest"
+      prometheusConfigReloaderImage: "k3d-agreg:5000/library/prometheus-config-reloader:latest"
+  secrets:
+    externalSecrets:
+      helm:
+        image: "k3d-agreg:5000/library/external-secrets:latest"
+    vault:
+      helm:
+        image: "k3d-agreg:5000/library/vault:latest"
+  ingress:
+    active: true
+    helm:
+      values:
+        image:
+          registry: "k3d-agreg:5000"
+          repository: "library/traefik"
+          tag: "v3.3.3"
   certManager:
     active: true
     helm:
-      image: "airgappedreg/library/cert-manager-controller:latest"
-      webhookImage: "airgappedreg/library/cert-manager-webhook:latest"
-      cainjectorImage: "airgappedreg/library/cert-manager-cainjector:latest"
+      version: v1.16.1
+      image: "k3d-agreg:5000/library/cert-manager-controller:latest"
+      webhookImage: "k3d-agreg:5000/library/cert-manager-webhook:latest"
+      cainjectorImage: "k3d-agreg:5000/library/cert-manager-cainjector:latest"
+  mail:
+    mailServer: true
+    helm:
+      image: "k3d-agreg:5000/library/mailhog:latest"
+

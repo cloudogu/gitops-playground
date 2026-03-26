@@ -1,5 +1,9 @@
+application:
+  baseUrl: "http://localhost"
+  insecure: true
 features:
   argocd:
+    active: true
   monitoring:
     active: true
     helm:
@@ -15,13 +19,23 @@ features:
     vault:
       helm:
         image: "<address>/library/vault:latest"
-#   ingress:
-#     active: true
-#     helm:
-#       image: "<address>/library/traefik:latest"
+  ingress:
+    active: true
+    helm:
+      values:
+        image:
+          registry: "<address>"
+          repository: "library/traefik"
+          tag: "v3.3.3"
   certManager:
     active: true
     helm:
+      version: v1.16.1
       image: "<address>/library/cert-manager-controller:latest"
       webhookImage: "<address>/library/cert-manager-webhook:latest"
       cainjectorImage: "<address>/library/cert-manager-cainjector:latest"
+  mail:
+    mailServer: true
+    helm:
+      image: "<address>/library/mailhog:latest"
+

@@ -34,8 +34,8 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
   - [Install the playground](#install-the-playground)
-  - [Notifications / E-Mail](#notifications--e-mail)
-  - [Troubleshooting](#troubleshooting)
+- [Notifications / E-Mail](#notifications--e-mail)
+- [Troubleshooting](#troubleshooting)
   - [Using ingresses locally](#using-ingresses-locally)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
@@ -407,20 +407,13 @@ like images or helm charts.
 
 ### Setup cluster
 
-First of all, create a new default cluster with:
-```bash
-./scripts/init-cluster.sh
-```
-
-Then deploy the GOP with your desired settings, for example:
-```bash
-./mvnw exec:java -Dexec.arguments="--profile=full"
-```
-
-Now you can prepare the airgapped cluster, this step will remove the default 'gitops-playground' cluster
+You can prepare the airgapped cluster, by calling make with the "prepare-airgappe-cluster" target:
 ```bash
 make prepare-airgapped-cluster
 ```
+
+This will setup a local image registry and upload all necessary images into it, while simultaneously binding it to the
+newly creates k3d-cluster "airgapped-playground".
 
 ### Install the playground
 
@@ -437,22 +430,12 @@ So, start the installation and once Argo CD is running, go offline.
 ```bash
 docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
-    --net=host gitops-playground:dev --argocd --yes -x \
-      --vault=dev --metrics \
-      --grafana-image localhost:30002/library/grafana:12.3.0 \
-      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:2.1.2 \
-      --prometheus-image localhost:30002/library/prometheus:v3.8.0 \
-      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.87.1 \
-      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.87.1 \
-      --external-secrets-image localhost:30002/library/external-secrets:v0.6.1 \
-      --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
-      --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
-      --vault-image localhost:30002/library/vault:1.12.0 \
-      --ingress-image localhost:30002/library/traefik:3.6.7
+    -v ./scripts/dev/gop_airgapped_config.yaml:/gop.yaml \
+    --net=host gitops-playground:latest --config-file=/gop.yaml -x 
 ```
 
 
-### Notifications / E-Mail
+## Notifications / E-Mail
 
 Notifications are implemented via Mail.  
 Either internal MailHog or an external mail server can be used.
@@ -471,7 +454,7 @@ Here you can check if the configuration is implemented correctly and fire up a T
 
 For testing Argo CD, just uncomment some of the defaultTriggers in it's values.yaml and it will send a lot of emails.
 
-### Troubleshooting
+## Troubleshooting
 
 When stuck in `Pending` this might be due to volumes not being provisioned
 ```bash
