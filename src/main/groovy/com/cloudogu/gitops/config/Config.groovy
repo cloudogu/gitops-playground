@@ -525,14 +525,6 @@ class Config {
 
 		Boolean active = false
 
-		@Option(names = ['--mail'], description = MAILSERVER_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
-		@JsonPropertyDescription(MAILSERVER_ENABLE_DESCRIPTION)
-		Boolean mailServer = false
-
-		@Option(names = ['--mail-url'], description = MAIL_URL_DESCRIPTION)
-		@JsonPropertyDescription(MAIL_URL_DESCRIPTION)
-		String mailUrl = ''
-
 		@Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
 		@JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
 		String smtpAddress = ''
@@ -548,18 +540,6 @@ class Config {
 		@Option(names = ['--smtp-password'], description = SMTP_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
 		String smtpPassword = ''
-
-		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-		@Mixin
-		MailHelmSchema helm = new MailHelmSchema(chart: 'mailhog',
-				repoURL: 'https://codecentric.github.io/helm-charts',
-				version: '5.0.1')
-
-		static class MailHelmSchema extends HelmConfigWithValues {
-			@Option(names = ['--mail-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
-			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
-			String image = 'ghcr.io/cloudogu/mailhog:v1.0.1'
-		}
 	}
 
 	static class MonitoringSchema {

@@ -81,9 +81,6 @@ class ArgoCDTest {
                             emailToAdmin             : 'infra@example.org',
                             resourceInclusionsCluster: ''
                     ],
-                    mail        : [
-                            mailServer: true,
-                    ],
                     monitoring  : [
                             active: true,
                             helm  : [
@@ -252,7 +249,6 @@ class ArgoCDTest {
     @Test
     void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = false
-        config.features.mail.mailServer = false
 
         def argocd = createArgoCD()
         argocd.install()
