@@ -83,9 +83,6 @@ class MonitoringTest {
                     ],
                     ingress: [
                             active: true
-                    ],
-                    mail        : [
-                            mailServer: true
                     ]
             ])
 
@@ -118,7 +115,6 @@ class MonitoringTest {
     @Test
     void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
@@ -257,7 +253,6 @@ policies:
     @Test
     void 'When external Mailserver is NOT set'() {
         config.features.mail.active = null // user should not do this in real.
-        config.features.mail.mailServer = false
         createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 
