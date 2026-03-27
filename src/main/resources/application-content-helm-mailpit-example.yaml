@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  insecure: true
+features:
+  argocd:
+    active: true
+  ingress:
+    active: true
+  monitoring:
+    active: true
+  mail:
+    smtpAddress: "mailpit-smtp.mailpit.svc.cluster.local"
+    smtpPort: 25
+registry:
+  active: true
+content:
+  helmReleases:
+    - name: mailpit
+      repoURL: https://jouve.github.io/charts
+      chart: mailpit
+      version: "0.31.3"
+      namespace: mailpit
+      releaseName: mailpit
+      values:
+        ingress:
+          enabled: true
+          hostname: mailpit.localhost
+          tls: false
+        mailpit:
+          ui:
+            authFile:
+              enabled: false
+        resources:
+          limits:
+            cpu: 500m
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 20Mi
