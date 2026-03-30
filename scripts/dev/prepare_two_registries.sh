@@ -26,18 +26,33 @@ cat <<EOF >> ./scripts/local/two-registries.yaml
       nginx: ""
       petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
       maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
+jenkins:
+  active: true
+application:
+  baseUrl: "http://localhost"
+  insecure: true
 features:
   argocd:
+    active: true
   mail:
     helm:
       image: "localhost:30000/proxy/mailhog"
   monitoring:
+    active: true
     helm:
       grafanaImage: "localhost:30000/proxy/grafana"
       grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar"
       prometheusImage: "localhost:30000/proxy/prometheus"
       prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator"
       prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader"
+  ingress:
+    active: true
+    helm:
+      values:
+        image:
+          registry: "localhost:30000"
+          repository: "traefik/traefik"
+          tag: "v3.3.3"
   secrets:
     externalSecrets:
       helm:
