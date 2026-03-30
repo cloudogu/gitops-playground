@@ -3,10 +3,6 @@ package com.cloudogu.gitops.cli
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
-import com.cloudogu.gitops.destroy.ArgoCDDestructionHandler
-import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.destroy.JenkinsDestructionHandler
-import com.cloudogu.gitops.destroy.ScmmDestructionHandler
 import com.cloudogu.gitops.features.*
 import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
@@ -64,37 +60,31 @@ class GitopsPlaygroundCliMainScripted {
 			HttpClientFactory httpClientFactory = new HttpClientFactory()
 			GitRepoFactory gitRepoFactory = new GitRepoFactory(config, fileSystemUtils)
 			HelmStrategy helmStrategy = new HelmStrategy(config, helmClient)
-			GitHandler gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
 
 			JenkinsApiClient jenkinsApiClient = new JenkinsApiClient(config,
 			                                                         httpClientFactory.okHttpClientJenkins(config))
 
 			context.registerSingleton(k8sClient)
+			GitHandler gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
+			Deployer deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
 
-			if (config.application.destroy) {
-				context.registerSingleton(new Destroyer([new ArgoCDDestructionHandler(config, k8sClient, gitRepoFactory, helmClient, fileSystemUtils, gitHandler),
-				                                         new ScmmDestructionHandler(config),
-				                                         new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient)),]))
-			} else {
-				Deployer deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
-				AirGappedUtils airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
-				Jenkins jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
-				                              new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-				                              new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils, gitHandler)
+			AirGappedUtils airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
+			Jenkins jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
+			                              new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
+			                              new PrometheusConfigurator(jenkinsApiClient), deployer, k8sClient, networkingUtils, gitHandler)
 
-				// make sure the order of features is in same order as the @Order values
-				context.registerSingleton(new Application(config, [new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-				                                                   gitHandler,
-				                                                   jenkins,
-				                                                   new ArgoCD(config, k8sClient, helmClient, helmStrategy, fileSystemUtils, gitRepoFactory, gitHandler),
-				                                                   new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-				                                                   new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-				                                                   new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-				                                                   new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
-				                                                   new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-				                                                   new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
-				                                                   new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),]))
-			}
+			// make sure the order of features is in same order as the @Order values
+			context.registerSingleton(new Application(config, [new Registry(config, fileSystemUtils, k8sClient, deployer),
+			                                                   gitHandler,
+			                                                   jenkins,
+			                                                   new ArgoCD(config, k8sClient, helmClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler),
+			                                                   new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+			                                                   new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+			                                                   new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+			                                                   new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
+			                                                   new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+			                                                   new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
+			                                                   new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),]))
 		}
 	}
 }

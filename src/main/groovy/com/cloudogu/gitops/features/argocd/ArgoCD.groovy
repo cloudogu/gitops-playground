@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.HelmClient
@@ -42,7 +42,7 @@ class ArgoCD extends Feature {
 			Config config,
 			K8sClient k8sClient,
 			HelmClient helmClient,
-			HelmStrategy deployer,
+			Deployer deployer,
 			FileSystemUtils fileSystemUtils,
 			GitRepoFactory repoProvider,
 			GitHandler gitHandler) {
@@ -141,7 +141,7 @@ class ArgoCD extends Feature {
 		} else {
 			// Bootstrap root application
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "argocd.yaml").toString())
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
+			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "argocd.yaml").toString())
 		}
 
 		// Delete helm-argo secrets to decouple from helm.
@@ -207,8 +207,7 @@ rm -Rf ../argocd-operator/
 
 	private void deployWithHelm() {
 		addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
-		deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config)
-
+		deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config, true)
 		log.debug("Setting new argocd admin password")
 		// Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
