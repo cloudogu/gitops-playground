@@ -35,7 +35,7 @@ class HelmStrategy implements DeploymentStrategy {
                     "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")
 
             if (RepoType.HELM  == repoType ) {
-                 log.debug("helm chart by http")
+                log.debug("adding helm repo {}.",repoUrl)
                 helmClient.addRepo(repoName, repoURL)
             helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
                     [namespace: namespace,
