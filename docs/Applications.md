@@ -8,7 +8,7 @@ The stack is composed of multiple applications, where some of them can be access
 * Prometheus/Grafana
 * Jenkins
 * SCM-Manager
-* Vault
+* Vault/External Secrets Operator
 * Ingress
 * Cert-Manager
 
