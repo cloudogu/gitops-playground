@@ -9,7 +9,7 @@ The stack is composed of multiple applications, where some of them can be access
 * Jenkins
 * SCM-Manager
 * Vault/External Secrets Operator
-* Ingress
+* Ingress (Traefik)
 * Cert-Manager
 
 In addition, there are example applications that provide a turnkey solution for GitOps-Pipelines from a developer's
