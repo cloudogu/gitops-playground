@@ -8,8 +8,8 @@ The stack is composed of multiple applications, where some of them can be access
 * Prometheus/Grafana
 * Jenkins
 * SCM-Manager
-* Vault
-* Ingress
+* Vault/External Secrets Operator
+* Ingress (Traefik)
 * Cert-Manager
 
 In addition, there are example applications that provide a turnkey solution for GitOps-Pipelines from a developer's
