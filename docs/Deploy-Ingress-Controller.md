@@ -32,7 +32,7 @@ This config file is merged with precedence over the defaults set by
 It is possible to deploy `Ingress` objects for all components. You can either
 
 * set a common base url (`--base-url=https://example.com`) or
-* individual URLS: <- falsch!
+* individual URLS:
 ```
 --argocd-url https://argocd.example.com 
 --grafana-url https://grafana.example.com 

@@ -39,9 +39,8 @@ providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/
 
 ### Repositories and layout
 
-When installing the GitOps playground, the following Git repositories are created and initialized:
+When installing the GitOps playground, the following Git repository is created and initialized:
 
-* example-apps – example GitOps repository for a developer / application team
 * cluster-resources – example GitOps repository for a cluster admin or infra / platform team
 
 Argo CD’s own management and configuration, which previously lived in a dedicated `argocd` repository, 
@@ -308,11 +307,11 @@ All applications are deployed via separated application and GitOps repos:
 
 * Separation of app repo (e.g. `petclinic-plain`) and GitOps repo (e.g. `argocd/example-app`)
 * Config is maintained in app repo,
-* CI Server writes to GitOps repo and creates PullRequests.
+* CI Server writes to GitOps repo and creates PullRequests, using the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
 The applications implement a simple staging mechanism:
 
-* After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
+* After a successful Jenkins build, the staging application will be deployed into the cluster by ArogCD.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
 
