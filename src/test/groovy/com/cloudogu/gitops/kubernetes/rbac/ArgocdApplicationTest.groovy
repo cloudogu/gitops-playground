@@ -17,7 +17,6 @@ class ArgocdApplicationTest {
                     scmManager: [username: 'user',
                                  password: 'pass',
                                  host    : 'localhost',
-                                 rootPath: 'scm'
                     ],
                     gitlab    : [username: 'user',
                                  password: 'pass',

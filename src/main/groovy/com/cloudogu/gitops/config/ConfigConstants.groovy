@@ -47,6 +47,15 @@ interface ConfigConstants {
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
     String CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION = 'Enables the whitelist for statics in content templating'
     String CONTENT_STATICSWHITELIST_DESCRIPTION = 'Whitelist for Statics freemarker is allowing in user templates'
+    String CONTENT_HELM_RELEASE_NAME_DESCRIPTION = "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
+
+    String CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION = "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
+    String CONTENT_HELM_RELEASE_CHART_DESCRIPTION = "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+    String CONTENT_HELM_RELEASE_VERSION_DESCRIPTION = "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
+    String CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION = "Kubernetes namespace to deploy the release into."
+    String CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION = "Helm release name. If empty, the value of 'name' is used."
+    String CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION = "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
+    String CONTENT_HELM_RELEASE_VALUES_DESCRIPTION = "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
 
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'

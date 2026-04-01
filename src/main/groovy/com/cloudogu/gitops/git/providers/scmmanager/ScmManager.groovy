@@ -93,14 +93,14 @@ class ScmManager implements GitProvider {
         return urls.inClusterBase().toString()
     }
 
-    /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
+    /** In-cluster repo prefix: …/scm/repo/[<namePrefix>] */
     @Override
     String repoPrefix() {
         return urls.inClusterRepoPrefix()
     }
 
 
-    /**  …/scm/<rootPath>/<ns>/<name> */
+    /**  …/scm/repo/<ns>/<name> */
     @Override
     String repoUrl(String repoTarget, RepoUrlScope scope) {
         switch (scope) {

@@ -1,0 +1,25 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  insecure: true
+  namePrefix: my-prefix
+features:
+  argocd:
+    active: true
+  ingress:
+    active: true
+
+content:
+  helmReleases:
+    - name: elasticsearch
+      repoURL: https://helm.elastic.co
+      chart: elasticsearch
+      version: "8.5.1"
+      namespace: my-prefix-elasticsearch
+      valuesPath: "src/main/resources/elasticsearch-helm.yaml"
+      values:
+        replicas: 3
+
+registry:
+  active: true

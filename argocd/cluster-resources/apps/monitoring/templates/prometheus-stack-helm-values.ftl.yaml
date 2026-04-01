@@ -164,7 +164,16 @@ grafana:
   ingress:
     enabled: true
     hosts: [${monitoring.grafana.host}]
+<#if config.features.certManager.active == true>
+    annotations:
+      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+    tls:
+      - secretName: grafana-tls
+        hosts:
+        - ${monitoring.grafana.host}
 </#if>
+</#if>
+
 <#if config.features.monitoring.helm.grafanaImage?has_content>
 <#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
   image:
