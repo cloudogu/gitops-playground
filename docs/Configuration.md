@@ -29,6 +29,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--registry-username` | `registry.username` | String | `` | Optional when registry-url is set |
 | `--registry-password` | `registry.password` | String | `` | Optional when registry-url is set |
 | `--registry-proxy-url` | `registry.proxyUrl` | String | `` | The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields. |
+| `--registry-proxy-path` | `registry.proxyPath` | String | `` | Optional when registry-proxy-url is set and the registry is running on a non root web path. |
 | `--registry-proxy-username` | `registry.proxyUsername` | String | `` | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set. |
 | `--registry-proxy-password` | `registry.proxyPassword` | String | `` | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set. |
 | `--registry-username-read-only` | `registry.readOnlyUsername` | String | `` | Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
@@ -70,7 +71,6 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--central-scmm-url` | `multiTenant.scmManager.url` | String | `-` | URL for the centralized Management Repo |
 | `--central-scmm-username` | `multiTenant.scmManager.username` | String | `-` | CENTRAL SCMM username |
 | `--central-scmm-password` | `multiTenant.scmManager.password` | String | `-` | CENTRAL SCMM password |
-| `--central-scmm-root-path` | `multiTenant.scmManager.rootPath` | String | `-` | Root path for SCM Manager. In SCM-Manager it is always "repo" |
 | `--central-scmm-namespace` | `multiTenant.scmManager.namespace` | String | `-` | Namespace where to find the Central SCMM |
 | `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | String | `argocd` | Namespace for the centralized Argocd |
 | `--dedicated-instance` | `multiTenant.useDedicatedInstance` | Boolean | `false` | Toggles the Dedicated Instances Mode. See docs for more info |
@@ -93,7 +93,6 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `scm.scmManager.helm.chart` | String | `-` | Name of the Helm chart |
 | - | `scm.scmManager.helm.repoURL` | String | `-` | Repository url from which the Helm chart should be obtained |
 | - | `scm.scmManager.helm.version` | String | `-` | The version of the Helm chart to be installed |
-| `--scmm-root-path` | `scm.scmManager.rootPath` | String | `-` | Sets the root path for the Git Repositories. In SCM-Manager it is always "repo" |
 | `--scmm-skip-restart` | `scm.scmManager.skipRestart` | Boolean | `-` | Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.' |
 | `--scmm-skip-plugins` | `scm.scmManager.skipPlugins` | Boolean | `-` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | - | `scm.scmManager.gitOpsUsername` | String | `-` | Username for the Gitops User |
@@ -119,7 +118,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--pod-resources` | `application.podResources` | Boolean | `false` | Write kubernetes resource requests and limits on each pod |
 | `--git-name` | `application.gitName` | String | `Cloudogu` | Sets git author and committer name used for initial commits |
 | `--git-email` | `application.gitEmail` | String | `hello@cloudogu.com` | Sets git author and committer email used for initial commits |
-| `--base-url` | `application.baseUrl` | String | `` | the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence. |
+| `--base-url` | `application.baseUrl` | String | `` | the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence. |
 | `--url-separator-hyphen` | `application.urlSeparatorHyphen` | Boolean | `false` | Use hyphens instead of dots to separate application name from base-url |
 | `--mirror-repos` | `application.mirrorRepos` | Boolean | `false` | Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments. |
 | `--skip-crds` | `application.skipCrds` | Boolean | `false` | Skip installation of CRDs. This requires prior installation of CRDs |
@@ -137,6 +136,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `content.namespaces` | List&lt;String&gt; | `[]` | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
 | - | `content.repos` | List&lt;ContentRepositorySchema&gt; | `[]` | ContentLoader repos to push into target environment |
 | - | `content.variables` | Map | `[:]` | Additional variables to use in custom templates. |
+| - | `content.helmReleases` | List&lt;HelmReleaseSchema&gt; | `[]` | - |
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
 
@@ -163,17 +163,10 @@ Configuration of optional features supported by gitops-playground.
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `--mail` | `features.mail.mailServer` | Boolean | `false` | Installs a dedicated mail server. |
-| `--mail-url` | `features.mail.mailUrl` | String | `` | Sets url for the mail server frontend |
 | `--smtp-address` | `features.mail.smtpAddress` | String | `` | Sets smtp port of external Mailserver |
 | `--smtp-port` | `features.mail.smtpPort` | Integer | `-` | Sets smtp port of external Mailserver |
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
-| `--mail-image` | `features.mail.helm.image` | String | `ghcr.io/cloudogu/mailhog:v1.0.1` | The image of the Helm chart to be installed |
-| - | `features.mail.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-| - | `features.mail.helm.chart` | String | `mailhog` | Name of the Helm chart |
-| - | `features.mail.helm.repoURL` | String | `https://codecentric.github.io/helm-charts` | Repository url from which the Helm chart should be obtained |
-| - | `features.mail.helm.version` | String | `5.0.1` | The version of the Helm chart to be installed |
 
 ### Feature: Monitoring
 
@@ -227,6 +220,7 @@ Configuration of optional features supported by gitops-playground.
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `--cert-manager` | `features.certManager.active` | Boolean | `false` | Sets and enables Cert Manager |
+| `--cert-manager-issuer` | `features.certManager.issuer` | String | `cluster-selfsigned` | Sets and enables Cert Manager |
 | `--cert-manager-image` | `features.certManager.helm.image` | String | `` | Sets image for Cert Manager |
 | `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | String | `` | Sets webhook Image for Cert Manager |
 | `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | String | `` | Sets cainjector Image for Cert Manager |
@@ -235,5 +229,5 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.certManager.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `features.certManager.helm.chart` | String | `cert-manager` | Name of the Helm chart |
 | - | `features.certManager.helm.repoURL` | String | `https://charts.jetstack.io` | Repository url from which the Helm chart should be obtained |
-| - | `features.certManager.helm.version` | String | `1.16.1` | The version of the Helm chart to be installed |
+| - | `features.certManager.helm.version` | String | `1.19.4` | The version of the Helm chart to be installed |
 

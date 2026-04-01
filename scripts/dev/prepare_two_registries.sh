@@ -34,9 +34,6 @@ application:
 features:
   argocd:
     active: true
-  mail:
-    helm:
-      image: "localhost:30000/proxy/mailhog"
   monitoring:
     active: true
     helm:

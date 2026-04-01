@@ -48,7 +48,7 @@
       "properties" : {
         "baseUrl" : {
           "type" : [ "string", "null" ],
-          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
+          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence."
         },
         "clusterAdmin" : {
           "type" : [ "boolean", "null" ],

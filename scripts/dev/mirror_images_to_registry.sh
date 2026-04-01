@@ -9,7 +9,6 @@ REGISTRY_BASE_URL=$1
 HARBOR=$2
 REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
-MAILHOG_IMAGE="docker://ghcr.io/cloudogu/mailhog:v1.0.1"
 ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v0.9.16"
 VAULT_IMAGE="docker://hashicorp/vault:1.14.0"
 NGINX_IMAGE="docker://bitnamilegacy/nginx:1.23.3-debian-11-r8"
@@ -65,7 +64,6 @@ if [[ -n $HARBOR ]]; then
     sleep 5
 
     # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
-    skopeo copy $MAILHOG_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/mailhog
     skopeo copy $ESO_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/external-secrets
     skopeo copy $VAULT_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/vault
     skopeo copy $NGINX_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/nginx
@@ -94,7 +92,6 @@ fi
 
 # also push the images to the public library
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
-skopeo copy $MAILHOG_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/mailhog
 skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/external-secrets
 skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/vault
 skopeo copy $NGINX_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/nginx

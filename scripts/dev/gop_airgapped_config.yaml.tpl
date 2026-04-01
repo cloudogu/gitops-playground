@@ -34,8 +34,3 @@ features:
       image: "<address>/library/cert-manager-controller:latest"
       webhookImage: "<address>/library/cert-manager-webhook:latest"
       cainjectorImage: "<address>/library/cert-manager-cainjector:latest"
-  mail:
-    mailServer: true
-    helm:
-      image: "<address>/library/mailhog:latest"
-

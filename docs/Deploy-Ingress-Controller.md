@@ -37,7 +37,6 @@ It is possible to deploy `Ingress` objects for all components. You can either
 --argocd-url https://argocd.example.com 
 --grafana-url https://grafana.example.com 
 --vault-url https://vault.example.com 
---mail-url https://mail.example.com 
 --petclinic-base-domain petclinic.example.com 
 --nginx-base-domain nginx.example.com
 ```

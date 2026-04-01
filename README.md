@@ -7,7 +7,7 @@ Create a complete GitOps-based operational stack with all the tools you need for
 * __Deployment__: GitOps via Argo CD with a ready-to-use [repo structure](docs/Applications.md#argo-cd)
 * __Monitoring__: [Prometheus and Grafana](docs/Applications.md#monitoring-tools)
 * __Secrets__ Management:  [Vault and External Secrets Operator](docs/Applications.md#secrets-management-tools)
-* __Notifications__/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
+* __Notifications__/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver.
 * __Pipelines__: Example applications using [Jenkins](docs/Applications.md#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](docs/Applications.md#scm-manager)
 * __Ingress__ Controller: [ingress](https://traefik.github.io/charts)
 * __Certificate__ Management: [cert-manager](https://cert-manager.io/)
@@ -40,7 +40,7 @@ bash <(curl -s \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
-# More IDP-features: --mail --monitoring --vault=dev --cert-manager
+# More IDP-features: --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
 
