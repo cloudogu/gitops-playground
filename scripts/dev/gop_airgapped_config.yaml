@@ -1,0 +1,41 @@
+application:
+  baseUrl: "http://localhost"
+  insecure: true
+features:
+  argocd:
+    active: true
+  monitoring:
+    active: true
+    helm:
+      grafanaImage: "k3d-agreg:5000/library/grafana:latest"
+      grafanaSidecarImage: "k3d-agreg:5000/library/k8s-sidecar:latest"
+      prometheusImage: "k3d-agreg:5000/library/prometheus:latest"
+      prometheusOperatorImage: "k3d-agreg:5000/library/prometheus-operator:latest"
+      prometheusConfigReloaderImage: "k3d-agreg:5000/library/prometheus-config-reloader:latest"
+  secrets:
+    externalSecrets:
+      helm:
+        image: "k3d-agreg:5000/library/external-secrets:latest"
+    vault:
+      helm:
+        image: "k3d-agreg:5000/library/vault:latest"
+  ingress:
+    active: true
+    helm:
+      values:
+        image:
+          registry: "k3d-agreg:5000"
+          repository: "library/traefik"
+          tag: "v3.3.3"
+  certManager:
+    active: true
+    helm:
+      version: v1.16.1
+      image: "k3d-agreg:5000/library/cert-manager-controller:latest"
+      webhookImage: "k3d-agreg:5000/library/cert-manager-webhook:latest"
+      cainjectorImage: "k3d-agreg:5000/library/cert-manager-cainjector:latest"
+  mail:
+    mailServer: true
+    helm:
+      image: "k3d-agreg:5000/library/mailhog:latest"
+

@@ -8,6 +8,8 @@ scripts/local/**
 !scripts/local/**/
 !scripts/local/**/*.sh
 
+scripts/dev/gop_airgapped_config.yaml
+
 # do not check in the workspace
 workspace/
 
