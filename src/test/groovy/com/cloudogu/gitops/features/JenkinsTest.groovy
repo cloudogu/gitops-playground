@@ -162,7 +162,6 @@ me:x:1000:''')
     void 'Maps config properly'() {
         config.application.trace = true
         config.features.argocd.active = true
-        config.content.examples = true
         config.scm.scmManager.url = 'http://scmm.scm-manager.svc.cluster.local/scm'
         config.scm.scmManager.username = 'scmm-usr'
         config.scm.scmManager.password = 'scmm-pw'
@@ -276,7 +275,6 @@ me:x:1000:''')
     @Test
     void 'Handles two registries'() {
         config.registry.twoRegistries = true
-        config.content.examples = true
         config.application.namePrefix = 'my-prefix-'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
 

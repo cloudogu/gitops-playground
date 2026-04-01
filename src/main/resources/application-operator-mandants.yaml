@@ -1,4 +1,39 @@
 # $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  baseUrl: "http://localhost"
+  insecure: true
+  username: "admin"
+  password: "admin"
+  "yes": true
+  namePrefix: ""
+  namespaceIsolation: false
+  skipCrds: true
+  clusterAdmin: true
+jenkins:
+  active: false
+features:
+  monitoring:
+    active: false
+  argocd:
+    active: true
+    operator: false
+    env: []
+    resourceInclusionsCluster: "https://10.43.0.1:443"
+  ingress:
+    active: true
 content:
-  multitenancyExamples: true
+  repos:
+    - url: https://github.com/cloudogu/gop-helm
+      target: 3rd-party-dependencies/gop-helm
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/gitops-examples
+      path: init-multi-tenancy/
+      ref: main
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+
+  namespaces:
+    - tenant1-argocd
+  variables:
 

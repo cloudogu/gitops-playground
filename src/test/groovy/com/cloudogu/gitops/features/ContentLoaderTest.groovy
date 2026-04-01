@@ -123,7 +123,6 @@ class ContentLoaderTest {
 
     @Test
     void 'deploys image pull secrets'() {
-        config.content.examples = true
         config.registry.createImagePullSecrets = true
         config.content.namespaces = ['example-apps-staging', 'example-apps-production']
 
@@ -134,7 +133,6 @@ class ContentLoaderTest {
 
     @Test
     void 'deploys image pull secrets from read-only vars'() {
-        config.content.examples = true
         config.registry.createImagePullSecrets = true
         config.content.namespaces = ['example-apps-staging', 'example-apps-production']
         config.registry.readOnlyUsername = 'other-user'
@@ -147,7 +145,6 @@ class ContentLoaderTest {
 
     @Test
     void 'deploys additional image pull secrets for proxy registry'() {
-        config.content.examples = true
         config.registry.createImagePullSecrets = true
         config.content.namespaces = ['example-apps-staging', 'example-apps-production']
         config.registry.twoRegistries = true

@@ -51,13 +51,6 @@ class ApplicationConfigurator {
         if (newConfig.features.ingress.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
-        if (newConfig.content.examples) {
-            if (!newConfig.registry.active) {
-                throw new RuntimeException("content.examples requires either registry.active or registry.url")
-            }
-            String prefix = newConfig.application.namePrefix
-            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
-        }
     }
 
     private void addNamePrefix(Config newConfig) {
