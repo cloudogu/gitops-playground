@@ -1,0 +1,34 @@
+---
+apiVersion: "argoproj.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: "argocd"
+  namespace: ${config.application.namePrefix}argocd
+spec:
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: ${config.application.namePrefix}argocd
+  project: "argocd"
+  sources:
+  - repoURL: ${config.features.argocd.helm.repoURL}
+    chart: ${config.features.argocd.helm.chart}
+    targetRevision: ${config.features.argocd.helm.version}
+    helm:
+      releaseName: ${config.application.namePrefix}argocd
+      valueFiles:
+      - "$values/apps/argocd/argocd-gop-helm.yaml"
+      - "$values/apps/argocd/argocd-user-values.yaml"
+      ignoreMissingValueFiles: true
+  - repoURL: ${scm.repoUrl}argocd/cluster-resources.git
+    targetRevision: "main"
+    ref: "values"
+    path: "apps/argocd/argocd"
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - "ServerSideApply=true"
+    - "CreateNamespace=true"

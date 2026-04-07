@@ -141,7 +141,7 @@ class ArgoCD extends Feature {
 		} else {
 			// Bootstrap root application
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "argocd.yaml").toString())
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "argocd.yaml").toString())
+			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "applications.yaml").toString())
 		}
 
 		// Delete helm-argo secrets to decouple from helm.
@@ -206,14 +206,18 @@ rm -Rf ../argocd-operator/
 	}
 
 	private void deployWithHelm() {
-		addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
-		deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config, true)
+
+		helmClient.addRepo('argo', this.config.features.argocd.helm.repoURL)
+		helmClient.upgrade('argocd', "argo/argo-cd", [namespace: namespace])
+
+		//	addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
+		//	deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config, true)
+
 		log.debug("Setting new argocd admin password")
 		// Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 		k8sClient.patch('secret', 'argocd-secret', namespace,
 		                [stringData: ['admin.password': bcryptArgoCDPassword]])
-
 	}
 
 	// The ArgoCD instance installed via an operator only manages its deployment namespace.
