@@ -13,7 +13,14 @@ jenkins:
   active: false
 features:
   monitoring:
-    active: false
+    active: true
+    helm:
+      repoURL: "https://prometheus-community.github.io/helm-charts"
+      version: "80.2.2"
+      chart: "kube-prometheus-stack"
+      values:
+        crds:
+          enabled: true
   argocd:
     active: true
     operator: false
