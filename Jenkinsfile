@@ -150,7 +150,7 @@ pipeline {
                 anyOf {
                     branch 'main'
                     buildingTag()
-                    expression { return params.forcePushImage}
+                    expression { return params.forcePushImage }
                 }
                 not {
                     triggeredBy 'TimerTrigger'
