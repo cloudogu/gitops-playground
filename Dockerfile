@@ -28,7 +28,7 @@ WORKDIR /app
 RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
     && rm GenerateJsonSchema.groovy \
     && rm GitopsPlaygroundCliMainScripted.groovy
-RUN ./mvnw package -DskipTests
+RUN ./mvnw -B package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
