@@ -129,9 +129,6 @@ class ArgoCDRepoSetup {
         if (config.jenkins.active) {
             clusterResourceSubDirs.add(RepoLayout.jenkinsSubdirRel())
         }
-        if (config.features.mail.active) {
-            clusterResourceSubDirs.add(RepoLayout.mailhogSubdirRel())
-        }
         if (config.features.monitoring.active) {
             clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
         }

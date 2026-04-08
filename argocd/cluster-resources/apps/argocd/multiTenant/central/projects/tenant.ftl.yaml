@@ -12,7 +12,6 @@ spec:
     - ${scm.centralScmUrl}argocd/cluster-resources.git
 <#if config.application.mirrorRepos>
     - ${scm.repoUrl}3rd-party-dependencies/kube-prometheus-stack.git
-    - ${scm.repoUrl}3rd-party-dependencies/mailhog.git
     - ${scm.repoUrl}3rd-party-dependencies/traefik.git
     - ${scm.repoUrl}3rd-party-dependencies/external-secrets.git
     - ${scm.repoUrl}3rd-party-dependencies/vault.git

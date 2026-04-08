@@ -81,9 +81,6 @@ class ArgoCDTest {
                             emailToAdmin             : 'infra@example.org',
                             resourceInclusionsCluster: ''
                     ],
-                    mail        : [
-                            mailServer: true,
-                    ],
                     monitoring  : [
                             active: true,
                             helm  : [
@@ -252,7 +249,6 @@ class ArgoCDTest {
     @Test
     void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = false
-        config.features.mail.mailServer = false
 
         def argocd = createArgoCD()
         argocd.install()
@@ -405,7 +401,6 @@ class ArgoCDTest {
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
-        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host']) doesNotHaveToString('mailhog.*monitoring.svc.cluster.local')
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1025)
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('username')
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('password')
@@ -1266,7 +1261,6 @@ class ArgoCDTest {
         )
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
@@ -1275,7 +1269,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
@@ -1297,7 +1290,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
@@ -1306,7 +1298,6 @@ class ArgoCDTest {
         )
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
@@ -1328,7 +1319,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
-                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
@@ -1352,7 +1342,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
-                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
                 'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
@@ -1361,7 +1350,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
@@ -1384,7 +1372,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
@@ -1393,7 +1380,6 @@ class ArgoCDTest {
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',

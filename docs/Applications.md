@@ -215,7 +215,7 @@ Grafana can be used to query and visualize metrics via prometheus.
 It is exposed via ingress, e.g. http://grafana.localhost.
 Prometheus is not exposed by default.
 
-In addition, argocd-notifications is set up. Applications deployed with Argo CD now will alert via email to mailhog
+In addition, argocd-notifications is set up. Applications deployed with Argo CD now will alert via email.
 the sync status failed, for example.
 
 **Note that this only works with Argo CD so far**

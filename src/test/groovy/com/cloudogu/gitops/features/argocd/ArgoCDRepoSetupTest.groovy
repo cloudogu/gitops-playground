@@ -198,7 +198,6 @@ class ArgoCDRepoSetupTest {
         assertThat(dirs).doesNotContain(RepoLayout.secretsSubdirRel())
         assertThat(dirs).doesNotContain(RepoLayout.vaultSubdirRel())
         assertThat(dirs).doesNotContain(RepoLayout.jenkinsSubdirRel())
-        assertThat(dirs).doesNotContain(RepoLayout.mailhogSubdirRel())
         assertThat(dirs).doesNotContain(RepoLayout.certManagerSubdirRel())
     }
 

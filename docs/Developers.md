@@ -218,7 +218,7 @@ docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
-   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress --mail --monitoring --vault=dev --url-separator-hyphen
+   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress --monitoring --vault=dev --url-separator-hyphen
 
 # Create localhost entries with hyphens
 echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}') | sudo tee -a /etc/hosts
@@ -317,7 +317,6 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --mail-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
     --config-file=/home/two-registries.yaml
     
@@ -438,8 +437,6 @@ docker run -it -u $(id -u) \
 ## Notifications / E-Mail
 
 Notifications are implemented via Mail.  
-Either internal MailHog or an external mail server can be used.
-
 To test with an external mail server, set up the configuration as follows:
 
 ```

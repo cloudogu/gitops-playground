@@ -92,7 +92,7 @@ interface ConfigConstants {
     String EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s controller'
     String EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s webhook'
     String VAULT_IMAGE_DESCRIPTION = 'Sets image for vault'
-    String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.'
+    String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence.'
     String URL_SEPARATOR_HYPHEN_DESCRIPTION = 'Use hyphens instead of dots to separate application name from base-url'
     String SKIP_CRDS_DESCRIPTION = 'Skip installation of CRDs. This requires prior installation of CRDs'
     String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
@@ -116,11 +116,8 @@ interface ConfigConstants {
     String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
     String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
 
-    String MAIL_DESCRIPTION = 'Config parameters for mail servers'
-    String MAIL_URL_DESCRIPTION = 'Sets url for the mail server frontend'
-    String MAILSERVER_ENABLE_DESCRIPTION = 'Installs a dedicated mail server.'
-
     // group external Mailserver
+    String MAIL_DESCRIPTION = 'Config parameters for mail servers'
     String SMTP_ADDRESS_DESCRIPTION = 'Sets smtp port of external Mailserver'
     String SMTP_PORT_DESCRIPTION = 'Sets smtp port of external Mailserver'
     String SMTP_USER_DESCRIPTION = 'Sets smtp username for external Mailserver'
