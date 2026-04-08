@@ -128,10 +128,6 @@
             "type" : "string"
           }
         },
-        "examples" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
-        },
         "helmReleases" : {
           "description" : "",
           "type" : [ "array", "null" ],
@@ -173,10 +169,6 @@
             },
             "additionalProperties" : false
           }
-        },
-        "multitenancyExamples" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
         },
         "namespaces" : {
           "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",

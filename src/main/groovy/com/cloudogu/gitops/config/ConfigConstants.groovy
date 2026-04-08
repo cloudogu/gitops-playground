@@ -29,9 +29,6 @@ interface ConfigConstants {
     String CONTENT_DESCRIPTION = 'Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources'
 
     // ContentLoader
-    String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
-    String CONTENT_MULTI_TENANCY_EXAMPLES_DESCRIPTION = "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
-
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
     String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
@@ -149,7 +146,6 @@ interface ConfigConstants {
     String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
     String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
     String ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION= 'Defines the kubernetes namespace for ArgoCD'
-    // group example apps
 
     // group ingress-class
     String INGRESS_DESCRIPTION = 'Config parameters for the Ingress Controller'

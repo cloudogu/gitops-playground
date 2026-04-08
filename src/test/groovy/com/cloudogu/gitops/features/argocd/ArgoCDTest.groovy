@@ -64,11 +64,68 @@ class ArgoCDTest {
                     useDedicatedInstance: false
             ],
             content: [
-                    examples : true,
-                    variables: [
-                            images: [
-                                    buildImages + [petclinic: 'petclinic-value']
+                    repos: [
+                            [
+                                url: 'https://github.com/cloudogu/gitops-build-lib',
+                                target: '3rd-party-dependencies/gitops-build-lib',
+                                overwriteMode: 'RESET'
+                            ],
+                            [
+                                url: 'https://github.com/cloudogu/ces-build-lib',
+                                target: '3rd-party-dependencies/ces-build-lib',
+                                overwriteMode: 'RESET'
+                            ],
+                            [
+                                url: 'https://github.com/cloudogu/spring-boot-helm-chart',
+                                target: '3rd-party-dependencies/spring-boot-helm-chart',
+                                overwriteMode: 'RESET'
+                            ],
+                            [
+                                url: 'https://github.com/cloudogu/spring-petclinic',
+                                target: 'argocd/petclinic-plain',
+                                ref: 'feature/gitops_ready',
+                                targetRef: 'main',
+                                overwriteMode: 'UPGRADE',
+                                createJenkinsJob: true
+                            ],
+                            [
+                                url: 'https://github.com/cloudogu/spring-petclinic',
+                                target: 'argocd/petclinic-helm',
+                                ref: 'feature/gitops_ready',
+                                targetRef: 'main',
+                                overwriteMode: 'UPGRADE',
+                                createJenkinsJob: true
+                            ],
+                            [
+                                url: 'https://github.com/cloudogu/gitops-playground',
+                                path: 'example-apps-via-content-loader/',
+                                ref: 'main',
+                                templating: true,
+                                type: 'FOLDER_BASED',
+                                overwriteMode: 'UPGRADE'
                             ]
+                        ],
+                    namespaces: [
+                        "example-apps-production",
+                        "example-apps-staging"
+                    ],
+                    variables: [
+                        petclinic: [
+                            baseDomain: 'petclinic.localhost'
+                        ],
+                        nginx: [
+                            baseDomain: 'nginx.localhost'
+                        ],
+                        images: [
+                            kubectl: 'bitnamilegacy/kubectl:1.29',
+                            helm: 'ghcr.io/cloudogu/helm:3.16.4-1',
+                            kubeval: 'ghcr.io/cloudogu/helm:3.16.4-1',
+                            helmKubeval: 'ghcr.io/cloudogu/helm:3.16.4-1',
+                            yamllint: 'cytopia/yamllint:1.25-0.7',
+                            nginx: '',
+                            petclinic: 'eclipse-temurin:17-jre-alpine',
+                            maven: ''
+                        ]
                     ]
             ],
             features: [
@@ -1408,9 +1465,9 @@ class ArgoCDTest {
         def argoCD = createArgoCD()
 
         if (config.multiTenant.useDedicatedInstance) {
-            config.content.examples ? setupMockResponsesFor(MockReponses.MULTI_TENANT_WITH_EXAMPLES) : setupMockResponsesFor(MockReponses.MULTI_TENANT)
+            config.content.repos ? setupMockResponsesFor(MockReponses.MULTI_TENANT_WITH_EXAMPLES) : setupMockResponsesFor(MockReponses.MULTI_TENANT)
         } else {
-            setupMockResponsesFor(MockReponses.SINGLE_TENANT)
+        setupMockResponsesFor(MockReponses.SINGLE_TENANT)
         }
 
         return argoCD

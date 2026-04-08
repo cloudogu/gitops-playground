@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
@@ -191,13 +192,8 @@ class GitopsPlaygroundCli {
 		// first evaluate profile for setting predefined values e.g. examples, if applicable
 		Config profileConfig = extractProfile(cliParams)
 
-		Boolean contentExamples = cliParams.content.examples || profileConfig.content.examples
-		Boolean multiTenancyExamples = cliParams.content.multitenancyExamples || profileConfig.content.multitenancyExamples
-
 		List<Map> configFile = []
 		List<Map> configMap = []
-		Map contentExamplesFile = [:]
-		Map multiTenancyContentExamplesFile = [:]
 
 		for (String configFileItem : cliParams.application.configFiles) {
 			log.debug("Reading config file ${configFileItem}")
@@ -210,27 +206,14 @@ class GitopsPlaygroundCli {
 			configMap.add(validateConfig(configValues))
 		}
 
-		if (contentExamples) {
-			String contentExamplesConfigPath = "examples/example-apps-via-content-loader/config.yaml"
-			log.debug("Adding example-apps-via-content-loader configuration from '${contentExamplesConfigPath}'")
-			contentExamplesFile = validateConfig(new File(contentExamplesConfigPath).text)
-		}
-
-		if (multiTenancyExamples) {
-			String multiTenancyContentExamplesConfigPath = "examples/init-multi-tenancy/managementConfig.yaml"
-			log.debug("Adding multi tenancy example-apps config loader from '${multiTenancyContentExamplesConfigPath}'")
-			multiTenancyContentExamplesFile = validateConfig(new File(multiTenancyContentExamplesConfigPath).text)
-		}
-
-
 		// Last one takes precedence
-		def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
+		def configPrecedence = [profileConfig.toMap(), configMap, configFile]
 		Map mergedConfigs = [:]
 		configPrecedence.flatten().each { element -> deepMerge(element as Map, mergedConfigs)
 		}
 
 		// DeepMerge with default Config values to keep the default values defined in Config.groovy
-		mergedConfigs = deepMerge(mergedConfigs, new Config().toMap())
+		mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap())
 
 		log.debug("Writing CLI params into config")
 		Config mergedConfig = Config.fromMap(mergedConfigs)
