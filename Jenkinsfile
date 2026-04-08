@@ -169,7 +169,7 @@ pipeline {
                         if (env.TAG_NAME) {
                             image.push('latest')
                             currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
-                            currentBuild.description += "\nReleae: ${env.TAG_NAME}"
+                            currentBuild.description += "\nRelease: ${env.TAG_NAME}"
                         }
                     }
                 }
