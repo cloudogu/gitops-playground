@@ -183,11 +183,11 @@ class Config {
 
 	static class HelmConfig {
 		@JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
-		String chart = ''
+		String chart = null
 		@JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
-		String repoURL = ''
+		String repoURL = null
 		@JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-		String version = ''
+		String version = null
 	}
 
 	static class HelmConfigWithValues extends HelmConfig {

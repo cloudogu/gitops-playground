@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
@@ -212,7 +213,7 @@ class GitopsPlaygroundCli {
 		}
 
 		// DeepMerge with default Config values to keep the default values defined in Config.groovy
-		mergedConfigs = deepMerge(mergedConfigs, new Config().toMap())
+		mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap())
 
 		log.debug("Writing CLI params into config")
 		Config mergedConfig = Config.fromMap(mergedConfigs)
