@@ -131,8 +131,6 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `--content-examples` | `content.examples` | Boolean | `false` | Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project |
-| `--multi-tenancy-examples` | `content.multitenancyExamples` | Boolean | `false` | Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project |
 | - | `content.namespaces` | List&lt;String&gt; | `[]` | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
 | - | `content.repos` | List&lt;ContentRepositorySchema&gt; | `[]` | ContentLoader repos to push into target environment |
 | - | `content.variables` | Map | `[:]` | Additional variables to use in custom templates. |

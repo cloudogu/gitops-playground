@@ -294,7 +294,7 @@ The following video shows this demo in time-lapse:
 The playground comes with example applications that provide a turnkey solution for GitOps-Pipelines  
 from a developer's point of view.
 
-These can be enabled using `--content-examples`.  
+These can be used with the profile "content-examples"  
 They require a registry, so locally use `--registry` or pass in an existing instance using `registry-url`.  
 The examples very much rely on jenkins. So it is recommended to enable it using `--jenkins` or pass in an existing 
 instance using `--jenkins-url`.  
