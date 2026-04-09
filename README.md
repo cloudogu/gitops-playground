@@ -39,10 +39,10 @@ bash <(curl -s \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
-# More IDP-features: --monitoring --vault=dev --cert-manager
-# More features for developers: --jenkins --registry --content-examples
+    ghcr.io/cloudogu/gitops-playground --profile=full
 ```
+
+This will install the gop-platform with the profile full to showcase most of the features. To learn more about profiles, see [Profiles](#profiles)
 
 Note that on some linux distros like debian do not support subdomains of localhost.
 There you might have to use `--base-url=http://local.gd` (see [local ingresses](docs/Deploy-Ingress-Controller.md#local-ingresses)).
