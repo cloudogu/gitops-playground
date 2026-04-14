@@ -25,7 +25,6 @@ import groovy.util.logging.Slf4j
 class Jenkins extends Feature {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
-
 	String namespace
 	private Config config
 	private CommandExecutor commandExecutor

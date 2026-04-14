@@ -13,7 +13,7 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(60)
+@Order(10)
 class Registry extends Feature {
 
 	/**

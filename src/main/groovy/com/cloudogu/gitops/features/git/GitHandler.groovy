@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.git
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.gitlab.Gitlab
@@ -13,27 +13,29 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 
 import io.micronaut.core.annotation.Order
 
+import jakarta.inject.Inject
+import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(40)
+@Order(1)
 class GitHandler extends Feature {
 
 	Config config
 
 	NetworkingUtils networkingUtils
-	HelmStrategy deployer
+	@Inject
+	Provider<Deployer> deployerProvider
 	FileSystemUtils fileSystemUtils
 	K8sClient k8sClient
 
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(Config config, HelmStrategy deployer, FileSystemUtils fileSystemUtils, K8sClient k8sClient, NetworkingUtils networkingUtils) {
+	GitHandler(Config config, FileSystemUtils fileSystemUtils, K8sClient k8sClient, NetworkingUtils networkingUtils) {
 		this.config = config
-		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
@@ -90,8 +92,8 @@ class GitHandler extends Feature {
 			case ScmProviderType.SCM_MANAGER:
 				def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
 				config.scm.scmManager.namespace = prefixedNamespace
-				this.tenant = new ScmManager(this.config, config.scm.scmManager, deployer, k8sClient, networkingUtils, true)
-				// this.tenant.setup() setup will be here in future
+				this.tenant = new ScmManager(this.config, config.scm.scmManager, deployerProvider.get(), k8sClient, networkingUtils)
+				(tenant as ScmManager).init(true)
 				break
 			default:
 				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM")
@@ -103,7 +105,7 @@ class GitHandler extends Feature {
 					this.central = new Gitlab(this.config, this.config.multiTenant.gitlab)
 					break
 				case ScmProviderType.SCM_MANAGER:
-					this.central = new ScmManager(this.config, config.multiTenant.scmManager, deployer, k8sClient, networkingUtils)
+					this.central = new ScmManager(this.config, config.multiTenant.scmManager, deployerProvider.get(), k8sClient, networkingUtils)
 					break
 				default:
 					throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")

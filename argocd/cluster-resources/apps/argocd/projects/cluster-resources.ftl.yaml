@@ -32,6 +32,7 @@ spec:
   - https://charts.jenkins.io
   - https://argoproj.github.io/argo-helm
   - https://twuni.github.io/docker-registry.helm
+  - https://packages.scm-manager.org/repository/helm-v2-releases/
 </#if>
 
   # allow to only see application resources from the specified namespace

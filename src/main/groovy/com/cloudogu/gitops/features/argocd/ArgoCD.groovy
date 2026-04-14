@@ -22,7 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
 @Singleton
-@Order(100)
+@Order(2)
 class ArgoCD extends Feature {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/argocd/argocd/argocd-helm-values.ftl.yaml"

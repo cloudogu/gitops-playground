@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
@@ -25,21 +25,20 @@ class ScmManager implements GitProvider {
 	ScmManagerConfig scmmConfig
 
 	NetworkingUtils networkingUtils
-	HelmStrategy helmStrategy
+	Deployer deployer
 	K8sClient k8sClient
 	Config config
 	ScmManagerSetup scmManagerSetup
 
-	ScmManager(Config config, ScmManagerConfig scmmConfig, HelmStrategy helmStrategy, K8sClient k8sClient, NetworkingUtils networkingUtils, Boolean installNeeded = false) {
+	ScmManager(Config config, ScmManagerConfig scmmConfig, Deployer deployer, K8sClient k8sClient, NetworkingUtils networkingUtils) {
 		this.scmmConfig = scmmConfig
 		this.config = config
-		this.helmStrategy = helmStrategy
+		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
-		init(installNeeded)
 	}
 
-	void init(installNeeded) {
+	void init(boolean installNeeded) {
 		// --- Init Setup ---
 		if (this.scmmConfig.internal && installNeeded) {
 			this.scmManagerSetup = new ScmManagerSetup(this)

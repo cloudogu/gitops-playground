@@ -65,7 +65,7 @@ class GitopsPlaygroundCliMainScripted {
 			                                                         httpClientFactory.okHttpClientJenkins(config))
 
 			context.registerSingleton(k8sClient)
-			GitHandler gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
+			GitHandler gitHandler = new GitHandler(config, fileSystemUtils, k8sClient, networkingUtils)
 			Deployer deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
 
 			AirGappedUtils airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
