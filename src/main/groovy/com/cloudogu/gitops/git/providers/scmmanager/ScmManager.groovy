@@ -51,6 +51,7 @@ class ScmManager implements GitProvider {
 			this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
 			this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
 		}
+
 	}
 
 	// --- Git operations ---

@@ -90,7 +90,7 @@ class GitHandler extends Feature {
 				this.tenant = new Gitlab(this.config, this.config.scm.gitlab)
 				break
 			case ScmProviderType.SCM_MANAGER:
-				def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
+				String prefixedNamespace = "${config.application.namePrefix}scm-manager"
 				config.scm.scmManager.namespace = prefixedNamespace
 				this.tenant = new ScmManager(this.config, config.scm.scmManager, deployerProvider.get(), k8sClient, networkingUtils)
 				(tenant as ScmManager).init(true)
@@ -120,6 +120,9 @@ class GitHandler extends Feature {
 		} else {
 			setupRepos(this.tenant, namePrefix)
 		}
+
+		//creating ArgocdApplication after repos are created. Fixing the bootstrap problem
+		(this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
 	}
 
 	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {

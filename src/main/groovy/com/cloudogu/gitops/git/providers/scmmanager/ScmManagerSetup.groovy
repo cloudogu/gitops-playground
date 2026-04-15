@@ -74,7 +74,7 @@ class ScmManagerSetup {
 	}
 
 	void createArgocdApplication() {
-		def releaseName = 'scm-manager'
+		def releaseName = 'scmm'
 
 		def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [host       : this.scmManager.scmmConfig.ingress,
 		                                                                     username   : this.scmManager.scmmConfig.credentials.username,
