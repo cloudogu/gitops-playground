@@ -99,7 +99,7 @@ abstract class Feature {
     ) {
         String repoURL = helmConfig.repoURL
         boolean ociChart = false
-        if (repoURL.startsWithIgnoreCase("oci")){
+        if (repoURL && repoURL.startsWithIgnoreCase("oci")){
             ociChart = true
         }
         String chartOrPath = helmConfig.chart
