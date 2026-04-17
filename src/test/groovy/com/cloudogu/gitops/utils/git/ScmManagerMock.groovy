@@ -25,7 +25,6 @@ class ScmManagerMock implements GitProvider {
     // --- configurable  ---
     URI inClusterBase = new URI("http://scmm.scm-manager.svc.cluster.local/scm")
     URI clientBase = new URI("http://localhost:8080/scm")
-    String rootPath = "repo"            // SCMM rootPath
     String namePrefix = ""                // e.g., "fv40-" for tenant mode
     Credentials credentials = new Credentials("gitops", "gitops")
     String gitOpsUsername = "gitops"
@@ -58,20 +57,20 @@ class ScmManagerMock implements GitProvider {
         ]
     }
 
-    /** …/scm/<rootPath>/<ns>/<name> */
+    /** …/scm/repo/<ns>/<name> */
     @Override
     String repoUrl(String repoTarget, RepoUrlScope scope) {
         URI base = (scope == RepoUrlScope.CLIENT) ? clientBase : inClusterBase
         def cleanedBase = withoutTrailingSlash(base).toString()
-        return "${cleanedBase}/${rootPath}/${repoTarget}"
+        return "${cleanedBase}/repo/${repoTarget}"
     }
 
-    /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
+    /** In-cluster repo prefix: …/scm/repo/[<namePrefix>] */
     @Override
     String repoPrefix() {
         def base = withoutTrailingSlash(inClusterBase).toString()
         def prefix = (namePrefix ?: "").strip()
-        return "${base}/${rootPath}/${prefix}"
+        return "${base}/repo/${prefix}"
     }
 
     @Override

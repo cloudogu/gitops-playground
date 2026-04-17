@@ -16,7 +16,7 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(15)
+@Order(160)
 class CertManager extends Feature implements FeatureWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
@@ -25,8 +25,7 @@ class CertManager extends Feature implements FeatureWithImage {
 	final Config config
 	final String namespace = "${config.application.namePrefix}cert-manager"
 
-	CertManager(
-			Config config,
+	CertManager(Config config,
 			FileSystemUtils fileSystemUtils,
 			DeploymentStrategy deployer,
 			K8sClient k8sClient,
@@ -47,8 +46,6 @@ class CertManager extends Feature implements FeatureWithImage {
 
 	@Override
 	void enable() {
-		def helmConfig = config.features.certManager.helm
-
-		deployHelmChart('cert-manager', 'cert-manager', namespace, helmConfig, HELM_VALUES_PATH, config)
+		deployHelmChart('cert-manager', 'cert-manager', namespace, config.features.certManager.helm, HELM_VALUES_PATH, config)
 	}
 }

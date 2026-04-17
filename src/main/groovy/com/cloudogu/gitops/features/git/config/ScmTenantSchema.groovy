@@ -114,13 +114,9 @@ class ScmTenantSchema {
         Config.HelmConfigWithValues helm = new Config.HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.11.4',
+                version: '3.11.6',
                 values: [:]
         )
-
-        @Option(names = ['--scmm-root-path'], description = SCMM_ROOT_PATH_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_ROOT_PATH_DESCRIPTION)
-        String rootPath = 'repo'
 
         /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
            the SCMM URL used by jenkins.

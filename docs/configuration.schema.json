@@ -48,7 +48,7 @@
       "properties" : {
         "baseUrl" : {
           "type" : [ "string", "null" ],
-          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
+          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence."
         },
         "clusterAdmin" : {
           "type" : [ "boolean", "null" ],
@@ -128,13 +128,47 @@
             "type" : "string"
           }
         },
-        "examples" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
-        },
-        "multitenancyExamples" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+        "helmReleases" : {
+          "description" : "",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "chart" : {
+                "type" : [ "string", "null" ],
+                "description" : "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+              },
+              "name" : {
+                "type" : [ "string", "null" ],
+                "description" : "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
+              },
+              "namespace" : {
+                "type" : [ "string", "null" ],
+                "description" : "Kubernetes namespace to deploy the release into."
+              },
+              "releaseName" : {
+                "type" : [ "string", "null" ],
+                "description" : "Helm release name. If empty, the value of 'name' is used."
+              },
+              "repoURL" : {
+                "type" : [ "string", "null" ],
+                "description" : "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
+              },
+              "values" : {
+                "$ref" : "#/$defs/Map(String,Object)-nullable",
+                "description" : "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
+              },
+              "valuesPath" : {
+                "type" : [ "string", "null" ],
+                "description" : "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
+              },
+              "version" : {
+                "type" : [ "string", "null" ],
+                "description" : "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
+              }
+            },
+            "additionalProperties" : false
+          }
         },
         "namespaces" : {
           "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",
@@ -343,6 +377,10 @@
               },
               "additionalProperties" : false,
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "issuer" : {
+              "type" : [ "string", "null" ],
+              "description" : "Sets and enables Cert Manager"
             }
           },
           "additionalProperties" : false,
@@ -389,41 +427,6 @@
         "mail" : {
           "type" : [ "object", "null" ],
           "properties" : {
-            "helm" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "chart" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Name of the Helm chart"
-                },
-                "image" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The image of the Helm chart to be installed"
-                },
-                "repoURL" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Repository url from which the Helm chart should be obtained"
-                },
-                "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)-nullable",
-                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
-                },
-                "version" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The version of the Helm chart to be installed"
-                }
-              },
-              "additionalProperties" : false,
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
-            },
-            "mailServer" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Installs a dedicated mail server."
-            },
-            "mailUrl" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets url for the mail server frontend"
-            },
             "smtpAddress" : {
               "type" : [ "string", "null" ],
               "description" : "Sets smtp port of external Mailserver"
@@ -713,10 +716,6 @@
               "type" : [ "string", "null" ],
               "description" : "CENTRAL SCMM password"
             },
-            "rootPath" : {
-              "type" : [ "string", "null" ],
-              "description" : "Root path for SCM Manager. In SCM-Manager it is always \"repo\""
-            },
             "url" : {
               "type" : [ "string", "null" ],
               "description" : "URL for the centralized Management Repo"
@@ -856,10 +855,6 @@
             "password" : {
               "type" : [ "string", "null" ],
               "description" : "Mandatory when scmm-url is set"
-            },
-            "rootPath" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
             },
             "skipPlugins" : {
               "type" : [ "boolean", "null" ],

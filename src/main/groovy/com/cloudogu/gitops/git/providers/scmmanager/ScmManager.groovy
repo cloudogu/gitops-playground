@@ -12,9 +12,7 @@ import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import groovy.util.logging.Slf4j
-
 import retrofit2.Response
 
 @Slf4j
@@ -94,24 +92,25 @@ class ScmManager implements GitProvider {
 		return urls.inClusterBase().toString()
 	}
 
-	/** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
-	@Override
-	String repoPrefix() {
-		return urls.inClusterRepoPrefix()
-	}
+    /** In-cluster repo prefix: …/scm/repo/[<namePrefix>] */
+    @Override
+    String repoPrefix() {
+        return urls.inClusterRepoPrefix()
+    }
 
-	/**  …/scm/<rootPath>/<ns>/<name> */
-	@Override
-	String repoUrl(String repoTarget, RepoUrlScope scope) {
-		switch (scope) {
-			case RepoUrlScope.CLIENT:
-				return urls.clientRepoUrl(repoTarget)
-			case RepoUrlScope.IN_CLUSTER:
-				return urls.inClusterRepoUrl(repoTarget)
-			default:
-				return urls.inClusterRepoUrl(repoTarget)
-		}
-	}
+
+    /**  …/scm/repo/<ns>/<name> */
+    @Override
+    String repoUrl(String repoTarget, RepoUrlScope scope) {
+        switch (scope) {
+            case RepoUrlScope.CLIENT:
+                return urls.clientRepoUrl(repoTarget)
+            case RepoUrlScope.IN_CLUSTER:
+                return urls.inClusterRepoUrl(repoTarget)
+            default:
+                return urls.inClusterRepoUrl(repoTarget)
+        }
+    }
 
 	@Override
 	String getProtocol() {

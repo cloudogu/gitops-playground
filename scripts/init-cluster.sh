@@ -23,7 +23,7 @@ function main() {
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
     if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
-      echoHightlighted "WARNING: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
+      echo "WARNING: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
     fi
   fi
 
@@ -127,6 +127,20 @@ EOF
             "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@loadbalancer"
             )
     fi
+
+        # Bind ingress https port only when requested by parameter.
+        # On linux the pods can be reached without ingress via the k3d container's network address and the node port.
+        if [[ "${BIND_INGRESS_HTTPS_PORT}" == '0' ]]; then
+          # User wants us to choose an arbitrary port.
+          # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
+          K3D_ARGS+=(
+           '-p 127.0.0.1::443@loadbalancer'
+          )
+        elif [[ "${BIND_INGRESS_HTTPS_PORT}" != '-' ]]; then
+            K3D_ARGS+=(
+                "-p 127.0.0.1:${BIND_INGRESS_HTTPS_PORT}:443@loadbalancer"
+                )
+        fi
     
     if [[ -n "$BIND_PORTS" ]]; then
       IFS=","
@@ -158,7 +172,7 @@ EOF
       --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound internal registry port 30000 to localhost port ${registryPort}."
-    echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+    echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
   
   if [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
@@ -167,7 +181,7 @@ EOF
       --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound ingress port to localhost:${ingressPort}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
+    echo "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -235,6 +249,7 @@ readParameters() {
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=false
   BIND_INGRESS_PORT="80"
+  BIND_INGRESS_HTTPS_PORT="443"
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
   BIND_PORTS=""
@@ -251,6 +266,8 @@ readParameters() {
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ingress-https-port*) BIND_INGRESS_HTTPS_PORT=$(get_longopt_value "--bind-ingress-https-port" "$@")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ports*) BIND_PORTS=$(get_longopt_value "--bind-ports" "$@"); 
@@ -261,19 +278,6 @@ readParameters() {
     *) break ;;
     esac
   done
-}
-
-function echoHightlighted() {
-    # fallback to normal echo if TERM is not set
-    # because tput requires a valid terminal
-    if [ -z "$TERM" ] || ! command -v tput > /dev/null 2>&1; then
-        echo "$@"
-    else 
-      # Print to stdout in green
-      tput setaf 2
-      echo "$@"
-      tput sgr0
-    fi
 }
 
 main "$@"

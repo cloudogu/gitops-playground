@@ -80,7 +80,6 @@ class GitopsPlaygroundCliMainScripted {
 			                                                   new ArgoCD(config, k8sClient, helmClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler),
 			                                                   new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-			                                                   new Mail(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
 			                                                   new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),

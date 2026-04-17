@@ -27,6 +27,14 @@ server:
     enabled: true
     hosts:
       - host: ${host}
+<#if config.features.certManager.active!false>
+    annotations:
+      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+    tls:
+      - secretName: vault-tls
+        hosts:
+        - ${host}
+</#if>  
 </#if>
 <#if dev?has_content>
   dev:

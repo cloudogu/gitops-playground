@@ -29,9 +29,6 @@ interface ConfigConstants {
     String CONTENT_DESCRIPTION = 'Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources'
 
     // ContentLoader
-    String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
-    String CONTENT_MULTI_TENANCY_EXAMPLES_DESCRIPTION = "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
-
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
     String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
@@ -47,6 +44,15 @@ interface ConfigConstants {
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
     String CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION = 'Enables the whitelist for statics in content templating'
     String CONTENT_STATICSWHITELIST_DESCRIPTION = 'Whitelist for Statics freemarker is allowing in user templates'
+    String CONTENT_HELM_RELEASE_NAME_DESCRIPTION = "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
+
+    String CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION = "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
+    String CONTENT_HELM_RELEASE_CHART_DESCRIPTION = "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+    String CONTENT_HELM_RELEASE_VERSION_DESCRIPTION = "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
+    String CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION = "Kubernetes namespace to deploy the release into."
+    String CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION = "Helm release name. If empty, the value of 'name' is used."
+    String CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION = "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
+    String CONTENT_HELM_RELEASE_VALUES_DESCRIPTION = "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
 
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
@@ -83,7 +89,7 @@ interface ConfigConstants {
     String EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s controller'
     String EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s webhook'
     String VAULT_IMAGE_DESCRIPTION = 'Sets image for vault'
-    String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.'
+    String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence.'
     String URL_SEPARATOR_HYPHEN_DESCRIPTION = 'Use hyphens instead of dots to separate application name from base-url'
     String SKIP_CRDS_DESCRIPTION = 'Skip installation of CRDs. This requires prior installation of CRDs'
     String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
@@ -107,11 +113,8 @@ interface ConfigConstants {
     String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
     String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
 
-    String MAIL_DESCRIPTION = 'Config parameters for mail servers'
-    String MAIL_URL_DESCRIPTION = 'Sets url for the mail server frontend'
-    String MAILSERVER_ENABLE_DESCRIPTION = 'Installs a dedicated mail server.'
-
     // group external Mailserver
+    String MAIL_DESCRIPTION = 'Config parameters for mail servers'
     String SMTP_ADDRESS_DESCRIPTION = 'Sets smtp port of external Mailserver'
     String SMTP_PORT_DESCRIPTION = 'Sets smtp port of external Mailserver'
     String SMTP_USER_DESCRIPTION = 'Sets smtp username for external Mailserver'
@@ -143,7 +146,6 @@ interface ConfigConstants {
     String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
     String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
     String ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION= 'Defines the kubernetes namespace for ArgoCD'
-    // group example apps
 
     // group ingress-class
     String INGRESS_DESCRIPTION = 'Config parameters for the Ingress Controller'

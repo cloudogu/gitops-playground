@@ -19,7 +19,7 @@ class ApplicationTest {
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
 
-        assertThat(features).isEqualTo(['Registry', 'GitHandler' ,'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Mail', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
+        assertThat(features).isEqualTo(['Registry', 'GitHandler' ,'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
     }
 
     @Test
@@ -28,7 +28,6 @@ class ApplicationTest {
         config.jenkins.active = true
         config.features.monitoring.active = true
         config.features.argocd.active = true
-        config.content.examples = true
         config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.content.namespaces = [
@@ -57,7 +56,6 @@ class ApplicationTest {
         config.jenkins.active = true
         config.features.monitoring.active = true
         config.features.argocd.active = true
-        config.content.examples = true
         config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true
@@ -114,7 +112,6 @@ class ApplicationTest {
         config.scm.scmManager.internal = false
         config.features.monitoring.active = true
         config.features.argocd.active = true
-        config.content.examples = true
         config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true

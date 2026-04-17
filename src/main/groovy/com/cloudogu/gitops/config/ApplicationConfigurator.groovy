@@ -41,22 +41,11 @@ class ApplicationConfigurator {
         if (newConfig.features.secrets.vault.mode)
             newConfig.features.secrets.active = true
 
-        if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailServer)
+        if (newConfig.features.mail.smtpAddress)
             newConfig.features.mail.active = true
-        if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailServer) {
-            newConfig.features.mail.mailServer = false
-            log.warn("Enabled both external Mailserver and in-cluster Mailserver! Implicitly deactivating in-cluster mailserver")
-        }
 
         if (newConfig.features.ingress.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
-        }
-        if (newConfig.content.examples) {
-            if (!newConfig.registry.active) {
-                throw new RuntimeException("content.examples requires either registry.active or registry.url")
-            }
-            String prefix = newConfig.application.namePrefix
-            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
         }
     }
 
@@ -194,10 +183,6 @@ class ApplicationConfigurator {
         if (argocd.active && !argocd.url) {
             argocd.url = injectSubdomain("argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
-        }
-        if (mail.mailServer && !mail.mailUrl) {
-            mail.mailUrl = injectSubdomain('mail', baseUrl, urlSeparatorHyphen)
-            log.debug("Setting Mail URL ${mail.mailUrl}")
         }
         if (monitoring.active && !monitoring.grafanaUrl) {
             monitoring.grafanaUrl = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)

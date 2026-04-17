@@ -28,7 +28,7 @@ WORKDIR /app
 RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
     && rm GenerateJsonSchema.groovy \
     && rm GitopsPlaygroundCliMainScripted.groovy
-RUN ./mvnw package -DskipTests
+RUN ./mvnw -B package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
@@ -160,8 +160,7 @@ ENV HOME=/home \
     GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
     CES_BUILD_LIB_REPO=/gitops/repos/ces-build-lib.git \
     JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/ \
-    LOCAL_HELM_CHART_FOLDER=/gitops/charts/ \
-    EXAMPLE_APPS_CONTENT_REPO=/app/examples/example-apps-via-content-loader
+    LOCAL_HELM_CHART_FOLDER=/gitops/charts/
 
 WORKDIR /app
 
@@ -176,26 +175,6 @@ RUN apk update --no-cache && apk upgrade --no-cache && \
     unzip
 
 COPY --from=downloader /dist /
-
-# Set example apps config to use the repos from the image
-RUN sed -i \
-  -e "s|url: https://github.com/cloudogu/gitops-build-lib|url: 'file://$GITOPS_BUILD_LIB_REPO'|g" \
-  -e "s|url: https://github.com/cloudogu/ces-build-lib|url: 'file://$CES_BUILD_LIB_REPO'|g" \
-  -e "s|url: https://github.com/cloudogu/spring-boot-helm-chart|url: 'file://$SPRING_BOOT_HELM_CHART_REPO'|g" \
-  -e "s|url: https://github.com/cloudogu/spring-petclinic|url: 'file://$SPRING_PETCLINIC_REPO'|g" \
-  -e "s|url: https://github.com/cloudogu/gitops-playground|url: 'file://$EXAMPLE_APPS_CONTENT_REPO'|g" \
-  -e "/^[[:space:]]*path: examples\/example-apps-via-content-loader\//d" \
-  /app/examples/example-apps-via-content-loader/config.yaml
-
-# Initialize example apps folder with git, so we can use it with content-loader
-# we need safe.directory setting because of: fatal: detected dubious ownership in repository at '/app/examples/example-apps-via-content-loader'
-RUN git -C /app/examples/example-apps-via-content-loader init -b main && \
-    git -C /app/examples/example-apps-via-content-loader config user.email "noreply@example.com" && \
-    git -C /app/examples/example-apps-via-content-loader config user.name "Container" && \
-    git -C /app/examples/example-apps-via-content-loader add -A && \
-    git -C /app/examples/example-apps-via-content-loader commit -m "initial commit" && \
-    git config --global --add safe.directory /app/examples/example-apps-via-content-loader
-
 
 USER 1000:0
 

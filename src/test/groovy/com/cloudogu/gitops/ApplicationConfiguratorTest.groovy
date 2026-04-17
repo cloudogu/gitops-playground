@@ -6,6 +6,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.ContentLoader
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
@@ -94,9 +95,11 @@ class ApplicationConfiguratorTest {
         HelmClient helmClient = Mockito.mock(HelmClient)
         GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
 
+        DeploymentStrategy deploymentStrategy = Mockito.mock(DeploymentStrategy)
+
 
         GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
-        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler))
+        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deploymentStrategy))
         featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
     }
 
@@ -258,14 +261,12 @@ class ApplicationConfiguratorTest {
         testConfig.application.baseUrl = 'http://localhost'
 
         testConfig.features.argocd.active = true
-        testConfig.features.mail.mailServer = true
         testConfig.features.monitoring.active = true
         testConfig.features.secrets.active = true
 
         Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd.localhost")
-        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("http://mail.localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
         assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm.localhost")
@@ -278,14 +279,12 @@ class ApplicationConfiguratorTest {
         testConfig.application.urlSeparatorHyphen = true
 
         testConfig.features.argocd.active = true
-        testConfig.features.mail.mailServer = true
         testConfig.features.monitoring.active = true
         testConfig.features.secrets.active = true
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd-localhost")
-        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("http://mail-localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
         assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm-localhost")
@@ -325,7 +324,6 @@ class ApplicationConfiguratorTest {
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo('')
-        assertThat(actualConfig.features.mail.mailUrl).isEqualTo('')
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo('')
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo('')
     }
@@ -340,14 +338,12 @@ class ApplicationConfiguratorTest {
         testConfig.features.secrets.active = true
 
         testConfig.features.argocd.url = 'argocd'
-        testConfig.features.mail.mailUrl = 'mail'
         testConfig.features.monitoring.grafanaUrl = 'grafana'
         testConfig.features.secrets.vault.url = 'vault'
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.features.argocd.url).isEqualTo("argocd")
-        assertThat(actualConfig.features.mail.mailUrl).isEqualTo("mail")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("grafana")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("vault")
     }

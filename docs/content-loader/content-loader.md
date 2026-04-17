@@ -52,11 +52,11 @@ during GOP apply optionally run through a templating engine and then pushed to t
 
 # Meaning of the term "content"
 
-- Currently, GOP (version > 0.11.0) consists of example applications and exercises and their dependencies, 
+- Currently, GOP (version > 0.11.0) consists of example applications, which are maintained [here](https://github.com/cloudogu/gitops-examples), 
   in addition to the actual IDP (ArgoCD, Prometheus, etc.).  
   ➡️ Turnkey-solution deployed via GitOps pipelines
 - We refer to these applications as "content".
-- When rolling out GOP, the `--content-examples` parameter leads to example applications being pushed to Git.
+- When rolling out GOP, the profile `content-examples` leads to example applications being pushed to Git.
 - These applications include:
   - Code (e.g., repo `argocd/petclinic-helm`)
   - Configuration (Argo CD `Application` and YAML resources in the GitOps repo `example-tenant/gitops`)

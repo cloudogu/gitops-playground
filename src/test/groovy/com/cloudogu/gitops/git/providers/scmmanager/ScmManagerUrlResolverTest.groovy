@@ -39,7 +39,6 @@ class ScmManagerUrlResolverTest {
         def scmmCofig = new ScmTenantSchema.ScmManagerTenantConfig()
         scmmCofig.internal = (args.containsKey('internal') ? args.internal : true)
         scmmCofig.namespace = (args.containsKey('namespace') ? args.namespace : "scm-manager")
-        scmmCofig.rootPath = (args.containsKey('rootPath') ? args.rootPath : "repo")
         scmmCofig.url = (args.containsKey('url') ? args.url : "")
         scmmCofig.ingress = (args.containsKey('ingress') ? args.ingress : "")
 

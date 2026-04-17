@@ -22,4 +22,12 @@ ingress:
   path: /
   hosts:
     - ${host}
+<#if config.features.certManager.active == true>
+  annotations:
+    cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+  tls:
+    - secretName: scm-manager-tls
+      hosts:
+        - ${host}
+</#if>
 </#if>

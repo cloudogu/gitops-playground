@@ -1,0 +1,19 @@
+expose:
+  type: nodePort
+  nodePort:
+    ports:
+      http:
+        nodePort: 30000
+  tls:
+    enabled: false
+externalURL: http://localhost:30000
+internalTLS:
+  enabled: false
+chartMuseum:
+  enabled: false
+clair:
+  enabled: false
+trivy:
+  enabled: false
+notary:
+  enabled: false
