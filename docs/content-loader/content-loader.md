@@ -8,7 +8,7 @@ This can be used to deploy your own content, e.g. your own applications, or addi
 
 Example for a GOP content repository:
 
-- Sample [configuration file](content-loader-config.yaml).
+- Sample [configuration file](../../src/main/resources/application-content-examples.yaml).
 - [Directory structure](.) as an example of a folder-based content repository.
 
 This document will use the short for "repo" from here on, for brevity.
@@ -104,7 +104,7 @@ content:
   examples: true # deploy example content described in https://github.com/cloudogu/gitops-playground
 ```
 
-See [here for a full example](content-loader-config.yaml). 
+See [here for a full example](../../src/main/resources/application-content-examples.yaml). 
 The [TL;DR](#tldr) sections shows how to see this example in action.
 
 ## Content repos
@@ -318,7 +318,6 @@ Most applications mentioned in [README/Example Applications](../../README.md#exa
 
 This chapter describes real-world use cases that can be done via content loader.
 
-You can try them out using the [`content-loader-config.yaml`](content-loader-config.yaml) used in [TL;DR](#tldr).
 
 ## Mirror the entire repo on every call
 ```yaml
@@ -339,8 +338,6 @@ You can try them out using the [`content-loader-config.yaml`](content-loader-con
       type: FOLDER_BASED
       overrideMode: UPGRADE
 ```
-
-In this repo, the folder structure defines the target repos, e.g. [argocd/argocd](argocd/argocd).
 
 ## Mirror/copy repo and add specific files
 

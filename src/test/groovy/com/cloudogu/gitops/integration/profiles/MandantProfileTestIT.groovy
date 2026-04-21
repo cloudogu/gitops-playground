@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.fail
  **/
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
-// operator can not load nginx
 class MandantProfileTestIT extends ProfileTestSetup {
 
     /**

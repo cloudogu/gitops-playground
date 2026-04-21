@@ -57,14 +57,11 @@ content:
   variables:
     petclinic:
       baseDomain: "petclinic.localhost"
-    nginx:
-      baseDomain: "nginx.localhost"
     images:
-      kubectl: "bitnamilegacy/kubectl:1.29"
+      kubectl: "alpine/kubectl:1.35.0"
       helm: "ghcr.io/cloudogu/helm:3.16.4-1"
       kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
       helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
       yamllint: "cytopia/yamllint:1.25-0.7"
-      nginx: ""
       petclinic: "eclipse-temurin:17-jre-alpine"
       maven: ""

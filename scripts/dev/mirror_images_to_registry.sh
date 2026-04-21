@@ -11,7 +11,6 @@ REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
 ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v0.9.16"
 VAULT_IMAGE="docker://hashicorp/vault:1.14.0"
-NGINX_IMAGE="docker://bitnamilegacy/nginx:1.23.3-debian-11-r8"
 TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.3.3"
 
 PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.8.0"
@@ -24,7 +23,7 @@ CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.16
 CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1"
 CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
 
-KUBECTL_IMAGE="docker://bitnamilegacy/kubectl:latest"
+KUBECTL_IMAGE="docker://alpine/kubectl:latest"
 TEMURIN_IMAGE="docker://eclipse-temurin:17-jre-alpine"
 HELM_IMAGE="docker://ghcr.io/cloudogu/helm:latest"
 MVN_IMAGE="docker://maven:3-eclipse-temurin-17-alpine"
@@ -66,7 +65,6 @@ if [[ -n $HARBOR ]]; then
     # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
     skopeo copy $ESO_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/external-secrets
     skopeo copy $VAULT_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/vault
-    skopeo copy $NGINX_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/nginx
     skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.3.3
 
     # Monitoring
@@ -82,7 +80,7 @@ if [[ -n $HARBOR ]]; then
     skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-webhook
 
     # Needed for the builds to work with proxy-registry
-    skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/bitnami/kubectl:1.29
+    skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/alpine/kubectl:1.29
     skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre-alpine
     skopeo copy $HELM_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/helm:latest
     skopeo copy $MVN_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/maven:3-eclipse-temurin-17-alpine
@@ -94,7 +92,6 @@ fi
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
 skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/external-secrets
 skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/vault
-skopeo copy $NGINX_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/nginx
 skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.3.3
 
 # Monitoring
@@ -110,7 +107,7 @@ skopeo copy $CERT_MANAGER_CA_INJECTOR --dest-creds admin:Harbor12345 --dest-tls-
 skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-webhook
 
 # Needed for the builds to work with proxy-registry
-skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/bitnami/kubectl:1.29
+skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/alpine/kubectl:1.29
 skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre-alpine
 skopeo copy $HELM_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/helm:latest
 skopeo copy $MVN_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/maven:3-eclipse-temurin-17-alpine

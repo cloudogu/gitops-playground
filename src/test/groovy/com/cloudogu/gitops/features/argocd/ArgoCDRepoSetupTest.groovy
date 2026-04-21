@@ -27,7 +27,7 @@ class ArgoCDRepoSetupTest {
                         namePrefix: '',
                         netpols   : true,
                         namespaces: [
-                                dedicatedNamespaces: ["argocd", "monitoring", "ingress-nginx", "secrets"],
+                                dedicatedNamespaces: ["argocd", "monitoring", "secrets"],
                                 tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                         ]
                 ],

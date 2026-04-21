@@ -86,7 +86,6 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
     }
 
     @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
-// operator can not install nginx
     @Test
     void ensurePetclinicIngressIsOnline() {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
@@ -112,7 +111,6 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
     }
 
     @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
-// operator can not install nginx
     @Test
     void ensurePetclinicServidsdsdceIsOnline() {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
