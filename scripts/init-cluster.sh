@@ -2,9 +2,9 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=5.7.4
+K3D_VERSION=5.8.3
 # When updating please also adapt in Dockerfile, vars.tf and Config.groovy
-K8S_VERSION=1.35.4
+K8S_VERSION=1.35.3
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
 set -o errexit
