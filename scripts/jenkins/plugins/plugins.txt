@@ -59,7 +59,7 @@ pipeline-utility-steps:2.19.0
 plain-credentials:195.vb_906e9073dee
 plugin-util-api:6.1.0
 prism-api:1.30.0-1
-prometheus:819.v50953a_c560dd
+prometheus:852.v317db_5d17a_b_0
 scm-api:704.v3ce5c542825a_
 scm-manager:1.10.0
 script-security:1373.vb_b_4a_a_c26fa_00
