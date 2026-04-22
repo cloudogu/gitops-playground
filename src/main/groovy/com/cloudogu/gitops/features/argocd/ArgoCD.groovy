@@ -5,7 +5,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
@@ -30,7 +29,6 @@ class ArgoCD extends Feature {
 	private final String namespace
 	private final Config config
 	private final K8sClient k8sClient
-	private final HelmClient helmClient
 	private final GitRepoFactory repoProvider
 	private final GitHandler gitHandler
 	private final String password
@@ -41,7 +39,6 @@ class ArgoCD extends Feature {
 	ArgoCD(
 			Config config,
 			K8sClient k8sClient,
-			HelmClient helmClient,
 			Deployer deployer,
 			FileSystemUtils fileSystemUtils,
 			GitRepoFactory repoProvider,
@@ -49,7 +46,6 @@ class ArgoCD extends Feature {
 		this.repoProvider = repoProvider
 		this.config = config
 		this.k8sClient = k8sClient
-		this.helmClient = helmClient
 		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
@@ -207,11 +203,12 @@ rm -Rf ../argocd-operator/
 
 	private void deployWithHelm() {
 
-		helmClient.addRepo('argo', this.config.features.argocd.helm.repoURL)
-		helmClient.upgrade('argocd', "argo/argo-cd", [namespace: namespace])
-
-		//	addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
-		//	deployHelmChart(this.namespace, this.namespace, namespace, config.features.argocd.helm, HELM_VALUES_PATH, config, true)
+		deployHelmChart('argo-cd',
+		                'argo-cd',
+		                namespace,
+		                config.features.argocd.helm,
+		                HELM_VALUES_PATH,
+		                config)
 
 		log.debug("Setting new argocd admin password")
 		// Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo

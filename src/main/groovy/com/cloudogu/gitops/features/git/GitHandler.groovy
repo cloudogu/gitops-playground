@@ -13,8 +13,6 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 
 import io.micronaut.core.annotation.Order
 
-import jakarta.inject.Inject
-import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
@@ -26,16 +24,17 @@ class GitHandler extends Feature {
 	Config config
 
 	NetworkingUtils networkingUtils
-	@Inject
-	Provider<Deployer> deployerProvider
+
+	Deployer deployer
 	FileSystemUtils fileSystemUtils
 	K8sClient k8sClient
 
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(Config config, FileSystemUtils fileSystemUtils, K8sClient k8sClient, NetworkingUtils networkingUtils) {
+	GitHandler(Config config, Deployer deployer, FileSystemUtils fileSystemUtils, K8sClient k8sClient, NetworkingUtils networkingUtils) {
 		this.config = config
+		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils

@@ -3,7 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -30,7 +30,7 @@ class Vault extends Feature implements FeatureWithImage {
 			Config config,
 			FileSystemUtils fileSystemUtils,
 			K8sClient k8sClient,
-			DeploymentStrategy deployer,
+			Deployer deployer,
 			AirGappedUtils airGappedUtils,
 			GitHandler gitHandler) {
 		this.deployer = deployer

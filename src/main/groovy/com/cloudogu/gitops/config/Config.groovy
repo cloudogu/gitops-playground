@@ -97,9 +97,10 @@ class Config {
 		@JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
 		Map<String, Object> variables = [:]
 
-        // ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
-        @JsonPropertyDescription()//(CONTENT_HELM_RELEASES_DESCRIPTION)
-        List<HelmReleaseSchema> helmReleases = []
+		// ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
+		@JsonPropertyDescription()
+		//(CONTENT_HELM_RELEASES_DESCRIPTION)
+		List<HelmReleaseSchema> helmReleases = []
 
 		@Option(names = ['--content-whitelist'], description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
 		@JsonPropertyDescription(CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
@@ -154,30 +155,39 @@ class Config {
 			Boolean createJenkinsJob = false
 
 		}
+
 		static class HelmReleaseSchema {
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
-			String name = ''               // featureName/apps/<name>, also default for releaseName
+			String name = ''
+			// featureName/apps/<name>, also default for releaseName
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
-			String repoURL = ''            // helm repo url
+			String repoURL = ''
+			// helm repo url
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
-			String chart = ''              // chart name
+			String chart = ''
+			// chart name
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
-			String version = ''            // chart version
+			String version = ''
+			// chart version
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
-			String namespace = ''          // target namespace to deploy into
+			String namespace = ''
+			// target namespace to deploy into
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
-			String releaseName = ''        // optional override; if empty => use name
+			String releaseName = ''
+			// optional override; if empty => use name
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
-			String valuesPath = ''   // optional local path, e.g. src/main/resources/foo/values.yaml
+			String valuesPath = ''
+			// optional local path, e.g. src/main/resources/foo/values.yaml
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
-			Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)
+			Map<String, Object> values = [:]
+			// optional inline values (merged with valuesFile)
 		}
 	}
 
@@ -229,13 +239,13 @@ class Config {
 		@JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
 		String proxyUrl = ''
 
-        @Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
-        @JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
-        String proxyPath = ''
+		@Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
+		@JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
+		String proxyPath = ''
 
-        @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
-        String proxyUsername = ''
+		@Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
+		@JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
+		String proxyUsername = ''
 
 		@Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
 		@JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
@@ -256,8 +266,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
-				repoURL: 'https://twuni.github.io/docker-registry.helm',
-				version: '3.0.0')
+		                                                     repoURL: 'https://twuni.github.io/docker-registry.helm',
+		                                                     version: '3.0.0')
 
 	}
 
@@ -522,18 +532,9 @@ class Config {
 
 		Boolean active = false
 
-        @Option(names = ['--mail'], description = MAILSERVER_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
-        @JsonPropertyDescription(MAILSERVER_ENABLE_DESCRIPTION)
-        Boolean mailServer = false
-
-
-        @Option(names = ['--mail-url'], description = MAIL_URL_DESCRIPTION)
-        @JsonPropertyDescription(MAIL_URL_DESCRIPTION)
-        String mailUrl = ''
-
-        @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
-        @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
-        String smtpAddress = ''
+		@Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
+		@JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
+		String smtpAddress = ''
 
 		@Option(names = ['--smtp-port'], description = SMTP_PORT_DESCRIPTION)
 		@JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
@@ -685,8 +686,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		CertManagerHelmSchema helm = new CertManagerHelmSchema(chart: 'cert-manager',
-				repoURL: 'https://charts.jetstack.io',
-				version: '1.19.4')
+		                                                       repoURL: 'https://charts.jetstack.io',
+		                                                       version: '1.19.4')
 
 		static class CertManagerHelmSchema extends HelmConfigWithValues {
 

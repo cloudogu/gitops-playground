@@ -3,7 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
@@ -38,7 +38,7 @@ class Monitoring extends Feature implements FeatureWithImage {
 	Monitoring(
 			Config config,
 			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer,
+			Deployer deployer,
 			K8sClient k8sClient,
 			AirGappedUtils airGappedUtils,
 			GitRepoFactory scmRepoProvider,

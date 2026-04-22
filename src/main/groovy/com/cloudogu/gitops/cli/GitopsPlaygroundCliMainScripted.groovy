@@ -65,10 +65,11 @@ class GitopsPlaygroundCliMainScripted {
 			                                                         httpClientFactory.okHttpClientJenkins(config))
 
 			context.registerSingleton(k8sClient)
-			GitHandler gitHandler = new GitHandler(config, fileSystemUtils, k8sClient, networkingUtils)
-			Deployer deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
-
+			Deployer deployer = new Deployer(helmStrategy)
+			GitHandler gitHandler = new GitHandler(config, deployer, fileSystemUtils, k8sClient, networkingUtils)
+			ArgoCdApplicationStrategy argoCdApplicationStrategy = new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler)
 			AirGappedUtils airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
+
 			Jenkins jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
 			                              new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
 			                              new PrometheusConfigurator(jenkinsApiClient), deployer, k8sClient, networkingUtils, gitHandler)
@@ -77,13 +78,13 @@ class GitopsPlaygroundCliMainScripted {
 			context.registerSingleton(new Application(config, [new Registry(config, fileSystemUtils, k8sClient, deployer),
 			                                                   gitHandler,
 			                                                   jenkins,
-			                                                   new ArgoCD(config, k8sClient, helmClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler),
+			                                                   new ArgoCD(config, k8sClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler),
 			                                                   new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new Monitoring(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
 			                                                   new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
 			                                                   new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
-			                                                   new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),]))
+			                                                   new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler, fileSystemUtils, deployer)]))
 		}
 	}
 }
