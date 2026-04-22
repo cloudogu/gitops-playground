@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -36,7 +36,7 @@ class CertManagerTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@Mock
-	DeploymentStrategy deploymentStrategy
+	Deployer deploymentStrategy
 	@Mock
 	AirGappedUtils airGappedUtils
 	@Mock

@@ -9,7 +9,9 @@ import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+
 import groovy.util.logging.Slf4j
+
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.PushCommand
@@ -27,275 +29,265 @@ import org.eclipse.jgit.treewalk.filter.PathFilter
 @Slf4j
 class GitRepo {
 
-    static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
+	static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
-    private final Config config
-    public GitProvider gitProvider
-    private final FileSystemUtils fileSystemUtils
+	private final Config config
+	public GitProvider gitProvider
+	private final FileSystemUtils fileSystemUtils
 
-    private final String repoTarget
-    private final boolean insecure
-    private final String gitName
-    private final String gitEmail
+	private final String repoTarget
+	private final boolean insecure
+	private final String gitName
+	private final String gitEmail
 
-    private Git gitMemoization
-    private final String absoluteLocalRepoTmpDir
+	private Git gitMemoization
+	private final String absoluteLocalRepoTmpDir
 
-    GitRepo(Config config,
-            GitProvider gitProvider,
-            String repoTarget,
-            FileSystemUtils fileSystemUtils) {
-        def tmpDir = File.createTempDir()
-        tmpDir.deleteOnExit()
-        this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
-        this.config = config
-        this.gitProvider = gitProvider
-        this.fileSystemUtils = fileSystemUtils
+	GitRepo(
+			Config config,
+			GitProvider gitProvider,
+			String repoTarget,
+			FileSystemUtils fileSystemUtils) {
+		def tmpDir = File.createTempDir()
+		tmpDir.deleteOnExit()
+		this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
+		this.config = config
+		this.gitProvider = gitProvider
+		this.fileSystemUtils = fileSystemUtils
 
-        this.repoTarget = "${config.application.namePrefix}${repoTarget}"
+		this.repoTarget = "${config.application.namePrefix}${repoTarget}"
 
-        this.insecure = config.application.insecure
-        this.gitName = config.application.gitName
-        this.gitEmail = config.application.gitEmail
-    }
+		this.insecure = config.application.insecure
+		this.gitName = config.application.gitName
+		this.gitEmail = config.application.gitEmail
+	}
 
-    String getRepoTarget() {
-        return repoTarget
-    }
-    
-    boolean createRepositoryAndSetPermission(String description, boolean initialize = true) {
-        def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
-        if (gitProvider.getGitOpsUsername()) {
-            gitProvider.setRepositoryPermission(
-                    repoTarget,
-                    gitProvider.getGitOpsUsername(),
-                    AccessRole.WRITE,
-                    Scope.USER
-            )
-        }
-        return isNewRepo
+	String getRepoTarget() {
+		return repoTarget
+	}
 
-    }
+	boolean createRepositoryAndSetPermission(String description, boolean initialize = true) {
+		def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
+		if (gitProvider.getGitOpsUsername()) {
+			gitProvider.setRepositoryPermission(repoTarget,
+			                                    gitProvider.getGitOpsUsername(),
+			                                    AccessRole.WRITE,
+			                                    Scope.USER)
+		}
+		return isNewRepo
 
-    String getAbsoluteLocalRepoTmpDir() {
-        return absoluteLocalRepoTmpDir
-    }
+	}
 
-    void cloneRepo() {
-        def cloneUrl = getGitRepositoryUrl()
-        log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
-        Git.cloneRepository()
-                .setURI(cloneUrl)
-                .setDirectory(new File(absoluteLocalRepoTmpDir))
-                .setCredentialsProvider(getCredentialProvider())
-                .call()
-    }
+	String getAbsoluteLocalRepoTmpDir() {
+		return absoluteLocalRepoTmpDir
+	}
 
-    void commitAndPush(String message, String tag) {
-        commitAndPush(message, tag, 'HEAD:refs/heads/main')
-    }
+	void cloneRepo() {
+		def cloneUrl = getGitRepositoryUrl()
+		log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
+		Git.cloneRepository()
+				.setURI(cloneUrl)
+				.setDirectory(new File(absoluteLocalRepoTmpDir))
+				.setCredentialsProvider(getCredentialProvider())
+				.call()
+	}
 
+	void commitAndPush(String message, String tag) {
+		commitAndPush(message, tag, 'HEAD:refs/heads/main')
+	}
 
-    void commitAndPush(String commitMessage, String tag, String refSpec) {
-        log.debug("Adding files to ${repoTarget}")
-        def git = getGit()
-        git.add().addFilepattern(".").call()
+	void commitAndPush(String commitMessage, String tag, String refSpec) {
+		log.debug("Adding files to ${repoTarget}")
+		def git = getGit()
+		git.add().addFilepattern(".").call()
 
-        if (git.status().call().hasUncommittedChanges()) {
-            log.debug("Commiting ${repoTarget}")
-            git.commit()
-                    .setSign(false)
-                    .setMessage(commitMessage)
-                    .setAuthor(gitName, gitEmail)
-                    .setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(','')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
-                    .call()
+		if (git.status().call().hasUncommittedChanges()) {
+			log.debug("Commiting ${repoTarget}")
+			git.commit()
+					.setSign(false)
+					.setMessage(commitMessage)
+					.setAuthor(gitName, gitEmail)
+					.setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(', '')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
+					.call()
 
-            def pushCommand = createPushCommand(refSpec)
+			def pushCommand = createPushCommand(refSpec)
 
-            if (tag) {
-                log.debug("Setting tag '${tag}' on repo: ${repoTarget}")
-                // Delete existing tags first to get idempotence
-                git.tagDelete().setTags(tag).call()
-                git.tag()
-                        .setName(tag)
-                        .call()
-                pushCommand.setPushTags()
-            }
+			if (tag) {
+				log.debug("Setting tag '${tag}' on repo: ${repoTarget}")
+				// Delete existing tags first to get idempotence
+				git.tagDelete().setTags(tag).call()
+				git.tag()
+						.setName(tag)
+						.call()
+				pushCommand.setPushTags()
+			}
 
-            log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
-            pushCommand.call()
-        } else {
-            log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
-        }
-    }
+			log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
+			pushCommand.call()
+		} else {
+			log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
+		}
+	}
 
+	void commitAndPush(String commitMessage) {
+		commitAndPush(commitMessage, null, 'HEAD:refs/heads/main')
+	}
 
-    void commitAndPush(String commitMessage) {
-        commitAndPush(commitMessage, null, 'HEAD:refs/heads/main')
-    }
-    /**
-     * Push all refs, i.e. all tags and branches
-     */
+	/**
+	 * Push all refs, i.e. all tags and branches*/
 
-    void pushAll(boolean force) {
-        createPushCommand('refs/*:refs/*').setForce(force).call()
-    }
+	void pushAll(boolean force) {
+		createPushCommand('refs/*:refs/*').setForce(force).call()
+	}
 
+	void pushRef(String ref, boolean force) {
+		pushRef(ref, ref, force)
+	}
 
-    void pushRef(String ref, boolean force) {
-        pushRef(ref, ref, force)
-    }
+	void pushRef(String ref, String targetRef, boolean force) {
+		createPushCommand("${ref}:${targetRef}").setForce(force).call()
+	}
 
+	/**
+	 * Delete all files in this repository*/
+	void clearRepo() {
+		fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
+	}
 
-    void pushRef(String ref, String targetRef, boolean force) {
-        createPushCommand("${ref}:${targetRef}").setForce(force).call()
-    }
+	void copyDirectoryContents(String srcDir) {
+		copyDirectoryContents(srcDir, (FileFilter) null)
+	}
 
+	void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
+		if (!srcDir) {
+			log.warn("Source directory is not defined. Nothing to copy?")
+			return
+		}
 
-    /**
-     * Delete all files in this repository
-     */
-    void clearRepo() {
-        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
-    }
+		log.debug("Initializing repo $repoTarget from $srcDir")
+		String absoluteSrcDirLocation = new File(srcDir).isAbsolute() ? srcDir : "${fileSystemUtils.getRootDir()}/${srcDir}"
+		fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
+	}
 
+	void writeFile(String path, String content, boolean overwrite = true) {
+		File file = new File("$absoluteLocalRepoTmpDir/$path")
+		fileSystemUtils.createDirectory(file.parent)
 
-    void copyDirectoryContents(String srcDir) {
-        copyDirectoryContents(srcDir, (FileFilter) null)
-    }
+		if (!overwrite && file.exists()) {
+			return
+		}
 
+		file.text = content
+	}
 
-    void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
-        if (!srcDir) {
-            log.warn("Source directory is not defined. Nothing to copy?")
-            return
-        }
+	void replaceTemplates(Map parameters) {
+		new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
+	}
 
-        log.debug("Initializing repo $repoTarget from $srcDir")
-        String absoluteSrcDirLocation = new File(srcDir).isAbsolute()
-                ? srcDir
-                : "${fileSystemUtils.getRootDir()}/${srcDir}"
-        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
-    }
+	String getGitRepositoryUrl() {
+		return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
+	}
 
+	static boolean isCommit(File repoPath, String ref) {
+		if (!ref) {
+			return false
+		}
 
-    void writeFile(String path, String content) {
-        def file = new File("$absoluteLocalRepoTmpDir/$path")
-        fileSystemUtils.createDirectory(file.parent)
-        file.createNewFile()
-        file.text = content
-    }
+		try (Git git = Git.open(repoPath)) {
+			// Get all branch and tag names
+			def allRefs = []
 
-    void replaceTemplates(Map parameters) {
-        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
-    }
+			// Add all branch names (without refs/heads/ prefix)
+			git.branchList().call().each { branch -> allRefs.add(branch.name.replaceFirst('refs/heads/', ''))
+			}
 
-    String getGitRepositoryUrl() {
-        return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
-    }
+			// Add all tag names (without refs/tags/ prefix)
+			git.tagList().call().each { tag -> allRefs.add(tag.name.replaceFirst('refs/tags/', ''))
+			}
 
-    static boolean isCommit(File repoPath, String ref) {
-        if (!ref) {
-            return false
-        }
+			// If the ref matches any branch or tag name, it's not a commit hash
+			if (allRefs.contains(ref)) {
+				return false
+			}
 
-        try (Git git = Git.open(repoPath)) {
-            // Get all branch and tag names
-            def allRefs = []
+			// If it's not a branch or tag, try to resolve it as a commit
+			def objectId = git.repository.resolve(ref)
+			return objectId != null
 
-            // Add all branch names (without refs/heads/ prefix)
-            git.branchList().call().each { branch ->
-                allRefs.add(branch.name.replaceFirst('refs/heads/', ''))
-            }
+		}
+	}
 
-            // Add all tag names (without refs/tags/ prefix)
-            git.tagList().call().each { tag ->
-                allRefs.add(tag.name.replaceFirst('refs/tags/', ''))
-            }
+	/**
+	 * checks, if file exists in repo in some branch.
+	 * @param pathToRepo
+	 * @param filename
+	 */
+	static boolean existFileInSomeBranch(String repo, String filename) {
+		String filenameToSearch = filename
+		File repoPath = new File(repo + '/.git')
 
-            // If the ref matches any branch or tag name, it's not a commit hash
-            if (allRefs.contains(ref)) {
-                return false
-            }
+		try (def git = Git.open(repoPath)) {
+			List<Ref> branches = git
+					.branchList()
+					.setListMode(ListBranchCommand.ListMode.ALL)
+					.call()
 
-            // If it's not a branch or tag, try to resolve it as a commit
-            def objectId = git.repository.resolve(ref)
-            return objectId != null
+			for (Ref branch : branches) {
+				String branchName = branch.getName()
 
-        }
-    }
+				ObjectId commitId = git.repository.resolve(branchName)
+				if (commitId == null) {
+					continue
+				}
+				try (RevWalk revWalk = new RevWalk(git.repository)) {
+					RevCommit commit = revWalk.parseCommit(commitId)
+					try (TreeWalk treeWalk = new TreeWalk(git.repository)) {
 
-    /**
-     * checks, if file exists in repo in some branch.
-     * @param pathToRepo
-     * @param filename
-     */
-    static boolean existFileInSomeBranch(String repo, String filename) {
-        String filenameToSearch = filename
-        File repoPath = new File(repo + '/.git')
+						treeWalk.addTree(commit.getTree())
+						treeWalk.setFilter(PathFilter.create(filenameToSearch))
 
-        try (def git = Git.open(repoPath)) {
-            List<Ref> branches = git
-                    .branchList()
-                    .setListMode(ListBranchCommand.ListMode.ALL)
-                    .call()
+						if (treeWalk.next()) {
+							log.debug("File ${filename} found in branch ${branchName}")
 
-            for (Ref branch : branches) {
-                String branchName = branch.getName()
+							return true
+						}
+					}
+				}
+			}
+		}
+		log.debug("File ${filename} not found in repository ${repoPath}")
+		return false
+	}
 
-                ObjectId commitId = git.repository.resolve(branchName)
-                if (commitId == null) {
-                    continue
-                }
-                try (RevWalk revWalk = new RevWalk(git.repository)) {
-                    RevCommit commit = revWalk.parseCommit(commitId)
-                    try (TreeWalk treeWalk = new TreeWalk(git.repository)) {
+	static boolean isTag(File repo, String ref) {
+		if (!ref) {
+			return false
+		}
+		try (def git = Git.open(repo)) {
+			git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
+		}
+	}
 
-                        treeWalk.addTree(commit.getTree())
-                        treeWalk.setFilter(PathFilter.create(filenameToSearch))
+	private PushCommand createPushCommand(String refSpec) {
+		getGit()
+				.push()
+				.setRemote(getGitRepositoryUrl())
+				.setRefSpecs(new RefSpec(refSpec))
+				.setCredentialsProvider(getCredentialProvider())
+	}
 
-                        if (treeWalk.next()) {
-                            log.debug("File ${filename} found in branch ${branchName}")
+	private Git getGit() {
+		if (gitMemoization != null) {
+			return gitMemoization
+		}
 
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-        log.debug("File ${filename} not found in repository ${repoPath}")
-        return false
-    }
+		return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
+	}
 
-    static boolean isTag(File repo, String ref) {
-        if (!ref) {
-            return false
-        }
-        try (def git = Git.open(repo)) {
-            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
-        }
-    }
-
-    private PushCommand createPushCommand(String refSpec) {
-        getGit()
-                .push()
-                .setRemote(getGitRepositoryUrl())
-                .setRefSpecs(new RefSpec(refSpec))
-                .setCredentialsProvider(getCredentialProvider())
-    }
-
-    private Git getGit() {
-        if (gitMemoization != null) {
-            return gitMemoization
-        }
-
-        return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
-    }
-
-    private CredentialsProvider getCredentialProvider() {
-        def auth = this.gitProvider.getCredentials()
-        def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
-        return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
-    }
+	private CredentialsProvider getCredentialProvider() {
+		def auth = this.gitProvider.getCredentials()
+		def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
+		return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
+	}
 
 }

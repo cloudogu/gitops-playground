@@ -97,9 +97,10 @@ class Config {
 		@JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
 		Map<String, Object> variables = [:]
 
-        // ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
-        @JsonPropertyDescription()//(CONTENT_HELM_RELEASES_DESCRIPTION)
-        List<HelmReleaseSchema> helmReleases = []
+		// ✅ NEW: helm releases that should be deployed via ArgoCDApplicationStrategy without requiring a git repo
+		@JsonPropertyDescription()
+		//(CONTENT_HELM_RELEASES_DESCRIPTION)
+		List<HelmReleaseSchema> helmReleases = []
 
 		@Option(names = ['--content-whitelist'], description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
 		@JsonPropertyDescription(CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
@@ -154,30 +155,39 @@ class Config {
 			Boolean createJenkinsJob = false
 
 		}
+
 		static class HelmReleaseSchema {
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
-			String name = ''               // featureName/apps/<name>, also default for releaseName
+			String name = ''
+			// featureName/apps/<name>, also default for releaseName
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION)
-			String repoURL = ''            // helm repo url
+			String repoURL = ''
+			// helm repo url
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_CHART_DESCRIPTION)
-			String chart = ''              // chart name
+			String chart = ''
+			// chart name
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VERSION_DESCRIPTION)
-			String version = ''            // chart version
+			String version = ''
+			// chart version
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION)
-			String namespace = ''          // target namespace to deploy into
+			String namespace = ''
+			// target namespace to deploy into
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION)
-			String releaseName = ''        // optional override; if empty => use name
+			String releaseName = ''
+			// optional override; if empty => use name
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
-			String valuesPath = ''   // optional local path, e.g. src/main/resources/foo/values.yaml
+			String valuesPath = ''
+			// optional local path, e.g. src/main/resources/foo/values.yaml
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
-			Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)
+			Map<String, Object> values = [:]
+			// optional inline values (merged with valuesFile)
 		}
 	}
 
@@ -229,13 +239,13 @@ class Config {
 		@JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
 		String proxyUrl = ''
 
-        @Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
-        @JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
-        String proxyPath = ''
+		@Option(names = ['--registry-proxy-path'], description = REGISTRY_PROXY_PATH_DESCRIPTION)
+		@JsonPropertyDescription(REGISTRY_PROXY_PATH_DESCRIPTION)
+		String proxyPath = ''
 
-        @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
-        String proxyUsername = ''
+		@Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
+		@JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
+		String proxyUsername = ''
 
 		@Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
 		@JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
@@ -256,8 +266,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
-				repoURL: 'https://twuni.github.io/docker-registry.helm',
-				version: '3.0.0')
+		                                                     repoURL: 'https://twuni.github.io/docker-registry.helm',
+		                                                     version: '3.0.0')
 
 	}
 
@@ -323,8 +333,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
-				repoURL: 'https://charts.jenkins.io',
-				version: '5.8.43')
+		                                                     repoURL: 'https://charts.jenkins.io',
+		                                                     version: '5.8.43')
 	}
 
 	static class ApplicationSchema {
@@ -511,6 +521,11 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
 		Map<String, Object> values = [:]
+
+		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'argo-cd',
+		                                                     repoURL: 'https://argoproj.github.io/argo-helm',
+		                                                     version: '9.4.15')
 	}
 
 	static class MailSchema {
@@ -556,10 +571,10 @@ class Config {
 		@SuppressWarnings('GroovyAssignabilityCheck')
 		// Because of values
 		MonitoringHelmSchema helm = new MonitoringHelmSchema(chart: 'kube-prometheus-stack',
-				repoURL: 'https://prometheus-community.github.io/helm-charts',
-				/* When updating this make sure to also test if air-gapped mode still works */
-				version: '80.2.2',
-				values: [:] // Otherwise values is null 🤷‍♂️
+		                                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
+		                                                     /* When updating this make sure to also test if air-gapped mode still works */
+		                                                     version: '80.2.2',
+		                                                     values: [:] // Otherwise values is null 🤷‍♂️
 		)
 		static class MonitoringHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
@@ -600,8 +615,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
-					repoURL: 'https://charts.external-secrets.io',
-					version: '0.9.16')
+			                                       repoURL: 'https://charts.external-secrets.io',
+			                                       version: '0.9.16')
 			static class ESOHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -629,8 +644,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
-					repoURL: 'https://helm.releases.hashicorp.com',
-					version: '0.25.0')
+			                                           repoURL: 'https://helm.releases.hashicorp.com',
+			                                           version: '0.25.0')
 			static class VaultHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
@@ -648,8 +663,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		IngressHelmSchema helm = new IngressHelmSchema(chart: 'traefik',
-				repoURL: 'https://traefik.github.io/charts',
-				version: '39.0.0')
+		                                               repoURL: 'https://traefik.github.io/charts',
+		                                               version: '39.0.0')
 		static class IngressHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
 			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
@@ -671,8 +686,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		CertManagerHelmSchema helm = new CertManagerHelmSchema(chart: 'cert-manager',
-				repoURL: 'https://charts.jetstack.io',
-				version: '1.19.4')
+		                                                       repoURL: 'https://charts.jetstack.io',
+		                                                       version: '1.19.4')
 
 		static class CertManagerHelmSchema extends HelmConfigWithValues {
 
