@@ -11,7 +11,7 @@ cloudbees-folder:6.1012.v79a_86a_1ea_c1f
 commons-compress-api:1.27.1-3
 commons-lang3-api:3.17.0-87.v5cf526e63b_8b_
 commons-text-api:1.13.0-153.v91dcd89e2a_22
-configuration-as-code:1967.va_968e15fd05b_
+configuration-as-code:2077.v41f1011a_5110
 credentials:1415.v831096eb_5534
 credentials-binding:687.v619cb_15e923f
 display-url-api:2.209.v582ed814ff2f
