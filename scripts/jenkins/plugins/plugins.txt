@@ -65,7 +65,7 @@ scm-manager:1.10.0
 script-security:1373.vb_b_4a_a_c26fa_00
 snakeyaml-api:2.3-125.v4d77857a_b_402
 ssh-credentials:355.v9b_e5b_cde5003
-structs:343.vdcf37b_a_c81d5
+structs:362.va_b_695ef4fdf9
 trilead-api:2.209.v0e69b_c43c245
 variant:70.va_d9f17f859e0
 workflow-aggregator:608.v67378e9d3db_1
