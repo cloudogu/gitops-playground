@@ -52,7 +52,7 @@ pipeline-model-api:2.2255.v56a_15e805f12
 pipeline-model-definition:2.2255.v56a_15e805f12
 pipeline-model-extensions:2.2255.v56a_15e805f12
 pipeline-rest-api:2.38
-pipeline-stage-step:322.vecffa_99f371c
+pipeline-stage-step:345.va_96187909426
 pipeline-stage-tags-metadata:2.2255.v56a_15e805f12
 pipeline-stage-view:2.38
 pipeline-utility-steps:2.19.0
