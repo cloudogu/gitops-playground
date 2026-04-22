@@ -33,7 +33,7 @@ javax-activation-api:1.2.0-8
 jaxb:2.3.9-133.vb_ec76a_73f706
 joda-time-api:2.14.0-127.v7d9da_295a_d51
 jquery3-api:3.7.1-3
-json-api:20250107-125.v28b_a_ffa_eb_f01
+json-api:20250517-173.v596efb_962a_31
 junit:1335.v6b_a_a_e18534e1
 kubernetes:4336.v55d9a_494db_38
 kubernetes-client-api:6.10.0-251.v556f5f100500
