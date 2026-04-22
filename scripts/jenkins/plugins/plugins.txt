@@ -44,7 +44,7 @@ mina-sshd-api-common:2.15.0-161.vb_200831a_c15b_
 mina-sshd-api-core:2.15.0-161.vb_200831a_c15b_
 okhttp-api:4.11.0-189.v976fa_d3379d6
 pipeline-build-step:567.vea_ce550ece97
-pipeline-graph-analysis:237.v2b_75640ca_888
+pipeline-graph-analysis:254.v0f63a_a_447dca_
 pipeline-groovy-lib:752.vdddedf804e72
 pipeline-input-step:517.vf8e782ee645c
 pipeline-milestone-step:134.vdf60d179845f
