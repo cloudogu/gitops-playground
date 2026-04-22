@@ -2,7 +2,7 @@ antisamy-markup-formatter:173.v680e3a_b_69ff3
 apache-httpcomponents-client-4-api:4.5.14-269.vfa_2321039a_83
 asm-api:9.8-135.vb_2239d08ee90
 authentication-tokens:1.131.v7199556c3004
-bootstrap5-api:5.3.5-1
+bootstrap5-api:5.3.8-1024.v127320880c60
 bouncycastle-api:2.30.1.80-256.vf98926042a_9b_
 branch-api:2.1217.v43d8b_b_d8b_2c7
 caffeine-api:3.2.0-166.v72a_6d74b_870f
