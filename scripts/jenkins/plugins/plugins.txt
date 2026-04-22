@@ -36,7 +36,7 @@ jquery3-api:3.7.1-3
 json-api:20250107-125.v28b_a_ffa_eb_f01
 junit:1335.v6b_a_a_e18534e1
 kubernetes:4336.v55d9a_494db_38
-kubernetes-client-api:6.10.0-251.v556f5f100500
+kubernetes-client-api:7.3.1-256.v788a_0b_787114
 kubernetes-credentials:192.v4d5b_1c429d17
 mailer:489.vd4b_25144138f
 metrics:4.2.30-471.v55fa_495f2b_f5
