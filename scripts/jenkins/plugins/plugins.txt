@@ -42,7 +42,7 @@ mailer:489.vd4b_25144138f
 metrics:4.2.30-471.v55fa_495f2b_f5
 mina-sshd-api-common:2.15.0-161.vb_200831a_c15b_
 mina-sshd-api-core:2.15.0-161.vb_200831a_c15b_
-okhttp-api:4.11.0-189.v976fa_d3379d6
+okhttp-api:5.3.2-200.vedb_720a_cf1f8
 pipeline-build-step:567.vea_ce550ece97
 pipeline-graph-analysis:237.v2b_75640ca_888
 pipeline-groovy-lib:752.vdddedf804e72
