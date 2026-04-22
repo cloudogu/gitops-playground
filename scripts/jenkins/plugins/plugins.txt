@@ -62,7 +62,7 @@ prism-api:1.30.0-1
 prometheus:819.v50953a_c560dd
 scm-api:704.v3ce5c542825a_
 scm-manager:1.10.0
-script-security:1373.vb_b_4a_a_c26fa_00
+script-security:1399.ve6a_66547f6e1
 snakeyaml-api:2.3-125.v4d77857a_b_402
 ssh-credentials:355.v9b_e5b_cde5003
 structs:343.vdcf37b_a_c81d5
