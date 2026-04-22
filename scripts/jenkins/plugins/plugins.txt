@@ -18,7 +18,7 @@ display-url-api:2.209.v582ed814ff2f
 docker-commons:451.vd12c371eeeb_3
 docker-workflow:611.v16e84da_6d3ff
 durable-task:587.v84b_877235b_45
-echarts-api:5.6.0-4
+echarts-api:6.0.0-1281.vd3d21a_1ca_cb_4
 eddsa-api:0.3.0.1-19.vc432d923e5ee
 font-awesome-api:6.7.2-1
 git:5.7.0
