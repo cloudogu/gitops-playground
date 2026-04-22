@@ -13,7 +13,7 @@ commons-lang3-api:3.17.0-87.v5cf526e63b_8b_
 commons-text-api:1.13.0-153.v91dcd89e2a_22
 configuration-as-code:1967.va_968e15fd05b_
 credentials:1415.v831096eb_5534
-credentials-binding:687.v619cb_15e923f
+credentials-binding:719.v80e905ef14eb_
 display-url-api:2.209.v582ed814ff2f
 docker-commons:451.vd12c371eeeb_3
 docker-workflow:611.v16e84da_6d3ff
