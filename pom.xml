@@ -360,7 +360,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.141</version>
+      <version>4.8.184</version>
     </dependency>
 
     <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
