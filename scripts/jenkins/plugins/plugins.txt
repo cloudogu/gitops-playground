@@ -20,7 +20,7 @@ docker-workflow:611.v16e84da_6d3ff
 durable-task:587.v84b_877235b_45
 echarts-api:5.6.0-4
 eddsa-api:0.3.0.1-19.vc432d923e5ee
-font-awesome-api:6.7.2-1
+font-awesome-api:7.2.0-983.v3f63c34eddb_9
 git:5.7.0
 git-client:6.1.3
 gson-api:2.13.1-139.v4569c2ef303f
