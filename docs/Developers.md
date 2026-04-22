@@ -243,7 +243,7 @@ curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -
 
 Then either import external images like so (requires `skopeo` but no prior pulling or insecure config necessary):
 ```bash
-skopeo copy docker://alpine/kubectl:1.35.0 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/kubectl:1.35.0
+skopeo copy docker://alpine/kubectl:1.35.4 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/kubectl:1.35.4
 ```
 
 Alternatively, you could push existing images from your docker daemon.
@@ -251,7 +251,7 @@ However, this takes longer (pull first) and you'll have to make sure to add `loc
 
 ```bash
 docker login localhost:30002 -u admin -p Harbor12345
-docker tag alpine/kubectl:1.35.0 localhost:30002/library/kubectl:1.35.0
+docker tag alpine/kubectl:1.35.4 localhost:30002/library/kubectl:1.35.4
 docker push localhost:30002/library/kubectl:1.35.0
 ```
 

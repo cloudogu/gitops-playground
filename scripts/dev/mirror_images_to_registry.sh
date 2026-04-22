@@ -23,7 +23,7 @@ CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.16
 CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1"
 CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
 
-KUBECTL_IMAGE="docker://alpine/kubectl:latest"
+KUBECTL_IMAGE="docker://alpine/kubectl:1.35.4"
 TEMURIN_IMAGE="docker://eclipse-temurin:17-jre-alpine"
 HELM_IMAGE="docker://ghcr.io/cloudogu/helm:latest"
 MVN_IMAGE="docker://maven:3-eclipse-temurin-17-alpine"
@@ -80,7 +80,7 @@ if [[ -n $HARBOR ]]; then
     skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-webhook
 
     # Needed for the builds to work with proxy-registry
-    skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/alpine/kubectl:1.29
+    skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/alpine/kubectl:1.35.4
     skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre-alpine
     skopeo copy $HELM_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/helm:latest
     skopeo copy $MVN_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/maven:3-eclipse-temurin-17-alpine
@@ -107,7 +107,7 @@ skopeo copy $CERT_MANAGER_CA_INJECTOR --dest-creds admin:Harbor12345 --dest-tls-
 skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-webhook
 
 # Needed for the builds to work with proxy-registry
-skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/alpine/kubectl:1.29
+skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/alpine/kubectl:1.35.4
 skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre-alpine
 skopeo copy $HELM_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/helm:latest
 skopeo copy $MVN_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/maven:3-eclipse-temurin-17-alpine
