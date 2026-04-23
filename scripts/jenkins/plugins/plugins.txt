@@ -29,7 +29,7 @@ ionicons-api:94.vcc3065403257
 jackson-annotations2-api:2.21-7.v4777a_f3a_a_d47
 jackson2-api:2.21.2-436.v29efdb_7418ff
 jackson3-api:3.1.2-73.v3e5485d8b_148
-jakarta-xml-bind-api:4.0.5-3.v3d5b_a_73965b_9
+jakarta-xml-bind-api:4.0.6-12.vb_1833c1231d3
 jakarta-activation-api:2.1.4-1
 jakarta-mail-api:2.1.5-1
 javax-activation-api:1.2.0-8
