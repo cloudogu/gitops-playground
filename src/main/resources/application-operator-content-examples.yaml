@@ -49,7 +49,7 @@ content:
     petclinic:
       baseDomain: "petclinic.localhost"
     images:
-      kubectl: "kubectl/kubectl:1.35"
+      kubectl: "alpine/kubectl:1.35.4"
       helm: "ghcr.io/cloudogu/helm:3.16.4-1"
       kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
       helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
