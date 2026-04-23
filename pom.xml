@@ -27,7 +27,7 @@
     
     <versionNameVersion>2.2.0</versionNameVersion>
     <okhttpVersion>5.3.2</okhttpVersion>
-    <retrofitVersion>2.9.0</retrofitVersion>
+    <retrofitVersion>3.0.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
     <jsonschema.version>4.35.0</jsonschema.version>
     <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
