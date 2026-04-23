@@ -324,7 +324,7 @@ class Config {
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
 				repoURL: 'https://charts.jenkins.io',
-				version: '5.8.43')
+				version: '5.9.18')
 	}
 
 	static class ApplicationSchema {
