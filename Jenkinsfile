@@ -58,8 +58,7 @@ pipeline {
                         script {
                             docker.build(env.FULL_IMAGE_TAG,
                                          "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                         "--build-arg VCS_REF='${env.GIT_COMMIT}' " +
-                                         "--build-arg ENV=dev ."
+                                         "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             )
                         }
                     }
@@ -130,7 +129,7 @@ pipeline {
                                     }
 
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(dockerArgs) {
-                                        sh "/app/scripts/apply-ng.sh --profile=${profile}"
+                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(dockerArgs) {
                                         sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"

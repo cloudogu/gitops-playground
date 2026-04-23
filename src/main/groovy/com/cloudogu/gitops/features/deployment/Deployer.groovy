@@ -1,32 +1,30 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Config
-
-import io.micronaut.context.annotation.Primary
-import jakarta.inject.Singleton
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 import java.nio.file.Path
 
-@Singleton
-@Primary
-class Deployer implements DeploymentStrategy {
-    private Config config
-    private ArgoCdApplicationStrategy argoCdStrategy
-    private HelmStrategy helmStrategy
+import org.jvnet.hk2.annotations.Service
 
-    Deployer(Config config, ArgoCdApplicationStrategy argoCdStrategy, HelmStrategy helmStrategy) {
-        this.helmStrategy = helmStrategy
-        this.argoCdStrategy = argoCdStrategy
-        this.config = config
-    }
+@Service
+class Deployer {
 
-    @Override
-    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
-                       String releaseName, Path helmValuesPath, RepoType repoType) {
-        if (config.features['argocd']['active']) {
-            argoCdStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
-        } else {
-            helmStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
-        }
-    }
+	@Lazy
+	ArgoCdApplicationStrategy argoCdStrategy
+
+	HelmStrategy helmStrategy
+
+	Deployer(HelmStrategy helmStrategy) {
+		this.helmStrategy = helmStrategy
+	}
+
+	void deployFeature(
+			String repoURL, String repoName, String chartOrPath, String version, String namespace,
+			String releaseName, Path helmValuesPath, RepoType repoType, boolean initByHelm = false) {
+
+		if (initByHelm) {
+			helmStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
+		}
+		argoCdStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
+	}
 }
