@@ -40,10 +40,10 @@ RUN apk add curl grep
 # * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.36.0-alpha.1
-ARG KUBECTL_CHECKSUM=39c4b08639bca4ad4d8d5f504f5c15e0866a725cf873160e45149fc616be0a7c
+ARG K8S_VERSION=1.35.4
+ARG KUBECTL_CHECKSUM=b529430df69a688fd61b64ad2299edb5fd71cb58be2a4779dba624c7d3510efd
 # When updating, also upgrade helm image in Config
-ARG HELM_VERSION=4.1.1
+ARG HELM_VERSION=4.1.4
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \

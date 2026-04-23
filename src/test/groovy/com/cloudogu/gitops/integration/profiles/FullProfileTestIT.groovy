@@ -21,14 +21,12 @@ import static org.assertj.core.api.Assertions.fail
  **/
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
-// operator can not load nginx
 class FullProfileTestIT extends ProfileTestSetup {
 
     /**
      * Gets path to kubeconfig */
     static final String RUNNING = "Running"
     static final String EXAMPLE_APPS_NAMESPACE = 'example-apps-staging'
-    static final String NGINX_POD = 'nginx-helm-jenkins'
 
     @BeforeAll
     static void labelMyTest() {
@@ -40,7 +38,7 @@ class FullProfileTestIT extends ProfileTestSetup {
     private static void waitUntilAllPodsRunning() {
         // if cert-manager is online, argocd is online, too!
         Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
-            TestK8sHelper.checkAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, NGINX_POD)
+            TestK8sHelper.checkAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE)
         }
     }
 
@@ -126,7 +124,7 @@ class FullProfileTestIT extends ProfileTestSetup {
 /**
  * tests searches for ingress services and ensure ingress is used as loadbalancer*/
     @Test
-    void ensureNginxIsOnline() {
+    void ensureIngressIsOnline() {
         TestK8sHelper.checkAllPodsRunningInNamespace('ingress', 'traefik')
     }
 

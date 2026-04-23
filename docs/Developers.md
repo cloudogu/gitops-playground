@@ -243,7 +243,7 @@ curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -
 
 Then either import external images like so (requires `skopeo` but no prior pulling or insecure config necessary):
 ```bash
-skopeo copy docker://bitnamilegacy/nginx:1.25.1 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/nginx:1.25.1
+skopeo copy docker://alpine/kubectl:1.35.4 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/kubectl:1.35.4
 ```
 
 Alternatively, you could push existing images from your docker daemon.
@@ -251,8 +251,8 @@ However, this takes longer (pull first) and you'll have to make sure to add `loc
 
 ```bash
 docker login localhost:30002 -u admin -p Harbor12345
-docker tag bitnamilegacy/nginx:1.25.1 localhost:30002/library/nginx:1.25.1
-docker push localhost:30002/library/nginx:1.25.1
+docker tag alpine/kubectl:1.35.4 localhost:30002/library/kubectl:1.35.4
+docker push localhost:30002/library/kubectl:1.35.4
 ```
 
 To make the registry credentials know to kubernetes, apply the following to *each* namespace where they are needed:
@@ -472,7 +472,6 @@ docker run --rm -it -u $(id -u) \
   gitops-playground:dev --argocd --monitoring --vault=dev -x --yes \
   --argocd-url argocd.localhost --grafana-url grafana.localhost --vault-url vault.localhost \
   --mail-url mail.localhost --petclinic-base-domain petclinic.localhost \
-  --nginx-base-domain nginx.localhost
 ```
 
 Once Jenkins and Argo CD are through with their initial steps you can conveniently get all ingresses via
@@ -488,10 +487,9 @@ Where opening for example http://argocd.localhost in your browser should work.
 
 The `base-domain` parameters lead to URLs in the following schema:  
 `<stage>.<app-name>.<parameter>`, e.g.  
-`staging.nginx-helm.nginx.localhost`
+
 
 ## Generate schema.json
-
 
 Run `GenerateJsonSchema.groovy` from your IDE.
 
