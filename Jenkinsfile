@@ -58,7 +58,7 @@ pipeline {
                         script {
                             docker.build(env.FULL_IMAGE_TAG,
                                          "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                         "--build-arg VCS_REF='${env.GIT_COMMIT}' "
+                                         "--build-arg VCS_REF='${env.GIT_COMMIT}' ."
                             )
                         }
                     }
