@@ -252,7 +252,7 @@ However, this takes longer (pull first) and you'll have to make sure to add `loc
 ```bash
 docker login localhost:30002 -u admin -p Harbor12345
 docker tag alpine/kubectl:1.35.4 localhost:30002/library/kubectl:1.35.4
-docker push localhost:30002/library/kubectl:1.35.0
+docker push localhost:30002/library/kubectl:1.35.4
 ```
 
 To make the registry credentials know to kubernetes, apply the following to *each* namespace where they are needed:
