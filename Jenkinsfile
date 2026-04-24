@@ -164,7 +164,7 @@ pipeline {
                         currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
                         image.push()
 
-                        if (!params.forcePushImage) { image.push(env.BRANCH_NAME) }
+                        if (params.forcePushImage) { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
                             image.push('latest')
                             currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
