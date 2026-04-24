@@ -232,6 +232,7 @@ class GitopsPlaygroundCli {
 	}
 
 	void printWelcomeScreen() {
+		def password = Config.DEFAULT_ADMIN_PW
 		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!
@@ -246,8 +247,12 @@ class GitopsPlaygroundCli {
   | kubectl get ing -A
   |
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+  | 
+  | ''' + "Your generated password for all apps is: ${password}" + '''
+  | 
   |----------------------------------------------------------------------------------------------|
 '''
+
 	}
 
 	static void runHook(Application app, String methodName, def config) {
