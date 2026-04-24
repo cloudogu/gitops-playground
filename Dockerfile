@@ -249,7 +249,7 @@ RUN adduser --disabled-password --home /home --no-create-home --uid 1000 user
 USER 1000:0
 
 # Run production JAR directly
-ENTRYPOINT ["java", "-jar", "/app/gitops-playground.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "/app/gitops-playground.jar"]
 
 # -----------------------------------------------------------------------------
 # 4.6: Image Metadata (OCI Labels)
