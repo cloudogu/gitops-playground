@@ -221,7 +221,7 @@
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
       <groupId>org.springframework</groupId>
       <artifactId>spring-jcl</artifactId>
-      <version>5.3.9</version>
+      <version>6.2.18</version>
       <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
       <scope>test</scope>
     </dependency>
