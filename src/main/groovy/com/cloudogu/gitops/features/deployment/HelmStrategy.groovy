@@ -29,13 +29,30 @@ class HelmStrategy implements DeploymentStrategy {
                     "Repo URL: ${repoURL}")
         }
 
-        log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-                "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")
-        
-        helmClient.addRepo(repoName, repoURL)
-        helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
-                [namespace: namespace,
-                 version  : version,
-                 values   : helmValuesPath.toString()])
+        {
+
+            log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
+                    "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")
+
+            if (RepoType.HELM  == repoType ) {
+                log.debug("adding helm repo {}.", repoURL)
+                helmClient.addRepo(repoName, repoURL)
+            helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
+                    [namespace: namespace,
+                     version  : version,
+                     values   : helmValuesPath.toString()])
+             } else if (RepoType.OCI  == repoType){
+                def registry = extractOciRegistry(repoURL)
+                helmClient.upgrade(chartOrPath,"$repoURL",
+                    [namespace: namespace,
+                     version  : version,
+                     values   : helmValuesPath.toString()])
+            }
+        }
+
     }
+    private static String extractOciRegistry(String repoURL) {
+    // oci://ghcr.io/myorg/charts  ->  ghcr.io
+    return repoURL.replace('oci://', '').split('/')[0]
+}
 }

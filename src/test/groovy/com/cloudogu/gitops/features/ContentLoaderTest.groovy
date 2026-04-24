@@ -1214,4 +1214,75 @@ class ContentLoaderTest {
         String valuesPath
         Config config
     }
+
+    @Test
+    void 'deployHelmReleasesFromContent passes oci flag for OCI helm charts'() {
+    def cfg = Config.fromMap(
+            content: [
+                    helmReleases: [
+                            [
+                                    name     : 'my-oci-chart',
+                                    repoURL  : 'oci://ghcr.io/myorg/charts',
+                                    chart    : 'mychart',
+                                    version  : '1.2.3',
+                                    namespace: 'my-namespace',
+
+                            ]
+                    ]
+            ]
+    )
+
+    def contentLoader = createContent(cfg)
+    contentLoader.install()
+
+    assertThat(contentLoader.deployCalls).hasSize(1)
+    def call = contentLoader.deployCalls[0]
+
+    assertThat(call.helmConfig.repoURL).isEqualTo('oci://ghcr.io/myorg/charts')
+    assertThat(call.helmConfig.chart).isEqualTo('mychart')
+    assertThat(call.helmConfig.version).isEqualTo('1.2.3')
+
+    }
+
+
+
+@Test
+void 'deployHelmReleasesFromContent merges inline values for OCI helm charts'(@TempDir Path tempDir) {
+    Path valuesFile = tempDir.resolve("values.yaml")
+    Files.writeString(valuesFile, """
+    replicas: 1
+    service:
+      type: ClusterIP
+    """.stripIndent())
+
+    def cfg = Config.fromMap(
+            content: [
+                    helmReleases: [
+                            [
+                                    name      : 'my-oci-chart',
+                                    repoURL   : 'oci://ghcr.io/myorg/charts',
+                                    chart     : 'mychart',
+                                    version   : '1.2.3',
+                                    namespace : 'my-namespace',
+                                    valuesPath: valuesFile.toString(),
+                                    values    : [
+                                            replicas: 3,
+                                            service : [type: 'NodePort']
+                                    ]
+                            ]
+                    ]
+            ]
+    )
+
+    def contentLoader = createContent(cfg)
+    contentLoader.install()
+
+    assertThat(contentLoader.deployCalls).hasSize(1)
+    def call = contentLoader.deployCalls[0]
+
+
+    def mergedYaml = new YamlSlurper().parse(Path.of(call.valuesPath).toFile()) as Map
+    assertThat(mergedYaml['replicas']).isEqualTo(3)
+    assertThat(((Map) mergedYaml['service'])['type']).isEqualTo('NodePort')
+    }
 }

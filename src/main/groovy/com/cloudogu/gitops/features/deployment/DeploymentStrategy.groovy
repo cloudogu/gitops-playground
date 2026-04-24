@@ -11,5 +11,5 @@ interface DeploymentStrategy {
         deployFeature(repoURL, repoName, chart, version, namespace, releaseName, helmValuesPath, RepoType.HELM)
     }
     
-    enum RepoType { HELM, GIT }
+    enum RepoType { HELM, GIT, OCI }
 }
