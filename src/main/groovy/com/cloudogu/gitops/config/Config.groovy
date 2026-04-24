@@ -347,6 +347,7 @@ class Config {
 		String internalKubernetesApiUrl = ''
 		String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
+
 		NamespaceSchema namespaces = new NamespaceSchema()
 
 		@Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION, split = ',')
@@ -442,6 +443,9 @@ class Config {
 
 		@Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
 		String profile
+
+		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
+		String gopNamespace = ''
 
 
 
