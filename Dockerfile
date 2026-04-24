@@ -32,17 +32,13 @@ ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
 
-# Copy source code (speed up build by not compiling tests)
 COPY src/main /app/src/main
 COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app
 
-# Build the application (skip tests for faster builds)
 RUN ./mvnw -B package -DskipTests
-
-# Rename JAR to a simple name for easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 # ============================================================================
@@ -139,8 +135,6 @@ RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 # These repos are used in GitOps Playground examples and demos
 WORKDIR /dist/gitops/repos
 
-RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git
-RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
 RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
 
@@ -210,9 +204,7 @@ ENV HOME=/home \
     HELM_REPOSITORY_CONFIG=/home/.config/helm/repositories.yaml
 
 # Application paths for pre-bundled resources
-ENV SPRING_BOOT_HELM_CHART_REPO=/gitops/repos/spring-boot-helm-chart.git \
-    SPRING_PETCLINIC_REPO=/gitops/repos/spring-petclinic.git \
-    GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
+ENV GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
     CES_BUILD_LIB_REPO=/gitops/repos/ces-build-lib.git \
     JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/ \
     LOCAL_HELM_CHART_FOLDER=/gitops/charts/
