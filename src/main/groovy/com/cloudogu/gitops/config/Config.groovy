@@ -442,9 +442,11 @@ class Config {
 		Boolean clusterAdmin = false
 
 		@Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
+		@JsonPropertyDescription(APPLICATION_PROFIL)
 		String profile
 
 		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
+		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
 
 

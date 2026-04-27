@@ -49,7 +49,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
 | `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | String | `KqGL4b07SU8W` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `mK1KDmJOeg6Y` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
@@ -111,7 +111,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
 | `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
 | `--username` | `application.username` | String | `admin` | Set initial admin username |
-| `--password` | `application.password` | String | `KqGL4b07SU8W` | Set initial admin passwords |
+| `--password` | `application.password` | String | `mK1KDmJOeg6Y` | Set initial admin passwords |
 | `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
 | `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
 | `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
@@ -125,8 +125,8 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--namespace-isolation` | `application.namespaceIsolation` | Boolean | `false` | Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions. |
 | `--netpols` | `application.netpols` | Boolean | `false` | Sets Network Policies |
 | `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
-| `-p`, `--profile` | `application.profile` | String | `-` | - |
-| `--gop-namespace` | `application.gopNamespace` | String | `` | - |
+| `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
+| `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |
 
 ## Content
 
