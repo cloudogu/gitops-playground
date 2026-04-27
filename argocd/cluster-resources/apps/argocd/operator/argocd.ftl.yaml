@@ -142,15 +142,6 @@ spec:
       type: helm
       url: https://traefik.github.io/charts
 </#if>
-    - name: example-apps
-      url: ${scm.repoUrl}argocd/example-apps.git
-    - name: nginx-helm-jenkins
-      url: ${scm.repoUrl}argocd/nginx-helm-jenkins.git
-    - name: nginx-helm-umbrella
-      url: ${scm.repoUrl}argocd/nginx-helm-umbrella.git
-    - name: bitnami
-      type: helm
-      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
 <#if !config.application.clusterAdmin>
   resourceInclusions: |
     - apiGroups:

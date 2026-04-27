@@ -11,7 +11,7 @@
     <groupId>io.micronaut.platform</groupId>
     <artifactId>micronaut-parent</artifactId>
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-    <version>4.10.8</version>
+    <version>4.10.12</version>
   </parent>
 
   <properties>
@@ -27,11 +27,11 @@
     
     <versionNameVersion>2.2.0</versionNameVersion>
     <okhttpVersion>5.3.2</okhttpVersion>
-    <retrofitVersion>2.9.0</retrofitVersion>
-    <groovy.version>4.0.12</groovy.version>
-    <jsonschema.version>4.35.0</jsonschema.version>
-    <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
-    <kubernetes.fabric8.java.version>7.5.2</kubernetes.fabric8.java.version>
+    <retrofitVersion>3.0.0</retrofitVersion>
+    <groovy.version>4.0.31</groovy.version>
+    <jsonschema.version>4.38.0</jsonschema.version>
+    <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
+    <kubernetes.fabric8.java.version>7.6.1</kubernetes.fabric8.java.version>
     <wiremock.version>3.13.2</wiremock.version>
   </properties>
 
@@ -114,7 +114,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.15.0-rc2</version>
+      <version>2.21.2</version>
     </dependency>
 
     <dependency>
@@ -155,21 +155,21 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.14.0</version>
+      <version>2.22.0</version>
     </dependency>
 
       <!--Used for BCrypt functions-->
       <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-crypto</artifactId>
-        <version>7.0.2</version>
+        <version>7.0.5</version>
       </dependency>
 
       <dependency>
         <groupId>org.eclipse.jgit</groupId>
         <artifactId>org.eclipse.jgit</artifactId>
         <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
-      <version>7.2.1.202505142326-r</version>
+      <version>7.6.0.202603022253-r</version>
     </dependency>
 
     <dependency>
@@ -187,7 +187,7 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>logging-interceptor</artifactId>
-      <version>4.11.0</version>
+      <version>5.3.2</version>
     </dependency>
 
     <dependency>
@@ -221,7 +221,7 @@
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
       <groupId>org.springframework</groupId>
       <artifactId>spring-jcl</artifactId>
-      <version>5.3.9</version>
+      <version>6.2.18</version>
       <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
       <scope>test</scope>
     </dependency>
@@ -229,7 +229,7 @@
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
-      <version>2.3.32</version>
+      <version>2.3.34</version>
     </dependency>
 
     <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
@@ -333,7 +333,7 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>1.0.87</version>
+      <version>1.5.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.commons</groupId>
@@ -360,19 +360,19 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.141</version>
+      <version>4.8.184</version>
     </dependency>
 
     <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>4.0.2</version>
+      <version>4.0.5</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-      <version>4.0.5</version>
+      <version>4.0.7</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -382,7 +382,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.5</version>
+        <version>3.5.5</version>
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
           <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
@@ -450,7 +450,7 @@
 
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.5.0</version>
       </plugin>
 
       <plugin>
@@ -461,7 +461,7 @@
       <plugin>
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
-        <version>4.0.1</version>
+        <version>4.3.1</version>
         <executions>
           <execution>
             <goals>
@@ -480,7 +480,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>truezip-maven-plugin</artifactId>
-        <version>1.1</version>
+        <version>1.2</version>
         <executions>
           <execution>
             <id>remove-a-file-in-sub-archive</id>
@@ -505,7 +505,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.9.0</version>
+        <version>3.15.0</version>
         <configuration>
           <annotationProcessorPaths>
             <path>
@@ -524,7 +524,7 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>9.0.1</version>
+        <version>10.0.0</version>
         <executions>
           <execution>
             <id>get-the-git-infos</id>
@@ -544,7 +544,7 @@
 
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.10.0</version>
       </plugin>
 
       <plugin>
@@ -568,7 +568,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>1.0.0</version>
+        <version>1.3.0</version>
         <executions>
           <execution>
             <goals>

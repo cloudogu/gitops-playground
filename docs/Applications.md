@@ -262,33 +262,6 @@ If you want the example app to work, you'll have to manually
 * authorize the `vault` service accounts in `argocd-production` and `argocd-staging` namspaces. See `SecretStore`s and
   [dev-post-start.sh](../argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh) for an example.
 
-
-## Example app
-
-With vault in `dev` mode and ArgoCD enabled, the example app `applications/nginx/argocd/helm-jenkins` will be deployed
-in a way that exposes the vault secrets `secret/<environment>/nginx-secret` via HTTP on the URL `http://<host>/secret`,
-for example `http://staging.nginx-helm.nginx.localhost/secret`.
-
-While exposing secrets on the web is a bad practice, it's good for demoing auto reload of a secret changed in
-vault.
-
-To demo this, you could
-* change the [staging secret](http://vault.localhost/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
-* Wait for the change to show on the web, e.g. like so
-```shell
-while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; \
-  curl http://staging.nginx-helm.nginx.localhost/secret/ ; echo; sleep 1; done
-```
-
-This usually takes between a couple of seconds and 1-2 minutes.  
-This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically)
-(defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration))
-+ cache propagation delay
-
-The following video shows this demo in time-lapse:
-
-[secrets-demo-video](https://user-images.githubusercontent.com/1824962/215204174-eadf180b-2a82-4273-8cbb-6e7c187267c6.mp4)
-
 ### Example Applications
 
 The playground comes with example applications that provide a turnkey solution for GitOps-Pipelines  
@@ -339,11 +312,10 @@ http://staging.petclinic-plain.petclinic.localhost/.
 
 The `.petlinic.` part can be overridden using
 `--petclinic-base-domain` (for the petlinic examples/exercises), or 
-`--nginx-base-domain` (for the nginx examples/exercises).
 
 #### PetClinic with plain k8s resources
 
-[Jenkinsfile](../examples/example-apps-via-content-loader/argocd/petclinic-plain/Jenkinsfile.ftl) for `plain` deployment
+[Jenkinsfile](https://github.com/cloudogu/gitops-examples/example-apps-via-content-loader/argocd/petclinic-plain/Jenkinsfile.ftl) for `plain` deployment
 
 * Staging: http://staging.petclinic-plain.petclinic.localhost/
 * Production: http://production.petclinic-plain.petclinic.localhost/  
@@ -351,7 +323,7 @@ The `.petlinic.` part can be overridden using
 
 #### PetClinic with helm
 
-[Jenkinsfile](../examples/example-apps-via-content-loader/argocd/petclinic-helm/Jenkinsfile.ftl) for `helm` deployment
+[Jenkinsfile](https://github.com/cloudogu/gitops-examples/example-apps-via-content-loader/argocd/petclinic-helm/Jenkinsfile.ftl) for `helm` deployment
 
 * Staging: http://staging.petclinic-helm.petclinic.localhost/
 * Production: http://production.petclinic-helm.petclinic.localhost/  

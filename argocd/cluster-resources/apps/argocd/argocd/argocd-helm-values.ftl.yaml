@@ -69,6 +69,7 @@ argo-cd:
     #    password: ...
     cm:
       timeout.reconciliation: 15s
+      repository.check.interval: 30s
 
   notifications:
     # secrets are created dynamically in groovy, so they are not stored in git

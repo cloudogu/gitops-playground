@@ -38,7 +38,6 @@ It is possible to deploy `Ingress` objects for all components. You can either
 --grafana-url https://grafana.example.com 
 --vault-url https://vault.example.com 
 --petclinic-base-domain petclinic.example.com 
---nginx-base-domain nginx.example.com
 ```
 * or both, where the individual URLs take precedence.
 
