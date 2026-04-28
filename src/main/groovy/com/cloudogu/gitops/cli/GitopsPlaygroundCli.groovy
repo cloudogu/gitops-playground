@@ -248,7 +248,7 @@ class GitopsPlaygroundCli {
   |
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   | 
-  | ''' + "Your generated password for all apps is: ${password}" + '''
+  | ''' + "Your initial password for all apps (if not set manually): ${password}" + '''
   | 
   |----------------------------------------------------------------------------------------------|
 '''
