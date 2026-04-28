@@ -4,10 +4,10 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import io.micronaut.context.ApplicationContext
 import picocli.CommandLine.Option as CliOption
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.databind.ObjectMapper
 
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier

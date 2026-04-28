@@ -1,20 +1,21 @@
 package com.cloudogu.gitops.config.schema
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersionDetector
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
+import com.networknt.schema.SchemaRegistry
+import com.networknt.schema.Schema
 import groovy.util.logging.Slf4j
 
 @Slf4j
 class JsonSchemaValidator {
 
     private static ObjectMapper objectMapper = new ObjectMapper()
+    private static SchemaRegistry schemaRegistry = SchemaRegistry.builder().build()
     
     static void validate(Map yaml) {
             def json = objectMapper.convertValue(yaml, JsonNode)
             def schemaNode = JsonSchemaGenerator.createSchema()
-            def schema = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaNode)).getSchema(schemaNode)
+            Schema schema = schemaRegistry.getSchema(schemaNode)
 
             log.debug("yaml configuration converted to json for validate {}", json)
 
