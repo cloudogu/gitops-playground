@@ -29,7 +29,7 @@
     <okhttpVersion>5.3.2</okhttpVersion>
     <retrofitVersion>3.0.0</retrofitVersion>
     <groovy.version>5.0.5</groovy.version>
-    <jsonschema.version>4.38.0</jsonschema.version>
+    <jsonschema.version>5.0.0</jsonschema.version>
     <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
     <kubernetes.fabric8.java.version>7.6.1</kubernetes.fabric8.java.version>
     <wiremock.version>3.13.2</wiremock.version>
@@ -333,7 +333,7 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>1.5.9</version>
+      <version>3.0.2</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.commons</groupId>
