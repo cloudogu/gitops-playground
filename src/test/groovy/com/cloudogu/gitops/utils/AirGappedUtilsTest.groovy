@@ -113,7 +113,7 @@ class AirGappedUtilsTest {
     protected void setupForAirgappedUse(Map chartLock = null, List dependencies = null) {
         Path sourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
         Files.createDirectories(sourceChart)
-        Map prometheusChartYaml = [
+        Map<String, Object> prometheusChartYaml = [
                 version     : '1.2.3',
                 name        : 'kube-prometheus-stack-chart',
                 dependencies: [
@@ -136,7 +136,7 @@ class AirGappedUtilsTest {
             if (dependencies.isEmpty()) {
                 prometheusChartYaml.remove('dependencies')
             } else {
-                prometheusChartYaml.dependencies = dependencies
+                prometheusChartYaml['dependencies'] = dependencies
             }
         }
 
