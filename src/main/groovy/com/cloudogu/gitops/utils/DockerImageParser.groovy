@@ -13,7 +13,7 @@ class DockerImageParser {
         }
 
         String getRegistryAndRepositoryAsString() {
-            if (registry === "") {
+            if (registry == "") {
                 return repository
             }
 
