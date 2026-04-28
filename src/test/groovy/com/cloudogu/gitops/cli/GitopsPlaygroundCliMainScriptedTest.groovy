@@ -53,7 +53,9 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     @Test
     void 'all DestructionHandlers are instantiated in the correct order'() {
-        config = new Config(config.properties + [application: new ApplicationSchema(destroy: true)])
+        Map<String, Object> props = config.toMap()
+        props.put('application', new ApplicationSchema(destroy: true))
+        config = new Config(props)
 
         gitopsPlaygroundCliScripted.createApplicationContext()
         gitopsPlaygroundCliScripted.register(config, applicationContext)
