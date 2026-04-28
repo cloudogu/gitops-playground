@@ -81,7 +81,7 @@ class GitopsPlaygroundCliMainScripted {
                         new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils, gitHandler)
 
                 // make sure the order of features is in same order as the @Order values
-                context.registerSingleton(new Application(config, [
+                context.registerSingleton(new Application(config,k8sClient, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         gitHandler,
                         jenkins,

@@ -66,6 +66,10 @@
           "type" : [ "string", "null" ],
           "description" : "Sets git author and committer name used for initial commits"
         },
+        "gopNamespace" : {
+          "type" : [ "string", "null" ],
+          "description" : "If set, GOP stores specific information in this namespace."
+        },
         "insecure" : {
           "type" : [ "boolean", "null" ],
           "description" : "Sets insecure-mode in cURL which skips cert validation"
@@ -97,6 +101,10 @@
         "podResources" : {
           "type" : [ "boolean", "null" ],
           "description" : "Write kubernetes resource requests and limits on each pod"
+        },
+        "profile" : {
+          "type" : [ "string", "null" ],
+          "description" : "Use predefined profile (full, only-argocd, operator-mandants aso.)"
         },
         "skipCrds" : {
           "type" : [ "boolean", "null" ],
