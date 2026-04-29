@@ -163,8 +163,10 @@ RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy
 # -----------------------------------------------------------------------------
 WORKDIR /tmp
 
-# Copy only runtime scripts (not entire project to avoid bloat)
+# Copy runtime scripts, templates and cluster resources (not entire project to avoid bloat)
 COPY scripts /dist/app/scripts
+COPY argocd /dist/app/argocd
+COPY templates /dist/app/templates
 
 # Remove development scripts not needed in runtime
 RUN cd /dist/app/scripts && rm -f downloadHelmCharts.sh
