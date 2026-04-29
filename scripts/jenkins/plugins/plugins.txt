@@ -61,7 +61,7 @@ pipeline-stage-view:2.41
 pipeline-utility-steps:2.20.0
 plain-credentials:199.v9f8e1f741799
 plugin-util-api:7.1330.v47b_46ee2047a_
-prism-api:1.30.0-720.v1eb_7496954b_3
+prism-api:1.30.0-723.v97277866cece
 prometheus:852.v317db_5d17a_b_0
 scm-api:728.vc30dcf7a_0df5
 scm-manager:1.11.1
