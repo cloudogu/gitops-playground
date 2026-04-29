@@ -98,6 +98,7 @@ interface ConfigConstants {
     String CLUSTER_ADMIN_DESCRIPTION = 'Binds ArgoCD controllers to cluster-admin ClusterRole'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
     String APPLICATION_PROFIL = 'Use predefined profile (full, only-argocd, operator-mandants aso.)'
+    String APPLICATION_GOP_NAMESPACE = 'If set, GOP stores specific information in this namespace.'
 
     // group metrics
     String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'

@@ -199,7 +199,7 @@ class ArgoCD extends Feature {
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
         // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
         List helmDependencies = fileSystemUtils.readYaml(
-                Path.of(clusterResourcesRepo.chartYaml()))['dependencies']
+            Path.of(clusterResourcesRepo.chartYaml()))['dependencies'].collect { it }
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: namespace])

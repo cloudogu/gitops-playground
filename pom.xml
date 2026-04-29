@@ -28,8 +28,8 @@
     <versionNameVersion>2.2.0</versionNameVersion>
     <okhttpVersion>5.3.2</okhttpVersion>
     <retrofitVersion>3.0.0</retrofitVersion>
-    <groovy.version>4.0.31</groovy.version>
-    <jsonschema.version>4.38.0</jsonschema.version>
+    <groovy.version>5.0.5</groovy.version>
+    <jsonschema.version>5.0.0</jsonschema.version>
     <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
     <kubernetes.fabric8.java.version>7.6.1</kubernetes.fabric8.java.version>
     <wiremock.version>3.13.2</wiremock.version>
@@ -56,21 +56,27 @@
     <url>https://www.cloudogu.com/</url>
   </organization>
 
-    <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
+    <!-- Wiremock requires the jetty12 dependency for Jetty 12 support -->
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>11.0.26</version>
+                <version>12.1.8</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-bom</artifactId>
+                <version>12.1.8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
-  <dependencies>
-    <dependency>
+    <dependencies>    <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject-groovy</artifactId>
     </dependency>
@@ -205,7 +211,7 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-jetty12</artifactId>
       <version>${wiremock.version}</version>
       <scope>test</scope>
     </dependency>
@@ -333,7 +339,7 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>1.5.9</version>
+      <version>3.0.2</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.commons</groupId>

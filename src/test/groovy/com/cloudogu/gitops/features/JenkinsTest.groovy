@@ -14,6 +14,7 @@ import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,10 +30,10 @@ import static org.mockito.Mockito.*
 
 class JenkinsTest {
     Config config = new Config(
-            scm: [
-                    scmManager: [
+            scm: new ScmTenantSchema(
+                    scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
                             urlForJenkins: "testUrlJenkins"
-                    ]],
+                    )),
             jenkins: new Config.JenkinsSchema(active: true))
 
     String expectedNodeName = 'something'

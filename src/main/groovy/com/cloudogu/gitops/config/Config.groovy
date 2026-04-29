@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.config
 
+import java.security.SecureRandom
+
 import static com.cloudogu.gitops.config.ConfigConstants.*
 import static picocli.CommandLine.ScopeType
 
@@ -56,7 +58,7 @@ class Config {
 	// When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
 	public static final String K8S_VERSION = "1.35.4"
 	public static final String DEFAULT_ADMIN_USER = 'admin'
-	public static final String DEFAULT_ADMIN_PW = 'admin'
+	public static final String DEFAULT_ADMIN_PW = generatePassword()
 	public static final int DEFAULT_REGISTRY_PORT = 30000
 
 	@JsonPropertyDescription(REGISTRY_DESCRIPTION)
@@ -86,6 +88,18 @@ class Config {
 	@JsonPropertyDescription(CONTENT_DESCRIPTION)
 	@Mixin
 	ContentSchema content = new ContentSchema()
+	/**
+	 * Generates an admin password.
+	 * @return
+	 */
+	private static generatePassword() {
+		return new SecureRandom()
+				.with { sr ->
+					(1..12).collect {
+						('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
+					}.join('')
+				}
+			}
 
 	static class ContentSchema {
 		@JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
@@ -333,6 +347,7 @@ class Config {
 		String internalKubernetesApiUrl = ''
 		String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
+
 		NamespaceSchema namespaces = new NamespaceSchema()
 
 		@Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION, split = ',')
@@ -427,7 +442,14 @@ class Config {
 		Boolean clusterAdmin = false
 
 		@Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
+		@JsonPropertyDescription(APPLICATION_PROFIL)
 		String profile
+
+		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
+		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
+		String gopNamespace = ''
+
+
 
 		static class NamespaceSchema {
 			LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
