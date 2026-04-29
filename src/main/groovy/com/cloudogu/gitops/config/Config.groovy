@@ -333,8 +333,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
-				repoURL: 'https://charts.jenkins.io',
-				version: '5.9.18')
+		                                                     repoURL: 'https://charts.jenkins.io',
+		                                                     version: '5.9.18')
 	}
 
 	static class ApplicationSchema {
@@ -491,6 +491,13 @@ class Config {
 		@Option(names = ['--argocd-operator'], description = ARGOCD_OPERATOR_DESCRIPTION)
 		@JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
 		Boolean operator = false
+
+		@Option(names = ['--install-argocd-operator'], description = ARGOCD_INSTALL_OPERATOR_DESCRIPTION)
+		@JsonPropertyDescription(ARGOCD_INSTALL_OPERATOR_DESCRIPTION)
+		Boolean installOperator = false
+
+		@JsonPropertyDescription(ARGOCD_INSTALL_OPERATOR_VERSION_DESCRIPTION)
+		Boolean operatorVersion = '0.17'
 
 		@Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
 		@JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)

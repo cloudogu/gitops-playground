@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
+import java.nio.file.Path
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -14,10 +15,13 @@ class ScmManagerSetup {
 
 	private ScmManager scmManager
 
+	private static final SCMM_RELEASE_NAME = 'scmm'
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
+	Path tempValuesPath
 
 	ScmManagerSetup(ScmManager scmManager) {
 		this.scmManager = scmManager
+		prepareHelmValues()
 	}
 
 	void waitForScmmAvailable(int timeoutSeconds = 180, int intervalMillis = 5000, int startDelay = 0) {
@@ -51,48 +55,41 @@ class ScmManagerSetup {
 		log.info("ScmManager Setup finished!")
 	}
 
-	void setupHelm() {
-		def releaseName = 'scmm'
-
-		def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [host       : this.scmManager.scmmConfig.ingress,
+	void prepareHelmValues() {
+		def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [config     : this.scmManager.config,
+		                                                                     host       : this.scmManager.scmmConfig.ingress,
 		                                                                     username   : this.scmManager.scmmConfig.credentials.username,
 		                                                                     password   : this.scmManager.scmmConfig.credentials.password,
 		                                                                     helm       : this.scmManager.scmmConfig.helm,
-		                                                                     releaseName: releaseName])
+		                                                                     releaseName: SCMM_RELEASE_NAME])
 
 		def helmConfig = this.scmManager.scmmConfig.helm
 		def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-		def tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
+		tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
+	}
+
+	void setupHelm() {
+		def helmConfig = this.scmManager.scmmConfig.helm
 		scmManager.deployer.helmStrategy.deployFeature(helmConfig.repoURL,
 		                                               'scm-manager',
 		                                               helmConfig.chart,
 		                                               helmConfig.version,
 		                                               this.scmManager.scmmConfig.namespace,
-		                                               releaseName,
+		                                               SCMM_RELEASE_NAME,
 		                                               tempValuesPath,
 		                                               DeploymentStrategy.RepoType.HELM)
 	}
 
 	void createArgocdApplication() {
-		def releaseName = 'scmm'
-
-		def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [host       : this.scmManager.scmmConfig.ingress,
-		                                                                     username   : this.scmManager.scmmConfig.credentials.username,
-		                                                                     password   : this.scmManager.scmmConfig.credentials.password,
-		                                                                     helm       : this.scmManager.scmmConfig.helm,
-		                                                                     releaseName: releaseName])
-
 		def helmConfig = this.scmManager.scmmConfig.helm
-		def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-		def tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
-		scmManager.deployer.argoCdStrategy.deployFeature(helmConfig.repoURL,
-		                                                 'scm-manager',
-		                                                 helmConfig.chart,
-		                                                 helmConfig.version,
-		                                                 this.scmManager.scmmConfig.namespace,
-		                                                 releaseName,
-		                                                 tempValuesPath,
-		                                                 DeploymentStrategy.RepoType.HELM)
+		scmManager.deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL,
+		                                                               'scm-manager',
+		                                                               helmConfig.chart,
+		                                                               helmConfig.version,
+		                                                               this.scmManager.scmmConfig.namespace,
+		                                                               SCMM_RELEASE_NAME,
+		                                                               tempValuesPath,
+		                                                               DeploymentStrategy.RepoType.HELM)
 	}
 
 	def installScmmPlugins() {

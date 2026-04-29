@@ -110,7 +110,7 @@ class ArgoCD extends Feature {
 
 		if (config.features.argocd.operator) {
 			generateRBAC()
-			installOperator()
+			if (config.features.argocd.installOperator) { installOperator() }
 			deployWithOperator()
 		} else {
 			if (this.config.features.argocd?.values) {
@@ -186,12 +186,12 @@ class ArgoCD extends Feature {
 		k8sClient.applyYaml("${argocdRbacPath} --recursive")
 	}
 
-	private static void installOperator() {
+	private void installOperator() {
 		def cmd = """
 git clone https://github.com/argoproj-labs/argocd-operator &&
 cd argocd-operator &&
-git checkout release-0.17 &&
-make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.17.0 &&
+git checkout release-${config.features.argocd.operatorVersion} &&
+make deploy IMG=quay.io/argoprojlabs/argocd-operator:v${config.features.argocd.operatorVersion}.0 &&
 rm -Rf ../argocd-operator/
 """
 
@@ -199,16 +199,20 @@ rm -Rf ../argocd-operator/
 		process.in.eachLine { log.debug(it) }
 		process.err.eachLine { log.debug(it) }
 		process.waitFor()
+		log.info("Successfully installed ArgoCD Operator version ${config.features.argocd.operatorVersion}")
 	}
 
 	private void deployWithHelm() {
 
-		deployHelmChart('argo-cd',
-		                'argo-cd',
+		addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
+
+		deployHelmChart('argocd',
+		                'argocd',
 		                namespace,
 		                config.features.argocd.helm,
 		                HELM_VALUES_PATH,
-		                config)
+		                config,
+		                true)
 
 		log.debug("Setting new argocd admin password")
 		// Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo

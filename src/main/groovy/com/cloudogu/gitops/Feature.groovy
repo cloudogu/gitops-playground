@@ -63,6 +63,7 @@ abstract class Feature {
 			}
 
 			enable()
+			log.info("Feature installed: ${getClass().getSimpleName()}")
 			return true
 		} else {
 			log.debug("Feature ${getClass().getSimpleName()} is disabled")
