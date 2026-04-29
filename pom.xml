@@ -56,21 +56,27 @@
     <url>https://www.cloudogu.com/</url>
   </organization>
 
-    <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
+    <!-- Wiremock requires the jetty12 dependency for Jetty 12 support -->
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>11.0.26</version>
+                <version>12.1.8</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-bom</artifactId>
+                <version>12.1.8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
-  <dependencies>
-    <dependency>
+    <dependencies>    <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject-groovy</artifactId>
     </dependency>
@@ -205,7 +211,7 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-jetty12</artifactId>
       <version>${wiremock.version}</version>
       <scope>test</scope>
     </dependency>
