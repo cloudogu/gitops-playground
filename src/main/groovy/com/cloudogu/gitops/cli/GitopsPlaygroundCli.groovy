@@ -272,16 +272,15 @@ class GitopsPlaygroundCli {
 
 		Config profileConfig = new Config()
 		if (profile) {
-			String profileName = "src/main/resources/application-${profile}.yaml"
-			log.debug("Loading profile '${profileName}'")
-			def file
-			try {
-				file = new File(profileName)
+			String resourceName = "application-${profile}.yaml"
+			log.debug("Loading profile '${resourceName}' from classpath")
 
-			} catch (Exception e) {
-				throw new RuntimeException("Profile '${profileName}' does not exist.")
+			def inputStream = GitopsPlaygroundCli.class.getResourceAsStream("/${resourceName}")
+			if (inputStream == null) {
+				throw new RuntimeException("Profile '${profile}' does not exist (resource '${resourceName}' not found).")
 			}
-			Map profileFile = validateConfig(file.text)
+			String content = inputStream.text
+			Map profileFile = validateConfig(content)
 			profileConfig = Config.fromMap(profileFile)
 		}
 		return profileConfig

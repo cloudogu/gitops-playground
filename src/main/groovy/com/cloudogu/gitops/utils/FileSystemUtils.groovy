@@ -208,7 +208,28 @@ class FileSystemUtils {
 
     Map readYaml(Path path) {
         def ys = new YamlSlurper()
-        return (ys.parse path) as Map
+        if (Files.exists(path)) {
+            return (ys.parse path) as Map
+        }
+
+        // Fallback to classpath
+        String resourceName = path.toString()
+        // Ensure it starts with / for getResourceAsStream from root
+        if (!resourceName.startsWith("/")) {
+            resourceName = "/" + resourceName
+        }
+        
+        // Remove src/main/resources if present, as it's not part of the classpath in the JAR
+        resourceName = resourceName.replace("/src/main/resources", "")
+
+        log.debug("Path ${path} not found on filesystem, trying classpath: ${resourceName}")
+        def inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)
+        if (inputStream != null) {
+            return (ys.parseText(inputStream.text)) as Map
+        }
+        
+        log.warn("Could not find YAML at ${path} or on classpath ${resourceName}")
+        return [:]
     }
 
     Path writeTempFile(Map mapValues) {
