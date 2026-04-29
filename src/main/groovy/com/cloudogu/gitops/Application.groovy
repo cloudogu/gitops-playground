@@ -1,6 +1,7 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import jakarta.inject.Singleton
@@ -13,21 +14,25 @@ import freemarker.template.DefaultObjectWrapperBuilder
 @Singleton
 class Application {
 
-	final List<Feature> features
-	final Config config
+    final List<Feature> features
+    final Config config
+    final K8sClient k8sClient
 
-	Application(
-			Config config,
-			List<Feature> features) {
-		this.config = config
-		// Order is important. Enforced by @Order-Annotation on the Singletons
-		this.features = features
-	}
+    Application(Config config, K8sClient k8sClient,
+                List<Feature> features
+    ) {
+        this.config = config
+        // Order is important. Enforced by @Order-Annotation on the Singletons
+        this.features = features
+        this.k8sClient = k8sClient
+    }
 
 	def start() {
 		log.debug("Starting Application")
 
-		setNamespaceListToConfig(config)
+        setNamespaceListToConfig(config)
+        // if set, stores configuration in a secret.
+        storeGopInformationInSecret(config)
 
 		features.forEach(feature -> {
 			feature.validate()
@@ -38,9 +43,20 @@ class Application {
 		log.debug("Application finished")
 	}
 
-	List<Feature> getFeatures() {
-		return features
-	}
+    private void storeGopInformationInSecret(Config config) {
+        if (!config.application.gopNamespace.isEmpty()) {
+
+            String namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
+            k8sClient.createNamespace(namespace)
+            k8sClient.createSecret('generic', 'gop-configuration', namespace,
+                    new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+                    new Tuple2('gop-config', config.toYaml(true)))
+        }
+    }
+
+    List<Feature> getFeatures() {
+        return features
+    }
 
 	void setNamespaceListToConfig(Config config) {
 		LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()

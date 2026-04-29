@@ -44,6 +44,6 @@ class HelmStrategyTest {
     }
     
     protected HelmStrategy createStrategy() {
-        new HelmStrategy(new Config([application: [namePrefix: "foo-"]]), helmClient)
+        new HelmStrategy(new Config(application: new Config.ApplicationSchema(namePrefix: "foo-")), helmClient)
     }
 }

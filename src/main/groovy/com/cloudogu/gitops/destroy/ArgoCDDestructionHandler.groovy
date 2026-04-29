@@ -8,12 +8,14 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import io.micronaut.core.annotation.Order
+import groovy.transform.CompileStatic
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
 @Singleton
 @Order(100)
+@CompileStatic
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
     private GitRepoFactory repoProvider
@@ -96,7 +98,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
         // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
-        List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies']
+        List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies'].collect { it }
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])

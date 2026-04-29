@@ -24,6 +24,7 @@ import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,13 +53,23 @@ class ContentLoaderTest {
 
 	static List<File> foldersToDelete = new ArrayList<File>()
 
-	Config config = new Config([application: [namePrefix: 'foo-'],
-	                            scm        : [scmManager: [url: '']],
-	                            registry   : [url                   : 'reg-url',
-	                                          path                  : 'reg-path',
-	                                          username              : 'reg-user',
-	                                          password              : 'reg-pw',
-	                                          createImagePullSecrets: false]])
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    namePrefix: 'foo-'
+            ),
+            scm        : new ScmTenantSchema(
+                    scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
+                            url: ''
+                    )
+            ),
+            registry   : new Config.RegistrySchema(
+                    url                   : 'reg-url',
+                    path                  : 'reg-path',
+                    username              : 'reg-user',
+                    password              : 'reg-pw',
+                    createImagePullSecrets: false
+            )
+    )
 
 	KubernetesClient client
 	CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
