@@ -188,7 +188,7 @@ class Config {
 			String releaseName = ''        // optional override; if empty => use name
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
-			String valuesPath = ''   // optional local path, e.g. src/main/resources/foo/values.yaml
+			String valuesPath = ''   // optional local path or classpath resource, e.g. /foo/values.yaml
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
 			Map<String, Object> values = [:]  // optional inline values (merged with valuesFile)

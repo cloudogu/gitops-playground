@@ -36,7 +36,7 @@ You can try the GitOps Playground on a local Kubernetes cluster by running a sin
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && docker run --rm -t --pull=always -u $(id -u) \
+  && docker run --rm -t --pull=always \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --profile=full
