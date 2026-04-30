@@ -15,7 +15,8 @@ pipeline {
 
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
-        choice(name: 'chooseProfile', choices: ['minimal', 'all-profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
+        choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -32,6 +33,8 @@ pipeline {
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
         TAG_NAME = sh(returnStdout: true, script: "git --no-pager tag --points-at HEAD").trim()
+        // Shared docker args for integration tests
+        INTEGRATION_TEST_DOCKER_ARGS = "-e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml -v maven-cache:/root/.m2 -v /var/run/docker.sock:/var/run/docker.sock -u :${env.BUILD_GROUP} --network=host --entrypoint ''"
     }
 
     stages {
@@ -47,19 +50,19 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test'
+                        sh './mvnw -B clean test'
                         junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                        archiveArtifacts artifacts: "**/target/site/jacoco/index.html"
+                        archiveArtifacts artifacts: "**/target/site/jacoco/**"
                     }
                 }
 
                 stage("Build Image") {
                     steps {
                         script {
-                            docker.build(env.FULL_IMAGE_TAG,
-                                         "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                         "--build-arg VCS_REF='${env.GIT_COMMIT}' ."
-                            )
+                            def buildArgs = "--no-cache " +
+                                            "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
+                                            "--build-arg VCS_REF='${env.GIT_COMMIT}' "
+                            docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
                         }
                     }
                 }
@@ -92,24 +95,16 @@ pipeline {
                 stage('Integration tests') {
                     steps {
                         script {
-                            def profiles = (env.BRANCH_NAME == 'main')
-                                ? ['full-prefix', 'operator-mandants', 'operator-full']
-                                : [params.chooseProfile]
-
+                            def profiles = []
                             def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
                             if (isTriggeredByTimer || params.chooseProfile == 'all-profiles') {
                                 profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                            } else if (env.BRANCH_NAME == 'main') {
+                                profiles = ['full-prefix', 'operator-mandants', 'operator-full']
+                            } else {
+                                profiles = [params.chooseProfile]
                             }
-
-                            def dockerArgs = """
-                                -e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml
-                                -v maven-cache:/root/.m2
-                                -v /var/run/docker.sock:/var/run/docker.sock
-                                -u :${env.BUILD_GROUP}
-                                --network=host
-                                --entrypoint ''
-                            """
 
                             def withK3dCluster = { body ->
                                 try {
@@ -123,16 +118,16 @@ pipeline {
                                 withK3dCluster {
 
                                     if (profile.startsWith('operator')) {
-                                        docker.image("${env.GOLANG_IMAGE}").inside(dockerArgs) {
+                                        docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                             sh 'apk add --no-cache make bash curl git kubectl && ./scripts/local/install-argocd-operator.sh'
                                         }
                                     }
 
-                                    docker.image("${env.FULL_IMAGE_TAG}").inside(dockerArgs) {
+                                    docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
-                                    docker.image("${env.MAVEN_IMAGE}").inside(dockerArgs) {
-                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
+                                    docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                        sh "./mvnw -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
                                     }
                                 }
                                 junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
