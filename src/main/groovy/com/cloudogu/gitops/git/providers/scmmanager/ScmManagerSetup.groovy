@@ -13,11 +13,11 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class ScmManagerSetup {
 
-	private ScmManager scmManager
+	private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
+	private static final String SCMM_RELEASE_NAME = 'scmm'
 
-	private static final SCMM_RELEASE_NAME = 'scmm'
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
-	Path tempValuesPath
+	private final ScmManager scmManager
+	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManager scmManager) {
 		this.scmManager = scmManager

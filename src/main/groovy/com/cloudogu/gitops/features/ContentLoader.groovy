@@ -165,13 +165,15 @@ class ContentLoader extends Feature {
 
 			// always write a temp values file and pass its path to deployHelmChart
 			Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
+			String mergedValuesFilePath = mergedValuesFile.toString()
 
-			deployHelmChart(helmRelease.name,
-			                helmRelease.releaseName ?: helmRelease.name,
-			                helmRelease.namespace,
-			                helmConfig,
-			                mergedValuesFile.toString(),
-			                config)
+			deployHelmChart(helmRelease.name as String,
+			                (helmRelease.releaseName ?: helmRelease.name) as String,
+			                helmRelease.namespace as String,
+			                helmConfig as Config.HelmConfigWithValues,
+			                mergedValuesFilePath as String,
+			                config as Config,
+			                false)
 		}
 	}
 
