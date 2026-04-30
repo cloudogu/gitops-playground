@@ -50,7 +50,7 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh './mvnw -B clean test'
+                        sh 'mvn -B clean test'
                         junit testResults: '**/target/surefire-reports/TEST-*.xml'
                         archiveArtifacts artifacts: "**/target/site/jacoco/**"
                     }
@@ -127,7 +127,7 @@ pipeline {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "./mvnw -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
+                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
                                     }
                                 }
                                 junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
