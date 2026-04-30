@@ -65,21 +65,40 @@ class FileSystemUtilsTest {
     }
     
     @Test
-    void 'deletes files except'() {
-        Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
-        for (i in 0..<3) {
-            def filePath = parentDir.resolve i.toString()
-            Files.write(filePath, i.toString().getBytes())
-        }
-        for (i in 3..<7) {
-            Path dirPath = parentDir.resolve(i.toString())
-            Files.createDirectories(dirPath)
-        }
-        
-        fileSystemUtils.deleteFilesExcept(parentDir.toFile(), '0', '3')
+    void 'reads and writes yaml'() {
+        Path tmpFile = fileSystemUtils.createTempFile()
+        Map yaml = [foo: 'bar', nested: [a: 1, b: 2]]
 
-        List<Path> chartSubFolders = Files.list(parentDir).collect(Collectors.toList())
-        assertThat(chartSubFolders).hasSize(2)
-        assertThat(chartSubFolders).contains(parentDir.resolve('0'), parentDir.resolve('3'))
+        fileSystemUtils.writeYaml(yaml, tmpFile.toFile())
+        Map result = fileSystemUtils.readYaml(tmpFile)
+
+        assertThat(result).isEqualTo(yaml)
+    }
+
+    @Test
+    void 'readYaml falls back to classpath'() {
+        // testMainConfig.yaml exists in src/test/resources, so it is on the classpath
+        Map result = fileSystemUtils.readYaml(Path.of('testMainConfig.yaml'))
+
+        assertThat(result)
+                .extracting('registry.internalPort')
+                .isEqualTo(30000)
+    }
+
+    @Test
+    void 'readYaml falls back to classpath and removes src main resources'() {
+        // application-minimal.yaml exists in src/main/resources
+        // We simulate a path that might be in a config file pointing to the source tree
+        Map result = fileSystemUtils.readYaml(Path.of('src/main/resources/application-minimal.yaml'))
+
+        assertThat(result)
+                .extracting('application.yes')
+                .isEqualTo(true)
+    }
+
+    @Test
+    void 'readYaml returns empty map if not found'() {
+        Map result = fileSystemUtils.readYaml(Path.of('non-existent.yaml'))
+        assertThat(result).isEmpty()
     }
 }
