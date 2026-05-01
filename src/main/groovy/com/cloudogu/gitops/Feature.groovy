@@ -98,9 +98,13 @@ abstract class Feature {
             Config config
     ) {
         String repoURL = helmConfig.repoURL
+        boolean ociChart = false
+        if (repoURL && repoURL.startsWithIgnoreCase("oci")){
+            ociChart = true
+        }
         String chartOrPath = helmConfig.chart
         String version = helmConfig.version
-        RepoType repoType = RepoType.HELM
+        RepoType repoType = ociChart ? RepoType.OCI :  RepoType.HELM
 
         this.addHelmValuesData("config", config)
         this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())

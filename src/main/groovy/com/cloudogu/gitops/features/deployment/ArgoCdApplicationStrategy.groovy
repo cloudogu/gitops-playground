@@ -150,6 +150,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
     String chooseKeyChartOrPath(RepoType repoType) {
         switch (repoType) {
+            case RepoType.OCI:
             case RepoType.HELM: 'chart'
                 break
             case RepoType.GIT: 'path'
