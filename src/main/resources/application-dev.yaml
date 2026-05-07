@@ -1,6 +1,6 @@
 # $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
 application:
-  "yes": false
+  "yes": true
   baseUrl: http://localhost
   password: "admin"
 features:
