@@ -12,8 +12,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
 
 import io.micronaut.context.ApplicationContext
 
@@ -41,7 +39,8 @@ class GitopsPlaygroundCli {
 	K8sClient k8sClient
 	ApplicationConfigurator applicationConfigurator
 
-	GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
+	GitopsPlaygroundCli(
+			K8sClient k8sClient = new K8sClient(),
 			ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
 		this.k8sClient = k8sClient
 		this.applicationConfigurator = applicationConfigurator
@@ -173,8 +172,8 @@ class GitopsPlaygroundCli {
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder()
 		// Remove less relevant details from log pattern
 		encoder.setPattern(defaultPattern
-				.replaceAll(" \\S*%thread\\S* ", " ")
-				.replaceAll(" \\S*%logger\\S* ", " "))
+				                   .replaceAll(" \\S*%thread\\S* ", " ")
+				                   .replaceAll(" \\S*%logger\\S* ", " "))
 		encoder.setContext(loggerContext)
 		encoder.start()
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()

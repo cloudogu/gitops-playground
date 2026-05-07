@@ -155,7 +155,7 @@ class CertManagerTest {
 				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, deploymentStrategy, new K8sClientForTest(config), airGappedUtils, gitHandler)
+		}, deploymentStrategy, new K8sClientForTest(), airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {
