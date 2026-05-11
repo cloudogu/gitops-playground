@@ -197,7 +197,7 @@ class ContentLoaderTest {
 	@Test
 	@DisplayName("Authenticates content Repos with secret")
 	void authenticatesContentReposWithSecret() {
-		this.k8sClient.k8sJavaApiClient.client = client
+		this.k8sClient.client = client
 		Secret secret = new SecretBuilder()
 				.withNewMetadata()
 				.withName("secret-test-name")
@@ -208,7 +208,7 @@ class ContentLoaderTest {
 				                 "password", "czNjcjN0"))
 				.build()
 
-		this.k8sClient.k8sJavaApiClient.client.secrets()
+		this.k8sClient.client.secrets()
 				.inNamespace("default")
 				.resource(secret)
 				.create()

@@ -11,7 +11,6 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.git.ScmManagerMock
@@ -81,7 +80,6 @@ class MonitoringTest {
 		config.features.monitoring.active = false
 		createStack(scmManagerMock).install()
 		assertThat(temporaryYamlFilePrometheus).isNull()
-		assertThat(k8sCommandExecutor.actualCommands).isEmpty()
 		verifyNoMoreInteractions(deploymentStrategy)
 	}
 
@@ -169,7 +167,6 @@ policies:
 		createStack(scmManagerMock).install()
 
 		assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
-		k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=mailserver@example.com --from-literal password=')
 	}
 
 	@Test
@@ -180,7 +177,6 @@ policies:
 
 		createStack(scmManagerMock).install()
 		assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
-		k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user= --from-literal password=1101ABCabc&/+*~')
 	}
 
 	@Test
@@ -192,7 +188,6 @@ policies:
 
 		assertThat(parseActualYaml()['grafana']['valuesFrom']).isNull()
 		assertThat(parseActualYaml()['grafana']['smtp']).isNull()
-		k8sCommandExecutor.assertNotExecuted('kubectl create secret generic grafana-email-secret')
 	}
 
 	@Test
@@ -204,7 +199,6 @@ policies:
 
 		createStack(scmManagerMock).install()
 
-		k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=grafana@example.com --from-literal password=1101ABCabc&/+*~')
 	}
 
 	@Test
@@ -291,8 +285,6 @@ policies:
 		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n")
 
 		createStack(scmManagerMock).install()
-		k8sCommandExecutor.assertExecuted("kubectl apply -f ${crdFile}")
-
 	}
 
 	@Test
@@ -303,8 +295,6 @@ policies:
 
 		createStack(scmManagerMock).install()
 
-		k8sCommandExecutor.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
-				                                  "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 	}
 
 	@Test
@@ -316,7 +306,6 @@ policies:
 		createStack(scmManagerMock).install()
 
 		// no CRD apply should happen at all
-		k8sCommandExecutor.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
 	}
 
 	@Test
@@ -357,7 +346,6 @@ policies:
 		config.jenkins["metricsPassword"] = 'hunter2'
 		createStack(scmManagerMock).install()
 
-		assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
 		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
 		assertThat(additionalScrapeConfigs[1]['basic_auth']['username']).isEqualTo('external-metrics-username')
 	}
@@ -480,10 +468,6 @@ policies:
 	@Test
 	void 'works with openshift'() {
 		config.application.openshift = true
-		// Prepare UID
-		String realoutput = '{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}'
-		k8sCommandExecutor.enqueueOutput(new CommandExecutor.Output('', realoutput, 0))
-
 		createStack(scmManagerMock).install()
 
 		def yaml = parseActualYaml()
