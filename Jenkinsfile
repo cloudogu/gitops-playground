@@ -4,7 +4,7 @@ pipeline {
     }
 
     triggers {
-        cron(env.BRANCH_NAME == 'main' ? '0 19 * * 5' : '')
+        cron(env.BRANCH_NAME == 'develop' ? '0 19 * * 5' : '')
     }
 
     options {
@@ -98,9 +98,9 @@ pipeline {
                             def profiles = []
                             def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
-                            if (isTriggeredByTimer || params.chooseProfile == 'all-profiles') {
+                            if (isTriggeredByTimer || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
                                 profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
-                            } else if (env.BRANCH_NAME == 'main') {
+                            } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
                                 profiles = [params.chooseProfile]
@@ -143,6 +143,7 @@ pipeline {
             when {
                 anyOf {
                     branch 'main'
+                    branch 'develop'
                     buildingTag()
                     expression { return params.forcePushImage }
                 }
@@ -159,7 +160,7 @@ pipeline {
                         currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
                         image.push()
 
-                        if (params.forcePushImage) { image.push(env.BRANCH_NAME) }
+                        if (params.forcePushImage || env.BRANCH_NAME == 'develop') { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
                             image.push('latest')
                             image.push(env.TAG_NAME)
