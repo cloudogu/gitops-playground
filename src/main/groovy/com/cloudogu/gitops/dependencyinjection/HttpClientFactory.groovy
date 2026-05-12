@@ -4,15 +4,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
 import com.cloudogu.gitops.okhttp.RetryInterceptor
-import groovy.transform.TupleConstructor
+
 import io.micronaut.context.annotation.Factory
-import jakarta.inject.Named
-import jakarta.inject.Singleton
-import okhttp3.JavaNetCookieJar
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import org.jetbrains.annotations.NotNull
-import org.slf4j.LoggerFactory
 
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
@@ -21,82 +14,89 @@ import javax.net.ssl.X509TrustManager
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import groovy.transform.TupleConstructor
+
+import okhttp3.JavaNetCookieJar
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import org.jetbrains.annotations.NotNull
+import org.slf4j.LoggerFactory
 
 @Factory
 class HttpClientFactory {
 
-    static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
-        def builder = new OkHttpClient.Builder()
-                .addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
-                .addInterceptor(createLoggingInterceptor())
-                .addInterceptor(new RetryInterceptor())
+	static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
+		def builder = new OkHttpClient.Builder()
+			.addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
+			.addInterceptor(createLoggingInterceptor())
+			.addInterceptor(new RetryInterceptor())
 
-        if (isInsecure) {
-            def context = insecureSslContext()
-            builder.sslSocketFactory(context.socketFactory, context.trustManager)
-        }
+		if (isInsecure) {
+			def context = insecureSslContext()
+			builder.sslSocketFactory(context.socketFactory, context.trustManager)
+		}
 
-        builder.hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
+		builder.hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
 
-        return builder.build()
-    }
+		return builder.build()
+	}
 
-    @Singleton
-    @Named("jenkins")
-    OkHttpClient okHttpClientJenkins(Config config) {
-        def builder = new OkHttpClient.Builder()
-                .cookieJar(new JavaNetCookieJar(new CookieManager()))
-                .addInterceptor(createLoggingInterceptor())
-                .addInterceptor(new RetryInterceptor())
+	@Singleton
+	@Named("jenkins")
+	OkHttpClient okHttpClientJenkins(Config config) {
+		def builder = new OkHttpClient.Builder()
+			.cookieJar(new JavaNetCookieJar(new CookieManager()))
+			.addInterceptor(createLoggingInterceptor())
+			.addInterceptor(new RetryInterceptor())
 
-        if (config.application.insecure) {
-            def context = insecureSslContext()
-            builder.sslSocketFactory(context.socketFactory, context.trustManager)
-        }
+		if (config.application.insecure) {
+			def context = insecureSslContext()
+			builder.sslSocketFactory(context.socketFactory, context.trustManager)
+		}
 
-        return builder.build()
-    }
+		return builder.build()
+	}
 
-    static HttpLoggingInterceptor createLoggingInterceptor() {
-        def logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")
+	static HttpLoggingInterceptor createLoggingInterceptor() {
+		def logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")
 
-        def ret = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-            @Override
-            void log(@NotNull String msg) {
-                logger.trace(msg)
-            }
-        })
+		def ret = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+			@Override
+			void log(@NotNull String msg) {
+				logger.trace(msg)
+			}
+		})
 
-        ret.setLevel(HttpLoggingInterceptor.Level.HEADERS)
-        ret.redactHeader("Authorization")
+		ret.setLevel(HttpLoggingInterceptor.Level.HEADERS)
+		ret.redactHeader("Authorization")
 
-        return ret
-    }
+		return ret
+	}
 
-    static InsecureSslContext insecureSslContext() {
-        def noCheckTrustManager = new X509TrustManager() {
-            @Override
-            void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            }
+	static InsecureSslContext insecureSslContext() {
+		def noCheckTrustManager = new X509TrustManager() {
+			@Override
+			void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
 
-            @Override
-            void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            }
+			@Override
+			void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
 
-            @Override
-            X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[0]
-            }
-        }
-        def sslCtxt = SSLContext.getInstance('SSL')
-        sslCtxt.init(null, [noCheckTrustManager] as X509TrustManager[], new SecureRandom())
+			@Override
+			X509Certificate[] getAcceptedIssuers() {
+				return new X509Certificate[0]
+			}
+		}
+		def sslCtxt = SSLContext.getInstance('SSL')
+		sslCtxt.init(null, [noCheckTrustManager] as X509TrustManager[], new SecureRandom())
 
-        return new InsecureSslContext(sslCtxt.socketFactory, noCheckTrustManager)
-    }
+		return new InsecureSslContext(sslCtxt.socketFactory, noCheckTrustManager)
+	}
 
-    @TupleConstructor(defaults = false)
-    static class InsecureSslContext {
-        final SSLSocketFactory socketFactory
-        final X509TrustManager trustManager
-    }
+	@TupleConstructor(defaults = false)
+	static class InsecureSslContext {
+		final SSLSocketFactory socketFactory
+		final X509TrustManager trustManager
+	}
 }
