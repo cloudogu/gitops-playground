@@ -21,9 +21,8 @@ class Deployer implements DeploymentStrategy {
 	}
 
 	@Override
-	void deployFeature(
-			String repoURL, String repoName, String chartOrPath, String version, String namespace,
-			String releaseName, Path helmValuesPath, RepoType repoType) {
+	void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+		String releaseName, Path helmValuesPath, RepoType repoType) {
 		if (config.features['argocd']['active']) {
 			argoCdStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
 		} else {

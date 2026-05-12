@@ -26,11 +26,11 @@ class Ingress extends Feature implements FeatureWithImage {
 	K8sClient k8sClient
 
 	Ingress(Config config,
-			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer,
-			K8sClient k8sClient,
-			AirGappedUtils airGappedUtils,
-			GitHandler gitHandler) {
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
