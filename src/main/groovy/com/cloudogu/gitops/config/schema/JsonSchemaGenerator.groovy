@@ -5,9 +5,9 @@ import com.cloudogu.gitops.config.Config
 import jakarta.inject.Singleton
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
-import tools.jackson.databind.node.ObjectNode
 import com.github.victools.jsonschema.generator.*
 import com.github.victools.jsonschema.module.jackson.JacksonModule
+import tools.jackson.databind.node.ObjectNode
 
 @Singleton
 class JsonSchemaGenerator {
