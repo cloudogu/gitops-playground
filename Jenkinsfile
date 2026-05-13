@@ -160,7 +160,6 @@ pipeline {
                         currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
                         image.push()
 
-                        if (params.forcePushImage || env.BRANCH_NAME == 'develop') { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
                             image.push('latest')
                             image.push(env.TAG_NAME)
