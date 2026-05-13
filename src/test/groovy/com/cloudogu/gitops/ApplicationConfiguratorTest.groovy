@@ -4,13 +4,13 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
+import com.cloudogu.gitops.application.content.ContentLoader
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.ContentLoader
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
-import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy

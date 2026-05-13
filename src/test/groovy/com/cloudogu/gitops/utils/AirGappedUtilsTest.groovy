@@ -1,12 +1,12 @@
 package com.cloudogu.gitops.utils
 
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Ref
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
@@ -20,10 +20,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import groovy.yaml.YamlSlurper
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.Ref
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class AirGappedUtilsTest {
 

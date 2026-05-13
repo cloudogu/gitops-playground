@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.git
+package com.cloudogu.gitops.application.orchestration
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config

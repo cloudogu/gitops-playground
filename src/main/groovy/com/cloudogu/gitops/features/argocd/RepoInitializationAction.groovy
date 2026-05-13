@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 
 import groovy.util.logging.Slf4j
