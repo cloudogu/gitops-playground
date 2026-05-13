@@ -233,7 +233,7 @@ class ContentLoader extends Feature {
 		if (repoConfig.credentials?.username != null && repoConfig.credentials?.password != null) {
 			credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
 		} else if (repoConfig.credentials?.secretName && repoConfig.credentials?.secretNamespace) {
-			Credentials credentials = this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
+			Credentials credentials = this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
 			credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username, credentials.password)
 		}
 

@@ -131,7 +131,7 @@ class K8sClient {
 	 * @param nodePort The NodePort (optional)
 	 * @param namespace The namespace (defaults to "default")
 	 */
-	void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
+	void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '', Map<String, String> selector = [:]) {
 		log.debug("Creating NodePort service $name in namespace $namespace")
 
 		def ports = tcp.split(':')
@@ -153,10 +153,12 @@ class K8sClient {
 			portBuilder = portBuilder.withNodePort(Integer.parseInt(nodePort))
 		}
 
-		Service service = portBuilder
-				.endPort()
-				.endSpec()
-				.build()
+		def specBuilder = portBuilder.endPort()
+		if (selector) {
+			specBuilder = specBuilder.withSelector(selector)
+		}
+
+		Service service = specBuilder.endSpec().build()
 
 		executeWithErrorHandling("create NodePort service $name") {
 			client.services()

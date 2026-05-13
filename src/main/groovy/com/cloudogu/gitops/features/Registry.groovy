@@ -61,18 +61,11 @@ class Registry extends Feature {
 			   e.g 32769 is needed so the kubelet can access the image inside the server-0 container
 			 */
 
-				/* k8sClient.createServiceNodePort('docker-registry-internal-port',
-						 CONTAINER_PORT, config.registry.internalPort.toString(),
-						 namespace) */
-
-				Map<String, String> selector = new HashMap<>()
-				selector.put("app", "docker-registry")
-				k8sClient.k8sJavaApiClient.createNodePortService(namespace,
-					'docker-registry-internal-port',
-					selector,
-					CONTAINER_PORT.toInteger(),
-					config.registry.internalPort,
-					'docker-registry-internal-port')
+				k8sClient.createServiceNodePort('docker-registry-internal-port',
+					CONTAINER_PORT,
+					config.registry.internalPort.toString(),
+					namespace,
+					['app': 'docker-registry'])
 			}
 		}
 	}
