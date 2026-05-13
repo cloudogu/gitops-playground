@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.Mockito.mock
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils

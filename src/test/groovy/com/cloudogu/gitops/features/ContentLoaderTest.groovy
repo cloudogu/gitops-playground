@@ -1,10 +1,21 @@
 package com.cloudogu.gitops.features
 
+import static ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
@@ -14,9 +25,12 @@ import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+
+import java.nio.file.Files
+import java.nio.file.Path
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -32,19 +46,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.config.Config.OverwriteMode
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
 
 @Slf4j
 @EnableKubernetesMockClient(crud=true)

@@ -1,10 +1,10 @@
 package com.cloudogu.gitops
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
@@ -20,7 +20,7 @@ import freemarker.template.DefaultObjectWrapperBuilder
 /**
  * A single tool to be deployed by GOP.
  *
- * Typically, this is a helm chart (see {@link com.cloudogu.gitops.features.deployment.DeploymentStrategy} and 
+ * Typically, this is a helm chart (see {@link DeploymentStrategy} and
  * {@code downloadHelmCharts.sh}) with its own section in the config
  * (see {@link com.cloudogu.gitops.config.schema.Schema#features}).<br/><br/>
  *

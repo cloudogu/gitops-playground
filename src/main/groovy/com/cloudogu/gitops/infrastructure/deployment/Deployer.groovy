@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.deployment
+package com.cloudogu.gitops.infrastructure.deployment
 
 import com.cloudogu.gitops.config.Config
 

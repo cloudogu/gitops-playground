@@ -4,7 +4,7 @@ import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
