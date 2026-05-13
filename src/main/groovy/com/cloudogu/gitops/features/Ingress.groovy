@@ -25,7 +25,8 @@ class Ingress extends Feature implements FeatureWithImage {
 	Config config
 	K8sClient k8sClient
 
-	Ingress(Config config,
+	Ingress(
+			Config config,
 			FileSystemUtils fileSystemUtils,
 			DeploymentStrategy deployer,
 			K8sClient k8sClient,

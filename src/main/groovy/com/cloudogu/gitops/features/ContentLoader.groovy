@@ -331,10 +331,10 @@ class ContentLoader extends Feature {
 			GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
 
 			engine.replaceTemplates(srcPath, [config : config,
-			                                  scm    : [baseUrl: repo.gitProvider.url,
-			                                            host: repo.gitProvider.host,
+			                                  scm    : [baseUrl : repo.gitProvider.url,
+			                                            host    : repo.gitProvider.host,
 			                                            protocol: repo.gitProvider.protocol,
-			                                            repoUrl: repo.gitProvider.repoPrefix(),],
+			                                            repoUrl : repo.gitProvider.repoPrefix(),],
 			                                  // Allow for using static classes inside the templates
 			                                  statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
 			                                           new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()])
