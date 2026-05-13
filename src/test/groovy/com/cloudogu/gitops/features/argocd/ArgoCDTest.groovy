@@ -1,9 +1,5 @@
 package com.cloudogu.gitops.features.argocd
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
@@ -23,9 +19,9 @@ import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
 
-import org.junit.jupiter.api.Test
-import org.mockito.Spy
-import org.springframework.security.crypto.bcrypt.BCrypt
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 
 class ArgoCDTest {
 	Map buildImages = [kubectl    : 'kubectl-value',
