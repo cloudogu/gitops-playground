@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.providers.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.GitlabConfig
+import com.cloudogu.gitops.config.scm.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.RepoUrlScope

@@ -9,9 +9,9 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.kubernetes.api.HelmClient

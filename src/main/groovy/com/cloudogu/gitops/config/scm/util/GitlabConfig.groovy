@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.git.config.util
+package com.cloudogu.gitops.config.scm.util
 
 import com.cloudogu.gitops.config.Credentials
 

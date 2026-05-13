@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy

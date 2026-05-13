@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.kubernetes.api.K8sClient

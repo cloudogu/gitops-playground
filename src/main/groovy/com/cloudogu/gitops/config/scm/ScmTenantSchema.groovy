@@ -1,12 +1,12 @@
-package com.cloudogu.gitops.features.git.config
+package com.cloudogu.gitops.config.scm
 
 import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.config.scm.util.GitlabConfig
+import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.utils.NetworkingUtils
 
 import com.fasterxml.jackson.annotation.JsonIgnore

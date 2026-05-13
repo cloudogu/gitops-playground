@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager

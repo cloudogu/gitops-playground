@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
+import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope

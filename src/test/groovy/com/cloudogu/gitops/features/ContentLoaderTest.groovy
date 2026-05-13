@@ -14,7 +14,7 @@ import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.kubernetes.api.K8sClient

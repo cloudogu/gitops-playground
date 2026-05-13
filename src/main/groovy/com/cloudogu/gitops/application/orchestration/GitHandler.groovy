@@ -2,7 +2,7 @@ package com.cloudogu.gitops.application.orchestration
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
