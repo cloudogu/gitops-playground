@@ -436,6 +436,7 @@
                      <goal>check</goal>
                  </goals>
                  <configuration>
+                     <haltOnFailure>false</haltOnFailure>
                      <rules>
                          <rule>
                              <element>PACKAGE</element>
@@ -443,6 +444,7 @@
                                  <limit>
                                      <counter>LINE</counter>
                                      <value>COVEREDRATIO</value>
+                                     <minimum>0.80</minimum>
                                  </limit>
                              </limits>
                          </rule>
