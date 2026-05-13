@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.jenkins
 
-
+import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.infrastructure.jenkins.JenkinsApiClient
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail

@@ -2,8 +2,8 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
-import com.cloudogu.gitops.okhttp.RetryInterceptor
+import com.cloudogu.gitops.dependencyinjection.okhttp.RetryInterceptor
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.AuthorizationInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
 import jakarta.inject.Named

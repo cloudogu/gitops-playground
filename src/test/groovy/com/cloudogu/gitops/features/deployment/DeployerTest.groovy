@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-
+import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path

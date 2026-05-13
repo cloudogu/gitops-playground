@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
 
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Files

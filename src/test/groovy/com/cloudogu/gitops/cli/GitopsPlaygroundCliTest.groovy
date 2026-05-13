@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.application.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.kubernetes.k8s.K8sClient
 
 import io.micronaut.context.ApplicationContext
 

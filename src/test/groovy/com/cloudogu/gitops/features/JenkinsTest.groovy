@@ -1,20 +1,20 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.jenkins.GlobalPropertyManager
-import com.cloudogu.gitops.jenkins.JobManager
-import com.cloudogu.gitops.jenkins.PrometheusConfigurator
-import com.cloudogu.gitops.jenkins.UserManager
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.infrastructure.jenkins.JobManager
+import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
+import com.cloudogu.gitops.infrastructure.jenkins.UserManager
+import com.cloudogu.gitops.tools.core.jenkins.Jenkins
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.kubernetes.k8s.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +23,6 @@ import org.mockito.Mock
 
 import java.nio.file.Path
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*

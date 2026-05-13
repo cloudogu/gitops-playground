@@ -1,11 +1,12 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema.ScmManagerTenantConfig
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests

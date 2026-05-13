@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.infrastructure.kubernetes.k8s.K8sJavaApiClient
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient

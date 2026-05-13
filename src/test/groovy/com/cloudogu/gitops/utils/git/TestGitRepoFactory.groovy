@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.utils.git
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import org.apache.commons.io.FileUtils

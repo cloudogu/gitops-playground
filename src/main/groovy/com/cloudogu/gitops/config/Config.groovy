@@ -5,7 +5,7 @@ import java.security.SecureRandom
 import static com.cloudogu.gitops.config.ConfigConstants.*
 import static picocli.CommandLine.ScopeType
 
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 
 import jakarta.inject.Singleton
 import groovy.transform.CompileStatic

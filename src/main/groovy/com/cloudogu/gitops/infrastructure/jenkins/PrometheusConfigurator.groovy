@@ -1,0 +1,27 @@
+package com.cloudogu.gitops.infrastructure.jenkins
+
+import jakarta.inject.Singleton
+
+@Singleton
+class PrometheusConfigurator {
+    private final JenkinsApiClient apiClient
+
+    PrometheusConfigurator(JenkinsApiClient apiClient) {
+        this.apiClient = apiClient
+    }
+
+    void enableAuthentication() {
+        def result = apiClient.runScript("""
+            import org.jenkinsci.plugins.prometheus.config.*
+            
+            def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)
+            config.setUseAuthenticatedEndpoint(true)
+            
+            print(config.useAuthenticatedEndpoint)
+        """)
+
+        if (result != "true") {
+            throw new RuntimeException("Cannot enable authentication for prometheus: $result")
+        }
+    }
+}

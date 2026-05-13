@@ -1,8 +1,8 @@
 package com.cloudogu.gitops
 
+import com.cloudogu.gitops.application.Application
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import groovy.transform.CompileStatic
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 

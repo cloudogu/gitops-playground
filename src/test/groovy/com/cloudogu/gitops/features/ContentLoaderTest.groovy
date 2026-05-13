@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.kubernetes.k8s.K8sClient
+import com.cloudogu.gitops.tools.core.jenkins.Jenkins
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -14,7 +16,7 @@ import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.fabric8.kubernetes.api.model.Secret
@@ -36,7 +38,7 @@ import org.mockito.ArgumentCaptor
 import java.nio.file.Files
 import java.nio.file.Path
 
-import static ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 import static com.cloudogu.gitops.config.Config.OverwriteMode

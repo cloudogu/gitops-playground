@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.tools.certmanager.CertManager
+
 import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
@@ -8,7 +10,7 @@ import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils

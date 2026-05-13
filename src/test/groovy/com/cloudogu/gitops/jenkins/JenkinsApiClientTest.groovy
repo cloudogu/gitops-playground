@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.jenkins
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.jenkins.JenkinsApiClient
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody

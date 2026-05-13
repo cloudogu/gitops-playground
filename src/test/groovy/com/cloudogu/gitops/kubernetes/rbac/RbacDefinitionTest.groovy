@@ -1,7 +1,10 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
+import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
+import com.cloudogu.gitops.infrastructure.kubernetes.rbac.ServiceAccountRef
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test

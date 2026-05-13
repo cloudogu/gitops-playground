@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.infrastructure.kubernetes.k8s.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

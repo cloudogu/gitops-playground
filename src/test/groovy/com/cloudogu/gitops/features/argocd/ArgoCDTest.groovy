@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.tools.core.argocd.ArgoCD
+import com.cloudogu.gitops.tools.core.argocd.RepoLayout
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitProvider

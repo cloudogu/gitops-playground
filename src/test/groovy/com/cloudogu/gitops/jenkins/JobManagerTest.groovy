@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.jenkins
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.jenkins.JenkinsApiClient
+import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.github.tomakehurst.wiremock.WireMockServer
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test

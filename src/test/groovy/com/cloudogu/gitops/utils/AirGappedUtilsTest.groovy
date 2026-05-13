@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
