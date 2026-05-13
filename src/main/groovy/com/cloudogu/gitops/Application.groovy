@@ -51,7 +51,7 @@ class Application {
             // if gop-namespace not set, take namespace from running GOP
             namespace = this.k8sClient.k8sJavaApiClient.getCurrentNamespace()
         }
-        log.debug("using namespace ${namespace}")
+        log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
         k8sClient.createNamespace(namespace)
         k8sClient.createSecret('generic', 'gop-configuration', namespace,
                 new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
