@@ -298,20 +298,22 @@ class K8sClient {
 		literals.each { tuple -> data[tuple.v1 as String] = tuple.v2 as String
 		}
 
+		String resolvedType = type == 'generic' ? 'Opaque' : type
 		Secret secret = new SecretBuilder()
 				.withNewMetadata()
 				.withName(name)
 				.withNamespace(resolveNamespace(namespace))
 				.endMetadata()
-				.withType(type)
+				.withType(resolvedType)
 				.withStringData(data)
 				.build()
 
 		executeWithErrorHandling("create secret $name") {
-			client.secrets()
-					.inNamespace(resolveNamespace(namespace))
-					.resource(secret)
-					.createOrReplace()
+			def secretsClient = client.secrets().inNamespace(resolveNamespace(namespace))
+			if (secretsClient.withName(name).get()) {
+				secretsClient.withName(name).delete()
+			}
+			secretsClient.resource(secret).create()
 		}
 
 		log.debug("Secret $name created/updated successfully")
@@ -503,13 +505,10 @@ class K8sClient {
 	String applyYaml(String yamlLocation) {
 		log.debug("Applying YAML from $yamlLocation")
 
-		File yamlFile = new File(yamlLocation)
-		if (!yamlFile.exists()) {
-			throw new RuntimeException("YAML file not found: $yamlLocation")
-		}
-
 		def resources = executeWithErrorHandling("load YAML from $yamlLocation") {
-			client.load(yamlFile.newInputStream()).items()
+			InputStream stream = yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://") ? new URL(yamlLocation).openStream() :
+			                     new File(yamlLocation).newInputStream()
+			client.load(stream).items()
 		}
 
 		resources.each { resource ->
@@ -538,6 +537,12 @@ class K8sClient {
 	void label(String resource, String name, String namespace = '', Tuple2... keyValues) {
 		if (!keyValues) {
 			throw new RuntimeException("Missing key-value-pairs")
+		}
+
+		if (name == '--all') {
+			client.nodes().list().items.each { node -> label(resource, node.metadata.name, namespace, keyValues)
+			}
+			return
 		}
 
 		log.debug("Labeling $resource/$name in namespace $namespace")
@@ -949,6 +954,10 @@ class K8sClient {
 			case 'namespaces':
 			case 'ns':
 				return client.namespaces().withName(name)
+
+			case 'node':
+			case 'nodes':
+				return client.nodes().withName(name)
 
 			default:
 				return client.genericKubernetesResources(resourceType).inNamespace(ns).withName(name)
