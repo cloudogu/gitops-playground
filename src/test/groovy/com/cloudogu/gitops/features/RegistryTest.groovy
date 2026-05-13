@@ -27,6 +27,7 @@ class RegistryTest {
 		createRegistry().install()
 
 		assertThat(helmCommands.actualCommands).isEmpty()
+		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -40,14 +41,15 @@ class RegistryTest {
 		assertThat(helmCommands.actualCommands[1].trim()).contains('--version')
 		assertThat(helmCommands.actualCommands[1].trim()).contains("--values ${temporaryYamlFile}")
 		assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-registry')
+		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
 	void 'inject custom value into chart'() {
 		def registryConfig = new RegistrySchema(active: true,
-		                                        helm: new HelmConfigWithValues(chart: 'test',
-		                                                                       values: [service    : [type: 'NodePortTest'],
-		                                                                                customValue: 'testinjectionValue']))
+			helm: new HelmConfigWithValues(chart: 'test',
+				values: [service    : [type: 'NodePortTest'],
+				         customValue: 'testinjectionValue']))
 
 		createRegistry(registryConfig).install()
 		assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
@@ -56,8 +58,8 @@ class RegistryTest {
 
 	private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
 		def config = new Config(application: new ApplicationSchema(namePrefix: 'foo-'),
-		                        registry: registryConfig)
-		k8sClient = new K8sClientForTest()
+			registry: registryConfig)
+		k8sClient = new K8sClientForTest(config)
 		helmCommands = new CommandExecutorForTest()
 		helmClient = new HelmClient(helmCommands)
 

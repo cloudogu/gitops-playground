@@ -26,11 +26,11 @@ class CertManager extends Feature implements FeatureWithImage {
 	final String namespace = "${config.application.namePrefix}cert-manager"
 
 	CertManager(Config config,
-			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer,
-			K8sClient k8sClient,
-			AirGappedUtils airGappedUtils,
-			GitHandler gitHandler) {
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils

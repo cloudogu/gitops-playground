@@ -8,10 +8,7 @@ import static org.mockito.Mockito.*
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
+import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 
@@ -25,13 +22,13 @@ import org.mockito.ArgumentCaptor
 class VaultTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',),
-	                           features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true,)))
+		features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true,)))
 
 	CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClientForTest k8sClient = new K8sClientForTest(config)
 	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 	Path temporaryYamlFile
 
@@ -40,6 +37,7 @@ class VaultTest {
 		config.features.secrets.active = false
 		createVault().install()
 		assertThat(helmCommands.actualCommands).isEmpty()
+		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -79,6 +77,9 @@ class VaultTest {
 
 		def vault = createVault()
 
+		// Simulate that the namespace does not exist (kubectl get returns a non-zero exit code)
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "foo-secrets" not found', '', 1))
+
 		vault.install()
 
 		def actualYaml = parseActualYaml()
@@ -101,6 +102,15 @@ class VaultTest {
 		assertThat(actualVolumeMounts[0]['readOnly']).is(true)
 		assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
+		assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(3)
+
+		assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl get namespace foo-secrets')
+		assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('kubectl create namespace foo-secrets')
+
+		def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[2] =~ /kubectl create configmap (\S*) .*/)[0] as List)[1]
+		assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
+
+		assertThat(k8sClient.commandExecutorForTest.actualCommands[2]).contains('-n foo-secrets')
 		assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
 	}
 
@@ -122,6 +132,8 @@ class VaultTest {
 		createVault().install()
 
 		assertThat(parseActualYaml()).doesNotContainKey('server')
+
+		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -137,18 +149,18 @@ class VaultTest {
 	@Test
 	void 'helm release is installed'() {
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
-		                                                                                          repoURL: 'https://vault-reg',
-		                                                                                          version: '42.23.0')
+			repoURL: 'https://vault-reg',
+			version: '42.23.0')
 		createVault().install()
 
 		verify(deploymentStrategy).deployFeature('https://vault-reg',
-		                                         'vault',
-		                                         'vault',
-		                                         '42.23.0',
-		                                         'foo-secrets',
-		                                         'vault',
-		                                         temporaryYamlFile,
-		                                         RepoType.HELM)
+			'vault',
+			'vault',
+			'42.23.0',
+			'foo-secrets',
+			'vault',
+			temporaryYamlFile,
+			RepoType.HELM)
 
 		assertThat(parseActualYaml()).doesNotContainKey('global')
 	}
@@ -157,8 +169,8 @@ class VaultTest {
 	void 'helm release is installed in air-gapped mode'() {
 		config.application.mirrorRepos = true
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
-		                                                                                          repoURL: 'https://vault-reg',
-		                                                                                          version: '42.23.0')
+			repoURL: 'https://vault-reg',
+			version: '42.23.0')
 
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
@@ -179,8 +191,8 @@ class VaultTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
 		assertThat(helmConfig.value.version).isEqualTo('42.23.0')
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'vault', '.', '1.2.3', 'foo-secrets',
-		                                         'vault', temporaryYamlFile, RepoType.GIT)
+			'vault', '.', '1.2.3', 'foo-secrets',
+			'vault', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test
@@ -202,6 +214,8 @@ class VaultTest {
 
 		createVault().install()
 
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-secrets' +
+			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 		assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 

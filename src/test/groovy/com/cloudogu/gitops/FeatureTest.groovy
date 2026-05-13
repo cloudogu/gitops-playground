@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class FeatureTest {
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClientForTest k8sClient = new K8sClientForTest(config)
 
 	@Test
 	void 'Image pull secrets are create automatically'() {
@@ -24,6 +24,9 @@ class FeatureTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
+
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
+			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 	}
 
 	protected FeatureWithImageForTest createFeatureWithImage() {
@@ -44,6 +47,9 @@ class FeatureTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
+
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
+			' --docker-server url --docker-username ROuser --docker-password ROpw')
 	}
 
 	@Test
@@ -54,6 +60,9 @@ class FeatureTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
+
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
+			' --docker-server url --docker-username user --docker-password pw')
 	}
 
 	class FeatureWithImageForTest extends Feature implements FeatureWithImage {

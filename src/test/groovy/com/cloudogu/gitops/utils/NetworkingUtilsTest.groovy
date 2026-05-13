@@ -2,16 +2,16 @@ package com.cloudogu.gitops.utils
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
 
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.config.Config
 
 import org.junit.jupiter.api.Test
 
 class NetworkingUtilsTest {
 
-	K8sClient k8sClient = mock(K8sClient)
+	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
+
+	K8sClientForTest k8sClient = new K8sClientForTest(config)
 	CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
 	NetworkingUtils networkingUtils = new NetworkingUtils(k8sClient, commandExecutor)
 
@@ -19,9 +19,12 @@ class NetworkingUtilsTest {
 	void 'clusterBindAddress: returns bind address for external cluster'() {
 		def internalNodeIp = "1.2.3.4"
 		def localIp = "5.6.7.8"
-		when(k8sClient.waitForInternalNodeIp()).thenReturn(internalNodeIp)
+		// waitForInternalNodeIp -> waitForNode()
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
+		// waitForInternalNodeIp -> actual exec
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
-		                                                         "1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
+			"1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
 
 		def actualBindAddress = networkingUtils.findClusterBindAddress()
 
@@ -33,7 +36,10 @@ class NetworkingUtilsTest {
 		def internalNodeIp = networkingUtils.localAddress
 		assertThat(internalNodeIp).isNotEmpty()
 
-		when(k8sClient.waitForInternalNodeIp()).thenReturn(internalNodeIp)
+		// waitForInternalNodeIp -> waitForNode(), don't care
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
+		// waitForInternalNodeIp -> actual exec
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
 
 		def actualBindAddress = networkingUtils.findClusterBindAddress()
 
@@ -42,14 +48,18 @@ class NetworkingUtilsTest {
 
 	@Test
 	void 'clusterBindAddress: fails when no potential bind address'() {
-		when(k8sClient.waitForInternalNodeIp()).thenReturn('')
+		def internalNodeIp = ''
+		// waitForInternalNodeIp -> waitForNode()
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
+		// waitForInternalNodeIp -> actual exec
+		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
-		                                                         "1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
+			"1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
 
 		def exception = shouldFail(RuntimeException) {
 			networkingUtils.findClusterBindAddress()
 		}
-		assertThat(exception.message).isEqualTo('Could not connect to kubernetes cluster: no cluster bind address')
+		assertThat(exception.message).isEqualTo('Failed to retrieve internal node IP')
 	}
 
 	@Test
@@ -59,10 +69,18 @@ class NetworkingUtilsTest {
 		assertThat(NetworkingUtils.getHost("")).isEqualTo("")
 		assertThat(NetworkingUtils.getHost("example.com")).isEqualTo("example.com")
 
+		// Legacy! The function is misleading.
+		//assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com")
+		//assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com")
+		//assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com")
+		//assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com")
 		assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com/bla")
 		assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com:9090/bla")
 		assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com/bla")
 		assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com:9090/bla")
+
+		// More legacy, known bugs. We should get rid of this method and scmm.host and scmm.protocol altogether!
+		// assertThat(NetworkingUtils.getHost("ftp://example.com")).isEqualTo("example.com")
 	}
 
 	@Test

@@ -12,9 +12,8 @@ class NetworkingUtils {
 	private K8sClient k8sClient
 	private CommandExecutor commandExecutor
 
-	NetworkingUtils(
-			K8sClient k8sClient = new K8sClient(),
-			CommandExecutor commandExecutor = new CommandExecutor()) {
+	NetworkingUtils(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
+		CommandExecutor commandExecutor = new CommandExecutor()) {
 		this.k8sClient = k8sClient
 		this.commandExecutor = commandExecutor
 	}
@@ -60,7 +59,7 @@ class NetworkingUtils {
 	String getLocalAddress() {
 		try {
 			List<NetworkInterface> sortedInterfaces =
-					Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
+				Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
 
 			for (NetworkInterface anInterface : sortedInterfaces) {
 				for (InetAddress address : Collections.list(anInterface.inetAddresses)) {

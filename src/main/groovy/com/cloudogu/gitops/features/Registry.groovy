@@ -24,12 +24,11 @@ class Registry extends Feature {
 	private Config config
 	private K8sClient k8sClient
 
-	Registry(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			K8sClient k8sClient,
-			// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
-			HelmStrategy deployer) {
+	Registry(Config config,
+		FileSystemUtils fileSystemUtils,
+		K8sClient k8sClient,
+		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
+		HelmStrategy deployer) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
@@ -66,10 +65,14 @@ class Registry extends Feature {
 						 CONTAINER_PORT, config.registry.internalPort.toString(),
 						 namespace) */
 
-				k8sClient.createServiceNodePort('docker-registry-internal-port',
-				                                "${CONTAINER_PORT}:${CONTAINER_PORT}",
-				                                config.registry.internalPort.toString(),
-				                                namespace)
+				Map<String, String> selector = new HashMap<>()
+				selector.put("app", "docker-registry")
+				k8sClient.k8sJavaApiClient.createNodePortService(namespace,
+					'docker-registry-internal-port',
+					selector,
+					CONTAINER_PORT.toInteger(),
+					config.registry.internalPort,
+					'docker-registry-internal-port')
 			}
 		}
 	}

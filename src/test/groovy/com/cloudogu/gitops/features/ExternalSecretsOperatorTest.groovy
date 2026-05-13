@@ -29,11 +29,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 class ExternalSecretsOperatorTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"),
-	                           registry: new Config.RegistrySchema(),
-	                           features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true)))
+		registry: new Config.RegistrySchema(),
+		features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true)))
 
 	CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClientForTest k8sClient = new K8sClientForTest(config)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Path temporaryYamlFile
 
@@ -58,13 +58,13 @@ class ExternalSecretsOperatorTest {
 		createExternalSecretsOperator().install()
 
 		verify(deploymentStrategy).deployFeature('https://charts.external-secrets.io',
-		                                         'external-secrets-operator',
-		                                         'external-secrets',
-		                                         '0.9.16',
-		                                         'foo-secrets',
-		                                         'external-secrets',
-		                                         temporaryYamlFile,
-		                                         RepoType.HELM)
+			'external-secrets-operator',
+			'external-secrets',
+			'0.9.16',
+			'foo-secrets',
+			'external-secrets',
+			temporaryYamlFile,
+			RepoType.HELM)
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -137,8 +137,8 @@ class ExternalSecretsOperatorTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
 		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-		                                         'external-secrets', temporaryYamlFile, RepoType.GIT)
+			'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
+			'external-secrets', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test
@@ -152,6 +152,9 @@ class ExternalSecretsOperatorTest {
 		                                                                                                 webhookImage       : 'some:thing'])
 
 		createExternalSecretsOperator().install()
+
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-secrets' +
+			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 		assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['certController']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['webhook']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
@@ -159,15 +162,15 @@ class ExternalSecretsOperatorTest {
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
 		new ExternalSecretsOperator(config,
-		                            new FileSystemUtils() {
-			                            @Override
-			                            Path writeTempFile(Map mergeMap) {
-				                            def ret = super.writeTempFile(mergeMap)
-				                            temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
-				                            // Path after template invocation
-				                            return ret
-			                            }
-		                            }, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
+			new FileSystemUtils() {
+				@Override
+				Path writeTempFile(Map mergeMap) {
+					def ret = super.writeTempFile(mergeMap)
+					temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+					// Path after template invocation
+					return ret
+				}
+			}, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

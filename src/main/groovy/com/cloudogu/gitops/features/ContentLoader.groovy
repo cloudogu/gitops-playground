@@ -54,14 +54,13 @@ class ContentLoader extends Feature {
 	@JsonIgnore
 	UsernamePasswordCredentialsProvider credentialsProvider
 
-	ContentLoader(
-			Config config,
-			K8sClient k8sClient,
-			GitRepoFactory repoProvider,
-			Jenkins jenkins,
-			GitHandler gitHandler,
-			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer) {
+	ContentLoader(Config config,
+		K8sClient k8sClient,
+		GitRepoFactory repoProvider,
+		Jenkins jenkins,
+		GitHandler gitHandler,
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
@@ -147,9 +146,9 @@ class ContentLoader extends Feature {
 			}
 
 			Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(repoURL: helmRelease.repoURL,
-			                                                                         chart: helmRelease.chart,
-			                                                                         version: version,
-			                                                                         values: [:] as Map<String, Object> // IMPORTANT: we will pass merged values via a file
+				chart: helmRelease.chart,
+				version: version,
+				values: [:] as Map<String, Object> // IMPORTANT: we will pass merged values via a file
 			)
 
 			Map<String, Object> fileValues = [:]
@@ -167,11 +166,11 @@ class ContentLoader extends Feature {
 			Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
 
 			deployHelmChart(helmRelease.name,
-			                helmRelease.releaseName ?: helmRelease.name,
-			                helmRelease.namespace,
-			                helmConfig,
-			                mergedValuesFile.toString(),
-			                config)
+				helmRelease.releaseName ?: helmRelease.name,
+				helmRelease.namespace,
+				helmConfig,
+				mergedValuesFile.toString(),
+				config)
 		}
 	}
 
@@ -186,16 +185,16 @@ class ContentLoader extends Feature {
 				k8sClient.createNamespace(namespace)
 
 				k8sClient.createImagePullSecret(registrySecretName, namespace,
-				                                config.registry.url /* Only domain matters, path would be ignored */,
-				                                registryUsername, registryPassword)
+					config.registry.url /* Only domain matters, path would be ignored */,
+					registryUsername, registryPassword)
 
 				k8sClient.patch('serviceaccount', 'default', namespace,
-				                [imagePullSecrets: [[name: registrySecretName]]])
+					[imagePullSecrets: [[name: registrySecretName]]])
 
 				if (config.registry.twoRegistries) {
 					k8sClient.createImagePullSecret('proxy-registry', namespace,
-					                                config.registry.proxyUrl, config.registry.proxyUsername,
-					                                config.registry.proxyPassword)
+						config.registry.proxyUrl, config.registry.proxyUsername,
+						config.registry.proxyPassword)
 				}
 			}
 		}
@@ -234,7 +233,7 @@ class ContentLoader extends Feature {
 		if (repoConfig.credentials?.username != null && repoConfig.credentials?.password != null) {
 			credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
 		} else if (repoConfig.credentials?.secretName && repoConfig.credentials?.secretNamespace) {
-			Credentials credentials = this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
+			Credentials credentials = this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
 			credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username, credentials.password)
 		}
 
@@ -260,8 +259,8 @@ class ContentLoader extends Feature {
 		log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
 	}
 
-	private static void createRepoCoordinatesForTypeCopy(
-			ContentRepositorySchema repoConfig, File contentRepoDir, File mergedReposFolder, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig, File contentRepoDir, File mergedReposFolder, File repoTmpDir,
+		List<RepoCoordinate> repoCoordinates) {
 		String namespace = repoConfig.target.split('/')[0]
 		String repoName = repoConfig.target.split('/')[1]
 
@@ -270,20 +269,20 @@ class ContentLoader extends Feature {
 		addRepoCoordinates(repoCoordinates, repoCoordinate)
 	}
 
-	private static void createRepoCoordinatesForTypeFolderBased(
-			ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedReposFolder,
+		List<RepoCoordinate> repoCoordinates) {
 		boolean refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.ref)
 		findRepoDirectories(contentRepoDir)
-				.each { contentRepoNamespaceDir ->
-					findRepoDirectories(contentRepoNamespaceDir)
-							.each { contentRepoFolder ->
-								String namespace = contentRepoNamespaceDir.name
-								String repoName = contentRepoFolder.name
-								def repoCoordinate = mergeRepoDirs(contentRepoFolder, namespace, repoName, mergedReposFolder, repoConfig)
-								repoCoordinate.refIsTag = refIsTag
-								addRepoCoordinates(repoCoordinates, repoCoordinate)
-							}
-				}
+			.each { contentRepoNamespaceDir ->
+				findRepoDirectories(contentRepoNamespaceDir)
+					.each { contentRepoFolder ->
+						String namespace = contentRepoNamespaceDir.name
+						String repoName = contentRepoFolder.name
+						def repoCoordinate = mergeRepoDirs(contentRepoFolder, namespace, repoName, mergedReposFolder, repoConfig)
+						repoCoordinate.refIsTag = refIsTag
+						addRepoCoordinates(repoCoordinates, repoCoordinate)
+					}
+			}
 	}
 
 	private static void createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
@@ -292,10 +291,10 @@ class ContentLoader extends Feature {
 		String namespace = repoConfig.target.split('/')[0]
 		String repoName = repoConfig.target.split('/')[1]
 		def repoCoordinate = new RepoCoordinate(namespace: namespace,
-		                                        repoName: repoName,
-		                                        clonedContentRepo: repoTmpDir,
-		                                        repoConfig: repoConfig,
-		                                        refIsTag: GitRepo.isTag(repoTmpDir, repoConfig.ref))
+			repoName: repoName,
+			clonedContentRepo: repoTmpDir,
+			repoConfig: repoConfig,
+			refIsTag: GitRepo.isTag(repoTmpDir, repoConfig.ref))
 		addRepoCoordinates(repoCoordinates, repoCoordinate)
 	}
 
@@ -303,24 +302,23 @@ class ContentLoader extends Feature {
 	 * Merges the files of src into the mergeRepoFolder/namespace/name and adds a new object to repoCoordinates.
 	 *
 	 * Note that existing repoCoordinate objects with different overwriteMode are overwritten. The last repo to be mentioned within config.content.repos wins!*/
-	private static RepoCoordinate mergeRepoDirs(
-			File src, String namespace, String repoName, File mergedRepoFolder,
-			ContentRepositorySchema repoConfig) {
+	private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
+		ContentRepositorySchema repoConfig) {
 		File target = new File(new File(mergedRepoFolder, namespace), repoName)
 		log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
 		FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
 
 		def repoCoordinate = new RepoCoordinate(namespace: namespace,
-		                                        repoName: repoName,
-		                                        clonedContentRepo: target,
-		                                        repoConfig: repoConfig,)
+			repoName: repoName,
+			clonedContentRepo: target,
+			repoConfig: repoConfig,)
 		return repoCoordinate
 	}
 
 	private static List<File> findRepoDirectories(File srcRepo) {
 		srcRepo.listFiles().findAll {
 			it.isDirectory() && // Exclude .git for example
-					!it.name.startsWith('.')
+				!it.name.startsWith('.')
 		}
 	}
 
@@ -331,10 +329,10 @@ class ContentLoader extends Feature {
 			GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
 
 			engine.replaceTemplates(srcPath, [config : config,
-			                                  scm    : [baseUrl: repo.gitProvider.url,
-			                                            host: repo.gitProvider.host,
+			                                  scm    : [baseUrl : repo.gitProvider.url,
+			                                            host    : repo.gitProvider.host,
 			                                            protocol: repo.gitProvider.protocol,
-			                                            repoUrl: repo.gitProvider.repoPrefix(),],
+			                                            repoUrl : repo.gitProvider.repoPrefix(),],
 			                                  // Allow for using static classes inside the templates
 			                                  statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
 			                                           new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()])
@@ -344,9 +342,9 @@ class ContentLoader extends Feature {
 	private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir) {
 
 		def cloneCommand = gitClone()
-				.setURI(repoConfig.url)
-				.setDirectory(repoTmpDir)
-				.setNoCheckout(false)
+			.setURI(repoConfig.url)
+			.setDirectory(repoTmpDir)
+			.setNoCheckout(false)
 		// Checkout default branch
 
 		if (credentialsProvider) {
@@ -379,9 +377,9 @@ class ContentLoader extends Feature {
 
 		// Check branches or tags
 		def remoteCommand = Git.lsRemoteRepository()
-				.setRemote(repoConfig.url)
-				.setHeads(true)
-				.setTags(true)
+			.setRemote(repoConfig.url)
+			.setHeads(true)
+			.setTags(true)
 
 		Collection<Ref> refs = remoteCommand.call()
 		String potentialRef = refs.find { it.name.endsWith(repoConfig.ref) }?.name
@@ -463,7 +461,7 @@ class ContentLoader extends Feature {
 		if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
 			if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
 				log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
-						         "Deleting existing files in repo and replacing them with new content.")
+					"Deleting existing files in repo and replacing them with new content.")
 				targetRepo.clearRepo()
 			} else {
 				log.debug("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " + "Merging new content into existing repo. ")
@@ -555,7 +553,7 @@ class ContentLoader extends Feature {
 
 		if (!isNewRepo && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
 			log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " + "and repo already exists in target:  Not pushing content!" +
-					         "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
+				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}
 		return true

@@ -16,20 +16,20 @@ class K8sJavaApiTest {
 	//https://github.com/fabric8io/kubernetes-client?tab=readme-ov-file#mocking-kubernetes
 	KubernetesClient client
 	//Client to set mock data, gets injected by annotation
-	K8sClient k8sClient
+	K8sJavaApiClient k8sJavaApiClient
 	KubernetesMockServer server
 	//Use server for non CRUD
 
 	@BeforeEach
 	void init() {
-		k8sClient = new K8sClient()
-		k8sClient.client = client
+		k8sJavaApiClient = new K8sJavaApiClient()
+		k8sJavaApiClient.client = client
 	}
 
 	@Test
 	void 'getCredentialsFromSecret'() {
 		generateSecret()
-		Credentials credentials = k8sClient.getCredentialsFromSecret('test-secret', 'test')
+		Credentials credentials = k8sJavaApiClient.getCredentialsFromSecret('test-secret', 'test')
 		assert (credentials.password) == 's3cr3t'
 		assert (credentials.username) == 'admin'
 	}
@@ -37,18 +37,18 @@ class K8sJavaApiTest {
 	private generateSecret() {
 
 		Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName("test-secret")
-				.withNamespace('test')
-				.endMetadata()
-				.withType("Opaque")
-				.withData(Map.of("username", "YWRtaW4=",
-				                 "password", "czNjcjN0"))
-				.build()
+			.withNewMetadata()
+			.withName("test-secret")
+			.withNamespace('test')
+			.endMetadata()
+			.withType("Opaque")
+			.withData(Map.of("username", "YWRtaW4=",
+				"password", "czNjcjN0"))
+			.build()
 
 		client.secrets()
-				.inNamespace('test')
-				.create(secret)
+			.inNamespace('test')
+			.create(secret)
 
 	}
 }

@@ -29,11 +29,11 @@ class IngressTest {
 
 	// setting default config values with ingress active
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
-	                           features: new Config.FeaturesSchema(ingress: new Config.IngressSchema(active: true)))
+		features: new Config.FeaturesSchema(ingress: new Config.IngressSchema(active: true)))
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClientForTest k8sClient = new K8sClientForTest(config)
 
 	@Mock
 	DeploymentStrategy deploymentStrategy
@@ -53,8 +53,8 @@ class IngressTest {
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
 		verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
-		                                         config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-		                                         'traefik', temporaryYamlFile, RepoType.HELM)
+			config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
+			'traefik', temporaryYamlFile, RepoType.HELM)
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -117,8 +117,8 @@ class IngressTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
 		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-		                                         'traefik', temporaryYamlFile, RepoType.GIT)
+			'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
+			'traefik', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test
@@ -154,6 +154,10 @@ class IngressTest {
 		config.registry.proxyPassword = 'proxy-pw'
 
 		createIngress().install()
+
+		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-ingress' +
+			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 

@@ -15,7 +15,7 @@ class GitHandlerForTests extends GitHandler {
 	private final GitProvider centralProvider
 
 	GitHandlerForTests(Config config, GitProvider tenantProvider, GitProvider centralProvider = null) {
-		super(config, mock(HelmStrategy), new FileSystemUtils(), new K8sClientForTest(), new NetworkingUtils())
+		super(config, mock(HelmStrategy), new FileSystemUtils(), new K8sClientForTest(config), new NetworkingUtils())
 		this.tenantProvider = tenantProvider
 		this.centralProvider = centralProvider
 	}
@@ -43,22 +43,15 @@ class GitHandlerForTests extends GitHandler {
 	}
 
 	@Override
-	void validate() {
-	}
+	void validate() {}
 
 	@Override
-	GitProvider getTenant() {
-		return tenantProvider
-	}
+	GitProvider getTenant() { return tenantProvider }
 
 	@Override
-	GitProvider getCentral() {
-		return centralProvider
-	}
+	GitProvider getCentral() { return centralProvider }
 
 	@Override
-	GitProvider getResourcesScm() {
-		return centralProvider ?: tenantProvider
-	}
+	GitProvider getResourcesScm() { return centralProvider ?: tenantProvider }
 
 }
