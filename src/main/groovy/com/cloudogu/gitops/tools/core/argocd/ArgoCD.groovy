@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.argocd
+package com.cloudogu.gitops.tools.core.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config

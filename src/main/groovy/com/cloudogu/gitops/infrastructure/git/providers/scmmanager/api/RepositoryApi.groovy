@@ -1,6 +1,6 @@
-package com.cloudogu.gitops.git.providers.scmmanager.api
+package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api
 
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
 
 import retrofit2.Call
 import retrofit2.http.*

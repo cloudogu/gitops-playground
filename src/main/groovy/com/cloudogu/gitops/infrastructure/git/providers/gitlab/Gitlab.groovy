@@ -1,12 +1,12 @@
-package com.cloudogu.gitops.git.providers.gitlab
+package com.cloudogu.gitops.infrastructure.git.providers.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.git.providers.AccessRole
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.RepoUrlScope
-import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.config.scm.util.GitlabConfig
+import com.cloudogu.gitops.infrastructure.git.providers.AccessRole
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope
+import com.cloudogu.gitops.infrastructure.git.providers.Scope
 
 import java.util.logging.Level
 import groovy.util.logging.Slf4j

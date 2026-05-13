@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.features.git.config.ScmCentralSchema.GitlabCentralConfig
-import com.cloudogu.gitops.features.git.config.ScmCentralSchema.ScmManagerCentralConfig
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.config.scm.ScmCentralSchema
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
@@ -24,11 +23,11 @@ class MultiTenantSchema {
 
 	@JsonPropertyDescription(GITLAB_CONFIG_DESCRIPTION)
 	@Mixin
-	GitlabCentralConfig gitlab
+	ScmCentralSchema.GitlabCentralConfig gitlab
 
 	@JsonPropertyDescription(SCMM_CONFIG_DESCRIPTION)
 	@Mixin
-	ScmManagerCentralConfig scmManager
+	ScmCentralSchema.ScmManagerCentralConfig scmManager
 
 	@Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
 	@JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)

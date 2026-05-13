@@ -1,14 +1,11 @@
-package com.cloudogu.gitops.git
+package com.cloudogu.gitops.infrastructure.git
 
 import com.cloudogu.gitops.cli.Version
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
-import com.cloudogu.gitops.git.providers.AccessRole
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.RepoUrlScope
-import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+import com.cloudogu.gitops.utils.helpers.InsecureCredentialProvider
 
 import groovy.util.logging.Slf4j
 

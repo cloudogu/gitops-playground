@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.HelmStrategy
+
 import io.micronaut.context.annotation.Primary
 
 import java.nio.file.Path

@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
+
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import groovy.yaml.YamlSlurper

@@ -1,10 +1,10 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.tools.common
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
@@ -161,7 +161,7 @@ abstract class Feature {
 	 * Feature should throw RuntimeException to stop immediately.
 	 */
 
-	protected void validate() {}
+	void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.

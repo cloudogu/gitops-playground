@@ -1,4 +1,4 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.tools.common
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient

@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.tools.monitoring
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
