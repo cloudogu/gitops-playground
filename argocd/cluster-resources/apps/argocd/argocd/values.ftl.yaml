@@ -70,6 +70,11 @@ argo-cd:
     cm:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
+      <#if config.features.argocd.oidc?has_content>
+      oidc.config: |                                                                                                                                                    
+                   ${config.features.argocd.oidc?trim?replace("\n", "\n                   ")}
+      </#if>
+
 
   notifications:
     # secrets are created dynamically in groovy, so they are not stored in git

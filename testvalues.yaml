@@ -1,0 +1,7 @@
+features:
+  argocd:
+    oidc: |
+      name: Keycloak
+      issuer: http://localhost:41061/realms/gop
+      clientID: argocd
+      clientSecret: 780KBVPXufod5TLAvNXEXNY5daFXVnkx
