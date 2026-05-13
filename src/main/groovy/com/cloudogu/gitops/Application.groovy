@@ -42,16 +42,22 @@ class Application {
 		log.debug("Application finished")
 	}
 
-	private void storeGopInformationInSecret(Config config) {
-		if (!config.application.gopNamespace.isEmpty()) {
+    private void storeGopInformationInSecret(Config config) {
+        String namespace = "gop-job" // Fallback, if run from IDE
+        if (!config.application.gopNamespace.isEmpty()) {
+            // if set, take namespace from configuration
+            namespace = "${config.application.gopNamespace}"
+        } else if (this.k8sClient.k8sJavaApiClient.getCurrentNamespace() != null) {
+            // if gop-namespace not set, take namespace from running GOP
+            namespace = this.k8sClient.k8sJavaApiClient.getCurrentNamespace()
+        }
+        log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
+        k8sClient.createNamespace(namespace)
+        k8sClient.createSecret('generic', 'gop-configuration', namespace,
+                new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+                new Tuple2('gop-config', config.toYaml(true)))
+    }
 
-			String namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
-			k8sClient.createNamespace(namespace)
-			k8sClient.createSecret('generic', 'gop-configuration', namespace,
-				new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
-				new Tuple2('gop-config', config.toYaml(true)))
-		}
-	}
 
 	List<Feature> getFeatures() {
 		return features

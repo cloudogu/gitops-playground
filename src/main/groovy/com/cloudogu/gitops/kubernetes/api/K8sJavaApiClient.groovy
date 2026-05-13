@@ -87,4 +87,12 @@ class K8sJavaApiClient {
 			throw new RuntimeException("Couldn't parse credentials from K8s secret: ${credentials.secretName} in namespace ${credentials.secretNamespace}", e)
 		}
 	}
+
+	/**
+	 * Return current namespace from running pod.
+	 * @return
+	 */
+	String getCurrentNamespace() {
+        return this.client.getNamespace()
+    }
 }
