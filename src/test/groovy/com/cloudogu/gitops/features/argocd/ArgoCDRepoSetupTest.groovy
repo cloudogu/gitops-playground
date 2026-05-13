@@ -1,5 +1,8 @@
 package com.cloudogu.gitops.features.argocd
 
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoSetup
@@ -8,8 +11,6 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitProvider
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
