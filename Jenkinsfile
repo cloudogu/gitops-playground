@@ -106,16 +106,75 @@ pipeline {
                                 profiles = [params.chooseProfile]
                             }
 
-                            def withK3dCluster = { body ->
+                            def dumpKubernetesDebugInfo = { profile ->
+                                  def dumpDir = "target/k8s-debug/${profile}"
+
+                                  sh(script: """
+                                      set +e
+                                      mkdir -p '${dumpDir}'
+                                      export KUBECONFIG='${env.WORKSPACE}/.kubeconfig.yaml'
+
+                                      {
+                                        echo '# cluster-info'
+                                        kubectl cluster-info
+
+                                        echo
+                                        echo '# nodes'
+                                        kubectl get nodes -o wide
+
+                                        echo
+                                        echo '# namespaces'
+                                        kubectl get namespaces -o wide
+
+                                        echo
+                                        echo '# pods'
+                                        kubectl get pods -A -o wide
+
+                                        echo
+                                        echo '# events'
+                                        kubectl get events -A --sort-by=.lastTimestamp
+
+                                        echo
+                                        echo '# pvc / pv'
+                                        kubectl get pvc,pv -A -o wide
+
+                                        echo
+                                        echo '# ingress'
+                                        kubectl get ingress -A -o wide
+                                      } > '${dumpDir}/overview.txt' 2>&1
+
+                                      kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
+
+                                      : > '${dumpDir}/container-logs.txt'
+                                      kubectl get pods -A --no-headers \\
+                                        -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name |
+                                      while read -r namespace pod; do
+                                        echo "===== \${namespace}/\${pod} current =====" >> '${dumpDir}/container-logs.txt'
+                                        kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --tail=100 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
+
+                                        echo >> '${dumpDir}/container-logs.txt'
+                                        echo "===== \${namespace}/\${pod} previous =====" >> '${dumpDir}/container-logs.txt'
+                                        kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=100 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
+                                        echo >> '${dumpDir}/container-logs.txt'
+                                      done
+                                  """, returnStatus: true)
+
+                                  archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
+                              }
+
+                            def withK3dCluster = { profile, body ->
                                 try {
                                     sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
                                     body()
+                                } catch(Throwable t) {
+                                    dumpKubernetesDebugInfo(profile)
+                                    throw t
                                 } finally {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
                                 }}
 
                             profiles.each { profile ->
-                                withK3dCluster {
+                                withK3dCluster(profile) {
 
                                     if (profile.startsWith('operator')) {
                                         docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
