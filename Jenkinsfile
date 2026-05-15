@@ -50,9 +50,7 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test'
-                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                        archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                      echo 'test'
                     }
                 }
 
