@@ -29,11 +29,6 @@ class ArgoCDProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	void forceFailureForJenkinsDebugDump() {
-		fail("Intentional failure to verify Jenkins Kubernetes debug dump")
-	}
-
-	@Test
 	void ensureNamespaceExists() {
 
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
