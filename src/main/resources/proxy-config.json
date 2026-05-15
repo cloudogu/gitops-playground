@@ -1,9 +1,23 @@
 [
-  ["java.util.function.Consumer"],
-  ["java.util.function.Function"],
-  ["java.util.function.Predicate"],
-  ["java.util.function.Supplier"],
-  ["com.cloudogu.gitops.git.providers.scmmanager.apiUsersApi"],
-  ["com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi"],
-  ["java.io.FileFilter"]
+  [
+    "java.util.function.Consumer"
+  ],
+  [
+    "java.util.function.Function"
+  ],
+  [
+    "java.util.function.Predicate"
+  ],
+  [
+    "java.util.function.Supplier"
+  ],
+  [
+    "com.cloudogu.gitops.git.providers.scmmanager.apiUsersApi"
+  ],
+  [
+    "com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi"
+  ],
+  [
+    "java.io.FileFilter"
+  ]
 ]

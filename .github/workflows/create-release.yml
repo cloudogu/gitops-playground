@@ -12,12 +12,12 @@ jobs:
     name: Release pushed tag
     runs-on: ubuntu-latest
     steps:
-      - name: Create release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-        run: |
-          gh release create "$tag" \
-              --repo="$GITHUB_REPOSITORY" \
-              --title="${tag}" \
-              --generate-notes
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        tag: ${{ github.ref_name }}
+      run: |
+        gh release create "$tag" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="${tag}" \
+            --generate-notes

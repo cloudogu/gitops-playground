@@ -6,10 +6,10 @@ It provides workarounds or solutions for the given issues.
 
 ## Disclaimer
 
-The versions listed in this README may not always reflect the most current release. 
-Please be aware that newer versions may exist. 
-The versions are also specified in the `Config.groovy` file, so it is recommended to consult that file for the latest version information.
-
+The versions listed in this README may not always reflect the most current release.
+Please be aware that newer versions may exist.
+The versions are also specified in the `Config.groovy` file, so it is recommended to consult that file for the latest
+version information.
 
 ## Table of contents
 
@@ -19,30 +19,30 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 - [Prerequisites](#prerequisites)
 - [Testing](#testing)
-  - [Unit-Tests](#unit-tests)
-  - [Integration-Tests](#integration-tests)
+    - [Unit-Tests](#unit-tests)
+    - [Integration-Tests](#integration-tests)
 - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
-  - [Solution](#solution)
-  - [Updating all plugins](#updating-all-plugins)
+    - [Solution](#solution)
+    - [Updating all plugins](#updating-all-plugins)
 - [Local development](#local-development)
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
-  - [Basic test](#basic-test)
-  - [Proper test](#proper-test)
+    - [Basic test](#basic-test)
+    - [Proper test](#proper-test)
 - [Testing Network Policies locally](#testing-network-policies-locally)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
-  - [Setup cluster](#setup-cluster)
-  - [Install the playground](#install-the-playground)
+    - [Setup cluster](#setup-cluster)
+    - [Install the playground](#install-the-playground)
 - [Notifications / E-Mail](#notifications--e-mail)
 - [Troubleshooting](#troubleshooting)
-  - [Using ingresses locally](#using-ingresses-locally)
+    - [Using ingresses locally](#using-ingresses-locally)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
 - [Installing ArgoCD Operator](#installing-argocd-operator)
-  - [Prerequisites:](#prerequisites)
-  - [Installation Script](#installation-script)
-  - [Install ingress manually](#install-ingress-manually)
+    - [Prerequisites:](#prerequisites)
+    - [Installation Script](#installation-script)
+    - [Install ingress manually](#install-ingress-manually)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -59,11 +59,12 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 - [Golang](https://go.dev/doc/install) (only if you plan to use argo-cd operator)
 - [yq](https://mikefarah.gitbook.io/yq/) (useful for debugging purposes)
 
-To check if you have all necessary tools installed, run the following command. If you don't see any error messages, you are good to go:
+To check if you have all necessary tools installed, run the following command. If you don't see any error messages, you
+are good to go:
+
 ```bash
 java -version && mvn -version && docker version && k3d version && kubectl version && helm version
 ```
-
 
 ## Testing
 
@@ -94,6 +95,7 @@ mvn clean test
 ```
 
 where <PROFILES> can be one of:
+
 - full
 - full-prefix
 
@@ -103,6 +105,7 @@ where <PROFILES> can be one of:
 
 Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
 This can be done by running:
+
 ```bash
 ./scripts/local/install-argocd-operator.sh
 ```
@@ -114,27 +117,31 @@ Trying to overcome this issue we pinned all plugins within `scripts/jenkins/plug
 These pinned plugins get downloaded within the docker build and saved into a folder as `.hpi` files. Later on
 when configuring jenkins, we upload all the plugin files with the given version.
 
-Turns out it does not completely circumvent this issue. In some cases jenkins updates these plugins automagically (as it seems) when installing the pinned version fails at first or being installed when resolving dependencies.
-This again may lead to a broken jenkins, where some of the automatically updated plugins have changes within their dependencies. These dependencies than again are not updated but pinned and may cause issues.
+Turns out it does not completely circumvent this issue. In some cases jenkins updates these plugins automagically (as it
+seems) when installing the pinned version fails at first or being installed when resolving dependencies.
+This again may lead to a broken jenkins, where some of the automatically updated plugins have changes within their
+dependencies. These dependencies than again are not updated but pinned and may cause issues.
 
-Since solving this issue may require some additional deep dive into bash scripts we like to get rid of in the future, we decided to give some hints how to easily solve the issue (and keep the plugins list up to date :]) instead of fixing it with tremendous effort.
+Since solving this issue may require some additional deep dive into bash scripts we like to get rid of in the future, we
+decided to give some hints how to easily solve the issue (and keep the plugins list up to date :]) instead of fixing it
+with tremendous effort.
 
 ### Solution
 
 * Determine the plugins that cause the issue
-  * inspecting the logs of the jenkins-pod
-  * jenkins-ui (http://localhost:9090/manage)
+    * inspecting the logs of the jenkins-pod
+    * jenkins-ui (http://localhost:9090/manage)
 
 ![Jenkins-UI with broken plugins](images/example-plugin-install-fail.png)
 
 * Fix conflicts by updating the plugins with compatible versions
-  * Update all plugin versions via jenkins-ui (http://localhost:9090/pluginManager/) and restart
+    * Update all plugin versions via jenkins-ui (http://localhost:9090/pluginManager/) and restart
 
 ![Jenkins-UI update plugins](images/update-all-plugins.png)
 
 * Verify the plugin installation
-  * Check if jenkins starts up correctly and builds all example pipelines successfully
-  * verify installation of all plugins via jenkins-ui (http://localhost:9090/script) executing the following command
+    * Check if jenkins starts up correctly and builds all example pipelines successfully
+    * verify installation of all plugins via jenkins-ui (http://localhost:9090/script) executing the following command
 
 ![Jenkins-UI plugin list](images/get-plugin-list.png)
 
@@ -145,8 +152,8 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
 ```
 
 * Share and publish your plugin updates
-  * Make sure you have updated `plugins.txt` with working versions of the plugins
-  * commit and push changes to your feature-branch and submit a pr
+    * Make sure you have updated `plugins.txt` with working versions of the plugins
+    * commit and push changes to your feature-branch and submit a pr
 
 Note that `plugins.txt` contains the whole dependency tree, including transitive plugin dependencies.
 The bare minimum of plugins that are needed is this:
@@ -162,21 +169,24 @@ scm-manager # Used in example builds
 workflow-aggregator # Pipelines plugin, used in example builds
 ```
 
-Note that, when running locally we also need `kubernetes` and `configuration-as-code` but these are contained in [our 
-jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile) (extracted from the 
+Note that, when running locally we also need `kubernetes` and `configuration-as-code` but these are contained in [our
+jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile) (extracted from the
 [corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml)).
 
+### Updating all plugins
 
-### Updating all plugins 
-To get a minimal list of plugins, start an empty jenkins that uses [the base image of our image](https://github.com/cloudogu/jenkins-helm-image/blob/main/Dockerfile):
+To get a minimal list of plugins, start an empty jenkins that
+uses [the base image of our image](https://github.com/cloudogu/jenkins-helm-image/blob/main/Dockerfile):
 
 ```shell
 docker run --rm -v $RANDOM-tmp-jenkins:/var/jenkins_home  jenkins/jenkins:2.479.2-jdk17
 ```
+
 We need a volume to persist the plugins when jenkins restarts.  
 (These can be cleaned up afterwards like so: `docker volume ls -q | grep jenkins | xargs -I {} docker volume rm {}`).
 
 Then
+
 * manually install the bare minimum of plugins mentioned above
 * extract the plugins using the groovy console as mentioned above
 * Write the output into `plugins.txt`
@@ -186,33 +196,35 @@ We should automate this!
 ## Local development
 
 * Run locally
-  * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA
-    Note: If you encounter `error=2, No such file or directory`,
-    it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
-  * From shell:  
-    Run
-      ```shell
-     ./mvnw package -DskipTests
-     ./mvnw exec:java -Dexec.arguments="<gopParamsHere>"
-       ```
+    * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA
+      Note: If you encounter `error=2, No such file or directory`,
+      it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
+    * From shell:  
+      Run
+        ```shell
+       ./mvnw package -DskipTests
+       ./mvnw exec:java -Dexec.arguments="<gopParamsHere>"
+         ```
 * Running inside the container:
-  * Build and run dev Container:
-    ```shell
-    docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
-    docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-      --net=host gitops-playground:dev #params
-     ```
-  * Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
-    To do so, download the plugins into a folder, then set this folder vie env var:  
-    `JENKINS_PLUGIN_FOLDER=$(pwd) java -classpath .. # See above`.  
-    A working combination of plugins be extracted from the image:
-      ```bash
-      id=$(docker create --pull=always ghcr.io/cloudogu/gitops-playground:main)
-      docker cp $id:/gitops/jenkins-plugins .
-      docker rm -v $id
-      ```
+    * Build and run dev Container:
+      ```shell
+      docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
+      docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+        --net=host gitops-playground:dev #params
+       ```
+    * Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the
+      internet.  
+      To do so, download the plugins into a folder, then set this folder vie env var:  
+      `JENKINS_PLUGIN_FOLDER=$(pwd) java -classpath .. # See above`.  
+      A working combination of plugins be extracted from the image:
+        ```bash
+        id=$(docker create --pull=always ghcr.io/cloudogu/gitops-playground:main)
+        docker cp $id:/gitops/jenkins-plugins .
+        docker rm -v $id
+        ```
 
 ## Testing URL separator hyphens
+
 ```bash
 docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -230,24 +242,28 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 ## External registry for development
 
 If you need to emulate an "external", private registry with credentials, then install it like so:
+
 ```bash
 helm repo add harbor https://helm.goharbor.io
 helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
 
 Once it's up and running either create your own private project or just set the existing `library` to private:
+
 ```bash
 curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -H 'Content-Type: application/json' \
 --data-raw '{"metadata":{"public":"false", "id":1,"project_id":1}}'
 ```
 
 Then either import external images like so (requires `skopeo` but no prior pulling or insecure config necessary):
+
 ```bash
 skopeo copy docker://alpine/kubectl:1.35.4 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/kubectl:1.35.4
 ```
 
 Alternatively, you could push existing images from your docker daemon.
-However, this takes longer (pull first) and you'll have to make sure to add `localhost:30002` to `insecure-registries` in `/etc/docker/daemon.json` and restart your docker daemon first.
+However, this takes longer (pull first) and you'll have to make sure to add `localhost:30002` to `insecure-registries`
+in `/etc/docker/daemon.json` and restart your docker daemon first.
 
 ```bash
 docker login localhost:30002 -u admin -p Harbor12345
@@ -271,6 +287,7 @@ That is, for most helm charts, you'll need to set an individual value.
 ## Testing two registries
 
 ### Basic test
+
 * Start playground once,
 * then again with these parameters:  
   `--registry-url=localhost:30000 --registry-proxy-url=localhost:30000 --registry-proxy-username=Proxy --registry-proxy-password=Proxy12345`
@@ -284,16 +301,18 @@ That is, for most helm charts, you'll need to set an individual value.
 * Important: Harbor has to be set up after initializing the cluster, but before installing GOP.  
   Otherwise GOP deploys its own registry, leading to port conflicts:  
   `Service "harbor" is invalid: spec.ports[0].nodePort: Invalid value: 30000: provided port is already allocated`
-* By default, `docker run` relies on the `gitops-playground:dev` image.  
+* By default, `docker run` relies on the `gitops-playground:dev` image.
 
 **Setup**
 
 To set-up harbor with two projects, you can use the target "prepare-two-registries".
+
 ```shell
 make prepare-two-registries
 ```
 
 Afer that, deploy GOP with the generated config file:
+
 ```bash
 # Create a docker container or use an available image from a registry
 # docker build -t gop:dev .
@@ -325,11 +344,14 @@ docker run --rm -t -u $(id -u) \
 
 ## Testing Network Policies locally
 
-The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
+The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu
+Ecosystem.
 
 That's why we need to initialize our local cluster with some netpols for everything to work.
-* The `<prefix>-jenkins` ,  `<prefix>-scm-manager` and `<prefix>-registry` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
-* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
+
+* The `<prefix>-jenkins` ,  `<prefix>-scm-manager` and `<prefix>-registry` namespace needs to be accesible from outside
+  the cluster (so GOP apply via `docker run` has access)
+* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller
 
 After the cluster is initialized and before GOP is applied, do the following:
 
@@ -394,7 +416,8 @@ done
 
 Let's set up our local playground to emulate an airgapped env, as some of our customers have.
 
-Note that with approach bellow, the whole k3d cluster is airgapped with one exception: the Jenkins agents can work around this.
+Note that with approach bellow, the whole k3d cluster is airgapped with one exception: the Jenkins agents can work
+around this.
 To be able to run the `docker` plugin in Jenkins (in a k3d cluster that only provides containerd) we mount the host's
 docker socket into the agents.
 From there it can start containers which are not airgapped.
@@ -407,6 +430,7 @@ like images or helm charts.
 ### Setup cluster
 
 You can prepare the airgapped cluster, by calling make with the "prepare-airgappe-cluster" target:
+
 ```bash
 make prepare-airgapped-cluster
 ```
@@ -426,13 +450,13 @@ Don't disconnect from the internet yet, because
   source code, as there are no parameters to do so.
 
 So, start the installation and once Argo CD is running, go offline.
+
 ```bash
 docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
     -v ./scripts/dev/gop_airgapped_config.yaml:/gop.yaml \
     --net=host gitops-playground:latest --config-file=/gop.yaml -x 
 ```
-
 
 ## Notifications / E-Mail
 
@@ -446,7 +470,8 @@ To test with an external mail server, set up the configuration as follows:
 ```
 
 For testing, an email can be sent via the Grafana UI.  
-Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point"   
+Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View
+contact point"   
 Here you can check if the configuration is implemented correctly and fire up a Testmail.
 
 For testing Argo CD, just uncomment some of the defaultTriggers in it's values.yaml and it will send a lot of emails.
@@ -454,6 +479,7 @@ For testing Argo CD, just uncomment some of the defaultTriggers in it's values.y
 ## Troubleshooting
 
 When stuck in `Pending` this might be due to volumes not being provisioned
+
 ```bash
 k get pod -n kube-system
 NAME                                                         READY   STATUS             RESTARTS      AGE
@@ -486,8 +512,7 @@ argocd                    argocd-server                   traefik   argocd.local
 Where opening for example http://argocd.localhost in your browser should work.
 
 The `base-domain` parameters lead to URLs in the following schema:  
-`<stage>.<app-name>.<parameter>`, e.g.  
-
+`<stage>.<app-name>.<parameter>`, e.g.
 
 ## Generate schema.json
 
@@ -528,7 +553,8 @@ git checkout main \
 For now, please start a Jenkins Build of `main` manually.  
 We might introduce tag builds in our Jenkins organization at a later stage.
 
-A GitHub release containing all merged PRs since the last release is create automatically via a [GitHub action](../.github/workflows/create-release.yml)
+A GitHub release containing all merged PRs since the last release is create automatically via
+a [GitHub action](../.github/workflows/create-release.yml)
 
 ## Installing ArgoCD Operator
 
@@ -538,7 +564,7 @@ This guide provides instructions for developers to install the ArgoCD Operator l
 
 Ensure you have the following installed on your system:
 
-- Git: For cloning the repository. 
+- Git: For cloning the repository.
 - golang: Version >= 1.24
 
 ### Installation Script
@@ -554,10 +580,10 @@ make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.15.0
 
 ### Install ingress manually
 
-The ArgoCD installed via Operator is namespace isolated and therefor can not deploy an ingress-controller, because of global scoped configurations.
+The ArgoCD installed via Operator is namespace isolated and therefor can not deploy an ingress-controller, because of
+global scoped configurations.
 GOP has to be startet with ``` --insecure ``` because of we do not use https locally.
 We have to install the ingress-controller manually:
-
 
 ```shell
 helm upgrade --install traefik traefik/traefik --version 4.12.1 --namespace traefik --create-namespace 

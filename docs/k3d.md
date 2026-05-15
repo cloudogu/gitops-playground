@@ -11,7 +11,7 @@ bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main
 ```
 
 If you plan to interact with your cluster directly (not only via GitOps), we recommend
-installing `kubectl` (see [here](https://kubernetes.io/docs/tasks/tools/#kubectl)). 
+installing `kubectl` (see [here](https://kubernetes.io/docs/tasks/tools/#kubectl)).
 
 ### Create Cluster without installing k3d
 
@@ -33,7 +33,8 @@ docker run --rm -it -u $(id -u ):$(getent group docker | cut -d: -f3)  \
 For deletion use `-c "k3d cluster rm gitops-playground"` in the last line.
 
 For this to work on MacOS and Windows with WSL2 we would have to overcome the missing docker group there.
-One option would be to run the container as root to access the docker socket and then `chown` the files back to the original user, e.g. like so:
+One option would be to run the container as root to access the docker socket and then `chown` the files back to the
+original user, e.g. like so:
 
 ```shell
 K3D_VERSION=$(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh | grep  '^K3D_VERSION='  | cut -d '=' -f 2)
@@ -44,45 +45,53 @@ docker run --rm -it -u $(id -u ):$(getent group docker | cut -d: -f3)  \
   ghcr.io/k3d-io/k3d:${K3D_VERSION}-dind \
     -c "bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) && chown -R \$(ls -ld /root/.config/k3d/ | awk '{print \$3 \":\" \$4}') /root/.config/k3d/"
 ```
+
 This example only writes cluster's kubeconfig to `~/.config/k3d`, but not to your default `~/.kube/config`.
-So to access the cluster, your would have to use `export KUBECONFIG=$HOME/.config/k3d/kubeconfig-gitops-playground.yaml` 
+So to access the cluster, your would have to use `export KUBECONFIG=$HOME/.config/k3d/kubeconfig-gitops-playground.yaml`
 or also add a `-v` and `chown` for `.kube/config`.
 
 ## Parameters
 
 ### --cluster-name
+
 `--cluster-name` - default: `gitops-playground`
 
 ### --bind-localhost
-`--bind-localhost` - binds the cluster to the host network (`localhost`). This only makes sense on Linux, as on Windows and Mac the  `host` network from Docker's perspective is not the localhost you can access from your browser. 
+
+`--bind-localhost` - binds the cluster to the host network (`localhost`). This only makes sense on Linux, as on Windows
+and Mac the  `host` network from Docker's perspective is not the localhost you can access from your browser.
 When using this argument, the URLs of the application will be reachable via localhost.
 e.g. `localhost:9092` for Argo CD.
-We used this for more convenience during development, before we introduced `--bind-ingress-port`. 
+We used this for more convenience during development, before we introduced `--bind-ingress-port`.
 
-By now, using no arguments (which sets [`--bind-ingress-port=80`](#--bind-ingress-port)) makes more sense for most use cases.
+By now, using no arguments (which sets [`--bind-ingress-port=80`](#--bind-ingress-port)) makes more sense for most use
+cases.
 
-Even with `--bind-localhost`, there still is one port that has to be bound to localhost: the registry port. 
-For registries other than localhost or local ip addresses, docker will use HTTPS, leading to errors on `docker push` in the example application's Jenkins Jobs.
-Note that if you use this option and the registry's default port 30000 is already bound on localhost 
+Even with `--bind-localhost`, there still is one port that has to be bound to localhost: the registry port.
+For registries other than localhost or local ip addresses, docker will use HTTPS, leading to errors on `docker push` in
+the example application's Jenkins Jobs.
+Note that if you use this option and the registry's default port 30000 is already bound on localhost
 (e.g. when starting more than one instance of the playground) you can overwrite it with `--bind-registry-port`.
-You can also bin the registry port will be bound to an arbitrary free port on localhost using `--bind-registry-port=0`, **which we don't recommend**.
-Note that this port changes on every restart of the k3d container, rendering the registry inside the playground's jenkins inaccessible. 
+You can also bin the registry port will be bound to an arbitrary free port on localhost using `--bind-registry-port=0`,
+**which we don't recommend**.
+Note that this port changes on every restart of the k3d container, rendering the registry inside the playground's
+jenkins inaccessible.
 
-This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example: 
+This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example:
 
 ### --bind-ingress-port
 
 By default, ingress controller is bound to `localhost:80`, i.e. `localhost`.
-Can be disabled by setting `--bind-ingress-port=-` 
+Can be disabled by setting `--bind-ingress-port=-`
 
-This feature can be used for local ingresses which are the only way to run the playground on Windows and Mac, 
+This feature can be used for local ingresses which are the only way to run the playground on Windows and Mac,
 reduce the risk of port conflicts and might be more convenient than using port numbers.
 
-See [README](../README.md) "Running on Windows or Mac" and "Local ingresses". 
+See [README](../README.md) "Running on Windows or Mac" and "Local ingresses".
 
 When there is a problem with the ingress controller, there are two options of reaching Argo CD, etc.
 
-#### Find the IP address of the k3d docker container 
+#### Find the IP address of the k3d docker container
 
 Find out the IP address to access the services in the playground, the following docker command will do
 
@@ -102,8 +111,6 @@ scripts/init-cluster.sh --bind-ports=9090:9090,9091:9091,9092:9092
 
 After applying GOP, you can reach Argo CD on `localhost:9092`.  
 See [README](../README.md), `Example Applications` for the port numbers.
-
-
 
 ## Implementation details
 

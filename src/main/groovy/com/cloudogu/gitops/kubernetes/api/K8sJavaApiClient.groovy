@@ -93,6 +93,6 @@ class K8sJavaApiClient {
 	 * @return
 	 */
 	String getCurrentNamespace() {
-        return this.client.getNamespace()
-    }
+		return this.client.getNamespace()
+	}
 }
