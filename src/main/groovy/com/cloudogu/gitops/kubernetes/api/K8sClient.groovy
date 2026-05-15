@@ -1089,6 +1089,14 @@ class K8sClient {
 		}
 	}
 
+	/**
+	 * Return current namespace from running pod.
+	 * @return
+	 */
+	String getCurrentNamespace() {
+		return this.client.getNamespace()
+	}
+
 	// ========================================
 	// Inner Classes
 	// ========================================
