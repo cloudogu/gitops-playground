@@ -312,6 +312,13 @@
                 }
               }
             },
+            "installOperator": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Installs ArgoCD Operator itself"
+            },
             "namespace" : {
               "type" : [ "string", "null" ],
               "description" : "Defines the kubernetes namespace for ArgoCD"
@@ -319,6 +326,13 @@
             "operator" : {
               "type" : [ "boolean", "null" ],
               "description" : "Install ArgoCD via an already running ArgoCD Operator"
+            },
+            "operatorVersion": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Operator Version to install"
             },
             "resourceInclusionsCluster" : {
               "type" : [ "string", "null" ],

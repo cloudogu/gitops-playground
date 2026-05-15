@@ -144,6 +144,8 @@ interface ConfigConstants {
 	String ARGOCD_EMAIL_TO_USER_DESCRIPTION = 'Notifications, define Argo CD user / app-team recipient email address'
 	String ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION = 'Notifications, define Argo CD admin recipient email address'
 	String ARGOCD_OPERATOR_DESCRIPTION = 'Install ArgoCD via an already running ArgoCD Operator'
+	String ARGOCD_INSTALL_OPERATOR_DESCRIPTION = 'Installs ArgoCD Operator itself'
+	String ARGOCD_INSTALL_OPERATOR_VERSION_DESCRIPTION = 'Operator Version to install'
 	String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
 	String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
 	String ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION = 'Defines the kubernetes namespace for ArgoCD'

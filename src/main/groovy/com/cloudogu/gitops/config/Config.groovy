@@ -510,6 +510,13 @@ class Config {
 		@JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
 		Boolean operator = false
 
+		@Option(names = ['--install-argocd-operator'], description = ARGOCD_INSTALL_OPERATOR_DESCRIPTION)
+		@JsonPropertyDescription(ARGOCD_INSTALL_OPERATOR_DESCRIPTION)
+		Boolean installOperator = false
+
+		@JsonPropertyDescription(ARGOCD_INSTALL_OPERATOR_VERSION_DESCRIPTION)
+		Boolean operatorVersion = '0.17'
+
 		@Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
 		@JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
 		String url = ''
