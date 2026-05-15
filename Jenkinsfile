@@ -107,57 +107,38 @@ pipeline {
                             }
 
                             def dumpKubernetesDebugInfo = { profile ->
-                                  def dumpDir = "target/k8s-debug/${profile}"
+                                def dumpDir = "target/k8s-debug/${profile}"
 
-                                  sh(script: """
-                                      set +e
-                                      mkdir -p '${dumpDir}'
-                                      export KUBECONFIG='${env.WORKSPACE}/.kubeconfig.yaml'
+                                docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                    sh(script: """
+                                        set +e
+                                        apk add --no-cache kubectl
+                                        mkdir -p '${dumpDir}'
+                                        export KUBECONFIG='${env.WORKSPACE}/.kubeconfig.yaml'
 
-                                      {
-                                        echo '# cluster-info'
-                                        kubectl cluster-info
+                                        kubectl cluster-info > '${dumpDir}/cluster-info.txt' 2>&1
+                                        kubectl get nodes -o wide > '${dumpDir}/nodes.txt' 2>&1
+                                        kubectl get namespaces -o wide > '${dumpDir}/namespaces.txt' 2>&1
+                                        kubectl get pods -A -o wide > '${dumpDir}/pods.txt' 2>&1
+                                        kubectl get events -A --sort-by=.lastTimestamp > '${dumpDir}/events.txt' 2>&1
+                                        kubectl get pvc,pv -A -o wide > '${dumpDir}/volumes.txt' 2>&1
+                                        kubectl get ingress -A -o wide > '${dumpDir}/ingress.txt' 2>&1
+                                        kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
 
-                                        echo
-                                        echo '# nodes'
-                                        kubectl get nodes -o wide
+                                        : > '${dumpDir}/container-logs.txt'
+                                        kubectl get pods -A --no-headers \\
+                                          -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name |
+                                        while read -r namespace pod; do
+                                          echo "===== \${namespace}/\${pod} current =====" >> '${dumpDir}/container-logs.txt'
+                                          kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
 
-                                        echo
-                                        echo '# namespaces'
-                                        kubectl get namespaces -o wide
-
-                                        echo
-                                        echo '# pods'
-                                        kubectl get pods -A -o wide
-
-                                        echo
-                                        echo '# events'
-                                        kubectl get events -A --sort-by=.lastTimestamp
-
-                                        echo
-                                        echo '# pvc / pv'
-                                        kubectl get pvc,pv -A -o wide
-
-                                        echo
-                                        echo '# ingress'
-                                        kubectl get ingress -A -o wide
-                                      } > '${dumpDir}/overview.txt' 2>&1
-
-                                      kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
-
-                                      : > '${dumpDir}/container-logs.txt'
-                                      kubectl get pods -A --no-headers \\
-                                        -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name |
-                                      while read -r namespace pod; do
-                                        echo "===== \${namespace}/\${pod} current =====" >> '${dumpDir}/container-logs.txt'
-                                        kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --tail=100 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
-
-                                        echo >> '${dumpDir}/container-logs.txt'
-                                        echo "===== \${namespace}/\${pod} previous =====" >> '${dumpDir}/container-logs.txt'
-                                        kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=100 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
-                                        echo >> '${dumpDir}/container-logs.txt'
-                                      done
-                                  """, returnStatus: true)
+                                          echo >> '${dumpDir}/container-logs.txt'
+                                          echo "===== \${namespace}/\${pod} previous =====" >> '${dumpDir}/container-logs.txt'
+                                          kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
+                                          echo >> '${dumpDir}/container-logs.txt'
+                                        done
+                                    """, returnStatus: true)
+                                }
 
                                   archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
                               }
