@@ -127,8 +127,8 @@ class ApplicationConfiguratorTest {
 			commonFeatureConfig.validateConfig(testConfig)
 		}
 		assertThat(exception.message).isEqualTo('Missing config for localHelmChartFolder.\n' +
-				                                        'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
-				                                        'after running \'scripts/downloadHelmCharts.sh\' from the repo')
+			'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
+			'after running \'scripts/downloadHelmCharts.sh\' from the repo')
 	}
 
 	@Test
@@ -192,7 +192,7 @@ class ApplicationConfiguratorTest {
 
 		// Test setting path
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
-		                                                                             target: 'namespace/repo', path: 'non-default-path'),]
+			target: 'namespace/repo', path: 'non-default-path'),]
 		exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
@@ -200,7 +200,7 @@ class ApplicationConfiguratorTest {
 
 		// Test templating enabled
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
-		                                                                             target: 'namespace/repo', templating: true),]
+			target: 'namespace/repo', templating: true),]
 		exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
@@ -446,7 +446,7 @@ class ApplicationConfiguratorTest {
 		applicationConfigurator.initConfig(testConfig)
 
 		assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup."))
-				.isNotEmpty()
+			.isNotEmpty()
 	}
 
 	@Test
@@ -459,9 +459,9 @@ class ApplicationConfiguratorTest {
 
 		assertThat(testConfig.features.argocd.resourceInclusionsCluster).isEqualTo("https://valid-url.com")
 		assertThat(testLogger.getLogs().search("Validating user-provided features.argocd.resourceInclusionsCluster URL: https://valid-url.com"))
-				.isNotEmpty()
+			.isNotEmpty()
 		assertThat(testLogger.getLogs().search("Found valid URL in features.argocd.resourceInclusionsCluster: https://valid-url.com"))
-				.isNotEmpty()
+			.isNotEmpty()
 	}
 
 	@Test
@@ -483,15 +483,15 @@ class ApplicationConfiguratorTest {
 
 		// Set Kubernetes ENV variables
 		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-				.and("KUBERNETES_SERVICE_PORT", "6443")
-				.execute {
-					Config actualConfig = applicationConfigurator.initConfig(testConfig)
+			.and("KUBERNETES_SERVICE_PORT", "6443")
+			.execute {
+				Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-					assertThat(actualConfig.features.argocd.resourceInclusionsCluster).isEqualTo("https://127.0.0.1:6443")
+				assertThat(actualConfig.features.argocd.resourceInclusionsCluster).isEqualTo("https://127.0.0.1:6443")
 
-					assertThat(testLogger.getLogs().search("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"))
-							.isNotEmpty()
-				}
+				assertThat(testLogger.getLogs().search("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"))
+					.isNotEmpty()
+			}
 	}
 
 	@Test
@@ -534,14 +534,14 @@ class ApplicationConfiguratorTest {
 
 		// Set invalid Kubernetes ENV variables
 		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "invalid_host")
-				.and("KUBERNETES_SERVICE_PORT", "not_a_port")
-				.execute {
-					def exception = shouldFail(RuntimeException) {
-						applicationConfigurator.initConfig(testConfig)
-					}
-
-					assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true.")
+			.and("KUBERNETES_SERVICE_PORT", "not_a_port")
+			.execute {
+				def exception = shouldFail(RuntimeException) {
+					applicationConfigurator.initConfig(testConfig)
 				}
+
+				assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true.")
+			}
 
 		assertThat(testLogger.getLogs().search("Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port")).isNotEmpty()
 	}
@@ -576,7 +576,7 @@ class ApplicationConfiguratorTest {
 	private static Config minimalConfig() {
 		def config = new Config()
 		config.application = new Config.ApplicationSchema(localHelmChartFolder: 'someValue',
-		                                                  namePrefix: '')
+			namePrefix: '')
 		config.scm = new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(url: ''))
 		return config
 	}

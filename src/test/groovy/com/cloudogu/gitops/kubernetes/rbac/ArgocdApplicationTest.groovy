@@ -31,11 +31,11 @@ class ArgocdApplicationTest {
 		GitRepo repo = new GitRepo(config, null, "my-repo", new FileSystemUtils())
 
 		new ArgoApplication('example-apps',
-		                    'testurl.com/argocd/example-apps',
-		                    'testprefix-argocd',
-		                    'testnamespace',
-		                    'argocd/')
-				.generate(repo, 'testsubfolder/test')
+			'testurl.com/argocd/example-apps',
+			'testprefix-argocd',
+			'testnamespace',
+			'argocd/')
+			.generate(repo, 'testsubfolder/test')
 
 		File file = new File(repo.getAbsoluteLocalRepoTmpDir(), "testsubfolder/test/argocd-application-example-apps-testprefix-argocd.yaml")
 		assertThat(file).exists()

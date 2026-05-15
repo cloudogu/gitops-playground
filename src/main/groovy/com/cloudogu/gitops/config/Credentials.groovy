@@ -24,8 +24,7 @@ class Credentials {
 	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
 	String passwordKey = 'password'
 
-	Credentials() {
-	}
+	Credentials() {}
 
 	Credentials(String username, String password, String secretName = '', String secretNamespace = '', String usernameKey = "username", String passwordKey = 'password') {
 		this.username = username

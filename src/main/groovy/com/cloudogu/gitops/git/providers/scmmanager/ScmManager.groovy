@@ -179,14 +179,13 @@ class ScmManager implements GitProvider {
 	}
 
 	/** Test-only constructor (package-private on purpose). */
-	ScmManager(
-			Config config, ScmManagerConfig scmmConfig,
-			ScmManagerUrlResolver urls,
-			ScmManagerApiClient apiClient) {
+	ScmManager(Config config, ScmManagerConfig scmmConfig,
+		ScmManagerUrlResolver urls,
+		ScmManagerApiClient apiClient) {
 		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
 		this.urls = Objects.requireNonNull(urls, "urls must not be null")
 		this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
-		                                                      scmmConfig.credentials,
-		                                                      Objects.requireNonNull(config, "config must not be null").application.insecure)
+			scmmConfig.credentials,
+			Objects.requireNonNull(config, "config must not be null").application.insecure)
 	}
 }

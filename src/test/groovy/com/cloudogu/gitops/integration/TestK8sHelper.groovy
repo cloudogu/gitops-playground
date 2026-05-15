@@ -44,7 +44,7 @@ class TestK8sHelper {
 					def restarts = (pod.status?.containerStatuses ?: []).sum { it?.restartCount ?: 0 } ?: 0
 
 					sb.append(String.format("  %-60s  phase=%-10s restarts=%-3s node=%-25s start=%s",
-					                        name, phase, restarts, node, startTime))
+						name, phase, restarts, node, startTime))
 					sb.append("\n")
 				}
 			}
@@ -61,12 +61,11 @@ class TestK8sHelper {
 	 * @param cmd
 	 * @return
 	 */
-	static String execAndGetStdout(
-			KubernetesClient client,
-			String ns,
-			String pod,
-			String container,
-			String... cmd) {
+	static String execAndGetStdout(KubernetesClient client,
+		String ns,
+		String pod,
+		String container,
+		String... cmd) {
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream()
 		ByteArrayOutputStream err = new ByteArrayOutputStream()
@@ -83,18 +82,18 @@ class TestK8sHelper {
 		}
 
 		try (ExecWatch watch = client.pods()
-				.inNamespace(ns)
-				.withName(pod)
-				.inContainer(container)
-				.writingOutput(out)
-				.writingError(err)
-				.usingListener(listener)
-				.exec(cmd)) {
+			.inNamespace(ns)
+			.withName(pod)
+			.inContainer(container)
+			.writingOutput(out)
+			.writingError(err)
+			.usingListener(listener)
+			.exec(cmd)) {
 
 			Awaitility.await()
-					.atMost(5, TimeUnit.MINUTES)
-					.pollInterval(500, TimeUnit.MILLISECONDS)
-					.until(() -> finished.getCount() == 0)
+				.atMost(5, TimeUnit.MINUTES)
+				.pollInterval(500, TimeUnit.MILLISECONDS)
+				.until(() -> finished.getCount() == 0)
 
 		} catch (Exception e) {
 			throw new RuntimeException("Exec failed/timeout for pod " + ns + "/" + pod, e)

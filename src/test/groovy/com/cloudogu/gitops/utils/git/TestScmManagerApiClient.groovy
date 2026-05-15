@@ -39,26 +39,26 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
 		def responseExists = mockErrorResponse(409)
 
 		when(repositoryApi.create(ArgumentMatchers.any(Repository), anyBoolean()))
-				.thenAnswer { invocation ->
-					Repository repo = invocation.getArgument(0)
-					if (createdRepos.contains(repo.fullRepoName)) {
-						return responseExists
-					} else {
-						createdRepos.add(repo.fullRepoName)
-						return responseCreated
-					}
+			.thenAnswer { invocation ->
+				Repository repo = invocation.getArgument(0)
+				if (createdRepos.contains(repo.fullRepoName)) {
+					return responseExists
+				} else {
+					createdRepos.add(repo.fullRepoName)
+					return responseCreated
 				}
+			}
 		when(repositoryApi.createPermission(anyString(), anyString(), any(Permission)))
-				.thenAnswer { invocation ->
-					String namespace = invocation.getArgument(0)
-					String name = invocation.getArgument(1)
-					if (createdPermissions.contains("${namespace}/${name}".toString())) {
-						return responseExists
-					} else {
-						createdPermissions.add("${namespace}/${name}".toString())
-						return responseCreated
-					}
+			.thenAnswer { invocation ->
+				String namespace = invocation.getArgument(0)
+				String name = invocation.getArgument(1)
+				if (createdPermissions.contains("${namespace}/${name}".toString())) {
+					return responseExists
+				} else {
+					createdPermissions.add("${namespace}/${name}".toString())
+					return responseCreated
 				}
+			}
 	}
 
 	static Call<Void> mockSuccessfulResponse(int expectedReturnCode) {

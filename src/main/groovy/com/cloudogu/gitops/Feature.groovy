@@ -89,13 +89,12 @@ abstract class Feature {
 		return new YamlSlurper().parseText(hydratedString) as Map
 	}
 
-	protected void deployHelmChart(
-			String featureName,
-			String releaseName,
-			String namespace,
-			Config.HelmConfigWithValues helmConfig,
-			String helmValuesTemplatePath,
-			Config config) {
+	protected void deployHelmChart(String featureName,
+		String releaseName,
+		String namespace,
+		Config.HelmConfigWithValues helmConfig,
+		String helmValuesTemplatePath,
+		Config config) {
 		String repoURL = helmConfig.repoURL
 		String chartOrPath = helmConfig.chart
 		String version = helmConfig.version
@@ -130,21 +129,21 @@ abstract class Feature {
 			chartOrPath = '.'
 			repoType = RepoType.GIT
 			version = new YamlSlurper()
-					.parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-					               'Chart.yaml'))['version']
+				.parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
+					'Chart.yaml'))['version']
 		}
 
 		log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
 		log.debug("helm values used: ${helmValuesData}")
 
 		this.deployer.deployFeature(repoURL,
-		                            featureName,
-		                            chartOrPath,
-		                            version,
-		                            namespace,
-		                            releaseName,
-		                            tempValuesPath,
-		                            repoType)
+			featureName,
+			chartOrPath,
+			version,
+			namespace,
+			releaseName,
+			tempValuesPath,
+			repoType)
 	}
 
 	abstract boolean isEnabled()
@@ -153,29 +152,24 @@ abstract class Feature {
 	 *  Hooks for enabling or disabling a feature. Both optional, because not always needed.
 	 */
 
-	protected void enable() {
-	}
+	protected void enable() {}
 
-	protected void disable() {
-	}
+	protected void disable() {}
 
 	/*
 	 * Hook for special feature validation. Optional.
 	 * Feature should throw RuntimeException to stop immediately.
 	 */
 
-	protected void validate() {
-	}
+	protected void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.
 	 * Feature should throw RuntimeException to stop immediately.*/
-	void preConfigInit(Config configToSet) {
-	}
+	void preConfigInit(Config configToSet) {}
 
 	/**
 	 * Hook for postConfigInit. Optional.
 	 * Feature should throw RuntimeException to stop immediately.*/
-	void postConfigInit(Config configToSet) {
-	}
+	void postConfigInit(Config configToSet) {}
 }

@@ -35,14 +35,13 @@ class Monitoring extends Feature implements FeatureWithImage {
 
 	private GitRepoFactory scmRepoProvider
 
-	Monitoring(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer,
-			K8sClient k8sClient,
-			AirGappedUtils airGappedUtils,
-			GitRepoFactory scmRepoProvider,
-			GitHandler gitHandler) {
+	Monitoring(Config config,
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitRepoFactory scmRepoProvider,
+		GitHandler gitHandler) {
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
@@ -91,43 +90,43 @@ class Monitoring extends Feature implements FeatureWithImage {
 
 	private void setupMonitoringSecrets() {
 		k8sClient.createSecret('generic',
-		                       'prometheus-metrics-creds-scmm',
-		                       namespace,
-		                       new Tuple2('password', config.application.password))
+			'prometheus-metrics-creds-scmm',
+			namespace,
+			new Tuple2('password', config.application.password))
 
 		k8sClient.createSecret('generic',
-		                       'prometheus-metrics-creds-jenkins',
-		                       namespace,
-		                       new Tuple2('password', config.jenkins.metricsPassword),)
+			'prometheus-metrics-creds-jenkins',
+			namespace,
+			new Tuple2('password', config.jenkins.metricsPassword),)
 
 		if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
 			k8sClient.createSecret('generic',
-			                       'grafana-email-secret',
-			                       namespace,
-			                       new Tuple2('user', config.features.mail.smtpUser),
-			                       new Tuple2('password', config.features.mail.smtpPassword))
+				'grafana-email-secret',
+				namespace,
+				new Tuple2('user', config.features.mail.smtpUser),
+				new Tuple2('password', config.features.mail.smtpPassword))
 		}
 	}
 
 	private void generateNamespaceIsolationRBAC(GitRepo repo) {
 		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 			String rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-			                                                  [namespace : currentNamespace,
-			                                                   namePrefix: config.application.namePrefix,
-			                                                   config    : config,])
+				[namespace : currentNamespace,
+				 namePrefix: config.application.namePrefix,
+				 config    : config,])
 			repo.writeFile("apps/monitoring/misc/rbac/${currentNamespace}.yaml",
-			               rbacYaml)
+				rbacYaml)
 		}
 	}
 
 	private void generateNetpols(GitRepo repo) {
 		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 			String netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
-			                                                     [namespace : currentNamespace,
-			                                                      namePrefix: config.application.namePrefix,])
+				[namespace : currentNamespace,
+				 namePrefix: config.application.namePrefix,])
 
 			repo.writeFile("apps/monitoring/misc/netpols/${currentNamespace}.yaml",
-			               netpolsYaml)
+				netpolsYaml)
 		}
 	}
 
@@ -145,7 +144,7 @@ class Monitoring extends Feature implements FeatureWithImage {
 				serviceMonitorCrdYaml = Path.of("${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml").toString()
 			} else {
 				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
-						"charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+					"charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
 			}
 
 			log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" + "Applying from path ${serviceMonitorCrdYaml}")

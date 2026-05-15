@@ -39,9 +39,8 @@ class GitopsPlaygroundCli {
 	K8sClient k8sClient
 	ApplicationConfigurator applicationConfigurator
 
-	GitopsPlaygroundCli(
-			K8sClient k8sClient = new K8sClient(),
-			ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
+	GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(),
+		ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
 		this.k8sClient = k8sClient
 		this.applicationConfigurator = applicationConfigurator
 	}
@@ -113,8 +112,8 @@ class GitopsPlaygroundCli {
 		if (versionName.trim().startsWith('(')) {
 			// When there is no git tag, print commit without parentheses
 			versionName = versionName.trim()
-					.replace('(', '')
-					.replace(')', '')
+				.replace('(', '')
+				.replace(')', '')
 		}
 		return "${APP_NAME} ${versionName}"
 	}
@@ -165,15 +164,15 @@ class GitopsPlaygroundCli {
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
 		def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
 		def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
-				.getEncoder() as PatternLayoutEncoder).pattern
+			.getEncoder() as PatternLayoutEncoder).pattern
 
 		// Avoid duplicate output by existing appender
 		rootLogger.detachAppender('STDOUT')
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder()
 		// Remove less relevant details from log pattern
 		encoder.setPattern(defaultPattern
-				                   .replaceAll(" \\S*%thread\\S* ", " ")
-				                   .replaceAll(" \\S*%logger\\S* ", " "))
+			.replaceAll(" \\S*%thread\\S* ", " ")
+			.replaceAll(" \\S*%logger\\S* ", " "))
 		encoder.setContext(loggerContext)
 		encoder.start()
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()

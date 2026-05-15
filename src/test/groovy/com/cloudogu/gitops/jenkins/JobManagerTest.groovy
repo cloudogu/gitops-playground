@@ -23,13 +23,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathMatching(".*createCredentials.*"))
-					                       .willReturn(ok()))
+				.willReturn(ok()))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			jobManager.createCredential('the-jobname', 'the-id', 'the-username', 'the-password', 'some description')
 
@@ -40,7 +40,7 @@ class JobManagerTest {
 
 			def requestBody = requests[0].bodyAsString
 			assertThat(URLDecoder.decode(requestBody, "utf-8"))
-					.isEqualTo('json={"credentials":{"scope":"GLOBAL","id":"the-id","username":"the-username","password":"the-password","description":"some description","$class":"com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"}}')
+				.isEqualTo('json={"credentials":{"scope":"GLOBAL","id":"the-id","username":"the-username","password":"the-password","description":"some description","$class":"com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"}}')
 
 		} finally {
 			wireMockServer.stop()
@@ -54,13 +54,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathMatching(".*createCredentials.*"))
-					                       .willReturn(aResponse().withStatus(404)))
+				.willReturn(aResponse().withStatus(404)))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def exception = shouldFail(RuntimeException) {
 				jobManager.createCredential('the-jobname', 'the-id', 'the-username', 'the-password', 'some description')
@@ -78,18 +78,18 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/job/the-jobname/build.*"))
-					                       .willReturn(ok()))
+				.willReturn(ok()))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			jobManager.startJob('the-jobname')
 
 			wireMockServer.verify(postRequestedFor(urlPathEqualTo("/jenkins/job/the-jobname/build"))
-					                      .withQueryParam("delay", equalTo("0sec")))
+				.withQueryParam("delay", equalTo("0sec")))
 
 		} finally {
 			wireMockServer.stop()
@@ -103,13 +103,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/job/the-jobname/build.*"))
-					                       .willReturn(aResponse().withStatus(400)))
+				.willReturn(aResponse().withStatus(400)))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def exception = shouldFail(RuntimeException) {
 				jobManager.startJob('the-jobname')
@@ -159,13 +159,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
-					                       .willReturn(ok()))
+				.willReturn(ok()))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def exists = jobManager.jobExists('the-jobname')
 
@@ -183,13 +183,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
-					                       .willReturn(aResponse().withStatus(404)))
+				.willReturn(aResponse().withStatus(404)))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def exists = jobManager.jobExists('the-jobname')
 			assertThat(exists).isEqualTo(false)
@@ -206,14 +206,14 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
-					                       .willReturn(aResponse().withStatus(404)))
+				.willReturn(aResponse().withStatus(404)))
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/createItem.*"))
-					                       .willReturn(ok()))
+				.willReturn(ok()))
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
 
@@ -221,10 +221,10 @@ class JobManagerTest {
 
 			wireMockServer.verify(postRequestedFor(urlPathEqualTo("/jenkins/job/the-jobname")))
 			wireMockServer.verify(postRequestedFor(urlPathEqualTo("/jenkins/createItem"))
-					                      .withQueryParam("name", equalTo("the-jobname"))
-					                      .withRequestBody(containing('<serverUrl>http://scm</serverUrl>'))
-					                      .withRequestBody(containing('<namespace>ns</namespace>'))
-					                      .withRequestBody(containing('<credentialsId>creds</credentialsId>')))
+				.withQueryParam("name", equalTo("the-jobname"))
+				.withRequestBody(containing('<serverUrl>http://scm</serverUrl>'))
+				.withRequestBody(containing('<namespace>ns</namespace>'))
+				.withRequestBody(containing('<credentialsId>creds</credentialsId>')))
 
 		} finally {
 			wireMockServer.stop()
@@ -238,13 +238,13 @@ class JobManagerTest {
 
 		try {
 			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-					                       .willReturn(okJson('{"crumb":"the-crumb"}')))
+				.willReturn(okJson('{"crumb":"the-crumb"}')))
 
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
-					                       .willReturn(ok())) // 200 OK means "Job Exists"
+				.willReturn(ok())) // 200 OK means "Job Exists"
 
 			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
-			                                                     new OkHttpClient()))
+				new OkHttpClient()))
 
 			def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
 

@@ -33,10 +33,10 @@ class HelmStrategyTest {
 	void 'Fails to deploy from git'() {
 		def exception = shouldFail(RuntimeException) {
 			createStrategy().deployFeature("http://repoURL", "repoName", "chart", "version", "namespace",
-			                               "releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.GIT)
+				"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.GIT)
 		}
 		assertThat(exception.message).isEqualTo("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" +
-				                                        "Repo URL: http://repoURL")
+			"Repo URL: http://repoURL")
 
 	}
 

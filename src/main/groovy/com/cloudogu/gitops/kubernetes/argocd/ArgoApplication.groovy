@@ -54,8 +54,8 @@ class ArgoApplication {
 		outputDir.mkdirs()
 
 		templater.template(this.getTemplateFile(),
-		                   this.getOutputFile(outputDir),
-		                   this.toTemplateParams())
+			this.getOutputFile(outputDir),
+			this.toTemplateParams())
 
 	}
 

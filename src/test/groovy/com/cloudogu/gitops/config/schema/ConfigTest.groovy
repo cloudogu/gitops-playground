@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class ConfigTest {
 	Config testConfig = new Config(registry: new RegistrySchema(twoRegistries: true,
-	                                                            internalPort: 123))
+		internalPort: 123))
 
 	@Test
 	void 'converts to yaml including internals'() {
@@ -35,13 +35,13 @@ registry:
 	@Test
 	void 'creates from schema overwriting only Map values, ignoring null values'() {
 		Config expectedValues = new Config(application: new ApplicationSchema(// Overwrites a default String
-		                                                                      username: 'myUser',
-		                                                                      // Overwrites a default Boolean
-		                                                                      yes: true,
-		                                                                      // Sets an otherwise empty string
-		                                                                      namePrefix: "aPrefix"),
-		                                   // Overwrites a default Integer
-		                                   registry: new RegistrySchema(internalPort: 42))
+			username: 'myUser',
+			// Overwrites a default Boolean
+			yes: true,
+			// Sets an otherwise empty string
+			namePrefix: "aPrefix"),
+			// Overwrites a default Integer
+			registry: new RegistrySchema(internalPort: 42))
 
 		def actualValues = fromMap(expectedValues.toMap())
 

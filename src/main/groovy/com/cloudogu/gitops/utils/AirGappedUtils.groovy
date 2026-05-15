@@ -22,9 +22,8 @@ class AirGappedUtils {
 	private HelmClient helmClient
 	private GitHandler gitHandler
 
-	AirGappedUtils(
-			Config config, GitRepoFactory repoProvider,
-			FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
+	AirGappedUtils(Config config, GitRepoFactory repoProvider,
+		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
 		this.config = config
 		this.repoProvider = repoProvider
 		this.fileSystemUtils = fileSystemUtils
@@ -62,7 +61,7 @@ class AirGappedUtils {
 		new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
 		repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" + "Source: ${helmConfig.repoURL}\n" +
-				                   "Dependencies localized to run in air-gapped environments", chartYaml.version as String)
+			"Dependencies localized to run in air-gapped environments", chartYaml.version as String)
 		return repoNamespaceAndName
 	}
 
@@ -118,7 +117,7 @@ class AirGappedUtils {
 		// Note that list.find{} does not work in GraalVM native image:
 		// UnsupportedFeatureError: Runtime reflection is not supported
 		list.stream()
-				.filter(map -> map.name == name)
-				.findFirst().orElse([:])
+			.filter(map -> map.name == name)
+			.findFirst().orElse([:])
 	}
 }

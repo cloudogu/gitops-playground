@@ -20,14 +20,13 @@ class JenkinsApiClient {
 	private int maxRetries = 180
 	private int waitPeriodInMs = 2000
 
-	JenkinsApiClient(
-			Config config,
-			@Named("jenkins") OkHttpClient client) {
+	JenkinsApiClient(Config config,
+		@Named("jenkins") OkHttpClient client) {
 
 		if (config.application.insecure) {
 			this.client = client.newBuilder()
-					.hostnameVerifier({ hostname, session -> true })
-					.build()
+				.hostnameVerifier({ hostname, session -> true })
+				.build()
 		} else {
 			this.client = client
 		}
@@ -47,7 +46,7 @@ class JenkinsApiClient {
 	Response postRequestWithCrumb(String url, RequestBody postData = null) {
 		return sendRequestWithRetries {
 			Request.Builder request = buildRequest(url)
-					.header("Jenkins-Crumb", getCrumb())
+				.header("Jenkins-Crumb", getCrumb())
 
 			if (postData != null) {
 				request.method("POST", postData)
@@ -80,8 +79,8 @@ class JenkinsApiClient {
 
 	private Request.Builder buildRequest(String url) {
 		return new Request.Builder()
-				.url("${config.jenkins.url}/$url")
-				.header("Authorization", Credentials.basic(config.jenkins.username, config.jenkins.password))
+			.url("${config.jenkins.url}/$url")
+			.header("Authorization", Credentials.basic(config.jenkins.username, config.jenkins.password))
 	}
 
 	// We pass a closure, so that we actually refetch a new crumb for a failed request

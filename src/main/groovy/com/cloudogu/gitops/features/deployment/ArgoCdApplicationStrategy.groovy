@@ -22,11 +22,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 	private GitHandler gitHandler
 
-	ArgoCdApplicationStrategy(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			GitRepoFactory gitRepoProvider,
-			GitHandler gitHandler) {
+	ArgoCdApplicationStrategy(Config config,
+		FileSystemUtils fileSystemUtils,
+		GitRepoFactory gitRepoProvider,
+		GitHandler gitHandler) {
 		this.gitRepoProvider = gitRepoProvider
 		this.fileSystemUtils = fileSystemUtils
 		this.config = config
@@ -36,9 +35,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	@Override
 	@SuppressWarnings('GroovyGStringKey')
 	// Using dynamic strings as keys seems an easy to read way to avoid more ifs
-	void deployFeature(
-			String repoURL, String repoName, String chartOrPath, String version, String namespace,
-			String releaseName, Path helmValuesPath, RepoType repoType) {
+	void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+		String releaseName, Path helmValuesPath, RepoType repoType) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 		def namePrefix = config.application.namePrefix
 		def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
@@ -100,8 +98,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		// Prepare ArgoCD Application YAML
 		def yamlMapper = YAMLMapper.builder()
-				.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
-				.build()
+			.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
+			.build()
 
 		def yamlResult = yamlMapper.writeValueAsString([apiVersion: "argoproj.io/v1alpha1",
 		                                                kind      : "Application",

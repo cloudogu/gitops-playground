@@ -23,12 +23,11 @@ class ArgoCDRepoSetup {
 	private final Config config
 	private final FileSystemUtils fileSystemUtils
 
-	private ArgoCDRepoSetup(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			RepoInitializationAction clusterResources,
-			RepoInitializationAction tenantBootstrap,
-			List<RepoInitializationAction> allRepos) {
+	private ArgoCDRepoSetup(Config config,
+		FileSystemUtils fileSystemUtils,
+		RepoInitializationAction clusterResources,
+		RepoInitializationAction tenantBootstrap,
+		List<RepoInitializationAction> allRepos) {
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.clusterResources = clusterResources
@@ -44,23 +43,23 @@ class ArgoCDRepoSetup {
 		if (config.multiTenant.useDedicatedInstance) {
 			// Dedicated instance: tenant bootstrap (tenant provider) + cluster-resources (central provider)
 			tenant = createRepoInitializationAction(config, repoFactory, gitHandler,
-			                                        'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
-			                                        'argocd/cluster-resources',
-			                                        gitHandler.tenant)
+				'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
+				'argocd/cluster-resources',
+				gitHandler.tenant)
 			all.add(tenant)
 
 			cluster = createRepoInitializationAction(config, repoFactory, gitHandler,
-			                                         'argocd/cluster-resources',
-			                                         'argocd/cluster-resources',
-			                                         gitHandler.central)
+				'argocd/cluster-resources',
+				'argocd/cluster-resources',
+				gitHandler.central)
 			all.add(cluster)
 
 		} else {
 			// Single instance: only cluster-resources (tenant provider)
 			cluster = createRepoInitializationAction(config, repoFactory, gitHandler,
-			                                         'argocd/cluster-resources',
-			                                         'argocd/cluster-resources',
-			                                         gitHandler.tenant)
+				'argocd/cluster-resources',
+				'argocd/cluster-resources',
+				gitHandler.tenant)
 			all.add(cluster)
 		}
 
@@ -141,16 +140,15 @@ class ArgoCDRepoSetup {
 		return clusterResourceSubDirs
 	}
 
-	private static RepoInitializationAction createRepoInitializationAction(
-			Config config,
-			GitRepoFactory repoFactory,
-			GitHandler gitHandler,
-			String localSrcDir,
-			String scmRepoTarget,
-			GitProvider gitProvider) {
+	private static RepoInitializationAction createRepoInitializationAction(Config config,
+		GitRepoFactory repoFactory,
+		GitHandler gitHandler,
+		String localSrcDir,
+		String scmRepoTarget,
+		GitProvider gitProvider) {
 		new RepoInitializationAction(config,
-		                             repoFactory.getRepo(scmRepoTarget, gitProvider),
-		                             gitHandler,
-		                             localSrcDir)
+			repoFactory.getRepo(scmRepoTarget, gitProvider),
+			gitHandler,
+			localSrcDir)
 	}
 }

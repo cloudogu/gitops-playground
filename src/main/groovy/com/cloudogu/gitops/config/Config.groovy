@@ -93,11 +93,11 @@ class Config {
 	 */
 	private static generatePassword() {
 		return new SecureRandom()
-				.with { sr ->
-					(1..12).collect {
-						('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
-					}.join('')
-				}
+			.with { sr ->
+				(1..12).collect {
+					('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
+				}.join('')
+			}
 	}
 
 	static class ContentSchema {
@@ -279,8 +279,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
-		                                                     repoURL: 'https://twuni.github.io/docker-registry.helm',
-		                                                     version: '3.0.0')
+			repoURL: 'https://twuni.github.io/docker-registry.helm',
+			version: '3.0.0')
 
 	}
 
@@ -346,8 +346,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
-		                                                     repoURL: 'https://charts.jenkins.io',
-		                                                     version: '5.9.18')
+			repoURL: 'https://charts.jenkins.io',
+			version: '5.9.18')
 	}
 
 	static class ApplicationSchema {
@@ -584,10 +584,10 @@ class Config {
 		@SuppressWarnings('GroovyAssignabilityCheck')
 		// Because of values
 		MonitoringHelmSchema helm = new MonitoringHelmSchema(chart: 'kube-prometheus-stack',
-		                                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-		                                                     /* When updating this make sure to also test if air-gapped mode still works */
-		                                                     version: '80.2.2',
-		                                                     values: [:] // Otherwise values is null 🤷‍♂️
+			repoURL: 'https://prometheus-community.github.io/helm-charts',
+			/* When updating this make sure to also test if air-gapped mode still works */
+			version: '80.2.2',
+			values: [:] // Otherwise values is null 🤷‍♂️
 		)
 		static class MonitoringHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
@@ -628,8 +628,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
-			                                       repoURL: 'https://charts.external-secrets.io',
-			                                       version: '0.9.16')
+				repoURL: 'https://charts.external-secrets.io',
+				version: '0.9.16')
 			static class ESOHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -657,8 +657,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
-			                                           repoURL: 'https://helm.releases.hashicorp.com',
-			                                           version: '0.25.0')
+				repoURL: 'https://helm.releases.hashicorp.com',
+				version: '0.25.0')
 			static class VaultHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
@@ -676,8 +676,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		IngressHelmSchema helm = new IngressHelmSchema(chart: 'traefik',
-		                                               repoURL: 'https://traefik.github.io/charts',
-		                                               version: '39.0.0')
+			repoURL: 'https://traefik.github.io/charts',
+			version: '39.0.0')
 		static class IngressHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
 			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
@@ -699,8 +699,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		CertManagerHelmSchema helm = new CertManagerHelmSchema(chart: 'cert-manager',
-		                                                       repoURL: 'https://charts.jetstack.io',
-		                                                       version: '1.19.4')
+			repoURL: 'https://charts.jetstack.io',
+			version: '1.19.4')
 
 		static class CertManagerHelmSchema extends HelmConfigWithValues {
 
@@ -744,12 +744,12 @@ class Config {
 	}
 
 	private static final ObjectMapper objectMapper = new ObjectMapper()
-			.registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
-				@Override
-				void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-					jsonGenerator.writeString(value.toString())
-				}
-			}))
+		.registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
+			@Override
+			void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+				jsonGenerator.writeString(value.toString())
+			}
+		}))
 
 	static Config fromMap(Map map) {
 		objectMapper.convertValue(map, Config)
@@ -761,18 +761,18 @@ class Config {
 
 	String toYaml(boolean includeInternals) {
 		createYamlMapper(includeInternals)
-				.writeValueAsString(this)
+			.writeValueAsString(this)
 	}
 
 	private static YAMLMapper createYamlMapper(boolean includeInternals) {
 		if (!includeInternals) {
 			new YAMLMapper()
-					.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
-						@Override
-						List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
-							beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
-						}
-					})) as YAMLMapper
+				.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
+					@Override
+					List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+						beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
+					}
+				})) as YAMLMapper
 		} else {
 			new YAMLMapper()
 		}

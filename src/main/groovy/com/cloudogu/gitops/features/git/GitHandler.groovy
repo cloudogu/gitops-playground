@@ -122,7 +122,7 @@ class GitHandler extends Feature {
 
 	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
 		gitProvider.createRepository(withOrgPrefix(namePrefix, "argocd/cluster-resources"),
-		                             "GitOps repo for basic cluster-resources")
+			"GitOps repo for basic cluster-resources")
 	}
 
 	/**

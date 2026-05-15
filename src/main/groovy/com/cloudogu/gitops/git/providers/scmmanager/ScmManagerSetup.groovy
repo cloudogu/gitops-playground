@@ -64,12 +64,12 @@ class ScmManagerSetup {
 		def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
 		def tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
 		this.scmManager.helmStrategy.deployFeature(helmConfig.repoURL,
-		                                           'scm-manager',
-		                                           helmConfig.chart,
-		                                           helmConfig.version,
-		                                           this.scmManager.scmmConfig.namespace,
-		                                           releaseName,
-		                                           tempValuesPath)
+			'scm-manager',
+			helmConfig.chart,
+			helmConfig.version,
+			this.scmManager.scmmConfig.namespace,
+			releaseName,
+			tempValuesPath)
 	}
 
 	def installScmmPlugins() {

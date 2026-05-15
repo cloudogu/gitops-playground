@@ -18,9 +18,8 @@ class Application {
 	final Config config
 	final K8sClient k8sClient
 
-	Application(
-			Config config, K8sClient k8sClient,
-			List<Feature> features) {
+	Application(Config config, K8sClient k8sClient,
+		List<Feature> features) {
 		this.config = config
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.features = features
@@ -49,8 +48,8 @@ class Application {
 			String namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
 			k8sClient.createNamespace(namespace)
 			k8sClient.createSecret('generic', 'gop-configuration', namespace,
-			                       new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
-			                       new Tuple2('gop-config', config.toYaml(true)))
+				new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+				new Tuple2('gop-config', config.toYaml(true)))
 		}
 	}
 
@@ -72,10 +71,10 @@ class Application {
 
 		//iterates over all FeatureWithImages and gets their namespaces
 		dedicatedNamespaces.addAll(this.features
-				                           .collect { it.activeNamespaceFromFeature }
-				                           .findAll { it }
-				                           .unique()
-				                           .collect { "${it}".toString() })
+			.collect { it.activeNamespaceFromFeature }
+			.findAll { it }
+			.unique()
+			.collect { "${it}".toString() })
 
 		config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
 		config.application.namespaces.tenantNamespaces = tenantNamespaces

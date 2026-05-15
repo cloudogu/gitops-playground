@@ -25,13 +25,12 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 	Config config
 	K8sClient k8sClient
 
-	ExternalSecretsOperator(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deployer,
-			K8sClient k8sClient,
-			AirGappedUtils airGappedUtils,
-			GitHandler gitHandler) {
+	ExternalSecretsOperator(Config config,
+		FileSystemUtils fileSystemUtils,
+		DeploymentStrategy deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils

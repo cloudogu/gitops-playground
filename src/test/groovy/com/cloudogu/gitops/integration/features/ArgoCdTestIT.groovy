@@ -36,7 +36,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
 		def expectedSumOfArgoPods = 7
 
 		V1PodList list = api.listNamespacedPod(namespace)
-				.execute()
+			.execute()
 		List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
 		assertThat(argoPods.size()).isEqualTo(expectedSumOfArgoPods)
 
@@ -49,7 +49,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
 	@Override
 	boolean isReadyToStartTests() {
 		V1PodList list = api.listPodForAllNamespaces()
-				.execute()
+			.execute()
 		if (list && !list.items.isEmpty()) {
 
 			List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }

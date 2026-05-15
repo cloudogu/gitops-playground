@@ -34,7 +34,7 @@ class GitopsPlaygroundCliMainTest {
 		int status = SystemLambda.catchSystemExit(() -> {
 			GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
 			                              '--debug' // avoids changing default log pattern
-			                             ] as String[])
+			] as String[])
 		})
 
 		assertThat(status).isNotZero()
@@ -57,8 +57,7 @@ class GitopsPlaygroundCliMainTest {
 		}
 
 		@Command
-		void mockedCommand() {
-		}
+		void mockedCommand() {}
 
 		@Option(names = ['--mock'])
 		private boolean mock

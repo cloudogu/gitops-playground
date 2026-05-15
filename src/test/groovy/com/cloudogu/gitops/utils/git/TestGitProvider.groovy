@@ -7,7 +7,7 @@ class TestGitProvider {
 	static Map<String, GitProvider> buildProviders(Config cfg) {
 		if (cfg.scm.scmProviderType?.toString() == 'GITLAB') {
 			def gitlab = new GitlabMock(base: new URI(cfg.scm.gitlab.url),
-			                            namePrefix: cfg.application.namePrefix)
+				namePrefix: cfg.application.namePrefix)
 			return [tenant: gitlab, central: cfg.multiTenant.useDedicatedInstance ? gitlab : null]
 		}
 

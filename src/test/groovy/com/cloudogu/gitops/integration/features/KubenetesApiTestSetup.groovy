@@ -37,15 +37,15 @@ abstract class KubenetesApiTestSetup {
 	@BeforeEach
 	void setupConnection() {
 		ApiClient client =
-				ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build()
+			ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build()
 		// set the global default api-client to the out-of-cluster one from above
 		Configuration.setDefaultApiClient(client)
 
 		// the CoreV1Api loads default api-client from global configuration.
 		api = new CoreV1Api()
 		waitForCondition(() -> waitingCondition(),
-		                 maxWaitTimeInMinutes(TIME_TO_WAIT),
-		                 pollIntervallSeconds(RETRY_SECONDS))
+			maxWaitTimeInMinutes(TIME_TO_WAIT),
+			pollIntervallSeconds(RETRY_SECONDS))
 	}
 
 	static void waitForCondition(Supplier<Boolean> condition, Duration timeout, Duration pollInterval) {

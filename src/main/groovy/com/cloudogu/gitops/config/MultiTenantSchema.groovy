@@ -17,8 +17,8 @@ class MultiTenantSchema {
 	static final String CENTRAL_USEDEDICATED_DESCRIPTION = 'Toggles the Dedicated Instances Mode. See docs for more info'
 
 	@Option(names = ['--central-scm-provider'],
-			description = SCM_PROVIDER_TYPE_DESCRIPTION,
-			defaultValue = "SCM_MANAGER")
+		description = SCM_PROVIDER_TYPE_DESCRIPTION,
+		defaultValue = "SCM_MANAGER")
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
 	ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 

@@ -45,9 +45,9 @@ class RegistryTest {
 	@Test
 	void 'inject custom value into chart'() {
 		def registryConfig = new RegistrySchema(active: true,
-		                                        helm: new HelmConfigWithValues(chart: 'test',
-		                                                                       values: [service    : [type: 'NodePortTest'],
-		                                                                                customValue: 'testinjectionValue']))
+			helm: new HelmConfigWithValues(chart: 'test',
+				values: [service    : [type: 'NodePortTest'],
+				         customValue: 'testinjectionValue']))
 
 		createRegistry(registryConfig).install()
 		assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
@@ -56,7 +56,7 @@ class RegistryTest {
 
 	private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
 		def config = new Config(application: new ApplicationSchema(namePrefix: 'foo-'),
-		                        registry: registryConfig)
+			registry: registryConfig)
 		k8sClient = new K8sClientForTest()
 		helmCommands = new CommandExecutorForTest()
 		helmClient = new HelmClient(helmCommands)

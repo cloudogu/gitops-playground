@@ -29,9 +29,9 @@ class HttpClientFactory {
 
 	static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
 		def builder = new OkHttpClient.Builder()
-				.addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
-				.addInterceptor(createLoggingInterceptor())
-				.addInterceptor(new RetryInterceptor())
+			.addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
+			.addInterceptor(createLoggingInterceptor())
+			.addInterceptor(new RetryInterceptor())
 
 		if (isInsecure) {
 			def context = insecureSslContext()
@@ -47,9 +47,9 @@ class HttpClientFactory {
 	@Named("jenkins")
 	OkHttpClient okHttpClientJenkins(Config config) {
 		def builder = new OkHttpClient.Builder()
-				.cookieJar(new JavaNetCookieJar(new CookieManager()))
-				.addInterceptor(createLoggingInterceptor())
-				.addInterceptor(new RetryInterceptor())
+			.cookieJar(new JavaNetCookieJar(new CookieManager()))
+			.addInterceptor(createLoggingInterceptor())
+			.addInterceptor(new RetryInterceptor())
 
 		if (config.application.insecure) {
 			def context = insecureSslContext()
@@ -78,12 +78,10 @@ class HttpClientFactory {
 	static InsecureSslContext insecureSslContext() {
 		def noCheckTrustManager = new X509TrustManager() {
 			@Override
-			void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-			}
+			void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
 
 			@Override
-			void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-			}
+			void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
 
 			@Override
 			X509Certificate[] getAcceptedIssuers() {

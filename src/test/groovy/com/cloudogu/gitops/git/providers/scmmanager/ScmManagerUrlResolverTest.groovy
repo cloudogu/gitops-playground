@@ -28,7 +28,7 @@ class ScmManagerUrlResolverTest {
 	@BeforeEach
 	void setUp() {
 		config = new Config(application: new Config.ApplicationSchema(namePrefix: 'fv40-',
-		                                                              runningInsideK8s: false))
+			runningInsideK8s: false))
 	}
 
 	private ScmManagerUrlResolver resolverWith(Map args = [:]) {
@@ -76,7 +76,7 @@ class ScmManagerUrlResolverTest {
 
 		var urlResolver = resolverWith()
 		assertEquals("http://10.0.0.1:30080/scm/repo/ns/project",
-		             urlResolver.clientRepoUrl("  ns/project  "))
+			urlResolver.clientRepoUrl("  ns/project  "))
 	}
 
 	// ---------- In-cluster base & URLs ----------
@@ -96,7 +96,7 @@ class ScmManagerUrlResolverTest {
 	void "inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash"() {
 		var urlResolver = resolverWith()
 		assertEquals("http://scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
-		             urlResolver.inClusterRepoUrl("admin/admin"))
+			urlResolver.inClusterRepoUrl("admin/admin"))
 	}
 
 	@Test

@@ -26,7 +26,7 @@ class ArgoCdApplicationStrategyTest {
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-		                       "foo-namespace", "releaseName", valuesYaml.toPath())
+			"foo-namespace", "releaseName", valuesYaml.toPath())
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		assertThat(argoCdApplicationYaml.text).isEqualTo("""---
@@ -71,7 +71,7 @@ spec:
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-		                       "namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
+			"namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		def result = new YamlSlurper().parse(argoCdApplicationYaml)
@@ -89,7 +89,7 @@ spec:
     param2: value2
     """
 		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-		                       "namespace", "releaseName", valuesYaml.toPath())
+			"namespace", "releaseName", valuesYaml.toPath())
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
@@ -104,7 +104,7 @@ spec:
     param2: value2
     """
 		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-		                       "namespace", "releaseName", valuesYaml.toPath())
+			"namespace", "releaseName", valuesYaml.toPath())
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
@@ -112,11 +112,11 @@ spec:
 
 	private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
 		Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',
-		                                                                     gitName: 'Cloudogu',
-		                                                                     gitEmail: 'hello@cloudogu.com'),
-		                           scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(username: "dont-care-username",
-		                                                                                           password: "dont-care-password")),
-		                           features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(operator: argocdOperator)))
+			gitName: 'Cloudogu',
+			gitEmail: 'hello@cloudogu.com'),
+			scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(username: "dont-care-username",
+				password: "dont-care-password")),
+			features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(operator: argocdOperator)))
 
 		def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override

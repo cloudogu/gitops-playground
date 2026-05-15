@@ -30,7 +30,7 @@ import org.mockito.Mock
 
 class JenkinsTest {
 	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: "testUrlJenkins")),
-	                           jenkins: new Config.JenkinsSchema(active: true))
+		jenkins: new Config.JenkinsSchema(active: true))
 
 	String expectedNodeName = 'something'
 
@@ -77,13 +77,13 @@ me:x:1000:''')
 		jenkins.install()
 
 		verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
-		                                         'jen-chart', '4.8.1', 'jenkins',
-		                                         'jenkins', temporaryYamlFile, RepoType.HELM)
+			'jen-chart', '4.8.1', 'jenkins',
+			'jenkins', temporaryYamlFile, RepoType.HELM)
 		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
 		verify(k8sClient).labelRemove('node', '--all', '', 'node')
 		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
-		                               new Tuple2('jenkins-admin-user', 'jenusr'),
-		                               new Tuple2('jenkins-admin-password', 'jenpw'))
+			new Tuple2('jenkins-admin-user', 'jenusr'),
+			new Tuple2('jenkins-admin-password', 'jenpw'))
 
 		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 
@@ -126,7 +126,7 @@ me:x:1000:''')
 
 		createJenkins().install()
 		verify(deploymentStrategy, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
-		                                                  anyString(), anyString(), any(Path))
+			anyString(), anyString(), any(Path))
 
 		assertThat(temporaryYamlFile).isNull()
 	}

@@ -82,8 +82,8 @@ class RbacDefinition {
 		def role = new Role(name, namespace, variant, config)
 
 		templater.template(role.getTemplateFile(),
-		                   role.getOutputFile(outputDir),
-		                   role.toTemplateParams())
+			role.getOutputFile(outputDir),
+			role.toTemplateParams())
 	}
 
 	private void generateRoleBinding(File outputDir) {
@@ -94,8 +94,8 @@ class RbacDefinition {
 		def binding = new RoleBinding(name, namespace, roleName, serviceAccounts)
 
 		templater.template(binding.getTemplateFile(),
-		                   binding.getOutputFile(outputDir),
-		                   binding.toTemplateParams())
+			binding.getOutputFile(outputDir),
+			binding.toTemplateParams())
 	}
 
 }

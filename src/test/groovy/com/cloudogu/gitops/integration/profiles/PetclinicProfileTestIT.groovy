@@ -34,11 +34,11 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
 			Awaitility.await()
-					.atMost(40, TimeUnit.MINUTES)
-					.pollInterval(5, TimeUnit.SECONDS)
-					.untilAsserted {
-						waitUntilPetclinicIsRunning()
-					}
+				.atMost(40, TimeUnit.MINUTES)
+				.pollInterval(5, TimeUnit.SECONDS)
+				.untilAsserted {
+					waitUntilPetclinicIsRunning()
+				}
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
@@ -85,17 +85,17 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 			def nameOfServiceAndIngress = "spring-petclinic-plain"
 			// check Ingress
 			def ingress = client.network()
-					.v1()
-					.ingresses()
-					.inNamespace(exampleStagingNs)
-					.withName(nameOfServiceAndIngress)
-					.get()
+				.v1()
+				.ingresses()
+				.inNamespace(exampleStagingNs)
+				.withName(nameOfServiceAndIngress)
+				.get()
 
 			assert ingress != null: "Ingress '${nameOfServiceAndIngress}' not found in '${exampleStagingNs}'"
 
 			def hosts = (ingress.spec?.rules ?: [])
-					.collect { it?.host }
-					.findAll { it }
+				.collect { it?.host }
+				.findAll { it }
 
 			assert hosts.get(0).contains("petclinic") // in this case, petclinic do not care about prefix
 		} catch (KubernetesClientException ex) {
@@ -111,9 +111,9 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 			// Check Service
 			def nameOfServiceAndIngress = "spring-petclinic-plain"
 			def service = client.services()
-					.inNamespace(exampleStagingNs)
-					.withName(nameOfServiceAndIngress)
-					.get()
+				.inNamespace(exampleStagingNs)
+				.withName(nameOfServiceAndIngress)
+				.get()
 
 			assertThat(service).isNotNull()
 

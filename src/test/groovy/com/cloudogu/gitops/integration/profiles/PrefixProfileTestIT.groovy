@@ -41,11 +41,11 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 
 		try {
 			Awaitility.await()
-					.atMost(40, TimeUnit.MINUTES)
-					.pollInterval(5, TimeUnit.SECONDS)
-					.untilAsserted {
-						waitUntilPetclinicIsRunning()
-					}
+				.atMost(40, TimeUnit.MINUTES)
+				.pollInterval(5, TimeUnit.SECONDS)
+				.untilAsserted {
+					waitUntilPetclinicIsRunning()
+				}
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.')

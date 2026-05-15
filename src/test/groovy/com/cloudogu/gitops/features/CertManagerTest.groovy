@@ -49,8 +49,8 @@ class CertManagerTest {
 		createCertManager().install()
 
 		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-		                                         'cert-manager', chartVersion, 'cert-manager',
-		                                         'cert-manager', temporaryYamlFile, RepoType.HELM)
+			'cert-manager', chartVersion, 'cert-manager',
+			'cert-manager', temporaryYamlFile, RepoType.HELM)
 	}
 
 	@Test
@@ -98,8 +98,8 @@ class CertManagerTest {
 		assertThat(helmConfig.value.version).isEqualTo(chartVersion)
 		// important check: scmmRepoUrl is overridden with our values.
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'cert-manager', '.', chartVersion, 'cert-manager',
-		                                         'cert-manager', temporaryYamlFile, RepoType.GIT)
+			'cert-manager', '.', chartVersion, 'cert-manager',
+			'cert-manager', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test

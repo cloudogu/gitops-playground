@@ -25,10 +25,10 @@ class RetryInterceptorTest {
 
 	@RegisterExtension
 	static WireMockExtension wireMock = WireMockExtension.newInstance()
-			.options(wireMockConfig()
-					         .dynamicPort()
-					         .dynamicHttpsPort())
-			.build()
+		.options(wireMockConfig()
+			.dynamicPort()
+			.dynamicHttpsPort())
+		.build()
 
 	@BeforeEach
 	void 'resetWireMock'() {
@@ -40,23 +40,23 @@ class RetryInterceptorTest {
 		def path = "/retry-500"
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("Retry Scenario")
-				                 .whenScenarioStateIs("Started")
-				                 .willReturn(aResponse().withStatus(500))
-				                 .willSetStateTo("First Retry"))
+			.inScenario("Retry Scenario")
+			.whenScenarioStateIs("Started")
+			.willReturn(aResponse().withStatus(500))
+			.willSetStateTo("First Retry"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("Retry Scenario")
-				                 .whenScenarioStateIs("First Retry")
-				                 .willReturn(aResponse().withStatus(500))
-				                 .willSetStateTo("Second Retry"))
+			.inScenario("Retry Scenario")
+			.whenScenarioStateIs("First Retry")
+			.willReturn(aResponse().withStatus(500))
+			.willSetStateTo("Second Retry"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("Retry Scenario")
-				                 .whenScenarioStateIs("Second Retry")
-				                 .willReturn(aResponse()
-						                             .withStatus(200)
-						                             .withBody("Successful Result")))
+			.inScenario("Retry Scenario")
+			.whenScenarioStateIs("Second Retry")
+			.willReturn(aResponse()
+				.withStatus(200)
+				.withBody("Successful Result")))
 
 		def client = createClient()
 		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
@@ -70,23 +70,23 @@ class RetryInterceptorTest {
 		def path = "/retry-500"
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("HTTPS Retry Scenario")
-				                 .whenScenarioStateIs("Started")
-				                 .willReturn(aResponse().withStatus(500))
-				                 .willSetStateTo("First Retry"))
+			.inScenario("HTTPS Retry Scenario")
+			.whenScenarioStateIs("Started")
+			.willReturn(aResponse().withStatus(500))
+			.willSetStateTo("First Retry"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("HTTPS Retry Scenario")
-				                 .whenScenarioStateIs("First Retry")
-				                 .willReturn(aResponse().withStatus(500))
-				                 .willSetStateTo("Second Retry"))
+			.inScenario("HTTPS Retry Scenario")
+			.whenScenarioStateIs("First Retry")
+			.willReturn(aResponse().withStatus(500))
+			.willSetStateTo("Second Retry"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("HTTPS Retry Scenario")
-				                 .whenScenarioStateIs("Second Retry")
-				                 .willReturn(aResponse()
-						                             .withStatus(200)
-						                             .withBody("Successful Result")))
+			.inScenario("HTTPS Retry Scenario")
+			.whenScenarioStateIs("Second Retry")
+			.willReturn(aResponse()
+				.withStatus(200)
+				.withBody("Successful Result")))
 
 		def client = createClient()
 		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
@@ -100,19 +100,19 @@ class RetryInterceptorTest {
 		def path = "/timeout-test"
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("Timeout Scenario")
-				                 .whenScenarioStateIs("Started")
-				                 .willReturn(aResponse()
-						                             .withStatus(200)
-						                             .withFixedDelay(100)) // Delay longer than read timeout
-				                 .willSetStateTo("After Timeout"))
+			.inScenario("Timeout Scenario")
+			.whenScenarioStateIs("Started")
+			.willReturn(aResponse()
+				.withStatus(200)
+				.withFixedDelay(100)) // Delay longer than read timeout
+			.willSetStateTo("After Timeout"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .inScenario("Timeout Scenario")
-				                 .whenScenarioStateIs("After Timeout")
-				                 .willReturn(aResponse()
-						                             .withStatus(200)
-						                             .withBody("Successful Result")))
+			.inScenario("Timeout Scenario")
+			.whenScenarioStateIs("After Timeout")
+			.willReturn(aResponse()
+				.withStatus(200)
+				.withBody("Successful Result")))
 
 		def client = createClient(100)
 		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
@@ -126,7 +126,7 @@ class RetryInterceptorTest {
 		def path = "/always-fail"
 
 		wireMock.stubFor(get(urlEqualTo(path))
-				                 .willReturn(aResponse().withStatus(500)))
+			.willReturn(aResponse().withStatus(500)))
 
 		def client = createClient()
 		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
@@ -138,11 +138,9 @@ class RetryInterceptorTest {
 	private OkHttpClient createClient(int timeout = OKHTTPCLIENT_TIMEOUT) {
 		// 1. Create a TrustManager that trusts everyone
 		def trustAllCerts = [new X509TrustManager() {
-			void checkClientTrusted(X509Certificate[] chain, String authType) {
-			}
+			void checkClientTrusted(X509Certificate[] chain, String authType) {}
 
-			void checkServerTrusted(X509Certificate[] chain, String authType) {
-			}
+			void checkServerTrusted(X509Certificate[] chain, String authType) {}
 
 			X509Certificate[] getAcceptedIssuers() {
 				return new X509Certificate[0]
@@ -153,11 +151,11 @@ class RetryInterceptorTest {
 		sslContext.init(null, trustAllCerts, new SecureRandom())
 
 		new OkHttpClient.Builder()
-				.addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
-				.connectTimeout(timeout, TimeUnit.MILLISECONDS)
-				.readTimeout(timeout, TimeUnit.MILLISECONDS)
-				.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-				.hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
-				.build()
+			.addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
+			.connectTimeout(timeout, TimeUnit.MILLISECONDS)
+			.readTimeout(timeout, TimeUnit.MILLISECONDS)
+			.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+			.hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
+			.build()
 	}
 }

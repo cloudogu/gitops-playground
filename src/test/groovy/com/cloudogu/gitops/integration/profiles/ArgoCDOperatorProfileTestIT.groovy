@@ -32,11 +32,11 @@ class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 		println "###### Integration ArgoCD Operator test ######"
 		try {
 			Awaitility.await()
-					.atMost(40, TimeUnit.MINUTES)
-					.pollInterval(5, TimeUnit.SECONDS)
-					.untilAsserted {
-						assert TestK8sHelper.checkAllPodsRunningInNamespace(namespaceOperator, 'argocd-operator-controller') && TestK8sHelper.checkAllPodsRunningInNamespace(namespaceArgocd, 'argocd-server')
-					}
+				.atMost(40, TimeUnit.MINUTES)
+				.pollInterval(5, TimeUnit.SECONDS)
+				.untilAsserted {
+					assert TestK8sHelper.checkAllPodsRunningInNamespace(namespaceOperator, 'argocd-operator-controller') && TestK8sHelper.checkAllPodsRunningInNamespace(namespaceArgocd, 'argocd-server')
+				}
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.')

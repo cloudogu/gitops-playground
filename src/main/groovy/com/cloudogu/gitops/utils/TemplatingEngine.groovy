@@ -42,8 +42,8 @@ class TemplatingEngine {
 	 * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.  */
 	void replaceTemplates(File path, Map parameters, Pattern filepathMatches = ~/\.ftl/) {
 		Files.walk(path.toPath())
-				.filter { filepathMatches.matcher(it.toString()).find() }
-				.each { Path it -> replaceTemplate(it.toFile(), parameters) }
+			.filter { filepathMatches.matcher(it.toString()).find() }
+			.each { Path it -> replaceTemplate(it.toFile(), parameters) }
 	}
 
 	static Map templateToMap(String filePath, Map parameters) {

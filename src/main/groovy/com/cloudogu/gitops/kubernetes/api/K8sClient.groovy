@@ -139,30 +139,30 @@ class K8sClient {
 		int targetPort = ports.size() > 1 ? Integer.parseInt(ports[1]) : port
 
 		def portBuilder = new ServiceBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(resolveNamespace(namespace))
-				.endMetadata()
-				.withNewSpec()
-				.withType("NodePort")
-				.addNewPort()
-				.withPort(port)
-				.withTargetPort(new IntOrString(targetPort))
+			.withNewMetadata()
+			.withName(name)
+			.withNamespace(resolveNamespace(namespace))
+			.endMetadata()
+			.withNewSpec()
+			.withType("NodePort")
+			.addNewPort()
+			.withPort(port)
+			.withTargetPort(new IntOrString(targetPort))
 
 		if (nodePort) {
 			portBuilder = portBuilder.withNodePort(Integer.parseInt(nodePort))
 		}
 
 		Service service = portBuilder
-				.endPort()
-				.endSpec()
-				.build()
+			.endPort()
+			.endSpec()
+			.build()
 
 		executeWithErrorHandling("create NodePort service $name") {
 			client.services()
-					.inNamespace(resolveNamespace(namespace))
-					.resource(service)
-					.createOrReplace()
+				.inNamespace(resolveNamespace(namespace))
+				.resource(service)
+				.createOrReplace()
 		}
 
 		log.debug("NodePort service $name created/updated successfully")
@@ -203,14 +203,14 @@ class K8sClient {
 
 		String patchJson = new JsonBuilder(patch).toString()
 		PatchContext patchContext = new PatchContext.Builder()
-				.withPatchType(PatchType.JSON)
-				.build()
+			.withPatchType(PatchType.JSON)
+			.build()
 
 		executeWithErrorHandling("patch service $serviceName") {
 			client.services()
-					.inNamespace(namespace)
-					.withName(serviceName)
-					.patch(patchContext, patchJson)
+				.inNamespace(namespace)
+				.withName(serviceName)
+				.patch(patchContext, patchJson)
 		}
 
 		log.debug("Service ${serviceName} in namespace ${namespace} successfully patched with nodePort ${newNodePort} for port ${portName}.")
@@ -234,10 +234,10 @@ class K8sClient {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
 			Namespace namespace = new NamespaceBuilder()
-					.withNewMetadata()
-					.withName(name)
-					.endMetadata()
-					.build()
+				.withNewMetadata()
+				.withName(name)
+				.endMetadata()
+				.build()
 
 			executeWithErrorHandling("create namespace ${name}") {
 				client.namespaces().resource(namespace).create()
@@ -300,13 +300,13 @@ class K8sClient {
 
 		String resolvedType = type == 'generic' ? 'Opaque' : type
 		Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(resolveNamespace(namespace))
-				.endMetadata()
-				.withType(resolvedType)
-				.withStringData(data)
-				.build()
+			.withNewMetadata()
+			.withName(name)
+			.withNamespace(resolveNamespace(namespace))
+			.endMetadata()
+			.withType(resolvedType)
+			.withStringData(data)
+			.build()
 
 		executeWithErrorHandling("create secret $name") {
 			def secretsClient = client.secrets().inNamespace(resolveNamespace(namespace))
@@ -335,19 +335,19 @@ class K8sClient {
 		String dockerConfig = """{"auths":{"${host}":{"username":"${user}","password":"${password}","auth":"${auth}"}}}"""
 
 		Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(resolveNamespace(namespace))
-				.endMetadata()
-				.withType(DOCKER_CONFIG_JSON_TYPE)
-				.addToStringData(DOCKER_CONFIG_JSON_KEY, dockerConfig)
-				.build()
+			.withNewMetadata()
+			.withName(name)
+			.withNamespace(resolveNamespace(namespace))
+			.endMetadata()
+			.withType(DOCKER_CONFIG_JSON_TYPE)
+			.addToStringData(DOCKER_CONFIG_JSON_KEY, dockerConfig)
+			.build()
 
 		executeWithErrorHandling("create image pull secret $name") {
 			client.secrets()
-					.inNamespace(resolveNamespace(namespace))
-					.resource(secret)
-					.createOrReplace()
+				.inNamespace(resolveNamespace(namespace))
+				.resource(secret)
+				.createOrReplace()
 		}
 
 		log.debug("Image pull secret $name created/updated successfully")
@@ -366,9 +366,9 @@ class K8sClient {
 
 		String secretData = waitForResourceWithRetry("secret $name") { ->
 			Secret secret = client.secrets()
-					.inNamespace(resolveNamespace(namespace))
-					.withName(name)
-					.get()
+				.inNamespace(resolveNamespace(namespace))
+				.withName(name)
+				.get()
 
 			return secret?.data?.containsKey('namespaces') ? secret.data['namespaces'] : null
 		}
@@ -389,9 +389,9 @@ class K8sClient {
 	Credentials getCredentialsFromSecret(String secretname, String namespace, String usernameKey = 'username', String passwordKey = 'password') {
 		executeWithErrorHandling("get credentials from secret ${secretname}") {
 			Secret secret = client.secrets()
-					.inNamespace(namespace)
-					.withName(secretname)
-					.get()
+				.inNamespace(namespace)
+				.withName(secretname)
+				.get()
 
 			def secretData = secret.getData()
 			String username = new String(Base64.getDecoder().decode(secretData[usernameKey]))
@@ -410,9 +410,9 @@ class K8sClient {
 	Credentials getCredentialsFromSecret(Credentials credentials) {
 		executeWithErrorHandling("get credentials from secret ${credentials.secretName}") {
 			Secret secret = client.secrets()
-					.inNamespace(credentials.secretNamespace)
-					.withName(credentials.secretName)
-					.get()
+				.inNamespace(credentials.secretNamespace)
+				.withName(credentials.secretName)
+				.get()
 
 			def secretData = secret.getData()
 			def usernameEncoded = secretData[credentials.usernameKey]
@@ -450,18 +450,18 @@ class K8sClient {
 		Map<String, String> data = [(file.name): file.text]
 
 		ConfigMap configMap = new ConfigMapBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(resolveNamespace(namespace))
-				.endMetadata()
-				.withData(data)
-				.build()
+			.withNewMetadata()
+			.withName(name)
+			.withNamespace(resolveNamespace(namespace))
+			.endMetadata()
+			.withData(data)
+			.build()
 
 		executeWithErrorHandling("create ConfigMap $name from file") {
 			client.configMaps()
-					.inNamespace(resolveNamespace(namespace))
-					.resource(configMap)
-					.createOrReplace()
+				.inNamespace(resolveNamespace(namespace))
+				.resource(configMap)
+				.createOrReplace()
 		}
 
 		log.debug("ConfigMap $name created/updated successfully")
@@ -679,17 +679,17 @@ class K8sClient {
 		log.debug("Running pod $name with image $image in namespace $namespace")
 
 		Pod pod = new PodBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(resolveNamespace(namespace))
-				.endMetadata()
-				.withNewSpec()
-				.addNewContainer()
-				.withName(name)
-				.withImage(image)
-				.endContainer()
-				.endSpec()
-				.build()
+			.withNewMetadata()
+			.withName(name)
+			.withNamespace(resolveNamespace(namespace))
+			.endMetadata()
+			.withNewSpec()
+			.addNewContainer()
+			.withName(name)
+			.withImage(image)
+			.endContainer()
+			.endSpec()
+			.build()
 
 		if (overrides) {
 			log.debug("Applying overrides: $overrides")
@@ -698,9 +698,9 @@ class K8sClient {
 
 		Pod createdPod = executeWithErrorHandling("run pod $name") {
 			client.pods()
-					.inNamespace(resolveNamespace(namespace))
-					.resource(pod)
-					.create()
+				.inNamespace(resolveNamespace(namespace))
+				.resource(pod)
+				.create()
 		}
 
 		log.debug("Pod $name created successfully")
@@ -734,7 +734,7 @@ class K8sClient {
 				def itemMap = item as Map
 				def metadata = itemMap.get('metadata') as Map
 				new CustomResource((metadata?.get('namespace') ?: '') as String,
-				                   (metadata?.get('name') ?: '') as String)
+					(metadata?.get('name') ?: '') as String)
 			}
 		} catch (Exception e) {
 			log.warn("Failed to get custom resources: ${e.message}")
@@ -806,9 +806,8 @@ class K8sClient {
 	 * @throws RuntimeException if timeout is reached
 	 */
 	@CompileStatic(TypeCheckingMode.SKIP)
-	void waitForResourcePhase(
-			String resourceType, String resourceName, String namespace, String desiredPhase,
-			int timeoutSeconds, int checkIntervalSeconds) {
+	void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase,
+		int timeoutSeconds, int checkIntervalSeconds) {
 		validateWaitForResourcePhaseParams(resourceType, resourceName, namespace, desiredPhase, timeoutSeconds, checkIntervalSeconds)
 
 		log.debug("Waiting for $resourceType/$resourceName to reach phase $desiredPhase")
@@ -851,7 +850,7 @@ class K8sClient {
 	 */
 	void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
 		waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase,
-		                     DEFAULT_TIMEOUT_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS)
+			DEFAULT_TIMEOUT_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS)
 	}
 
 	// ========================================
@@ -1080,9 +1079,8 @@ class K8sClient {
 	 *
 	 * @throws IllegalArgumentException if any parameter is invalid
 	 */
-	private void validateWaitForResourcePhaseParams(
-			String resourceType, String resourceName, String namespace,
-			String desiredPhase, int timeoutSeconds, int checkIntervalSeconds) {
+	private void validateWaitForResourcePhaseParams(String resourceType, String resourceName, String namespace,
+		String desiredPhase, int timeoutSeconds, int checkIntervalSeconds) {
 		if (!resourceType || !resourceName || !namespace || !desiredPhase) {
 			throw new IllegalArgumentException("Resource type, name, namespace, and desired phase must be provided")
 		}

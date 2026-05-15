@@ -36,18 +36,17 @@ class Jenkins extends Feature {
 	private K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
-	Jenkins(
-			Config config,
-			CommandExecutor commandExecutor,
-			FileSystemUtils fileSystemUtils,
-			GlobalPropertyManager globalPropertyManager,
-			JobManager jobManager,
-			UserManager userManager,
-			PrometheusConfigurator prometheusConfigurator,
-			HelmStrategy deployer,
-			K8sClient k8sClient,
-			NetworkingUtils networkingUtils,
-			GitHandler gitHandler) {
+	Jenkins(Config config,
+		CommandExecutor commandExecutor,
+		FileSystemUtils fileSystemUtils,
+		GlobalPropertyManager globalPropertyManager,
+		JobManager jobManager,
+		UserManager userManager,
+		PrometheusConfigurator prometheusConfigurator,
+		HelmStrategy deployer,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils,
+		GitHandler gitHandler) {
 		this.config = config
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
@@ -84,8 +83,8 @@ class Jenkins extends Feature {
 			k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
 
 			k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
-			                       new Tuple2('jenkins-admin-user', config.jenkins.username),
-			                       new Tuple2('jenkins-admin-password', config.jenkins.password))
+				new Tuple2('jenkins-admin-user', config.jenkins.username),
+				new Tuple2('jenkins-admin-password', config.jenkins.password))
 
 			def helmConfig = config.jenkins.helm
 			String releaseName = "jenkins"
@@ -172,38 +171,38 @@ class Jenkins extends Feature {
 		String jobName = "${config.application.namePrefix}${repoName}"
 
 		jobManager.createJob(jobName,
-		                     this.gitHandler.tenant.url,
-		                     prefixedNamespace,
-		                     credentialId)
+			this.gitHandler.tenant.url,
+			prefixedNamespace,
+			credentialId)
 
 		if (config.scm.scmProviderType == ScmProviderType.SCM_MANAGER) {
 			jobManager.createCredential(jobName,
-			                            credentialId,
-			                            "${config.application.namePrefix}gitops",
-			                            "${config.scm.getScmManager().password}",
-			                            'credentials for accessing scm-manager')
+				credentialId,
+				"${config.application.namePrefix}gitops",
+				"${config.scm.getScmManager().password}",
+				'credentials for accessing scm-manager')
 		}
 
 		if (config.scm.scmProviderType == ScmProviderType.GITLAB) {
 			jobManager.createCredential(jobName,
-			                            credentialId,
-			                            "${config.scm.getGitlab().username}",
-			                            "${config.scm.getGitlab().password}",
-			                            'credentials for accessing gitlab')
+				credentialId,
+				"${config.scm.getGitlab().username}",
+				"${config.scm.getGitlab().password}",
+				'credentials for accessing gitlab')
 		}
 
 		jobManager.createCredential(jobName,
-		                            "registry-user",
-		                            "${config.registry.username}",
-		                            "${config.registry.password}",
-		                            'credentials for accessing the docker-registry for writing images built on jenkins')
+			"registry-user",
+			"${config.registry.username}",
+			"${config.registry.password}",
+			'credentials for accessing the docker-registry for writing images built on jenkins')
 
 		if (config.registry.twoRegistries) {
 			jobManager.createCredential(jobName,
-			                            "registry-proxy-user",
-			                            "${config.registry.proxyUsername}",
-			                            "${config.registry.proxyPassword}",
-			                            'credentials for accessing the docker-registry that contains 3rd party or base images')
+				"registry-proxy-user",
+				"${config.registry.proxyUsername}",
+				"${config.registry.proxyPassword}",
+				'credentials for accessing the docker-registry that contains 3rd party or base images')
 		}
 
 		jobManager.startJob(jobName)
@@ -212,8 +211,8 @@ class Jenkins extends Feature {
 	protected String findDockerGid() {
 		String gid = ''
 		def etcGroup = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
-		                             'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(),
-		                             '--restart=Never', '-ti', '--rm', '--quiet')
+			'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(),
+			'--restart=Never', '-ti', '--rm', '--quiet')
 		// --quiet is necessary to avoid 'pod deleted' output
 
 		def lines = etcGroup?.split('\n')

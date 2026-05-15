@@ -22,14 +22,14 @@ class JobManager {
 
 	void createCredential(String jobName, String id, String username, String password, String description) {
 		def response = apiClient.postRequestWithCrumb("job/$jobName/credentials/store/folder/domain/_/createCredentials",
-		                                              new FormBody.Builder()
-				                                              .add("json", JsonOutput.toJson([credentials: [scope      : "GLOBAL",
-				                                                                                            id         : id,
-				                                                                                            username   : username,
-				                                                                                            password   : password,
-				                                                                                            description: description,
-				                                                                                            $class     : "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",]]))
-				                                              .build())
+			new FormBody.Builder()
+				.add("json", JsonOutput.toJson([credentials: [scope      : "GLOBAL",
+				                                              id         : id,
+				                                              username   : username,
+				                                              password   : password,
+				                                              description: description,
+				                                              $class     : "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",]]))
+				.build())
 
 		if (response.code() != 200) {
 			throw new RuntimeException("Could not create credential id=$id,job=$jobName. StatusCode: ${response.code()}")
@@ -46,9 +46,9 @@ class JobManager {
 		} else {
 			// Note for development: the XML representation of an existing job can be exporting by adding /config.xml to the URL
 			String payloadXml = new TemplatingEngine().template(new File('argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl'),
-			                                                    [SCMM_NAMESPACE_JOB_SERVER_URL    : serverUrl,
-			                                                     SCMM_NAMESPACE_JOB_NAMESPACE     : jobNamespace,
-			                                                     SCMM_NAMESPACE_JOB_CREDENTIALS_ID: credentialsId])
+				[SCMM_NAMESPACE_JOB_SERVER_URL    : serverUrl,
+				 SCMM_NAMESPACE_JOB_NAMESPACE     : jobNamespace,
+				 SCMM_NAMESPACE_JOB_CREDENTIALS_ID: credentialsId])
 
 			RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"))
 

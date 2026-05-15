@@ -27,38 +27,38 @@ import org.mockito.ArgumentCaptor
 class MonitoringTest {
 	Config config = Config.fromMap(registry: [internal              : true,
 	                                          createImagePullSecrets: false],
-	                               scm: [scmManager: [internal: true]],
-	                               jenkins: [internal       : true,
-	                                         active         : true,
-	                                         metricsUsername: 'metrics',
-	                                         metricsPassword: 'metrics',],
-	                               application: [username          : 'abc',
-	                                             password          : '123',
-	                                             openshift         : false,
-	                                             namePrefix        : 'foo-',
-	                                             mirrorRepos       : false,
-	                                             podResources      : false,
-	                                             skipCrds          : false,
-	                                             namespaceIsolation: false,
-	                                             gitName           : 'Cloudogu',
-	                                             gitEmail          : 'hello@cloudogu.com',
-	                                             netpols           : false,
-	                                             namespaces        : [dedicatedNamespaces: ["test1-default",
-	                                                                                        "test1-argocd",
-	                                                                                        "test1-monitoring",
-	                                                                                        "test1-secrets"] as LinkedHashSet,
-	                                                                  tenantNamespaces   : ["test1-example-apps-staging",
-	                                                                                        "test1-example-apps-production"] as LinkedHashSet]],
-	                               features: [argocd    : [active: true],
-	                                          monitoring: [active          : true,
-	                                                       grafanaUrl      : '',
-	                                                       grafanaEmailFrom: 'grafana@example.org',
-	                                                       grafanaEmailTo  : 'infra@example.org',
-	                                                       helm            : [chart  : 'kube-prometheus-stack',
-	                                                                          repoURL: 'https://prom',
-	                                                                          version: '19.2.2']],
-	                                          secrets   : [active: true],
-	                                          ingress   : [active: true]])
+		scm: [scmManager: [internal: true]],
+		jenkins: [internal       : true,
+		          active         : true,
+		          metricsUsername: 'metrics',
+		          metricsPassword: 'metrics',],
+		application: [username          : 'abc',
+		              password          : '123',
+		              openshift         : false,
+		              namePrefix        : 'foo-',
+		              mirrorRepos       : false,
+		              podResources      : false,
+		              skipCrds          : false,
+		              namespaceIsolation: false,
+		              gitName           : 'Cloudogu',
+		              gitEmail          : 'hello@cloudogu.com',
+		              netpols           : false,
+		              namespaces        : [dedicatedNamespaces: ["test1-default",
+		                                                         "test1-argocd",
+		                                                         "test1-monitoring",
+		                                                         "test1-secrets"] as LinkedHashSet,
+		                                   tenantNamespaces   : ["test1-example-apps-staging",
+		                                                         "test1-example-apps-production"] as LinkedHashSet]],
+		features: [argocd    : [active: true],
+		           monitoring: [active          : true,
+		                        grafanaUrl      : '',
+		                        grafanaEmailFrom: 'grafana@example.org',
+		                        grafanaEmailTo  : 'infra@example.org',
+		                        helm            : [chart  : 'kube-prometheus-stack',
+		                                           repoURL: 'https://prom',
+		                                           version: '19.2.2']],
+		           secrets   : [active: true],
+		           ingress   : [active: true]])
 
 	K8sClientForTest k8sClient = new K8sClientForTest()
 	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
@@ -407,8 +407,8 @@ policies:
 		createStack(scmManagerMock).install()
 
 		verify(deploymentStrategy).deployFeature('https://prom', 'monitoring',
-		                                         'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-		                                         'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
+			'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
+			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
 		/* This corresponds to
 				'helm repo add prometheusstack https://prom'
 				'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
@@ -549,8 +549,8 @@ policies:
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
 		assertThat(helmConfig.value.version).isEqualTo('19.2.2')
 		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'monitoring', '.', '1.2.3', 'foo-monitoring',
-		                                         'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
+			'monitoring', '.', '1.2.3', 'foo-monitoring',
+			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
 	}
 
 	@Test

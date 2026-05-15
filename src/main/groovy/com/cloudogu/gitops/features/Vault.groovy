@@ -26,13 +26,12 @@ class Vault extends Feature implements FeatureWithImage {
 	Config config
 	K8sClient k8sClient
 
-	Vault(
-			Config config,
-			FileSystemUtils fileSystemUtils,
-			K8sClient k8sClient,
-			DeploymentStrategy deployer,
-			AirGappedUtils airGappedUtils,
-			GitHandler gitHandler) {
+	Vault(Config config,
+		FileSystemUtils fileSystemUtils,
+		K8sClient k8sClient,
+		DeploymentStrategy deployer,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils

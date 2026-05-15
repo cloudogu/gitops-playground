@@ -82,8 +82,8 @@ class FileSystemUtilsTest {
 		Map result = fileSystemUtils.readYaml(Path.of('testMainConfig.yaml'))
 
 		assertThat(result)
-				.extracting('registry.internalPort')
-				.isEqualTo(30000)
+			.extracting('registry.internalPort')
+			.isEqualTo(30000)
 	}
 
 	@Test
@@ -93,8 +93,8 @@ class FileSystemUtilsTest {
 		Map result = fileSystemUtils.readYaml(Path.of('src/main/resources/application-minimal.yaml'))
 
 		assertThat(result)
-				.extracting('application.yes')
-				.isEqualTo(true)
+			.extracting('application.yes')
+			.isEqualTo(true)
 	}
 
 	@Test

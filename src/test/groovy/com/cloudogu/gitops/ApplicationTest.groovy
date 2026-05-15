@@ -16,8 +16,8 @@ class ApplicationTest {
 	@Test
 	void 'feature\'s ordering is correct'() {
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		def features = application.features.collect { it.class.simpleName }
 
 		assertThat(features).isEqualTo(['Registry', 'GitHandler', 'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
@@ -34,15 +34,15 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 		List<String> namespaceList = new ArrayList<>(Arrays.asList("test1-argocd",
-		                                                           "test1-example-apps-staging",
-		                                                           "test1-example-apps-production",
-		                                                           "test1-" + config.features.ingress.ingressNamespace,
-		                                                           "test1-monitoring",
-		                                                           "test1-registry",
-		                                                           "test1-jenkins"))
+			"test1-example-apps-staging",
+			"test1-example-apps-production",
+			"test1-" + config.features.ingress.ingressNamespace,
+			"test1-monitoring",
+			"test1-registry",
+			"test1-jenkins"))
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		application.setNamespaceListToConfig(config)
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}
@@ -59,15 +59,15 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 		List<String> namespaceList = new ArrayList<>(Arrays.asList("test1-argocd",
-		                                                           "test1-example-apps-staging",
-		                                                           "test1-example-apps-production",
-		                                                           "test1-" + config.features.ingress.ingressNamespace,
-		                                                           "test1-monitoring",
-		                                                           "test1-registry",
-		                                                           "test1-jenkins"))
+			"test1-example-apps-staging",
+			"test1-example-apps-production",
+			"test1-" + config.features.ingress.ingressNamespace,
+			"test1-monitoring",
+			"test1-registry",
+			"test1-jenkins"))
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		application.setNamespaceListToConfig(config)
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}
@@ -77,8 +77,8 @@ class ApplicationTest {
 		config.content.namespaces = ['example-apps-staging',
 		                             'example-apps-production']
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		application.setNamespaceListToConfig(config)
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsAll(["example-apps-staging",
 		                                                                             "example-apps-production",])
@@ -87,8 +87,8 @@ class ApplicationTest {
 	@Test
 	void 'handles empty content namespaces'() {
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		application.setNamespaceListToConfig(config)
 		// No exception == happy
 	}
@@ -108,14 +108,14 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 		List<String> namespaceList = new ArrayList<>(Arrays.asList("test1-argocd",
-		                                                           "test1-example-apps-staging",
-		                                                           "test1-example-apps-production",
-		                                                           "test1-" + config.features.ingress.ingressNamespace,
-		                                                           "test1-monitoring",
-		                                                           "test1-registry",))
+			"test1-example-apps-staging",
+			"test1-example-apps-production",
+			"test1-" + config.features.ingress.ingressNamespace,
+			"test1-monitoring",
+			"test1-registry",))
 		def application = ApplicationContext.run()
-				.registerSingleton(config)
-				.getBean(Application)
+			.registerSingleton(config)
+			.getBean(Application)
 		application.setNamespaceListToConfig(config)
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}

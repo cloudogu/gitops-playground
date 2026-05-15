@@ -21,9 +21,9 @@ class ServiceAccountRef {
 		}
 
 		return names
-				.findAll { it?.trim() }
-				.unique()
-				.collect { new ServiceAccountRef(it, namespace) }
+			.findAll { it?.trim() }
+			.unique()
+			.collect { new ServiceAccountRef(it, namespace) }
 	}
 
 	Map<String, String> toMap() {

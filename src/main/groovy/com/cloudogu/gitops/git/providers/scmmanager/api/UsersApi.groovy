@@ -13,7 +13,6 @@ interface UsersApi {
 
 	@Headers(["Content-Type: application/vnd.scmm-permissionCollection+json;v=2"])
 	@PUT("v2/users/{username}/permissions")
-	Call<Void> setPermissionForUser(
-			@Path("username") String username,
-			@Body Map<String, List<String>> permissions)
+	Call<Void> setPermissionForUser(@Path("username") String username,
+		@Body Map<String, List<String>> permissions)
 }

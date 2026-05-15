@@ -43,8 +43,7 @@ class GitHandlerForTests extends GitHandler {
 	}
 
 	@Override
-	void validate() {
-	}
+	void validate() {}
 
 	@Override
 	GitProvider getTenant() {

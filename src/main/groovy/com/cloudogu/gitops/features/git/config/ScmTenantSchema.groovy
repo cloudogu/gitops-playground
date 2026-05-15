@@ -23,8 +23,8 @@ class ScmTenantSchema {
 	static final String GITOPSUSERNAME_DESCRIPTION = 'Username for the Gitops User'
 
 	@Option(names = ['--scm-provider'],
-			description = SCM_PROVIDER_TYPE_DESCRIPTION,
-			defaultValue = "SCM_MANAGER")
+		description = SCM_PROVIDER_TYPE_DESCRIPTION,
+		defaultValue = "SCM_MANAGER")
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
 	ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
@@ -109,9 +109,9 @@ class ScmTenantSchema {
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
 		Config.HelmConfigWithValues helm = new Config.HelmConfigWithValues(chart: 'scm-manager',
-		                                                                   repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-		                                                                   version: '3.11.6',
-		                                                                   values: [:])
+			repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+			version: '3.11.6',
+			values: [:])
 
 		/* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
 		   the SCMM URL used by jenkins.

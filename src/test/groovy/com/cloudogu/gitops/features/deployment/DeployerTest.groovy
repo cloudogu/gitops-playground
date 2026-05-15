@@ -22,7 +22,7 @@ class DeployerTest {
 
 		verify(argoCdStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
 		verify(helmStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace",
-		                                "releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
+			"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
 	}
 
 	@Test
@@ -32,7 +32,7 @@ class DeployerTest {
 		deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
 
 		verify(argoCdStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace",
-		                                  "releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
+			"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
 		verify(helmStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
 	}
 

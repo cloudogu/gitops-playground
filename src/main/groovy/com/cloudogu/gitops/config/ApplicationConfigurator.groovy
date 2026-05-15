@@ -119,7 +119,7 @@ class ApplicationConfigurator {
 		// We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
 		if (newConfig.application.baseUrl) {
 			newConfig.scm.scmManager.ingress = new URL(injectSubdomain("scmm",
-			                                                           newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
+				newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
 		}
 		// When specific user/pw are not set, set them to global values
 		if (newConfig.scm.scmManager.password === Config.DEFAULT_ADMIN_PW) {
@@ -153,7 +153,7 @@ class ApplicationConfigurator {
 
 		if (newConfig.application.baseUrl) {
 			newConfig.jenkins.ingress = new URL(injectSubdomain("jenkins",
-			                                                    newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
+				newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
 		}
 		// When specific user/pw are not set, set them to global values
 		if (newConfig.jenkins.username === Config.DEFAULT_ADMIN_USER) {
@@ -282,8 +282,8 @@ class ApplicationConfigurator {
 		String port = System.getenv("KUBERNETES_SERVICE_PORT")
 
 		String errorMessage = "Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " +
-				"Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " +
-				"Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override."
+			"Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " +
+			"Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override."
 
 		if (!host || !port) {
 			throw new RuntimeException(errorMessage)

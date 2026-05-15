@@ -69,7 +69,7 @@ class AirGappedUtilsTest {
 		}
 
 		assertThat(exception.message).isEqualTo('Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
-				                                        'from repo 3rd-party-dependencies/kube-prometheus-stack')
+			'from repo 3rd-party-dependencies/kube-prometheus-stack')
 	}
 
 	@Test
@@ -155,10 +155,10 @@ class AirGappedUtilsTest {
 		assertThat(dependencies[1]['repository']).isEqualTo('')
 
 		assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
-				'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
+			'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
 		verify(prometheusRepo).createRepositoryAndSetPermission(eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
-		                                                        eq(false))
+			eq(false))
 	}
 
 	void assertHelmRepoCommits(GitRepo repo, String expectedTag, String expectedCommitMessage) {

@@ -48,12 +48,12 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
 		scmManagerSetup.setupHelm()
 		verify(helmStrategy).deployFeature(eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
-		                                   eq("scm-manager"),
-		                                   any(),
-		                                   eq("3.11.2"),
-		                                   eq("scm-manager"),
-		                                   eq("scmm"),
-		                                   any())
+			eq("scm-manager"),
+			any(),
+			eq("3.11.2"),
+			eq("scm-manager"),
+			eq("scmm"),
+			any())
 	}
 
 	@Test

@@ -22,7 +22,7 @@ class CommonFeatureConfig extends Feature {
 		if (configToSet.application.mirrorRepos && !configToSet.application.localHelmChartFolder) {
 			// This should only happen when run outside the image, i.e. during development
 			throw new RuntimeException("Missing config for localHelmChartFolder.\n" + "Either run inside the official container image or setting env var " +
-					                           "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
+				"LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
 		}
 	}
 

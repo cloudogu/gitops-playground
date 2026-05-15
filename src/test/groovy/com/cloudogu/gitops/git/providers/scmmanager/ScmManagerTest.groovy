@@ -48,8 +48,8 @@ class ScmManagerTest {
 	@BeforeEach
 	void setup() {
 		config = new Config(application: new Config.ApplicationSchema(insecure: false,
-		                                                              namePrefix: "fv40-",
-		                                                              runningInsideK8s: true))
+			namePrefix: "fv40-",
+			runningInsideK8s: true))
 
 		lenient().when(scmmCfg.getCredentials()).thenReturn(new Credentials("user", "password"))
 		lenient().when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot")
@@ -87,12 +87,12 @@ class ScmManagerTest {
 		def seen = new HashSet<String>()
 
 		when(repoApi.create(any(Repository), anyBoolean()))
-				.thenAnswer(inv -> {
-					Repository r = inv.getArgument(0)
-					if (seen.contains(r.fullRepoName)) return conflict
-					seen.add(r.fullRepoName)
-					return created
-				})
+			.thenAnswer(inv -> {
+				Repository r = inv.getArgument(0)
+				if (seen.contains(r.fullRepoName)) return conflict
+				seen.add(r.fullRepoName)
+				return created
+			})
 
 		assertTrue(scmManager.createRepository("team/demo", "Demo repo", true))
 		assertFalse(scmManager.createRepository("team/demo", "Demo repo", true)) // 409
@@ -111,22 +111,22 @@ class ScmManagerTest {
 		// key: ns/name
 
 		when(repoApi.createPermission(anyString(), anyString(), any(Permission)))
-				.thenAnswer(inv -> {
-					String namespace = inv.getArgument(0)
-					String repoName = inv.getArgument(1)
-					String key = namespace + "/" + repoName
-					if (seen.contains(key)) return conflict
-					seen.add(key)
-					return created
-				})
+			.thenAnswer(inv -> {
+				String namespace = inv.getArgument(0)
+				String repoName = inv.getArgument(1)
+				String key = namespace + "/" + repoName
+				if (seen.contains(key)) return conflict
+				seen.add(key)
+				return created
+			})
 
 		assertDoesNotThrow({ -> scmManager.setRepositoryPermission("namespace/repo1", "devs", AccessRole.MAINTAIN, Scope.GROUP)
-		                   } as Executable)
+		} as Executable)
 
 		assertDoesNotThrow({ -> scmManager.setRepositoryPermission("namespace/repo1", "devs", AccessRole.MAINTAIN, Scope.GROUP)
-		                   } as Executable)
+		} as Executable)
 		verify(repoApi, atLeastOnce())
-				.createPermission(eq("namespace"), eq("repo1"), argThat { Permission p -> p.groupPermission && p.role == Permission.Role.WRITE })
+			.createPermission(eq("namespace"), eq("repo1"), argThat { Permission p -> p.groupPermission && p.role == Permission.Role.WRITE })
 	}
 
 	@Test
@@ -140,9 +140,9 @@ class ScmManagerTest {
 		assertEquals("http://scmm.ns.svc.cluster.local/scm/repo/fv40-", scmManager.repoPrefix())
 
 		assertEquals("http://scmm.ns.svc.cluster.local/scm/repo/team/app",
-		             scmManager.repoUrl("team/app", RepoUrlScope.IN_CLUSTER))
+			scmManager.repoUrl("team/app", RepoUrlScope.IN_CLUSTER))
 		assertEquals("http://nodeport/scm/repo/team/app",
-		             scmManager.repoUrl("team/app", RepoUrlScope.CLIENT))
+			scmManager.repoUrl("team/app", RepoUrlScope.CLIENT))
 
 		assertEquals("http", scmManager.protocol)
 		assertEquals("scmm.ns.svc.cluster.local", scmManager.host)

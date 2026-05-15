@@ -55,15 +55,15 @@ class Gitlab implements GitProvider {
 		}
 
 		def project = new Project()
-				.withName(repoName)
-				.withPath(projectPath)
-				.withDescription(description ?: "")
-				.withIssuesEnabled(false)
-				.withMergeRequestsEnabled(false)
-				.withWikiEnabled(false)
-				.withSnippetsEnabled(false)
-				.withNamespaceId(subgroupId)
-				.withInitializeWithReadme(initialize)
+			.withName(repoName)
+			.withPath(projectPath)
+			.withDescription(description ?: "")
+			.withIssuesEnabled(false)
+			.withMergeRequestsEnabled(false)
+			.withWikiEnabled(false)
+			.withSnippetsEnabled(false)
+			.withNamespaceId(subgroupId)
+			.withInitializeWithReadme(initialize)
 		project.visibility = toVisibility(gitlabConfig.defaultVisibility)
 
 		def created = api.projectApi.createProject(project)
@@ -78,12 +78,12 @@ class Gitlab implements GitProvider {
 		AccessLevel level = toAccessLevel(role, scope)
 		if (scope == Scope.GROUP) {
 			def group = api.groupApi.getGroups(principal)
-					.find { it.fullPath == principal || it.path == principal || it.name == principal }
+				.find { it.fullPath == principal || it.path == principal || it.name == principal }
 			if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
 			api.projectApi.shareProject(project.id, group.id, level, null)
 		} else {
 			def user = api.userApi.findUsers(principal)
-					.find { it.username == principal || it.email == principal }
+				.find { it.username == principal || it.email == principal }
 			if (!user) throw new IllegalArgumentException("User '${principal}' not found")
 			api.projectApi.addMember(project.id, user.id, level)
 		}
@@ -188,14 +188,14 @@ class Gitlab implements GitProvider {
 		Project collision = findDirectProjectByPath(parent.id as Long, segPath)
 		if (collision != null) {
 			throw new IllegalStateException("Cannot create subgroup '${segPath}' under '${parent.fullPath}': " + "a project with that path already exists at '${parent.fullPath}/${segPath}'. " +
-					                                "Rename/transfer the project first or choose a different subgroup name.")
+				"Rename/transfer the project first or choose a different subgroup name.")
 		}
 
 		// 3) Create subgroup
 		Group toCreate = new Group()
-				.withName(segPath) // display name
-				.withPath(segPath) // (lowercase etc.)
-				.withParentId(parent.id)
+			.withName(segPath) // display name
+			.withPath(segPath) // (lowercase etc.)
+			.withParentId(parent.id)
 
 		try {
 			Group created = api.groupApi.addGroup(toCreate)
@@ -209,7 +209,7 @@ class Gitlab implements GitProvider {
 			}
 			def ve = e.hasValidationErrors() ? e.getValidationErrors() : null
 			log.error("addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})",
-			          parent.fullPath, segPath, e.httpStatus, e.getMessage(), ve)
+				parent.fullPath, segPath, e.httpStatus, e.getMessage(), ve)
 			throw e
 		}
 	}

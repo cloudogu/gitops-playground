@@ -52,7 +52,7 @@ class CommandExecutorForTest extends CommandExecutor {
 			it.startsWith(commandStartsWith)
 		}
 		assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" + "Actual commands:\n${actualCommands.join('\n')}")
-				.isNotNull()
+			.isNotNull()
 		return actualCommand
 	}
 
@@ -61,6 +61,6 @@ class CommandExecutorForTest extends CommandExecutor {
 			it.startsWith(commandStartsWith)
 		}
 		assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
-				.isNull()
+			.isNull()
 	}
 }

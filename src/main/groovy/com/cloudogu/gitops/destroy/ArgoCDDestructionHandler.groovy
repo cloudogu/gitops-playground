@@ -25,13 +25,12 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	private FileSystemUtils fileSystemUtils
 	private GitHandler gitHandler
 
-	ArgoCDDestructionHandler(
-			Config config,
-			K8sClient k8sClient,
-			HelmClient helmClient,
-			GitRepoFactory repoProvider,
-			FileSystemUtils fileSystemUtils,
-			GitHandler gitHandler) {
+	ArgoCDDestructionHandler(Config config,
+		K8sClient k8sClient,
+		HelmClient helmClient,
+		GitRepoFactory repoProvider,
+		FileSystemUtils fileSystemUtils,
+		GitHandler gitHandler) {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.repoProvider = repoProvider
@@ -54,10 +53,10 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 			}
 
 			k8sClient.patch("app",
-			                app.name,
-			                app.namespace,
-			                'merge',
-			                [metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
+				app.name,
+				app.namespace,
+				'merge',
+				[metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
 		}
 
 		List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation

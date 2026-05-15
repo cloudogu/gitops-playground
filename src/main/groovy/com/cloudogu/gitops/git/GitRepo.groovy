@@ -43,11 +43,10 @@ class GitRepo {
 	private Git gitMemoization
 	private final String absoluteLocalRepoTmpDir
 
-	GitRepo(
-			Config config,
-			GitProvider gitProvider,
-			String repoTarget,
-			FileSystemUtils fileSystemUtils) {
+	GitRepo(Config config,
+		GitProvider gitProvider,
+		String repoTarget,
+		FileSystemUtils fileSystemUtils) {
 		def tmpDir = File.createTempDir()
 		tmpDir.deleteOnExit()
 		this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
@@ -70,9 +69,9 @@ class GitRepo {
 		def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
 		if (gitProvider.getGitOpsUsername()) {
 			gitProvider.setRepositoryPermission(repoTarget,
-			                                    gitProvider.getGitOpsUsername(),
-			                                    AccessRole.WRITE,
-			                                    Scope.USER)
+				gitProvider.getGitOpsUsername(),
+				AccessRole.WRITE,
+				Scope.USER)
 		}
 		return isNewRepo
 
@@ -86,10 +85,10 @@ class GitRepo {
 		def cloneUrl = getGitRepositoryUrl()
 		log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
 		Git.cloneRepository()
-				.setURI(cloneUrl)
-				.setDirectory(new File(absoluteLocalRepoTmpDir))
-				.setCredentialsProvider(getCredentialProvider())
-				.call()
+			.setURI(cloneUrl)
+			.setDirectory(new File(absoluteLocalRepoTmpDir))
+			.setCredentialsProvider(getCredentialProvider())
+			.call()
 	}
 
 	void commitAndPush(String message, String tag) {
@@ -104,11 +103,11 @@ class GitRepo {
 		if (git.status().call().hasUncommittedChanges()) {
 			log.debug("Commiting ${repoTarget}")
 			git.commit()
-					.setSign(false)
-					.setMessage(commitMessage)
-					.setAuthor(gitName, gitEmail)
-					.setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(', '')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
-					.call()
+				.setSign(false)
+				.setMessage(commitMessage)
+				.setAuthor(gitName, gitEmail)
+				.setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(', '')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
+				.call()
 
 			def pushCommand = createPushCommand(refSpec)
 
@@ -117,8 +116,8 @@ class GitRepo {
 				// Delete existing tags first to get idempotence
 				git.tagDelete().setTags(tag).call()
 				git.tag()
-						.setName(tag)
-						.call()
+					.setName(tag)
+					.call()
 				pushCommand.setPushTags()
 			}
 
@@ -224,9 +223,9 @@ class GitRepo {
 
 		try (def git = Git.open(repoPath)) {
 			List<Ref> branches = git
-					.branchList()
-					.setListMode(ListBranchCommand.ListMode.ALL)
-					.call()
+				.branchList()
+				.setListMode(ListBranchCommand.ListMode.ALL)
+				.call()
 
 			for (Ref branch : branches) {
 				String branchName = branch.getName()
@@ -266,10 +265,10 @@ class GitRepo {
 
 	private PushCommand createPushCommand(String refSpec) {
 		getGit()
-				.push()
-				.setRemote(getGitRepositoryUrl())
-				.setRefSpecs(new RefSpec(refSpec))
-				.setCredentialsProvider(getCredentialProvider())
+			.push()
+			.setRemote(getGitRepositoryUrl())
+			.setRefSpecs(new RefSpec(refSpec))
+			.setCredentialsProvider(getCredentialProvider())
 	}
 
 	private Git getGit() {

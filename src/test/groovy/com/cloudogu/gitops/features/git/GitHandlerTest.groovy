@@ -46,10 +46,10 @@ class GitHandlerTest {
 
 	private static GitHandler handler(Config cfg) {
 		return new GitHandler(cfg,
-		                      mock(HelmStrategy),
-		                      mock(FileSystemUtils),
-		                      mock(K8sClient),
-		                      mock(NetworkingUtils))
+			mock(HelmStrategy),
+			mock(FileSystemUtils),
+			mock(K8sClient),
+			mock(NetworkingUtils))
 	}
 
 	// ---------- validate() ------------------------------------------------------------

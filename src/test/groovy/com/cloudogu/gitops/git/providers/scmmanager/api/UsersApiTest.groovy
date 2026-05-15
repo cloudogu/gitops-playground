@@ -17,17 +17,17 @@ class UsersApiTest {
 
 	@RegisterExtension
 	static WireMockExtension wireMock = WireMockExtension.newInstance()
-			.options(wireMockConfig()
-					         .dynamicPort()
-					         .dynamicHttpsPort())
-			.build()
+		.options(wireMockConfig()
+			.dynamicPort()
+			.dynamicHttpsPort())
+		.build()
 
 	private Credentials credentials = new Credentials("user", "pass")
 
 	@Test
 	void 'allows self-signed certificates when using insecure option'() {
 		wireMock.stubFor(delete(urlPathEqualTo("/scm/api/v2/users/test-user"))
-				                 .willReturn(aResponse().withStatus(204)))
+			.willReturn(aResponse().withStatus(204)))
 
 		def api = usersApi(true, true)
 		// insecure=true, useHttps=true
@@ -40,7 +40,7 @@ class UsersApiTest {
 	@Test
 	void 'does not allow self-signed certificates by default'() {
 		wireMock.stubFor(delete(urlPathEqualTo("/scm/api/v2/users/test-user"))
-				                 .willReturn(aResponse().withStatus(204)))
+			.willReturn(aResponse().withStatus(204)))
 
 		def api = usersApi(false, true)
 		// insecure=false, useHttps=true

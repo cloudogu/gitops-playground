@@ -37,18 +37,18 @@ class K8sJavaApiTest {
 	private generateSecret() {
 
 		Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName("test-secret")
-				.withNamespace('test')
-				.endMetadata()
-				.withType("Opaque")
-				.withData(Map.of("username", "YWRtaW4=",
-				                 "password", "czNjcjN0"))
-				.build()
+			.withNewMetadata()
+			.withName("test-secret")
+			.withNamespace('test')
+			.endMetadata()
+			.withType("Opaque")
+			.withData(Map.of("username", "YWRtaW4=",
+				"password", "czNjcjN0"))
+			.build()
 
 		client.secrets()
-				.inNamespace('test')
-				.create(secret)
+			.inNamespace('test')
+			.create(secret)
 
 	}
 }

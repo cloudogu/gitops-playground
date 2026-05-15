@@ -25,7 +25,7 @@ import org.mockito.ArgumentCaptor
 class VaultTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',),
-	                           features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true,)))
+		features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true,)))
 
 	CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
@@ -137,18 +137,18 @@ class VaultTest {
 	@Test
 	void 'helm release is installed'() {
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
-		                                                                                          repoURL: 'https://vault-reg',
-		                                                                                          version: '42.23.0')
+			repoURL: 'https://vault-reg',
+			version: '42.23.0')
 		createVault().install()
 
 		verify(deploymentStrategy).deployFeature('https://vault-reg',
-		                                         'vault',
-		                                         'vault',
-		                                         '42.23.0',
-		                                         'foo-secrets',
-		                                         'vault',
-		                                         temporaryYamlFile,
-		                                         RepoType.HELM)
+			'vault',
+			'vault',
+			'42.23.0',
+			'foo-secrets',
+			'vault',
+			temporaryYamlFile,
+			RepoType.HELM)
 
 		assertThat(parseActualYaml()).doesNotContainKey('global')
 	}
@@ -157,8 +157,8 @@ class VaultTest {
 	void 'helm release is installed in air-gapped mode'() {
 		config.application.mirrorRepos = true
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
-		                                                                                          repoURL: 'https://vault-reg',
-		                                                                                          version: '42.23.0')
+			repoURL: 'https://vault-reg',
+			version: '42.23.0')
 
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
@@ -179,8 +179,8 @@ class VaultTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
 		assertThat(helmConfig.value.version).isEqualTo('42.23.0')
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'vault', '.', '1.2.3', 'foo-secrets',
-		                                         'vault', temporaryYamlFile, RepoType.GIT)
+			'vault', '.', '1.2.3', 'foo-secrets',
+			'vault', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test
