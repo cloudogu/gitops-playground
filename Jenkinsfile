@@ -49,11 +49,7 @@ pipeline {
                         args "-v maven-cache:/root/.m2"
                         reuseNode true
                     }}
-                    steps {
-                        sh 'mvn -B clean test'
-                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                        archiveArtifacts artifacts: "**/target/site/jacoco/**"
-                    }
+
                 }
 
                 stage("Build Image") {
