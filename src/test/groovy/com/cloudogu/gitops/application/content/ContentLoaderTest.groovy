@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.application.content
 
 import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
 import static com.cloudogu.gitops.config.Config.ContentRepoType
@@ -10,11 +10,11 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.kubernetes.api.K8sClient
@@ -77,7 +77,7 @@ class ContentLoaderTest {
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-    Jenkins jenkins = mock(Jenkins.class)
+	Jenkins jenkins = mock(Jenkins.class)
     ScmManagerMock scmManagerMock = new ScmManagerMock()
     GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
