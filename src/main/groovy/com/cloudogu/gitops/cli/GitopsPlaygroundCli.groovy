@@ -11,7 +11,7 @@ import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 

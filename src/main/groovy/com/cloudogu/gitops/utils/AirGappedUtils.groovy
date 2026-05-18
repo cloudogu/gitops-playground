@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Path
 import jakarta.inject.Singleton

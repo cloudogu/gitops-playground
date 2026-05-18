@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.kubernetes.api
+package com.cloudogu.gitops.infrastructure.helm
 
 import com.cloudogu.gitops.utils.CommandExecutor
 

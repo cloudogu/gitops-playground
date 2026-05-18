@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.jenkins
+package com.cloudogu.gitops.infrastructure.jenkins
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.anyString

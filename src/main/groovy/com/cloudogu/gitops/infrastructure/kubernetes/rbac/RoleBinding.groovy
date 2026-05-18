@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.kubernetes.rbac
+package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
 class RoleBinding {
 	String name

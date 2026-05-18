@@ -14,8 +14,8 @@ import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock

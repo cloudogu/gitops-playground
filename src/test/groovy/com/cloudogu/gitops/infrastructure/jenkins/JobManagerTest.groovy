@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.jenkins
+package com.cloudogu.gitops.infrastructure.jenkins
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options

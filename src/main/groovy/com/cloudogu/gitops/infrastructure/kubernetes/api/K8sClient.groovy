@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.kubernetes.api
+package com.cloudogu.gitops.infrastructure.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.CommandExecutor

@@ -5,11 +5,11 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
-import com.cloudogu.gitops.jenkins.GlobalPropertyManager
-import com.cloudogu.gitops.jenkins.JobManager
-import com.cloudogu.gitops.jenkins.PrometheusConfigurator
-import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.infrastructure.jenkins.JobManager
+import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
+import com.cloudogu.gitops.infrastructure.jenkins.UserManager
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils

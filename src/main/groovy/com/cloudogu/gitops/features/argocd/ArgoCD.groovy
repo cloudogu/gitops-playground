@@ -4,10 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
-import com.cloudogu.gitops.kubernetes.rbac.Role
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
+import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 

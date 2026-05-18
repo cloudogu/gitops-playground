@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.kubernetes.rbac
+package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows

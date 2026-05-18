@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Files
 import java.nio.file.Path

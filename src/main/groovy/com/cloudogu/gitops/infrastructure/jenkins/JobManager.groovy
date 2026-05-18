@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.jenkins
+package com.cloudogu.gitops.infrastructure.jenkins
 
 import com.cloudogu.gitops.utils.TemplatingEngine
 

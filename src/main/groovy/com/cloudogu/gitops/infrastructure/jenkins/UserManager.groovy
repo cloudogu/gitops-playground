@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.jenkins
+package com.cloudogu.gitops.infrastructure.jenkins
 
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j

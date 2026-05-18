@@ -10,7 +10,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
