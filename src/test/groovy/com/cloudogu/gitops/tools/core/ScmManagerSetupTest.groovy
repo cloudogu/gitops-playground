@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
+package com.cloudogu.gitops.tools.core
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
@@ -55,7 +56,7 @@ class ScmManagerSetupTest {
         when(scmManager.getConfig()).thenReturn(config)
         when(scmManager.getHelmStrategy()).thenReturn(helmStrategy)
         when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
-        ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
+	    ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
         scmManagerSetup.setupHelm()
         verify(helmStrategy).deployFeature(
                 eq( "https://packages.scm-manager.org/repository/helm-v2-releases/"),

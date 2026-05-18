@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -16,21 +16,22 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(160)
-class CertManager extends Feature implements FeatureWithImage {
+@Order(400)
+class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
 
-	final K8sClient k8sClient
-	final Config config
-	final String namespace = "${config.application.namePrefix}cert-manager"
+	String namespace = "${config.application.namePrefix}secrets"
+	Config config
+	K8sClient k8sClient
 
-	CertManager(Config config,
+	ExternalSecretsOperator(Config config,
 		FileSystemUtils fileSystemUtils,
 		DeploymentStrategy deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
+
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
@@ -41,11 +42,12 @@ class CertManager extends Feature implements FeatureWithImage {
 
 	@Override
 	boolean isEnabled() {
-		return config.features.certManager.active
+		return config.features.secrets.active
 	}
 
 	@Override
 	void enable() {
-		deployHelmChart('cert-manager', 'cert-manager', namespace, config.features.certManager.helm, HELM_VALUES_PATH, config)
+		def helmConfig = config.features.secrets.externalSecrets.helm
+		deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, config)
 	}
 }

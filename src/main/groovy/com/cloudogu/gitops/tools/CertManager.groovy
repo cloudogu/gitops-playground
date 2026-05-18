@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -16,16 +16,16 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(150)
-class Ingress extends Feature implements FeatureWithImage {
+@Order(160)
+class CertManager extends Feature implements FeatureWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
-	Config config
-	K8sClient k8sClient
+	final K8sClient k8sClient
+	final Config config
+	final String namespace = "${config.application.namePrefix}cert-manager"
 
-	Ingress(Config config,
+	CertManager(Config config,
 		FileSystemUtils fileSystemUtils,
 		DeploymentStrategy deployer,
 		K8sClient k8sClient,
@@ -41,12 +41,11 @@ class Ingress extends Feature implements FeatureWithImage {
 
 	@Override
 	boolean isEnabled() {
-		return config.features.ingress.active
+		return config.features.certManager.active
 	}
 
 	@Override
 	void enable() {
-		def helmConfig = config.features.ingress.helm
-		deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, config)
+		deployHelmChart('cert-manager', 'cert-manager', namespace, config.features.certManager.helm, HELM_VALUES_PATH, config)
 	}
 }

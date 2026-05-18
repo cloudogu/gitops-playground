@@ -11,6 +11,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.core.ScmManagerSetup
 import com.cloudogu.gitops.utils.NetworkingUtils
 
 import groovy.util.logging.Slf4j

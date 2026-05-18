@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat

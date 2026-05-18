@@ -1,5 +1,6 @@
-package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
+package com.cloudogu.gitops.tools.core
 
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser
 import com.cloudogu.gitops.utils.FileSystemUtils

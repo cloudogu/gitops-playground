@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -16,22 +16,21 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(400)
-class ExternalSecretsOperator extends Feature implements FeatureWithImage {
+@Order(150)
+class Ingress extends Feature implements FeatureWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}secrets"
+	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	Config config
 	K8sClient k8sClient
 
-	ExternalSecretsOperator(Config config,
+	Ingress(Config config,
 		FileSystemUtils fileSystemUtils,
 		DeploymentStrategy deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
-
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
@@ -42,12 +41,12 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
 	@Override
 	boolean isEnabled() {
-		return config.features.secrets.active
+		return config.features.ingress.active
 	}
 
 	@Override
 	void enable() {
-		def helmConfig = config.features.secrets.externalSecrets.helm
-		deployHelmChart('external-secrets-operator', 'external-secrets', namespace, helmConfig, HELM_VALUES_PATH, config)
+		def helmConfig = config.features.ingress.helm
+		deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, config)
 	}
 }
