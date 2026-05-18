@@ -1,6 +1,6 @@
-package com.cloudogu.gitops.config
+package com.cloudogu.gitops.tools.common
 
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.config.Config
 
 import groovy.util.logging.Slf4j
 

@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient

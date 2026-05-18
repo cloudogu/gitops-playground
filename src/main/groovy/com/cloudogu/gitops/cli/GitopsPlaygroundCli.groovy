@@ -5,12 +5,11 @@ import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
 import com.cloudogu.gitops.application.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.CommonFeatureConfig
 import com.cloudogu.gitops.tools.common.Feature
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils

@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.config
+package com.cloudogu.gitops.cli
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
@@ -16,6 +17,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.tools.common.CommonFeatureConfig
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import org.junit.jupiter.api.BeforeEach
