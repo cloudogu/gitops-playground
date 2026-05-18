@@ -1,20 +1,20 @@
 package com.cloudogu.gitops.features.argocd
 
-import org.junit.jupiter.api.Test
-import org.mockito.Spy
-import org.springframework.security.crypto.bcrypt.BCrypt
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.TestGitProvider
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitProvider
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,9 +23,9 @@ import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
+import org.junit.jupiter.api.Test
+import org.mockito.Spy
+import org.springframework.security.crypto.bcrypt.BCrypt
 
 class ArgoCDTest {
     Map buildImages = [

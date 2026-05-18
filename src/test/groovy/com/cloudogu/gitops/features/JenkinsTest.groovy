@@ -14,11 +14,11 @@ import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.ScmManagerMock
 
 import java.nio.file.Path
 import groovy.yaml.YamlSlurper

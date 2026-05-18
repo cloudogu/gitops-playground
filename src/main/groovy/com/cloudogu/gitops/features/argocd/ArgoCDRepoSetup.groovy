@@ -2,8 +2,8 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path

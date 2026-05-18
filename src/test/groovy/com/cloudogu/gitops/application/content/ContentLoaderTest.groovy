@@ -15,17 +15,17 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.features.Jenkins
-import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 
 import java.nio.file.Files
 import java.nio.file.Path

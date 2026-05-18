@@ -3,10 +3,10 @@ package com.cloudogu.gitops.application.orchestration
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.gitlab.Gitlab
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils

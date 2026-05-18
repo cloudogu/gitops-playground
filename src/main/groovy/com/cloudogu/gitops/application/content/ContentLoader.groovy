@@ -9,9 +9,9 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.Jenkins
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils

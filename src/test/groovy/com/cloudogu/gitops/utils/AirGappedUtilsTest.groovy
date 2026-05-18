@@ -7,14 +7,14 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
-import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 
 import java.nio.file.Files
 import java.nio.file.Path

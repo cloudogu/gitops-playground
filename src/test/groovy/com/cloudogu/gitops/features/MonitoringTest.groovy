@@ -7,12 +7,12 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 
 import java.nio.file.Files
 import java.nio.file.Path

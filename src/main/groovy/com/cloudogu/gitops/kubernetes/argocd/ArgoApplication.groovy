@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.kubernetes.argocd
 
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import java.nio.file.Path

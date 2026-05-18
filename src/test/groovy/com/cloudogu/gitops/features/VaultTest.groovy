@@ -8,9 +8,9 @@ import static org.mockito.Mockito.*
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.ScmManagerMock
 
 import java.nio.file.Files
 import java.nio.file.Path

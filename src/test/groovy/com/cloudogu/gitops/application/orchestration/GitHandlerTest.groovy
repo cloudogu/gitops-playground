@@ -5,14 +5,14 @@ import static org.mockito.Mockito.mock
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.GitlabMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.GitlabMock
-import com.cloudogu.gitops.utils.git.ScmManagerMock
 
 import org.junit.jupiter.api.Test
 
