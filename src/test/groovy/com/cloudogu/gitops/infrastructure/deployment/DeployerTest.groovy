@@ -1,14 +1,10 @@
-package com.cloudogu.gitops.features.deployment
+package com.cloudogu.gitops.infrastructure.deployment
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 
 import java.nio.file.Path
 

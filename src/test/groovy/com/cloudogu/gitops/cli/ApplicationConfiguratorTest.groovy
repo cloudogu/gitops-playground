@@ -9,7 +9,6 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.features.Jenkins
-import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
@@ -18,6 +17,7 @@ import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.tools.common.CommonFeatureConfig
+import com.cloudogu.gitops.tools.core.argocd.ArgoCD
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import org.junit.jupiter.api.BeforeEach

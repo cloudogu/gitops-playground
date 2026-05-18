@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.argocd
+package com.cloudogu.gitops.tools.core.argocd
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
@@ -164,8 +164,8 @@ class ArgoCDTest {
     String actualHelmValuesFile
     GitRepo clusterResourcesRepo
     List<GitRepo> petClinicRepos = []
-    ArgoCD argocd
-    RepoLayout clusterResourcesRepoLayout
+	ArgoCD argocd
+	RepoLayout clusterResourcesRepoLayout
 
     @Test
     void 'Installs argoCD'() {

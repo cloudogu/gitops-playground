@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.argocd
+package com.cloudogu.gitops.tools.core.argocd
 
 import java.nio.file.Path
 

@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.deployment
+package com.cloudogu.gitops.infrastructure.deployment
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
@@ -6,8 +6,6 @@ import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Files

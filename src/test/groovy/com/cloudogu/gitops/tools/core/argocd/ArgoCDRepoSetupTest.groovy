@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.argocd
+package com.cloudogu.gitops.tools.core.argocd
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows
