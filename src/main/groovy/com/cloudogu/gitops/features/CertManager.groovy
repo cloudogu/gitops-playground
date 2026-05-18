@@ -1,11 +1,11 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.FeatureWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 

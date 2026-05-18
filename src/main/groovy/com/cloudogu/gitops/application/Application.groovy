@@ -1,7 +1,8 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.application
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.Feature
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import jakarta.inject.Singleton

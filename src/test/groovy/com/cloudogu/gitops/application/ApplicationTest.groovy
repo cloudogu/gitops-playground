@@ -1,4 +1,4 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.application
 
 import static org.assertj.core.api.Assertions.assertThat
 

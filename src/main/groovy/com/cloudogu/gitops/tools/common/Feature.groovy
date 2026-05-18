@@ -1,4 +1,4 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.tools.common
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
@@ -161,7 +161,7 @@ abstract class Feature {
 	 * Feature should throw RuntimeException to stop immediately.
 	 */
 
-	protected void validate() {}
+	void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.

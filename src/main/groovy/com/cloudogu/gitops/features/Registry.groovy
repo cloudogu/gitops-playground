@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import io.micronaut.core.annotation.Order
