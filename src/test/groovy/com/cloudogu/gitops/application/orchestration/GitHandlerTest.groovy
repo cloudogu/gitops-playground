@@ -1,9 +1,8 @@
-package com.cloudogu.gitops.features.git
+package com.cloudogu.gitops.application.orchestration
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.Mockito.mock
 
-import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
