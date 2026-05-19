@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Feature
-import com.cloudogu.gitops.tools.common.FeatureWithImage
+import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -18,7 +18,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(500)
-class Vault extends Feature implements FeatureWithImage {
+class Vault extends Feature implements ToolWithImage {
 	static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh"
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
 

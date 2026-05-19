@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import groovy.util.logging.Slf4j
 
 @Slf4j
-class CommonFeatureConfig extends Feature {
+class CommonToolConfig extends Feature {
 	@Override
 	void preConfigInit(Config configToSet) {
 		validateConfig(configToSet)

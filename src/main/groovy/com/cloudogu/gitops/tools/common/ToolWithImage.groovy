@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 
 /**
  * A feature that relies on container images running inside the kubernetes cluster.*/
-trait FeatureWithImage {
+trait ToolWithImage {
 
 	final Logger log = LoggerFactory.getLogger(this.class)
 

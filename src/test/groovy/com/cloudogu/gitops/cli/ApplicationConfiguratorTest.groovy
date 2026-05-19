@@ -15,7 +15,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
-import com.cloudogu.gitops.tools.common.CommonFeatureConfig
+import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -36,7 +36,7 @@ class ApplicationConfiguratorTest {
     private ApplicationConfigurator applicationConfigurator
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
-    private CommonFeatureConfig commonFeatureConfig
+	private CommonToolConfig commonFeatureConfig
     private ContentLoader featureContent
     private ArgoCD featureArgoCd
 
@@ -89,7 +89,7 @@ class ApplicationConfiguratorTest {
         fileSystemUtils = new FileSystemUtils()
         applicationConfigurator = new ApplicationConfigurator(fileSystemUtils)
         testLogger = new TestLogger(applicationConfigurator.getClass())
-        commonFeatureConfig = new CommonFeatureConfig()
+	    commonFeatureConfig = new CommonToolConfig()
 
         K8sClient k8sClient = Mockito.mock(K8sClient)
         HelmClient helmClient = Mockito.mock(HelmClient)

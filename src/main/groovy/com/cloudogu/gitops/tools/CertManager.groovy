@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Feature
-import com.cloudogu.gitops.tools.common.FeatureWithImage
+import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -17,7 +17,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(160)
-class CertManager extends Feature implements FeatureWithImage {
+class CertManager extends Feature implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
 

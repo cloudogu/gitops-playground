@@ -29,8 +29,8 @@ class FeatureTest {
 			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 	}
 
-	protected FeatureWithImageForTest createFeatureWithImage() {
-		Feature feature = new FeatureWithImageForTest()
+	protected ToolWithImageForTest createFeatureWithImage() {
+		Feature feature = new ToolWithImageForTest()
 		feature.config = config
 		feature.k8sClient = k8sClient
 		feature.namespace = 'foo-my-ns'
@@ -65,7 +65,7 @@ class FeatureTest {
 			' --docker-server url --docker-username user --docker-password pw')
 	}
 
-	class FeatureWithImageForTest extends Feature implements FeatureWithImage {
+	class ToolWithImageForTest extends Feature implements ToolWithImage {
 
 		String namespace
 		Config config

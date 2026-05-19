@@ -7,7 +7,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Feature
-import com.cloudogu.gitops.tools.common.FeatureWithImage
+import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -23,7 +23,7 @@ import groovy.util.logging.Slf4j
 @Singleton
 @Order(300)
 @CompileStatic
-class Monitoring extends Feature implements FeatureWithImage {
+class Monitoring extends Feature implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
