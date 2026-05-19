@@ -3,7 +3,7 @@ package com.cloudogu.gitops.tools
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import io.micronaut.core.annotation.Order
@@ -14,7 +14,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(40)
-class Registry extends Feature {
+class Registry extends Tool {
 
 	/**
 	 * Local container port of the registry within the pod*/

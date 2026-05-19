@@ -7,7 +7,7 @@ import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 
@@ -22,7 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Slf4j
 @Singleton
 @Order(100)
-class ArgoCD extends Feature {
+class ArgoCD extends Tool {
 
 	private final String namespace
 	private final Config config

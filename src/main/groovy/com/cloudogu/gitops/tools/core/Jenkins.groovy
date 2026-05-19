@@ -9,7 +9,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
@@ -22,7 +22,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(70)
-class Jenkins extends Feature {
+class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
 

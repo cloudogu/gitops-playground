@@ -2,7 +2,7 @@ package com.cloudogu.gitops.application
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import jakarta.inject.Singleton
@@ -15,12 +15,12 @@ import freemarker.template.DefaultObjectWrapperBuilder
 @Singleton
 class Application {
 
-	final List<Feature> features
+	final List<Tool> features
 	final Config config
 	final K8sClient k8sClient
 
 	Application(Config config, K8sClient k8sClient,
-		List<Feature> features) {
+		List<Tool> features) {
 		this.config = config
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.features = features
@@ -59,8 +59,7 @@ class Application {
                 new Tuple2('gop-config', config.toYaml(true)))
     }
 
-
-	List<Feature> getFeatures() {
+	List<Tool> getFeatures() {
 		return features
 	}
 

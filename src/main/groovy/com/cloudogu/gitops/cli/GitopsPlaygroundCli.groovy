@@ -10,7 +10,7 @@ import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.CommonToolConfig
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -258,7 +258,7 @@ class GitopsPlaygroundCli {
 		([new CommonToolConfig(), *app.features]).each { feature ->
 			// Executing only the method if the derived feature class has implemented the passed methodName
 			def mm = feature.metaClass.getMetaMethod(methodName, config)
-			if (mm && mm.declaringClass.theClass != Feature) {
+			if (mm && mm.declaringClass.theClass != Tool) {
 				log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
 				mm.invoke(feature, config)
 			}

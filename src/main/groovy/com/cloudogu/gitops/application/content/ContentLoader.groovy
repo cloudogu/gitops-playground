@@ -11,7 +11,7 @@ import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -38,7 +38,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 @Singleton
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
-class ContentLoader extends Feature {
+class ContentLoader extends Tool {
 	private Config config
 	private K8sClient k8sClient
 	private GitRepoFactory repoProvider

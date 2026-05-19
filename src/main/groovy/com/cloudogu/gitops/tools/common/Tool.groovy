@@ -42,7 +42,7 @@ import freemarker.template.DefaultObjectWrapperBuilder
  * </ul>*/
 
 @Slf4j
-abstract class Feature {
+abstract class Tool {
 
 	protected FileSystemUtils fileSystemUtils
 	protected DeploymentStrategy deployer

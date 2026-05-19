@@ -7,7 +7,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Feature
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 
@@ -19,7 +19,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(60)
-class GitHandler extends Feature {
+class GitHandler extends Tool {
 
 	Config config
 

@@ -6,7 +6,7 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 
 import org.junit.jupiter.api.Test
 
-class FeatureTest {
+class ToolTest {
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
 	K8sClientForTest k8sClient = new K8sClientForTest(config)
@@ -30,7 +30,7 @@ class FeatureTest {
 	}
 
 	protected ToolWithImageForTest createFeatureWithImage() {
-		Feature feature = new ToolWithImageForTest()
+		Tool feature = new ToolWithImageForTest()
 		feature.config = config
 		feature.k8sClient = k8sClient
 		feature.namespace = 'foo-my-ns'
@@ -65,7 +65,7 @@ class FeatureTest {
 			' --docker-server url --docker-username user --docker-password pw')
 	}
 
-	class ToolWithImageForTest extends Feature implements ToolWithImage {
+	class ToolWithImageForTest extends Tool implements ToolWithImage {
 
 		String namespace
 		Config config
