@@ -6,10 +6,10 @@
     "minimumReleaseAge": "7 days",
 
     "extends": [
-        "preset:automergeMinor",
-        "preset:combinePatchMinorReleases",
-        "preset:configMigration",
-        "preset:autoMergeDigest"
+        ":automergeMinor",
+        ":combinePatchMinorReleases",
+        ":configMigration",
+        ":automergeDigest"
     ],
 
     "packageRules": [
