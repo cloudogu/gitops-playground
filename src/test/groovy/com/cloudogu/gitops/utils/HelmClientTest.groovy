@@ -2,7 +2,7 @@ package com.cloudogu.gitops.utils
 
 import static org.assertj.core.api.Assertions.assertThat
 
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import org.junit.jupiter.api.Test
 
