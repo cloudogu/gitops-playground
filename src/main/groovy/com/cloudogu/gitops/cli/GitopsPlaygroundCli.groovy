@@ -4,14 +4,13 @@ import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
-import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.CommonFeatureConfig
+import com.cloudogu.gitops.application.Application
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.CommonToolConfig
+import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -256,10 +255,10 @@ class GitopsPlaygroundCli {
 	}
 
 	static void runHook(Application app, String methodName, def config) {
-		([new CommonFeatureConfig(), *app.features]).each { feature ->
+		([new CommonToolConfig(), *app.features]).each { feature ->
 			// Executing only the method if the derived feature class has implemented the passed methodName
 			def mm = feature.metaClass.getMetaMethod(methodName, config)
-			if (mm && mm.declaringClass.theClass != Feature) {
+			if (mm && mm.declaringClass.theClass != Tool) {
 				log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
 				mm.invoke(feature, config)
 			}

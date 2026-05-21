@@ -3,7 +3,7 @@ package com.cloudogu.gitops.config
 import static com.cloudogu.gitops.config.ConfigConstants.*
 import static picocli.CommandLine.ScopeType
 
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 
 import java.security.SecureRandom
 import jakarta.inject.Singleton
