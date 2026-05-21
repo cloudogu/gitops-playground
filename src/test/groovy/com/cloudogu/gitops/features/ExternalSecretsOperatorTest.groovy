@@ -10,15 +10,18 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
 
 import java.nio.file.Files
 import java.nio.file.Path
 import groovy.yaml.YamlSlurper
 
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
@@ -26,6 +29,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension.class)
+@EnableKubernetesMockClient(crud = true)
 class ExternalSecretsOperatorTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"),
@@ -33,7 +37,6 @@ class ExternalSecretsOperatorTest {
 		features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true)))
 
 	CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-	K8sClientForTest k8sClient = new K8sClientForTest()
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Path temporaryYamlFile
 
@@ -45,6 +48,15 @@ class ExternalSecretsOperatorTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+
+	K8sClient k8sClient
+	KubernetesClient client
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
 
 	@Test
 	void "is disabled via active flag"() {
