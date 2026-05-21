@@ -2,10 +2,9 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.K8sClientForTest
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -15,7 +14,6 @@ class FeatureTest {
 
 	K8sClient k8sClient
 	KubernetesClient client
-	KubernetesMockServer server
 
 	@BeforeEach
 	void init() {

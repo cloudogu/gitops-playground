@@ -5,14 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 
@@ -22,9 +21,7 @@ import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
-
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -43,7 +40,6 @@ class VaultTest {
 
 	K8sClient k8sClient
 	KubernetesClient client
-	KubernetesMockServer server
 
 	@BeforeEach
 	void init() {
