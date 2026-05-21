@@ -21,6 +21,7 @@ features:
   argocd:
     active: true
     operator: false
+    installOperator: true
     env: []
     resourceInclusionsCluster: "https://10.43.0.1:443"
   ingress:
@@ -40,4 +41,3 @@ content:
   namespaces:
     - tenant1-argocd
   variables:
-

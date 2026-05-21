@@ -116,13 +116,6 @@ pipeline {
 
                             profiles.each { profile ->
                                 withK3dCluster {
-
-                                    if (profile.startsWith('operator')) {
-                                        docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh 'apk add --no-cache make bash curl git kubectl && ./scripts/local/install-argocd-operator.sh'
-                                        }
-                                    }
-
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
