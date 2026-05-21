@@ -18,7 +18,6 @@ import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
@@ -60,7 +59,7 @@ class ContentLoaderTest {
 			createImagePullSecrets: false))
 
 	KubernetesClient client
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClient k8sClient = new K8sClient()
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	Jenkins jenkins = mock(Jenkins.class)

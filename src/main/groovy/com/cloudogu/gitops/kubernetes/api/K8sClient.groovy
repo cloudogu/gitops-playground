@@ -958,6 +958,11 @@ class K8sClient {
 			case 'nodes':
 				return client.nodes().withName(name)
 
+			case 'serviceaccount':
+			case 'serviceaccounts':
+				return client.serviceAccounts().inNamespace(ns).withName(name)
+
+
 			default:
 				return client.genericKubernetesResources(resourceType).inNamespace(ns).withName(name)
 		}
