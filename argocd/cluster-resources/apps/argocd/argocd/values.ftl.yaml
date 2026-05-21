@@ -6,6 +6,7 @@ argo-cd:
 </#if>
 <#if config.application.netpols == true>
   global:
+   domain: ${argocd.host}
     networkPolicy:
       create: true
 </#if>
@@ -74,7 +75,6 @@ argo-cd:
       oidc.config: |                                                                                                                                                    
                    ${config.features.argocd.oidc?trim?replace("\n", "\n                   ")}
       </#if>
-
 
   notifications:
     # secrets are created dynamically in groovy, so they are not stored in git

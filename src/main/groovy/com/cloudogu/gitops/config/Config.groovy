@@ -540,7 +540,7 @@ class Config {
 		@JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
 		Map<String, Object> values = [:]
 
-		@JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
 		String oidc = ''
 
 	}
@@ -582,6 +582,9 @@ class Config {
 		@Option(names = ['--grafana-email-to'], description = GRAFANA_EMAIL_TO_DESCRIPTION)
 		@JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
 		String grafanaEmailTo = 'infra@example.org'
+
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
+		String oidc = ''
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)

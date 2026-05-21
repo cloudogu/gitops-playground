@@ -142,6 +142,11 @@ alertmanager:
   enabled: false
 grafana:
   grafana.ini:
+<#if config.features.monitoring.oidc?has_content>
+    assertNoLeakedSecrets: false # TODO remove this and use a secret to store the oidc config or at least the credentials
+    auth.generic_oauth: |
+      ${config.features.monitoring.oidc?trim?replace("\n", "\n      ")}
+</#if>
     analytics:
       check_for_updates: false
 <#if config.application.openshift == true>
