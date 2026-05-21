@@ -329,7 +329,7 @@
             },
             "operatorVersion": {
               "type": [
-                "boolean",
+                "string",
                 "null"
               ],
               "description": "Operator Version to install"
