@@ -111,6 +111,10 @@ class K8sClient {
 		commandExecutor.execute("kubectl apply -f $yamlLocation").stdOut
 	}
 
+	String applyKustomize(String kustomizeLocation) {
+		commandExecutor.execute("kubectl apply -k $kustomizeLocation").stdOut
+	}
+
 	/**
 	 * Creates a namespace with the specified name if it does not already exist.
 	 *

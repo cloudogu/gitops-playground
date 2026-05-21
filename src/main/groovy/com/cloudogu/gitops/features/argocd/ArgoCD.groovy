@@ -186,19 +186,9 @@ class ArgoCD extends Feature {
 	}
 
 	private void installOperator() {
-		def cmd = """
-git clone https://github.com/argoproj-labs/argocd-operator &&
-cd argocd-operator &&
-git checkout release-${config.features.argocd.operatorVersion} &&
-make deploy IMG=quay.io/argoprojlabs/argocd-operator:v${config.features.argocd.operatorVersion}.0 &&
-rm -Rf ../argocd-operator/
-"""
-
-		def process = ["bash", "-c", cmd].execute()
-		process.in.eachLine { log.debug(it) }
-		process.err.eachLine { log.debug(it) }
-		process.waitFor()
-		log.info("Successfully installed ArgoCD Operator version ${config.features.argocd.operatorVersion}")
+		String version = config.features.argocd.operatorVersion
+		k8sClient.applyKustomize("github.com/argoproj-labs/argocd-operator/config/default?ref=release-${version}")
+		log.info("Successfully installed ArgoCD Operator version ${version}")
 	}
 
 	private void deployWithHelm() {
