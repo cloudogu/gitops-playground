@@ -3,13 +3,25 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
-
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@EnableKubernetesMockClient(crud = true)
 class FeatureTest {
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClient k8sClient
+	KubernetesClient client
+	KubernetesMockServer server
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
 
 	@Test
 	void 'Image pull secrets are create automatically'() {

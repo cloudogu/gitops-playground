@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
@@ -19,9 +20,15 @@ import java.nio.file.Files
 import java.nio.file.Path
 import groovy.yaml.YamlSlurper
 
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import org.junit.jupiter.api.BeforeEach
+
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
+@EnableKubernetesMockClient(crud = true)
 class VaultTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',),
@@ -31,9 +38,18 @@ class VaultTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	K8sClientForTest k8sClient = new K8sClientForTest()
 	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 	Path temporaryYamlFile
+
+	K8sClient k8sClient
+	KubernetesClient client
+	KubernetesMockServer server
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
 
 	@Test
 	void 'is disabled via active flag'() {
