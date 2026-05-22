@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-
-import jakarta.inject.Singleton
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton

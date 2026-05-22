@@ -1,15 +1,6 @@
 package com.cloudogu.gitops.config
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType
-
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-
-import java.security.SecureRandom
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
-import groovy.transform.MapConstructor
-
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
@@ -18,9 +9,17 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import groovy.transform.CompileStatic
+import groovy.transform.MapConstructor
+import jakarta.inject.Singleton
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+
+import java.security.SecureRandom
+
+import static com.cloudogu.gitops.config.ConfigConstants.*
+import static picocli.CommandLine.ScopeType
 
 /**
  * The global configuration object.

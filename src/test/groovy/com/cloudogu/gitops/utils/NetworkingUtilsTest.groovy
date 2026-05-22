@@ -1,13 +1,12 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import org.junit.jupiter.api.Test
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
-
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-
-import org.junit.jupiter.api.Test
 
 class NetworkingUtilsTest {
 

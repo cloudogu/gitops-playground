@@ -1,18 +1,17 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-
+import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
 
 @Singleton
 @Order(100)

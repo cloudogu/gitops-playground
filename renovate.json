@@ -1,6 +1,32 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "baseBranchPatterns": [
-    "develop"
-  ]
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "baseBranchPatterns": [
+        "develop"
+    ],
+    "assignees": [
+        "avetgit",
+        "DerDaehne",
+        "mdroll",
+        "ThomasMichael1811"
+    ],
+    "dependencyDashboard": true,
+    "minimumReleaseAge": "7 days",
+    "extends": [
+        ":automergeMinor",
+        ":combinePatchMinorReleases",
+        ":configMigration",
+        ":automergeDigest"
+    ],
+    "packageRules": [
+        {
+            "matchManagers": [
+                "jenkins"
+            ],
+            "automerge": false,
+            "registryUrls": [
+                "http://updates.jenkins-ci.org/stable/update-center.json"
+            ],
+            "groupName": "Jenkins Updates"
+        }
+    ]
 }

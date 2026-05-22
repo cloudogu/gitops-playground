@@ -10,7 +10,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 - [Scm](#scm)
 - [Application](#application)
 - [Content](#content)
-- [Features](#features)
+- [Tools](#tools)
   - [Argocd](#feature-argocd)
   - [Mail](#feature-mail)
   - [Monitoring](#feature-monitoring)
@@ -139,11 +139,11 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
 
-## Features
+## Tools
 
 Configuration of optional features supported by gitops-playground.
 
-### Feature: Argocd
+### Tool: Argocd
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -158,7 +158,7 @@ Configuration of optional features supported by gitops-playground.
 | `--argocd-namespace` | `features.argocd.namespace` | String | `argocd` | Defines the kubernetes namespace for ArgoCD |
 | - | `features.argocd.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 
-### Feature: Mail
+### Tool: Mail
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -167,7 +167,7 @@ Configuration of optional features supported by gitops-playground.
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
 
-### Feature: Monitoring
+### Tool: Monitoring
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -185,7 +185,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.monitoring.helm.repoURL` | String | `https://prometheus-community.github.io/helm-charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.monitoring.helm.version` | String | `80.2.2` | The version of the Helm chart to be installed |
 
-### Feature: Secrets
+### Tool: Secrets
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -203,7 +203,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.secrets.vault.helm.repoURL` | String | `https://helm.releases.hashicorp.com` | Repository url from which the Helm chart should be obtained |
 | - | `features.secrets.vault.helm.version` | String | `0.25.0` | The version of the Helm chart to be installed |
 
-### Feature: Ingress
+### Tool: Ingress
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -214,7 +214,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.ingress.helm.repoURL` | String | `https://traefik.github.io/charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.ingress.helm.version` | String | `39.0.0` | The version of the Helm chart to be installed |
 
-### Feature: Cert Manager
+### Tool: Cert Manager
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
