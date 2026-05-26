@@ -188,6 +188,7 @@ class ArgoCD extends Tool {
 	private void installOperator() {
 		String version = config.features.argocd.operatorVersion
 		k8sClient.applyKustomize("github.com/argoproj-labs/argocd-operator/config/default?ref=release-${version} --server-side --force-conflicts")
+		k8sClient.applyKustomize("github.com/argoproj-labs/argocd-operator/config/crd?ref=release-${version} --server-side --force-conflicts")
 		log.info("Successfully installed ArgoCD Operator version ${version}")
 	}
 
