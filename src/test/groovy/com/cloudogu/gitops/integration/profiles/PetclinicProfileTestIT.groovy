@@ -7,14 +7,10 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import org.awaitility.Awaitility
 import org.awaitility.core.ConditionTimeoutException
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
-import org.junit.jupiter.api.extension.ExtensionContext
-import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.api.extension.TestWatcher
 
 import java.util.concurrent.TimeUnit
 
@@ -24,8 +20,7 @@ import static org.assertj.core.api.Assertions.fail
 /**
  * This tests can only be successfull, if one of theses profiles used.
  *
- * * To run locally: add -Dmicronaut.environments=content-examples to your execute configuration
- */
+ * * To run locally: add -Dmicronaut.environments=content-examples to your execute configuration*/
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
 class PetclinicProfileTestIT extends ProfileTestSetup {
@@ -48,22 +43,20 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
             fail('Cluster not ready, sth false.', timeoutEx)
         }
     }
+
     // Start condition
     private static void waitUntilPetclinicIsRunning() {
         // Check Pod
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
             assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
-            def notRunningPods = actualPods.findAll { pod ->
-                pod.getStatus().getPhase() != "Running"
+            def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
             }
             assert !actualPods.isEmpty() && notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-        }
-        catch (KubernetesClientException ex) {
+        } catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-
 
     @Test
     void ensurePetclinicIsRunningOnStages() {
@@ -74,8 +67,7 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 
             assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
 
-            def notRunningPods = actualPods.findAll { pod ->
-                pod.getStatus().getPhase() != "Running"
+            def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
             }
 
             assert notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
@@ -123,7 +115,6 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
                     .get()
 
             assertThat(service).isNotNull()
-
 
         } catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)

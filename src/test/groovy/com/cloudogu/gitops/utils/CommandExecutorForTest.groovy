@@ -15,10 +15,10 @@ class CommandExecutorForTest extends CommandExecutor {
     void enqueueOutputs(Queue<Output> outputsQueue) {
         outputs.addAll(outputsQueue)
     }
-    
+
     // This is actually only set when an env is passed to CommandExecutor
-    List<GString> environment = [] 
-    
+    List<GString> environment = []
+
     @Override
     protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command
@@ -51,8 +51,7 @@ class CommandExecutorForTest extends CommandExecutor {
         def actualCommand = actualCommands.find {
             it.startsWith(commandStartsWith)
         }
-        assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" +
-                "Actual commands:\n${actualCommands.join('\n')}")
+        assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" + "Actual commands:\n${actualCommands.join('\n')}")
                 .isNotNull()
         return actualCommand
     }

@@ -17,8 +17,7 @@ import static org.assertj.core.api.Assertions.fail
 
 /**
  * This tests can only be successfull, if one of theses profiles used.
- * * To run locally: add -Dmicronaut.environments=full-prefix to your execute configuration
- */
+ * * To run locally: add -Dmicronaut.environments=full-prefix to your execute configuration*/
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-prefix")
 class PrefixProfileTestIT extends ProfileTestSetup {
@@ -27,7 +26,8 @@ class PrefixProfileTestIT extends ProfileTestSetup {
     static String argocdNs = 'my-prefix-argocd'
     String scmManagerNs = 'my-prefix-scm-manager'
     String registryNs = 'my-prefix-registry'
-    String ingressNs = 'my-prefix-ingress' /* Jenking can not start ingress*/
+    String ingressNs = 'my-prefix-ingress'
+    /* Jenking can not start ingress*/
     static String certManagerNs = 'my-prefix-cert-manager'
     String jenkinsNs = 'my-prefix-jenkins'
     static String monitoringNs = 'my-prefix-monitoring'
@@ -57,38 +57,32 @@ class PrefixProfileTestIT extends ProfileTestSetup {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
             assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
-            def notRunningPods = actualPods.findAll { pod ->
-                pod.getStatus().getPhase() != "Running"
+            def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
             }
             assert !actualPods.isEmpty() && notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-        }
-        catch (KubernetesClientException ex) {
+        } catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
 
-
     @Test
     void ensureNamespacesExistWithPrefix() {
-        List<String> expectedNamespaces = [
-                argocdNs,
-                scmManagerNs,
-                registryNs,
-                ingressNs,
-                certManagerNs,
-                jenkinsNs,
-                monitoringNs,
-                secretsNs,
-                exampleProductionNs,
-                exampleStagingNs
-        ]
+        List<String> expectedNamespaces = [argocdNs,
+                                           scmManagerNs,
+                                           registryNs,
+                                           ingressNs,
+                                           certManagerNs,
+                                           jenkinsNs,
+                                           monitoringNs,
+                                           secretsNs,
+                                           exampleProductionNs,
+                                           exampleStagingNs]
 
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             def currentNames = client.namespaces().list().getItems()
 
             // 1. Verify all expected pods are present
-            def missingNamespace = expectedNamespaces.findAll { prefix ->
-                !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
+            def missingNamespace = expectedNamespaces.findAll { prefix -> !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
             }
             assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
         } catch (KubernetesClientException ex) {
@@ -99,19 +93,16 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 
     @Test
     void ensurePodsAreRunningInPrefixedNamespaces() {
-        List<String> namespacesToCheck = [
-                argocdNs,
-                scmManagerNs,
-                registryNs,
-                certManagerNs,
-                monitoringNs
-        ]
+        List<String> namespacesToCheck = [argocdNs,
+                                          scmManagerNs,
+                                          registryNs,
+                                          certManagerNs,
+                                          monitoringNs]
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             namespacesToCheck.each { ns ->
                 def actualPods = client.pods().inNamespace(ns).list().getItems()
                 assert !actualPods.isEmpty(): "No pods found in namespace: ${ns}"
-                def notRunningPods = actualPods.findAll { pod ->
-                    pod.getStatus().getPhase() != "Running"
+                def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
                 }
                 assert notRunningPods.isEmpty(): "These pods in ${ns} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
             }

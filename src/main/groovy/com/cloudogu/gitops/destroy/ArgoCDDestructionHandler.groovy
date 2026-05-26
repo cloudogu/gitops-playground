@@ -1,14 +1,14 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import io.micronaut.core.annotation.Order
 import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
@@ -18,22 +18,21 @@ import java.nio.file.Path
 @CompileStatic
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
-    private GitRepoFactory repoProvider
     private HelmClient helmClient
+    private GitRepoFactory repoProvider
     private Config config
     private FileSystemUtils fileSystemUtils
     private GitHandler gitHandler
-    ArgoCDDestructionHandler(
-            Config config,
-            K8sClient k8sClient,
-            GitRepoFactory repoProvider,
-            HelmClient helmClient,
-            FileSystemUtils fileSystemUtils,
-            GitHandler gitHandler
-    ) {
+
+    ArgoCDDestructionHandler(Config config,
+                             K8sClient k8sClient,
+                             HelmClient helmClient,
+                             GitRepoFactory repoProvider,
+                             FileSystemUtils fileSystemUtils,
+                             GitHandler gitHandler) {
         this.k8sClient = k8sClient
-        this.repoProvider = repoProvider
         this.helmClient = helmClient
+        this.repoProvider = repoProvider
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.gitHandler = gitHandler
@@ -52,26 +51,16 @@ class ArgoCDDestructionHandler implements DestructionHandler {
                 continue
             }
 
-            k8sClient.patch(
-                    "app",
+            k8sClient.patch("app",
                     app.name,
                     app.namespace,
                     'merge',
-                    [
-                            metadata: [
-                                    finalizers: [
-                                            "resources-finalizer.argocd.argoproj.io"
-                                    ]
-                            ]
-                    ]
-            )
+                    [metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
         }
 
-        List<Tuple2<String, String>> appsToBeDeleted = [
-                new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation
-                new Tuple2<String, String>("argocd", "cluster-resources"),
-                new Tuple2<String, String>("argocd", "example-apps"),
-        ]
+        List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation
+                                                        new Tuple2<String, String>("argocd", "cluster-resources"),
+                                                        new Tuple2<String, String>("argocd", "example-apps"),]
 
         for (def app in appsToBeDeleted) {
             k8sClient.delete("app", app.v1, app.v2)

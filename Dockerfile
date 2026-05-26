@@ -163,8 +163,10 @@ RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy
 # -----------------------------------------------------------------------------
 WORKDIR /tmp
 
-# Copy only runtime scripts (not entire project to avoid bloat)
+# Copy runtime scripts, templates and cluster resources (not entire project to avoid bloat)
 COPY scripts /dist/app/scripts
+COPY argocd /dist/app/argocd
+COPY templates /dist/app/templates
 
 # Remove development scripts not needed in runtime
 RUN cd /dist/app/scripts && rm -f downloadHelmCharts.sh
@@ -241,6 +243,7 @@ COPY --from=downloader /dist /
 # Temporarily use root to create user
 USER 0
 RUN adduser --disabled-password --home /home --no-create-home --uid 1000 user
+RUN chown 1000:1000 /home -R
 
 # -----------------------------------------------------------------------------
 # 4.5: Set User and Entrypoint
@@ -263,7 +266,7 @@ LABEL org.opencontainers.image.title="gitops-playground" \
       org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
       org.opencontainers.image.licenses="AGPL3.0" \
-      org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \
+      org.opencontainers.image.description="Creates a complete GitOps-based operational stack / IDP on your Kubernetes clusters" \
       org.opencontainers.image.version="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.ref.name="${VCS_REF}" \

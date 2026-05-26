@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import io.micronaut.context.ApplicationContext
 import picocli.CommandLine.Option as CliOption
-import tools.jackson.databind.node.ObjectNode
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -26,7 +26,7 @@ import java.lang.reflect.ParameterizedType
 class GenerateJsonSchema {
 
     static final String SCHEMA_FILE = 'docs/configuration.schema.json'
-    static final String DOCS_FILE   = 'docs/Configuration.md'
+    static final String DOCS_FILE = 'docs/Configuration.md'
 
     static void main(String[] args) {
         ObjectNode jsonSchema = ApplicationContext.run().getBean(JsonSchemaGenerator).createSchema()
@@ -57,8 +57,7 @@ class GenerateJsonSchema {
         md << '## Table of Contents\n\n'
         topFields.each { f -> md << "- [${sectionTitle(f.name)}](#${anchor(f.name)})\n" }
         md << '- [Features](#features)\n'
-        schemaFields(Config.FeaturesSchema).each { f ->
-            md << "  - [${sectionTitle(f.name)}](#feature-${anchor(f.name)})\n"
+        schemaFields(Config.FeaturesSchema).each { f -> md << "  - [${sectionTitle(f.name)}](#feature-${anchor(f.name)})\n"
         }
         md << '\n'
 
@@ -83,13 +82,14 @@ class GenerateJsonSchema {
 
     static String buildTable(Object instance, Class clazz, String prefix) {
         List<Map> rows = collectRows(instance, clazz, prefix)
-        if (!rows) { return '' }
+        if (!rows) {
+            return ''
+        }
 
         StringBuilder sb = new StringBuilder()
         sb << '| CLI | Config key | Type | Default | Description |\n'
         sb << '| :--- | :--- | :--- | :--- | :--- |\n'
-        rows.each { Map r ->
-            sb << "| ${r.cli} | `${r.key}` | ${r.type} | `${r.default}` | ${r.desc} |\n"
+        rows.each { Map r -> sb << "| ${r.cli} | `${r.key}` | ${r.type} | `${r.default}` | ${r.desc} |\n"
         }
         sb << '\n'
         return sb.toString()
@@ -98,11 +98,15 @@ class GenerateJsonSchema {
     static List<Map> collectRows(Object instance, Class clazz, String prefix) {
         List<Map> rows = []
         allFields(clazz).each { Field field ->
-            if (isInternalField(field)) { return }
+            if (isInternalField(field)) {
+                return
+            }
 
             JsonPropertyDescription jsonDesc = field.getAnnotation(JsonPropertyDescription)
-            CliOption cliOpt                = field.getAnnotation(CliOption)
-            if (!jsonDesc && !cliOpt) { return }
+            CliOption cliOpt = field.getAnnotation(CliOption)
+            if (!jsonDesc && !cliOpt) {
+                return
+            }
 
             field.accessible = true
             String key = "${prefix}.${field.name}"
@@ -110,13 +114,11 @@ class GenerateJsonSchema {
             if (isSchemaType(field.type)) {
                 rows.addAll(collectRows(safeGet(field, instance), field.type, key))
             } else {
-                rows << [
-                    cli    : cliOpt ? cliOpt.names().collect { String opt -> "`${opt}`" }.join(', ') : '-',
-                    key    : key,
-                    type   : typeName(field),
-                    default: formatDefault(safeGet(field, instance)),
-                    desc   : (jsonDesc?.value() ?: '-').replaceAll(/\s*\n\s*/, ' ').trim(),
-                ]
+                rows << [cli    : cliOpt ? cliOpt.names().collect { String opt -> "`${opt}`" }.join(', ') : '-',
+                         key    : key,
+                         type   : typeName(field),
+                         default: formatDefault(safeGet(field, instance)),
+                         desc   : (jsonDesc?.value() ?: '-').replaceAll(/\s*\n\s*/, ' ').trim(),]
             }
         }
         return rows
@@ -135,9 +137,15 @@ class GenerateJsonSchema {
     }
 
     static boolean isInternalField(Field field) {
-        if (field.synthetic) { return true }
-        if (Modifier.isStatic(field.modifiers)) { return true }
-        if (field.getAnnotation(JsonIgnore)) { return true }
+        if (field.synthetic) {
+            return true
+        }
+        if (Modifier.isStatic(field.modifiers)) {
+            return true
+        }
+        if (field.getAnnotation(JsonIgnore)) {
+            return true
+        }
         return (field.name in ['metaClass', '$staticClassInfo', '__$stMC'])
     }
 
@@ -146,29 +154,42 @@ class GenerateJsonSchema {
     }
 
     static Object safeGet(Field field, Object instance) {
-        try { field.accessible = true; return field.get(instance) } catch (e) { return null }
+        try {
+            field.accessible = true; return field.get(instance)
+        } catch (e) {
+            return null
+        }
     }
 
     static String formatDefault(Object value) {
         switch (value) {
-            case null:       return '-'
-            case Map:        return value ? '[:]' : value.toString()
-            case Collection: return value ? '[]'  : value.toString()
-            default:         return value.toString()
+            case null: return '-'
+            case Map: return value ? '[:]' : value.toString()
+            case Collection: return value ? '[]' : value.toString()
+            default: return value.toString()
         }
     }
 
     static String typeName(Field field) {
         Class t = field.type
-        if (t == Boolean || t == boolean) { return 'Boolean' }
-        if (t == Integer || t == int)     { return 'Integer' }
-        if (t == String)                  { return 'String' }
-        if (Map.isAssignableFrom(t))      { return 'Map' }
-        if (t.enum)                       { return t.simpleName }
+        if (t == Boolean || t == boolean) {
+            return 'Boolean'
+        }
+        if (t == Integer || t == int) {
+            return 'Integer'
+        }
+        if (t == String) {
+            return 'String'
+        }
+        if (Map.isAssignableFrom(t)) {
+            return 'Map'
+        }
+        if (t.enum) {
+            return t.simpleName
+        }
         if (field.genericType instanceof ParameterizedType) {
             ParameterizedType pt = field.genericType as ParameterizedType
-            String args = pt.actualTypeArguments.collect { it ->
-                it instanceof Class ? (it as Class).simpleName : it.toString()
+            String args = pt.actualTypeArguments.collect { it -> it instanceof Class ? (it as Class).simpleName : it.toString()
             }.join(', ')
             return "${(pt.rawType as Class).simpleName}&lt;${args}&gt;"
         }
@@ -183,4 +204,3 @@ class GenerateJsonSchema {
         return sectionTitle(name).toLowerCase().replaceAll(/\s+/, '-')
     }
 }
-

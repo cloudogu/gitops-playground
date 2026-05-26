@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.integration.features
 
-
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -13,8 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * Prometheus contains own namespace ('monitoring') which owns and 3 Pods:
  *  - Grafana
  *  - Operator
- *  - prometheus-stack
- */
+ *  - prometheus-stack*/
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
 class MonitoringTestIT extends KubenetesApiTestSetup {
 
@@ -87,6 +85,7 @@ class MonitoringTestIT extends KubenetesApiTestSetup {
         assertThat(prometheus).isNotNull()
         assertThat(prometheus.status.phase).isEqualTo("Running")
     }
+
     @Disabled("jenkins got only 2")
     @Test
     void ensureNamespaceGot3Pods() {

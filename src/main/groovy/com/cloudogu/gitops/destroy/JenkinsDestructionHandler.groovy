@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.jenkins.GlobalPropertyManager
-import com.cloudogu.gitops.jenkins.JobManager
+import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 

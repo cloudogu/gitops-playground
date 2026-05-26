@@ -7,7 +7,7 @@ import groovy.yaml.YamlSlurper
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern 
+import java.util.regex.Pattern
 
 class TemplatingEngine {
     private Configuration engine
@@ -19,8 +19,7 @@ class TemplatingEngine {
     }
 
     /**
-     * Executes template with parameters and replaces the .ftl in the file name.
-     */
+     * Executes template with parameters and replaces the .ftl in the file name.*/
     File replaceTemplate(File templateFile, Map parameters) {
         def targetFile = new File(templateFile.toString().replace(".ftl", ""))
         def rendered = template(templateFile, parameters)
@@ -40,8 +39,7 @@ class TemplatingEngine {
     /**
      * Recursively templates all .ftl files in <code>path</code>.
      *
-     * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.  
-     */
+     * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.  */
     void replaceTemplates(File path, Map parameters, Pattern filepathMatches = ~/\.ftl/) {
         Files.walk(path.toPath())
                 .filter { filepathMatches.matcher(it.toString()).find() }
@@ -59,23 +57,20 @@ class TemplatingEngine {
     }
 
     /**
-     * Executes template and writes to targetFile, keeping the template file.
-     */
+     * Executes template and writes to targetFile, keeping the template file.*/
     File template(File templateFile, File targetFile, Map parameters) {
         Template template = prepareTemplate(templateFile)
         template.process(parameters, targetFile.newWriter())
 
         return targetFile
     }
-    
-    
 
     String template(File templateFile, Map parameters) {
         Template template = prepareTemplate(templateFile)
 
         StringWriter writer = new StringWriter()
         template.process(parameters, writer)
-        
+
         return writer.toString()
     }
 
@@ -96,6 +91,5 @@ class TemplatingEngine {
         def template = engine.getTemplate(templateFile.name)
         template
     }
-    
-    
+
 }

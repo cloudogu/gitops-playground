@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.cli
 
-
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -14,7 +13,7 @@ class GitopsPlaygroundCliMain {
     // Non-static for easier testing and reuse
     void exec(String[] args, Class<? extends GitopsPlaygroundCli> commandClass) {
         GitopsPlaygroundCli app = commandClass.getDeclaredConstructor().newInstance()
-        
+
         try {
             System.exit(app.run(args).ordinal())
         } catch (RuntimeException e) {

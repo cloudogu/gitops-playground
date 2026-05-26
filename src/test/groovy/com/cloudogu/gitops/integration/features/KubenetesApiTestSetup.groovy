@@ -22,8 +22,7 @@ abstract class KubenetesApiTestSetup {
     int RETRY_SECONDS = 30
 
     /**
-     * Gets path to kubeconfig
-     */
+     * Gets path to kubeconfig*/
     @BeforeAll
     static void setupKubeconfig() {
         kubeConfigPath = System.getenv("HOME") + "/.kube/config"
@@ -34,8 +33,7 @@ abstract class KubenetesApiTestSetup {
     }
 
     /**
-     * establish connection to kubernetes and create API to use.
-     */
+     * establish connection to kubernetes and create API to use.*/
     @BeforeEach
     void setupConnection() {
         ApiClient client =
@@ -45,11 +43,9 @@ abstract class KubenetesApiTestSetup {
 
         // the CoreV1Api loads default api-client from global configuration.
         api = new CoreV1Api()
-        waitForCondition(() ->
-                waitingCondition(),
+        waitForCondition(() -> waitingCondition(),
                 maxWaitTimeInMinutes(TIME_TO_WAIT),
-                pollIntervallSeconds(RETRY_SECONDS)
-        )
+                pollIntervallSeconds(RETRY_SECONDS))
     }
 
     static void waitForCondition(Supplier<Boolean> condition, Duration timeout, Duration pollInterval) {
@@ -80,6 +76,7 @@ abstract class KubenetesApiTestSetup {
         println 'waiting for pods'
         return isReadyToStartTests()
     }
+
     /**
      * This condition is to override, if test has to wait, i.e. ArgoCD has to do its GitOps magic.
      * @return

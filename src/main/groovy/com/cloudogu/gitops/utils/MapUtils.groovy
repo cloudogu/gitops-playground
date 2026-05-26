@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.utils 
+package com.cloudogu.gitops.utils
 
 class MapUtils {
 

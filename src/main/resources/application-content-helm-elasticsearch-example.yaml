@@ -17,7 +17,7 @@ content:
       chart: elasticsearch
       version: "8.5.1"
       namespace: my-prefix-elasticsearch
-      valuesPath: "src/main/resources/elasticsearch-helm.yaml"
+      valuesPath: "elasticsearch-helm.yaml"
       values:
         replicas: 3
 

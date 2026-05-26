@@ -34,7 +34,6 @@ class FullProfileTestIT extends ProfileTestSetup {
         waitUntilAllPodsRunning()
     }
 
-
     private static void waitUntilAllPodsRunning() {
         // if cert-manager is online, argocd is online, too!
         Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
@@ -51,13 +50,12 @@ class FullProfileTestIT extends ProfileTestSetup {
     void ensureArgoCDIsOnlineAndPodsAreRunning() {
         String expectedPod1 = "argocd-application-controller"
         String expectedPod2 = "argocd-applicationset-controller"
-//        String expectedPod3 = "argocd-notifications-controller" // not stable
+        //        String expectedPod3 = "argocd-notifications-controller" // not stable
         String expectedPod4 = "argocd-redis"
         String expectedPod5 = "argocd-repo-server"
         String expectedPod6 = "argocd-server"
 
         List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
-
 
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
@@ -103,7 +101,6 @@ class FullProfileTestIT extends ProfileTestSetup {
                                            "monitoring",
                                            "secrets"] as List<String>
 
-
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
             def currentNames = client.namespaces().list().getItems()
@@ -113,16 +110,14 @@ class FullProfileTestIT extends ProfileTestSetup {
             }
             assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
 
-
         } catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)
         }
 
-
     }
 
-/**
- * tests searches for ingress services and ensure ingress is used as loadbalancer*/
+    /**
+     * tests searches for ingress services and ensure ingress is used as loadbalancer*/
     @Test
     void ensureIngressIsOnline() {
         TestK8sHelper.checkAllPodsRunningInNamespace('ingress', 'traefik')
@@ -174,6 +169,5 @@ class FullProfileTestIT extends ProfileTestSetup {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-
 
 }

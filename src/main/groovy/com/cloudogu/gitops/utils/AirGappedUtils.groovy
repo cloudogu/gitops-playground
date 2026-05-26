@@ -1,14 +1,15 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
+
 import java.nio.file.Path
 
 @Slf4j
@@ -32,7 +33,7 @@ class AirGappedUtils {
 
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
-     * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
+     * As helm does not provide an option for changing them interactively, we push the charts into a separate repo.
      * We alter these repos to resolve dependencies locally from SCM.
      *
      * @return the repo namespace and name
@@ -59,15 +60,13 @@ class AirGappedUtils {
         // We either have to update or remove them. Take the easier approach.
         new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
-        repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" +
-                "Source: ${helmConfig.repoURL}\n" +
+        repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" + "Source: ${helmConfig.repoURL}\n" +
                 "Dependencies localized to run in air-gapped environments", chartYaml.version as String)
         return repoNamespaceAndName
     }
 
     private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
-        log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" +
-                "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
+        log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" + "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
         try {
             helmClient.template(repoName, localHelmChartFolder)
         } catch (RuntimeException e) {
@@ -103,21 +102,19 @@ class AirGappedUtils {
     }
 
     /**
-     * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
-     */
+     * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1*/
     private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
-            throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
+            throw new RuntimeException("Unable to determine proper version for dependency " + "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
         }
     }
 
     Map findByName(List<Map> list, String name) {
         if (!list) return [:]
-        // Note that list.find{} does not work in GraalVM native image: 
+        // Note that list.find{} does not work in GraalVM native image:
         // UnsupportedFeatureError: Runtime reflection is not supported
         list.stream()
                 .filter(map -> map.name == name)

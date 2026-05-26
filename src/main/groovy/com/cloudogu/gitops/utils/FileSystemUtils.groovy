@@ -18,10 +18,9 @@ import java.util.regex.Pattern
 class FileSystemUtils {
 
     /**
-     * Replaces text in files. If you want to change a YAML field, better use 
+     * Replaces text in files. If you want to change a YAML field, better use
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)} 
-     */
+     * {@link #writeYaml(java.util.Map, java.io.File)} */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
         String newConfig = file.text.replace(from, to)
@@ -118,8 +117,7 @@ class FileSystemUtils {
         List<File> list = []
 
         File dir = new File(parentDir)
-        dir.eachFileRecurse(FileType.FILES) { file ->
-            list << file
+        dir.eachFileRecurse(FileType.FILES) { file -> list << file
         }
         list.each {
             println it.path
@@ -129,7 +127,7 @@ class FileSystemUtils {
     static void makeWritable(File directory) {
         if (!directory.exists()) {
             return
-        } 
+        }
         directory.eachFileRecurse { file ->
             if (!file.canWrite()) {
                 file.setWritable(true)
@@ -174,7 +172,6 @@ class FileSystemUtils {
         }
     }
 
-
     void createDirectory(String directory) {
         log.trace("Creating folder: " + directory)
         new File(directory).mkdirs()
@@ -198,7 +195,6 @@ class FileSystemUtils {
         File.createTempDir("gitops-playground-").toPath()
     }
 
-
     Path createTempFile() {
         def file = File.createTempFile("gitops-playground-", '')
         file.deleteOnExit()
@@ -208,7 +204,28 @@ class FileSystemUtils {
 
     Map readYaml(Path path) {
         def ys = new YamlSlurper()
-        return (ys.parse path) as Map
+        if (Files.exists(path)) {
+            return (ys.parse path) as Map
+        }
+
+        // Fallback to classpath
+        String resourceName = path.toString()
+        // Ensure it starts with / for getResourceAsStream from root
+        if (!resourceName.startsWith("/")) {
+            resourceName = "/" + resourceName
+        }
+
+        // Remove src/main/resources if present, as it's not part of the classpath in the JAR
+        resourceName = resourceName.replace("/src/main/resources", "")
+
+        log.debug("Path ${path} not found on filesystem, trying classpath: ${resourceName}")
+        def inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)
+        if (inputStream != null) {
+            return (ys.parseText(inputStream.text)) as Map
+        }
+
+        log.warn("Could not find YAML at ${path} or on classpath ${resourceName}")
+        return [:]
     }
 
     Path writeTempFile(Map mapValues) {
@@ -243,8 +260,7 @@ class FileSystemUtils {
     /**
      * Moves all direct children of sourceDir into an existing targetDir.
      * Conflicts are overwritten.
-     * Directories are merged recursively.
-     */
+     * Directories are merged recursively.*/
     void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
         if (!Files.exists(targetDir)) {
             Files.createDirectories(targetDir.parent)
@@ -274,7 +290,8 @@ class FileSystemUtils {
         // remove empty source dir
         try {
             Files.deleteIfExists(sourceDir)
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 
     private void moveFileOverwrite(Path sourceFile, Path targetFile) {
@@ -289,10 +306,8 @@ class FileSystemUtils {
         }
     }
 
-
     /**
-     * This filter can be used to copy whole directories without .git folder.
-     */
+     * This filter can be used to copy whole directories without .git folder.*/
     static class IgnoreDotGitFolderFilter implements FileFilter {
         @Override
         boolean accept(File file) {

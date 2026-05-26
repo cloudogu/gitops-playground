@@ -1,12 +1,10 @@
 package com.cloudogu.gitops.integration.features
 
-
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -37,7 +35,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
     void ensureArgoCDIsOnlineAndRunning() {
         def expectedSumOfArgoPods = 7
 
-        V1PodList list = api.listNamespacedPod(namespace )
+        V1PodList list = api.listNamespacedPod(namespace)
                 .execute()
         List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
         assertThat(argoPods.size()).isEqualTo(expectedSumOfArgoPods)
@@ -55,8 +53,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
         if (list && !list.items.isEmpty()) {
 
             List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-            if (argoPods.size() == 7)
-            {
+            if (argoPods.size() == 7) {
                 return "Running".equals(argoPods.get(0).status.phase)
             }
         }

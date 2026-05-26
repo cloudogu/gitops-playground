@@ -1,15 +1,15 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -26,22 +26,14 @@ import static org.mockito.Mockito.*
 
 class AirGappedUtilsTest {
 
-    Config config = Config.fromMap([
-            application: [
-                    localHelmChartFolder: '',
-                    gitName             : 'Cloudogu',
-                    gitEmail            : 'hello@cloudogu.com'],
-            scm        : [
-                    scmManager: [
-                            url: '']
-            ]
-    ])
+    Config config = Config.fromMap([application: [localHelmChartFolder: '',
+                                                  gitName             : 'Cloudogu',
+                                                  gitEmail            : 'hello@cloudogu.com'],
+                                    scm        : [scmManager: [url: '']]])
 
-    Config.HelmConfig helmConfig = new Config.HelmConfig([
-            chart  : 'kube-prometheus-stack',
-            repoURL: 'https://kube-prometheus-stack-repo-url',
-            version: '58.2.1'
-    ])
+    Config.HelmConfig helmConfig = new Config.HelmConfig([chart  : 'kube-prometheus-stack',
+                                                          repoURL: 'https://kube-prometheus-stack-repo-url',
+                                                          version: '58.2.1'])
 
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestGitRepoFactory gitRepoFactory = new TestGitRepoFactory(config, new FileSystemUtils())
@@ -64,8 +56,7 @@ class AirGappedUtilsTest {
 
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
-        assertThat(actualRepoNamespaceAndName).isEqualTo(
-                "${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
+        assertThat(actualRepoNamespaceAndName).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
     }
 
@@ -76,10 +67,8 @@ class AirGappedUtilsTest {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         }
 
-        assertThat(exception.message).isEqualTo(
-                'Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
-                        'from repo 3rd-party-dependencies/kube-prometheus-stack'
-        )
+        assertThat(exception.message).isEqualTo('Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
+                'from repo 3rd-party-dependencies/kube-prometheus-stack')
     }
 
     @Test
@@ -105,32 +94,23 @@ class AirGappedUtilsTest {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         }
 
-        assertThat(exception.getMessage()).isEqualTo(
-                "Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
+        assertThat(exception.getMessage()).isEqualTo("Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
         assertThat(exception.getCause()).isSameAs(expectedException)
     }
 
     protected void setupForAirgappedUse(Map chartLock = null, List dependencies = null) {
         Path sourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
         Files.createDirectories(sourceChart)
-        Map<String, Object> prometheusChartYaml = [
-                version     : '1.2.3',
-                name        : 'kube-prometheus-stack-chart',
-                dependencies: [
-                        [
-                                condition : 'crds.enabled',
-                                name      : 'crds',
-                                repository: '',
-                                version   : '0.0.0'
-                        ],
-                        [
-                                condition : 'grafana.enabled',
-                                name      : 'grafana',
-                                repository: 'https://grafana-repo-url',
-                                version   : '7.3.*',
-                        ]
-                ]
-        ]
+        Map<String, Object> prometheusChartYaml = [version     : '1.2.3',
+                                                   name        : 'kube-prometheus-stack-chart',
+                                                   dependencies: [[condition : 'crds.enabled',
+                                                                   name      : 'crds',
+                                                                   repository: '',
+                                                                   version   : '0.0.0'],
+                                                                  [condition : 'grafana.enabled',
+                                                                   name      : 'grafana',
+                                                                   repository: 'https://grafana-repo-url',
+                                                                   version   : '7.3.*',]]]
 
         if (dependencies != null) {
             if (dependencies.isEmpty()) {
@@ -184,12 +164,9 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        verify(prometheusRepo).createRepositoryAndSetPermission(
-                eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
-                eq(false)
-        )
+        verify(prometheusRepo).createRepositoryAndSetPermission(eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
+                eq(false))
     }
-
 
     void assertHelmRepoCommits(GitRepo repo, String expectedTag, String expectedCommitMessage) {
         def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()

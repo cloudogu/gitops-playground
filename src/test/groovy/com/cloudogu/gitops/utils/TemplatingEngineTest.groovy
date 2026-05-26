@@ -1,10 +1,9 @@
 package com.cloudogu.gitops.utils
 
-
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class TemplatingEngineTest {
 
@@ -35,9 +34,7 @@ class TemplatingEngineTest {
         barTemplate.text = "Hello \${name}"
 
         def engine = new TemplatingEngine()
-        engine.replaceTemplate(barTemplate, [
-                name: "Playground",
-        ])
+        engine.replaceTemplate(barTemplate, [name: "Playground",])
 
         assertThat(new File(tmpDir2.absolutePath, "bar.txt").text).isEqualTo("Hello Playground")
         assertThat(barTemplate).doesNotExist()
@@ -48,11 +45,9 @@ class TemplatingEngineTest {
         def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
         def barTarget = new File(tmpDir.absolutePath, "bar.txt")
         barTemplate.text = "Hello \${name}"
-        
+
         def engine = new TemplatingEngine()
-        engine.template(barTemplate, barTarget, [
-                name: "Playground",
-        ])
+        engine.template(barTemplate, barTarget, [name: "Playground",])
 
         assertThat(barTarget.text).isEqualTo("Hello Playground")
         assertThat(barTemplate).exists()
@@ -64,25 +59,21 @@ class TemplatingEngineTest {
         fooTemplate.text = "Hello \${name}"
 
         def engine = new TemplatingEngine()
-        String result = engine.template(fooTemplate, [
-                name: "Playground",
-        ])
+        String result = engine.template(fooTemplate, [name: "Playground",])
 
         assertThat(result).isEqualTo("Hello Playground")
     }
-    
+
     @Test
     void 'Templates from string to string'() {
         def fooTemplate = "Hello \${name}"
 
         def engine = new TemplatingEngine()
-        String result = engine.template(fooTemplate, [
-                name: "Playground",
-        ])
+        String result = engine.template(fooTemplate, [name: "Playground",])
 
         assertThat(result).isEqualTo("Hello Playground")
     }
-    
+
     @Test
     void 'Ignores templates without variables'() {
         def fooTemplate = "Hello name"
@@ -100,7 +91,7 @@ class TemplatingEngineTest {
         barTemplate.text = 'foo: ${prefix}suffix'
         def barTarget = new File(tmpDir.absolutePath, "subdirectory/keep-this-way.yaml")
         barTarget.text = 'thiswont: ${prefix}-be-replaced'
-        
+
         def engine = new TemplatingEngine()
         engine.replaceTemplates(tmpDir, [prefix: "myteam-"])
 

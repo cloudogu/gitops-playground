@@ -41,8 +41,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
     private static void waitUntilTenantIsReady() {
         // tenant is created very late after running GOP twice!
         Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
-            assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, "docker-registry") &&
-                    TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
+            assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, "docker-registry") && TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
         }
     }
 
@@ -106,7 +105,6 @@ class MandantProfileTestIT extends ProfileTestSetup {
                                            "kube-public",
                                            "kube-system"] as List<String>
 
-
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
             def currentNames = client.namespaces().list().getItems()
@@ -115,7 +113,6 @@ class MandantProfileTestIT extends ProfileTestSetup {
             def missingNamespace = expectedNamespaces.findAll { prefix -> !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
             }
             assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
-
 
         } catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)

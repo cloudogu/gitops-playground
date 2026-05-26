@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.*
 
 class AllowlistFreemarkerObjectWrapperTest {
 
-
     @Test
     void 'should allow access to whitelisted static models'() {
         def wrapper = new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ["com.cloudogu.gitops.utils.DockerImageParser"] as Set)
@@ -45,9 +44,7 @@ class AllowlistFreemarkerObjectWrapperTest {
   <#assign imageObject = staticsTests.exit()>
     '''.stripIndent()
 
-        def model = [
-                statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()
-        ] as Map<String, Object>
+        def model = [statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()] as Map<String, Object>
         // create a temporary file to simulate an actual file input
         def tempInputFile = File.createTempFile("test", ".ftl.yaml")
         tempInputFile.text = templateText
@@ -56,7 +53,7 @@ class AllowlistFreemarkerObjectWrapperTest {
             new TemplatingEngine().replaceTemplates(tempInputFile, model)
         }
 
-        assert exception.message.contains("System") : "Exception message should mention 'System'"
+        assert exception.message.contains("System"): "Exception message should mention 'System'"
     }
 
     @Test
@@ -68,9 +65,7 @@ class AllowlistFreemarkerObjectWrapperTest {
 <#assign number = staticsTests.round(3.14)>
     '''.stripIndent()
 
-        def model = [
-                statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['java.lang.Math', 'com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()
-        ] as Map<String, Object>
+        def model = [statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['java.lang.Math', 'com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()] as Map<String, Object>
         // create a temporary file to simulate an actual file input
         def tempInputFile = File.createTempFile("test", ".ftl.yaml")
         tempInputFile.text = templateText

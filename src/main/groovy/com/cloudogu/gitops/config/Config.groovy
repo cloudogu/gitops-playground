@@ -1,16 +1,6 @@
 package com.cloudogu.gitops.config
 
-import java.security.SecureRandom
-
-import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType
-
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
-import groovy.transform.MapConstructor
-
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
@@ -19,9 +9,17 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import groovy.transform.CompileStatic
+import groovy.transform.MapConstructor
+import jakarta.inject.Singleton
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+
+import java.security.SecureRandom
+
+import static com.cloudogu.gitops.config.ConfigConstants.*
+import static picocli.CommandLine.ScopeType
 
 /**
  * The global configuration object.
@@ -99,7 +97,7 @@ class Config {
 						('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
 					}.join('')
 				}
-			}
+	}
 
 	static class ContentSchema {
 		@JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
@@ -197,7 +195,7 @@ class Config {
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION)
 			String valuesPath = ''
-			// optional local path, e.g. src/main/resources/foo/values.yaml
+			// optional local path or classpath resource, e.g. /foo/values.yaml
 
 			@JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
 			Map<String, Object> values = [:]
@@ -357,7 +355,6 @@ class Config {
 		String internalKubernetesApiUrl = ''
 		String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
-
 		NamespaceSchema namespaces = new NamespaceSchema()
 
 		@Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION, split = ',')
@@ -458,8 +455,6 @@ class Config {
 		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
-
-
 
 		static class NamespaceSchema {
 			LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
