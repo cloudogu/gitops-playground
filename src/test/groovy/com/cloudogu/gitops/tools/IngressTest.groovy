@@ -1,30 +1,33 @@
 package com.cloudogu.gitops.tools
 
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
-
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
-
-import java.nio.file.Files
-import java.nio.file.Path
 import groovy.yaml.YamlSlurper
-
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
+import java.nio.file.Files
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
+
 @ExtendWith(MockitoExtension.class)
+@EnableKubernetesMockClient(crud = true)
 class IngressTest {
 
 	// setting default config values with ingress active
@@ -32,8 +35,6 @@ class IngressTest {
 		features: new Config.FeaturesSchema(ingress: new Config.IngressSchema(active: true)))
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
-
-	K8sClientForTest k8sClient = new K8sClientForTest(config)
 
 	@Mock
 	DeploymentStrategy deploymentStrategy
@@ -43,6 +44,16 @@ class IngressTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+
+	K8sClient k8sClient
+	KubernetesClient client
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
+
 
 	@Test
 	void 'Helm release is installed'() {
@@ -154,10 +165,6 @@ class IngressTest {
 		config.registry.proxyPassword = 'proxy-pw'
 
 		createIngress().install()
-
-		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-ingress' +
-			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
-
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 

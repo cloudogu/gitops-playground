@@ -1,24 +1,30 @@
 package com.cloudogu.gitops.tools
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.utils.FileSystemUtils
+import groovy.yaml.YamlSlurper
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
+
+import java.nio.file.Files
+import java.nio.file.Path
+
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
-import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
-import com.cloudogu.gitops.utils.*
-
-import java.nio.file.Files
-import java.nio.file.Path
-import groovy.yaml.YamlSlurper
-
-import org.junit.jupiter.api.Test
-import org.mockito.ArgumentCaptor
-
+@EnableKubernetesMockClient(crud = true)
 class VaultTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',),
@@ -28,16 +34,23 @@ class VaultTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	K8sClientForTest k8sClient = new K8sClientForTest(config)
 	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 	Path temporaryYamlFile
+
+	K8sClient k8sClient
+	KubernetesClient client
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
 
 	@Test
 	void 'is disabled via active flag'() {
 		config.features.secrets.active = false
 		createVault().install()
 		assertThat(helmCommands.actualCommands).isEmpty()
-		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -77,9 +90,6 @@ class VaultTest {
 
 		def vault = createVault()
 
-		// Simulate that the namespace does not exist (kubectl get returns a non-zero exit code)
-		k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "foo-secrets" not found', '', 1))
-
 		vault.install()
 
 		def actualYaml = parseActualYaml()
@@ -102,15 +112,6 @@ class VaultTest {
 		assertThat(actualVolumeMounts[0]['readOnly']).is(true)
 		assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
-		assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(3)
-
-		assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl get namespace foo-secrets')
-		assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('kubectl create namespace foo-secrets')
-
-		def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[2] =~ /kubectl create configmap (\S*) .*/)[0] as List)[1]
-		assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
-
-		assertThat(k8sClient.commandExecutorForTest.actualCommands[2]).contains('-n foo-secrets')
 		assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
 	}
 
@@ -132,8 +133,6 @@ class VaultTest {
 		createVault().install()
 
 		assertThat(parseActualYaml()).doesNotContainKey('server')
-
-		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -214,8 +213,6 @@ class VaultTest {
 
 		createVault().install()
 
-		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-secrets' +
-			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 		assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 

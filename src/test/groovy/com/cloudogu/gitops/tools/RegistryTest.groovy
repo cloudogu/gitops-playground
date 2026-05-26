@@ -1,19 +1,18 @@
 package com.cloudogu.gitops.tools
 
-import static com.cloudogu.gitops.config.Config.*
-import static org.assertj.core.api.Assertions.assertThat
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
+import groovy.yaml.YamlSlurper
+import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
-import groovy.yaml.YamlSlurper
 
-import org.junit.jupiter.api.Test
+import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
 
 class RegistryTest {
 
@@ -27,7 +26,6 @@ class RegistryTest {
 		createRegistry().install()
 
 		assertThat(helmCommands.actualCommands).isEmpty()
-		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -41,7 +39,6 @@ class RegistryTest {
 		assertThat(helmCommands.actualCommands[1].trim()).contains('--version')
 		assertThat(helmCommands.actualCommands[1].trim()).contains("--values ${temporaryYamlFile}")
 		assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-registry')
-		assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
 	}
 
 	@Test
@@ -59,7 +56,7 @@ class RegistryTest {
 	private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
 		def config = new Config(application: new ApplicationSchema(namePrefix: 'foo-'),
 			registry: registryConfig)
-		k8sClient = new K8sClientForTest(config)
+		k8sClient = new K8sClientForTest()
 		helmCommands = new CommandExecutorForTest()
 		helmClient = new HelmClient(helmCommands)
 

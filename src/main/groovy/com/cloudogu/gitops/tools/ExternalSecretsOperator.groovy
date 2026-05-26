@@ -8,11 +8,9 @@ import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-
-import io.micronaut.core.annotation.Order
-
-import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -31,7 +29,6 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
-
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils

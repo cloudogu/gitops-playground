@@ -180,4 +180,3 @@ class GenerateJsonSchema {
 		return sectionTitle(name).toLowerCase().replaceAll(/\s+/, '-')
 	}
 }
-

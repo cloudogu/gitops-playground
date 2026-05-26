@@ -7,33 +7,32 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-
+import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
 
 @Singleton
 @Order(100)
 @CompileStatic
 class ArgoCDDestructionHandler implements DestructionHandler {
 	private K8sClient k8sClient
-	private GitRepoFactory repoProvider
 	private HelmClient helmClient
+	private GitRepoFactory repoProvider
 	private Config config
 	private FileSystemUtils fileSystemUtils
 	private GitHandler gitHandler
 
 	ArgoCDDestructionHandler(Config config,
 		K8sClient k8sClient,
-		GitRepoFactory repoProvider,
 		HelmClient helmClient,
+		GitRepoFactory repoProvider,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler) {
 		this.k8sClient = k8sClient
-		this.repoProvider = repoProvider
 		this.helmClient = helmClient
+		this.repoProvider = repoProvider
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler

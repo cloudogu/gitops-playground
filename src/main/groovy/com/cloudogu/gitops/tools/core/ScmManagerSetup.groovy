@@ -6,7 +6,6 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManage
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-
 import groovy.util.logging.Slf4j
 
 @Slf4j

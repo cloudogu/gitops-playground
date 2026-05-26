@@ -1,11 +1,5 @@
 package com.cloudogu.gitops.tools
 
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
-
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -13,16 +7,21 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-
-import java.nio.file.Files
-import java.nio.file.Path
 import groovy.yaml.YamlSlurper
-
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+
+import java.nio.file.Files
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 @ExtendWith(MockitoExtension.class)
 class CertManagerTest {
@@ -49,8 +48,8 @@ class CertManagerTest {
 		createCertManager().install()
 
 		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-		                                         'cert-manager', chartVersion, 'cert-manager',
-		                                         'cert-manager', temporaryYamlFile, RepoType.HELM)
+			'cert-manager', chartVersion, 'cert-manager',
+			'cert-manager', temporaryYamlFile, RepoType.HELM)
 	}
 
 	@Test
@@ -98,8 +97,8 @@ class CertManagerTest {
 		assertThat(helmConfig.value.version).isEqualTo(chartVersion)
 		// important check: scmmRepoUrl is overridden with our values.
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-		                                         'cert-manager', '.', chartVersion, 'cert-manager',
-		                                         'cert-manager', temporaryYamlFile, RepoType.GIT)
+			'cert-manager', '.', chartVersion, 'cert-manager',
+			'cert-manager', temporaryYamlFile, RepoType.GIT)
 	}
 
 	@Test
@@ -155,7 +154,7 @@ class CertManagerTest {
 				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, deploymentStrategy, new K8sClientForTest(config), airGappedUtils, gitHandler)
+		}, deploymentStrategy, new K8sClientForTest(), airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

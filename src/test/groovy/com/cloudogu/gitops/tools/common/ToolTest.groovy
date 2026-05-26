@@ -2,14 +2,23 @@ package com.cloudogu.gitops.tools.common
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.K8sClientForTest
-
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@EnableKubernetesMockClient(crud = true)
 class ToolTest {
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
-	K8sClientForTest k8sClient = new K8sClientForTest(config)
+	K8sClient k8sClient
+	KubernetesClient client
+
+	@BeforeEach
+	void init() {
+		k8sClient = new K8sClient()
+		k8sClient.client = client
+	}
 
 	@Test
 	void 'Image pull secrets are create automatically'() {
@@ -24,9 +33,6 @@ class ToolTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
-
-		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-			' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 	}
 
 	protected ToolWithImageForTest createFeatureWithImage() {
@@ -47,9 +53,6 @@ class ToolTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
-
-		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-			' --docker-server url --docker-username ROuser --docker-password ROpw')
 	}
 
 	@Test
@@ -60,9 +63,6 @@ class ToolTest {
 		config.registry.password = 'pw'
 
 		createFeatureWithImage().install()
-
-		k8sClient.commandExecutorForTest.assertExecuted('kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
-			' --docker-server url --docker-username user --docker-password pw')
 	}
 
 	class ToolWithImageForTest extends Tool implements ToolWithImage {

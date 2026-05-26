@@ -11,13 +11,12 @@ import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-
-import io.micronaut.core.annotation.Order
-
-import java.nio.file.Path
-import jakarta.inject.Singleton
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
+
+import java.nio.file.Path
 
 @Slf4j
 @Singleton

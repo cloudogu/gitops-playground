@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.infrastructure.jenkins
 
+import org.junit.jupiter.api.Test
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
-
-import org.junit.jupiter.api.Test
 
 class GlobalPropertyManagerTest {
 	@Test

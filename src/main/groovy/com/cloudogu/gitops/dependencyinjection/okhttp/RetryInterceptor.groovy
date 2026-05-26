@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.dependencyinjection.okhttp
 
 import groovy.util.logging.Slf4j
-
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.jetbrains.annotations.NotNull

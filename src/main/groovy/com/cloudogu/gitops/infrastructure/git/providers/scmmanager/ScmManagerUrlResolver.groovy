@@ -4,7 +4,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -29,16 +28,24 @@ class ScmManagerUrlResolver {
 	// ---------- Public API used by ScmManager ----------
 
 	/** Client base …/scm (no trailing slash) */
-	URI clientBase() { noTrailSlash(ensureScm(clientBaseRaw())) }
+	URI clientBase() {
+		noTrailSlash(ensureScm(clientBaseRaw()))
+	}
 
 	/** Client API base …/scm/api/ */
-	URI clientApiBase() { withSlash(clientBase()).resolve("api/") }
+	URI clientApiBase() {
+		withSlash(clientBase()).resolve("api/")
+	}
 
 	/** Client repo base …/scm/repo (no trailing slash) */
-	URI clientRepoBase() { noTrailSlash(withSlash(clientBase()).resolve("${root()}/")) }
+	URI clientRepoBase() {
+		noTrailSlash(withSlash(clientBase()).resolve("${root()}/"))
+	}
 
 	/** In-cluster base …/scm (no trailing slash) */
-	URI inClusterBase() { noTrailSlash(ensureScm(inClusterBaseRaw())) }
+	URI inClusterBase() {
+		noTrailSlash(ensureScm(inClusterBaseRaw()))
+	}
 
 	/** In-cluster repo prefix …/scm/repo/[<namePrefix>] */
 	String inClusterRepoPrefix() {
@@ -62,7 +69,9 @@ class ScmManagerUrlResolver {
 	}
 
 	/** …/scm/api/v2/metrics/prometheus */
-	URI prometheusEndpoint() { withSlash(clientBase()).resolve("api/v2/metrics/prometheus") }
+	URI prometheusEndpoint() {
+		withSlash(clientBase()).resolve("api/v2/metrics/prometheus")
+	}
 
 	// ---------- Base resolution ----------
 

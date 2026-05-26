@@ -1,9 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 
-import static org.junit.jupiter.api.Assertions.*
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
@@ -15,7 +11,6 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repositor
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import org.junit.jupiter.api.BeforeEach
@@ -26,6 +21,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import retrofit2.Call
 import retrofit2.Response
+
+import static org.junit.jupiter.api.Assertions.*
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
 
 @ExtendWith(MockitoExtension)
 class ScmManagerTest {
