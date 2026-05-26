@@ -10,11 +10,9 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-
-import io.micronaut.core.annotation.Order
-
-import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton

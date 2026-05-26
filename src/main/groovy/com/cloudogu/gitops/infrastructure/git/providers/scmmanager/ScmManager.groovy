@@ -13,9 +13,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManage
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.core.ScmManagerSetup
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import groovy.util.logging.Slf4j
-
 import retrofit2.Response
 
 @Slf4j

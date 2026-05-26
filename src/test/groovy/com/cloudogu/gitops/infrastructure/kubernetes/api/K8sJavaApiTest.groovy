@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
-
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -16,20 +15,20 @@ class K8sJavaApiTest {
 	//https://github.com/fabric8io/kubernetes-client?tab=readme-ov-file#mocking-kubernetes
 	KubernetesClient client
 	//Client to set mock data, gets injected by annotation
-	K8sJavaApiClient k8sJavaApiClient
+	K8sClient k8sClient
 	KubernetesMockServer server
 	//Use server for non CRUD
 
 	@BeforeEach
 	void init() {
-		k8sJavaApiClient = new K8sJavaApiClient()
-		k8sJavaApiClient.client = client
+		k8sClient = new K8sClient()
+		k8sClient.client = client
 	}
 
 	@Test
 	void 'getCredentialsFromSecret'() {
 		generateSecret()
-		Credentials credentials = k8sJavaApiClient.getCredentialsFromSecret('test-secret', 'test')
+		Credentials credentials = k8sClient.getCredentialsFromSecret('test-secret', 'test')
 		assert (credentials.password) == 's3cr3t'
 		assert (credentials.username) == 'admin'
 	}

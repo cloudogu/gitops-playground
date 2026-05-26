@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.tools.common
 
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -9,13 +7,14 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-
-import java.nio.file.Path
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
-import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 /**
  * A single tool to be deployed by GOP.
@@ -58,8 +57,8 @@ abstract class Tool {
 		if (isEnabled()) {
 			log.info("Installing Feature ${getClass().getSimpleName()}")
 
-			if (this instanceof ToolWithImage) {
-				(this as ToolWithImage).createImagePullSecret()
+            if (this instanceof ToolWithImage) {
+                (this as ToolWithImage).createImagePullSecret()
 			}
 
 			enable()
@@ -161,7 +160,7 @@ abstract class Tool {
 	 * Feature should throw RuntimeException to stop immediately.
 	 */
 
-	void validate() {}
+    void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.

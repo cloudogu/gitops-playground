@@ -45,10 +45,14 @@ class GitlabMock implements GitProvider {
 
 	// trivial passthroughs
 	@Override
-	URI prometheusMetricsEndpoint() { return base }
+	URI prometheusMetricsEndpoint() {
+		return base
+	}
 
 	@Override
-	Credentials getCredentials() { return new Credentials("gitops", "gitops") }
+	Credentials getCredentials() {
+		return new Credentials("gitops", "gitops")
+	}
 
 	@Override
 	void deleteRepository(String n, String r, boolean p) {}
@@ -60,15 +64,23 @@ class GitlabMock implements GitProvider {
 	void setDefaultBranch(String target, String branch) {}
 
 	@Override
-	String getUrl() { return base.toString() }
+	String getUrl() {
+		return base.toString()
+	}
 
 	@Override
-	String getProtocol() { return base.scheme }
+	String getProtocol() {
+		return base.scheme
+	}
 
 	@Override
-	String getHost() { return base.host }
+	String getHost() {
+		return base.host
+	}
 
 	@Override
-	String getGitOpsUsername() { return "gitops" }
+	String getGitOpsUsername() {
+		return "gitops"
+	}
 
 }

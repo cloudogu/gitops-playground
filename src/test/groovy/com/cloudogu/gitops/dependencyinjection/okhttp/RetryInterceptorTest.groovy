@@ -1,8 +1,11 @@
 package com.cloudogu.gitops.dependencyinjection.okhttp
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import static org.assertj.core.api.Assertions.assertThat
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
@@ -12,12 +15,9 @@ import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
+import static com.github.tomakehurst.wiremock.client.WireMock.*
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import static org.assertj.core.api.Assertions.assertThat
 
 class RetryInterceptorTest {
 
@@ -142,7 +142,9 @@ class RetryInterceptorTest {
 
 			void checkServerTrusted(X509Certificate[] chain, String authType) {}
 
-			X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0] }
+			X509Certificate[] getAcceptedIssuers() {
+				return new X509Certificate[0]
+			}
 		}] as TrustManager[]
 
 		def sslContext = SSLContext.getInstance("TLS")

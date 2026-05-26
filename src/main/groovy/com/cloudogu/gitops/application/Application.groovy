@@ -4,12 +4,10 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
-
-import jakarta.inject.Singleton
-import groovy.util.logging.Slf4j
-
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
+import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -20,7 +18,7 @@ class Application {
 	final K8sClient k8sClient
 
 	Application(Config config, K8sClient k8sClient,
-		List<Tool> features) {
+	            List<Tool> features) {
 		this.config = config
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.features = features
@@ -43,21 +41,22 @@ class Application {
 		log.debug("Application finished")
 	}
 
-    private void storeGopInformationInSecret(Config config) {
-        String namespace = "gop-job" // Fallback, if run from IDE
-        if (!config.application.gopNamespace.isEmpty()) {
-            // if set, take namespace from configuration
-            namespace = "${config.application.gopNamespace}"
-        } else if (this.k8sClient.k8sJavaApiClient.getCurrentNamespace() != null) {
-            // if gop-namespace not set, take namespace from running GOP
-            namespace = this.k8sClient.k8sJavaApiClient.getCurrentNamespace()
-        }
-        log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
-        k8sClient.createNamespace(namespace)
-        k8sClient.createSecret('generic', 'gop-configuration', namespace,
-                new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
-                new Tuple2('gop-config', config.toYaml(true)))
-    }
+	private void storeGopInformationInSecret(Config config) {
+		String namespace = "gop-job"
+		// Fallback, if run from IDE
+		if (!config.application.gopNamespace.isEmpty()) {
+			// if set, take namespace from configuration
+			namespace = "${config.application.gopNamespace}"
+		} else if (this.k8sClient.getCurrentNamespace() != null) {
+			// if gop-namespace not set, take namespace from running GOP
+			namespace = this.k8sClient.getCurrentNamespace()
+		}
+		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
+		k8sClient.createNamespace(namespace)
+		k8sClient.createSecret('generic', 'gop-configuration', namespace,
+			new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+			new Tuple2('gop-config', config.toYaml(true)))
+	}
 
 	List<Tool> getFeatures() {
 		return features

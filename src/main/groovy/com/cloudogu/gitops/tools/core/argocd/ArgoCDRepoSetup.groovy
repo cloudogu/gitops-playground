@@ -5,9 +5,9 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+import groovy.util.logging.Slf4j
 
 import java.nio.file.Path
-import groovy.util.logging.Slf4j
 
 /**
  * Holds ArgoCD-related repo initialization actions (cluster-resources + optional tenant bootstrap)

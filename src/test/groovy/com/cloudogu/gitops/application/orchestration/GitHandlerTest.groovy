@@ -1,8 +1,5 @@
 package com.cloudogu.gitops.application.orchestration
 
-import static org.junit.jupiter.api.Assertions.*
-import static org.mockito.Mockito.mock
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
@@ -13,8 +10,10 @@ import com.cloudogu.gitops.testhelper.git.GitlabMock
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import org.junit.jupiter.api.Test
+
+import static org.junit.jupiter.api.Assertions.*
+import static org.mockito.Mockito.mock
 
 class GitHandlerTest {
 

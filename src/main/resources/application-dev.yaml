@@ -1,6 +1,5 @@
 # $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
 application:
-  "yes": true
   baseUrl: http://localhost
   password: "admin"
 features:
@@ -12,12 +11,10 @@ features:
   ingress:
     active: true
   monitoring:
-    active: true
   secrets:
     vault:
       mode: "dev"
 jenkins:
-  active: true
   password: "admin"
 registry:
   active: true

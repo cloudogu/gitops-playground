@@ -5,11 +5,9 @@ import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
-
-import io.micronaut.core.annotation.Order
-
-import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -65,14 +63,10 @@ class Registry extends Tool {
 						 CONTAINER_PORT, config.registry.internalPort.toString(),
 						 namespace) */
 
-				Map<String, String> selector = new HashMap<>()
-				selector.put("app", "docker-registry")
-				k8sClient.k8sJavaApiClient.createNodePortService(namespace,
-					'docker-registry-internal-port',
-					selector,
-					CONTAINER_PORT.toInteger(),
-					config.registry.internalPort,
-					'docker-registry-internal-port')
+				k8sClient.createServiceNodePort('docker-registry-internal-port',
+					"${CONTAINER_PORT}:${CONTAINER_PORT}",
+					config.registry.internalPort.toString(),
+					namespace)
 			}
 		}
 	}

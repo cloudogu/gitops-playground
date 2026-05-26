@@ -1,8 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -10,12 +7,14 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
-
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
+
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
 
 class GitRepoTest {
 

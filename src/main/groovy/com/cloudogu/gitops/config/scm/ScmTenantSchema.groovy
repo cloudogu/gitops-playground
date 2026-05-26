@@ -1,19 +1,18 @@
 package com.cloudogu.gitops.config.scm
 
-import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.GitlabConfig
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.utils.NetworkingUtils
-
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonMerge
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+
+import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
 
 class ScmTenantSchema {
 
@@ -128,10 +127,14 @@ class ScmTenantSchema {
 		String urlForJenkins = ''
 
 		@JsonIgnore
-		String getHost() { return NetworkingUtils.getHost(url) }
+		String getHost() {
+			return NetworkingUtils.getHost(url)
+		}
 
 		@JsonIgnore
-		String getProtocol() { return NetworkingUtils.getProtocol(url) }
+		String getProtocol() {
+			return NetworkingUtils.getProtocol(url)
+		}
 		String ingress = ''
 
 		@Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)

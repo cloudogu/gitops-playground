@@ -1,30 +1,28 @@
 package com.cloudogu.gitops.cli
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
-
-import com.cloudogu.gitops.application.Application
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-
-import io.micronaut.context.ApplicationContext
-
-import java.util.concurrent.TimeUnit
-
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
+import com.cloudogu.gitops.application.Application
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.slf4j.LoggerFactory
+
+import java.util.concurrent.TimeUnit
+
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
 
 // Avoids blocking if input is read by error
 @Timeout(value = 10, unit = TimeUnit.SECONDS)

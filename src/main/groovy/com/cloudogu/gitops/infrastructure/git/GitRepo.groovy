@@ -9,9 +9,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import com.cloudogu.gitops.utils.jgit.helpers.InsecureCredentialProvider
-
 import groovy.util.logging.Slf4j
-
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.PushCommand

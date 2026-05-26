@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.infrastructure.helm
 
 import com.cloudogu.gitops.utils.CommandExecutor
-
-import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -23,12 +22,17 @@ class HelmClient {
 		helm(['dependency', 'build', path])
 	}
 
-	String upgrade(String release, String chartOrPath, Map args) {
+	String upgrade(String release, String chartOrPath, Map args = [:]) {
 		helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
 	}
 
 	String template(String release, String chartOrPath, Map args = [:]) {
 		helm(['template', release, chartOrPath], args)
+	}
+
+	String uninstall(String release, String namespace) {
+		String[] command = ["helm", "uninstall", release, '--namespace', namespace]
+		commandExecutor.execute(command).stdOut
 	}
 
 	private String helm(List<String> verbAndParams, Map args = [:]) {
@@ -41,12 +45,7 @@ class HelmClient {
 			command += value
 		}
 
+		log.trace("Executing helm command: ${command.join(' ')}")
 		commandExecutor.execute(command as String[]).stdOut
-	}
-
-	String uninstall(String release, String namespace) {
-		String[] command = ["helm", "uninstall", release, '--namespace', namespace]
-
-		commandExecutor.execute(command).stdOut
 	}
 }

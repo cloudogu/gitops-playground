@@ -3,7 +3,6 @@ package com.cloudogu.gitops.config
 import com.cloudogu.gitops.config.scm.ScmCentralSchema.GitlabCentralConfig
 import com.cloudogu.gitops.config.scm.ScmCentralSchema.ScmManagerCentralConfig
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
