@@ -1,16 +1,16 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-
-import java.nio.file.Path
-import jakarta.inject.Singleton
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Singleton
+
+import java.nio.file.Path
 
 @Slf4j
 @Singleton

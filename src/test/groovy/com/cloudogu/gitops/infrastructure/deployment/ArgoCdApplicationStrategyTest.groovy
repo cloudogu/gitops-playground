@@ -1,0 +1,131 @@
+package com.cloudogu.gitops.infrastructure.deployment
+
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema.ScmManagerTenantConfig
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.utils.FileSystemUtils
+import groovy.yaml.YamlSlurper
+import org.junit.jupiter.api.Test
+
+import static org.assertj.core.api.Assertions.assertThat
+
+class ArgoCdApplicationStrategyTest {
+	private File localTempDir
+	GitHandler gitHandler = new GitHandlerForTests(new Config(), new ScmManagerMock())
+
+	@Test
+	void 'deploys feature using argo CD'() {
+		def strategy = createStrategy()
+		File valuesYaml = File.createTempFile('values', 'yaml')
+		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+			"foo-namespace", "releaseName", valuesYaml.toPath())
+
+		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
+		assertThat(argoCdApplicationYaml.text).isEqualTo("""---
+apiVersion: "argoproj.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: "repoName"
+  namespace: "foo-argocd"
+spec:
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: "foo-namespace"
+  project: "cluster-resources"
+  sources:
+  - repoURL: "repoURL"
+    chart: "chartName"
+    targetRevision: "version"
+    helm:
+      releaseName: "releaseName"
+      valueFiles:
+      - "\$values/apps/repoName/repoName-gop-helm.yaml"
+      - "\$values/apps/repoName/repoName-user-values.yaml"
+      ignoreMissingValueFiles: true
+  - repoURL: "http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/cluster-resources.git"
+    targetRevision: "main"
+    ref: "values"
+    path: "apps/repoName"
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - "ServerSideApply=true"
+    - "CreateNamespace=true"
+""")
+	}
+
+	@Test
+	void 'deploys feature using argo CD from git repo'() {
+		def strategy = createStrategy()
+		File valuesYaml = File.createTempFile('values', 'yaml')
+		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+			"namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
+
+		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
+		def result = new YamlSlurper().parse(argoCdApplicationYaml)
+		def sources = result['spec']['sources'] as List
+		assertThat(sources[0] as Map).containsKey('path')
+		assertThat(sources[0]['path']).isEqualTo('chartName')
+	}
+
+	@Test
+	void 'deploys feature with argocdOperator true, setting CreateNamespace to false'() {
+		def strategy = createStrategy(true)
+		File valuesYaml = File.createTempFile('values', 'yaml')
+		valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+			"namespace", "releaseName", valuesYaml.toPath())
+
+		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
+		assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
+	}
+
+	@Test
+	void 'deploys feature with argocdOperator false, setting CreateNamespace to true'() {
+		def strategy = createStrategy(false)
+		File valuesYaml = File.createTempFile('values', 'yaml')
+		valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+		strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+			"namespace", "releaseName", valuesYaml.toPath())
+
+		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
+		assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
+	}
+
+	private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
+		Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',
+			gitName: 'Cloudogu',
+			gitEmail: 'hello@cloudogu.com'),
+			scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(username: "dont-care-username",
+				password: "dont-care-password")),
+			features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(operator: argocdOperator)))
+
+		def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
+			@Override
+			GitRepo getRepo(String repoTarget, GitProvider gitProvider) {
+				def repo = super.getRepo(repoTarget, gitProvider)
+				localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+				return repo
+			}
+		}
+
+		return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider, gitHandler)
+	}
+}
