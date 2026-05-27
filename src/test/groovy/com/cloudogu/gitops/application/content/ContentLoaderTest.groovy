@@ -105,7 +105,6 @@ class ContentLoaderTest {
 
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys image pull secrets'() {
 		config.registry.createImagePullSecrets = true
@@ -116,7 +115,6 @@ class ContentLoaderTest {
 		assertRegistrySecrets('reg-user', 'reg-pw')
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys image pull secrets from read-only vars'() {
 		config.registry.createImagePullSecrets = true
@@ -129,7 +127,6 @@ class ContentLoaderTest {
 		assertRegistrySecrets('other-user', 'other-pw')
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys additional image pull secrets for proxy registry'() {
 		config.registry.createImagePullSecrets = true
