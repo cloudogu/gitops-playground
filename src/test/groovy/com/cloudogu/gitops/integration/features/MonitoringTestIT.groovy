@@ -2,6 +2,8 @@ package com.cloudogu.gitops.integration.features
 
 import static org.assertj.core.api.Assertions.assertThat
 
+import com.cloudogu.gitops.integration.TestK8sHelper
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -17,21 +19,17 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 class MonitoringTestIT extends KubenetesApiTestSetup {
 
 	String namespace = 'monitoring'
-	String grafanaPod = 'prometheus-stack-grafana'
-	String operatorPod = 'prometheus-stack-operator'
-	String prometheusPod = 'prometheus-stack-prometheus'
+	String grafanaPod = 'kube-prometheus-stack-grafana'
+	String operatorPod = 'kube-prometheus-stack-operator'
+	String prometheusPod = 'prometheus-kube-prometheus-stack-prometheus'
 
 	@Override
 	boolean isReadyToStartTests() {
-
-		def pods = api.listNamespacedPod(namespace).execute()
-		if (pods && !pods.items.isEmpty()) {
-			def grafanaPod = pods.items.find { it.getMetadata().name.contains(grafanaPod) }
-			if (grafanaPod) {
-				return "Running".equals(grafanaPod.status.phase)
-			}
+		try {
+			return TestK8sHelper.checkAllPodsRunningInNamespace(namespace, grafanaPod)
+		} catch (AssertionError ignored) {
+			return false
 		}
-		return false;
 	}
 
 	@BeforeAll
@@ -41,36 +39,17 @@ class MonitoringTestIT extends KubenetesApiTestSetup {
 
 	@Test
 	void ensureNamespaceExists() {
-		def namespaces = api.listNamespace().execute()
-		assertThat(namespaces).isNotNull()
-		assertThat(namespaces.getItems().isEmpty()).isFalse()
-		def namespace = namespaces.getItems().find { namespace.equals(it.getMetadata().name) }
-		assertThat(namespace).isNotNull()
-
+		TestK8sHelper.waitForNamespaces([namespace])
 	}
 
 	@Test
 	void ensureGrafanaIsStarted() {
-
-		def pods = api.listNamespacedPod(namespace).execute()
-		assertThat(pods).isNotNull()
-		assertThat(pods.getItems().isEmpty()).isFalse()
-
-		def grafanaPod = pods.items.find { it.getMetadata().name.contains(grafanaPod) }
-		assertThat(grafanaPod).isNotNull()
-		assertThat(grafanaPod.status.phase).isEqualTo("Running")
+		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, grafanaPod)
 	}
 
 	@Test
 	void ensureOperatorIsStarted() {
-
-		def pods = api.listNamespacedPod(namespace).execute()
-		assertThat(pods).isNotNull()
-		assertThat(pods.getItems().isEmpty()).isFalse()
-
-		def operator = pods.items.find { it.getMetadata().name.contains(operatorPod) }
-		assertThat(operator).isNotNull()
-		assertThat(operator.status.phase).isEqualTo("Running")
+		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, operatorPod)
 	}
 
 	@Disabled("not start on jenkins")

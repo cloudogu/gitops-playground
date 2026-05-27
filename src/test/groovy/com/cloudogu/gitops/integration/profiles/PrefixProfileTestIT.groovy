@@ -7,10 +7,6 @@ import com.cloudogu.gitops.integration.TestK8sHelper
 import java.util.concurrent.TimeUnit
 import groovy.util.logging.Slf4j
 
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
-import org.awaitility.Awaitility
 import org.awaitility.core.ConditionTimeoutException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -40,29 +36,10 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 		log.info "###### Integration test for Prefix ######"
 
 		try {
-			Awaitility.await()
-				.atMost(40, TimeUnit.MINUTES)
-				.pollInterval(5, TimeUnit.SECONDS)
-				.untilAsserted {
-					waitUntilPetclinicIsRunning()
-				}
+			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
-			fail('Cluster not ready, sth false.')
-		}
-	}
-
-	// Start condition
-	private static void waitUntilPetclinicIsRunning() {
-		// Check Pod
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
-			assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
-			def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
-			}
-			assert !actualPods.isEmpty() && notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+			fail('Cluster not ready, sth false.', timeoutEx)
 		}
 	}
 
@@ -79,17 +56,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 		                                   exampleProductionNs,
 		                                   exampleStagingNs]
 
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			def currentNames = client.namespaces().list().getItems()
-
-			// 1. Verify all expected pods are present
-			def missingNamespace = expectedNamespaces.findAll { prefix -> !currentNames.any { it.getMetadata().getName().startsWith(prefix) }
-			}
-			assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
-		}
-
+		TestK8sHelper.waitForNamespaces(expectedNamespaces)
 	}
 
 	@Test
@@ -99,16 +66,8 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 		                                  registryNs,
 		                                  certManagerNs,
 		                                  monitoringNs]
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			namespacesToCheck.each { ns ->
-				def actualPods = client.pods().inNamespace(ns).list().getItems()
-				assert !actualPods.isEmpty(): "No pods found in namespace: ${ns}"
-				def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
-				}
-				assert notRunningPods.isEmpty(): "These pods in ${ns} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-			}
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+		namespacesToCheck.each { String ns ->
+			TestK8sHelper.waitForAllPodsRunningInNamespace(ns)
 		}
 	}
 }
