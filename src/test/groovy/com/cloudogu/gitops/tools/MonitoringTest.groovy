@@ -5,12 +5,17 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
+
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -24,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
-@Disabled("TODO: Fix because of new test mock framework")
+@EnableKubernetesMockClient(crud = true)
 class MonitoringTest {
 	Config config = Config.fromMap(registry: [internal              : true,
 	                                          createImagePullSecrets: false],
@@ -61,7 +66,7 @@ class MonitoringTest {
 		           secrets   : [active: true],
 		           ingress   : [active: true]])
 
-	K8sClientForTest k8sClient = new K8sClientForTest()
+	K8sClient k8sClient
 	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 	Path temporaryYamlFilePrometheus = null
@@ -71,9 +76,16 @@ class MonitoringTest {
 	GitHandler gitHandler = mock(GitHandler.class)
 	ScmManagerMock scmManagerMock
 
+	KubernetesClient client
+	//Client to set mock data, gets injected by annotation
+	KubernetesMockServer server
+	//Use server for non CRUD
+
 	@BeforeEach
 	void setup() {
 		scmManagerMock = new ScmManagerMock()
+		k8sClient = mock(K8sClient)
+		k8sClient.client = client
 	}
 
 	@Test
@@ -469,6 +481,8 @@ policies:
 	@Test
 	void 'works with openshift'() {
 		config.application.openshift = true
+		when(k8sClient.getAnnotation('namespace', 'foo-monitoring', 'openshift.io/sa.scc.uid-range'))
+			.thenReturn('1000920000/10000')
 		createStack(scmManagerMock).install()
 
 		def yaml = parseActualYaml()
