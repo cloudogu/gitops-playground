@@ -3,20 +3,24 @@
     "baseBranchPatterns": [
         "develop"
     ],
+
     "assignees": [
         "avetgit",
         "DerDaehne",
         "mdroll",
         "ThomasMichael1811"
     ],
+
     "dependencyDashboard": true,
-    "minimumReleaseAge": "7 days",
+    "minimumReleaseAge": "3 days",
+
     "extends": [
         ":automergeMinor",
         ":combinePatchMinorReleases",
         ":configMigration",
         ":automergeDigest"
     ],
+
     "packageRules": [
         {
             "matchManagers": [
