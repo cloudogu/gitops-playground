@@ -32,3 +32,14 @@ helm upgrade --install keycloak oci://registry-1.docker.io/bitnamicharts/keycloa
 
 After the rollout, Keycloak is reachable at `http://keycloak.localhost`. Admin UI: `http://keycloak.localhost/admin` (
 admin / admin).
+
+For local Pods set the
+
+```bash
+hostAliases:
+- ip: "10.43.171.64"
+hostnames:
+- "keycloak.localhost"
+```
+
+in the helm values yaml files

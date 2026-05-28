@@ -316,6 +316,13 @@
               "type" : [ "string", "null" ],
               "description" : "Defines the kubernetes namespace for ArgoCD"
             },
+            "oidc": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OIDC Config for this tool. See docs for more infos"
+            },
             "operator" : {
               "type" : [ "boolean", "null" ],
               "description" : "Install ArgoCD via an already running ArgoCD Operator"
@@ -516,6 +523,13 @@
               },
               "additionalProperties" : false,
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "oidc": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OIDC Config for this tool. See docs for more infos"
             }
           },
           "additionalProperties" : false,
@@ -605,6 +619,37 @@
                   } ],
                   "description" : "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
                 },
+                "oidc": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "clientId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC client ID"
+                    },
+                    "clientSecret": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC client secret"
+                    },
+                    "discoveryUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC discovery URL"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "OIDC Config for this tool. See docs for more infos"
+                },
                 "url" : {
                   "type" : [ "string", "null" ],
                   "description" : "Sets url for vault ui"
@@ -654,6 +699,13 @@
         "metricsUsername" : {
           "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set and monitoring enabled"
+        },
+        "oidc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC Config for this tool. See docs for more infos"
         },
         "password" : {
           "type" : [ "string", "null" ],

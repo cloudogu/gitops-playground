@@ -83,6 +83,14 @@ controller:
         - name: host-tmp
           mountPath: /host-tmp
 
+<#if (config.jenkins.oidc)!?has_content>
+  JCasC: #<- can be used to configure jenkin
+    defaultConfig: true
+    configScripts:
+      oidc-auth: |
+        ${config.jenkins.oidc?trim?replace("\n", "\n                   ")}
+</#if>
+
 persistence:
   volumes:
     # Needed for initContainer only

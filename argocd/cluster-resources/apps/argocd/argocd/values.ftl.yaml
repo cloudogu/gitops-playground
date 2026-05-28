@@ -4,9 +4,9 @@ argo-cd:
   crds:
     install: false
 </#if>
-<#if config.application.netpols == true>
   global:
-   domain: ${argocd.host}
+    domain: ${argocd.host}
+<#if config.application.netpols == true>
     networkPolicy:
       create: true
 </#if>

@@ -141,11 +141,12 @@ kubeProxy:
 alertmanager:
   enabled: false
 grafana:
+  assertNoLeakedSecrets: false
   grafana.ini:
 <#if config.features.monitoring.oidc?has_content>
-    assertNoLeakedSecrets: false # TODO remove this and use a secret to store the oidc config or at least the credentials
-    auth.generic_oauth: |
-      ${config.features.monitoring.oidc?trim?replace("\n", "\n      ")}
+    <#list config.features.monitoring.oidc?trim?split("\n") as line>
+    ${line}
+    </#list>
 </#if>
     analytics:
       check_for_updates: false

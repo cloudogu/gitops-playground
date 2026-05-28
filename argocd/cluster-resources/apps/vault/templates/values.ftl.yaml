@@ -22,6 +22,7 @@ server:
       repository: ${imageObject.registryAndRepositoryAsString}
       tag: ${imageObject.tag}
 </#if>
+  
 <#if host?has_content>
   ingress:
     enabled: true
@@ -50,9 +51,22 @@ server:
     name: ${dev.vaultPostStartVolume}
     readOnly : true
   postStart:
-    - /bin/sh
-    - -c
-    - USERNAME=${config.application.username} PASSWORD=${config.application.password} ARGOCD=${config.features.argocd.active?c} /var/opt/scripts/${dev.postStartScriptName} 2>&1 ${"|"} tee /tmp/dev-post-start.log
+        - /bin/sh
+        - -c
+        - | 
+          USERNAME=${config.application.username} \
+          PASSWORD=${config.application.password} \
+          ARGOCD=${config.features.argocd.active?c} \
+    <#if config.features.secrets.vault.oidc.clientSecret?has_content>
+          OIDC_ENABLED=true \
+          OIDC_CLIENT_ID=${config.features.secrets.vault.oidc.clientId} \
+          OIDC_CLIENT_SECRET=${config.features.secrets.vault.oidc.clientSecret} \
+          OIDC_DISCOVERY_URL=${config.features.secrets.vault.oidc.discoveryUrl} \
+          VAULT_EXTERNAL_URL=http://${host} \
+    <#else>
+          OIDC_ENABLED=false \
+    </#if>
+          /var/opt/scripts/${dev.postStartScriptName} 2>&1 | tee /tmp/dev-post-start.log
 </#if>
 
 <#if config.application.podResources == true>

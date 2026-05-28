@@ -340,6 +340,9 @@ class Config {
 		@JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
 		String mavenCentralMirror = ''
 
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
+		String oidc = ''
+
 		@Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
 		@JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
 		Map<String, String> additionalEnvs = [:]
@@ -661,6 +664,9 @@ class Config {
 			@JsonPropertyDescription(VAULT_URL_DESCRIPTION)
 			String url = ''
 
+			@JsonPropertyDescription(OIDC_DESCPRIPTION)
+			VaultOidcSchema oidc
+
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
@@ -670,6 +676,15 @@ class Config {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
 				String image = ''
+			}
+
+			static class VaultOidcSchema {
+				@JsonPropertyDescription("OIDC client ID")
+				String clientId = 'vault'
+				@JsonPropertyDescription("OIDC client secret")
+				String clientSecret = ''
+				@JsonPropertyDescription("OIDC discovery URL")
+				String discoveryUrl = ''
 			}
 		}
 	}
