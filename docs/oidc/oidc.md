@@ -30,8 +30,16 @@ helm upgrade --install keycloak oci://registry-1.docker.io/bitnamicharts/keycloa
   --set ingress.tls=false
 ```
 
-After the rollout, Keycloak is reachable at `http://keycloak.localhost`. Admin UI: `http://keycloak.localhost/admin` (
-admin / admin).
+After the rollout, Keycloak is reachable at `http://keycloak.localhost`.
+
+First setup a new realm and add clients for:
+
+- Argocd
+- Jenkins
+- Vault
+- Grafana
+
+Scm-manager does not support OIDC yet.
 
 For local Pods set the
 
@@ -42,4 +50,10 @@ hostnames:
 - "keycloak.localhost"
 ```
 
-in the helm values yaml files
+or set in kubedns' rewrite name keycloak.localhost keycloak.default.svc.cluster.local'
+
+in the helm values yaml files to access keycloak by localhost url.
+
+```bash
+
+```
