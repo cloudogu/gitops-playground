@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
@@ -180,11 +181,11 @@ class ArgoCD extends Tool {
 
         updatingArgoCDManagedNamespaces()
 
-        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
-        // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = clusterResourcesRepo.operatorRbacDir()
-        k8sClient.applyYaml("${argocdRbacPath} --recursive")
-    }
+		log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
+		// Apply rbac yamls from operator/rbac folder
+		String argocdRbacPath = clusterResourcesRepo.operatorRbacDir()
+		k8sClient.applyYaml(argocdRbacPath)
+	}
 
     private void installOperator() {
         def cmd = """
