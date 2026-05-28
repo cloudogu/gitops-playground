@@ -1,5 +1,5 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
-
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
 import groovy.transform.CompileStatic
@@ -12,6 +12,8 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.dsl.base.PatchContext
 import io.fabric8.kubernetes.client.dsl.base.PatchType
 import jakarta.inject.Singleton
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.ConfigBuilder
 
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
@@ -30,6 +32,8 @@ class K8sClient {
 
 	private static final int DEFAULT_TIMEOUT_SECONDS = 60
 	private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1
+	private static final int FABRIC8_REQUEST_TIMEOUT_MILLIS = 60_000
+	private static final int FABRIC8_CONNECTION_TIMEOUT_MILLIS = 10_000
 
 	// ========================================
 	// Instance Variables
@@ -41,7 +45,15 @@ class K8sClient {
 	KubernetesClient client
 
 	K8sClient() {
-		this.client = new KubernetesClientBuilder().build()
+		Config config = new ConfigBuilder()
+				.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
+				.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
+				.build()
+
+		this.client = new KubernetesClientBuilder()
+				.withConfig(config)
+				.build()
+
 	}
 
 	// ========================================
@@ -962,8 +974,54 @@ class K8sClient {
 
 
 			default:
-				return client.genericKubernetesResources(resourceType).inNamespace(ns).withName(name)
+				return getCustomResourceClient(resourceType, name, ns)
 		}
+	}
+
+	@CompileStatic(TypeCheckingMode.SKIP)
+	private getCustomResourceClient(String resourceType, String name, String namespace) {
+		String normalized = resourceType.toLowerCase()
+
+		def crd = client.apiextensions()
+				.v1()
+				.customResourceDefinitions()
+				.list()
+				.items
+				.find { crd ->
+					crd.spec.names.kind?.equalsIgnoreCase(resourceType) ||
+							crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
+							crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
+							crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
+				}
+
+		if (!crd) {
+			throw new RuntimeException("No CRD found for custom resource type '${resourceType}'")
+		}
+
+		def version = crd.spec.versions.find { it.storage && it.served }?.name ?:
+				crd.spec.versions.find { it.storage }?.name ?:
+						crd.spec.versions.find { it.served }?.name
+		log.debug("Using CRD ${crd.metadata.name} with version ${version}, kind=${crd.spec.names.kind}, plural=${crd.spec.names.plural}")
+
+		if (!version) {
+			throw new RuntimeException("No served version found for CRD '${crd.metadata.name}'")
+		}
+
+		ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
+				.withGroup(crd.spec.group)
+				.withVersion(version)
+				.withKind(crd.spec.names.kind)
+				.withPlural(crd.spec.names.plural)
+				.withNamespaced(crd.spec.scope == "Namespaced")
+				.build()
+
+		def resourceClient = client.genericKubernetesResources(context)
+
+		if (crd.spec.scope == "Namespaced") {
+			return resourceClient.inNamespace(namespace).withName(name)
+		}
+
+		return resourceClient.withName(name)
 	}
 
 	/**
