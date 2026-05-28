@@ -1,4 +1,5 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 
 import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
@@ -12,7 +13,9 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.dsl.base.PatchContext
 import io.fabric8.kubernetes.client.dsl.base.PatchType
 import jakarta.inject.Singleton
-
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.ConfigBuilder
+import groovy.io.FileType
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
 @Slf4j
@@ -30,6 +33,8 @@ class K8sClient {
 
 	private static final int DEFAULT_TIMEOUT_SECONDS = 60
 	private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1
+	private static final int FABRIC8_REQUEST_TIMEOUT_MILLIS = 60_000
+	private static final int FABRIC8_CONNECTION_TIMEOUT_MILLIS = 10_000
 
 	// ========================================
 	// Instance Variables
@@ -41,7 +46,15 @@ class K8sClient {
 	KubernetesClient client
 
 	K8sClient() {
-		this.client = new KubernetesClientBuilder().build()
+		Config config = new ConfigBuilder()
+				.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
+				.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
+				.build()
+
+		this.client = new KubernetesClientBuilder()
+				.withConfig(config)
+				.build()
+
 	}
 
 	// ========================================
@@ -503,24 +516,61 @@ class K8sClient {
 	String applyYaml(String yamlLocation) {
 		log.debug("Applying YAML from $yamlLocation")
 
-		def resources = executeWithErrorHandling("load YAML from $yamlLocation") {
-			InputStream stream = yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://") ? new URL(yamlLocation).openStream() :
-			                     new File(yamlLocation).newInputStream()
-			client.load(stream).items()
+		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
+			int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation)
+			return "Applied ${appliedResources} resource(s) from $yamlLocation"
+		}
+
+		File location = new File(yamlLocation)
+
+		if (!location.exists()) {
+			throw new RuntimeException("File or directory not found: $yamlLocation")
+		}
+
+		if (location.isDirectory()) {
+			List<File> yamlFiles = []
+			location.traverse(type: FileType.FILES) { File file ->
+				if (file.name.endsWith(".yaml") || file.name.endsWith(".yml")) {
+					yamlFiles.add(file)
+				}
+			}
+
+			yamlFiles = yamlFiles.sort { it.absolutePath }
+
+			int appliedResources = 0
+			yamlFiles.each { File file ->
+				appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+			}
+
+			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
+		}
+
+		int appliedResources = applyYamlStream(location.newInputStream(), yamlLocation)
+		return "Applied ${appliedResources} resource(s) from $yamlLocation"
+	}
+
+	private int applyYamlStream(InputStream stream, String sourceDescription) {
+		def resources = executeWithErrorHandling("load YAML from $sourceDescription") {
+			try {
+				return client.load(stream).items()
+			} finally {
+				stream.close()
+			}
 		}
 
 		resources.each { resource ->
-			executeWithErrorHandling("apply resource from $yamlLocation") {
+			executeWithErrorHandling("apply resource from $sourceDescription") {
 				def resourceClient = client.resource(resource)
-				// Only set namespace if the resource has one (some resources like Namespace are cluster-scoped)
+
 				if (resource.metadata?.namespace) {
 					resourceClient = resourceClient.inNamespace(resource.metadata.namespace)
 				}
+
 				resourceClient.createOrReplace()
 			}
 		}
 
-		return "Applied ${resources.size()} resource(s) from $yamlLocation"
+		return resources.size()
 	}
 
 	/**
@@ -820,12 +870,13 @@ class K8sClient {
 				HasMetadata resource = resourceObj as HasMetadata
 
 				if (resource) {
-					def status = resource.getAdditionalProperties()?.get('status') as Map
-					String phase = status?.get('phase') as String
+					String phase = extractPhase(resource)
+
 					if (phase == desiredPhase) {
 						log.debug("Resource ${resourceType}/${resourceName} in namespace ${namespace} reached the desired phase: ${desiredPhase}")
 						return
 					}
+
 					log.debug("Current phase: ${phase}. Waiting for phase: ${desiredPhase}...")
 				}
 			} catch (Exception e) {
@@ -838,6 +889,17 @@ class K8sClient {
 		throw new RuntimeException("Timeout reached. Resource ${resourceType}/${resourceName} in namespace ${namespace} " + "did not reach the desired phase: ${desiredPhase} within ${timeoutSeconds} seconds.")
 	}
 
+	@CompileStatic(TypeCheckingMode.SKIP)
+	private String extractPhase(def resource) {
+		// Typed Fabric8 resources, e.g. Pod.status.phase
+		if (resource.hasProperty('status') && resource.status?.hasProperty('phase')) {
+			return resource.status.phase as String
+		}
+
+		// GenericKubernetesResource / Custom Resources
+		def status = resource.getAdditionalProperties()?.get('status') as Map
+		return status?.get('phase') as String
+	}
 	/**
 	 * Waits for a resource to reach a desired phase with default timeout and interval.
 	 *
@@ -962,8 +1024,54 @@ class K8sClient {
 
 
 			default:
-				return client.genericKubernetesResources(resourceType).inNamespace(ns).withName(name)
+				return getCustomResourceClient(resourceType, name, ns)
 		}
+	}
+
+	@CompileStatic(TypeCheckingMode.SKIP)
+	private getCustomResourceClient(String resourceType, String name, String namespace) {
+		String normalized = resourceType.toLowerCase()
+
+		def crd = client.apiextensions()
+				.v1()
+				.customResourceDefinitions()
+				.list()
+				.items
+				.find { crd ->
+					crd.spec.names.kind?.equalsIgnoreCase(resourceType) ||
+							crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
+							crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
+							crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
+				}
+
+		if (!crd) {
+			throw new RuntimeException("No CRD found for custom resource type '${resourceType}'")
+		}
+
+		def version = crd.spec.versions.find { it.storage && it.served }?.name ?:
+				crd.spec.versions.find { it.storage }?.name ?:
+						crd.spec.versions.find { it.served }?.name
+		log.debug("Using CRD ${crd.metadata.name} with version ${version}, kind=${crd.spec.names.kind}, plural=${crd.spec.names.plural}")
+
+		if (!version) {
+			throw new RuntimeException("No served version found for CRD '${crd.metadata.name}'")
+		}
+
+		ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
+				.withGroup(crd.spec.group)
+				.withVersion(version)
+				.withKind(crd.spec.names.kind)
+				.withPlural(crd.spec.names.plural)
+				.withNamespaced(crd.spec.scope == "Namespaced")
+				.build()
+
+		def resourceClient = client.genericKubernetesResources(context)
+
+		if (crd.spec.scope == "Namespaced") {
+			return resourceClient.inNamespace(namespace).withName(name)
+		}
+
+		return resourceClient.withName(name)
 	}
 
 	/**
