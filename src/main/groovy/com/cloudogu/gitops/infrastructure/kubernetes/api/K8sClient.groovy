@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
+
 import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
 import groovy.transform.CompileStatic
@@ -14,7 +15,7 @@ import io.fabric8.kubernetes.client.dsl.base.PatchType
 import jakarta.inject.Singleton
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigBuilder
-
+import groovy.io.FileType
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
 @Slf4j
@@ -515,24 +516,61 @@ class K8sClient {
 	String applyYaml(String yamlLocation) {
 		log.debug("Applying YAML from $yamlLocation")
 
-		def resources = executeWithErrorHandling("load YAML from $yamlLocation") {
-			InputStream stream = yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://") ? new URL(yamlLocation).openStream() :
-			                     new File(yamlLocation).newInputStream()
-			client.load(stream).items()
+		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
+			int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation)
+			return "Applied ${appliedResources} resource(s) from $yamlLocation"
+		}
+
+		File location = new File(yamlLocation)
+
+		if (!location.exists()) {
+			throw new RuntimeException("File or directory not found: $yamlLocation")
+		}
+
+		if (location.isDirectory()) {
+			List<File> yamlFiles = []
+			location.traverse(type: FileType.FILES) { File file ->
+				if (file.name.endsWith(".yaml") || file.name.endsWith(".yml")) {
+					yamlFiles.add(file)
+				}
+			}
+
+			yamlFiles = yamlFiles.sort { it.absolutePath }
+
+			int appliedResources = 0
+			yamlFiles.each { File file ->
+				appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+			}
+
+			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
+		}
+
+		int appliedResources = applyYamlStream(location.newInputStream(), yamlLocation)
+		return "Applied ${appliedResources} resource(s) from $yamlLocation"
+	}
+
+	private int applyYamlStream(InputStream stream, String sourceDescription) {
+		def resources = executeWithErrorHandling("load YAML from $sourceDescription") {
+			try {
+				return client.load(stream).items()
+			} finally {
+				stream.close()
+			}
 		}
 
 		resources.each { resource ->
-			executeWithErrorHandling("apply resource from $yamlLocation") {
+			executeWithErrorHandling("apply resource from $sourceDescription") {
 				def resourceClient = client.resource(resource)
-				// Only set namespace if the resource has one (some resources like Namespace are cluster-scoped)
+
 				if (resource.metadata?.namespace) {
 					resourceClient = resourceClient.inNamespace(resource.metadata.namespace)
 				}
+
 				resourceClient.createOrReplace()
 			}
 		}
 
-		return "Applied ${resources.size()} resource(s) from $yamlLocation"
+		return resources.size()
 	}
 
 	/**
