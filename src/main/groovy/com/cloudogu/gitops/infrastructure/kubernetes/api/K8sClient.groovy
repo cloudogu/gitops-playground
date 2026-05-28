@@ -870,12 +870,13 @@ class K8sClient {
 				HasMetadata resource = resourceObj as HasMetadata
 
 				if (resource) {
-					def status = resource.getAdditionalProperties()?.get('status') as Map
-					String phase = status?.get('phase') as String
+					String phase = extractPhase(resource)
+
 					if (phase == desiredPhase) {
 						log.debug("Resource ${resourceType}/${resourceName} in namespace ${namespace} reached the desired phase: ${desiredPhase}")
 						return
 					}
+
 					log.debug("Current phase: ${phase}. Waiting for phase: ${desiredPhase}...")
 				}
 			} catch (Exception e) {
@@ -888,6 +889,17 @@ class K8sClient {
 		throw new RuntimeException("Timeout reached. Resource ${resourceType}/${resourceName} in namespace ${namespace} " + "did not reach the desired phase: ${desiredPhase} within ${timeoutSeconds} seconds.")
 	}
 
+	@CompileStatic(TypeCheckingMode.SKIP)
+	private String extractPhase(def resource) {
+		// Typed Fabric8 resources, e.g. Pod.status.phase
+		if (resource.hasProperty('status') && resource.status?.hasProperty('phase')) {
+			return resource.status.phase as String
+		}
+
+		// GenericKubernetesResource / Custom Resources
+		def status = resource.getAdditionalProperties()?.get('status') as Map
+		return status?.get('phase') as String
+	}
 	/**
 	 * Waits for a resource to reach a desired phase with default timeout and interval.
 	 *

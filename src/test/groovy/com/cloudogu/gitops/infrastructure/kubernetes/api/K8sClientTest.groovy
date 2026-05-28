@@ -708,12 +708,14 @@ metadata:
     }
 
     @Test
-    void 'applyYaml throws exception for non-existing file'() {
+    void 'applyYaml throws exception for non-existing file or directory'() {
         // When/Then
         def exception = shouldFail(RuntimeException) {
             k8sApiClient.applyYaml("/non/existing/file.yaml")
         }
-        assertThat(exception.message).contains("YAML file not found")
+
+        assertThat(exception.message).contains("File or directory not found")
+        assertThat(exception.message).contains("/non/existing/file.yaml")
     }
 
     @Test
