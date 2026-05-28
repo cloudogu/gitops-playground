@@ -179,7 +179,7 @@ class ArgoCD extends Tool {
 		log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
 		// Apply rbac yamls from operator/rbac folder
 		String argocdRbacPath = clusterResourcesRepo.operatorRbacDir()
-		k8sClient.applyYaml("${argocdRbacPath} --recursive")
+		k8sClient.applyYaml(argocdRbacPath)
 	}
 
 	private void deployWithHelm() {
