@@ -26,6 +26,18 @@ class TestK8sHelper {
 	static final int DEFAULT_WAIT_MINUTES = 5
 	static final int DEFAULT_POLL_SECONDS = 5
 	static final String RUNNING = "Running"
+	static final String FAILED = "Failed"
+	static final String SUCCEEDED = "Succeeded"
+	static final Set<String> FATAL_CONTAINER_WAITING_REASONS = [
+		"CrashLoopBackOff",
+		"CreateContainerConfigError",
+		"CreateContainerError",
+		"ErrImagePull",
+		"ImageInspectError",
+		"ImagePullBackOff",
+		"InvalidImageName",
+		"RunContainerError"
+	] as Set
 
 	/**
 	 * This method logs Namespace and contining Pods to namespace.*/
@@ -132,7 +144,8 @@ class TestK8sHelper {
 				pod.getMetadata().getName().startsWith(podNameStartsWith)
 			}
 			assert !actualPods.isEmpty(): "No pods found in namespace: ${namespace} with name ${podNameStartsWith}"
-			List<Pod> notRunningPods = actualPods.findAll { Pod pod -> pod.getStatus().getPhase() != RUNNING }
+			failOnFatalPods(namespace, actualPods)
+			List<Pod> notRunningPods = actualPods.findAll { Pod pod -> !isPodRunning(pod) }
 
 			assert notRunningPods.isEmpty(): "These pods in ${namespace} are not yet running: ${describePods(notRunningPods)}"
 			return true
@@ -144,7 +157,6 @@ class TestK8sHelper {
 
 	/**
 	 * Waits until at least one matching pod exists and all matching pods are running.
-	 * This is the default choice for integration tests that observe resources created asynchronously.
 	 */
 	static boolean waitForAllPodsRunningInNamespace(String namespace,
 		String podNameStartsWith = "",
@@ -166,6 +178,11 @@ class TestK8sHelper {
 	static boolean checkPodPrefixesRunningInNamespace(String namespace, List<String> expectedPodPrefixes) {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			List<Pod> actualPods = client.pods().inNamespace(namespace).list().getItems()
+			expectedPodPrefixes.each { String prefix ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> pod.getMetadata().getName().startsWith(prefix) }
+				failIfOnlyFatalPodsMatch(namespace, prefix, matchingPods)
+			}
+
 			List<String> missingPods = expectedPodPrefixes.findAll { String prefix ->
 				!actualPods.any { Pod pod -> pod.getMetadata().getName().startsWith(prefix) }
 			}
@@ -173,7 +190,7 @@ class TestK8sHelper {
 
 			List<String> notRunningPodPrefixes = expectedPodPrefixes.findAll { String prefix ->
 				List<Pod> matchingPods = actualPods.findAll { Pod pod -> pod.getMetadata().getName().startsWith(prefix) }
-				!matchingPods.any { Pod pod -> pod.getStatus().getPhase() == RUNNING }
+				!matchingPods.any { Pod pod -> isPodRunning(pod) }
 			}
 			assert notRunningPodPrefixes.isEmpty(): "No running pod found in ${namespace} for: ${notRunningPodPrefixes}. Current pods: ${describePods(actualPods)}"
 			return true
@@ -206,6 +223,11 @@ class TestK8sHelper {
 	static boolean checkPodsMatchingRunningInNamespace(String namespace, Map<String, Closure<Boolean>> expectedPods) {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			List<Pod> actualPods = client.pods().inNamespace(namespace).list().getItems()
+			expectedPods.each { String expectedPod, Closure<Boolean> podNameMatches ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> podNameMatches.call(pod.getMetadata().getName()) }
+				failIfOnlyFatalPodsMatch(namespace, expectedPod, matchingPods)
+			}
+
 			List<String> missingPods = expectedPods.findAll { String expectedPod, Closure<Boolean> podNameMatches ->
 				!actualPods.any { Pod pod -> podNameMatches.call(pod.getMetadata().getName()) }
 			}.keySet() as List<String>
@@ -213,7 +235,7 @@ class TestK8sHelper {
 
 			List<String> notRunningPods = expectedPods.findAll { String expectedPod, Closure<Boolean> podNameMatches ->
 				List<Pod> matchingPods = actualPods.findAll { Pod pod -> podNameMatches.call(pod.getMetadata().getName()) }
-				!matchingPods.any { Pod pod -> pod.getStatus().getPhase() == RUNNING }
+				!matchingPods.any { Pod pod -> isPodRunning(pod) }
 			}.keySet() as List<String>
 			assert notRunningPods.isEmpty(): "No running pod found in ${namespace} for: ${notRunningPods}. Current pods: ${describePods(actualPods)}"
 			return true
@@ -271,6 +293,50 @@ class TestK8sHelper {
 		return true
 	}
 
+	private static void failOnFatalPods(String namespace, Collection<Pod> pods) {
+		Collection<Pod> fatalPods = pods.findAll { Pod pod -> isPodFatal(pod) }
+		if (!fatalPods.isEmpty()) {
+			throw new IllegalStateException("Pods in ${namespace} reached a terminal or unrecoverable state: ${describePods(fatalPods)}")
+		}
+	}
+
+	private static void failIfOnlyFatalPodsMatch(String namespace, String expectedPod, Collection<Pod> matchingPods) {
+		if (matchingPods.isEmpty() || matchingPods.any { Pod pod -> isPodRunning(pod) }) {
+			return
+		}
+
+		if (matchingPods.every { Pod pod -> isPodFatal(pod) }) {
+			throw new IllegalStateException(
+				"No recoverable pod found in ${namespace} for ${expectedPod}. Matching pods: ${describePods(matchingPods)}"
+			)
+		}
+	}
+
+	private static boolean isPodRunning(Pod pod) {
+		return pod.getStatus()?.getPhase() == RUNNING && !hasFatalContainerState(pod)
+	}
+
+	private static boolean isPodFatal(Pod pod) {
+		String phase = pod.getStatus()?.getPhase()
+		return phase == FAILED || phase == SUCCEEDED || hasFatalContainerState(pod)
+	}
+
+	private static boolean hasFatalContainerState(Pod pod) {
+		return containerStatusesFor(pod).any { ContainerStatus status ->
+			def waiting = status.getState()?.getWaiting()
+			def terminated = status.getState()?.getTerminated()
+			(waiting != null && FATAL_CONTAINER_WAITING_REASONS.contains(waiting.getReason()))
+				|| (terminated != null && terminated.getExitCode() != null && terminated.getExitCode() != 0)
+		}
+	}
+
+	private static List<ContainerStatus> containerStatusesFor(Pod pod) {
+		List<ContainerStatus> statuses = []
+		statuses.addAll(pod.getStatus()?.getInitContainerStatuses() ?: [])
+		statuses.addAll(pod.getStatus()?.getContainerStatuses() ?: [])
+		return statuses
+	}
+
 	private static String describePods(Collection<Pod> pods) {
 		return pods.collect { Pod pod ->
 			String podName = pod.getMetadata().getName()
@@ -279,7 +345,43 @@ class TestK8sHelper {
 			String readyContainers = containerStatuses == null
 				? "0/0"
 				: "${containerStatuses.count { ContainerStatus status -> Boolean.TRUE == status.getReady() }}/${containerStatuses.size()}"
-			"${podName}:${phase}:ready=${readyContainers}"
+			String details = podProblemDetails(pod)
+			"${podName}:${phase}:ready=${readyContainers}${details ? ":${details}" : ""}"
 		}.join(', ')
+	}
+
+	private static String podProblemDetails(Pod pod) {
+		List<String> details = []
+		if (pod.getStatus()?.getReason()) {
+			details << "reason=" + pod.getStatus().getReason()
+		}
+		if (pod.getStatus()?.getMessage()) {
+			details << "message=" + shorten(pod.getStatus().getMessage())
+		}
+		containerStatusesFor(pod).each { ContainerStatus status ->
+			String containerState = describeContainerState(status)
+			if (containerState) {
+				details << containerState
+			}
+		}
+		return details.isEmpty() ? "" : "details=[${details.join('; ')}]"
+	}
+
+	private static String describeContainerState(ContainerStatus status) {
+		def waiting = status.getState()?.getWaiting()
+		if (waiting != null) {
+			return "container=${status.getName()} waiting=${waiting.getReason() ?: '<unknown>'}${waiting.getMessage() ? " message=${shorten(waiting.getMessage())}" : ''}"
+		}
+
+		def terminated = status.getState()?.getTerminated()
+		if (terminated != null) {
+			return "container=${status.getName()} terminated=${terminated.getReason() ?: '<unknown>'} exit=${terminated.getExitCode()}"
+		}
+
+		return null
+	}
+
+	private static String shorten(String value) {
+		return value.length() <= 160 ? value : "${value.take(157)}..."
 	}
 }
