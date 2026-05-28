@@ -213,7 +213,7 @@ pipeline {
 
     }
 
-    /*post {
+    post {
         changed {
             emailext(
                 subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
@@ -225,5 +225,5 @@ pipeline {
                 ]
             )
         }
-    }*/
+    }
 }
