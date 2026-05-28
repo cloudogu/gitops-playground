@@ -1,36 +1,20 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.application.content
 
-import static ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.config.Config.OverwriteMode
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
-
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.deployment.Deployer
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
+import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
+import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
-import com.cloudogu.gitops.utils.git.GitHandlerForTests
-import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-
-import java.nio.file.Files
-import java.nio.file.Path
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -47,33 +31,35 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
 
+import java.nio.file.Files
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
+
 @Slf4j
 @EnableKubernetesMockClient(crud = true)
 class ContentLoaderTest {
 
 	static List<File> foldersToDelete = new ArrayList<File>()
 
-    Config config = new Config(
-            application: new Config.ApplicationSchema(
-                    namePrefix: 'foo-'
-            ),
-            scm        : new ScmTenantSchema(
-                    scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
-                            url: ''
-                    )
-            ),
-            registry   : new Config.RegistrySchema(
-                    url                   : 'reg-url',
-                    path                  : 'reg-path',
-                    username              : 'reg-user',
-                    password              : 'reg-pw',
-                    createImagePullSecrets: false
-            )
-    )
+	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
+			scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(url: '')),
+			registry: new Config.RegistrySchema(url: 'reg-url',
+					path: 'reg-path',
+					username: 'reg-user',
+					password: 'reg-pw',
+					createImagePullSecrets: false))
 
 	KubernetesClient client
-	CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
-	K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
+	K8sClient k8sClient = new K8sClient()
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	Jenkins jenkins = mock(Jenkins.class)
@@ -855,7 +841,7 @@ class ContentLoaderTest {
 		                                                   valuesPath : valuesFile.toString(),
 		                                                   values     : [replicas: 2, // override file
 		                                                                 service : [type: 'NodePort'] // override nested
-		                                                   ]]]])
+														   ]]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
@@ -889,7 +875,7 @@ class ContentLoaderTest {
 		                                                   namespace : 'my-prefix-elasticsearch',
 		                                                   valuesPath: valuesFile.toString()
 		                                                   // no values
-		                                                  ]]])
+														  ]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
@@ -913,7 +899,7 @@ class ContentLoaderTest {
 		                                                   namespace: 'my-prefix-elasticsearch',
 		                                                   values   : [replicas: 2]
 		                                                   // helmValuesPath empty / missing
-		                                                  ]]])
+														  ]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
