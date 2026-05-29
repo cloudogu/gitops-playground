@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 @Order(160)
 class CertManager extends Tool implements ToolWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/cert-manager-gop-helm.ftl.yaml"
 
 	final K8sClient k8sClient
 	final Config config

@@ -24,7 +24,7 @@ import java.nio.file.Path
 @CompileStatic
 class Monitoring extends Tool implements ToolWithImage {
 
-    static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
+    static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/monitoring-gop-values.ftl.yaml'
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 

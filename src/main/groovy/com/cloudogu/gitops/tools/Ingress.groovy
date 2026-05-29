@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 @Order(5)
 class Ingress extends Tool implements ToolWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/traefik-gop-helm.ftl.yaml"
 
 	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	Config config

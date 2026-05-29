@@ -22,7 +22,7 @@ import jakarta.inject.Singleton
 @Order(70)
 class Jenkins extends Tool {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/jenkins-gop-helm.ftl.yaml"
     String namespace
     private Config config
     private CommandExecutor commandExecutor

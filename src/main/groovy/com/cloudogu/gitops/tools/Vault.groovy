@@ -18,7 +18,7 @@ import jakarta.inject.Singleton
 @Order(500)
 class Vault extends Tool implements ToolWithImage {
     static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh"
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/vault-gop-helm.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}secrets"
     Config config

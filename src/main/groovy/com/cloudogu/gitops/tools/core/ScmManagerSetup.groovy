@@ -14,7 +14,7 @@ import java.nio.file.Path
 @Slf4j
 class ScmManagerSetup {
 
-	private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
+	private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/scm-manager-gop-helm.ftl.yaml"
 	private static final String SCMM_RELEASE_NAME = 'scmm'
 
 	private final ScmManager scmManager

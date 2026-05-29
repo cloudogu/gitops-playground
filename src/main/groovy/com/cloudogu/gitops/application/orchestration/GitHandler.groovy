@@ -118,7 +118,7 @@ class GitHandler extends Tool {
             setupRepos(this.tenant, namePrefix)
         }
 
-        //creating ArgocdApplication after repos are created. Fixing the bootstrap problem
+        //creating ArgocdApplication AFTER repos are created. Fixing the bootstrap problem
         (this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
     }
 
