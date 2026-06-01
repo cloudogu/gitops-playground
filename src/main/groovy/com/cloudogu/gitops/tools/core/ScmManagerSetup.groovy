@@ -65,13 +65,15 @@ class ScmManagerSetup {
 		                                    releaseName: SCMM_RELEASE_NAME]
 
 		Map templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars)
-		Map helmConfig = this.scmManager.scmmConfig.helm as Map
-		Map mergedMap = MapUtils.deepMerge(helmConfig.values as Map, templatedMap)
+		Map values = this.scmManager.scmmConfig.helm.values as Map ?: [:]
+
+		Map mergedMap = MapUtils.deepMerge(values, templatedMap)
 		tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
 	}
 
 	void setupHelm() {
-		Map helmConfig = this.scmManager.scmmConfig.helm as Map
+		def helmConfig = this.scmManager.scmmConfig.helm
+
 		scmManager.deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
 				'scm-manager',
 				helmConfig.chart as String,
@@ -83,7 +85,7 @@ class ScmManagerSetup {
 	}
 
 	void createArgocdApplication() {
-		Map helmConfig = this.scmManager.scmmConfig.helm as Map
+		def helmConfig = this.scmManager.scmmConfig.helm
 		scmManager.deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
 				'scm-manager',
 				helmConfig.chart as String,
