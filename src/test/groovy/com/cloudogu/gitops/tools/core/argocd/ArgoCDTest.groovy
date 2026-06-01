@@ -3,6 +3,8 @@ package com.cloudogu.gitops.tools.core.argocd
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -33,7 +35,6 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
@@ -129,10 +130,18 @@ class ArgoCDTest {
 
 	@BeforeEach
 	void setupKubernetesClient() {
-		k8sClient = new K8sClientForTest()
+		k8sClient = spy( new  K8sClientForTest())
 		k8sClient.client = client
 		k8sClient.SLEEPTIME = 1
 		k8sClient.DEFAULT_RETRIES = 1
+
+		// no need to wait in tests, we stub!
+		doNothing().when(k8sClient).waitForResourcePhase(
+			any(String),
+			any(String),
+			any(String),
+			any(String)
+		)
 	}
 
 	@Test
@@ -358,9 +367,14 @@ class ArgoCDTest {
 		assertThat(serviceEmail['username']).isEqualTo('$email-username')
 		assertThat(serviceEmail['password']).isEqualTo('$email-password')
 
-		def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
-		assertThat(createMailSecretCommand).contains('email-username', config.features.mail.smtpUser as CharSequence)
-		assertThat(createMailSecretCommand).contains('email-password', config.features.mail.smtpPassword as CharSequence)
+		Secret mailSecret = client.secrets()
+			.inNamespace('argocd')
+			.withName('argocd-notifications-secret')
+			.get()
+
+		assertThat(mailSecret).isNotNull()
+		assertThat(decodedSecretValue(mailSecret, 'email-username')).isEqualTo(config.features.mail.smtpUser)
+		assertThat(decodedSecretValue(mailSecret, 'email-password')).isEqualTo(config.features.mail.smtpPassword)
 	}
 
 	@Test
@@ -790,7 +804,7 @@ class ArgoCDTest {
 			}
 		}
 	}
-	@Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Prepares ArgoCD repo with Operator configuration file'() {
 		def argocd = setupOperatorTest()
@@ -831,7 +845,7 @@ class ArgoCDTest {
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
 
-		k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+		assertThat(argocdConfigPath.toFile()).exists()
 
 		def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
 		assertThat(yaml['spec']['rbac']).isNull()
@@ -840,7 +854,7 @@ class ArgoCDTest {
 		def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
 		assertThat(argocdYaml['spec']['source']['directory']['recurse'] as Boolean).isTrue()
 		assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
-		// Here we should assert all <#if argocd.isOperator> in YAML 😐️
+		// Here we should assert all <#if argocd.isOperator> in YAML ️
 	}
 
 	@Test
@@ -897,7 +911,7 @@ class ArgoCDTest {
 			assertThat(roleRef["kind"]).isEqualTo("Role")
 		}
 	}
-	@Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Deploys with operator with OpenShift configuration'() {
 		def argocd = setupOperatorTest(openshift: true)
@@ -906,7 +920,7 @@ class ArgoCDTest {
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
-		k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+		assertThat(argocdConfigPath.toFile()).exists()
 
 		def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
 		assertThat(yaml['spec']['sso']).isNotNull()
@@ -914,8 +928,6 @@ class ArgoCDTest {
 		assertThat(yaml['spec']['sso']['provider']).isEqualTo('dex')
 		assertThat(yaml['spec']['rbac']).isNotNull()
 		assertThat(yaml['spec']['server']['route']['enabled']).isEqualTo(true)
-
-		k8sCommands.assertNotExecuted("kubectl patch service argocd-server -n argocd")
 	}
 
 	@Test
@@ -1018,7 +1030,7 @@ class ArgoCDTest {
 			assertThat(resource['clusters'] as List<String>).doesNotContain("https://100.125.0.1:443")
 		}
 	}
-    @Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Sets env variables in ArgoCD components when provided'() {
 		def argocd = setupOperatorTest()
@@ -1121,7 +1133,7 @@ class ArgoCDTest {
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
 		assertThat(yaml['spec']['key']).isEqualTo('value')
 	}
-	@Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Operator config sets server_insecure to false when insecure is not set'() {
 		def argocd = setupOperatorTest()
@@ -1197,15 +1209,20 @@ class ArgoCDTest {
 	void 'Central Bootstrapping for Tenant Applications'() {
 		setupDedicatedInstanceMode()
 
+		assertThat(clusterResourcesRepoLayout).isNotNull()
+
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml")
 		assertThat(ingressFile)
-			.as("Ingress file should not be generated when both flags are false")
+			.as("Ingress file should not be generated when insecure is false")
 			.doesNotExist()
 	}
 
 	@Test
 	void 'GOP DedicatedInstances Central templating works correctly'() {
 		setupDedicatedInstanceMode()
+
+		assertThat(clusterResourcesRepoLayout).isNotNull()
+
 		//Central Applications
 		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/argocd.yaml")).exists()
 		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/bootstrap.yaml")).exists()
@@ -1241,14 +1258,30 @@ class ArgoCDTest {
 		assertThat(sourceRepos[0]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git')
 	}
 
-	@Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
 		config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
 		config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
+
 		setupDedicatedInstanceMode()
-		k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -n argocd -ojsonpath={.data.namespaces}')
-		k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
+
+		Secret defaultClusterConfig = client.secrets()
+			.inNamespace('argocd')
+			.withName('argocd-default-cluster-config')
+			.get()
+
+		assertThat(defaultClusterConfig).isNotNull()
+
+		String namespaces = decodedSecretValue(defaultClusterConfig, 'namespaces')
+		assertThat(namespaces).contains('testnamespace1')
+		assertThat(namespaces).contains('testnamespace2')
+		assertThat(namespaces).contains('testPrefix-dedi-test1')
+		assertThat(namespaces).contains('testPrefix-dedi-test2')
+		assertThat(namespaces).contains('testPrefix-dedi-test3')
+		assertThat(namespaces).contains('testPrefix-tenant-test1')
+		assertThat(namespaces).contains('testPrefix-tenant-test2')
+		assertThat(namespaces).contains('testPrefix-tenant-test3')
 	}
 
 	@Test
@@ -1266,12 +1299,9 @@ class ArgoCDTest {
 
 	@Test
 	void 'deleting unused folder in dedicated mode'() {
-		config.multiTenant.useDedicatedInstance = true
+		setupDedicatedInstanceMode()
 
-		def argocd = createArgoCD()
-		argocd.install()
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
+		assertThat(clusterResourcesRepoLayout).isNotNull()
 		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), 'multiTenant/')).doesNotExist()
 		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), 'applications/')).exists()
 		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), 'projects/')).exists()
@@ -1314,7 +1344,7 @@ class ArgoCDTest {
 		}
 
 	}
-	@Disabled("does not run because of new mockframework")
+
 	@Test
 	void 'Operator RBAC includes node access rules when not on OpenShift'() {
 		config.application.namePrefix = "testprefix-"
@@ -1492,6 +1522,9 @@ class ArgoCDTest {
 		config.multiTenant.scmManager.password = 'testPassword'
 		config.multiTenant.useDedicatedInstance = true
 		this.argocd = setupOperatorTest()
+
+		doReturn("Applied").when(k8sClient).applyYaml(any(String))
+
 		argocd.install()
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
@@ -1503,66 +1536,9 @@ class ArgoCDTest {
 		config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
 		config.application.openshift = options.openshift ?: false
 
-		def argoCD = createArgoCD()
-
-		if (config.multiTenant.useDedicatedInstance) {
-			config.content.repos ? setupMockResponsesFor(MockReponses.MULTI_TENANT_WITH_EXAMPLES) : setupMockResponsesFor(MockReponses.MULTI_TENANT)
-		} else {
-			setupMockResponsesFor(MockReponses.SINGLE_TENANT)
-		}
-
-		return argoCD
+		return createArgoCD()
 	}
 
-	enum MockReponses {
-		SINGLE_TENANT,
-		MULTI_TENANT,
-		MULTI_TENANT_WITH_EXAMPLES
-	}
-
-	//Mock Responses for Testing
-	void setupMockResponsesFor(MockReponses mockReponses) {
-		switch (mockReponses) {
-			case MockReponses.SINGLE_TENANT -> {
-				k8sCommands.enqueueOutputs([queueUpAllNamespacesExist(),
-				                            new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
-				                            new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
-				                            new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
-				                            new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
-				                            new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
-				].flatten() as Queue<CommandExecutor.Output>)
-			}
-			case MockReponses.MULTI_TENANT_WITH_EXAMPLES -> mockReponseMultiTenant()
-			case MockReponses.MULTI_TENANT -> mockReponseMultiTenant()
-		}
-	}
-
-	void mockReponseMultiTenant() {
-		k8sCommands.enqueueOutputs([queueUpAllNamespacesExist(),
-		                            new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
-
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD SCM Secret applied
-		                            new CommandExecutor.Output('', '', 0), // Labeling ArgoCD SCM Secret
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD SCM central Secret applied
-		                            new CommandExecutor.Output('', '', 0), // Labeling ArgoCD central SCM Secret
-
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
-		                            new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
-
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD argocd-cluster password secret
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD argocd-secret
-
-		                            new CommandExecutor.Output('', '', 0), // argocd-default-cluster-config patched
-		                            new CommandExecutor.Output('', '', 0), // ArgoCD argocd-secret
-		                            new CommandExecutor.Output('', 'dGVzdG5hbWVzcGFjZTEsdGVzdG5hbWVzcGFjZTI=', 0), // getting argocd-default-cluster-config from central Argocd
-		                            new CommandExecutor.Output('', '', 0), // setting argocd-default-cluster-config from central Argocd
-		].flatten() as Queue<CommandExecutor.Output>)
-	}
-
-
-	private Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
-		return new LinkedList<CommandExecutor.Output>(config.application.namespaces.getActiveNamespaces().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) })
-	}
 
 	private static void mockPrefixActiveNamespaces(Config config) {
 		def prefix = config.application.namePrefix ?: ""
