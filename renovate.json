@@ -3,26 +3,23 @@
     "baseBranchPatterns": [
         "develop"
     ],
-
     "assignees": [
         "avetgit",
         "DerDaehne",
         "mdroll",
         "ThomasMichael1811"
     ],
-
     "dependencyDashboard": true,
     "minimumReleaseAge": "3 days",
-
     "extends": [
         ":automergeMinor",
         ":combinePatchMinorReleases",
         ":configMigration",
         ":automergeDigest"
     ],
-
     "packageRules": [
         {
+            // Group all Jenkins plugin updates into a single PR
             "matchManagers": [
                 "jenkins"
             ],
@@ -31,6 +28,110 @@
                 "http://updates.jenkins-ci.org/stable/update-center.json"
             ],
             "groupName": "Jenkins Updates"
+        },
+        {
+            // Group Kubernetes version updates across Config.groovy and Dockerfile
+            "matchPackageNames": [
+                "kubernetes/kubernetes"
+            ],
+            "groupName": "Kubernetes Update"
+        },
+        {
+            // Group Helm CLI and Helm Docker image updates
+            "matchPackageNames": [
+                "helm/helm",
+                "ghcr.io/cloudogu/helm"
+            ],
+            "groupName": "Helm Update"
+        },
+        {
+            // Fix alpine versioning to avoid confusing date-based tags with versions
+            "matchPackageNames": ["alpine"],
+            "versioning": "docker",
+            "allowedVersions": "/^\\d+\\.\\d+(\\.\\d+)?$/"
+        },
+        {
+            // Ensure eclipse-temurin updates are handled correctly (major versions only for the ARG)
+            "matchPackageNames": ["eclipse-temurin"],
+            "versioning": "docker",
+            "matchManagers": ["regex"],
+            "allowedVersions": "/^\\d+$/"
+        }
+    ],
+
+    "customManagers": [
+        {
+            // Detect Helm charts defined in Groovy config classes
+            "customType": "regex",
+            "fileMatch": [
+                "src/main/groovy/com/cloudogu/gitops/config/Config\\.groovy$",
+                "src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema\\.groovy$"
+            ],
+            "matchStrings": [
+                "chart:\\s*'(?<depName>[^']+)',\\s*repoURL:\\s*'(?<registryUrl>[^']+)',[\\s\\S]*?version:\\s*'(?<currentValue>[^']+)'"
+            ],
+            "datasourceTemplate": "helm"
+        },
+        {
+            // Detect specific Docker images used as constants in Config.groovy
+            "customType": "regex",
+            "fileMatch": [
+                "src/main/groovy/com/cloudogu/gitops/config/Config\\.groovy$"
+            ],
+            "matchStrings": [
+                "(?:HELM_IMAGE|internalBashImage)\\s*=\\s*['\"](?<depName>[^:]+):(?<currentValue>[^'\"]+)['\"]"
+            ],
+            "datasourceTemplate": "docker"
+        },
+        {
+            // Sync Kubernetes version between Config.groovy and Dockerfile
+            "customType": "regex",
+            "fileMatch": [
+                "src/main/groovy/com/cloudogu/gitops/config/Config\\.groovy$",
+                "^Dockerfile$"
+            ],
+            "matchStrings": [
+                "K8S_VERSION\\s*[=:]\\s*\"?(?<currentValue>[^\"\\s\\n]+)\"?"
+            ],
+            "depNameTemplate": "kubernetes/kubernetes",
+            "datasourceTemplate": "github-releases"
+        },
+        {
+            // Track Helm CLI version in Dockerfile
+            "customType": "regex",
+            "fileMatch": [
+                "^Dockerfile$"
+            ],
+            "matchStrings": [
+                "HELM_VERSION\\s*=\\s*(?<currentValue>[^\\s\\n]+)"
+            ],
+            "depNameTemplate": "helm/helm",
+            "datasourceTemplate": "github-releases"
+        },
+        {
+            // Track Docker client version in Config.groovy (linked to moby/moby releases)
+            "customType": "regex",
+            "fileMatch": [
+                "src/main/groovy/com/cloudogu/gitops/config/Config\\.groovy$"
+            ],
+            "matchStrings": [
+                "internalDockerClientVersion\\s*=\\s*'(?<currentValue>[^']+)'"
+            ],
+            "depNameTemplate": "moby/moby",
+            "datasourceTemplate": "github-releases",
+            "versioningTemplate": "docker"
+        },
+        {
+            // Track JDK version in Dockerfile and sync it with eclipse-temurin
+            "customType": "regex",
+            "fileMatch": [
+                "^Dockerfile$"
+            ],
+            "matchStrings": [
+                "ARG JDK_VERSION=(?<currentValue>\\d+)"
+            ],
+            "depNameTemplate": "eclipse-temurin",
+            "datasourceTemplate": "docker"
         }
     ]
 }
