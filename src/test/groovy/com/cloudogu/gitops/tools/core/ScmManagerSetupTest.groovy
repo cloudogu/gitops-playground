@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools.core
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
@@ -57,7 +58,8 @@ class ScmManagerSetupTest {
                 eq("3.11.2"),
                 eq("scm-manager"),
                 eq("scmm"),
-                any())
+                any(),
+                eq(DeploymentStrategy.RepoType.HELM))
     }
 
     @Test

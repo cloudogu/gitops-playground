@@ -49,7 +49,7 @@ class CertManagerTest {
 
 		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
 				'cert-manager', chartVersion, 'cert-manager',
-				'cert-manager', temporaryYamlFile, RepoType.HELM)
+				'cert-manager', temporaryYamlFile, RepoType.HELM, false)
 	}
 
 	@Test
@@ -98,7 +98,7 @@ class CertManagerTest {
 		// important check: scmmRepoUrl is overridden with our values.
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
 				'cert-manager', '.', chartVersion, 'cert-manager',
-				'cert-manager', temporaryYamlFile, RepoType.GIT)
+				'cert-manager', temporaryYamlFile, RepoType.GIT,false)
 	}
 
 	@Test

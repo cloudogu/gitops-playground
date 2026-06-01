@@ -159,7 +159,8 @@ class VaultTest {
                 'foo-secrets',
                 'vault',
                 temporaryYamlFile,
-                RepoType.HELM)
+                RepoType.HELM,
+                false)
 
         assertThat(parseActualYaml()).doesNotContainKey('global')
     }
@@ -191,7 +192,7 @@ class VaultTest {
         assertThat(helmConfig.value.version).isEqualTo('42.23.0')
         verify(deployer).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'vault', '.', '1.2.3', 'foo-secrets',
-                'vault', temporaryYamlFile, RepoType.GIT)
+                'vault', temporaryYamlFile, RepoType.GIT, false)
     }
 
     @Test
