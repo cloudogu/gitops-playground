@@ -41,7 +41,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
 
 	private static void waitUntilTenantIsReady() {
 		// tenant is created very late after running GOP twice!
-		Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
+		Awaitility.await().atMost(40, TimeUnit.MINUTES).pollInterval(5, TimeUnit.SECONDS).untilAsserted {
 			assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, "docker-registry") && TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
 		}
 	}
@@ -50,12 +50,12 @@ class MandantProfileTestIT extends ProfileTestSetup {
 	// just local
 	@Test
 	void ensureJenkinsPodIsStartedOnTenant() {
-		TestK8sHelper.checkAllPodsRunningInNamespace('tenant1-jenkins', 'jenkins')
+		TestK8sHelper.waitForAllPodsRunningInNamespace('tenant1-jenkins', 'jenkins')
 	}
 
 	@Test
 	void ensureRegistryPodIsStartedOnTenant() {
-		TestK8sHelper.checkAllPodsRunningInNamespace('tenant1-registry', 'docker-registry')
+		TestK8sHelper.waitForAllPodsRunningInNamespace('tenant1-registry', 'docker-registry')
 	}
 
 	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
@@ -63,11 +63,11 @@ class MandantProfileTestIT extends ProfileTestSetup {
 	@Test
 	void ensureArgocdPodsAreStartedOnTenant() {
 		def argocdNamespace = TENANT_NAMESPACE_ARGOCD
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-application-controller')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-applicationset-controller')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-redis')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-repo-server')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-application-controller')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-applicationset-controller')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-redis')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-repo-server')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
 	}
 
 	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
@@ -75,17 +75,17 @@ class MandantProfileTestIT extends ProfileTestSetup {
 	@Test
 	void ensureArgocdPodsAreStartedOnCentral() {
 		def argocdNamespace = 'argocd'
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-application-controller')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-applicationset-controller')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-redis')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-repo-server')
-		TestK8sHelper.checkAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-application-controller')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-applicationset-controller')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-redis')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-repo-server')
+		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
 	}
 
 	@Test
 	void ensureScmmPodIsStarted() {
 
-		TestK8sHelper.checkAllPodsRunningInNamespace('scm-manager')
+		TestK8sHelper.waitForAllPodsRunningInNamespace('scm-manager')
 	}
 
 	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")

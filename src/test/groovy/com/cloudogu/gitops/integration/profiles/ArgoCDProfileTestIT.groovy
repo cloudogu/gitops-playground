@@ -1,14 +1,7 @@
 package com.cloudogu.gitops.integration.profiles
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.fail
+import com.cloudogu.gitops.integration.TestK8sHelper
 
-import java.util.concurrent.TimeUnit
-
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.fabric8.kubernetes.client.KubernetesClientException
-import org.awaitility.Awaitility
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
@@ -30,18 +23,7 @@ class ArgoCDProfileTestIT extends ProfileTestSetup {
 
 	@Test
 	void ensureNamespaceExists() {
-
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-
-			def argocdNamespace = client.namespaces().withName(namespace).get()
-
-			assertThat(argocdNamespace).isNotNull()
-
-		} catch (KubernetesClientException ex) {
-			// Handle exception
-			assert fail("not expected exception was thrown. ", ex)
-		}
-
+		TestK8sHelper.waitForNamespaces([namespace], 40)
 	}
 
 	/**
@@ -57,24 +39,6 @@ class ArgoCDProfileTestIT extends ProfileTestSetup {
 
 		List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
 
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
-				def actualPods = client.pods().inNamespace(namespace).list().getItems()
-
-				// 1. Verify all expected pods are present
-				def missingPods = expectedPods.findAll { prefix -> !actualPods.any { it.getMetadata().getName().startsWith(prefix) }
-				}
-				assert missingPods.isEmpty(): "Missing these pods in argocd: ${missingPods}"
-
-				// 2. Verify all relevant pods are in 'Running' phase
-				def notRunningPods = actualPods.findAll { pod -> expectedPods.any { prefix -> pod.getMetadata().getName().startsWith(prefix) }
-				}.findAll { pod -> pod.getStatus().getPhase() != "Running"
-				}
-
-				assert notRunningPods.isEmpty(): "These pods are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-			}
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
-		}
+		TestK8sHelper.waitForPodPrefixesRunningInNamespace(namespace, expectedPods, 40)
 	}
 }

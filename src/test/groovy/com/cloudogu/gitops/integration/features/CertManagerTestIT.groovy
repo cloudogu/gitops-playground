@@ -1,10 +1,9 @@
 package com.cloudogu.gitops.integration.features
 
-import static org.assertj.core.api.Assertions.assertThat
+import com.cloudogu.gitops.integration.TestK8sHelper
 
 import groovy.util.logging.Slf4j
 
-import io.kubernetes.client.openapi.models.V1Pod
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
@@ -18,22 +17,14 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 class CertManagerTestIT extends KubenetesApiTestSetup {
 
 	String namespace = 'cert-manager'
-	int sumOfPods = 3
 
 	@Override
 	boolean isReadyToStartTests() {
-		// cert-manager should has 3 running pods
-		def pods = api.listNamespacedPod(namespace).execute()
-		if (pods.items.size() != 3) {
+		try {
+			return TestK8sHelper.checkPodsMatchingRunningInNamespace(namespace, expectedCertManagerPods())
+		} catch (AssertionError ignored) {
 			return false
 		}
-		for (V1Pod pod : pods.getItems()) {
-			println("Pod ${pod.getMetadata().name} with status ${pod.status.phase}")
-			if (!"Running".equals(pod.status.phase)) {
-				return false
-			}
-		}
-		return true
 	}
 
 	@BeforeAll
@@ -43,29 +34,28 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
 
 	@Test
 	void ensureNamespaceExists() {
-		def namespaces = api.listNamespace().execute()
-		assertThat(namespaces).isNotNull()
-		assertThat(namespaces.getItems().isEmpty()).isFalse()
-		def namespace = namespaces.getItems().find { namespace.equals(it.getMetadata().name) }
-		assertThat(namespace).isNotNull()
-
+		TestK8sHelper.waitForNamespaces([namespace])
 	}
 
 	@Test
 	void ensureAllCertManagerPodsAreExist() {
-
-		def pods = api.listNamespacedPod(namespace).execute()
-		assertThat(pods).isNotNull()
-		assertThat(pods.getItems().isEmpty()).isFalse()
-
+		TestK8sHelper.waitForPodsMatchingRunningInNamespace(namespace, expectedCertManagerPods())
 	}
 
 	@Test
-	void ensureNumberOfPodsAreEqualToSumOfPods() {
-
-		def pods = api.listNamespacedPod(namespace).execute()
-		assertThat(pods.getItems().size()).isEqualTo(sumOfPods)
-
+	void ensureExpectedCertManagerPodsAreRunning() {
+		TestK8sHelper.waitForPodsMatchingRunningInNamespace(namespace, expectedCertManagerPods())
 	}
 
+	private static Map<String, Closure<Boolean>> expectedCertManagerPods() {
+		[
+			'cert-manager'          : { String podName ->
+				podName.startsWith('cert-manager-') &&
+					!podName.startsWith('cert-manager-cainjector') &&
+					!podName.startsWith('cert-manager-webhook')
+			},
+			'cert-manager-cainjector': { String podName -> podName.startsWith('cert-manager-cainjector') },
+			'cert-manager-webhook'  : { String podName -> podName.startsWith('cert-manager-webhook') },
+		]
+	}
 }

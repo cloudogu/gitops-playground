@@ -8,6 +8,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import groovy.util.logging.Slf4j
 
+import io.fabric8.kubernetes.api.model.ContainerStatus
+import io.fabric8.kubernetes.api.model.Namespace
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
@@ -19,6 +22,20 @@ import org.awaitility.Awaitility
  * This class contains helper methods for k8s communication.*/
 @Slf4j
 class TestK8sHelper {
+
+	static final int DEFAULT_WAIT_MINUTES = 5
+	static final int DEFAULT_POLL_SECONDS = 5
+	static final String RUNNING = 'Running'
+	static final String FAILED = 'Failed'
+	static final String SUCCEEDED = 'Succeeded'
+	static final Set<String> FATAL_CONTAINER_WAITING_REASONS = ['CrashLoopBackOff',
+	                                                            'CreateContainerConfigError',
+	                                                            'CreateContainerError',
+	                                                            'ErrImagePull',
+	                                                            'ImageInspectError',
+	                                                            'ImagePullBackOff',
+	                                                            'InvalidImageName',
+	                                                            'RunContainerError'] as Set
 
 	/**
 	 * This method logs Namespace and contining Pods to namespace.*/
@@ -113,23 +130,243 @@ class TestK8sHelper {
 	}
 
 	/**
-	 * Test defined namespace and check if all pods running or specific pod. Pod is find by name which startWith...
+	 * Checks the current Kubernetes state once and verifies that every matching pod is running.
+	 * Use a waitFor... variant when the tested resource may still be rolling out.
 	 * @param namespace
-	 * @param podNameStartsWith
+	 * @param podNameStartsWith optional pod name prefix. Empty string matches all pods in the namespace.
 	 */
-	static boolean checkAllPodsRunningInNamespace(String namespace, String podNameStartsWith = "") {
-		String running = "Running"
+	static boolean checkAllPodsRunningInNamespace(String namespace, String podNameStartsWith = '') {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			// Check Pod
-			def actualPods = client.pods().inNamespace(namespace).list().getItems().findAll { it.metadata.name.startsWith(podNameStartsWith) }
-			assert !actualPods.isEmpty(): "No pods found in namespace: ${namespace} with name ${podNameStartsWith}"
-			def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != running }
+			List<Pod> actualPods = client.pods().inNamespace(namespace).list().items.findAll { Pod pod -> pod.metadata.name.startsWith(podNameStartsWith)
+			}
+			assert !actualPods.empty: "No pods found in namespace: ${namespace} with name ${podNameStartsWith}"
+			failOnFatalPods(namespace, actualPods)
+			List<Pod> notRunningPods = actualPods.findAll { Pod pod -> !isPodRunning(pod) }
 
-			assert notRunningPods.isEmpty(): "These pods in ${namespace} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
+			assert notRunningPods.empty: "These pods in ${namespace} are not yet running: ${describePods(notRunningPods)}"
 			return true
 		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+			fail('Unexpected Kubernetes exception', ex)
 			return false
 		}
+	}
+
+	/**
+	 * Waits until at least one matching pod exists and all matching pods are running.	*/
+	static boolean waitForAllPodsRunningInNamespace(String namespace,
+		String podNameStartsWith = '',
+		int timeout = DEFAULT_WAIT_MINUTES,
+		TimeUnit timeoutUnit = TimeUnit.MINUTES) {
+		Awaitility.await()
+			.atMost(timeout, timeoutUnit)
+			.pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
+			.untilAsserted {
+				checkAllPodsRunningInNamespace(namespace, podNameStartsWith)
+			}
+		return true
+	}
+
+	/**
+	 * Checks the current Kubernetes state once and verifies one running pod for each expected name prefix.
+	 * Extra pods in the namespace are ignored, which keeps the check stable during rollouts.	*/
+	static boolean checkPodPrefixesRunningInNamespace(String namespace, List<String> expectedPodPrefixes) {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			List<Pod> actualPods = client.pods().inNamespace(namespace).list().items
+			expectedPodPrefixes.each { String prefix ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> pod.metadata.name.startsWith(prefix) }
+				failIfOnlyFatalPodsMatch(namespace, prefix, matchingPods)
+			}
+
+			List<String> missingPods = expectedPodPrefixes.findAll { String prefix -> !actualPods.any { Pod pod -> pod.metadata.name.startsWith(prefix) }
+			}
+			assert missingPods.empty: "Missing these pods in ${namespace}: ${missingPods}"
+
+			List<String> notRunningPodPrefixes = expectedPodPrefixes.findAll { String prefix ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> pod.metadata.name.startsWith(prefix) }
+				!matchingPods.any { Pod pod -> isPodRunning(pod) }
+			}
+			assert notRunningPodPrefixes.empty: "No running pod found in ${namespace} for: ${notRunningPodPrefixes}. Current pods: ${describePods(actualPods)}"
+			return true
+		} catch (KubernetesClientException ex) {
+			fail('Unexpected Kubernetes exception', ex)
+			return false
+		}
+	}
+
+	/**
+	 * Waits until each expected pod name prefix has at least one running pod.	*/
+	static boolean waitForPodPrefixesRunningInNamespace(String namespace,
+		List<String> expectedPodPrefixes,
+		int timeout = DEFAULT_WAIT_MINUTES,
+		TimeUnit timeoutUnit = TimeUnit.MINUTES) {
+		Awaitility.await()
+			.atMost(timeout, timeoutUnit)
+			.pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
+			.untilAsserted {
+				checkPodPrefixesRunningInNamespace(namespace, expectedPodPrefixes)
+			}
+		return true
+	}
+
+	/**
+	 * Checks the current Kubernetes state once using named pod matchers.
+	 * Use this when simple prefixes are ambiguous, for example when one pod name is a prefix of another.	*/
+	static boolean checkPodsMatchingRunningInNamespace(String namespace, Map<String, Closure<Boolean>> expectedPods) {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			List<Pod> actualPods = client.pods().inNamespace(namespace).list().items
+			expectedPods.each { String expectedPod, Closure<Boolean> podNameMatches ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> podNameMatches.call(pod.metadata.name) }
+				failIfOnlyFatalPodsMatch(namespace, expectedPod, matchingPods)
+			}
+
+			List<String> missingPods = expectedPods.findAll {
+				String expectedPod, Closure<Boolean> podNameMatches -> !actualPods.any { Pod pod -> podNameMatches.call(pod.metadata.name) }
+			}.keySet() as List<String>
+			assert missingPods.empty: "Missing these pods in ${namespace}: ${missingPods}"
+
+			List<String> notRunningPods = expectedPods.findAll { String expectedPod, Closure<Boolean> podNameMatches ->
+				List<Pod> matchingPods = actualPods.findAll { Pod pod -> podNameMatches.call(pod.metadata.name) }
+				!matchingPods.any { Pod pod -> isPodRunning(pod) }
+			}.keySet() as List<String>
+			assert notRunningPods.empty: "No running pod found in ${namespace} for: ${notRunningPods}. Current pods: ${describePods(actualPods)}"
+			return true
+		} catch (KubernetesClientException ex) {
+			fail('Unexpected Kubernetes exception', ex)
+			return false
+		}
+	}
+
+	/**
+	 * Waits until every named pod matcher resolves to at least one running pod.	*/
+	static boolean waitForPodsMatchingRunningInNamespace(String namespace,
+		Map<String, Closure<Boolean>> expectedPods,
+		int timeout = DEFAULT_WAIT_MINUTES,
+		TimeUnit timeoutUnit = TimeUnit.MINUTES) {
+		Awaitility.await()
+			.atMost(timeout, timeoutUnit)
+			.pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
+			.untilAsserted {
+				checkPodsMatchingRunningInNamespace(namespace, expectedPods)
+			}
+		return true
+	}
+
+	/**
+	 * Checks the current Kubernetes state once and verifies that all expected namespaces exist.	*/
+	static boolean checkNamespacesExist(List<String> expectedNamespaces) {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			List<Namespace> currentNamespaces = client.namespaces().list().items
+			List<String> missingNamespaces = expectedNamespaces.findAll {
+				String expectedNamespace -> !currentNamespaces.any { Namespace currentNamespace -> currentNamespace.metadata.name == expectedNamespace }
+			}
+			assert missingNamespaces.empty: "Missing these Namespaces: ${missingNamespaces}"
+			return true
+		} catch (KubernetesClientException ex) {
+			fail('Unexpected Kubernetes exception', ex)
+			return false
+		}
+	}
+
+	/**
+	 * Waits until all expected namespaces exist.	*/
+	static boolean waitForNamespaces(List<String> expectedNamespaces,
+		int timeout = DEFAULT_WAIT_MINUTES,
+		TimeUnit timeoutUnit = TimeUnit.MINUTES) {
+		Awaitility.await()
+			.atMost(timeout, timeoutUnit)
+			.pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
+			.untilAsserted {
+				checkNamespacesExist(expectedNamespaces)
+			}
+		return true
+	}
+
+	private static void failOnFatalPods(String namespace, Collection<Pod> pods) {
+		Collection<Pod> fatalPods = pods.findAll { Pod pod -> isPodFatal(pod) }
+		if (!fatalPods.empty) {
+			throw new IllegalStateException("Pods in ${namespace} reached a terminal or unrecoverable state: ${describePods(fatalPods)}")
+		}
+	}
+
+	private static void failIfOnlyFatalPodsMatch(String namespace, String expectedPod, Collection<Pod> matchingPods) {
+		if (matchingPods.empty || matchingPods.any { Pod pod -> isPodRunning(pod) }) {
+			return
+		}
+
+		if (matchingPods.every { Pod pod -> isPodFatal(pod) }) {
+			throw new IllegalStateException("No recoverable pod found in ${namespace} for ${expectedPod}. Matching pods: ${describePods(matchingPods)}")
+		}
+	}
+
+	private static boolean isPodRunning(Pod pod) {
+		return pod.status?.phase == RUNNING && !hasFatalContainerState(pod)
+	}
+
+	private static boolean isPodFatal(Pod pod) {
+		String phase = pod.status?.phase
+		return phase == FAILED || phase == SUCCEEDED || hasFatalContainerState(pod)
+	}
+
+	private static boolean hasFatalContainerState(Pod pod) {
+		return containerStatusesFor(pod).any { ContainerStatus status ->
+			def waiting = status.state?.waiting
+			def terminated = status.getState()?.getTerminated()
+			(waiting != null && FATAL_CONTAINER_WAITING_REASONS.contains(waiting.reason)) || (terminated != null && terminated.exitCode != null && terminated.exitCode != 0)
+		}
+	}
+
+	private static List<ContainerStatus> containerStatusesFor(Pod pod) {
+		List<ContainerStatus> statuses = []
+		statuses.addAll(pod.status?.initContainerStatuses ?: [])
+		statuses.addAll(pod.status?.containerStatuses ?: [])
+		return statuses
+	}
+
+	private static String describePods(Collection<Pod> pods) {
+		return pods.collect { Pod pod ->
+			String podName = pod.getMetadata().getName()
+			String phase = pod.getStatus()?.getPhase() ?: "<unknown>"
+			List<ContainerStatus> containerStatuses = pod.getStatus()?.getContainerStatuses()
+			String readyContainers = containerStatuses == null ? '0/0' :
+			                         "${containerStatuses.count { ContainerStatus status -> Boolean.TRUE == status.getReady() }}/${containerStatuses.size()}"
+			String details = podProblemDetails(pod)
+			"${podName}:${phase}:ready=${readyContainers}${details ? ":${details}" : ""}"
+		}.join(', ')
+	}
+
+	private static String podProblemDetails(Pod pod) {
+		List<String> details = []
+		if (pod.status?.reason) {
+			details << 'reason=' + pod.status.reason
+		}
+		if (pod.status?.message) {
+			details << 'message=' + shorten(pod.status.message)
+		}
+		containerStatusesFor(pod).each { ContainerStatus status ->
+			String containerState = describeContainerState(status)
+			if (containerState) {
+				details << containerState
+			}
+		}
+		return details.empty ? '' : "details=[${details.join('; ')}]"
+	}
+
+	private static String describeContainerState(ContainerStatus status) {
+		def waiting = status.state?.waiting
+		if (waiting != null) {
+			return "container=${status.name} waiting=${waiting.reason ?: '<unknown>'}${waiting.message ? " message=${shorten(waiting.message)}" : ''}"
+		}
+
+		def terminated = status.getState()?.getTerminated()
+		if (terminated != null) {
+			return "container=${status.name} terminated=${terminated.reason ?: '<unknown>'} exit=${terminated.exitCode}"
+		}
+
+		return null
+	}
+
+	private static String shorten(String value) {
+		return value.length() <= 160 ? value : "${value.take(157)}..."
 	}
 }

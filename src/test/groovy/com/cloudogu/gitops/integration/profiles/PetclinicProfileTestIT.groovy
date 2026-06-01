@@ -11,7 +11,6 @@ import groovy.util.logging.Slf4j
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
-import org.awaitility.Awaitility
 import org.awaitility.core.ConditionTimeoutException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -33,49 +32,16 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 		println "###### Testing Petclinic ######"
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
-			Awaitility.await()
-				.atMost(40, TimeUnit.MINUTES)
-				.pollInterval(5, TimeUnit.SECONDS)
-				.untilAsserted {
-					waitUntilPetclinicIsRunning()
-				}
+			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
 		}
 	}
 
-	// Start condition
-	private static void waitUntilPetclinicIsRunning() {
-		// Check Pod
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
-			assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
-			def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
-			}
-			assert !actualPods.isEmpty() && notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
-		}
-	}
-
 	@Test
 	void ensurePetclinicIsRunningOnStages() {
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-
-			// Check Pod
-			def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
-
-			assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
-
-			def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != "Running"
-			}
-
-			assert notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-
-		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
-		}
+		TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs)
 	}
 
 	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
