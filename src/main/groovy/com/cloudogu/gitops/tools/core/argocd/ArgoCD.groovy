@@ -109,9 +109,6 @@ class ArgoCD extends Tool {
 
         if (config.features.argocd.operator) {
             generateRBAC()
-            if (config.features.argocd.installOperator) {
-                installOperator()
-            }
             deployWithOperator()
         } else {
             if (this.config.features.argocd?.values) {
@@ -186,22 +183,6 @@ class ArgoCD extends Tool {
 		String argocdRbacPath = clusterResourcesRepo.operatorRbacDir()
 		k8sClient.applyYaml(argocdRbacPath)
 	}
-
-    private void installOperator() {
-        def cmd = """
-git clone https://github.com/argoproj-labs/argocd-operator &&
-cd argocd-operator &&
-git checkout release-${config.features.argocd.operatorVersion} &&
-make deploy IMG=quay.io/argoprojlabs/argocd-operator:v${config.features.argocd.operatorVersion}.0 &&
-rm -Rf ../argocd-operator/
-"""
-
-        def process = ["bash", "-c", cmd].execute()
-        process.in.eachLine { log.debug(it) }
-        process.err.eachLine { log.debug(it) }
-        process.waitFor()
-        log.info("Successfully installed ArgoCD Operator version ${config.features.argocd.operatorVersion}")
-    }
 
     private void deployWithHelm() {
 
