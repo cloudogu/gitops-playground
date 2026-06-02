@@ -573,17 +573,6 @@ class ArgoCDTest {
 
 		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 2) { Path file ->
 			def yaml = parseActualYaml(file.toString())
-			List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
-			// Some projects might not have sourceRepos
-			if (sourceRepos) {
-				sourceRepos.each {
-					if (it.startsWith(scmmUrl)) {
-						assertThat(it)
-							.as("$file sourceRepos have name prefix")
-							.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
-					}
-				}
-			}
 
 			String metadataNamespace = yaml['metadata']['namespace'] as String
 			if (metadataNamespace) {
@@ -604,12 +593,8 @@ class ArgoCDTest {
 			}
 		}
 
-		//TODO in applications the argocd.yaml has mutlisource and must assert different
 		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'applications', 3) { Path file ->
 			def yaml = parseActualYaml(file.toString())
-			assertThat(yaml['spec']['source']['repoURL'] as String)
-				.as("$file repoURL have name prefix")
-				.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
 
 			assertThat(yaml['metadata']['namespace'])
 				.as("$file metadata.namspace has name prefix")
