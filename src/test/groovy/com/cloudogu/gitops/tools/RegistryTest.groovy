@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.utils.CommandExecutorForTest
@@ -8,12 +9,16 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 
 import java.nio.file.Path
 
 import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
 
+@ExtendWith(MockitoExtension.class)
 class RegistryTest {
 
     K8sClientForTest k8sClient
@@ -21,11 +26,13 @@ class RegistryTest {
     HelmClient helmClient
     Path temporaryYamlFile
 
+    @Mock
+    Deployer deployer
+
     @Test
     void 'is disabled when external registry is configured'() {
-        createRegistry().install()
-
-        assertThat(helmCommands.actualCommands).isEmpty()
+        boolean enabled = createRegistry().install()
+        assertThat(enabled).isEqualTo(false)
     }
 
     @Test
@@ -69,7 +76,7 @@ class RegistryTest {
                 // Path after template invocation
                 return ret
             }
-        }, k8sClient, new HelmStrategy(config, helmClient))
+        }, k8sClient, deployer)
     }
 
     private Map parseActualYaml() {

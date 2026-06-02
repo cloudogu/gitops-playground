@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -37,7 +37,7 @@ class IngressTest {
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Mock
-    DeploymentStrategy deploymentStrategy
+    Deployer  deployer
     @Mock
     AirGappedUtils airGappedUtils
     @Mock
@@ -63,9 +63,9 @@ class IngressTest {
         def actual = parseActualYaml()
         assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-        verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
+        verify(deployer).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
                 config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-                'traefik', temporaryYamlFile, RepoType.HELM)
+                'traefik', temporaryYamlFile, RepoType.HELM, false)
         assertThat(parseActualYaml()['deployment']['metrics']).isNull()
         assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
         assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -127,9 +127,9 @@ class IngressTest {
 
         assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
         assertThat(helmConfig.value.version).isEqualTo('39.0.0')
-        verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+        verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-                'traefik', temporaryYamlFile, RepoType.GIT)
+                'traefik', temporaryYamlFile, RepoType.GIT, false)
     }
 
     @Test
@@ -197,7 +197,7 @@ class IngressTest {
                 // Path after template invocation
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
+        }, deployer, k8sClient, airGappedUtils, gitHandler)
     }
 
     private Map parseActualYaml() {

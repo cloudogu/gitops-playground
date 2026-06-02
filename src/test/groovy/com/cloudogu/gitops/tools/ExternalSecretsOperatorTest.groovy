@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -40,7 +40,7 @@ class ExternalSecretsOperatorTest {
     Path temporaryYamlFile
 
     @Mock
-    DeploymentStrategy deploymentStrategy
+    Deployer deployer
     @Mock
     AirGappedUtils airGappedUtils
     @Mock
@@ -60,22 +60,23 @@ class ExternalSecretsOperatorTest {
     @Test
     void "is disabled via active flag"() {
         config.features.secrets.active = false
-        createExternalSecretsOperator().install()
-        assertThat(commandExecutor.actualCommands).isEmpty()
+        boolean enabled = createExternalSecretsOperator().install()
+        assertThat(enabled).isEqualTo(false)
     }
 
     @Test
     void 'helm release is installed'() {
         createExternalSecretsOperator().install()
 
-        verify(deploymentStrategy).deployFeature('https://charts.external-secrets.io',
+        verify(deployer).deployFeature('https://charts.external-secrets.io',
                 'external-secrets-operator',
                 'external-secrets',
                 '0.9.16',
                 'foo-secrets',
                 'external-secrets',
                 temporaryYamlFile,
-                RepoType.HELM)
+                RepoType.HELM,
+                false)
 
         assertThat(parseActualYaml()).doesNotContainKeys('resources')
         assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -147,9 +148,9 @@ class ExternalSecretsOperatorTest {
         assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
         assertThat(helmConfig.value.version).isEqualTo('0.9.16')
-        verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+        verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-                'external-secrets', temporaryYamlFile, RepoType.GIT)
+                'external-secrets', temporaryYamlFile, RepoType.GIT, false)
     }
 
     @Test
@@ -178,7 +179,7 @@ class ExternalSecretsOperatorTest {
                         // Path after template invocation
                         return ret
                     }
-                }, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
+                }, deployer, k8sClient, airGappedUtils, gitHandler)
     }
 
     private Map parseActualYaml() {

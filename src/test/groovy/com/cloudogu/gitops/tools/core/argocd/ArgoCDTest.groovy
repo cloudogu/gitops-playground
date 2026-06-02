@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools.core.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -603,6 +604,7 @@ class ArgoCDTest {
 			}
 		}
 
+		//TODO in applications the argocd.yaml has mutlisource and must assert different
 		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'applications', 3) { Path file ->
 			def yaml = parseActualYaml(file.toString())
 			assertThat(yaml['spec']['source']['repoURL'] as String)
