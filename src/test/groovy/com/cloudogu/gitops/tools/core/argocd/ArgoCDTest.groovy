@@ -734,7 +734,7 @@ class ArgoCDTest {
 
 	private void createNamespaceIfMissing(String name) {
 		if (!name) {
-			return
+			throw new IllegalArgumentException()
 		}
 
 		if (!client.namespaces().withName(name).get()) {
@@ -761,7 +761,7 @@ class ArgoCDTest {
 
 	private void createSecretIfMissing(String name, String namespace, Map<String, String> data = [:]) {
 		if (!namespace) {
-			return
+			throw new IllegalArgumentException()
 		}
 
 		createNamespaceIfMissing(namespace)
