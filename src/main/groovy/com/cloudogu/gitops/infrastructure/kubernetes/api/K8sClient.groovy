@@ -1140,10 +1140,13 @@ class K8sClient {
 		PatchType patchType
 
 		if (!type) {
-			patchType = PatchType.STRATEGIC_MERGE
+			patchType = PatchType.JSON_MERGE
 		} else {
 			switch (type.toLowerCase()) {
 				case 'merge':
+				case 'json-merge':
+					patchType = PatchType.JSON_MERGE
+					break
 				case 'strategic':
 					patchType = PatchType.STRATEGIC_MERGE
 					break
