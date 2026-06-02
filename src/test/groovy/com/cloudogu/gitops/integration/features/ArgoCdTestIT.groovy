@@ -6,9 +6,11 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 /**
  * This class is for testing deployments via ArgoCD*/
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
 class ArgoCdTestIT extends KubenetesApiTestSetup {
 
 	String namespace = 'argocd'
