@@ -1,5 +1,15 @@
 package com.cloudogu.gitops.application.content
 
+import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
@@ -13,8 +23,12 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.utils.FileSystemUtils
+
+import java.nio.file.Files
+import java.nio.file.Path
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -31,19 +45,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.config.Config.OverwriteMode
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
 
 @Slf4j
 @EnableKubernetesMockClient(crud = true)
@@ -104,7 +105,8 @@ class ContentLoaderTest {
 		foldersToDelete.each { it.deleteDir() }
 
 	}
-	@Disabled("TODO: does not run on jenkins")
+
+	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys image pull secrets'() {
 		config.registry.createImagePullSecrets = true
@@ -114,7 +116,8 @@ class ContentLoaderTest {
 
 		assertRegistrySecrets('reg-user', 'reg-pw')
 	}
-	@Disabled("TODO: does not run on jenkins")
+
+	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys image pull secrets from read-only vars'() {
 		config.registry.createImagePullSecrets = true
@@ -127,7 +130,7 @@ class ContentLoaderTest {
 		assertRegistrySecrets('other-user', 'other-pw')
 	}
 
-	@Disabled("TODO: does not run on jenkins")
+	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void 'deploys additional image pull secrets for proxy registry'() {
 		config.registry.createImagePullSecrets = true
