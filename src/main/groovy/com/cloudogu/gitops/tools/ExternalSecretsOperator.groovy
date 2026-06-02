@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 @Order(35)
 class ExternalSecretsOperator extends Tool implements ToolWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/external-secrets-operator-gop-helm.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}secrets"
     Config config

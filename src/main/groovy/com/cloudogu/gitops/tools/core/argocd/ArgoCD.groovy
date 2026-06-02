@@ -23,7 +23,7 @@ import java.nio.file.Path
 @Order(2)
 class ArgoCD extends Tool {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/argocd/argocd/argocd-gop-helm.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/argocd/argocd/values.ftl.yaml"
 
     private final String namespace
     private final Config config
