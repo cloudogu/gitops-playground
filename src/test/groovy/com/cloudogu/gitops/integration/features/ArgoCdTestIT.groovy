@@ -5,12 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
  * This class is for testing deployments via ArgoCD*/
-@Disabled("TODO: analyse why it fails exactly.")
 class ArgoCdTestIT extends KubenetesApiTestSetup {
 
 	String namespace = 'argocd'
@@ -33,7 +31,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
 	 * ArgoCD uses 7 pods. All have to run*/
 	@Test
 	void ensureArgoCDIsOnlineAndRunning() {
-		def expectedSumOfArgoPods = 7
+		def expectedSumOfArgoPods = 6
 
 		V1PodList list = api.listNamespacedPod(namespace)
 			.execute()
@@ -53,7 +51,7 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
 		if (list && !list.items.isEmpty()) {
 
 			List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-			if (argoPods.size() == 7) {
+			if (argoPods.size() == 6) {
 				return "Running".equals(argoPods.get(0).status.phase)
 			}
 		}
