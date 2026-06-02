@@ -137,7 +137,7 @@ To keep things simpler, the GitOps playground only uses one kubernetes cluster, 
 pattern. However, the repo structure could also be used to serve multiple clusters, in a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
 Additional clusters could either be defined in the `vaules.yaml` or as secrets via the `templates` folder.
 
-We're also working on an optional implementation of the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator).
+We're also working on an optional implementation of the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator). Note that when using one of the `operator-*` profiles, the Argo CD operator must be installed in the cluster beforehand.
 
 ### cluster-resources
 
