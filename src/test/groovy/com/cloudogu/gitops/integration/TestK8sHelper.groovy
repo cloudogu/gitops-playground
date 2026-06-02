@@ -28,6 +28,7 @@ class TestK8sHelper {
 	static final String RUNNING = 'Running'
 	static final String FAILED = 'Failed'
 	static final String SUCCEEDED = 'Succeeded'
+	static final String COMPLETED = 'Completed'
 	static final Set<String> FATAL_CONTAINER_WAITING_REASONS = ['CrashLoopBackOff',
 	                                                            'CreateContainerConfigError',
 	                                                            'CreateContainerError',
@@ -300,7 +301,7 @@ class TestK8sHelper {
 	}
 
 	private static boolean isPodRunning(Pod pod) {
-		return pod.status?.phase == RUNNING && !hasFatalContainerState(pod)
+		return ( pod.status?.phase == RUNNING || pod.status?.phase == COMPLETED  ) && !hasFatalContainerState(pod)
 	}
 
 	private static boolean isPodFatal(Pod pod) {
