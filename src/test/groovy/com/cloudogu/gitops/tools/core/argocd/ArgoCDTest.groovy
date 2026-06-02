@@ -1,31 +1,21 @@
 package com.cloudogu.gitops.tools.core.argocd
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
-
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.TestGitProvider
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.stream.Collectors
 import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
-
 import io.fabric8.kubernetes.api.model.NamespaceBuilder
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
@@ -34,10 +24,21 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import jakarta.inject.Provider
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.stream.Collectors
+
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDTest {
@@ -119,8 +120,11 @@ class ArgoCDTest {
 	KubernetesClient client
 	KubernetesMockServer server
 	K8sClient k8sClient
+	HelmStrategy helmStrategy = mock(HelmStrategy.class)
+	ArgoCdApplicationStrategy argoCdApplicationStrategy = mock(ArgoCdApplicationStrategy.class)
+	Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider = mock(Provider.class)
+	Deployer deployer
 
-	CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 	//    GitRepo argocdRepo
 	String actualHelmValuesFile
 	GitRepo clusterResourcesRepo
@@ -142,6 +146,8 @@ class ArgoCDTest {
 			any(String),
 			any(String)
 		)
+		when(argoCdStrategyProvider.get()).thenReturn(argoCdApplicationStrategy)
+		deployer = new Deployer(argoCdStrategyProvider, helmStrategy)
 	}
 
 	@Test
@@ -177,12 +183,16 @@ class ArgoCDTest {
 		assertThat(repoCredentialsSecret.metadata.labels['argocd.argoproj.io/secret-type']).isEqualTo('repo-creds')
 
 		// Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
-		assertThat(helmCommands.actualCommands[0].trim())
-			.isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
-		assertThat(helmCommands.actualCommands[1].trim())
-			.isEqualTo("helm dependency build ${clusterResourcesRepoLayout.helmDir()}".toString())
-		assertThat(helmCommands.actualCommands[2].trim())
-			.isEqualTo("helm upgrade -i argocd ${clusterResourcesRepoLayout.helmDir()} --create-namespace --namespace argocd".toString())
+		verify(helmStrategy).deployFeature(
+				eq('https://argoproj.github.io/argo-helm'),
+				eq('argo'),
+				any(),
+				any(),
+				eq('argocd'),
+				eq('argocd'),
+				any(Path),
+				eq(DeploymentStrategy.RepoType.HELM)
+		)
 
 		Secret argocdSecret = client.secrets()
 			.inNamespace('argocd')
@@ -560,7 +570,7 @@ class ArgoCDTest {
 
 	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, RepoLayout repoLayout) {
 
-		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
+		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 2) { Path file ->
 			def yaml = parseActualYaml(file.toString())
 			List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
 			// Some projects might not have sourceRepos
@@ -657,7 +667,7 @@ class ArgoCDTest {
 
 	ArgoCD createArgoCD() {
 		prepareKubernetesObjectsForArgoCd()
-		def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, helmCommands)
+		def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, deployer)
 		return argoCD
 	}
 	private void prepareKubernetesObjectsForArgoCd() {
@@ -1553,27 +1563,26 @@ class ArgoCDTest {
 		final Config cfg
 		final GitProvider tenantProvider
 		final GitProvider centralProvider
-		GitRepo clusterResourcesRepo
 
 		static ArgoCDForTest newWithAutoProviders(Config cfg,
-			K8sClient k8sClient,
-			CommandExecutorForTest helmCommands) {
+		                                          K8sClient k8sClient,
+		                                          Deployer deployer) {
 			def provider = TestGitProvider.buildProviders(cfg)
 			return new ArgoCDForTest(cfg,
-				k8sClient,
-				helmCommands,
-				provider.tenant as GitProvider,
-				provider.central as GitProvider)
+					k8sClient,
+					deployer,
+					provider.tenant as GitProvider,
+					provider.central as GitProvider)
 		}
 
 		ArgoCDForTest(Config cfg,
 			K8sClient k8sClient,
-			CommandExecutorForTest helmCommands,
+			Deployer deployer,
 			GitProvider tenantProvider,
 			GitProvider centralProvider) {
 			super(cfg,
 				k8sClient,
-				new HelmClient(helmCommands),
+				deployer,
 				new FileSystemUtils(),
 				new TestGitRepoFactory(cfg, new FileSystemUtils()),
 				new GitHandlerForTests(cfg, tenantProvider, centralProvider))
