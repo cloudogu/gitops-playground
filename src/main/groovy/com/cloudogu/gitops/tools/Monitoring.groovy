@@ -162,7 +162,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	private static URI baseUriJenkins(Config config) {
 		if (config.jenkins.internal) {
-			return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+			return new URI("http://jenkins.${config.application.namePrefix}${config.jenkins.namespace}.svc.cluster.local/")
 		}
 		def urlString = config.jenkins?.url?.strip() ?: ""
 		if (!urlString) {

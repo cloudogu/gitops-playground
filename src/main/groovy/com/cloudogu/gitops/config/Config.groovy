@@ -351,6 +351,11 @@ class Config {
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
 			repoURL: 'https://charts.jenkins.io',
 			version: '5.9.18')
+
+		@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
+		@JsonPropertyDescription(JENKINS_NAMESPACE)
+		String namespace = "jenkins"
+
 	}
 
 	static class ApplicationSchema {

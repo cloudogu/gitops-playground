@@ -82,7 +82,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	void installArgoCDViaHelm(GitRepo repo) {
 		// this is a hack to be able to uninstall using helm
 		def namePrefix = config.application.namePrefix
-
+        def argocdNamespace = namePrefix + config.features.argocd.namespace
 		// Install umbrella chart from folder
 		String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
 		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -90,6 +90,6 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies'].collect { it }
 		helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
 		helmClient.dependencyBuild(umbrellaChartPath)
-		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
+		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${argocdNamespace}"])
 	}
 }

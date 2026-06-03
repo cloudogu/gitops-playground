@@ -51,7 +51,7 @@ class GitHandler extends Tool {
 			// We use the K8s service as default name here, because it is the only option:
 			// "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
 			// will not work on Windows and MacOS.
-			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local/scm"
 
 			// More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
 		}
@@ -86,7 +86,7 @@ class GitHandler extends Tool {
 				this.tenant = new Gitlab(this.config, this.config.scm.gitlab)
 				break
 			case ScmProviderType.SCM_MANAGER:
-				def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
+				def prefixedNamespace = "${config.application.namePrefix}${config.scm.scmManager.namespace}".toString()
 				config.scm.scmManager.namespace = prefixedNamespace
 				this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy, k8sClient, networkingUtils, true)
 				// this.tenant.setup() setup will be here in future

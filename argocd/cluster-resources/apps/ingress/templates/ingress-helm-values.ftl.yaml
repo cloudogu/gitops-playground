@@ -75,7 +75,7 @@ metrics:
       enabled: true
     serviceMonitor:
       enabled: true
-      namespace: ${config.application.namePrefix}monitoring
+      namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
       additionalLabels:
         release: kube-prometheus-stack
 </#if>
