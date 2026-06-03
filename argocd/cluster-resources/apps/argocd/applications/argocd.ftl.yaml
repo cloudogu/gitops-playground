@@ -4,6 +4,12 @@ kind: "Application"
 metadata:
   name: "argocd"
   namespace: ${config.application.namePrefix}argocd
+  annotations:
+  # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
+  # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
+<#if config.features.mail.active?? && config.features.mail.active>
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: ${config.features.argocd.emailToAdmin}
+</#if>
 spec:
   destination:
     server: "https://kubernetes.default.svc"

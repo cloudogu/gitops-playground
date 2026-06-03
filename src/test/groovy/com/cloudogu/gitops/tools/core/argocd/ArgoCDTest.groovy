@@ -24,7 +24,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import jakarta.inject.Provider
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -39,6 +38,7 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 @EnableKubernetesMockClient(crud = true)
@@ -225,9 +225,18 @@ class ArgoCDTest {
 		// Applications (jetzt unter argocd/applications)
 		def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
 
-		// Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
-		assertThat(argocdYaml['spec']['sources']['path'] as String)
-			.isIn( 'apps/argocd/argocd/')
+		def argocdSources = argocdYaml['spec']['sources'] as List
+		assertThat(argocdSources).isNotNull()
+		assertThat(argocdSources).isNotEmpty()
+
+		def valuesSource = argocdSources.find { it['ref'] == 'values' }
+
+		assertThat(valuesSource).isNotNull()
+
+		// Neuer Pfad: Chart liegt unter apps/argocd/argocd.
+		// Der abschließende Slash ist egal.
+		assertThat((valuesSource['path'] as String).replaceAll('/$', ''))
+				.isEqualTo('apps/argocd/argocd')
 	}
 
 	@Test
@@ -846,10 +855,18 @@ class ArgoCDTest {
 		assertThat(yaml['spec']['rbac']).isNull()
 		assertThat(yaml['spec']['sso']).isNull()
 
-		def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
-		assertThat(argocdYaml['spec']['sources']['directory']['recurse'] as Boolean).isTrue()
-		assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
-		// Here we should assert all <#if argocd.isOperator> in YAML ️
+		def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
+
+		def argocdSources = argocdYaml['spec']['sources'] as List
+		assertThat(argocdSources).isNotNull()
+		assertThat(argocdSources).isNotEmpty()
+
+		def valuesSource = argocdSources.find { it['ref'] == 'values' }
+
+		assertThat(valuesSource).isNotNull()
+		assertThat(valuesSource['path']).isEqualTo('apps/argocd/operator/')
+
+		// Here we should assert all <#if argocd.isOperator> in YAML
 	}
 
 	@Test
