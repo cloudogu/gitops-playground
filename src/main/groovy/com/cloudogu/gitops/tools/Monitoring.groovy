@@ -28,7 +28,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
-	String namespace = "${config.application.namePrefix}monitoring"
+	String namespace
 	Config config
 	K8sClient k8sClient
 
@@ -48,6 +48,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		this.airGappedUtils = airGappedUtils
 		this.scmRepoProvider = scmRepoProvider
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 	}
 
 	@Override

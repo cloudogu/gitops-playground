@@ -35,6 +35,7 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}secrets"
 	}
 
 	@Override

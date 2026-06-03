@@ -33,7 +33,7 @@ class Registry extends Tool {
 		this.k8sClient = k8sClient
 
 		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}registry"
+			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
 		}
 	}
 
