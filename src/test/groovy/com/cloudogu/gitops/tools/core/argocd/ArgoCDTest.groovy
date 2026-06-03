@@ -119,7 +119,6 @@ class ArgoCDTest {
 	@Spy
 	CommandExecutor test = new CommandExecutor()
 	KubernetesClient client
-	KubernetesMockServer server
 	K8sClient k8sClient
 	HelmStrategy helmStrategy = mock(HelmStrategy.class)
 	ArgoCdApplicationStrategy argoCdApplicationStrategy = mock(ArgoCdApplicationStrategy.class)
@@ -186,9 +185,9 @@ class ArgoCDTest {
 		// Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
 		verify(helmStrategy).deployFeature(
 				eq('https://argoproj.github.io/argo-helm'),
-				eq('argo'),
-				any(),
-				any(),
+				eq('argocd'),
+				eq('argo-cd'),
+				eq('9.4.15'),
 				eq('argocd'),
 				eq('argocd'),
 				any(Path),
@@ -225,11 +224,10 @@ class ArgoCDTest {
 
 		// Applications (jetzt unter argocd/applications)
 		def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
-		assertThat(argocdYaml['spec']['source']['directory']).isNull()
 
 		// Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
-		assertThat(argocdYaml['spec']['source']['path'] as String)
-			.isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
+		assertThat(argocdYaml['spec']['sources']['path'] as String)
+			.isIn( 'apps/argocd/argocd/')
 	}
 
 	@Test
@@ -571,7 +569,7 @@ class ArgoCDTest {
 
 	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, RepoLayout repoLayout) {
 
-		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 2) { Path file ->
+		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
 			def yaml = parseActualYaml(file.toString())
 
 			String metadataNamespace = yaml['metadata']['namespace'] as String
@@ -849,7 +847,7 @@ class ArgoCDTest {
 		assertThat(yaml['spec']['sso']).isNull()
 
 		def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
-		assertThat(argocdYaml['spec']['source']['directory']['recurse'] as Boolean).isTrue()
+		assertThat(argocdYaml['spec']['sources']['directory']['recurse'] as Boolean).isTrue()
 		assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
 		// Here we should assert all <#if argocd.isOperator> in YAML ️
 	}

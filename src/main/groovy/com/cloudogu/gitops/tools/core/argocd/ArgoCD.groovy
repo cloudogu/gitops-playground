@@ -29,7 +29,6 @@ class ArgoCD extends Tool {
     private final Config config
     private final K8sClient k8sClient
     private final GitRepoFactory repoProvider
-    private final GitHandler gitHandler
     private final String password
 
     private ArgoCDRepoSetup repoSetup

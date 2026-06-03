@@ -22,7 +22,7 @@ spec:
   - repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: "main"
     ref: "values"
-    path: "apps/argocd/argocd"
+    path: apps/argocd/${config.features.argocd.operator?string("operator/", "argocd/")}
     directory:
       recurse: true
   syncPolicy:

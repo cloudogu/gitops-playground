@@ -78,7 +78,7 @@ me:x:1000:''')
 
         verify(deployer).deployFeature('https://jen-repo', 'jenkins',
                 'jen-chart', '4.8.1', 'jenkins',
-                'jenkins', temporaryYamlFile, RepoType.HELM)
+                'jenkins', temporaryYamlFile, RepoType.HELM, true)
         verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
         verify(k8sClient).labelRemove('node', '--all', '', 'node')
         verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
@@ -126,7 +126,7 @@ me:x:1000:''')
         createJenkins().install()
 
         verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
-                anyString(), anyString(), any(Path), RepoType.HELM,true)
+                anyString(), anyString(), any(Path), any(), anyBoolean())
 
         assertThat(temporaryYamlFile).isNull()
     }

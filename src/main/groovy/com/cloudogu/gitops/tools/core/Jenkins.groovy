@@ -102,9 +102,9 @@ class Jenkins extends Tool {
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
             }
-            runSetupScript()
-        }
 
+        }
+        runSetupScript()
     }
 
     private void runSetupScript() {

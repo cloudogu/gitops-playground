@@ -95,7 +95,8 @@ abstract class Tool {
             String namespace,
             Config.HelmConfigWithValues helmConfig,
             String helmValuesTemplatePath,
-            Config config, boolean initByHelm = false) {
+            Config config,
+            boolean initByHelm = false) {
         String repoURL = helmConfig.repoURL
         String chartOrPath = helmConfig.chart
         String version = helmConfig.version
