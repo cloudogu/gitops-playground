@@ -1035,13 +1035,15 @@ class ContentLoaderTest {
 		                               String namespace,
 		                               Config.HelmConfigWithValues helmConfig,
 		                               String helmValuesTemplatePath,
-		                               Config config) {
+		                               Config config,
+									   boolean initByHelm) {
 			deployCalls << new DeployCall(featureName: featureName,
 					releaseName: releaseName,
 					namespace: namespace,
 					helmConfig: helmConfig,
 					valuesPath: helmValuesTemplatePath,
-					config: config)
+					config: config,
+					initByHelm: initByHelm)
 		}
 
 		@Override
@@ -1057,5 +1059,6 @@ class ContentLoaderTest {
 		Config.HelmConfigWithValues helmConfig
 		String valuesPath
 		Config config
+		boolean initByHelm
 	}
 }
