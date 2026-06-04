@@ -9,7 +9,6 @@ import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
@@ -20,7 +19,7 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 /**
  * A single tool to be deployed by GOP.
  *
- * Typically, this is a helm chart (see {@link com.cloudogu.gitops.features.deployment.DeploymentStrategy} and
+ * Typically, this is a helm chart (see {@link com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy} and
  * {@code downloadHelmCharts.sh}) with its own section in the config
  * (see {@link com.cloudogu.gitops.config.schema.Schema#features}).<br/><br/>
  *
