@@ -29,6 +29,8 @@ class Application {
 		log.debug("Starting Application")
 
 		setNamespaceListToConfig(config)
+		// last check before start
+		validateApplication()
 		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(config)
 
@@ -84,5 +86,13 @@ class Application {
 		config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
 		config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
+	}
+
+	/**
+	 * Config validation
+	 * @param config
+	 */
+	void validateApplication(Config config) {
+
 	}
 }

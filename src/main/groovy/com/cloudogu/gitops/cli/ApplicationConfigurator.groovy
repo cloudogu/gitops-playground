@@ -313,6 +313,9 @@ class ApplicationConfigurator {
 	void checkAndSetNamespaces(Config config) {
 		// if set, all tools have use this namespace
 		if (config.application.namespace){
+
+
+
 			String namespace = config.application.namespace
 
 			config.registry.namespace = namespace
@@ -324,6 +327,9 @@ class ApplicationConfigurator {
 			config.features.secrets.namespace = namespace
 			config.features.ingress.ingressNamespace = namespace
 			config.features.certManager.namespace = namespace
+			// remove all namespaces by contentLoad and replace with given ns
+			config.content.namespaces.clear()
+			config.content.namespaces.add(namespace)
 		}
 	}
 
