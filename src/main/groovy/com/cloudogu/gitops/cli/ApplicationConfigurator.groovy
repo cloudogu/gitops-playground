@@ -18,7 +18,10 @@ class ApplicationConfigurator {
 	Config initConfig(Config newConfig) {
 
 		addAdditionalApplicationConfig(newConfig)
+
 		addNamePrefix(newConfig)
+
+		checkAndSetNamespaces(newConfig)
 
 		addScmConfig(newConfig)
 
@@ -273,6 +276,7 @@ class ApplicationConfigurator {
 		}
 	}
 
+
 	/**
 	 * Build*/
 	void buildAndValidateURLFromEnvironment(Config config) {
@@ -301,4 +305,26 @@ class ApplicationConfigurator {
 			throw new RuntimeException(errorMessage, e)
 		}
 	}
+
+	/**
+	 *
+	 * @param config
+	 */
+	void checkAndSetNamespaces(Config config) {
+		// if set, all tools have use this namespace
+		if (config.application.namespace){
+			String namespace = config.application.namespace
+
+			config.registry.namespace = namespace
+			config.jenkins.namespace = namespace
+			config.scm.scmManager.namespace = namespace
+
+			config.features.argocd.namespace = namespace
+			config.features.monitoring.namespace = namespace
+			config.features.secrets.namespace = namespace
+			config.features.ingress.ingressNamespace = namespace
+			config.features.certManager.namespace = namespace
+		}
+	}
+
 }

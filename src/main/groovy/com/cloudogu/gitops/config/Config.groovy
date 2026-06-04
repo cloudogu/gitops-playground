@@ -465,6 +465,12 @@ class Config {
 		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
 
+
+		@Option(names = ["-n","--namespace"], description = APPLICATION_NAMESPACE)
+		@JsonPropertyDescription(APPLICATION_NAMESPACE)
+		String namespace = ''
+
+
 		static class NamespaceSchema {
 			LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
 			LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
