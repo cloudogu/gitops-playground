@@ -133,7 +133,6 @@ class ArgoCDTest {
     ArgoCD argocd
     RepoLayout clusterResourcesRepoLayout
 
-
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 
 
@@ -486,8 +485,6 @@ class ArgoCDTest {
     void 'Prepares repos for air-gapped mode'() {
         config.features.monitoring.active = false
         config.application.mirrorRepos = true
-
-        airGappedUtils = mock(AirGappedUtils)
         deployer = mock(Deployer)
 
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig)))
