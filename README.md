@@ -81,7 +81,7 @@ Current existing profiles for argocd in non-operator mode:
 | full             | all available features                   | showcase a full-fledged IDP          |
 
 
-Follow profils for ArgoCD in Operator mode which has to be installed first:
+The following profiles require the ArgoCD operator to be installed in your cluster first:
 | Profile                   | Features                                 | Use-Case                                                             |
 |---------------------------|------------------------------------------|----------------------------------------------------------------------|
 | operator-minimal          | Argo-cd, SCM-Manager                     | minimal example for an operator based gitops-stack                   |
