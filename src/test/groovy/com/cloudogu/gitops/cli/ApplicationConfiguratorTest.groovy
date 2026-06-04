@@ -13,6 +13,7 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -69,12 +70,13 @@ class ApplicationConfiguratorTest {
 
         K8sClient k8sClient = Mockito.mock(K8sClient)
         GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
+        AirGappedUtils airGappedUtils = Mockito.mock(AirGappedUtils)
 
         Deployer deployer = Mockito.mock(Deployer)
 
         GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
         featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
-        featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler))
+        featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, deployer, fileSystemUtils, gitRepoFactory, gitHandler, airGappedUtils))
     }
 
     @Test

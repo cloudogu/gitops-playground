@@ -9,6 +9,7 @@ import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
