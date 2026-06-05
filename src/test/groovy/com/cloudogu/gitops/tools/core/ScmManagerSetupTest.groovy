@@ -6,6 +6,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 import org.junit.jupiter.api.Test
 import retrofit2.Call
 import retrofit2.Response
@@ -45,7 +46,7 @@ class ScmManagerSetupTest {
 		when(scmManager.getConfig()).thenReturn(config)
 		when(scmManager.getHelmStrategy()).thenReturn(helmStrategy)
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
+        ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
 		scmManagerSetup.setupHelm()
 		verify(helmStrategy).deployFeature(eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
 			eq("scm-manager"),
