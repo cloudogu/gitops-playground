@@ -307,21 +307,20 @@ class ApplicationConfigurator {
 	}
 
 	/**
-	 *
+	 * if set, all namespaces set to configures namespace.
 	 * @param config
 	 */
 	void checkAndSetNamespaces(Config config) {
 		// if set, all tools have use this namespace
 		if (config.application.namespace){
-
-
-
 			String namespace = config.application.namespace
-
+			// gop config
+			config.application.gopNamespace= namespace
+			// startup tools
 			config.registry.namespace = namespace
 			config.jenkins.namespace = namespace
 			config.scm.scmManager.namespace = namespace
-
+			// all tools
 			config.features.argocd.namespace = namespace
 			config.features.monitoring.namespace = namespace
 			config.features.secrets.namespace = namespace
@@ -329,7 +328,9 @@ class ApplicationConfigurator {
 			config.features.certManager.namespace = namespace
 			// remove all namespaces by contentLoad and replace with given ns
 			config.content.namespaces.clear()
-			config.content.namespaces.add(namespace)
+			// content loader do not care about prefix like tools, thats why its needed here.
+			String contentNamespace = config.application.namePrefix+namespace
+			config.content.namespaces.add(contentNamespace)
 		}
 	}
 

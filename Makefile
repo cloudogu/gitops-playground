@@ -19,6 +19,10 @@ cluster: ## creates a k3d cluster suitable for GOP
 .PHONY:
 prepare-two-registries: ## for testing with multiple registries
 	./scripts/dev/prepare_two_registries.sh
+.PHONY:
+install-operator: ## installs argocd operator via kubectl and kustomize
+    kubectl apply -k github.com/argoproj-labs/argocd-operator/config/default?ref=release-0.17 --server-side --force-conflicts
+    kubectl apply -k github.com/argoproj-labs/argocd-operator/config/crd?ref=release-0.17 --server-side --force-conflicts
 
 %:
 	@:

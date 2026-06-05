@@ -29,8 +29,6 @@ class Application {
 		log.debug("Starting Application")
 
 		setNamespaceListToConfig(config)
-		// last check before start
-		validateApplication()
 		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(config)
 
@@ -48,7 +46,7 @@ class Application {
 		// Fallback, if run from IDE
 		if (!config.application.gopNamespace.isEmpty()) {
 			// if set, take namespace from configuration
-			namespace = "${config.application.gopNamespace}"
+			namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
 		} else if (this.k8sClient.getCurrentNamespace() != null) {
 			// if gop-namespace not set, take namespace from running GOP
 			namespace = this.k8sClient.getCurrentNamespace()
@@ -88,11 +86,5 @@ class Application {
 		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
 	}
 
-	/**
-	 * Config validation
-	 * @param config
-	 */
-	void validateApplication(Config config) {
 
-	}
 }
