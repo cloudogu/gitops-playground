@@ -51,8 +51,12 @@ pipeline {
                     }}
                     steps {
                         sh 'mvn -B clean test'
-                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                        archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                    }
+                    post {
+                        always {
+                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                            archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                        }
                     }
                 }
 
@@ -170,9 +174,14 @@ pipeline {
                                         sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
                                     }
                                 }
-                                junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
-                                    allowEmptyResults: true
+
                             }
+                        }
+                    }
+                    post {
+                        always {
+                            junit testResults: "**/target/failsafe-reports/TEST-*.xml",
+                                    allowEmptyResults: true
                         }
                     }
                 }
