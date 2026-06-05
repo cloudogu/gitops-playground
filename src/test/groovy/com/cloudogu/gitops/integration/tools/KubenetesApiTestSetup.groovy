@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.integration.features
+package com.cloudogu.gitops.integration.tools
 
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.Configuration
