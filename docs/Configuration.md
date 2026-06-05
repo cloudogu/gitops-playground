@@ -10,7 +10,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 - [Scm](#scm)
 - [Application](#application)
 - [Content](#content)
-- [Tools](#tools)
+- [Features](#features)
   - [Argocd](#feature-argocd)
   - [Mail](#feature-mail)
   - [Monitoring](#feature-monitoring)
@@ -49,7 +49,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
 | `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | String | `0AKhlykdC4sb` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `8jQ4yMRLZ6z0` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
@@ -111,7 +111,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
 | `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
 | `--username` | `application.username` | String | `admin` | Set initial admin username |
-| `--password` | `application.password` | String | `0AKhlykdC4sb` | Set initial admin passwords |
+| `--password` | `application.password` | String | `8jQ4yMRLZ6z0` | Set initial admin passwords |
 | `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
 | `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
 | `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
@@ -139,18 +139,16 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
 
-## Tools
+## Features
 
 Configuration of optional features supported by gitops-playground.
 
-### Tool: Argocd
+### Feature: Argocd
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `--argocd` | `features.argocd.active` | Boolean | `false` | Install ArgoCD |
 | `--argocd-operator` | `features.argocd.operator` | Boolean | `false` | Install ArgoCD via an already running ArgoCD Operator |
-| `--install-argocd-operator` | `features.argocd.installOperator` | Boolean | `false` | Installs ArgoCD Operator itself |
-| - | `features.argocd.operatorVersion` | Boolean | `true` | Operator Version to install |
 | `--argocd-url` | `features.argocd.url` | String | `` | The URL where argocd is accessible. It has to be the full URL with http:// or https:// |
 | - | `features.argocd.env` | List&lt;java.util.Map<java.lang.String, java.lang.String>&gt; | `-` | Pass a list of env vars to Argo CD components. Currently only works with operator |
 | `--argocd-email-from` | `features.argocd.emailFrom` | String | `argocd@example.org` | Notifications, define Argo CD sender email address |
@@ -164,7 +162,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.argocd.helm.repoURL` | String | `https://argoproj.github.io/argo-helm` | Repository url from which the Helm chart should be obtained |
 | - | `features.argocd.helm.version` | String | `9.4.15` | The version of the Helm chart to be installed |
 
-### Tool: Mail
+### Feature: Mail
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -173,7 +171,7 @@ Configuration of optional features supported by gitops-playground.
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
 
-### Tool: Monitoring
+### Feature: Monitoring
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -191,7 +189,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.monitoring.helm.repoURL` | String | `https://prometheus-community.github.io/helm-charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.monitoring.helm.version` | String | `80.2.2` | The version of the Helm chart to be installed |
 
-### Tool: Secrets
+### Feature: Secrets
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -209,7 +207,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.secrets.vault.helm.repoURL` | String | `https://helm.releases.hashicorp.com` | Repository url from which the Helm chart should be obtained |
 | - | `features.secrets.vault.helm.version` | String | `0.25.0` | The version of the Helm chart to be installed |
 
-### Tool: Ingress
+### Feature: Ingress
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -220,7 +218,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.ingress.helm.repoURL` | String | `https://traefik.github.io/charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.ingress.helm.version` | String | `39.0.0` | The version of the Helm chart to be installed |
 
-### Tool: Cert Manager
+### Feature: Cert Manager
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
