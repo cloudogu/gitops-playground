@@ -1,21 +1,27 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
-import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.utils.MapUtils
+
+import jakarta.inject.Singleton
+import groovy.io.FileType
 import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
 import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Slf4j
+
 import io.fabric8.kubernetes.api.model.*
+import io.fabric8.kubernetes.client.Config
+import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.dsl.base.PatchContext
 import io.fabric8.kubernetes.client.dsl.base.PatchType
-import jakarta.inject.Singleton
-import io.fabric8.kubernetes.client.Config
-import io.fabric8.kubernetes.client.ConfigBuilder
-import groovy.io.FileType
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
+import io.fabric8.kubernetes.client.utils.Serialization
+
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
 @Slf4j
@@ -719,17 +725,19 @@ class K8sClient {
 	 * @param name The name of the pod
 	 * @param image The container image
 	 * @param namespace The namespace (defaults to "default")
-	 * @param overrides Additional pod spec overrides (not yet fully implemented)
+	 * @param overrides Additional pod overrides
 	 * @param params Additional parameters
 	 * @return A message indicating the pod was created
 	 */
 	String run(String name, String image, String namespace = '', Map overrides = [:], String... params) {
 		log.debug("Running pod $name with image $image in namespace $namespace")
+		String resolvedNamespace = resolveNamespace(namespace)
+		List<String> runParams = params ? params.toList() : []
 
 		Pod pod = new PodBuilder()
 			.withNewMetadata()
 			.withName(name)
-			.withNamespace(resolveNamespace(namespace))
+			.withNamespace(resolvedNamespace)
 			.endMetadata()
 			.withNewSpec()
 			.addNewContainer()
@@ -739,19 +747,25 @@ class K8sClient {
 			.endSpec()
 			.build()
 
+		applyRunParams(pod, runParams)
+
 		if (overrides) {
 			log.debug("Applying overrides: $overrides")
-			// TODO: Implement deep merge of overrides
+			pod = applyPodOverrides(pod, overrides)
 		}
 
 		Pod createdPod = executeWithErrorHandling("run pod $name") {
 			client.pods()
-				.inNamespace(resolveNamespace(namespace))
+				.inNamespace(resolvedNamespace)
 				.resource(pod)
 				.create()
 		}
 
 		log.debug("Pod $name created successfully")
+		if (shouldReturnPodOutput(runParams)) {
+			return collectPodRunOutput(createdPod.metadata.name, resolvedNamespace, shouldRemovePod(runParams))
+		}
+
 		return "pod/${createdPod.metadata.name} created"
 	}
 
@@ -911,6 +925,88 @@ class K8sClient {
 	void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
 		waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase,
 			DEFAULT_TIMEOUT_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS)
+	}
+
+	private Pod applyPodOverrides(Pod pod, Map overrides) {
+		Map podAsMap = new JsonSlurper().parseText(Serialization.asJson(pod)) as Map
+		Map normalizedOverrides = normalizeOverrideValue(overrides) as Map
+		Map mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap)
+		return Serialization.unmarshal(Serialization.asJson(mergedPod), Pod) as Pod
+	}
+
+	private Object normalizeOverrideValue(Object value) {
+		if (value instanceof CharSequence) {
+			return value.toString()
+		}
+
+		if (value instanceof Map) {
+			return value.collectEntries { key, mapValue -> [(key.toString()): normalizeOverrideValue(mapValue)]
+			}
+		}
+
+		if (value instanceof Collection) {
+			return value.collect { entry -> normalizeOverrideValue(entry) }
+		}
+
+		return value
+	}
+
+	private void applyRunParams(Pod pod, List<String> params) {
+		String restartPolicy = params.find { it.startsWith('--restart=') }?.substring('--restart='.length())
+		if (restartPolicy) {
+			pod.spec.restartPolicy = restartPolicy
+		}
+	}
+
+	private boolean shouldReturnPodOutput(List<String> params) {
+		return params.any { it in ['--rm', '-i', '-it', '-ti'] }
+	}
+
+	private boolean shouldRemovePod(List<String> params) {
+		return params.contains('--rm')
+	}
+
+	private String collectPodRunOutput(String podName, String namespace, boolean removePod) {
+		String phase = null
+		try {
+			phase = waitForPodCompletion(podName, namespace)
+			String logOutput = client.pods()
+				                   .inNamespace(namespace)
+				                   .withName(podName)
+				                   .getLog() ?: ''
+
+			if (phase == 'Failed') {
+				throw new RuntimeException("Pod ${podName} failed:\n${logOutput}")
+			}
+
+			return logOutput
+		} finally {
+			if (removePod) {
+				delete('pod', namespace, podName)
+			}
+		}
+	}
+
+	private String waitForPodCompletion(String podName, String namespace) {
+		int tryCount = 0
+
+		while (tryCount < DEFAULT_RETRIES) {
+			Pod pod = client.pods()
+				.inNamespace(namespace)
+				.withName(podName)
+				.get()
+
+			String phase = pod?.status?.phase
+			if (phase in ['Succeeded', 'Failed']) {
+				return phase
+			}
+
+			tryCount++
+			log.debug("Still waiting for pod/${podName} to complete... (try $tryCount/$DEFAULT_RETRIES)")
+			sleep(SLEEPTIME)
+		}
+
+		throw new RuntimeException("Failed to retrieve completed pod/${podName} after ${DEFAULT_RETRIES} retries")
 	}
 
 	// ========================================
