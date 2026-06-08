@@ -63,8 +63,6 @@ class GitHandler {
 		if (config.multiTenant.useDedicatedInstance) {
 			this.central = createCentralScmProvider()
 		}
-
-		setupExternalRepositoriesIfPossible()
 	}
 
 	GitProvider getResourcesScm() {
@@ -120,44 +118,5 @@ class GitHandler {
 						"Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}"
 				)
 		}
-	}
-
-	private void setupExternalRepositoriesIfPossible() {
-		// TODO: Move to RepositoryProvisioning.
-		// For now this keeps external SCM providers working until repository provisioning is introduced.
-
-		final String namePrefix = (config?.application?.namePrefix ?: "").trim()
-
-		if (shouldSkipRepositorySetupForInternalScmManager()) {
-			log.debug("Skipping repository setup in GitHandler because internal SCM-Manager is not deployed yet.")
-			return
-		}
-
-		if (central) {
-			setupRepos(central, namePrefix)
-			setupRepos(tenant, namePrefix)
-		} else {
-			setupRepos(tenant, namePrefix)
-		}
-	}
-
-	private boolean shouldSkipRepositorySetupForInternalScmManager() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
-				config.scm.scmManager?.internal
-	}
-
-	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
-		gitProvider.createRepository(
-				withOrgPrefix(namePrefix, "argocd/cluster-resources"),
-				"GitOps repo for basic cluster-resources"
-		)
-	}
-
-	static String withOrgPrefix(String prefix, String repoPath) {
-		if (!prefix) {
-			return repoPath
-		}
-
-		return prefix + repoPath
 	}
 }

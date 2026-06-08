@@ -41,7 +41,6 @@ class RepositoryProvisioning {
         }
 
         ensureRemoteRepositoriesExist()
-
     }
 
     RepositoryWorkspace provideWorkspace() {
@@ -67,19 +66,21 @@ class RepositoryProvisioning {
         }
 
         if (workspace == null) {
-            throw new IllegalStateException('Repository workspace must be provided before remote repositories can be ensured.')
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before remote repositories can be ensured.'
+            )
         }
 
         ensureRepositoryExists(
                 workspace.clusterResourcesRepo.gitProvider,
-                CLUSTER_RESOURCES_REPO_TARGET,
+                clusterResourcesRepoTarget(),
                 'GitOps repo for cluster resources'
         )
 
         if (workspace.hasTenantBootstrapRepo()) {
             ensureRepositoryExists(
                     workspace.tenantBootstrapRepoOrFail().gitProvider,
-                    CLUSTER_RESOURCES_REPO_TARGET,
+                    clusterResourcesRepoTarget(),
                     'GitOps repo for tenant bootstrap resources'
             )
         }
@@ -90,40 +91,56 @@ class RepositoryProvisioning {
     void publishInitialStateAfterScmManagerDeployment() {
         ensureRemoteRepositoriesExist()
 
-        RepositoryWorkspace currentWorkspace = provideWorkspace()
+        if (workspace == null) {
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before initial state can be published.'
+            )
+        }
 
-        currentWorkspace.commitAndPushClusterChanges(
+        workspace.commitAndPushClusterChanges(
                 'Initial repository state with SCM-Manager resources'
         )
 
-        if (currentWorkspace.hasTenantBootstrapRepo()) {
-            currentWorkspace.commitAndPushTenantBootstrapChanges(
+        if (workspace.hasTenantBootstrapRepo()) {
+            workspace.commitAndPushTenantBootstrapChanges(
                     'Initial tenant bootstrap repository state'
             )
         }
     }
 
     void commitAndPushToolChanges(String toolName, String message = null) {
-        RepositoryWorkspace currentWorkspace = provideWorkspace()
+        if (workspace == null) {
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before tool changes can be published.'
+            )
+        }
 
-        currentWorkspace.commitAndPushClusterChanges(
+        workspace.commitAndPushClusterChanges(
                 message ?: "Update ${toolName} resources"
         )
     }
 
     void commitAndPushAllToolChanges(String toolName, String message = null) {
-        RepositoryWorkspace currentWorkspace = provideWorkspace()
+        if (workspace == null) {
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before tool changes can be published.'
+            )
+        }
 
-        currentWorkspace.commitAndPushAllChanges(
+        workspace.commitAndPushAllChanges(
                 message ?: "Update ${toolName} resources"
         )
+    }
+
+    String clusterResourcesRepoTarget() {
+        withOrgPrefix(namePrefix(), CLUSTER_RESOURCES_REPO_TARGET)
     }
 
     private RepositoryWorkspace createSingleInstanceWorkspace() {
         log.debug('Preparing local single-instance repository workspace.')
 
         GitRepo clusterResourcesRepo = gitRepoFactory.getRepo(
-                CLUSTER_RESOURCES_REPO_TARGET,
+                clusterResourcesRepoTarget(),
                 gitHandler.tenant
         )
 
@@ -134,12 +151,12 @@ class RepositoryProvisioning {
         log.debug('Preparing local dedicated-instance repository workspace.')
 
         GitRepo centralClusterResourcesRepo = gitRepoFactory.getRepo(
-                CLUSTER_RESOURCES_REPO_TARGET,
+                clusterResourcesRepoTarget(),
                 gitHandler.central
         )
 
         GitRepo tenantBootstrapRepo = gitRepoFactory.getRepo(
-                CLUSTER_RESOURCES_REPO_TARGET,
+                clusterResourcesRepoTarget(),
                 gitHandler.tenant
         )
 
@@ -149,8 +166,20 @@ class RepositoryProvisioning {
         )
     }
 
+    private String namePrefix() {
+        (config?.application?.namePrefix ?: '').trim()
+    }
+
+    private static String withOrgPrefix(String prefix, String repoPath) {
+        if (!prefix) {
+            return repoPath
+        }
+
+        prefix + repoPath
+    }
+
     private boolean mustWaitForInternalScmManagerDeployment() {
-        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
+        config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
                 config.scm.scmManager?.internal
     }
 
