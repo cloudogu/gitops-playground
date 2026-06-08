@@ -101,8 +101,7 @@ interface ConfigConstants {
 	String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
 	String APPLICATION_PROFIL = 'Use predefined profile (full, only-argocd, operator-mandants aso.)'
 	String APPLICATION_GOP_NAMESPACE = 'If set, GOP stores specific information in this namespace.'
-	String APPLICATION_NAMESPACE = 'If set, GOP uses same kubeernetes namespace for all tools and examples. Attention! Only use for test purposes'
-
+	String APPLICATION_NAMESPACE = 'If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes.'
 	// group metrics
 	String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'
 	String MONITORING_ENABLE_DESCRIPTION = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources'
