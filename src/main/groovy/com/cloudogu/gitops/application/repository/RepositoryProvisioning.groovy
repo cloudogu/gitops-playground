@@ -73,7 +73,7 @@ class RepositoryProvisioning {
 
         ensureRepositoryExists(
                 workspace.clusterResourcesRepo.gitProvider,
-                clusterResourcesRepoTarget(),
+                workspace.clusterResourcesRepo.repoTarget,
                 'GitOps repo for cluster resources'
         )
 
@@ -120,20 +120,14 @@ class RepositoryProvisioning {
         )
     }
 
-    void commitAndPushAllToolChanges(String toolName, String message = null) {
-        if (workspace == null) {
-            throw new IllegalStateException(
-                    'Repository workspace must be prepared before tool changes can be published.'
-            )
+    String clusterResourcesRepoTarget() {
+        String prefix = (config?.application?.namePrefix ?: '').trim()
+
+        if (!prefix) {
+            return CLUSTER_RESOURCES_REPO_TARGET
         }
 
-        workspace.commitAndPushAllChanges(
-                message ?: "Update ${toolName} resources"
-        )
-    }
-
-    String clusterResourcesRepoTarget() {
-        withOrgPrefix(namePrefix(), CLUSTER_RESOURCES_REPO_TARGET)
+        return "${prefix}${CLUSTER_RESOURCES_REPO_TARGET}"
     }
 
     private RepositoryWorkspace createSingleInstanceWorkspace() {
@@ -166,17 +160,6 @@ class RepositoryProvisioning {
         )
     }
 
-    private String namePrefix() {
-        (config?.application?.namePrefix ?: '').trim()
-    }
-
-    private static String withOrgPrefix(String prefix, String repoPath) {
-        if (!prefix) {
-            return repoPath
-        }
-
-        prefix + repoPath
-    }
 
     private boolean mustWaitForInternalScmManagerDeployment() {
         config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
