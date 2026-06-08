@@ -16,7 +16,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		def features = application.features.collect { it.class.simpleName }
+		def features = application.tools.collect { it.class.simpleName }
 
 		assertThat(features).isEqualTo(['Registry', 'GitHandler', 'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
 	}

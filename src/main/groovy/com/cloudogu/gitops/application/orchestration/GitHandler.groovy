@@ -6,16 +6,13 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(60)
-class GitHandler extends Tool {
+class GitHandler {
 
 	Config config
 	NetworkingUtils networkingUtils
@@ -34,12 +31,6 @@ class GitHandler extends Tool {
 		this.networkingUtils = networkingUtils
 	}
 
-	@Override
-	boolean isEnabled() {
-		true
-	}
-
-	@Override
 	void validate() {
 		if (config.scm.scmManager.url) {
 			config.scm.scmManager.internal = false
@@ -66,8 +57,7 @@ class GitHandler extends Tool {
 		}
 	}
 
-	@Override
-	void enable() {
+	void prepareProviders() {
 		this.tenant = createTenantScmProvider()
 
 		if (config.multiTenant.useDedicatedInstance) {

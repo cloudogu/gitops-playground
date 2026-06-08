@@ -32,13 +32,7 @@ class RepositoryProvisioning {
         this.gitHandler = gitHandler
     }
 
-    @Override
-    boolean isEnabled() {
-        true
-    }
-
-    @Override
-    void enable() {
+    void prepare() {
         provideWorkspace()
 
         if (mustWaitForInternalScmManagerDeployment()) {

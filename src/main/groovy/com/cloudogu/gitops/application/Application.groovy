@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.application
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -13,32 +15,46 @@ import jakarta.inject.Singleton
 @Singleton
 class Application {
 
-	final List<Tool> features
+	final List<Tool> tools
 	final Config config
 	final K8sClient k8sClient
+	final GitHandler gitHandler
+	final RepositoryProvisioning repositoryProvisioning
 
-	Application(Config config, K8sClient k8sClient,
-	            List<Tool> features) {
+	Application(
+			Config config,
+			K8sClient k8sClient,
+			GitHandler gitHandler,
+			RepositoryProvisioning repositoryProvisioning,
+			List<Tool> tools
+	) {
 		this.config = config
-		// Order is important. Enforced by @Order-Annotation on the Singletons
-		this.features = features
 		this.k8sClient = k8sClient
+		this.gitHandler = gitHandler
+		this.repositoryProvisioning = repositoryProvisioning
+		// Order is important. Enforced by @Order-Annotation on the Tool Singletons
+		this.tools = tools
 	}
 
 	def start() {
-		log.debug("Starting Application")
+		log.debug('Starting Application')
 
 		setNamespaceListToConfig(config)
-		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(config)
 
-		features.forEach(feature -> {
-			feature.validate()
+		gitHandler.validate()
+		gitHandler.prepareProviders()
+		repositoryProvisioning.prepare()
+
+		tools.forEach(tool -> {
+			tool.validate()
 		})
-		features.forEach(feature -> {
-			feature.install()
+
+		tools.forEach(tool -> {
+			tool.install()
 		})
-		log.debug("Application finished")
+
+		log.debug('Application finished')
 	}
 
 	private void storeGopInformationInSecret(Config config) {
@@ -58,8 +74,8 @@ class Application {
 			new Tuple2('gop-config', config.toYaml(true)))
 	}
 
-	List<Tool> getFeatures() {
-		return features
+	List<Tool> getTools() {
+		return tools
 	}
 
 	void setNamespaceListToConfig(Config config) {
@@ -75,7 +91,7 @@ class Application {
 		config.content.namespaces = tenantNamespaces.toList()
 
 		//iterates over all FeatureWithImages and gets their namespaces
-		dedicatedNamespaces.addAll(this.features
+		dedicatedNamespaces.addAll(this.tools
 			.collect { it.activeNamespaceFromFeature }
 			.findAll { it }
 			.unique()
