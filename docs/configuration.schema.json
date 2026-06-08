@@ -84,8 +84,8 @@
         },
         "namespace" : {
           "type" : [ "string", "null" ],
-          "description" : "If set, GOP uses same kubeernetes namespace for all tools and examples. Attention! Only use for test purposes"
-        },
+          "description" : "If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes."
+        }
         "namespaceIsolation" : {
           "type" : [ "boolean", "null" ],
           "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
