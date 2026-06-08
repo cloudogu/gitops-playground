@@ -727,7 +727,7 @@ class K8sClient {
 	 * @param namespace The namespace (defaults to "default")
 	 * @param overrides Additional pod overrides
 	 * @param params Additional parameters
-	 * @return A message indicating the pod was created
+	 * @return Either a creation message or the pod logs (when -i/-it/-ti/--rm is used)
 	 */
 	String run(String name, String image, String namespace = '', Map overrides = [:], String... params) {
 		log.debug("Running pod $name with image $image in namespace $namespace")
