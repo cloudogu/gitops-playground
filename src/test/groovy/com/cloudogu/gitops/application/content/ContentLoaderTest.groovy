@@ -1,15 +1,5 @@
 package com.cloudogu.gitops.application.content
 
-import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.config.Config.OverwriteMode
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
-
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
@@ -23,12 +13,8 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.utils.FileSystemUtils
-
-import java.nio.file.Files
-import java.nio.file.Path
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -45,6 +31,19 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
+
+import java.nio.file.Files
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.application.content.ContentLoader.RepoCoordinate
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
 
 @Slf4j
 @EnableKubernetesMockClient(crud = true)
@@ -566,7 +565,7 @@ class ContentLoaderTest {
 
 		]
 		def expectedRepo = 'common/repo'
-		def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
+		def repo = scmmRepoProvider.create(expectedRepo, scmManagerMock)
 		scmManagerMock.initOnceRepo(repo.repoTarget)
 		createContent(config).install()
 
@@ -623,7 +622,7 @@ class ContentLoaderTest {
 		createContent(config).install()
 
 		def expectedRepo = 'common/repo'
-		def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
+		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerMock())
 
 		def url = repo.getGitRepositoryUrl()
 		// clone repo, to ensure, changes in remote repo.
@@ -674,7 +673,7 @@ class ContentLoaderTest {
 
 		]
 		def expectedRepo = 'common/repo'
-		def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
+		def repo = scmmRepoProvider.create(expectedRepo, scmManagerMock)
 		scmManagerMock.initOnceRepo(repo.repoTarget)
 		createContent(config).install()
 
@@ -982,7 +981,7 @@ class ContentLoaderTest {
 	}
 
 	Git cloneRepo(String expectedRepo, File repoFolder) {
-		def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
+		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerMock())
 		def url = repo.getGitRepositoryUrl()
 
 		def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()

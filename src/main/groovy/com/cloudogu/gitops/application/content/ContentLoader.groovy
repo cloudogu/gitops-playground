@@ -325,7 +325,7 @@ class ContentLoader extends Tool {
 		if (repoConfig.templating) {
 			def engine = getTemplatingEngine()
 
-			GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
+			GitRepo repo = this.repoProvider.create(repoConfig.target, this.gitHandler.tenant)
 
 			engine.replaceTemplates(srcPath, [config : config,
 			                                  scm    : [baseUrl : repo.gitProvider.url,
@@ -396,7 +396,7 @@ class ContentLoader extends Tool {
 	private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
 		repoCoordinates.each { repoCoordinate ->
 
-			GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName, this.gitHandler.tenant)
+			GitRepo targetRepo = repoProvider.create(repoCoordinate.fullRepoName, this.gitHandler.tenant)
 			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
 
 			if (isValidForPush(isNewRepo, repoCoordinate)) {

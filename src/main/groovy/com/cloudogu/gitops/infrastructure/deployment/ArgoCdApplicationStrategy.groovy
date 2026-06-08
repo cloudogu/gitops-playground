@@ -40,7 +40,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		def namePrefix = config.application.namePrefix
 		def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-		GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
+		GitRepo clusterResourcesRepo = gitRepoProvider.create('argocd/cluster-resources', this.gitHandler.resourcesScm)
 		clusterResourcesRepo.cloneRepo()
 
 		String project = "cluster-resources"

@@ -72,7 +72,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
+		GitRepo clusterResourcesRepo = scmRepoProvider.create('argocd/cluster-resources', this.gitHandler.resourcesScm)
 		clusterResourcesRepo.cloneRepo()
 
 		if (config.application.namespaceIsolation || config.application.netpols) {

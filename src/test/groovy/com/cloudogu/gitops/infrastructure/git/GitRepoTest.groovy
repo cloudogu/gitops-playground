@@ -201,6 +201,6 @@ class GitRepoTest {
 	}
 
 	private GitRepo getRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerMock scmManagerMock) {
-		return repoProvider.getRepo(repoTarget, scmManagerMock)
+		return repoProvider.create(repoTarget, scmManagerMock)
 	}
 }

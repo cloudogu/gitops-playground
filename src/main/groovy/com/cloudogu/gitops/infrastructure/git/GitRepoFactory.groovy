@@ -15,7 +15,7 @@ class GitRepoFactory {
 		this.config = config
 	}
 
-	GitRepo getRepo(String repoTarget, GitProvider gitProvider) {
+	GitRepo create(String repoTarget, GitProvider gitProvider) {
 		return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils)
 	}
 

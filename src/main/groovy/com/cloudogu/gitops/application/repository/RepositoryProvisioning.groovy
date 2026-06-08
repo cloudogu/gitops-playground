@@ -133,7 +133,7 @@ class RepositoryProvisioning {
     private RepositoryWorkspace createSingleInstanceWorkspace() {
         log.debug('Preparing local single-instance repository workspace.')
 
-        GitRepo clusterResourcesRepo = gitRepoFactory.getRepo(
+        GitRepo clusterResourcesRepo = gitRepoFactory.create(
                 clusterResourcesRepoTarget(),
                 gitHandler.tenant
         )
@@ -144,12 +144,12 @@ class RepositoryProvisioning {
     private RepositoryWorkspace createDedicatedInstanceWorkspace() {
         log.debug('Preparing local dedicated-instance repository workspace.')
 
-        GitRepo centralClusterResourcesRepo = gitRepoFactory.getRepo(
+        GitRepo centralClusterResourcesRepo = gitRepoFactory.create(
                 clusterResourcesRepoTarget(),
                 gitHandler.central
         )
 
-        GitRepo tenantBootstrapRepo = gitRepoFactory.getRepo(
+        GitRepo tenantBootstrapRepo = gitRepoFactory.create(
                 clusterResourcesRepoTarget(),
                 gitHandler.tenant
         )

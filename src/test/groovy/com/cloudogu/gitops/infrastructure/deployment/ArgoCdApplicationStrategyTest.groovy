@@ -118,8 +118,8 @@ spec:
 
 		def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
-			GitRepo getRepo(String repoTarget, GitProvider gitProvider) {
-				def repo = super.getRepo(repoTarget, gitProvider)
+			GitRepo create(String repoTarget, GitProvider gitProvider) {
+				def repo = super.create(repoTarget, gitProvider)
 				localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
 				return repo

@@ -147,7 +147,7 @@ class ArgoCDRepoSetup {
 		String scmRepoTarget,
 		GitProvider gitProvider) {
 		new RepoInitializationAction(config,
-			repoFactory.getRepo(scmRepoTarget, gitProvider),
+				repoFactory.create(scmRepoTarget, gitProvider),
 			gitHandler,
 			localSrcDir)
 	}
