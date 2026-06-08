@@ -127,12 +127,24 @@ abstract class Tool {
             log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
             String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
-            repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
-            chartOrPath = '.'
-            repoType = RepoType.GIT
+
+            Path localChartPath = Path.of(
+                    config.application.localHelmChartFolder,
+                    helmConfig.chart
+            )
+
             version = new YamlSlurper()
-                    .parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                            'Chart.yaml'))['version']
+                    .parse(localChartPath.resolve('Chart.yaml'))['version']
+
+            if (initByHelm) {
+                repoURL = ''
+                chartOrPath = localChartPath.toString()
+                repoType = RepoType.HELM
+            } else {
+                repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
+                chartOrPath = '.'
+                repoType = RepoType.GIT
+            }
         }
 
         log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
