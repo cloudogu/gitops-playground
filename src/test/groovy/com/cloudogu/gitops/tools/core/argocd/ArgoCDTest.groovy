@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -133,7 +134,12 @@ class ArgoCDTest {
     ArgoCD argocd
     RepoLayout clusterResourcesRepoLayout
 
+
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
+
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+    GitHandler gitHandler = mock(GitHandler)
+    GitProvider gitProvider = mock(GitProvider)
 
 
     @BeforeEach
@@ -486,15 +492,53 @@ class ArgoCDTest {
         config.features.monitoring.active = false
         config.application.mirrorRepos = true
 
+        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
+
+        when(gitProvider.repoUrl(any())).thenAnswer { invocation ->
+            return "http://scmm.scm-manager.svc.cluster.local/scm/repo/${invocation.getArgument(0)}"
+        }
+
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig)))
+                .thenAnswer { invocation ->
+                    Config.HelmConfig helmConfig = invocation.getArgument(0)
+
+                    if (helmConfig.chart == 'argo-cd') {
+                        return '3rd-party-dependencies/argocd'
+                    }
+
+                    if (helmConfig.chart == 'kube-prometheus-stack') {
+                        return '3rd-party-dependencies/kube-prometheus-stack'
+                    }
+
+                    return "3rd-party-dependencies/${helmConfig.chart}"
+                }
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
+
+        Path argoCdChart = rootChartsFolder.resolve('argo-cd')
+        Files.createDirectories(argoCdChart)
+
+        fileSystemUtils.writeYaml(
+                [version: '9.4.15'],
+                argoCdChart.resolve('Chart.yaml').toFile()
+        )
+
         def argocd = createArgoCD()
         argocd.install()
+
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
+        def clusterRessourcesYaml = new YamlSlurper().parse(
+                Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
+        )
 
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
+                .contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
+                .doesNotContain('https://prometheus-community.github.io/helm-charts')
     }
 
     @Test
