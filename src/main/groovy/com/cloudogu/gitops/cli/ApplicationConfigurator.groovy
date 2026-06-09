@@ -308,8 +308,7 @@ class ApplicationConfigurator {
 	}
 
 	/**
-	 * if set, all namespaces set to configures namespace.
-	 * @param config
+	 * If application.namespace is set, overrides all tool namespaces and content namespaces to use that namespace.
 	 */
 	void checkAndSetNamespaces(Config config) {
 		// if set, all tools have use this namespace
