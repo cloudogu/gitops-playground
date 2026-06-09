@@ -38,7 +38,7 @@ content:
       createJenkinsJob: true
     - url: https://github.com/cloudogu/gitops-examples
       path: single-namespace/
-      ref: single-namespace
+      ref: main
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE

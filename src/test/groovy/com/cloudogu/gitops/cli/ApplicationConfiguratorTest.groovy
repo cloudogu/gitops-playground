@@ -544,7 +544,7 @@ class ApplicationConfiguratorTest {
 		assertThat(testLogger.getLogs().search("Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port")).isNotEmpty()
 	}
 
-		@Test
+	@Test
 	void "sets all tool namespaces to application namespace when configured"() {
 		Config config = minimalConfig()
 		config.application.namespace = 'platform'
