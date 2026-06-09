@@ -23,6 +23,7 @@ interface ConfigConstants {
 	String REGISTRY_USERNAME_RO_DESCRIPTION = 'Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
 	String REGISTRY_PASSWORD_RO_DESCRIPTION = 'Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
 	String REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION = 'Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication.'
+	String REGISTRY_NAMESPACE = 'Optional defines the kubernetes namespace for registry.'
 
 	String FEATURES_DESCRIPTION = 'Config parameters for features or tools'
 
@@ -66,6 +67,7 @@ interface ConfigConstants {
 	String JENKINS_METRICS_PASSWORD_DESCRIPTION = 'Mandatory when jenkins-url is set and monitoring enabled'
 	String MAVEN_CENTRAL_MIRROR_DESCRIPTION = 'URL for maven mirror, used by applications built in Jenkins'
 	String JENKINS_ADDITIONAL_ENVS_DESCRIPTION = 'Set additional environments to Jenkins'
+	String JENKINS_NAMESPACE = 'Optional defines the kubernetes namespace for Jenkins.'
 
 	// group scmm
 	String SCM_DESCRIPTION = 'Config parameters for Scm'
@@ -99,10 +101,11 @@ interface ConfigConstants {
 	String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
 	String APPLICATION_PROFIL = 'Use predefined profile (full, only-argocd, operator-mandants aso.)'
 	String APPLICATION_GOP_NAMESPACE = 'If set, GOP stores specific information in this namespace.'
-
+	String APPLICATION_NAMESPACE = 'If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes.'
 	// group metrics
 	String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'
 	String MONITORING_ENABLE_DESCRIPTION = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources'
+	String MONITORING_NAMESPACE = 'Optional defines the kubernetes namespace for monitoring.'
 	String GRAFANA_URL_DESCRIPTION = 'Sets url for grafana'
 	String GRAFANA_EMAIL_FROM_DESCRIPTION = 'Notifications, define grafana alerts sender email address'
 	String GRAFANA_EMAIL_TO_DESCRIPTION = 'Notifications, define grafana alerts recipient email address'
@@ -113,6 +116,7 @@ interface ConfigConstants {
 	String VAULT_DESCRIPTION = 'Config parameters for the secrets-vault'
 	String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
 	String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
+	String SECRETS_NAMESPACE = 'Optional defines the kubernetes namespace for secrets.'
 
 	// group external Mailserver
 	String MAIL_DESCRIPTION = 'Config parameters for mail servers'
@@ -151,6 +155,7 @@ interface ConfigConstants {
 	// group ingress-class
 	String INGRESS_DESCRIPTION = 'Config parameters for the Ingress Controller'
 	String INGRESS_ENABLE_DESCRIPTION = 'Sets and enables Ingress Controller'
+	String INGRESS_NAMESPACE = 'Optional defines the kubernetes namespace for Ingress Controller'
 
 	// group CERTMANAGER
 	String CERTMANAGER_DESCRIPTION = 'Config parameters for the Cert Manager'
@@ -160,6 +165,7 @@ interface ConfigConstants {
 	String CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION = 'Sets cainjector Image for Cert Manager'
 	String CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION = 'Sets acmeSolver Image for Cert Manager'
 	String CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION = 'Sets startupAPICheck Image for Cert Manager'
+	String CERTMANAGER_NAMESPACE = 'Optional defines the kubernetes namespace for Cert Manager'
 
 	// group helm
 	String HELM_CONFIG_DESCRIPTION = 'Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.'

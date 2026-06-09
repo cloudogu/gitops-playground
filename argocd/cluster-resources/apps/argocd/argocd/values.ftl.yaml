@@ -28,7 +28,7 @@ argo-cd:
 <#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: ${config.application.namePrefix}monitoring
+        namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -38,7 +38,7 @@ argo-cd:
 <#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: ${config.application.namePrefix}monitoring
+        namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -48,7 +48,7 @@ argo-cd:
 <#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: ${config.application.namePrefix}monitoring
+        namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -58,7 +58,7 @@ argo-cd:
     # Unfortunately, as of argocd 2.6 this leads to failing notifications 
     # https://github.com/argoproj/argo-cd/issues/11252
     params:
-      application.namespaces: "${config.application.namePrefix}argocd"
+      application.namespaces: "${config.application.namePrefix}${config.features.argocd.namespace}"
       server.insecure: true # tls terminated in ingress
 
     # Repo credential templates are created dynamically in groovy, so they are not stored in git
@@ -89,7 +89,7 @@ argo-cd:
         <#if config.features.mail.smtpUser?has_content>username: $email-username</#if>
         <#if config.features.mail.smtpPassword?has_content>password: $email-password</#if>
       <#else>
-        host: mail.${config.application.namePrefix}monitoring.svc.cluster.local
+        host: mail.${config.application.namePrefix}${config.features.monitoring.namespace}.svc.cluster.local
         port: 1025
       </#if>
         from: ${config.features.argocd.emailFrom}

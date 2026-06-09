@@ -11,12 +11,12 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 - [Application](#application)
 - [Content](#content)
 - [Tools](#tools)
-  - [Argocd](#feature-argocd)
-  - [Mail](#feature-mail)
-  - [Monitoring](#feature-monitoring)
-  - [Secrets](#feature-secrets)
-  - [Ingress](#feature-ingress)
-  - [Cert Manager](#feature-cert-manager)
+  - [Argocd](#tools-argocd)
+  - [Mail](#tools-mail)
+  - [Monitoring](#tools-monitoring)
+  - [Secrets](#tools-secrets)
+  - [Ingress](#tools-ingress)
+  - [Cert Manager](#tools-cert-manager)
 
 ## Registry
 
@@ -35,6 +35,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--registry-username-read-only` | `registry.readOnlyUsername` | String | `` | Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
 | `--registry-password-read-only` | `registry.readOnlyPassword` | String | `` | Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
 | `--create-image-pull-secrets` | `registry.createImagePullSecrets` | Boolean | `false` | Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication. |
+| `--registry-namespace` | `registry.namespace` | String | `registry` | Optional defines the kubernetes namespace for registry. |
 | - | `registry.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `registry.helm.chart` | String | `docker-registry` | Name of the Helm chart |
 | - | `registry.helm.repoURL` | String | `https://twuni.github.io/docker-registry.helm` | Repository url from which the Helm chart should be obtained |
@@ -49,7 +50,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
 | `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | String | `mK1KDmJOeg6Y` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `xVycWtxvCW5o` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
@@ -58,6 +59,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `jenkins.helm.chart` | String | `jenkins` | Name of the Helm chart |
 | - | `jenkins.helm.repoURL` | String | `https://charts.jenkins.io` | Repository url from which the Helm chart should be obtained |
 | - | `jenkins.helm.version` | String | `5.9.18` | The version of the Helm chart to be installed |
+| `--jenkins-namespace` | `jenkins.namespace` | String | `jenkins` | Optional defines the kubernetes namespace for Jenkins. |
 
 ## Multi Tenant
 
@@ -111,7 +113,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
 | `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
 | `--username` | `application.username` | String | `admin` | Set initial admin username |
-| `--password` | `application.password` | String | `mK1KDmJOeg6Y` | Set initial admin passwords |
+| `--password` | `application.password` | String | `xVycWtxvCW5o` | Set initial admin passwords |
 | `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
 | `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
 | `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
@@ -127,6 +129,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
 | `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
 | `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |
+| `-n`, `--namespace` | `application.namespace` | String | `` | If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes. |
 
 ## Content
 
@@ -141,7 +144,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 ## Tools
 
-Configuration of optional features supported by gitops-playground.
+Configuration of optional tools supported by gitops-playground.
 
 ### Tool: Argocd
 
@@ -184,6 +187,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.monitoring.helm.chart` | String | `kube-prometheus-stack` | Name of the Helm chart |
 | - | `features.monitoring.helm.repoURL` | String | `https://prometheus-community.github.io/helm-charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.monitoring.helm.version` | String | `80.2.2` | The version of the Helm chart to be installed |
+| `--monitoring-namespace` | `features.monitoring.namespace` | String | `monitoring` | Optional defines the kubernetes namespace for monitoring. |
 
 ### Tool: Secrets
 
@@ -202,6 +206,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.secrets.vault.helm.chart` | String | `vault` | Name of the Helm chart |
 | - | `features.secrets.vault.helm.repoURL` | String | `https://helm.releases.hashicorp.com` | Repository url from which the Helm chart should be obtained |
 | - | `features.secrets.vault.helm.version` | String | `0.25.0` | The version of the Helm chart to be installed |
+| `--secrets-namespace` | `features.secrets.namespace` | String | `secrets` | Optional defines the kubernetes namespace for secrets. |
 
 ### Tool: Ingress
 
@@ -213,6 +218,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.ingress.helm.chart` | String | `traefik` | Name of the Helm chart |
 | - | `features.ingress.helm.repoURL` | String | `https://traefik.github.io/charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.ingress.helm.version` | String | `39.0.0` | The version of the Helm chart to be installed |
+| `--ingress-namespace` | `features.ingress.ingressNamespace` | String | `ingress` | Optional defines the kubernetes namespace for Ingress Controller |
 
 ### Tool: Cert Manager
 
@@ -220,6 +226,7 @@ Configuration of optional features supported by gitops-playground.
 | :--- | :--- | :--- | :--- | :--- |
 | `--cert-manager` | `features.certManager.active` | Boolean | `false` | Sets and enables Cert Manager |
 | `--cert-manager-issuer` | `features.certManager.issuer` | String | `cluster-selfsigned` | Sets and enables Cert Manager |
+| `--cert-manager-namespace` | `features.certManager.namespace` | String | `cert-manager` | Optional defines the kubernetes namespace for Cert Manager |
 | `--cert-manager-image` | `features.certManager.helm.image` | String | `` | Sets image for Cert Manager |
 | `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | String | `` | Sets webhook Image for Cert Manager |
 | `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | String | `` | Sets cainjector Image for Cert Manager |

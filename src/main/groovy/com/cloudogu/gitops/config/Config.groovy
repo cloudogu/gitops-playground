@@ -276,6 +276,10 @@ class Config {
 		@JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
 		Boolean createImagePullSecrets = false
 
+		@Option(names = ['--registry-namespace'], description = REGISTRY_NAMESPACE)
+		@JsonPropertyDescription(REGISTRY_NAMESPACE)
+		String namespace = 'registry'
+
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
 			repoURL: 'https://twuni.github.io/docker-registry.helm',
@@ -347,6 +351,11 @@ class Config {
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
 			repoURL: 'https://charts.jenkins.io',
 			version: '5.9.18')
+
+		@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
+		@JsonPropertyDescription(JENKINS_NAMESPACE)
+		String namespace = "jenkins"
+
 	}
 
 	static class ApplicationSchema {
@@ -455,6 +464,12 @@ class Config {
 		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
+
+
+		@Option(names = ["-n","--namespace"], description = APPLICATION_NAMESPACE)
+		@JsonPropertyDescription(APPLICATION_NAMESPACE)
+		String namespace = ''
+
 
 		static class NamespaceSchema {
 			LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
@@ -588,6 +603,11 @@ class Config {
 			version: '80.2.2',
 			values: [:] // Otherwise values is null 🤷‍♂️
 		)
+
+		@Option(names = ['--monitoring-namespace'], description = MONITORING_NAMESPACE)
+		@JsonPropertyDescription(MONITORING_NAMESPACE)
+		String namespace = 'monitoring'
+
 		static class MonitoringHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
 			@JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
@@ -622,6 +642,10 @@ class Config {
 		@JsonPropertyDescription(VAULT_DESCRIPTION)
 		VaultSchema vault = new VaultSchema()
 
+		@Option(names = ['--secrets-namespace'], description = SECRETS_NAMESPACE)
+		@JsonPropertyDescription(SECRETS_NAMESPACE)
+		String namespace = 'secrets'
+
 		static class ESOSchema {
 
 			@Mixin
@@ -629,6 +653,7 @@ class Config {
 			ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
 				repoURL: 'https://charts.external-secrets.io',
 				version: '0.9.16')
+
 			static class ESOHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -682,7 +707,8 @@ class Config {
 			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
 			String image = ''
 		}
-
+		@Option(names = ['--ingress-namespace'], description = INGRESS_NAMESPACE)
+		@JsonPropertyDescription(INGRESS_NAMESPACE)
 		String ingressNamespace = 'ingress'
 	}
 
@@ -694,6 +720,10 @@ class Config {
 		@Option(names = ['--cert-manager-issuer'], description = CERTMANAGER_ENABLE_DESCRIPTION)
 		@JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
 		String issuer = 'cluster-selfsigned'
+
+		@Option(names = ['--cert-manager-namespace'], description = CERTMANAGER_NAMESPACE)
+		@JsonPropertyDescription(CERTMANAGER_NAMESPACE)
+		String namespace = 'cert-manager'
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)

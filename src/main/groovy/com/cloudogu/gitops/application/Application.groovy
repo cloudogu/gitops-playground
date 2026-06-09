@@ -46,7 +46,7 @@ class Application {
 		// Fallback, if run from IDE
 		if (!config.application.gopNamespace.isEmpty()) {
 			// if set, take namespace from configuration
-			namespace = "${config.application.gopNamespace}"
+			namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
 		} else if (this.k8sClient.getCurrentNamespace() != null) {
 			// if gop-namespace not set, take namespace from running GOP
 			namespace = this.k8sClient.getCurrentNamespace()
@@ -85,4 +85,6 @@ class Application {
 		config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
 	}
+
+
 }

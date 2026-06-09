@@ -58,7 +58,7 @@ class Jenkins extends Tool {
 		this.gitHandler = gitHandler
 
 		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}jenkins"
+			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
 		}
 	}
 
