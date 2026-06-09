@@ -10,13 +10,13 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 - [Scm](#scm)
 - [Application](#application)
 - [Content](#content)
-- [Features](#features)
-  - [Argocd](#feature-argocd)
-  - [Mail](#feature-mail)
-  - [Monitoring](#feature-monitoring)
-  - [Secrets](#feature-secrets)
-  - [Ingress](#feature-ingress)
-  - [Cert Manager](#feature-cert-manager)
+- [Tools](#tools)
+  - [Argocd](#tools-argocd)
+  - [Mail](#tools-mail)
+  - [Monitoring](#tools-monitoring)
+  - [Secrets](#tools-secrets)
+  - [Ingress](#tools-ingress)
+  - [Cert Manager](#tools-cert-manager)
 
 ## Registry
 
@@ -50,7 +50,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
 | `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | String | `xOBYkSHAEh5r` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `xVycWtxvCW5o` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
@@ -113,7 +113,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
 | `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
 | `--username` | `application.username` | String | `admin` | Set initial admin username |
-| `--password` | `application.password` | String | `xOBYkSHAEh5r` | Set initial admin passwords |
+| `--password` | `application.password` | String | `xVycWtxvCW5o` | Set initial admin passwords |
 | `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
 | `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
 | `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
@@ -142,11 +142,11 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
 
-## Features
+## Tools
 
-Configuration of optional features supported by gitops-playground.
+Configuration of optional tools supported by gitops-playground.
 
-### Feature: Argocd
+### Tool: Argocd
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -161,7 +161,7 @@ Configuration of optional features supported by gitops-playground.
 | `--argocd-namespace` | `features.argocd.namespace` | String | `argocd` | Defines the kubernetes namespace for ArgoCD |
 | - | `features.argocd.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 
-### Feature: Mail
+### Tool: Mail
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -170,7 +170,7 @@ Configuration of optional features supported by gitops-playground.
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
 
-### Feature: Monitoring
+### Tool: Monitoring
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -189,7 +189,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.monitoring.helm.version` | String | `80.2.2` | The version of the Helm chart to be installed |
 | `--monitoring-namespace` | `features.monitoring.namespace` | String | `monitoring` | Optional defines the kubernetes namespace for monitoring. |
 
-### Feature: Secrets
+### Tool: Secrets
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -208,7 +208,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.secrets.vault.helm.version` | String | `0.25.0` | The version of the Helm chart to be installed |
 | `--secrets-namespace` | `features.secrets.namespace` | String | `secrets` | Optional defines the kubernetes namespace for secrets. |
 
-### Feature: Ingress
+### Tool: Ingress
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -220,7 +220,7 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.ingress.helm.version` | String | `39.0.0` | The version of the Helm chart to be installed |
 | `--ingress-namespace` | `features.ingress.ingressNamespace` | String | `ingress` | Optional defines the kubernetes namespace for Ingress Controller |
 
-### Feature: Cert Manager
+### Tool: Cert Manager
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |

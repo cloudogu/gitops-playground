@@ -2,6 +2,7 @@
 application:
   "yes": true
   baseUrl: http://localhost
+  namespace: single-namespace
 features:
   argocd:
     active: true
