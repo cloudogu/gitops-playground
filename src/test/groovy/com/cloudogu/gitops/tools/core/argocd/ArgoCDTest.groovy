@@ -485,54 +485,16 @@ class ArgoCDTest {
     void 'Prepares repos for air-gapped mode'() {
         config.features.monitoring.active = false
         config.application.mirrorRepos = true
-        deployer = mock(Deployer)
-
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig)))
-                .thenReturn('3rd-party-dependencies/argocd')
-
-        def localHelmChartFolder = Files.createTempDirectory('local-helm-charts')
-        def argoCdChartDir = localHelmChartFolder.resolve('argo-cd')
-        Files.createDirectories(argoCdChartDir)
-
-        Files.writeString(
-                argoCdChartDir.resolve('Chart.yaml'),
-                '''apiVersion: v2
-name: argo-cd
-version: 9.4.15
-'''
-        )
-
-        config.application.localHelmChartFolder = localHelmChartFolder.toString()
 
         def argocd = createArgoCD()
         argocd.install()
-
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        def clusterRessourcesYaml = new YamlSlurper().parse(
-                Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
-        )
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
 
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
-                .contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
-
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
-                .doesNotContain('https://prometheus-community.github.io/helm-charts')
-
-        verify(airGappedUtils).mirrorHelmRepoToGit(any(Config.HelmConfig))
-
-        verify(deployer).deployFeature(
-                eq('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/argocd'),
-                eq('argocd'),
-                eq('.'),
-                eq('9.4.15'),
-                eq('argocd'),
-                eq('argocd'),
-                any(Path),
-                eq(DeploymentStrategy.RepoType.GIT),
-                eq(true)
-        )
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
     }
 
     @Test

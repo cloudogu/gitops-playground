@@ -9,7 +9,7 @@ metadata:
 </#if>
 spec:
   description: Default fallback AppProject if none other is specified. Is not allowed to do anything.
-  clusterResourceWhitelist:
-  destinations:
-  sourceRepos:
-  sourceNamespaces:
+  clusterResourceWhitelist: [ ]
+  destinations: [ ]
+  sourceRepos: [ ]
+  sourceNamespaces: [ ]

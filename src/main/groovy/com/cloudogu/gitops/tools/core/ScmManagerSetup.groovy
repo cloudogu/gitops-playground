@@ -93,7 +93,7 @@ class ScmManagerSetup {
 				this.scmManager.scmmConfig.namespace,
 				SCMM_RELEASE_NAME,
 				tempValuesPath as Path,
-				DeploymentStrategy.RepoType.HELM)
+				DeploymentStrategy.RepoType.HELM) //TODO check warum HELM?
 	}
 
 	def installScmmPlugins() {
