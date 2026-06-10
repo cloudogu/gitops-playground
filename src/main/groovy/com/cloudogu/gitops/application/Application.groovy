@@ -13,76 +13,78 @@ import jakarta.inject.Singleton
 @Singleton
 class Application {
 
-    final List<Tool> features
-    final Config config
-    final K8sClient k8sClient
+	final List<Tool> features
+	final Config config
+	final K8sClient k8sClient
 
-    Application(Config config, K8sClient k8sClient,
-                List<Tool> features) {
-        this.config = config
-        // Order is important. Enforced by @Order-Annotation on the Singletons
-        this.features = features
-        this.k8sClient = k8sClient
-    }
+	Application(Config config, K8sClient k8sClient,
+	            List<Tool> features) {
+		this.config = config
+		// Order is important. Enforced by @Order-Annotation on the Singletons
+		this.features = features
+		this.k8sClient = k8sClient
+	}
 
-    def start() {
-        log.debug("Starting Application")
+	def start() {
+		log.debug("Starting Application")
 
-        setNamespaceListToConfig(config)
-        // if set, stores configuration in a secret.
-        storeGopInformationInSecret(config)
+		setNamespaceListToConfig(config)
+		// if set, stores configuration in a secret.
+		storeGopInformationInSecret(config)
 
-        features.forEach(feature -> {
-            feature.validate()
-        })
-        features.forEach(feature -> {
-            feature.install()
-        })
-        log.debug("Application finished")
-    }
+		features.forEach(feature -> {
+			feature.validate()
+		})
+		features.forEach(feature -> {
+			feature.install()
+		})
+		log.debug("Application finished")
+	}
 
-    private void storeGopInformationInSecret(Config config) {
-        String namespace = "gop-job"
-        // Fallback, if run from IDE
-        if (!config.application.gopNamespace.isEmpty()) {
-            // if set, take namespace from configuration
-            namespace = "${config.application.gopNamespace}"
-        } else if (this.k8sClient.getCurrentNamespace() != null) {
-            // if gop-namespace not set, take namespace from running GOP
-            namespace = this.k8sClient.getCurrentNamespace()
-        }
-        log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
-        k8sClient.createNamespace(namespace)
-        k8sClient.createSecret('generic', 'gop-configuration', namespace,
-                new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
-                new Tuple2('gop-config', config.toYaml(true)))
-    }
+	private void storeGopInformationInSecret(Config config) {
+		String namespace = "gop-job"
+		// Fallback, if run from IDE
+		if (!config.application.gopNamespace.isEmpty()) {
+			// if set, take namespace from configuration
+			namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
+		} else if (this.k8sClient.getCurrentNamespace() != null) {
+			// if gop-namespace not set, take namespace from running GOP
+			namespace = this.k8sClient.getCurrentNamespace()
+		}
+		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
+		k8sClient.createNamespace(namespace)
+		k8sClient.createSecret('generic', 'gop-configuration', namespace,
+			new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+			new Tuple2('gop-config', config.toYaml(true)))
+	}
 
-    List<Tool> getFeatures() {
-        return features
-    }
+	List<Tool> getFeatures() {
+		return features
+	}
 
-    void setNamespaceListToConfig(Config config) {
-        LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
-        LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
-        def engine = new TemplatingEngine()
+	void setNamespaceListToConfig(Config config) {
+		LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
+		LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
+		def engine = new TemplatingEngine()
 
-        config.content.namespaces.each { String ns ->
-            tenantNamespaces.add(engine.template(ns, [config : config,
-                                                      // Allow for using static classes inside the templates
-                                                      statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()]))
-        }
-        config.content.namespaces = tenantNamespaces.toList()
+		config.content.namespaces.each { String ns ->
+			tenantNamespaces.add(engine.template(ns, [config : config,
+			                                          // Allow for using static classes inside the templates
+			                                          statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()]))
+		}
+		config.content.namespaces = tenantNamespaces.toList()
 
-        //iterates over all FeatureWithImages and gets their namespaces
-        dedicatedNamespaces.addAll(this.features
-                .collect { it.activeNamespaceFromFeature }
-                .findAll { it }
-                .unique()
-                .collect { "${it}".toString() })
+		//iterates over all FeatureWithImages and gets their namespaces
+		dedicatedNamespaces.addAll(this.features
+			.collect { it.activeNamespaceFromFeature }
+			.findAll { it }
+			.unique()
+			.collect { "${it}".toString() })
 
-        config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
-        config.application.namespaces.tenantNamespaces = tenantNamespaces
-        log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
-    }
+		config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
+		config.application.namespaces.tenantNamespaces = tenantNamespaces
+		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
+	}
+
+
 }

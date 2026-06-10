@@ -21,7 +21,7 @@ class CertManager extends Tool implements ToolWithImage {
 
 	final K8sClient k8sClient
 	final Config config
-	final String namespace = "${config.application.namePrefix}cert-manager"
+	String namespace
 
 	CertManager(Config config,
 			FileSystemUtils fileSystemUtils,
@@ -35,6 +35,7 @@ class CertManager extends Tool implements ToolWithImage {
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}${config.features.certManager.namespace}"
 	}
 
 	@Override

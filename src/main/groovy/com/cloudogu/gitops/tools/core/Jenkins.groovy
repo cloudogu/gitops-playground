@@ -57,10 +57,10 @@ class Jenkins extends Tool {
         this.networkingUtils = networkingUtils
         this.gitHandler = gitHandler
 
-        if (config.jenkins.internal) {
-            this.namespace = "${config.application.namePrefix}jenkins"
-        }
-    }
+		if (config.jenkins.internal) {
+			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+		}
+	}
 
     @Override
     boolean isEnabled() {

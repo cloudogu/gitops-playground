@@ -14,13 +14,13 @@ import jakarta.inject.Singleton
 @Order(40)
 class Registry extends Tool {
 
-    /**
-     * Local container port of the registry within the pod*/
-    public static final String CONTAINER_PORT = '5000'
+	/**
+	 * Local container port of the registry within the pod*/
+	public static final String CONTAINER_PORT = '5000'
 
-    String namespace
-    private Config config
-    private K8sClient k8sClient
+	String namespace
+	private Config config
+	private K8sClient k8sClient
 
     Registry(
             Config config,
@@ -33,10 +33,10 @@ class Registry extends Tool {
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
 
-        if (config.registry.internal) {
-            this.namespace = "${config.application.namePrefix}registry"
-        }
-    }
+		if (config.registry.internal) {
+			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
+		}
+	}
 
     @Override
     boolean isEnabled() {

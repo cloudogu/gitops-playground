@@ -17,79 +17,79 @@ import java.nio.file.Path
 @Order(100)
 @CompileStatic
 class ArgoCDDestructionHandler implements DestructionHandler {
-    private K8sClient k8sClient
-    private HelmClient helmClient
-    private GitRepoFactory repoProvider
-    private Config config
-    private FileSystemUtils fileSystemUtils
-    private GitHandler gitHandler
+	private K8sClient k8sClient
+	private HelmClient helmClient
+	private GitRepoFactory repoProvider
+	private Config config
+	private FileSystemUtils fileSystemUtils
+	private GitHandler gitHandler
 
-    ArgoCDDestructionHandler(Config config,
-                             K8sClient k8sClient,
-                             HelmClient helmClient,
-                             GitRepoFactory repoProvider,
-                             FileSystemUtils fileSystemUtils,
-                             GitHandler gitHandler) {
-        this.k8sClient = k8sClient
-        this.helmClient = helmClient
-        this.repoProvider = repoProvider
-        this.config = config
-        this.fileSystemUtils = fileSystemUtils
-        this.gitHandler = gitHandler
-    }
+	ArgoCDDestructionHandler(Config config,
+		K8sClient k8sClient,
+		HelmClient helmClient,
+		GitRepoFactory repoProvider,
+		FileSystemUtils fileSystemUtils,
+		GitHandler gitHandler) {
+		this.k8sClient = k8sClient
+		this.helmClient = helmClient
+		this.repoProvider = repoProvider
+		this.config = config
+		this.fileSystemUtils = fileSystemUtils
+		this.gitHandler = gitHandler
+	}
 
-    @Override
-    void destroy() {
+	@Override
+	void destroy() {
 
-        def repo = repoProvider.getRepo("argocd/cloud-resources", gitHandler.resourcesScm)
-        repo.cloneRepo()
+		def repo = repoProvider.getRepo("argocd/cloud-resources", gitHandler.resourcesScm)
+		repo.cloneRepo()
 
-        for (def app in k8sClient.getCustomResource("app")) {
-            if (app.name == 'bootstrap' || app.name == 'argocd' || app.name == 'projects') {
-                // we don't want bootstrap to kill everything
-                // argocd and projects are needed for argocd to function and run finalizers
-                continue
-            }
+		for (def app in k8sClient.getCustomResource("app")) {
+			if (app.name == 'bootstrap' || app.name == 'argocd' || app.name == 'projects') {
+				// we don't want bootstrap to kill everything
+				// argocd and projects are needed for argocd to function and run finalizers
+				continue
+			}
 
-            k8sClient.patch("app",
-                    app.name,
-                    app.namespace,
-                    'merge',
-                    [metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
-        }
+			k8sClient.patch("app",
+				app.name,
+				app.namespace,
+				'merge',
+				[metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
+		}
 
-        List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation
-                                                        new Tuple2<String, String>("argocd", "cluster-resources"),
-                                                        new Tuple2<String, String>("argocd", "example-apps"),]
+		List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation
+		                                                new Tuple2<String, String>("argocd", "cluster-resources"),
+		                                                new Tuple2<String, String>("argocd", "example-apps"),]
 
-        for (def app in appsToBeDeleted) {
-            k8sClient.delete("app", app.v1, app.v2)
-        }
+		for (def app in appsToBeDeleted) {
+			k8sClient.delete("app", app.v1, app.v2)
+		}
 
-        installArgoCDViaHelm(repo)
-        helmClient.uninstall('argocd', 'argocd')
-        for (def project in k8sClient.getCustomResource('appprojects')) {
-            k8sClient.delete("appproject", project.namespace, project.name)
-        }
+		installArgoCDViaHelm(repo)
+		helmClient.uninstall('argocd', 'argocd')
+		for (def project in k8sClient.getCustomResource('appprojects')) {
+			k8sClient.delete("appproject", project.namespace, project.name)
+		}
 
-        k8sClient.delete("app", 'argocd', "projects")
-        k8sClient.delete("app", 'argocd', "argocd")
+		k8sClient.delete("app", 'argocd', "projects")
+		k8sClient.delete("app", 'argocd', "argocd")
 
-        k8sClient.delete('secret', 'default', 'jenkins-credentials')
-        k8sClient.delete('secret', 'default', 'argocd-repo-creds-scm')
-    }
+		k8sClient.delete('secret', 'default', 'jenkins-credentials')
+		k8sClient.delete('secret', 'default', 'argocd-repo-creds-scm')
+	}
 
-    void installArgoCDViaHelm(GitRepo repo) {
-        // this is a hack to be able to uninstall using helm
-        def namePrefix = config.application.namePrefix
-
-        // Install umbrella chart from folder
-        String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
-        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
-        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
-        List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies'].collect { it }
-        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
-        helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
-    }
+	void installArgoCDViaHelm(GitRepo repo) {
+		// this is a hack to be able to uninstall using helm
+		def namePrefix = config.application.namePrefix
+        def argocdNamespace = namePrefix + config.features.argocd.namespace
+		// Install umbrella chart from folder
+		String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
+		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
+		// See https://github.com/helm/helm/issues/8036#issuecomment-872502901
+		List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies'].collect { it }
+		helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
+		helmClient.dependencyBuild(umbrellaChartPath)
+		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${argocdNamespace}"])
+	}
 }

@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: argocd
-  namespace: ${config.application.namePrefix}argocd
+  namespace: ${config.application.namePrefix}${config.features.argocd.namespace}
   annotations:
 <#if config.features.mail.active?? && config.features.mail.active>
     notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToAdmin}

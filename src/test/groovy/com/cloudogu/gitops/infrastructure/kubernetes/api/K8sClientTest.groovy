@@ -7,6 +7,7 @@ import com.cloudogu.gitops.config.Credentials
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.json.JsonSlurper
 
 import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -870,7 +871,117 @@ metadata:
         assertThat(result).contains("pod/test-pod created")
     }
 
-    // ========================================
+	@Test
+	void 'run applies pod overrides instead of generated parameter values'() {
+		// Given
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces/jenkins/pods")
+			.andReturn(201, new PodBuilder()
+				.withNewMetadata()
+				.withName("test-pod")
+				.endMetadata()
+				.build())
+			.once()
+
+		String overrideImage = "bash:42"
+		Map overrides = [spec: [containers  : [[name        : "override-container",
+		                                        image       : "${overrideImage}",
+		                                        args        : ["cat", "/etc/group"],
+		                                        volumeMounts: [[name: "group", mountPath: "/etc/group", readOnly: true]]]],
+		                        nodeSelector: [node: "jenkins"],
+		                        volumes     : [[name: "group", hostPath: [path: "/etc/group"]]]]]
+
+		// When
+		k8sApiClient.run("test-pod", "nginx:latest", "jenkins", overrides)
+
+		// Then
+		def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+		assertThat(requestBody["metadata"]["name"]).isEqualTo("test-pod")
+		assertThat(requestBody["metadata"]["namespace"]).isEqualTo("jenkins")
+		assertThat(requestBody["spec"]["nodeSelector"]["node"]).isEqualTo("jenkins")
+
+		List containers = requestBody["spec"]["containers"] as List
+		assertThat(containers).hasSize(1)
+		Map container = containers[0] as Map
+		assertThat(container["name"]).isEqualTo("override-container")
+		assertThat(container["image"]).isEqualTo("bash:42")
+		assertThat(container["args"] as List).containsExactly("cat", "/etc/group")
+
+		List volumeMounts = container["volumeMounts"] as List
+		Map volumeMount = volumeMounts[0] as Map
+		assertThat(volumeMount["mountPath"]).isEqualTo("/etc/group")
+		assertThat(volumeMount["readOnly"]).isEqualTo(true)
+
+		List volumes = requestBody["spec"]["volumes"] as List
+		Map volume = volumes[0] as Map
+		assertThat((volume["hostPath"] as Map)["path"]).isEqualTo("/etc/group")
+	}
+
+	@Test
+	void 'run returns pod logs and removes pod for interactive rm mode'() {
+		// Given
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces/jenkins/pods")
+			.andReturn(201, new PodBuilder()
+				.withNewMetadata()
+				.withName("gid-pod")
+				.endMetadata()
+				.build())
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+			.andReturn(200, new PodBuilder()
+				.withNewMetadata()
+				.withName("gid-pod")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Succeeded")
+				.endStatus()
+				.build())
+			.once()
+
+		def succeededPod = new PodBuilder()
+			.withNewMetadata()
+			.withName("gid-pod")
+			.endMetadata()
+			.withNewStatus()
+			.withPhase("Succeeded")
+			.endStatus()
+			.build()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods?fieldSelector=metadata.name%3Dgid-pod")
+			.andReturn(200, new PodListBuilder().withItems(succeededPod).build())
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod/log?pretty=false")
+			.andReturn(200, "root:x:0:\ndocker:x:42:\n")
+			.once()
+
+		server.expect()
+			.delete()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+			.andReturn(200, new StatusBuilder().build())
+			.once()
+
+		// When
+		String result = k8sApiClient.run("gid-pod", "bash:42", "jenkins", [:], "--restart=Never", "-ti", "--rm", "--quiet")
+
+		// Then
+		assertThat(result).isEqualTo("root:x:0:\ndocker:x:42:\n")
+
+		def createRequest = new JsonSlurper().parseText(server.takeRequest().getUtf8Body()) as Map
+		assertThat(createRequest["spec"]["restartPolicy"]).isEqualTo("Never")
+	}
+
+	// ========================================
     // Query Operations Tests
     // ========================================
 

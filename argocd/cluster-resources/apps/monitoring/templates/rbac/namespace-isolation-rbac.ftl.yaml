@@ -136,7 +136,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-operator
-    namespace: ${config.application.namePrefix}monitoring
+    namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -150,7 +150,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-prometheus
-    namespace: ${config.application.namePrefix}monitoring
+    namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -184,4 +184,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-grafana
-    namespace: ${config.application.namePrefix}monitoring
+    namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
