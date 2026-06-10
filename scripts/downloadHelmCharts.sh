@@ -3,7 +3,7 @@
 set -o errexit -o nounset -o pipefail
 charts=( 'kube-prometheus-stack' 'external-secrets' 'vault' 'traefik' 'cert-manager' 'jenkins' 'scm-manager')
 CONFIG="${1:-src/main/groovy/com/cloudogu/gitops/config/Config.groovy}"
-SCM_MANAGER_CONFIG="src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy"
+SCM_MANAGER_CONFIG="${2:-src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy}"
 CONFIG_FILES=("${CONFIG}")
 
 if [[ "${CONFIG}" != "${SCM_MANAGER_CONFIG}" ]]; then

@@ -155,8 +155,9 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 # 3.7: Download Helm Charts
 # -----------------------------------------------------------------------------
 COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
+COPY src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy /tmp/ScmTenantSchema.groovy
 
 # -----------------------------------------------------------------------------
 # 3.8: Prepare Application Files
