@@ -20,7 +20,7 @@ import java.nio.file.Path
 
 @Slf4j
 @Singleton
-@Order(45)
+@Order(300)
 @CompileStatic
 class Monitoring extends Tool implements ToolWithImage {
 

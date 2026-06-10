@@ -20,6 +20,7 @@ class ApplicationConfigurator {
         addAdditionalApplicationConfig(newConfig)
         addNamePrefix(newConfig)
 
+
         addScmConfig(newConfig)
 
         addRegistryConfig(newConfig)

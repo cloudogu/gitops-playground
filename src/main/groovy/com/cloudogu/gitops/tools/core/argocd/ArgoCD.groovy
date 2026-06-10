@@ -2,8 +2,8 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
@@ -20,15 +20,15 @@ import java.nio.file.Path
 
 @Slf4j
 @Singleton
-@Order(2)
+@Order(100)
 class ArgoCD extends Tool {
-
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/argocd/argocd/values.ftl.yaml"
 
     private final String namespace
     private final Config config
     private final K8sClient k8sClient
+    private final HelmClient helmClient
     private final GitRepoFactory repoProvider
+    private final GitHandler gitHandler
     private final String password
 
     private ArgoCDRepoSetup repoSetup
@@ -37,7 +37,7 @@ class ArgoCD extends Tool {
     ArgoCD(
             Config config,
             K8sClient k8sClient,
-            Deployer deployer,
+            HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             GitRepoFactory repoProvider,
             GitHandler gitHandler,
@@ -45,7 +45,7 @@ class ArgoCD extends Tool {
         this.repoProvider = repoProvider
         this.config = config
         this.k8sClient = k8sClient
-        this.deployer = deployer
+        this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
         this.gitHandler = gitHandler
         this.airGappedUtils = airGappedUtils
@@ -136,7 +136,7 @@ class ArgoCD extends Tool {
         } else {
             // Bootstrap root application
             k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "argocd.yaml").toString())
-            k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "applications.yaml").toString())
+            k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
         }
 
         // Delete helm-argo secrets to decouple from helm.
@@ -186,15 +186,14 @@ class ArgoCD extends Tool {
     }
 
     private void deployWithHelm() {
-        addHelmValuesData('argocd', [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''])
-
-        deployHelmChart('argocd',
-                'argocd',
-                namespace,
-                config.features.argocd.helm,
-                HELM_VALUES_PATH,
-                config,
-                true)
+        // Install umbrella chart from argocd/argocd
+        String umbrellaChartPath = clusterResourcesRepo.helmDir()
+        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
+        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
+        List helmDependencies = fileSystemUtils.readYaml(Path.of(clusterResourcesRepo.chartYaml()))['dependencies'].collect { it }
+        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
+        helmClient.dependencyBuild(umbrellaChartPath)
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: namespace])
 
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo

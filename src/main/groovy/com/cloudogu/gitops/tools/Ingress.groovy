@@ -14,7 +14,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(5)
+@Order(150)
 class Ingress extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/values.ftl.yaml"

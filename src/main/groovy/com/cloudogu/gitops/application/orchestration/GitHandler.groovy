@@ -16,7 +16,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(1)
+@Order(30)
 class GitHandler extends Tool {
 
     Config config
@@ -118,8 +118,8 @@ class GitHandler extends Tool {
             setupRepos(this.tenant, namePrefix)
         }
 
-        //creating ArgocdApplication AFTER repos are created. Fixing the bootstrap problem
-        (this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
+//        //creating ArgocdApplication AFTER repos are created. Fixing the bootstrap problem
+//        (this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
     }
 
     static void setupRepos(GitProvider gitProvider, String namePrefix = "") {

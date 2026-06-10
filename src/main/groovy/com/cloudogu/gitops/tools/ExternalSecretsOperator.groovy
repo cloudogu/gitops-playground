@@ -14,7 +14,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(35)
+@Order(400)
 class ExternalSecretsOperator extends Tool implements ToolWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
