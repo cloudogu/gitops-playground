@@ -306,7 +306,7 @@ docker run --rm -t -u $(id -u) \
     --net=host \
     ${GOP_IMAGE} -x \
     --yes --argocd --ingress --base-url=http://localhost \
-    --vault=dev --monitoring --mail --cert-manager \
+    --vault=dev --monitoring --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
     --registry-path=registry \
