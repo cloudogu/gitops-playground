@@ -45,7 +45,7 @@ features:
       values:
         image:
           registry: "localhost:30000"
-          repository: "traefik/traefik"
+          repository: "proxy/traefik"
           tag: "v3.3.3"
   secrets:
     externalSecrets:
@@ -55,6 +55,7 @@ features:
       helm:
         image: "localhost:30000/proxy/vault"
   certManager:
+    active: true
     helm:
       image: "localhost:30000/proxy/cert-manager-controller"
       webhookImage: "localhost:30000/proxy/cert-manager-webhook"
