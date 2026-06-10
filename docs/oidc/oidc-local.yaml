@@ -26,9 +26,9 @@ features:
          client_id: grafana
          client_secret: 46uALR2HeqLPtJxzkkn6tK6FVC9vMmRc
          scopes: openid profile email
-       auth_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/auth
-       token_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/token
-       api_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/userinfo
+         auth_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/auth
+         token_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/token
+         api_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/userinfo
          signout_redirect_url: http://grafana.localhost
          # Keycloak-Rollen Binding
          # role_attribute_path: contains(realm_access.roles[*], 'grafana-admin') && 'Admin' || contains(realm_access.roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
@@ -48,9 +48,10 @@ jenkins:
           emailFieldName: "email"
           logoutFromOpenidProvider: true
           postLogoutRedirectUrl: "http://jenkins.localhost"
-          escapeHatchEnabled: true
-          escapeHatchUsername: "admin"
-          escapeHatchSecret: "mtuIbUdggI2ZSy7jSsQW0WkwK0CwMbvO"
+          properties:
+            - escapeHatch:
+                username: "admin"
+                secret: "admin"
       authorizationStrategy:
         loggedInUsersCanDoAnything:
           allowAnonymousRead: false
