@@ -50,7 +50,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
 | `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | String | `KDPiRFLdJjb8` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `<generated>` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
