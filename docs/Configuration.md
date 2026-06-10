@@ -113,7 +113,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
 | `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
 | `--username` | `application.username` | String | `admin` | Set initial admin username |
-| `--password` | `application.password` | String | `KDPiRFLdJjb8` | Set initial admin passwords |
+| `--password` | `application.password` | String | `<generated>` | Set initial admin passwords |
 | `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
 | `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
 | `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
