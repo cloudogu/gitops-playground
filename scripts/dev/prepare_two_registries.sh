@@ -46,26 +46,12 @@ content:
   variables:
     petclinic:
       baseDomain: "petclinic.localhost"
-    nginx:
-      baseDomain: "nginx.localhost"
     images:
-      kubectl: "bitnamilegacy/kubectl:1.29"
-      helm: "ghcr.io/cloudogu/helm:3.16.4-1"
-      kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
-      helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
-      yamllint: "cytopia/yamllint:1.25-0.7"
-      nginx: ""
-      petclinic: "eclipse-temurin:17-jre-alpine"
-      maven: ""
-  variables:
-    petclinic:
-      baseDomain: "petclinic.localhost"
-    images:
-      kubectl: "localhost:30000/proxy/kubectl:1.29"
-      helm: "localhost:30000/proxy/helm:3.16.4-1"
-      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
-      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
+      kubectl: "localhost:30000/proxy/kubectl:latest"
+      helm: "localhost:30000/proxy/helm:latest"
+      kubeval: "localhost:30000/proxy/helm:latest"
+      helmKubeval: "localhost:30000/proxy/helm:latest"
+      yamllint: "localhost:30000/proxy/cytopia/yamllint:latest"
       petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
       maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
 registry:
