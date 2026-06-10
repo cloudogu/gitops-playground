@@ -88,7 +88,7 @@ class GitHandler extends Tool {
 			case ScmProviderType.SCM_MANAGER:
 				def prefixedNamespace = "${config.application.namePrefix}${config.scm.scmManager.namespace}".toString()
 				config.scm.scmManager.namespace = prefixedNamespace
-				this.tenant = new ScmManager(this.config, config.scm.scmManager, deployer, k8sClient, networkingUtils, true)
+				this.tenant = new ScmManager(this.config, config.scm.scmManager, deployer, k8sClient, networkingUtils)
                 (tenant as ScmManager).init(true)
                 // this.tenant.setup() setup will be here in future
 				break
@@ -118,8 +118,8 @@ class GitHandler extends Tool {
             setupRepos(this.tenant, namePrefix)
         }
 
-//        //creating ArgocdApplication AFTER repos are created. Fixing the bootstrap problem
-//        (this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
+        //creating ArgocdApplication AFTER repos are created. Fixing the bootstrap problem
+        (this.tenant as ScmManager)?.scmManagerSetup?.createArgocdApplication()
     }
 
 	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
