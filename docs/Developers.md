@@ -305,20 +305,7 @@ docker run --rm -t -u $(id -u) \
    -v ${PATH_TWO_REGISTRIES}:/home/two-registries.yaml \
     --net=host \
     ${GOP_IMAGE} -x \
-    --yes --argocd --ingress --base-url=http://localhost \
-    --vault=dev --monitoring --cert-manager \
-    --create-image-pull-secrets \
-    --registry-url=localhost:30000 \
-    --registry-path=registry \
-    --registry-username=Registry \
-    --registry-password=Registry12345 \
-    --registry-proxy-url=localhost:30000 \
-    --registry-proxy-username=Proxy \
-    --registry-proxy-password=Proxy12345 \
-    --registry-username-read-only=RegistryRead \
-    --registry-password-read-only=RegistryRead12345 \
-    --vault-image=localhost:30000/proxy/vault:latest \
-    --config-file=/home/two-registries.yaml
+    --config-file=/home/two-registries.yaml 
     
     # Or with config file --config-file=/config/gitops-playground.yaml
 ```
