@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
@@ -44,6 +45,7 @@ class Jenkins extends Tool {
 		HelmStrategy deployer,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
+		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.config = config
 		this.commandExecutor = commandExecutor
@@ -55,6 +57,7 @@ class Jenkins extends Tool {
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
+		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 
 		if (config.jenkins.internal) {

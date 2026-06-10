@@ -11,6 +11,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
@@ -343,7 +344,8 @@ me:x:1000:''')
 	private Jenkins createJenkins() {
 		when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
 		when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
-		new Jenkins(config, commandExecutor, new FileSystemUtils() {
+
+		FileSystemUtils fileSystemUtils = new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -351,7 +353,10 @@ me:x:1000:''')
 				// Path after template invocation
 				return ret
 			}
-		}, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils, gitHandler)
+		}
+		AirGappedUtils airGappedUtils =  new AirGappedUtils(config,null,fileSystemUtils,null, gitHandler)
+
+		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager,jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils, airGappedUtils, gitHandler )
 	}
 
 	private Map parseActualYaml() {
