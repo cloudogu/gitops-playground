@@ -186,7 +186,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
+		String dashboardRoot = "${repoRoot}/apps/monitoring/misc/dashboard"
 
 		if (!config.features.ingress.active) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")
