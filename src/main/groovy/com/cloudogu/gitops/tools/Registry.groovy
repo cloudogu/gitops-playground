@@ -11,7 +11,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(40)
+@Order(30)
 class Registry extends Tool {
 
 	/**

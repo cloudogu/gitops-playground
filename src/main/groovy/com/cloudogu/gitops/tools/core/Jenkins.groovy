@@ -19,7 +19,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(70)
+@Order(20)
 class Jenkins extends Tool {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"

@@ -3,7 +3,6 @@ package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope
@@ -11,7 +10,6 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.tools.core.ScmManagerSetup
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import retrofit2.Response
@@ -24,42 +22,47 @@ class ScmManager implements GitProvider {
     ScmManagerConfig scmmConfig
 
     NetworkingUtils networkingUtils
-    Deployer deployer
     K8sClient k8sClient
     Config config
-    ScmManagerSetup scmManagerSetup
 
-    ScmManager(Config config, ScmManagerConfig scmmConfig, Deployer deployer, K8sClient k8sClient, NetworkingUtils networkingUtils) {
+    ScmManager(
+            Config config,
+            ScmManagerConfig scmmConfig,
+            K8sClient k8sClient,
+            NetworkingUtils networkingUtils
+    ) {
         this.scmmConfig = scmmConfig
         this.config = config
-        this.deployer = deployer
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
+
+        this.urls = new ScmManagerUrlResolver(
+                this.config,
+                this.scmmConfig,
+                this.k8sClient,
+                this.networkingUtils
+        )
     }
 
-    void init(boolean installNeeded) {
-        // --- Init Setup ---
-        if (this.scmmConfig.internal && installNeeded) {
-            this.scmManagerSetup = new ScmManagerSetup(this)
-            this.scmManagerSetup.setupHelm()
-            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
-            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
-            this.scmManagerSetup.waitForScmmAvailable()
-            this.scmManagerSetup.configure()
-        } else {
-            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
-            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
+    ScmManagerApiClient getApiClient() {
+        if (this.apiClient == null) {
+            this.apiClient = new ScmManagerApiClient(
+                    this.urls.clientApiBase().toString(),
+                    this.scmmConfig.credentials,
+                    this.config.application.insecure
+            )
         }
 
+        return this.apiClient
     }
 
-    // --- Git operations ---
     @Override
-    boolean createRepository(String repoTarget, String description, boolean initialize) {
+    boolean createRepository(String repoTarget, String description, boolean initialize = true) {
         def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
         def repo = new Repository(repoNamespace, repoName, description ?: "")
-        Response<Void> response = apiClient.repositoryApi().create(repo, initialize).execute()
+
+        Response<Void> response = getApiClient().repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
     }
 
@@ -72,35 +75,33 @@ class ScmManager implements GitProvider {
         Permission.Role scmManagerRole = mapToScmManager(role)
         def permission = new Permission(principal, scmManagerRole, isGroup)
 
-        Response<Void> response = apiClient.repositoryApi().createPermission(repoNamespace, repoName, permission).execute()
+        Response<Void> response = getApiClient().repositoryApi()
+                .createPermission(repoNamespace, repoName, permission)
+                .execute()
+
         handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
     }
 
     @Override
     Credentials getCredentials() {
-        return this.scmmConfig.credentials
+        this.scmmConfig.credentials
     }
 
     @Override
     String getGitOpsUsername() {
-        return scmmConfig.gitOpsUsername
+        scmmConfig.gitOpsUsername
     }
 
-    // --- In-cluster / Endpoints ---
-    /** In-cluster base …/scm (without trailing slash) */
     @Override
     String getUrl() {
-        return urls.inClusterBase().toString()
+        urls.inClusterBase().toString()
     }
 
-    /** In-cluster repo prefix: …/scm/repo/[<namePrefix>] */
     @Override
     String repoPrefix() {
-        return urls.inClusterRepoPrefix()
+        urls.inClusterRepoPrefix()
     }
 
-
-    /**  …/scm/repo/<ns>/<name> */
     @Override
     String repoUrl(String repoTarget, RepoUrlScope scope) {
         switch (scope) {
@@ -115,78 +116,85 @@ class ScmManager implements GitProvider {
 
     @Override
     String getProtocol() {
-        return urls.inClusterBase().scheme // e.g. "http"
+        urls.inClusterBase().scheme
     }
 
     @Override
     String getHost() {
-        return urls.inClusterBase().host // e.g. "scmm.ns.svc.cluster.local"
+        urls.inClusterBase().host
     }
 
-    /** …/scm/api/v2/metrics/prometheus — client-side, typically scraped externally */
     @Override
     URI prometheusMetricsEndpoint() {
-        return urls.prometheusEndpoint()
+        urls.prometheusEndpoint()
     }
 
-    /**
-     * No-op by design. Not used: ScmmDestructionHandler deletes repositories via ScmManagerApiClient.
-     * Kept for interface compatibility only. */
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
         // intentionally left blank
     }
 
-    /**
-     * No-op by design. Not used: ScmmDestructionHandler deletes users via ScmManagerApiClient.
-     * Kept for interface compatibility only. */
     @Override
     void deleteUser(String name) {
         // intentionally left blank
     }
 
-    /**
-     * No-op by design. Default branch management is not implemented via this abstraction.
-     * Kept for interface compatibility only.*/
     @Override
     void setDefaultBranch(String repoTarget, String branch) {
         // intentionally left blank
     }
 
-    // --- helpers ---
     private static Permission.Role mapToScmManager(AccessRole role) {
         switch (role) {
-            case AccessRole.READ: return Permission.Role.READ
-            case AccessRole.WRITE: return Permission.Role.WRITE
-            case AccessRole.MAINTAIN:
-                // SCM-manager doesn't know  MAINTAIN -> downgrade to WRITE
-                log.warn("SCM-Manager: Mapping MAINTAIN → WRITE")
+            case AccessRole.READ:
+                return Permission.Role.READ
+            case AccessRole.WRITE:
                 return Permission.Role.WRITE
-            case AccessRole.ADMIN: return Permission.Role.OWNER
-            case AccessRole.OWNER: return Permission.Role.OWNER
+            case AccessRole.MAINTAIN:
+                log.warn("SCM-Manager: Mapping MAINTAIN to WRITE")
+                return Permission.Role.WRITE
+            case AccessRole.ADMIN:
+                return Permission.Role.OWNER
+            case AccessRole.OWNER:
+                return Permission.Role.OWNER
+            default:
+                throw new IllegalArgumentException("Unsupported access role: ${role}")
         }
     }
 
     private static boolean handle201or409(Response<?> response, String what) {
         int code = response.code()
+
         if (code == 409) {
-            log.debug("${what} already exists — ignoring (HTTP 409)")
+            log.debug("${what} already exists - ignoring HTTP 409")
             return false
-        } else if (code != 201) {
-            throw new RuntimeException("Could not create ${what}" + "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
         }
-        return true // because its created
+
+        if (code != 201) {
+            throw new RuntimeException(
+                    "Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}"
+            )
+        }
+
+        return true
     }
 
-    /** Test-only constructor (package-private on purpose). */
+    /**
+     * Test-only constructor.
+     */
     ScmManager(
-            Config config, ScmManagerConfig scmmConfig,
+            Config config,
+            ScmManagerConfig scmmConfig,
             ScmManagerUrlResolver urls,
-            ScmManagerApiClient apiClient) {
+            ScmManagerApiClient apiClient
+    ) {
         this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
+        this.config = Objects.requireNonNull(config, "config must not be null")
         this.urls = Objects.requireNonNull(urls, "urls must not be null")
-        this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
+        this.apiClient = apiClient ?: new ScmManagerApiClient(
+                urls.clientApiBase().toString(),
                 scmmConfig.credentials,
-                Objects.requireNonNull(config, "config must not be null").application.insecure)
+                config.application.insecure
+        )
     }
 }
