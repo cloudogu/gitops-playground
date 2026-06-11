@@ -22,6 +22,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
@@ -115,9 +116,10 @@ class ArgoCDTest {
     @Spy
     CommandExecutor test = new CommandExecutor()
     KubernetesClient client
+    KubernetesMockServer server
     K8sClient k8sClient
-    CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 
+    CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     //    GitRepo argocdRepo
     String actualHelmValuesFile
     GitRepo clusterResourcesRepo
@@ -125,11 +127,9 @@ class ArgoCDTest {
     ArgoCD argocd
     RepoLayout clusterResourcesRepoLayout
 
-
-
     @BeforeEach
     void setupKubernetesClient() {
-        k8sClient = spy(new K8sClientForTest())
+        k8sClient = spy( new  K8sClientForTest())
         k8sClient.client = client
         k8sClient.SLEEPTIME = 1
         k8sClient.DEFAULT_RETRIES = 1
@@ -146,6 +146,7 @@ class ArgoCDTest {
     @Test
     void 'Installs argoCD'() {
         // Simulate argocd Namespace does not exist
+
         def argocd = createArgoCD()
         argocd.install()
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
@@ -221,7 +222,7 @@ class ArgoCDTest {
 
     @Test
     void 'Installs Argo CD with custom values'() {
-        config.features.argocd.values = [key: 'value']
+        config.features.argocd.values = ['argo-cd': [key: 'value']]
 
         def argocd = createArgoCD()
         argocd.install()
@@ -229,7 +230,7 @@ class ArgoCDTest {
 
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
-        assertThat(valuesYaml['key']).isEqualTo('value')
+        assertThat(valuesYaml['argo-cd']['key']).isEqualTo('value')
     }
 
     @Test
@@ -283,8 +284,8 @@ class ArgoCDTest {
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
-        assertThat(valuesYaml['notifications']['enabled']).isEqualTo(false)
-        assertThat(valuesYaml['notifications']['notifiers']).isNull()
+        assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
+        assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNull()
     }
 
     @Test
@@ -297,8 +298,8 @@ class ArgoCDTest {
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
-        assertThat(valuesYaml['notifications']['enabled']).isEqualTo(true)
-        assertThat(valuesYaml['notifications']['notifiers']).isNotNull()
+        assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
+        assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNotNull()
     }
 
     @Test
@@ -318,7 +319,7 @@ class ArgoCDTest {
         def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
         def defaultYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), 'default.yaml')
 
-        assertThat(new YamlSlurper().parseText(valuesYaml['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.com")
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.com")
         assertThat(clusterRessourcesYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('argocd@example.com')
         assertThat(argocdYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.on-sync-status-unknown.email']).isEqualTo('argocd@example.com')
         assertThat(defaultYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('argocd@example.com')
@@ -338,7 +339,7 @@ class ArgoCDTest {
         def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
         def defaultYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), 'default.yaml')
 
-        assertThat(new YamlSlurper().parseText(valuesYaml['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.org")
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.org")
         assertThat(clusterRessourcesYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('infra@example.org')
         assertThat(argocdYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.on-sync-status-unknown.email']).isEqualTo('infra@example.org')
         assertThat(defaultYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('infra@example.org')
@@ -357,7 +358,7 @@ class ArgoCDTest {
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        def serviceEmail = new YamlSlurper().parseText(parseActualYaml(actualHelmValuesFile)['notifications']['notifiers']['service.email'] as String)
+        def serviceEmail = new YamlSlurper().parseText(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         assertThat(serviceEmail['host']).isEqualTo(config.features.mail.smtpAddress)
         assertThat(serviceEmail['port']).isEqualTo(config.features.mail.smtpPort)
@@ -420,7 +421,7 @@ class ArgoCDTest {
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        def serviceEmail = new YamlSlurper().parseText(parseActualYaml(actualHelmValuesFile)['notifications']['notifiers']['service.email'] as String)
+        def serviceEmail = new YamlSlurper().parseText(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         assertThat(client.secrets().inNamespace('argocd').withName('argocd-notifications-secret').get()).isNull()
 
@@ -440,9 +441,9 @@ class ArgoCDTest {
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
-        assertThat(new YamlSlurper().parseText(valuesYaml['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1025)
-        assertThat(new YamlSlurper().parseText(valuesYaml['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('username')
-        assertThat(new YamlSlurper().parseText(valuesYaml['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('password')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1025)
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('username')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('password')
     }
 
     @Test
@@ -528,7 +529,7 @@ class ArgoCDTest {
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        assertThat(parseActualYaml(actualHelmValuesFile)['crds']['install']).isEqualTo(false)
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
     }
 
     @Test
@@ -550,7 +551,7 @@ class ArgoCDTest {
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        assertThat(parseActualYaml(actualHelmValuesFile)['global']['networkPolicy']['create']).isEqualTo(true)
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
         assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text.contains("namespace: monitoring"))
         assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
         assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
@@ -560,6 +561,17 @@ class ArgoCDTest {
 
         assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
             def yaml = parseActualYaml(file.toString())
+            List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
+            // Some projects might not have sourceRepos
+            if (sourceRepos) {
+                sourceRepos.each {
+                    if (it.startsWith(scmmUrl)) {
+                        assertThat(it)
+                                .as("$file sourceRepos have name prefix")
+                                .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                    }
+                }
+            }
 
             String metadataNamespace = yaml['metadata']['namespace'] as String
             if (metadataNamespace) {
@@ -582,6 +594,9 @@ class ArgoCDTest {
 
         assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'applications', 3) { Path file ->
             def yaml = parseActualYaml(file.toString())
+            assertThat(yaml['spec']['source']['repoURL'] as String)
+                    .as("$file repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
 
             assertThat(yaml['metadata']['namespace'])
                     .as("$file metadata.namspace has name prefix")
@@ -644,7 +659,6 @@ class ArgoCDTest {
         def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, helmCommands)
         return argoCD
     }
-
     private void prepareKubernetesObjectsForArgoCd() {
         String namespace = "${config.application.namePrefix ?: ''}${config.features.argocd.namespace ?: 'argocd'}"
 
@@ -836,18 +850,10 @@ class ArgoCDTest {
         assertThat(yaml['spec']['rbac']).isNull()
         assertThat(yaml['spec']['sso']).isNull()
 
-        def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
-
-        def argocdSources = argocdYaml['spec']['sources'] as List
-        assertThat(argocdSources).isNotNull()
-        assertThat(argocdSources).isNotEmpty()
-
-        def valuesSource = argocdSources.find { it['ref'] == 'values' }
-
-        assertThat(valuesSource).isNotNull()
-        assertThat(valuesSource['path']).isEqualTo('apps/argocd/operator/')
-
-        // Here we should assert all <#if argocd.isOperator> in YAML
+        def argocdYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml')
+        assertThat(argocdYaml['spec']['source']['directory']['recurse'] as Boolean).isTrue()
+        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
+        // Here we should assert all <#if argocd.isOperator> in YAML ️
     }
 
     @Test
@@ -1411,6 +1417,103 @@ class ArgoCDTest {
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
     }
 
+    @Test
+    void 'If using mirror, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+
+        def argocd = createArgoCD()
+        argocd.install()
+
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+
+        )
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
+    }
+
+    @Test
+    void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlab.url = 'https://testGitLab.com/testgroup'
+        def argocd = createArgoCD()
+        argocd.install()
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
+    }
+
+    @Test
+    void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlab.url = "https://testGitLab.com/testgroup"
+        config.application.namePrefix = 'test1-'
+
+        def argocd = createArgoCD()
+        argocd.install()
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+    }
+
+    @Test
+    void 'If using mirror with name-prefix, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.application.namePrefix = 'test1-'
+
+        def argocd = createArgoCD()
+        argocd.install()
+        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
+    }
+
     void setupDedicatedInstanceMode() {
         config.application.namePrefix = 'testPrefix-'
         config.multiTenant.scmManager.url = 'scmm.testhost/scm'
@@ -1449,6 +1552,7 @@ class ArgoCDTest {
         final Config cfg
         final GitProvider tenantProvider
         final GitProvider centralProvider
+        GitRepo clusterResourcesRepo
 
         static ArgoCDForTest newWithAutoProviders(Config cfg,
                                                   K8sClient k8sClient,
