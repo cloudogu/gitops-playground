@@ -135,26 +135,30 @@ kubectl run oidc-check --rm -it --restart=Never --image=curlimages/curl -- \
 
 ## 4. Apply GOP with the OIDC configuration
 
-When applying or re-applying GOP, include [`oidc-local.yaml`](./oidc-local.yaml). With the published container image
-this
-means mounting the file into the container:
+When applying or re-applying GOP, include [`credentials.yaml`](./credentials.yaml) and
+[`oidc-local.yaml`](./oidc-local.yaml). The credentials file pins the local demo passwords and configures Jenkins'
+Prometheus scrape to use the OIDC escape hatch account. With the published container image this means mounting both
+files
+into the container:
 
 ```bash
 export CLUSTER_NAME=gitops-playground
 
 docker run --rm -t --pull=always \
   -v ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+  -v "$PWD/docs/oidc/credentials.yaml:/tmp/credentials.yaml:ro" \
   -v "$PWD/docs/oidc/oidc-local.yaml:/tmp/oidc-local.yaml:ro" \
   --net=host \
   ghcr.io/cloudogu/gitops-playground \
   --profile=full \
+  --config-file=/tmp/credentials.yaml \
   --config-file=/tmp/oidc-local.yaml
 ```
 
 For local development from this repository, use the same config file directly:
 
 ```bash
-./mvnw exec:java -Dexec.arguments="--profile=full --config-file=docs/oidc/oidc-local.yaml"
+./mvnw exec:java -Dexec.arguments="--profile=full --config-file=docs/oidc/credentials.yaml --config-file=docs/oidc/oidc-local.yaml"
 ```
 
 ## Troubleshooting

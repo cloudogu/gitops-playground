@@ -763,7 +763,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "******",
+      "secret": "Cq3U2Dvx6WR5ep2ZLH8rZXNKFNcIX5Zx",
       "redirectUris": [
         "http://argocd.localhost",
         "http://argocd.localhost/auth/callback",
@@ -873,7 +873,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "******",
+      "secret": "46uALR2HeqLPtJxzkkn6tK6FVC9vMmRc",
       "redirectUris": [
         "http://grafana.localhost",
         "*"
@@ -933,7 +933,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "******",
+      "secret": "mtuIbUdggI2ZSy7jSsQW0WkwK0CwMbvO",
       "redirectUris": [
         "http://jenkins.localhost",
         "*"
@@ -1104,7 +1104,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "******",
+      "secret": "XySg7UyAzVkcaU4Visqfe9EChDvARYA1",
       "redirectUris": [
         "*",
         "http://vault.localhost"

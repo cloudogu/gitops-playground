@@ -10,7 +10,9 @@ import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -21,6 +23,7 @@ import jakarta.inject.Singleton
 class Jenkins extends Feature {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
+    private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api']
 
     String namespace
     private Config config
@@ -88,6 +91,7 @@ class Jenkins extends Feature {
             def helmConfig = config.jenkins.helm
             String releaseName = "jenkins"
             addHelmValuesData("dockerGid", findDockerGid())
+            addHelmValuesData("jenkinsBootPlugins", jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
 
             deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config)
 
@@ -112,9 +116,9 @@ class Jenkins extends Feature {
                 JENKINS_URL               : config.jenkins.url,
                 JENKINS_USERNAME          : config.jenkins.username,
                 JENKINS_PASSWORD          : config.jenkins.password,
-                SCM_URL                 : this.gitHandler.tenant.url,
-                PREFIXED_SCM_URL : this.gitHandler.tenant.repoPrefix(),
-                SCM_PASSWORD             : this.gitHandler.tenant.credentials.password,
+                SCM_URL                   : this.gitHandler.tenant.url,
+                PREFIXED_SCM_URL          : this.gitHandler.tenant.repoPrefix(),
+                SCM_PASSWORD              : this.gitHandler.tenant.credentials.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
@@ -151,8 +155,8 @@ class Jenkins extends Feature {
 
         globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
 
-        if (userManager.isUsingCasSecurityRealm()) {
-            log.trace("Using CAS Security Realm. Must not create user.")
+        if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
+            log.trace("Using a security realm without local user creation. Must not create user.")
         } else {
             userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
         }
@@ -214,6 +218,34 @@ class Jenkins extends Feature {
         jobManager.startJob(jobName)
     }
 
+    private boolean jenkinsOidcConfigured() {
+        return config.jenkins.oidc?.trim()
+    }
+
+    private List<String> getJenkinsOidcBootPlugins() {
+        File pluginsFile = new File("${fileSystemUtils.rootDir}/scripts/jenkins/plugins/plugins.txt")
+        Map<String, String> pinnedPlugins = [:]
+
+        pluginsFile.eachLine { line ->
+            String pluginDefinition = line.trim()
+            if (pluginDefinition && !pluginDefinition.startsWith('#')) {
+                String pluginName = pluginDefinition.split(':', 2)[0]
+                if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
+                    pinnedPlugins[pluginName] = pluginDefinition
+                }
+            }
+        }
+
+        List<String> missingPlugins = OIDC_BOOT_PLUGIN_NAMES.findAll { !pinnedPlugins.containsKey(it) }
+        if (missingPlugins) {
+            throw new IllegalStateException(
+                    "Required Jenkins OIDC boot plugins missing from ${pluginsFile}: ${missingPlugins.join(', ')}"
+            )
+        }
+
+        return OIDC_BOOT_PLUGIN_NAMES.collect { pinnedPlugins[it] }
+    }
+
     protected String findDockerGid() {
         String gid = ''
         def etcGroup = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
@@ -272,6 +304,7 @@ class Jenkins extends Feature {
                 ]
         ]
     }
+
     @Override
     String getActiveNamespaceFromFeature() {
         return isEnabled() && config?.jenkins?.internal ? getNamespace() : null

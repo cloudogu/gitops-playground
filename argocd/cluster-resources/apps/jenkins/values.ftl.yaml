@@ -7,8 +7,15 @@ controller:
     # The image corresponds to the helm version,
     # because it contains the default plugins for this particular chart version
     tag: "${config.jenkins.helm.version}"
+  <#if jenkinsBootPlugins?has_content>
+  installPlugins:
+    <#list jenkinsBootPlugins as plugin>
+    - ${plugin}
+    </#list>
+  <#else>
   installPlugins: false
-  
+  </#if>
+
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
 
@@ -16,20 +23,20 @@ controller:
   servicePort: 80
 
   jenkinsUrl: ${config.jenkins.url}
-
-<#if config.application.baseUrl?has_content>
+  
+  <#if config.application.baseUrl?has_content>
   ingress:
     enabled: true
     hostName: ${config.jenkins.ingress}
-<#if config.features.certManager.active!false>
-    annotations:
-      cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
-    tls:
-      - secretName: jenkins-tls
-        hosts:
-          - ${config.jenkins.ingress}
-</#if>  
-</#if>
+  <#if config.features.certManager.active!false>
+  annotations:
+    cert-manager.io/cluster-issuer: ${config.features.certManager.issuer}
+  tls:
+    - secretName: jenkins-tls
+      hosts:
+        - ${config.jenkins.ingress}
+  </#if>
+  </#if>
   # Don't use controller for builds
   numExecutors: 0
 
@@ -78,18 +85,18 @@ controller:
           rm docker.tgz;
           find docker -type f -not -name 'docker' -delete;
           # Delete containerd, etc. We only need the docker CLI
-          # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
+        # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
       volumeMounts:
         - name: host-tmp
           mountPath: /host-tmp
 
-<#if (config.jenkins.oidc)!?has_content>
+  <#if jenkinsBootPlugins?has_content>
   JCasC: #<- can be used to configure jenkin
     defaultConfig: true
     configScripts:
       oidc-auth: |
         ${config.jenkins.oidc?trim?replace("\n", "\n                   ")}
-</#if>
+  </#if>
 
 persistence:
   volumes:

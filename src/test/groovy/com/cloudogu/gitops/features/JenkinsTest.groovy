@@ -1,20 +1,19 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +22,7 @@ import org.mockito.Mock
 
 import java.nio.file.Path
 
-import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.*
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
@@ -92,6 +91,7 @@ me:x:1000:''')
         assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 
         assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+        assertThat(parseActualYaml()['controller']['installPlugins']).isEqualTo(false)
 
         assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
         assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
@@ -122,6 +122,23 @@ me:x:1000:''')
 
         assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo('0')
         assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo('133')
+    }
+
+    @Test
+    void 'Installs OIDC plugin before Jenkins startup when OIDC is configured'() {
+        config.jenkins.oidc = '''
+jenkins:
+  securityRealm:
+    oic:
+      clientId: "jenkins"
+'''
+
+        createJenkins().install()
+
+        assertThat(parseActualYaml()['controller']['installPlugins'] as List).containsExactly(
+                'oic-auth:4.690.v5821cf665e43',
+                'json-path-api:3.0.0-218.vcd4dd1355de2'
+        )
     }
 
     @Test
@@ -299,9 +316,9 @@ me:x:1000:''')
     }
 
     @Test
-    void 'Does not create create job credentials when argo cd is deactivated'() {
+    void 'Does not create metrics user if security realm does not support local user creation'() {
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-        when(userManager.isUsingCasSecurityRealm()).thenReturn(true)
+        when(userManager.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
 
         createJenkins().install()
 
