@@ -170,7 +170,7 @@ class ArgoCDRepoSetupTest {
         config.features.ingress.active = true
         config.features.monitoring.active = false
         config.features.secrets.active = false
-        config.jenkins.active = false
+        config.jenkins.internal = false
         config.features.mail.active = false
         config.features.certManager.active = false
 
