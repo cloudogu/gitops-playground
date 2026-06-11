@@ -198,7 +198,7 @@ function printParameters() {
   echo
   echo "    | --cluster-name=STRING   >> Set your preferred cluster name to install k3d. Defaults to 'gitops-playground'."
   
-  echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
+  echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to false."
   echo "    | --bind-ingress-host=STRING   >> Bind the ingress controller to this local ip. Defaults to 127.0.0.1."
   echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
