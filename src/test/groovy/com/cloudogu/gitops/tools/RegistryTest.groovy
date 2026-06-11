@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -73,21 +75,23 @@ class RegistryTest {
                 registry: registryConfig)
         k8sClient = new K8sClientForTest()
 
-        // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new Registry(config, new FileSystemUtils() {
-            @Override
-            Path writeTempFile(Map mergeMap) {
-                def ret = super.writeTempFile(mergeMap)
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
-                // Path after template invocation
-                return ret
-            }
-        }, k8sClient, deployer)
-    }
+		FileSystemUtils fileUtil = new FileSystemUtils() {
+			@Override
+			Path writeTempFile(Map mergeMap) {
+				def ret = super.writeTempFile(mergeMap)
+				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				// Path after template invocation
+				return ret
+			}
+		}
+		AirGappedUtils airGappedUtils =  new AirGappedUtils(config,null,fileUtil,helmClient, null)
+		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
+		new Registry(config,fileUtil, k8sClient, airGappedUtils, deployer)
+	}
 
-    private Map parseActualYaml() {
-        def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile) as Map
-    }
+	private Map parseActualYaml() {
+		def ys = new YamlSlurper()
+		return ys.parse(temporaryYamlFile) as Map
+	}
 
 }
