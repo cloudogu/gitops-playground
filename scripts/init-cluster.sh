@@ -120,7 +120,7 @@ EOF
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
       K3D_ARGS+=(
-       '-p ${BIND_INGRESS_HOST}::80@loadbalancer'
+        "-p ${BIND_INGRESS_HOST}::80@loadbalancer"
       )
     elif [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
         K3D_ARGS+=(
