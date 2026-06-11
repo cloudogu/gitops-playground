@@ -8,7 +8,6 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
@@ -40,15 +39,13 @@ class ArgoCD extends Tool {
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             GitRepoFactory repoProvider,
-            GitHandler gitHandler,
-            AirGappedUtils airGappedUtils) {
+            GitHandler gitHandler) {
         this.repoProvider = repoProvider
         this.config = config
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
         this.gitHandler = gitHandler
-        this.airGappedUtils = airGappedUtils
         this.password = config.application.password
         this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
     }

@@ -1,31 +1,31 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import static org.mockito.Mockito.*
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.ArgumentMatchers.eq
 import org.mockito.junit.jupiter.MockitoExtension
+
 import java.nio.file.Path
 
 import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.verify
 
 @ExtendWith(MockitoExtension.class)
 class RegistryTest {
 
     K8sClientForTest k8sClient
     Path temporaryYamlFile
+    HelmClient helmClient
 
     @Mock
     Deployer deployer

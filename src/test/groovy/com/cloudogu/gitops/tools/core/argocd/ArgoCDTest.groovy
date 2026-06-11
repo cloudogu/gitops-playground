@@ -1,19 +1,15 @@
 package com.cloudogu.gitops.tools.core.argocd
 
-import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.ArgoCdApplicationStrategy
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.TestGitProvider
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.io.FileType
@@ -26,7 +22,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import jakarta.inject.Provider
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
@@ -40,7 +35,6 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 @EnableKubernetesMockClient(crud = true)
@@ -122,10 +116,7 @@ class ArgoCDTest {
     CommandExecutor test = new CommandExecutor()
     KubernetesClient client
     K8sClient k8sClient
-    HelmStrategy helmStrategy = mock(HelmStrategy.class)
-    ArgoCdApplicationStrategy argoCdApplicationStrategy = mock(ArgoCdApplicationStrategy.class)
-    Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider = mock(Provider.class)
-    Deployer deployer
+    CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 
     //    GitRepo argocdRepo
     String actualHelmValuesFile
@@ -134,12 +125,6 @@ class ArgoCDTest {
     ArgoCD argocd
     RepoLayout clusterResourcesRepoLayout
 
-
-    FileSystemUtils fileSystemUtils = new FileSystemUtils()
-
-    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-    GitHandler gitHandler = mock(GitHandler)
-    GitProvider gitProvider = mock(GitProvider)
 
 
     @BeforeEach
@@ -156,14 +141,11 @@ class ArgoCDTest {
                 any(String),
                 any(String)
         )
-        when(argoCdStrategyProvider.get()).thenReturn(argoCdApplicationStrategy)
-        deployer = new Deployer(argoCdStrategyProvider, helmStrategy)
     }
 
     @Test
     void 'Installs argoCD'() {
         // Simulate argocd Namespace does not exist
-        deployer = mock(Deployer)
         def argocd = createArgoCD()
         argocd.install()
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
@@ -177,11 +159,11 @@ class ArgoCDTest {
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepoLayout.rootDir()),
                 clusterResourcesRepo.gitProvider.url)
         assertThat(filesWithInternalSCMM).isNotEmpty()
-        assertThat(parseActualYaml(actualHelmValuesFile)['server']['service']['type'])
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('ClusterIP')
-        assertThat(parseActualYaml(actualHelmValuesFile)['notifications']['argocdUrl']).isNull()
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
-        assertThat(parseActualYaml(actualHelmValuesFile)['crds']).isNull()
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
 
         Secret repoCredentialsSecret = client.secrets()
@@ -193,17 +175,12 @@ class ArgoCDTest {
         assertThat(repoCredentialsSecret.metadata.labels['argocd.argoproj.io/secret-type']).isEqualTo('repo-creds')
 
         // Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
-        verify(deployer).deployFeature(
-                eq('https://argoproj.github.io/argo-helm'),
-                eq('argocd'),
-                eq('argo-cd'),
-                eq('9.4.15'),
-                eq('argocd'),
-                eq('argocd'),
-                any(Path),
-                eq(DeploymentStrategy.RepoType.HELM),
-                eq(true)
-        )
+        assertThat(helmCommands.actualCommands[0].trim())
+                .isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
+        assertThat(helmCommands.actualCommands[1].trim())
+                .isEqualTo("helm dependency build ${clusterResourcesRepoLayout.helmDir()}".toString())
+        assertThat(helmCommands.actualCommands[2].trim())
+                .isEqualTo("helm upgrade -i argocd ${clusterResourcesRepoLayout.helmDir()} --create-namespace --namespace argocd".toString())
 
         Secret argocdSecret = client.secrets()
                 .inNamespace('argocd')
@@ -235,19 +212,11 @@ class ArgoCDTest {
 
         // Applications (jetzt unter argocd/applications)
         def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
+        assertThat(argocdYaml['spec']['source']['directory']).isNull()
 
-        def argocdSources = argocdYaml['spec']['sources'] as List
-        assertThat(argocdSources).isNotNull()
-        assertThat(argocdSources).isNotEmpty()
-
-        def valuesSource = argocdSources.find { it['ref'] == 'values' }
-
-        assertThat(valuesSource).isNotNull()
-
-        // Neuer Pfad: Chart liegt unter apps/argocd/argocd.
-        // Der abschließende Slash ist egal.
-        assertThat((valuesSource['path'] as String).replaceAll('/$', ''))
-                .isEqualTo('apps/argocd/argocd')
+        // Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
+        assertThat(argocdYaml['spec']['source']['path'] as String)
+                .isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
     }
 
     @Test
@@ -492,53 +461,15 @@ class ArgoCDTest {
         config.features.monitoring.active = false
         config.application.mirrorRepos = true
 
-        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
-
-        when(gitProvider.repoUrl(any())).thenAnswer { invocation ->
-            return "http://scmm.scm-manager.svc.cluster.local/scm/repo/${invocation.getArgument(0)}"
-        }
-
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig)))
-                .thenAnswer { invocation ->
-                    Config.HelmConfig helmConfig = invocation.getArgument(0)
-
-                    if (helmConfig.chart == 'argo-cd') {
-                        return '3rd-party-dependencies/argocd'
-                    }
-
-                    if (helmConfig.chart == 'kube-prometheus-stack') {
-                        return '3rd-party-dependencies/kube-prometheus-stack'
-                    }
-
-                    return "3rd-party-dependencies/${helmConfig.chart}"
-                }
-
-        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application.localHelmChartFolder = rootChartsFolder.toString()
-
-        Path argoCdChart = rootChartsFolder.resolve('argo-cd')
-        Files.createDirectories(argoCdChart)
-
-        fileSystemUtils.writeYaml(
-                [version: '9.4.15'],
-                argoCdChart.resolve('Chart.yaml').toFile()
-        )
-
         def argocd = createArgoCD()
         argocd.install()
-
         clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
         this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
-        def clusterRessourcesYaml = new YamlSlurper().parse(
-                Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
-        )
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml")
 
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
-                .contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
-
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List)
-                .doesNotContain('https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
     }
 
     @Test
@@ -710,7 +641,7 @@ class ArgoCDTest {
 
     ArgoCD createArgoCD() {
         prepareKubernetesObjectsForArgoCd()
-        def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, deployer, airGappedUtils)
+        def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, helmCommands)
         return argoCD
     }
 
@@ -1521,30 +1452,26 @@ class ArgoCDTest {
 
         static ArgoCDForTest newWithAutoProviders(Config cfg,
                                                   K8sClient k8sClient,
-                                                  Deployer deployer,
-                                                  AirGappedUtils airGappedUtils) {
+                                                  CommandExecutorForTest helmCommands) {
             def provider = TestGitProvider.buildProviders(cfg)
             return new ArgoCDForTest(cfg,
                     k8sClient,
-                    deployer,
+                    helmCommands,
                     provider.tenant as GitProvider,
-                    provider.central as GitProvider,
-                    airGappedUtils)
+                    provider.central as GitProvider)
         }
 
         ArgoCDForTest(Config cfg,
                       K8sClient k8sClient,
-                      Deployer deployer,
+                      CommandExecutorForTest helmCommands,
                       GitProvider tenantProvider,
-                      GitProvider centralProvider,
-                      AirGappedUtils airGappedUtils) {
+                      GitProvider centralProvider) {
             super(cfg,
                     k8sClient,
-                    deployer,
+                    new HelmClient(helmCommands),
                     new FileSystemUtils(),
                     new TestGitRepoFactory(cfg, new FileSystemUtils()),
-                    new GitHandlerForTests(cfg, tenantProvider, centralProvider),
-                    airGappedUtils,)
+                    new GitHandlerForTests(cfg, tenantProvider, centralProvider))
             this.cfg = cfg
             this.tenantProvider = tenantProvider
             this.centralProvider = centralProvider
@@ -1558,6 +1485,7 @@ class ArgoCDTest {
         RepoLayout getClusterRepoLayout() {
             return getRepoSetup().clusterRepoLayout()
         }
+
     }
 
     private Map parseActualYaml(String pathToYamlFile) {

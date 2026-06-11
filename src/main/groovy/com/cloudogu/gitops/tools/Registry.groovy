@@ -53,7 +53,7 @@ class Registry extends Tool {
 			                              type    : 'NodePort'])
 
 			def helmConfig = config.registry.helm
-			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config)
+			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config, true)
 
 			if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
 				/* Add additional node port
