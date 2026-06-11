@@ -54,8 +54,9 @@ class K8sClient {
 	protected int DEFAULT_RETRIES = 120
 
 	KubernetesClient client
+com.cloudogu.gitops.config.Config gopConfig
 
-	K8sClient() {
+	K8sClient(com.cloudogu.gitops.config.Config gopConfig = null) {
 		Config config = new ConfigBuilder()
 			.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
 			.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
@@ -65,7 +66,7 @@ class K8sClient {
 			.withConfig(config)
 			.build()
 		/* Openshift client inlcudes kubernetes client! */
-
+		this.gopConfig = gopConfig
 	}
 
 	// ========================================
@@ -255,7 +256,7 @@ class K8sClient {
 		if (!namespaceExists(name)) {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
-			if (runInOpenShift()) {
+			if (runInOpenshift()) {
 				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
 
 				Project project = new ProjectBuilder().withNewMetadata().withName(name).endMetadata().build()
@@ -1320,8 +1321,8 @@ class K8sClient {
 		return this.client.getNamespace()
 	}
 
-	boolean runInOpenShift() {
-		return false
+	private boolean runInOpenshift() {
+		return this.gopConfig.application.openshift
 	}
 
 	// ========================================
