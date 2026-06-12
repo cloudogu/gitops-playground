@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools.core
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
@@ -12,26 +14,34 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
+import java.nio.file.Path
+
 @Slf4j
 @Singleton
 @Order(65)
 class ScmManagerTool extends Tool {
 
+    private static final String TOOL_NAME = 'scm-manager'
+    private static final String SCM_MANAGER_SOURCE_DIR = 'argocd/cluster-resources/apps/scm-manager'
+
     private final Config config
     private final GitHandler gitHandler
     private final HelmStrategy helmStrategy
     private final FileSystemUtils fileSystemUtils
+    private final RepositoryProvisioning repositoryProvisioning
 
     ScmManagerTool(
             Config config,
             GitHandler gitHandler,
             HelmStrategy helmStrategy,
-            FileSystemUtils fileSystemUtils
+            FileSystemUtils fileSystemUtils,
+            RepositoryProvisioning repositoryProvisioning
     ) {
         this.config = config
         this.gitHandler = gitHandler
         this.helmStrategy = helmStrategy
         this.fileSystemUtils = fileSystemUtils
+        this.repositoryProvisioning = repositoryProvisioning
     }
 
     @Override
@@ -42,7 +52,11 @@ class ScmManagerTool extends Tool {
 
     @Override
     void enable() {
-        log.info("Starting internal SCM-Manager setup.")
+        log.info('Starting internal SCM-Manager setup.')
+
+        RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+
+        prepareWorkspace(workspace)
 
         ScmManager scmManager = getTenantScmManager()
 
@@ -58,9 +72,22 @@ class ScmManagerTool extends Tool {
         setup.waitForScmmAvailable()
         setup.configure()
 
-        setupRepositoriesAfterDeployment()
+        repositoryProvisioning.publishInitialStateAfterScmManagerDeployment()
 
-        log.info("Internal SCM-Manager setup finished.")
+        log.info('Internal SCM-Manager setup finished.')
+    }
+
+
+    private void prepareWorkspace(RepositoryWorkspace workspace) {
+        log.debug('Preparing SCM-Manager workspace resources.')
+
+        String targetDir = workspace.clusterAppDir(TOOL_NAME)
+        Path.of(targetDir).toFile().mkdirs()
+
+        fileSystemUtils.copyDirectory(
+                SCM_MANAGER_SOURCE_DIR,
+                targetDir
+        )
     }
 
     private ScmManager getTenantScmManager() {
@@ -71,15 +98,5 @@ class ScmManagerTool extends Tool {
         }
 
         return gitHandler.tenant as ScmManager
-    }
-
-    private void setupRepositoriesAfterDeployment() {
-        final String namePrefix = (config?.application?.namePrefix ?: "").trim()
-
-        GitHandler.setupRepos(gitHandler.tenant, namePrefix)
-
-        if (gitHandler.central) {
-            GitHandler.setupRepos(gitHandler.central, namePrefix)
-        }
     }
 }
