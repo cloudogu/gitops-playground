@@ -131,18 +131,14 @@ class RepositoryProvisioning {
 
     void publishClusterChanges(String toolName, String message = null) {
         assertWorkspacePrepared()
-
-        workspace.commitAndPushClusterChanges(
-                message ?: "Update ${toolName} resources"
-        )
+        String commitMessage = message ?: "Update ${toolName} resources".toString()
+        workspace.commitAndPushClusterChanges(commitMessage)
     }
 
     void publishAllWorkspaceChanges(String toolName, String message = null) {
         assertWorkspacePrepared()
-
-        workspace.commitAndPushAllChanges(
-                message ?: "Update ${toolName} resources"
-        )
+        String commitMessage = message ?: "Update ${toolName} resources".toString()
+        workspace.commitAndPushAllChanges(commitMessage)
     }
 
     String clusterResourcesRepoTarget() {
