@@ -1322,7 +1322,9 @@ com.cloudogu.gitops.config.Config gopConfig
 	}
 
 	private boolean runInOpenshift() {
-		return this.gopConfig.application.openshift
+		// gopConfig can be null, in tests or at startup
+		boolean result = this.gopConfig != null && this.gopConfig.application.openshift
+		return result
 	}
 
 	// ========================================
