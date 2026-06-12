@@ -6,11 +6,13 @@ import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
+@CompileStatic
 class RepositoryProvisioning {
 
     static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
@@ -21,6 +23,7 @@ class RepositoryProvisioning {
 
     private RepositoryWorkspace workspace
     private boolean remoteRepositoriesEnsured = false
+    private boolean repositoriesCloned = false
 
     RepositoryProvisioning(
             Config config,
@@ -36,11 +39,13 @@ class RepositoryProvisioning {
         provideWorkspace()
 
         if (mustWaitForInternalScmManagerDeployment()) {
-            log.debug('Skipping remote repository provisioning until internal SCM-Manager is deployed.')
+            log.debug('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
+            workspace.prepareLocalDirectories()
             return
         }
 
         ensureRemoteRepositoriesExist()
+        cloneRepositories()
     }
 
     RepositoryWorkspace provideWorkspace() {
@@ -49,12 +54,10 @@ class RepositoryProvisioning {
         }
 
         if (config.multiTenant.useDedicatedInstance) {
-            workspace = createDedicatedInstanceWorkspace()
+            workspace = workspaceForDedicatedInstance()
         } else {
-            workspace = createSingleInstanceWorkspace()
+            workspace = workspaceForSingleInstance()
         }
-
-        workspace.prepareLocalDirectories()
 
         return workspace
     }
@@ -73,7 +76,7 @@ class RepositoryProvisioning {
 
         ensureRepositoryExists(
                 workspace.clusterResourcesRepo.gitProvider,
-                workspace.clusterResourcesRepo.repoTarget,
+                clusterResourcesRepoTarget(),
                 'GitOps repo for cluster resources'
         )
 
@@ -88,6 +91,22 @@ class RepositoryProvisioning {
         remoteRepositoriesEnsured = true
     }
 
+    void cloneRepositories() {
+        if (repositoriesCloned) {
+            log.debug('Repositories already cloned. Skipping.')
+            return
+        }
+
+        if (workspace == null) {
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before repositories can be cloned.'
+            )
+        }
+
+        workspace.cloneRepositories()
+        repositoriesCloned = true
+    }
+
     void publishInitialStateAfterScmManagerDeployment() {
         ensureRemoteRepositoriesExist()
 
@@ -96,6 +115,8 @@ class RepositoryProvisioning {
                     'Repository workspace must be prepared before initial state can be published.'
             )
         }
+
+        workspace.initLocalRepositoriesIfNeeded()
 
         workspace.commitAndPushClusterChanges(
                 'Initial repository state with SCM-Manager resources'
@@ -108,30 +129,52 @@ class RepositoryProvisioning {
         }
     }
 
-    void commitAndPushToolChanges(String toolName, String message = null) {
-        if (workspace == null) {
-            throw new IllegalStateException(
-                    'Repository workspace must be prepared before tool changes can be published.'
-            )
-        }
+    void publishClusterChanges(String toolName, String message = null) {
+        assertWorkspacePrepared()
 
         workspace.commitAndPushClusterChanges(
                 message ?: "Update ${toolName} resources"
         )
     }
 
-    String clusterResourcesRepoTarget() {
-        String prefix = (config?.application?.namePrefix ?: '').trim()
+    void publishAllWorkspaceChanges(String toolName, String message = null) {
+        assertWorkspacePrepared()
 
-        if (!prefix) {
-            return CLUSTER_RESOURCES_REPO_TARGET
-        }
-
-        return "${prefix}${CLUSTER_RESOURCES_REPO_TARGET}"
+        workspace.commitAndPushAllChanges(
+                message ?: "Update ${toolName} resources"
+        )
     }
 
-    private RepositoryWorkspace createSingleInstanceWorkspace() {
-        log.debug('Preparing local single-instance repository workspace.')
+    String clusterResourcesRepoTarget() {
+        return withOrgPrefix(namePrefix(), CLUSTER_RESOURCES_REPO_TARGET)
+    }
+
+    private static String withOrgPrefix(String prefix, String repoPath) {
+        if (!prefix) {
+            return repoPath
+        }
+
+        return prefix + repoPath
+    }
+
+    private static void ensureRepositoryExists(
+            GitProvider gitProvider,
+            String repoTarget,
+            String description
+    ) {
+        gitProvider.createRepository(repoTarget, description, true)
+    }
+
+    private void assertWorkspacePrepared() {
+        if (workspace == null) {
+            throw new IllegalStateException(
+                    'Repository workspace must be prepared before changes can be published.'
+            )
+        }
+    }
+
+    private RepositoryWorkspace workspaceForSingleInstance() {
+        log.debug('Creating single-instance repository workspace.')
 
         GitRepo clusterResourcesRepo = gitRepoFactory.create(
                 clusterResourcesRepoTarget(),
@@ -141,8 +184,8 @@ class RepositoryProvisioning {
         return new RepositoryWorkspace(clusterResourcesRepo)
     }
 
-    private RepositoryWorkspace createDedicatedInstanceWorkspace() {
-        log.debug('Preparing local dedicated-instance repository workspace.')
+    private RepositoryWorkspace workspaceForDedicatedInstance() {
+        log.debug('Creating dedicated-instance repository workspace.')
 
         GitRepo centralClusterResourcesRepo = gitRepoFactory.create(
                 clusterResourcesRepoTarget(),
@@ -160,17 +203,12 @@ class RepositoryProvisioning {
         )
     }
 
+    private String namePrefix() {
+        return (config?.application?.namePrefix ?: '').trim()
+    }
 
     private boolean mustWaitForInternalScmManagerDeployment() {
-        config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
-                config.scm.scmManager?.internal
+        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
     }
 
-    private static void ensureRepositoryExists(
-            GitProvider gitProvider,
-            String repoTarget,
-            String description
-    ) {
-        gitProvider.createRepository(repoTarget, description, true)
-    }
 }

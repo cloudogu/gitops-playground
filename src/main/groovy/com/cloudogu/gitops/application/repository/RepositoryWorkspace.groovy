@@ -1,11 +1,14 @@
 package com.cloudogu.gitops.application.repository
 
 import com.cloudogu.gitops.infrastructure.git.GitRepo
+import groovy.transform.CompileStatic
 
 import java.nio.file.Path
 
+@CompileStatic
 class RepositoryWorkspace {
 
+    private static final String APPS_DIR = 'apps'
     final GitRepo clusterResourcesRepo
     final GitRepo tenantBootstrapRepo
 
@@ -18,7 +21,7 @@ class RepositoryWorkspace {
     }
 
     boolean hasTenantBootstrapRepo() {
-        tenantBootstrapRepo != null
+        return tenantBootstrapRepo != null
     }
 
     GitRepo tenantBootstrapRepoOrFail() {
@@ -39,32 +42,48 @@ class RepositoryWorkspace {
         }
     }
 
+    void cloneRepositories() {
+        clusterResourcesRepo.cloneRepo()
+
+        if (hasTenantBootstrapRepo()) {
+            tenantBootstrapRepoOrFail().cloneRepo()
+        }
+    }
+
+    void initLocalRepositoriesIfNeeded() {
+        clusterResourcesRepo.initLocalRepoIfNeeded()
+
+        if (hasTenantBootstrapRepo()) {
+            tenantBootstrapRepoOrFail().initLocalRepoIfNeeded()
+        }
+    }
+
     String clusterRootDir() {
-        clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
+        return clusterResourcesRepo.absoluteLocalRepoTmpDir
     }
 
     String clusterAppsDir() {
-        Path.of(clusterRootDir(), 'apps').toString()
+        return Path.of(clusterRootDir(), APPS_DIR).toString()
     }
 
     String clusterAppDir(String toolName) {
-        Path.of(clusterAppsDir(), toolName).toString()
+        return Path.of(clusterAppsDir(), toolName).toString()
     }
 
     String tenantRootDir() {
-        tenantBootstrapRepoOrFail().getAbsoluteLocalRepoTmpDir()
+        return tenantBootstrapRepoOrFail().absoluteLocalRepoTmpDir
     }
 
     String tenantAppsDir() {
-        Path.of(tenantRootDir(), 'apps').toString()
+        return Path.of(tenantRootDir(), APPS_DIR).toString()
     }
 
     String tenantAppDir(String toolName) {
-        Path.of(tenantAppsDir(), toolName).toString()
+        return Path.of(tenantAppsDir(), toolName).toString()
     }
 
     String clusterResourcesRepoUrl() {
-        "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git"
+        return "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git"
     }
 
     void writeClusterFile(String relativePath, String content) {

@@ -89,6 +89,26 @@ class GitRepo {
 			.call()
 	}
 
+	void initLocalRepoIfNeeded() {
+		File localRepoDir = new File(getAbsoluteLocalRepoTmpDir())
+		File gitDir = new File(localRepoDir, '.git')
+
+		if (gitDir.exists()) {
+			log.debug("Local git repository already initialized at ${localRepoDir}")
+			return
+		}
+
+		log.debug("Initializing local git repository at ${localRepoDir}")
+
+		localRepoDir.mkdirs()
+
+		Git git = Git.init()
+				.setDirectory(localRepoDir)
+				.call()
+
+		git.close()
+	}
+
 	void commitAndPush(String message, String tag) {
 		commitAndPush(message, tag, 'HEAD:refs/heads/main')
 	}
