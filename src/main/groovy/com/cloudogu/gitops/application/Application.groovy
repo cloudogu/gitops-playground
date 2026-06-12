@@ -54,7 +54,7 @@ class Application {
 		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
 		k8sClient.createNamespace(namespace)
 		k8sClient.createSecret('generic', 'gop-configuration', namespace,
-			new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+			new Tuple2('gop-initial-password', config.application.password),
 			new Tuple2('gop-config', config.toYaml(true)))
 	}
 

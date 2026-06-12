@@ -226,7 +226,7 @@ class GitopsPlaygroundCli {
 	}
 
 	void printWelcomeScreen() {
-		def password = Config.DEFAULT_ADMIN_PW
+		def password = Config.application.password
 		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!
