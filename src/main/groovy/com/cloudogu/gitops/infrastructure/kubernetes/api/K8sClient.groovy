@@ -258,11 +258,15 @@ class K8sClient {
 			if (runInOpenshift()) {
 				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
 
-				Project project = new ProjectBuilder().withNewMetadata().withName(name).endMetadata().build()
-				executeWithErrorHandling("create project ${project}") {
+				Project project = new ProjectBuilder()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build()
+				executeWithErrorHandling("create project ${name}") {
 					osClient.projects().resource(project).create()
 				}
-				log.debug("Project ${project} created successfully.")
+				log.debug("Project ${name} created successfully.")
 			} else {
 
 				Namespace namespace = new NamespaceBuilder()
