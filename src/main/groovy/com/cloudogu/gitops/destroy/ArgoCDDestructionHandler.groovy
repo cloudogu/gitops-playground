@@ -1,39 +1,38 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.kubernetes.api.HelmClient
-import com.cloudogu.gitops.kubernetes.api.K8sClient
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-
+import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
 
 @Singleton
 @Order(100)
 @CompileStatic
 class ArgoCDDestructionHandler implements DestructionHandler {
 	private K8sClient k8sClient
-	private GitRepoFactory repoProvider
 	private HelmClient helmClient
+	private GitRepoFactory repoProvider
 	private Config config
 	private FileSystemUtils fileSystemUtils
 	private GitHandler gitHandler
 
 	ArgoCDDestructionHandler(Config config,
 		K8sClient k8sClient,
-		GitRepoFactory repoProvider,
 		HelmClient helmClient,
+		GitRepoFactory repoProvider,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler) {
 		this.k8sClient = k8sClient
-		this.repoProvider = repoProvider
 		this.helmClient = helmClient
+		this.repoProvider = repoProvider
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
@@ -83,7 +82,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	void installArgoCDViaHelm(GitRepo repo) {
 		// this is a hack to be able to uninstall using helm
 		def namePrefix = config.application.namePrefix
-
+        def argocdNamespace = namePrefix + config.features.argocd.namespace
 		// Install umbrella chart from folder
 		String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
 		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -91,6 +90,6 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		List helmDependencies = fileSystemUtils.readYaml(Path.of(umbrellaChartPath, 'Chart.yaml'))['dependencies'].collect { it }
 		helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
 		helmClient.dependencyBuild(umbrellaChartPath)
-		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
+		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${argocdNamespace}"])
 	}
 }

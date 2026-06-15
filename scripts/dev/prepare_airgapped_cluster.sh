@@ -23,3 +23,5 @@ sed -r "s/<address>/k3d-$AIRGAPPED_REGISTRY_NAME:$AIRGAPPED_REGISTRY_PORT/g" ./s
 export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 
 ./scripts/dev/mirror_images_to_registry.sh http://${AIRGAPPED_REGISTRY_IP}:${AIRGAPPED_REGISTRY_PORT}
+
+echo "DONE: airgapped environment prepared. Start GOP using ./scripts/dev/gop_airgapped_config.yaml as config file"

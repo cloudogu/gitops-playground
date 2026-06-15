@@ -9,7 +9,7 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: ${config.application.namePrefix}argocd
+    namespace: ${config.application.namePrefix}${config.features.argocd.namespace}
   project: ${tenantName}
   source:
     path: apps/argocd/projects/

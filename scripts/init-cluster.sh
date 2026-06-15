@@ -120,11 +120,11 @@ EOF
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
       K3D_ARGS+=(
-       '-p 127.0.0.1::80@loadbalancer'
+        "-p ${BIND_INGRESS_HOST}::80@loadbalancer"
       )
     elif [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
         K3D_ARGS+=(
-            "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@loadbalancer"
+            "-p ${BIND_INGRESS_HOST}:${BIND_INGRESS_PORT}:80@loadbalancer"
             )
     fi
 
@@ -134,11 +134,11 @@ EOF
           # User wants us to choose an arbitrary port.
           # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
           K3D_ARGS+=(
-           '-p 127.0.0.1::443@loadbalancer'
+            "-p ${BIND_INGRESS_HOST}::443@loadbalancer"
           )
         elif [[ "${BIND_INGRESS_HTTPS_PORT}" != '-' ]]; then
             K3D_ARGS+=(
-                "-p 127.0.0.1:${BIND_INGRESS_HTTPS_PORT}:443@loadbalancer"
+                "-p ${BIND_INGRESS_HOST}:${BIND_INGRESS_HTTPS_PORT}:443@loadbalancer"
                 )
         fi
     
@@ -180,8 +180,8 @@ EOF
     ingressPort=$(docker inspect \
       --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
-    echo "Bound ingress port to localhost:${ingressPort}."
-    echo "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
+    echo "Bound ingress port to ${BIND_INGRESS_HOST}:${ingressPort}."
+    echo "Make sure to pass the a base-url pointing to ${BIND_INGRESS_HOST}, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -198,8 +198,9 @@ function printParameters() {
   echo
   echo "    | --cluster-name=STRING   >> Set your preferred cluster name to install k3d. Defaults to 'gitops-playground'."
   
-  echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
-  echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Defaults to 80. Set to - to disable."
+  echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to false."
+  echo "    | --bind-ingress-host=STRING   >> Bind the ingress controller to this local ip. Defaults to 127.0.0.1."
+  echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
   echo "    | --bind-ports=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
   
@@ -248,6 +249,7 @@ get_longopt_value(){
 readParameters() {
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=false
+  BIND_INGRESS_HOST="127.0.0.1"
   BIND_INGRESS_PORT="80"
   BIND_INGRESS_HTTPS_PORT="443"
   # Use default port for playground registry, because no parameter is required when applying
@@ -265,6 +267,8 @@ readParameters() {
         # Allow passing portBindings with and without '=' 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ingress-host*) BIND_INGRESS_HOST=$(get_longopt_value "--bind-ingress-host" "$@")
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ingress-https-port*) BIND_INGRESS_HTTPS_PORT=$(get_longopt_value "--bind-ingress-https-port" "$@")
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
