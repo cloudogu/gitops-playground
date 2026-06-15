@@ -4,6 +4,7 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.config.Config
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,6 +14,7 @@ import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import io.fabric8.openshift.api.model.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -362,6 +364,68 @@ class K8sClientTest {
         // Then - Verify namespace was created
     }
 
+	@Test
+    void 'createNamespace creates OpenShift project when openshift config is enabled'() {
+        // Given
+        Config config = Config.fromMap([application: [openshift: true]])
+        k8sApiClient.gopConfig = config
+
+        server.expect()
+                .get()
+                .withPath("/api/v1/namespaces/test-project")
+                .andReturn(404, "")
+                .once()
+
+        server.expect()
+                .post()
+                .withPath("/apis/project.openshift.io/v1/projects")
+                .andReturn(201, new ProjectBuilder()
+                        .withNewMetadata()
+                        .withName("test-project")
+                        .endMetadata()
+                        .build())
+                .once()
+
+        // When
+        k8sApiClient.createNamespace("test-project")
+
+        // Then
+        def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+        assertThat(requestBody["kind"]).isEqualTo("Project")
+        assertThat(requestBody["metadata"]["name"]).isEqualTo("test-project")
+    }
+
+	@Test
+    void 'createNamespace creates Kubernetes namespace when openshift config is disabled'() {
+        // Given
+        Config config = Config.fromMap([application: [openshift: false]])
+        k8sApiClient.gopConfig = config
+
+        server.expect()
+                .get()
+                .withPath("/api/v1/namespaces/test-ns")
+                .andReturn(404, "")
+                .once()
+
+        server.expect()
+                .post()
+                .withPath("/api/v1/namespaces")
+                .andReturn(201, new NamespaceBuilder()
+                        .withNewMetadata()
+                        .withName("test-ns")
+                        .endMetadata()
+                        .build())
+                .once()
+
+        // When
+        k8sApiClient.createNamespace("test-ns")
+
+        // Then
+        def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+        assertThat(requestBody["kind"]).isEqualTo("Namespace")
+        assertThat(requestBody["metadata"]["name"]).isEqualTo("test-ns")
+    }
+
     @Test
     void 'createNamespace does not create existing namespace'() {
         // Given
@@ -380,7 +444,65 @@ class K8sClientTest {
         // When
         k8sApiClient.createNamespace("test-ns")
 
-        // Then - No POST request should be made
+        // Then
+        assertThat(server.getLastRequest().method).isEqualTo("GET")
+        assertThat(server.getLastRequest().path).isEqualTo("/api/v1/namespaces/test-ns")
+    }
+
+	@Test
+    void 'createNamespace creates Kubernetes namespace when config is null'() {
+        // Given
+        k8sApiClient.gopConfig = null
+
+        server.expect()
+                .get()
+                .withPath("/api/v1/namespaces/test-ns")
+                .andReturn(404, "")
+                .once()
+
+        server.expect()
+                .post()
+                .withPath("/api/v1/namespaces")
+                .andReturn(201, new NamespaceBuilder()
+                        .withNewMetadata()
+                        .withName("test-ns")
+                        .endMetadata()
+                        .build())
+                .once()
+
+        // When
+        k8sApiClient.createNamespace("test-ns")
+
+        // Then
+        def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+        assertThat(requestBody["kind"]).isEqualTo("Namespace")
+        assertThat(requestBody["metadata"]["name"]).isEqualTo("test-ns")
+    }
+
+	@Test
+    void 'createNamespace does not create OpenShift project when namespace already exists'() {
+        // Given
+        Config config = Config.fromMap([application: [openshift: true]])
+        k8sApiClient.gopConfig = config
+
+        def namespace = new NamespaceBuilder()
+                .withNewMetadata()
+                .withName("existing-project")
+                .endMetadata()
+                .build()
+
+        server.expect()
+                .get()
+                .withPath("/api/v1/namespaces/existing-project")
+                .andReturn(200, namespace)
+                .once()
+
+        // When
+        k8sApiClient.createNamespace("existing-project")
+
+        // Then
+        assertThat(server.getLastRequest().method).isEqualTo("GET")
+        assertThat(server.getLastRequest().path).isEqualTo("/api/v1/namespaces/existing-project")
     }
 
     @Test

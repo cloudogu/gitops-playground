@@ -96,7 +96,7 @@ class GitopsPlaygroundCli {
 			app = context.getBean(Application)
 			app.start()
 
-			printWelcomeScreen()
+			printWelcomeScreen(config)
 		}
 
 		return ReturnCode.SUCCESS
@@ -225,8 +225,8 @@ class GitopsPlaygroundCli {
 		return map as Map
 	}
 
-	void printWelcomeScreen() {
-		def password = Config.application.password
+	void printWelcomeScreen(Config newConfig) {
+		def password = newConfig.application.password
 		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!
