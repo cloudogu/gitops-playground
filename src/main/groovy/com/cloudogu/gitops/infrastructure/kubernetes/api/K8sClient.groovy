@@ -64,7 +64,7 @@ class K8sClient {
 		this.client = new KubernetesClientBuilder()
 			.withConfig(config)
 			.build()
-		/* Openshift client inlcudes kubernetes client! */
+		/* OpenShift client includes Kubernetes client APIs. */
 		this.gopConfig = gopConfig
 	}
 
