@@ -45,7 +45,6 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 # STAGE 3: Downloader
 # ============================================================================
 # Purpose: Download and prepare all external dependencies and tools
-# - Kubectl CLI
 # - Helm CLI
 # - Git repositories
 # - Jenkins plugins
@@ -58,13 +57,6 @@ RUN apk add curl grep
 # -----------------------------------------------------------------------------
 # 3.1: Version Configuration
 # -----------------------------------------------------------------------------
-# When updating kubectl:
-# * Update checksum from https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
-# * Update in init-cluster.sh, vars.tf, Config.groovy and apply.sh
-# When upgrading to 1.26+ we can verify kubectl signature with cosign!
-# https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-#ARG K8S_VERSION=1.36.2
-#ARG KUBECTL_CHECKSUM=1e9045ec32bea85da43de85f0065358529ea7c7a152eca78154fba5b58c27d82
 
 # When updating Helm, also upgrade helm image in Config.groovy
 ARG HELM_VERSION=4.2.1
@@ -115,19 +107,9 @@ RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
 # -----------------------------------------------------------------------------
-# 3.4: Download and Install Kubectl
+# 3.4: Download and Install Kubectl - Step removed
 # -----------------------------------------------------------------------------
-# Download kubectl binary
-#RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
-#    --output kubectl \
-#    https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
 
-# Verify kubectl checksum (note: two spaces required!)
-#RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
-
-# Install kubectl
-#RUN chmod +x /tmp/kubectl
-#RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 
 # -----------------------------------------------------------------------------
 # 3.5: Clone External Git Repositories
@@ -231,7 +213,7 @@ RUN apk update --no-cache && apk upgrade --no-cache && \
 # 4.3: Copy Distribution Files
 # -----------------------------------------------------------------------------
 # Copy all prepared files from downloader stage:
-# - Binaries (kubectl, helm)
+# - Binaries (helm)
 # - Git repositories
 # - Helm charts
 # - Jenkins plugins
