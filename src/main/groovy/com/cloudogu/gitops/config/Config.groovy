@@ -1,6 +1,15 @@
 package com.cloudogu.gitops.config
 
+import static com.cloudogu.gitops.config.ConfigConstants.*
+import static picocli.CommandLine.ScopeType
+
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
+
+import java.security.SecureRandom
+import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
+import groovy.transform.MapConstructor
+
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
@@ -9,17 +18,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import groovy.transform.CompileStatic
-import groovy.transform.MapConstructor
-import jakarta.inject.Singleton
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
-
-import java.security.SecureRandom
-
-import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType
 
 /**
  * The global configuration object.
@@ -52,9 +53,9 @@ import static picocli.CommandLine.ScopeType
 class Config {
 
 	// When updating please also update in Dockerfile
-	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.1.4-1"
+	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.2.1"
 	// When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-	public static final String K8S_VERSION = "1.35.4"
+	public static final String K8S_VERSION = "1.36.2"
 	public static final String DEFAULT_ADMIN_USER = 'admin'
 	public static final String DEFAULT_ADMIN_PW = generatePassword()
 	public static final int DEFAULT_REGISTRY_PORT = 30000

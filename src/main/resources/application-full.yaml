@@ -56,10 +56,10 @@ content:
     petclinic:
       baseDomain: "petclinic.localhost"
     images:
-      kubectl: "alpine/kubectl:1.35.4"
-      helm: "ghcr.io/cloudogu/helm:3.16.4-1"
-      kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
-      helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
+      kubectl: "alpine/kubectl:latest"
+      helm: "ghcr.io/cloudogu/helm:latest"
+      kubeval: "ghcr.io/cloudogu/helm:latest"
+      helmKubeval: "ghcr.io/cloudogu/helm:latest"
       yamllint: "cytopia/yamllint:1.25-0.7"
       petclinic: "eclipse-temurin:17-jre-alpine"
       maven: ""
