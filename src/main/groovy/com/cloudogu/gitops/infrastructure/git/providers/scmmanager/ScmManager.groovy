@@ -11,190 +11,179 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repositor
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
+
 import groovy.util.logging.Slf4j
+
 import retrofit2.Response
 
 @Slf4j
 class ScmManager implements GitProvider {
 
-    ScmManagerUrlResolver urls
-    ScmManagerApiClient apiClient
-    ScmManagerConfig scmmConfig
+	ScmManagerUrlResolver urls
+	ScmManagerApiClient apiClient
+	ScmManagerConfig scmmConfig
 
-    NetworkingUtils networkingUtils
-    K8sClient k8sClient
-    Config config
+	NetworkingUtils networkingUtils
+	K8sClient k8sClient
+	Config config
 
-    ScmManager(
-            Config config,
-            ScmManagerConfig scmmConfig,
-            K8sClient k8sClient,
-            NetworkingUtils networkingUtils
-    ) {
-        this.scmmConfig = scmmConfig
-        this.config = config
-        this.k8sClient = k8sClient
-        this.networkingUtils = networkingUtils
+	ScmManager(Config config,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
+		this.scmmConfig = scmmConfig
+		this.config = config
+		this.k8sClient = k8sClient
+		this.networkingUtils = networkingUtils
 
-        this.urls = new ScmManagerUrlResolver(
-                this.config,
-                this.scmmConfig,
-                this.k8sClient,
-                this.networkingUtils
-        )
-    }
+		this.urls = new ScmManagerUrlResolver(this.config,
+			this.scmmConfig,
+			this.k8sClient,
+			this.networkingUtils)
+	}
 
-    ScmManagerApiClient getApiClient() {
-        if (this.apiClient == null) {
-            this.apiClient = new ScmManagerApiClient(
-                    this.urls.clientApiBase().toString(),
-                    this.scmmConfig.credentials,
-                    this.config.application.insecure
-            )
-        }
+	ScmManagerApiClient getApiClient() {
+		if (this.apiClient == null) {
+			this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(),
+				this.scmmConfig.credentials,
+				this.config.application.insecure)
+		}
 
-        return this.apiClient
-    }
+		return this.apiClient
+	}
 
-    @Override
-    boolean createRepository(String repoTarget, String description, boolean initialize = true) {
-        def repoNamespace = repoTarget.split('/', 2)[0]
-        def repoName = repoTarget.split('/', 2)[1]
-        def repo = new Repository(repoNamespace, repoName, description ?: "")
+	@Override
+	boolean createRepository(String repoTarget, String description, boolean initialize = true) {
+		def repoNamespace = repoTarget.split('/', 2)[0]
+		def repoName = repoTarget.split('/', 2)[1]
+		def repo = new Repository(repoNamespace, repoName, description ?: "")
 
-        Response<Void> response = getApiClient().repositoryApi().create(repo, initialize).execute()
-        return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
-    }
+		Response<Void> response = getApiClient().repositoryApi().create(repo, initialize).execute()
+		return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
+	}
 
-    @Override
-    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        def repoNamespace = repoTarget.split('/', 2)[0]
-        def repoName = repoTarget.split('/', 2)[1]
+	@Override
+	void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
+		def repoNamespace = repoTarget.split('/', 2)[0]
+		def repoName = repoTarget.split('/', 2)[1]
 
-        boolean isGroup = (scope == Scope.GROUP)
-        Permission.Role scmManagerRole = mapToScmManager(role)
-        def permission = new Permission(principal, scmManagerRole, isGroup)
+		boolean isGroup = (scope == Scope.GROUP)
+		Permission.Role scmManagerRole = mapToScmManager(role)
+		def permission = new Permission(principal, scmManagerRole, isGroup)
 
-        Response<Void> response = getApiClient().repositoryApi()
-                .createPermission(repoNamespace, repoName, permission)
-                .execute()
+		Response<Void> response = getApiClient().repositoryApi()
+			.createPermission(repoNamespace, repoName, permission)
+			.execute()
 
-        handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
-    }
+		handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
+	}
 
-    @Override
-    Credentials getCredentials() {
-        this.scmmConfig.credentials
-    }
+	@Override
+	Credentials getCredentials() {
+		this.scmmConfig.credentials
+	}
 
-    @Override
-    String getGitOpsUsername() {
-        scmmConfig.gitOpsUsername
-    }
+	@Override
+	String getGitOpsUsername() {
+		scmmConfig.gitOpsUsername
+	}
 
-    @Override
-    String getUrl() {
-        urls.inClusterBase().toString()
-    }
+	@Override
+	String getUrl() {
+		urls.inClusterBase().toString()
+	}
 
-    @Override
-    String repoPrefix() {
-        urls.inClusterRepoPrefix()
-    }
+	@Override
+	String repoPrefix() {
+		urls.inClusterRepoPrefix()
+	}
 
-    @Override
-    String repoUrl(String repoTarget, RepoUrlScope scope) {
-        switch (scope) {
-            case RepoUrlScope.CLIENT:
-                return urls.clientRepoUrl(repoTarget)
-            case RepoUrlScope.IN_CLUSTER:
-                return urls.inClusterRepoUrl(repoTarget)
-            default:
-                return urls.inClusterRepoUrl(repoTarget)
-        }
-    }
+	@Override
+	String repoUrl(String repoTarget, RepoUrlScope scope) {
+		switch (scope) {
+			case RepoUrlScope.CLIENT:
+				return urls.clientRepoUrl(repoTarget)
+			case RepoUrlScope.IN_CLUSTER:
+				return urls.inClusterRepoUrl(repoTarget)
+			default:
+				return urls.inClusterRepoUrl(repoTarget)
+		}
+	}
 
-    @Override
-    String getProtocol() {
-        urls.inClusterBase().scheme
-    }
+	@Override
+	String getProtocol() {
+		urls.inClusterBase().scheme
+	}
 
-    @Override
-    String getHost() {
-        urls.inClusterBase().host
-    }
+	@Override
+	String getHost() {
+		urls.inClusterBase().host
+	}
 
-    @Override
-    URI prometheusMetricsEndpoint() {
-        urls.prometheusEndpoint()
-    }
+	@Override
+	URI prometheusMetricsEndpoint() {
+		urls.prometheusEndpoint()
+	}
 
-    @Override
-    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-        // intentionally left blank
-    }
+	@Override
+	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+		// intentionally left blank
+	}
 
-    @Override
-    void deleteUser(String name) {
-        // intentionally left blank
-    }
+	@Override
+	void deleteUser(String name) {
+		// intentionally left blank
+	}
 
-    @Override
-    void setDefaultBranch(String repoTarget, String branch) {
-        // intentionally left blank
-    }
+	@Override
+	void setDefaultBranch(String repoTarget, String branch) {
+		// intentionally left blank
+	}
 
-    private static Permission.Role mapToScmManager(AccessRole role) {
-        switch (role) {
-            case AccessRole.READ:
-                return Permission.Role.READ
-            case AccessRole.WRITE:
-                return Permission.Role.WRITE
-            case AccessRole.MAINTAIN:
-                log.warn("SCM-Manager: Mapping MAINTAIN to WRITE")
-                return Permission.Role.WRITE
-            case AccessRole.ADMIN:
-                return Permission.Role.OWNER
-            case AccessRole.OWNER:
-                return Permission.Role.OWNER
-            default:
-                throw new IllegalArgumentException("Unsupported access role: ${role}")
-        }
-    }
+	private static Permission.Role mapToScmManager(AccessRole role) {
+		switch (role) {
+			case AccessRole.READ:
+				return Permission.Role.READ
+			case AccessRole.WRITE:
+				return Permission.Role.WRITE
+			case AccessRole.MAINTAIN:
+				log.warn("SCM-Manager: Mapping MAINTAIN to WRITE")
+				return Permission.Role.WRITE
+			case AccessRole.ADMIN:
+				return Permission.Role.OWNER
+			case AccessRole.OWNER:
+				return Permission.Role.OWNER
+			default:
+				throw new IllegalArgumentException("Unsupported access role: ${role}")
+		}
+	}
 
-    private static boolean handle201or409(Response<?> response, String what) {
-        int code = response.code()
+	private static boolean handle201or409(Response<?> response, String what) {
+		int code = response.code()
 
-        if (code == 409) {
-            log.debug("${what} already exists - ignoring HTTP 409")
-            return false
-        }
+		if (code == 409) {
+			log.debug("${what} already exists - ignoring HTTP 409")
+			return false
+		}
 
-        if (code != 201) {
-            throw new RuntimeException(
-                    "Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}"
-            )
-        }
+		if (code != 201) {
+			throw new RuntimeException("Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}")
+		}
 
-        return true
-    }
+		return true
+	}
 
-    /**
-     * Test-only constructor.
-     */
-    ScmManager(
-            Config config,
-            ScmManagerConfig scmmConfig,
-            ScmManagerUrlResolver urls,
-            ScmManagerApiClient apiClient
-    ) {
-        this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
-        this.config = Objects.requireNonNull(config, "config must not be null")
-        this.urls = Objects.requireNonNull(urls, "urls must not be null")
-        this.apiClient = apiClient ?: new ScmManagerApiClient(
-                urls.clientApiBase().toString(),
-                scmmConfig.credentials,
-                config.application.insecure
-        )
-    }
+	/**
+	 * Test-only constructor.*/
+	ScmManager(Config config,
+		ScmManagerConfig scmmConfig,
+		ScmManagerUrlResolver urls,
+		ScmManagerApiClient apiClient) {
+		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
+		this.config = Objects.requireNonNull(config, "config must not be null")
+		this.urls = Objects.requireNonNull(urls, "urls must not be null")
+		this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
+			scmmConfig.credentials,
+			config.application.insecure)
+	}
 }

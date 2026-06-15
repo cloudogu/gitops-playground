@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import groovy.util.logging.Slf4j
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
@@ -12,7 +13,7 @@ class NetworkingUtils {
 	private CommandExecutor commandExecutor
 
 	NetworkingUtils(K8sClient k8sClient = new K8sClient(),
-	                CommandExecutor commandExecutor = new CommandExecutor()) {
+		CommandExecutor commandExecutor = new CommandExecutor()) {
 		this.k8sClient = k8sClient
 		this.commandExecutor = commandExecutor
 	}
@@ -58,7 +59,7 @@ class NetworkingUtils {
 	String getLocalAddress() {
 		try {
 			List<NetworkInterface> sortedInterfaces =
-					Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
+				Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
 
 			for (NetworkInterface anInterface : sortedInterfaces) {
 				for (InetAddress address : Collections.list(anInterface.inetAddresses)) {

@@ -5,10 +5,12 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
+
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -19,8 +21,8 @@ class Application {
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 
-	Application(Config config, K8sClient k8sClient,GitHandler gitHandler,
-	            List<Tool> features) {
+	Application(Config config, K8sClient k8sClient, GitHandler gitHandler,
+		List<Tool> features) {
 		this.config = config
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.gitHandler = gitHandler
@@ -91,6 +93,5 @@ class Application {
 		config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
 	}
-
 
 }

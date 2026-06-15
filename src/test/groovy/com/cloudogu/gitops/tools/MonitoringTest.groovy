@@ -1,5 +1,10 @@
 package com.cloudogu.gitops.tools
 
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -10,21 +15,17 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
+
+import java.nio.file.Files
+import java.nio.file.Path
 import groovy.yaml.YamlSlurper
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
 
 @EnableKubernetesMockClient(crud = true)
 class MonitoringTest {

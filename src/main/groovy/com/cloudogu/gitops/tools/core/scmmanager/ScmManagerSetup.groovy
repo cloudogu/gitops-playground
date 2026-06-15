@@ -8,9 +8,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManage
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.util.logging.Slf4j
 
 import java.nio.file.Path
+import groovy.util.logging.Slf4j
 
 @Slf4j
 class ScmManagerSetup {
@@ -23,10 +23,8 @@ class ScmManagerSetup {
 
 	private Path tempValuesPath
 
-	ScmManagerSetup(
-			ScmManager scmManager,
-			Deployer deployer
-	) {
+	ScmManagerSetup(ScmManager scmManager,
+		Deployer deployer) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 	}
@@ -35,43 +33,37 @@ class ScmManagerSetup {
 		Path valuesPath = prepareHelmValues()
 		def helmConfig = this.scmManager.scmmConfig.helm
 
-		deployer.helmStrategy.deployFeature(
-				helmConfig.repoURL as String,
-				'scm-manager',
-				helmConfig.chart as String,
-				helmConfig.version as String,
-				this.scmManager.scmmConfig.namespace,
-				SCMM_RELEASE_NAME,
-				valuesPath,
-				DeploymentStrategy.RepoType.HELM
-		)
+		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
+			'scm-manager',
+			helmConfig.chart as String,
+			helmConfig.version as String,
+			this.scmManager.scmmConfig.namespace,
+			SCMM_RELEASE_NAME,
+			valuesPath,
+			DeploymentStrategy.RepoType.HELM)
 	}
 
 	void createArgocdApplication() {
 		Path valuesPath = tempValuesPath ?: prepareHelmValues()
 		def helmConfig = this.scmManager.scmmConfig.helm
 
-		deployer.argoCdStrategyProvider.get().deployFeature(
-				helmConfig.repoURL as String,
-				'scm-manager',
-				helmConfig.chart as String,
-				helmConfig.version as String,
-				this.scmManager.scmmConfig.namespace,
-				SCMM_RELEASE_NAME,
-				valuesPath,
-				DeploymentStrategy.RepoType.HELM
-		)
+		deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
+			'scm-manager',
+			helmConfig.chart as String,
+			helmConfig.version as String,
+			this.scmManager.scmmConfig.namespace,
+			SCMM_RELEASE_NAME,
+			valuesPath,
+			DeploymentStrategy.RepoType.HELM)
 	}
 
 	private Path prepareHelmValues() {
-		Map<String, Object> templateVars = [
-				config     : this.scmManager.config,
-				host       : this.scmManager.scmmConfig.ingress,
-				username   : this.scmManager.scmmConfig.credentials.username,
-				password   : this.scmManager.scmmConfig.credentials.password,
-				helm       : this.scmManager.scmmConfig.helm,
-				releaseName: SCMM_RELEASE_NAME
-		]
+		Map<String, Object> templateVars = [config     : this.scmManager.config,
+		                                    host       : this.scmManager.scmmConfig.ingress,
+		                                    username   : this.scmManager.scmmConfig.credentials.username,
+		                                    password   : this.scmManager.scmmConfig.credentials.password,
+		                                    helm       : this.scmManager.scmmConfig.helm,
+		                                    releaseName: SCMM_RELEASE_NAME]
 
 		Map templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars)
 		Map values = this.scmManager.scmmConfig.helm.values as Map ?: [:]
@@ -128,18 +120,16 @@ class ScmManagerSetup {
 			return
 		}
 
-		List<String> pluginNames = [
-				"scm-mail-plugin",
-				"scm-review-plugin",
-				"scm-code-editor-plugin",
-				"scm-editor-plugin",
-				"scm-landingpage-plugin",
-				"scm-el-plugin",
-				"scm-readme-plugin",
-				"scm-webhook-plugin",
-				"scm-ci-plugin",
-				"scm-metrics-prometheus-plugin"
-		]
+		List<String> pluginNames = ["scm-mail-plugin",
+		                            "scm-review-plugin",
+		                            "scm-code-editor-plugin",
+		                            "scm-editor-plugin",
+		                            "scm-landingpage-plugin",
+		                            "scm-el-plugin",
+		                            "scm-readme-plugin",
+		                            "scm-webhook-plugin",
+		                            "scm-ci-plugin",
+		                            "scm-metrics-prometheus-plugin"]
 
 		if (this.scmManager.config.jenkins.active) {
 			pluginNames.add("scm-jenkins-plugin")
@@ -150,13 +140,9 @@ class ScmManagerSetup {
 		pluginNames.each { String pluginName ->
 			log.debug("Installing Plugin ${pluginName} ...")
 
-			restartForThisPlugin =
-					!this.scmManager.config.scm.scmManager.skipRestart &&
-							pluginName == pluginNames.last()
+			restartForThisPlugin = !this.scmManager.config.scm.scmManager.skipRestart && pluginName == pluginNames.last()
 
-			ScmManagerApiClient.handleApiResponse(
-					scmManager.getApiClient().pluginApi().install(pluginName, restartForThisPlugin)
-			)
+			ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().pluginApi().install(pluginName, restartForThisPlugin))
 		}
 
 		log.debug("SCM-Manager plugin installation finished successfully!")
@@ -167,52 +153,44 @@ class ScmManagerSetup {
 	}
 
 	private void setSetupConfigs() {
-		def setupConfigs = [
-				enableProxy             : false,
-				proxyPort               : 8080,
-				proxyServer             : "proxy.mydomain.com",
-				proxyUser               : null,
-				proxyPassword           : null,
-				realmDescription        : "SONIA :: SCM Manager",
-				disableGroupingGrid     : false,
-				dateFormat              : "YYYY-MM-DD HH:mm:ss",
-				anonymousAccessEnabled  : false,
-				anonymousMode           : "OFF",
-				baseUrl                 : this.scmManager.url,
-				forceBaseUrl            : false,
-				loginAttemptLimit       : -1,
-				proxyExcludes           : [],
-				skipFailedAuthenticators: false,
-				pluginUrl               : "https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}",
-				loginAttemptLimitTimeout: 300,
-				enabledXsrfProtection   : true,
-				namespaceStrategy       : "CustomNamespaceStrategy",
-				loginInfoUrl            : "https://login-info.scm-manager.org/api/v1/login-info",
-				releaseFeedUrl          : "https://scm-manager.org/download/rss.xml",
-				mailDomainName          : "scm-manager.local",
-				adminGroups             : [],
-				adminUsers              : []
-		]
+		def setupConfigs = [enableProxy             : false,
+		                    proxyPort               : 8080,
+		                    proxyServer             : "proxy.mydomain.com",
+		                    proxyUser               : null,
+		                    proxyPassword           : null,
+		                    realmDescription        : "SONIA :: SCM Manager",
+		                    disableGroupingGrid     : false,
+		                    dateFormat              : "YYYY-MM-DD HH:mm:ss",
+		                    anonymousAccessEnabled  : false,
+		                    anonymousMode           : "OFF",
+		                    baseUrl                 : this.scmManager.url,
+		                    forceBaseUrl            : false,
+		                    loginAttemptLimit       : -1,
+		                    proxyExcludes           : [],
+		                    skipFailedAuthenticators: false,
+		                    pluginUrl               : "https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}",
+		                    loginAttemptLimitTimeout: 300,
+		                    enabledXsrfProtection   : true,
+		                    namespaceStrategy       : "CustomNamespaceStrategy",
+		                    loginInfoUrl            : "https://login-info.scm-manager.org/api/v1/login-info",
+		                    releaseFeedUrl          : "https://scm-manager.org/download/rss.xml",
+		                    mailDomainName          : "scm-manager.local",
+		                    adminGroups             : [],
+		                    adminUsers              : []]
 
-		ScmManagerApiClient.handleApiResponse(
-				scmManager.getApiClient().generalApi().setConfig(setupConfigs)
-		)
+		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().generalApi().setConfig(setupConfigs))
 
 		log.debug("Successfully added SCMM Setup Configs")
 	}
 
 	private void configureJenkinsPlugin() {
-		def jenkinsPluginConfig = [
-				disableRepositoryConfiguration: false,
-				disableMercurialTrigger       : false,
-				disableGitTrigger             : false,
-				disableEventTrigger           : false,
-				url                           : this.scmManager.config.jenkins.urlForScm
-		] as Map<String, Object>
+		def jenkinsPluginConfig = [disableRepositoryConfiguration: false,
+		                           disableMercurialTrigger       : false,
+		                           disableGitTrigger             : false,
+		                           disableEventTrigger           : false,
+		                           url                           : this.scmManager.config.jenkins.urlForScm] as Map<String, Object>
 
-		ScmManagerApiClient.handleApiResponse(
-				this.scmManager.getApiClient().pluginApi().configureJenkinsPlugin(jenkinsPluginConfig)
-		)
+		ScmManagerApiClient.handleApiResponse(this.scmManager.getApiClient().pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
 
 		log.debug("Successfully configured JenkinsPlugin in SCM-Manager.")
 	}
@@ -226,19 +204,15 @@ class ScmManagerSetup {
 	}
 
 	private void addUser(String username, String password, String email = 'changeme@test.local') {
-		ScmManagerUser userRequest = [
-				name       : username,
-				displayName: username,
-				mail       : email,
-				external   : false,
-				password   : password,
-				active     : true,
-				_links     : [:]
-		]
+		ScmManagerUser userRequest = [name       : username,
+		                              displayName: username,
+		                              mail       : email,
+		                              external   : false,
+		                              password   : password,
+		                              active     : true,
+		                              _links     : [:]]
 
-		ScmManagerApiClient.handleApiResponse(
-				scmManager.getApiClient().usersApi().addUser(userRequest)
-		)
+		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().usersApi().addUser(userRequest))
 
 		log.debug("Successfully created SCM-Manager User ${username}.")
 	}
@@ -246,9 +220,7 @@ class ScmManagerSetup {
 	private void grantUserPermissions(String username, List<String> permissions) {
 		def permissionBody = [permissions: permissions]
 
-		ScmManagerApiClient.handleApiResponse(
-				scmManager.getApiClient().usersApi().setPermissionForUser(username, permissionBody)
-		)
+		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().usersApi().setPermissionForUser(username, permissionBody))
 
 		log.debug("Granted permissions ${permissions} to user ${username}.")
 	}

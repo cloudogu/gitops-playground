@@ -1,51 +1,52 @@
 package com.cloudogu.gitops.infrastructure.helm
 
 import com.cloudogu.gitops.utils.CommandExecutor
-import groovy.util.logging.Slf4j
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
 class HelmClient {
 
-    private CommandExecutor commandExecutor
+	private CommandExecutor commandExecutor
 
-    HelmClient(CommandExecutor commandExecutor) {
-        this.commandExecutor = commandExecutor
-    }
+	HelmClient(CommandExecutor commandExecutor) {
+		this.commandExecutor = commandExecutor
+	}
 
-    String addRepo(String repoName, String url) {
-        helm(['repo', 'add', repoName, url])
-    }
+	String addRepo(String repoName, String url) {
+		helm(['repo', 'add', repoName, url])
+	}
 
-    String dependencyBuild(String path) {
-        helm(['dependency', 'build', path])
-    }
+	String dependencyBuild(String path) {
+		helm(['dependency', 'build', path])
+	}
 
-    String upgrade(String release, String chartOrPath, Map args = [:]) {
-        helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
-    }
+	String upgrade(String release, String chartOrPath, Map args = [:]) {
+		helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
+	}
 
-    String template(String release, String chartOrPath, Map args = [:]) {
-        helm(['template', release, chartOrPath], args)
-    }
+	String template(String release, String chartOrPath, Map args = [:]) {
+		helm(['template', release, chartOrPath], args)
+	}
 
-    String uninstall(String release, String namespace) {
-        String[] command = ["helm", "uninstall", release, '--namespace', namespace]
-        commandExecutor.execute(command).stdOut
-    }
+	String uninstall(String release, String namespace) {
+		String[] command = ["helm", "uninstall", release, '--namespace', namespace]
+		commandExecutor.execute(command).stdOut
+	}
 
-    private String helm(List<String> verbAndParams, Map args = [:]) {
-        List<String> command = ['helm'] + verbAndParams
+	private String helm(List<String> verbAndParams, Map args = [:]) {
+		List<String> command = ['helm'] + verbAndParams
 
-        for (entry in args) {
-            String key = entry.key
-            String value = entry.value
-            command += "--${key}".toString()
-            command += value
-        }
+		for (entry in args) {
+			String key = entry.key
+			String value = entry.value
+			command += "--${key}".toString()
+			command += value
+		}
 
-        log.trace("Executing helm command: ${command.join(' ')}")
-        commandExecutor.execute(command as String[]).stdOut
-    }
+		log.trace("Executing helm command: ${command.join(' ')}")
+		commandExecutor.execute(command as String[]).stdOut
+	}
 }

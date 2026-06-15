@@ -1,12 +1,13 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import org.junit.jupiter.api.Test
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
+
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+
+import org.junit.jupiter.api.Test
 
 class NetworkingUtilsTest {
 
@@ -20,7 +21,7 @@ class NetworkingUtilsTest {
 		def localIp = "5.6.7.8"
 		when(k8sClient.waitForInternalNodeIp()).thenReturn(internalNodeIp)
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
-				"1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
+			"1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
 
 		def actualBindAddress = networkingUtils.findClusterBindAddress()
 
@@ -43,7 +44,7 @@ class NetworkingUtilsTest {
 	void 'clusterBindAddress: fails when no potential bind address'() {
 		when(k8sClient.waitForInternalNodeIp()).thenReturn('')
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
-				"1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
+			"1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
 
 		def exception = shouldFail(RuntimeException) {
 			networkingUtils.findClusterBindAddress()

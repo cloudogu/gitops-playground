@@ -53,13 +53,13 @@ class K8sClient {
 
 	K8sClient() {
 		Config config = new ConfigBuilder()
-				.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
-				.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
-				.build()
+			.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
+			.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
+			.build()
 
 		this.client = new KubernetesClientBuilder()
-				.withConfig(config)
-				.build()
+			.withConfig(config)
+			.build()
 
 	}
 
@@ -544,8 +544,7 @@ class K8sClient {
 			yamlFiles = yamlFiles.sort { it.absolutePath }
 
 			int appliedResources = 0
-			yamlFiles.each { File file ->
-				appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+			yamlFiles.each { File file -> appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
 			}
 
 			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
@@ -914,6 +913,7 @@ class K8sClient {
 		def status = resource.getAdditionalProperties()?.get('status') as Map
 		return status?.get('phase') as String
 	}
+
 	/**
 	 * Waits for a resource to reach a desired phase with default timeout and interval.
 	 *
@@ -1129,24 +1129,21 @@ class K8sClient {
 		String normalized = resourceType.toLowerCase()
 
 		def crd = client.apiextensions()
-				.v1()
-				.customResourceDefinitions()
-				.list()
-				.items
-				.find { crd ->
-					crd.spec.names.kind?.equalsIgnoreCase(resourceType) ||
-							crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
-							crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
-							crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
-				}
+			.v1()
+			.customResourceDefinitions()
+			.list()
+			.items
+			.find { crd ->
+				crd.spec.names.kind?.equalsIgnoreCase(resourceType) || crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
+					crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
+					crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
+			}
 
 		if (!crd) {
 			throw new RuntimeException("No CRD found for custom resource type '${resourceType}'")
 		}
 
-		def version = crd.spec.versions.find { it.storage && it.served }?.name ?:
-				crd.spec.versions.find { it.storage }?.name ?:
-						crd.spec.versions.find { it.served }?.name
+		def version = crd.spec.versions.find { it.storage && it.served }?.name ?: crd.spec.versions.find { it.storage }?.name ?: crd.spec.versions.find { it.served }?.name
 		log.debug("Using CRD ${crd.metadata.name} with version ${version}, kind=${crd.spec.names.kind}, plural=${crd.spec.names.plural}")
 
 		if (!version) {
@@ -1154,12 +1151,12 @@ class K8sClient {
 		}
 
 		ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
-				.withGroup(crd.spec.group)
-				.withVersion(version)
-				.withKind(crd.spec.names.kind)
-				.withPlural(crd.spec.names.plural)
-				.withNamespaced(crd.spec.scope == "Namespaced")
-				.build()
+			.withGroup(crd.spec.group)
+			.withVersion(version)
+			.withKind(crd.spec.names.kind)
+			.withPlural(crd.spec.names.plural)
+			.withNamespaced(crd.spec.scope == "Namespaced")
+			.build()
 
 		def resourceClient = client.genericKubernetesResources(context)
 

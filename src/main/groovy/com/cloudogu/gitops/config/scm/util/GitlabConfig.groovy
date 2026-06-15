@@ -3,13 +3,13 @@ package com.cloudogu.gitops.config.scm.util
 import com.cloudogu.gitops.config.Credentials
 
 interface GitlabConfig {
-    String getUrl()
+	String getUrl()
 
-    String getParentGroupId()
+	String getParentGroupId()
 
-    String getDefaultVisibility()
+	String getDefaultVisibility()
 
-    String getGitOpsUsername()
+	String getGitOpsUsername()
 
-    Credentials getCredentials()
+	Credentials getCredentials()
 }

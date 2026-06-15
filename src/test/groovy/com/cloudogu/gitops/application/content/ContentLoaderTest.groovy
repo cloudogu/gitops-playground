@@ -53,12 +53,12 @@ class ContentLoaderTest {
 	static List<File> foldersToDelete = new ArrayList<File>()
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
-			scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(url: '')),
-			registry: new Config.RegistrySchema(url: 'reg-url',
-					path: 'reg-path',
-					username: 'reg-user',
-					password: 'reg-pw',
-					createImagePullSecrets: false))
+		scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(url: '')),
+		registry: new Config.RegistrySchema(url: 'reg-url',
+			path: 'reg-path',
+			username: 'reg-user',
+			password: 'reg-pw',
+			createImagePullSecrets: false))
 
 	KubernetesClient client
 	K8sClient k8sClient = new K8sClient()
@@ -203,24 +203,24 @@ class ContentLoaderTest {
 	void authenticatesContentReposWithSecret() {
 		this.k8sClient.client = client
 		Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName("secret-test-name")
-				.withNamespace("default")
-				.endMetadata()
-				.withType("Opaque")
-				.withData(Map.of("username", "YWRtaW4=",
-						"password", "czNjcjN0"))
-				.build()
+			.withNewMetadata()
+			.withName("secret-test-name")
+			.withNamespace("default")
+			.endMetadata()
+			.withType("Opaque")
+			.withData(Map.of("username", "YWRtaW4=",
+				"password", "czNjcjN0"))
+			.build()
 
 		this.k8sClient.client.secrets()
-				.inNamespace("default")
-				.resource(secret)
-				.create()
+			.inNamespace("default")
+			.resource(secret)
+			.create()
 
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'),
-				ref: 'main', type: ContentRepoType.COPY,
-				target: 'common/repo',
-				credentials: new Credentials(null, null, 'secret-test-name', 'default'))]
+			ref: 'main', type: ContentRepoType.COPY,
+			target: 'common/repo',
+			credentials: new Credentials(null, null, 'secret-test-name', 'default'))]
 
 		def content = createContent(config)
 		content.cloneContentRepos()
@@ -526,30 +526,30 @@ class ContentLoaderTest {
 		def branches = assertBranch(git, branch)
 		def otherBranches = branches.findAll { !it.name.contains(branch) }
 		assertThat(otherBranches)
-				.withFailMessage("More than the expected branch main found. Available branches: ${otherBranches.collect { it.name }}")
-				.hasSize(0)
+			.withFailMessage("More than the expected branch main found. Available branches: ${otherBranches.collect { it.name }}")
+			.hasSize(0)
 	}
 
 	static void assertNoTags(Git git) {
 		def tags = git.tagList().call()
 		assertThat(tags)
-				.withFailMessage("No tags in mirrored repo with ref expected. Available tags: ${tags.collect { it.name }}")
-				.hasSize(0)
+			.withFailMessage("No tags in mirrored repo with ref expected. Available tags: ${tags.collect { it.name }}")
+			.hasSize(0)
 	}
 
 	static List<Ref> assertBranch(Git git, String someBranch) {
 		def branches = git.branchList().call()
 		assertThat(branches.findAll { it.name == "refs/heads/${someBranch}" })
-				.withFailMessage("Branch '${someBranch}' not found in git repository. Available branches: ${branches.collect { it.name }}")
-				.hasSize(1)
+			.withFailMessage("Branch '${someBranch}' not found in git repository. Available branches: ${branches.collect { it.name }}")
+			.hasSize(1)
 		return branches
 	}
 
 	static void assertTag(Git git, String expectedTag) {
 		def tags = git.tagList().call()
 		assertThat(tags.findAll { it.name == "refs/tags/$expectedTag" })
-				.withFailMessage("Tag '$expectedTag' not found in git repository. Available tags: ${tags.collect { it.name }}")
-				.hasSize(1)
+			.withFailMessage("Tag '$expectedTag' not found in git repository. Available tags: ${tags.collect { it.name }}")
+			.hasSize(1)
 	}
 
 	@Test
@@ -831,7 +831,7 @@ class ContentLoaderTest {
 		                                                   valuesPath : valuesFile.toString(),
 		                                                   values     : [replicas: 2, // override file
 		                                                                 service : [type: 'NodePort'] // override nested
-														   ]]]])
+		                                                   ]]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
@@ -865,7 +865,7 @@ class ContentLoaderTest {
 		                                                   namespace : 'my-prefix-elasticsearch',
 		                                                   valuesPath: valuesFile.toString()
 		                                                   // no values
-														  ]]])
+		                                                  ]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
@@ -889,7 +889,7 @@ class ContentLoaderTest {
 		                                                   namespace: 'my-prefix-elasticsearch',
 		                                                   values   : [replicas: 2]
 		                                                   // helmValuesPath empty / missing
-														  ]]])
+		                                                  ]]])
 
 		def contentLoader = createContent(cfg)
 		contentLoader.install()
@@ -940,10 +940,10 @@ class ContentLoaderTest {
 			foldersToDelete << tempRepo
 			log.debug("Repo $initPath: cloned bare repo to $tempRepo")
 			try (def git = Git.cloneRepository()
-					.setURI(bareRepoUri)
-					.setBranch('main')
-					.setDirectory(tempRepo)
-					.call()) {
+				.setURI(bareRepoUri)
+				.setBranch('main')
+				.setDirectory(tempRepo)
+				.call()) {
 
 				FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
 
@@ -1025,25 +1025,25 @@ class ContentLoaderTest {
 		CloneCommand cloneSpy
 
 		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
-		                     Deployer deployer) {
+			Deployer deployer) {
 			super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 		}
 
 		@Override
 		protected void deployHelmChart(String featureName,
-		                               String releaseName,
-		                               String namespace,
-		                               Config.HelmConfigWithValues helmConfig,
-		                               String helmValuesTemplatePath,
-		                               Config config,
-									   boolean initByHelm) {
+			String releaseName,
+			String namespace,
+			Config.HelmConfigWithValues helmConfig,
+			String helmValuesTemplatePath,
+			Config config,
+			boolean initByHelm) {
 			deployCalls << new DeployCall(featureName: featureName,
-					releaseName: releaseName,
-					namespace: namespace,
-					helmConfig: helmConfig,
-					valuesPath: helmValuesTemplatePath,
-					config: config,
-					initByHelm: initByHelm)
+				releaseName: releaseName,
+				namespace: namespace,
+				helmConfig: helmConfig,
+				valuesPath: helmValuesTemplatePath,
+				config: config,
+				initByHelm: initByHelm)
 		}
 
 		@Override

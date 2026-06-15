@@ -4,14 +4,14 @@ import jakarta.inject.Singleton
 
 @Singleton
 class PrometheusConfigurator {
-    private final JenkinsApiClient apiClient
+	private final JenkinsApiClient apiClient
 
-    PrometheusConfigurator(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient
-    }
+	PrometheusConfigurator(JenkinsApiClient apiClient) {
+		this.apiClient = apiClient
+	}
 
-    void enableAuthentication() {
-        def result = apiClient.runScript("""
+	void enableAuthentication() {
+		def result = apiClient.runScript("""
             import org.jenkinsci.plugins.prometheus.config.*
             
             def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)
@@ -20,8 +20,8 @@ class PrometheusConfigurator {
             print(config.useAuthenticatedEndpoint)
         """)
 
-        if (result != "true") {
-            throw new RuntimeException("Cannot enable authentication for prometheus: $result")
-        }
-    }
+		if (result != "true") {
+			throw new RuntimeException("Cannot enable authentication for prometheus: $result")
+		}
+	}
 }

@@ -4,21 +4,21 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 
 interface ScmManagerConfig {
-    Boolean getInternal()
+	Boolean getInternal()
 
-    String getUrl()
+	String getUrl()
 
-    String getUsername()
+	String getUsername()
 
-    String getPassword()
+	String getPassword()
 
-    String getNamespace()
+	String getNamespace()
 
-    String getIngress()
+	String getIngress()
 
-    Config.HelmConfigWithValues getHelm()
+	Config.HelmConfigWithValues getHelm()
 
-    String getGitOpsUsername()
+	String getGitOpsUsername()
 
-    Credentials getCredentials()
+	Credentials getCredentials()
 }

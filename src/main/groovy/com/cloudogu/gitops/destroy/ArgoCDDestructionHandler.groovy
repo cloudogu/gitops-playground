@@ -7,11 +7,12 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import groovy.transform.CompileStatic
+
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 
 @Singleton
 @Order(100)
@@ -82,7 +83,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	void installArgoCDViaHelm(GitRepo repo) {
 		// this is a hack to be able to uninstall using helm
 		def namePrefix = config.application.namePrefix
-        def argocdNamespace = namePrefix + config.features.argocd.namespace
+		def argocdNamespace = namePrefix + config.features.argocd.namespace
 		// Install umbrella chart from folder
 		String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
 		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
