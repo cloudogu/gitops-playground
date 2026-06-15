@@ -106,9 +106,6 @@ RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
-# -----------------------------------------------------------------------------
-# 3.4: Download and Install Kubectl - Step removed
-# -----------------------------------------------------------------------------
 
 
 # -----------------------------------------------------------------------------
