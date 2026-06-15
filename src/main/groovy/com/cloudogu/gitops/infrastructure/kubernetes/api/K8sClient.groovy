@@ -1328,8 +1328,7 @@ class K8sClient {
 
 	private boolean runInOpenshift() {
 		// gopConfig can be null, in tests or at startup
-		boolean result = this.gopConfig != null && this.gopConfig.application.openshift
-		return result
+		return this.gopConfig?.application?.openshift ?: false
 	}
 
 	// ========================================
