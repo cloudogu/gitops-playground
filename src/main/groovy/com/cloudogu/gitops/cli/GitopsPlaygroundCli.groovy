@@ -1,11 +1,9 @@
 package com.cloudogu.gitops.cli
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.ConsoleAppender
+import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
+
 import com.cloudogu.gitops.application.Application
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
@@ -13,15 +11,20 @@ import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.common.Tool
+
+import io.micronaut.context.ApplicationContext
+
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-import io.micronaut.context.ApplicationContext
+
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-
-import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge
-import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
@@ -96,7 +99,7 @@ class GitopsPlaygroundCli {
 			app = context.getBean(Application)
 			app.start()
 
-			printWelcomeScreen()
+			printWelcomeScreen(config.application.password)
 		}
 
 		return ReturnCode.SUCCESS
@@ -225,8 +228,7 @@ class GitopsPlaygroundCli {
 		return map as Map
 	}
 
-	void printWelcomeScreen() {
-		def password = Config.DEFAULT_ADMIN_PW
+	void printWelcomeScreen(String password) {
 		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!

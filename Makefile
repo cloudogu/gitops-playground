@@ -28,6 +28,7 @@ install-operator: ## installs argocd operator via kubectl and kustomize
 .PHONY: image
 image: ## builds the docker image for local testing
 	docker buildx prune -f && docker build . -t local/gop
+	echo "created docker image local/gop"
 
 %:
 	@:

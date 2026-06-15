@@ -21,6 +21,9 @@ import io.fabric8.kubernetes.client.dsl.base.PatchContext
 import io.fabric8.kubernetes.client.dsl.base.PatchType
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
 import io.fabric8.kubernetes.client.utils.Serialization
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.api.model.ProjectBuilder
+import io.fabric8.openshift.client.OpenShiftClient
 
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
@@ -50,17 +53,19 @@ class K8sClient {
 	protected int DEFAULT_RETRIES = 120
 
 	KubernetesClient client
+	com.cloudogu.gitops.config.Config gopConfig
 
-	K8sClient() {
+	K8sClient(com.cloudogu.gitops.config.Config gopConfig = null) {
 		Config config = new ConfigBuilder()
-				.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
-				.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
-				.build()
+			.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
+			.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
+			.build()
 
 		this.client = new KubernetesClientBuilder()
-				.withConfig(config)
-				.build()
-
+			.withConfig(config)
+			.build()
+		/* OpenShift client includes Kubernetes client APIs. */
+		this.gopConfig = gopConfig
 	}
 
 	// ========================================
@@ -250,17 +255,32 @@ class K8sClient {
 		if (!namespaceExists(name)) {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
-			Namespace namespace = new NamespaceBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.endMetadata()
-				.build()
+			if (runInOpenshift()) {
+				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
 
-			executeWithErrorHandling("create namespace ${name}") {
-				client.namespaces().resource(namespace).create()
+				Project project = new ProjectBuilder()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build()
+				executeWithErrorHandling("create project ${name}") {
+					osClient.projects().resource(project).create()
+				}
+				log.debug("Project ${name} created successfully.")
+			} else {
+
+				Namespace namespace = new NamespaceBuilder()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build()
+
+				executeWithErrorHandling("create namespace ${name}") {
+					client.namespaces().resource(namespace).create()
+				}
+
+				log.debug("Namespace ${name} created successfully.")
 			}
-
-			log.debug("Namespace ${name} created successfully.")
 		}
 	}
 
@@ -545,7 +565,8 @@ class K8sClient {
 
 			int appliedResources = 0
 			yamlFiles.each { File file ->
-				appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+				appliedResources += applyYamlStream(file.newInputStream(),
+					file.absolutePath)
 			}
 
 			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
@@ -914,6 +935,7 @@ class K8sClient {
 		def status = resource.getAdditionalProperties()?.get('status') as Map
 		return status?.get('phase') as String
 	}
+
 	/**
 	 * Waits for a resource to reach a desired phase with default timeout and interval.
 	 *
@@ -1129,24 +1151,21 @@ class K8sClient {
 		String normalized = resourceType.toLowerCase()
 
 		def crd = client.apiextensions()
-				.v1()
-				.customResourceDefinitions()
-				.list()
-				.items
-				.find { crd ->
-					crd.spec.names.kind?.equalsIgnoreCase(resourceType) ||
-							crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
-							crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
-							crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
-				}
+			.v1()
+			.customResourceDefinitions()
+			.list()
+			.items
+			.find { crd ->
+				crd.spec.names.kind?.equalsIgnoreCase(resourceType) || crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
+					crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
+					crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
+			}
 
 		if (!crd) {
 			throw new RuntimeException("No CRD found for custom resource type '${resourceType}'")
 		}
 
-		def version = crd.spec.versions.find { it.storage && it.served }?.name ?:
-				crd.spec.versions.find { it.storage }?.name ?:
-						crd.spec.versions.find { it.served }?.name
+		def version = crd.spec.versions.find { it.storage && it.served }?.name ?: crd.spec.versions.find { it.storage }?.name ?: crd.spec.versions.find { it.served }?.name
 		log.debug("Using CRD ${crd.metadata.name} with version ${version}, kind=${crd.spec.names.kind}, plural=${crd.spec.names.plural}")
 
 		if (!version) {
@@ -1154,12 +1173,12 @@ class K8sClient {
 		}
 
 		ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
-				.withGroup(crd.spec.group)
-				.withVersion(version)
-				.withKind(crd.spec.names.kind)
-				.withPlural(crd.spec.names.plural)
-				.withNamespaced(crd.spec.scope == "Namespaced")
-				.build()
+			.withGroup(crd.spec.group)
+			.withVersion(version)
+			.withKind(crd.spec.names.kind)
+			.withPlural(crd.spec.names.plural)
+			.withNamespaced(crd.spec.scope == "Namespaced")
+			.build()
 
 		def resourceClient = client.genericKubernetesResources(context)
 
@@ -1305,6 +1324,11 @@ class K8sClient {
 	 */
 	String getCurrentNamespace() {
 		return this.client.getNamespace()
+	}
+
+	private boolean runInOpenshift() {
+		// gopConfig can be null, in tests or at startup
+		return this.gopConfig?.application?.openshift ?: false
 	}
 
 	// ========================================
