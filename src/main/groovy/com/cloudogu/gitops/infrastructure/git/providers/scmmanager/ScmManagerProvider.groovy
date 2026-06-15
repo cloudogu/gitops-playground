@@ -80,22 +80,22 @@ class ScmManagerProvider implements GitProvider {
 
 	@Override
 	Credentials getCredentials() {
-		this.scmmConfig.credentials
+		return this.scmmConfig.credentials
 	}
 
 	@Override
 	String getGitOpsUsername() {
-		scmmConfig.gitOpsUsername
+		return scmmConfig.gitOpsUsername
 	}
 
 	@Override
 	String getUrl() {
-		urls.inClusterBase().toString()
+		return urls.inClusterBase().toString()
 	}
 
 	@Override
 	String repoPrefix() {
-		urls.inClusterRepoPrefix()
+		return urls.inClusterRepoPrefix()
 	}
 
 	@Override
@@ -112,17 +112,17 @@ class ScmManagerProvider implements GitProvider {
 
 	@Override
 	String getProtocol() {
-		urls.inClusterBase().scheme
+		return urls.inClusterBase().scheme
 	}
 
 	@Override
 	String getHost() {
-		urls.inClusterBase().host
+		return urls.inClusterBase().host
 	}
 
 	@Override
 	URI prometheusMetricsEndpoint() {
-		urls.prometheusEndpoint()
+		return urls.prometheusEndpoint()
 	}
 
 	@Override

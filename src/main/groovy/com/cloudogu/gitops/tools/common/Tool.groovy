@@ -34,7 +34,7 @@ import freemarker.template.DefaultObjectWrapperBuilder
  * Here are some typical examples:
  * <ul>
  *   <li>Mirror the Helm Chart: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#mirrorRepos} see {@link com.cloudogu.gitops.utils.AirGappedUtils#mirrorHelmRepoToGit(java.util.Map)} </li>
- *   <li>Create Image Pull Secrets: {@link com.cloudogu.gitops.config.schema.Schema.RegistrySchema#createImagePullSecrets} see {@link FeatureWithImage}</li>
+ *   <li>Create Image Pull Secrets: {@link com.cloudogu.gitops.config.schema.Schema.RegistrySchema#createImagePullSecrets} see {@link ToolWithImage}</li>
  *   <li>Install with Network Policies: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#netpols}</li>
  *   <li>Install with Resource requests + limits: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#podResources}</li>
  *   <li>Install without CRDs: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#skipCrds}</li>
@@ -63,7 +63,7 @@ abstract class Tool {
 			}
 
 			enable()
-			log.info("Feature installed: ${getClass().getSimpleName()}")
+			log.info("Tool installed: ${getClass().getSimpleName()}")
 			return true
 		} else {
 			log.debug("Feature ${getClass().getSimpleName()} is disabled")

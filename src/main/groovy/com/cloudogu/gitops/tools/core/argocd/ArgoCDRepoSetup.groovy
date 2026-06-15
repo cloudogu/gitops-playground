@@ -129,7 +129,7 @@ class ArgoCDRepoSetup {
 		if (config.features.monitoring.active) {
 			clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
 		}
-		if (config.scm.scmManager.internal) {
+		if (config.scm.scmManager?.internal) {
 			clusterResourceSubDirs.add(RepoLayout.scmManagerSubdirRel())
 		}
 		if (config.features.secrets.active) {
