@@ -1,60 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.cloudogu</groupId>
-  <artifactId>gitops-playground-cli</artifactId>
-  <version>0.1</version>
-  <packaging>${packaging}</packaging>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.cloudogu</groupId>
+    <artifactId>gitops-playground-cli</artifactId>
+    <version>0.1</version>
+    <packaging>${packaging}</packaging>
 
-  <parent>
-    <groupId>io.micronaut.platform</groupId>
-    <artifactId>micronaut-parent</artifactId>
-    <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-    <version>4.10.12</version>
-  </parent>
+    <parent>
+        <groupId>io.micronaut.platform</groupId>
+        <artifactId>micronaut-parent</artifactId>
+        <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
+        <version>4.10.12</version>
+    </parent>
 
-  <properties>
-    <packaging>jar</packaging>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
-    
-    <!--suppress UnresolvedMavenProperty -->
-    <!-- git is provided by git-commit-id-maven-plugin -->
-    <versionName>${git.tags} (${git.commit.id.abbrev}, ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
-    <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-    
-    <versionNameVersion>2.2.0</versionNameVersion>
-    <okhttpVersion>5.3.2</okhttpVersion>
-    <retrofitVersion>3.0.0</retrofitVersion>
-    <groovy.version>5.0.5</groovy.version>
-    <jsonschema.version>5.0.0</jsonschema.version>
-    <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
-    <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
-    <wiremock.version>3.13.2</wiremock.version>
-  </properties>
+    <properties>
+        <packaging>jar</packaging>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
-  <scm>
-    <connection>scm:git:https://github.com/cloudogu/gitops-playground.git</connection>
-    <developerConnection>scm:git:git@github.com:cloudogu/gitops-playground.git</developerConnection>
-    <url>https://github.com/cloudogu/gitops-playground</url>
-  </scm>
+        <!--suppress UnresolvedMavenProperty -->
+        <!-- git is provided by git-commit-id-maven-plugin -->
+        <versionName>${git.tags} (${git.commit.id.abbrev},
+            ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}
+        </versionName>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 
-  <licenses>
-    <license>
-      <name>GNU AFFERO GENERAL PUBLIC LICENSE, Version 3</name>
-      <comments>Copyright 2020 - present Cloudogu GmbH</comments>
-      <url>https://github.com/cloudogu/gitops-playground/blob/main/LICENSE</url>
-    </license>
-  </licenses>
+        <versionNameVersion>2.2.0</versionNameVersion>
+        <okhttpVersion>5.3.2</okhttpVersion>
+        <retrofitVersion>3.0.0</retrofitVersion>
+        <groovy.version>5.0.5</groovy.version>
+        <jsonschema.version>5.0.0</jsonschema.version>
+        <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
+        <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
+        <wiremock.version>3.13.2</wiremock.version>
+    </properties>
 
-  <inceptionYear>2020</inceptionYear>
+    <scm>
+        <connection>scm:git:https://github.com/cloudogu/gitops-playground.git</connection>
+        <developerConnection>scm:git:git@github.com:cloudogu/gitops-playground.git</developerConnection>
+        <url>https://github.com/cloudogu/gitops-playground</url>
+    </scm>
 
-  <organization>
-    <name>Cloudogu GmbH</name>
-    <url>https://www.cloudogu.com/</url>
-  </organization>
+    <licenses>
+        <license>
+            <name>GNU AFFERO GENERAL PUBLIC LICENSE, Version 3</name>
+            <comments>Copyright 2020 - present Cloudogu GmbH</comments>
+            <url>https://github.com/cloudogu/gitops-playground/blob/main/LICENSE</url>
+        </license>
+    </licenses>
+
+    <inceptionYear>2020</inceptionYear>
+
+    <organization>
+        <name>Cloudogu GmbH</name>
+        <url>https://www.cloudogu.com/</url>
+    </organization>
 
     <!-- Wiremock requires the jetty12 dependency for Jetty 12 support -->
     <dependencyManagement>
@@ -76,531 +78,534 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>    <dependency>
-      <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-inject-groovy</artifactId>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject-groovy</artifactId>
+        </dependency>
 
-    <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
-    <dependency>
-        <groupId>io.micronaut.reactor</groupId>
-        <artifactId>micronaut-reactor</artifactId>
-        <version>3.9.1</version>
-        <scope>runtime</scope>
-    </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
+        <dependency>
+            <groupId>io.micronaut.reactor</groupId>
+            <artifactId>micronaut-reactor</artifactId>
+            <version>3.9.1</version>
+            <scope>runtime</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.groovy</groupId>
-      <artifactId>groovy-all</artifactId>
-      <version>${groovy.version}</version>
-      <type>pom</type>
-      <exclusions>
-        <exclusion>
-          <groupId>org.testng</groupId>
-          <artifactId>testng</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.groovy</groupId>
-          <artifactId>groovy-testng</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.groovy</groupId>
-          <artifactId>groovy-test</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>${groovy.version}</version>
+            <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.testng</groupId>
+                    <artifactId>testng</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.groovy</groupId>
+                    <artifactId>groovy-testng</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.groovy</groupId>
+                    <artifactId>groovy-test</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-    <!-- not included in groovy-all -->
-    <dependency>
-      <groupId>org.apache.groovy</groupId>
-      <artifactId>groovy-yaml</artifactId>
-    </dependency>
+        <!-- not included in groovy-all -->
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-yaml</artifactId>
+        </dependency>
 
-    <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.21.2</version>
-    </dependency>
+        <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.21.2</version>
+        </dependency>
 
-    <dependency>
-      <groupId>info.picocli</groupId>
-      <artifactId>picocli</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut.groovy</groupId>
-      <artifactId>micronaut-runtime-groovy</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut.groovy</groupId>
+            <artifactId>micronaut-runtime-groovy</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut.picocli</groupId>
-      <artifactId>micronaut-picocli</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut.picocli</groupId>
+            <artifactId>micronaut-picocli</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>info.picocli</groupId>
-      <artifactId>picocli-codegen</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli-codegen</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-inject</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut.validation</groupId>
-      <artifactId>micronaut-validation</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut.validation</groupId>
+            <artifactId>micronaut-validation</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.22.0</version>
-    </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.22.0</version>
+        </dependency>
 
-      <!--Used for BCrypt functions-->
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-crypto</artifactId>
-        <version>7.0.5</version>
-      </dependency>
+        <!--Used for BCrypt functions-->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>7.0.5</version>
+        </dependency>
 
-      <dependency>
-        <groupId>org.eclipse.jgit</groupId>
-        <artifactId>org.eclipse.jgit</artifactId>
-        <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
-      <version>7.6.0.202603022253-r</version>
-    </dependency>
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
+            <version>7.6.0.202603022253-r</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp</artifactId>
-      <version>${okhttpVersion}</version>
-    </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttpVersion}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp-urlconnection</artifactId>
-      <version>${okhttpVersion}</version>
-    </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-urlconnection</artifactId>
+            <version>${okhttpVersion}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>logging-interceptor</artifactId>
-      <version>5.3.2</version>
-    </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>logging-interceptor</artifactId>
+            <version>5.3.2</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.squareup.retrofit2</groupId>
-      <artifactId>retrofit</artifactId>
-      <version>${retrofitVersion}</version>
-    </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>retrofit</artifactId>
+            <version>${retrofitVersion}</version>
+        </dependency>
 
-    <dependency>
-      <!-- Converts HTTP body objects from groovy to JSON -->
-      <groupId>com.squareup.retrofit2</groupId>
-      <artifactId>converter-jackson</artifactId>
-      <version>${retrofitVersion}</version>
-    </dependency>
+        <dependency>
+            <!-- Converts HTTP body objects from groovy to JSON -->
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>converter-jackson</artifactId>
+            <version>${retrofitVersion}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-jetty12</artifactId>
-      <version>${wiremock.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-jetty12</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp-tls</artifactId>
-      <version>${okhttpVersion}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-tls</artifactId>
+            <version>${okhttpVersion}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jcl</artifactId>
-      <version>6.2.18</version>
-      <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jcl</artifactId>
+            <version>6.2.18</version>
+            <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.freemarker</groupId>
-      <artifactId>freemarker</artifactId>
-      <version>2.3.34</version>
-    </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.34</version>
+        </dependency>
 
-    <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
-    <dependency>
-        <groupId>io.fabric8</groupId>
-        <artifactId>kubernetes-server-mock</artifactId>
-        <version>${kubernetes.fabric8.java.version}</version>
-        <scope>test</scope>
-    </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-server-mock</artifactId>
+            <version>${kubernetes.fabric8.java.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
-    <dependency>
-        <groupId>io.fabric8</groupId>
-        <artifactId>openshift-client</artifactId>
-         <version>${kubernetes.fabric8.java.version}</version>
-    </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>openshift-client</artifactId>
+            <version>${kubernetes.fabric8.java.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>io.kubernetes</groupId>
-      <artifactId>client-java</artifactId>
-      <version>${kubernetes.client.java.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.kubernetes</groupId>
+            <artifactId>client-java</artifactId>
+            <version>${kubernetes.client.java.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-http-client</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.micronaut.test</groupId>
-      <artifactId>micronaut-test-junit5</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>io.micronaut.test</groupId>
+            <artifactId>micronaut-test-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>4.0.0-M1</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>4.0.0-M1</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.groovy</groupId>
-      <artifactId>groovy-test</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- provides withEnvironmentVariable in Tests -->
-    <dependency>
-      <groupId>com.github.stefanbirkner</groupId>
-      <artifactId>system-lambda</artifactId>
-      <version>1.2.1</version>
-      <scope>test</scope>
-    </dependency>
+        <!-- provides withEnvironmentVariable in Tests -->
+        <dependency>
+            <groupId>com.github.stefanbirkner</groupId>
+            <artifactId>system-lambda</artifactId>
+            <version>1.2.1</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>javax.xml.bind</groupId>
-      <artifactId>jaxb-api</artifactId>
-      <version>2.3.1</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.gitlab4j</groupId>
-      <artifactId>gitlab4j-api</artifactId>
-      <version>6.2.0</version>
-    </dependency>
+        <dependency>
+            <groupId>org.gitlab4j</groupId>
+            <artifactId>gitlab4j-api</artifactId>
+            <version>6.2.0</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.github.victools</groupId>
-      <artifactId>jsonschema-generator</artifactId>
-      <version>${jsonschema.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-generator</artifactId>
+            <version>${jsonschema.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.github.victools</groupId>
-      <artifactId>jsonschema-module-jackson</artifactId>
-      <version>${jsonschema.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-module-jackson</artifactId>
+            <version>${jsonschema.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.networknt</groupId>
-      <artifactId>json-schema-validator</artifactId>
-      <version>3.0.2</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-lang3</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>3.0.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-    <dependency>
-      <groupId>com.cloudogu.versionName</groupId>
-      <artifactId>processor</artifactId>
-      <version>${versionNameVersion}</version>
-      <!-- This dependency is only necessary during compile time -->
-      <scope>provided</scope>
-    </dependency>
+        <dependency>
+            <groupId>com.cloudogu.versionName</groupId>
+            <artifactId>processor</artifactId>
+            <version>${versionNameVersion}</version>
+            <!-- This dependency is only necessary during compile time -->
+            <scope>provided</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <version>4.3.0</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.3.0</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.184</version>
-    </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.8.184</version>
+        </dependency>
 
-    <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>4.0.5</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jaxb</groupId>
-      <artifactId>jaxb-runtime</artifactId>
-      <version>4.0.7</version>
-      <scope>runtime</scope>
-    </dependency>
+        <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>4.0.7</version>
+            <scope>runtime</scope>
+        </dependency>
 
-  </dependencies>
+    </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.5</version>
-        <configuration>
-          <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
-          <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
-          <systemProperties>
-            <property>
-              <name>ROOT_LOG_LEVEL</name>
-              <value>OFF</value>
-            </property>
-            <property>
-              <name>APP_LOG_LEVEL</name>
-              <value>OFF</value>
-            </property>
-          </systemProperties>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.5</version>
+                <configuration>
+                    <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
+                    <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+                    <systemProperties>
+                        <property>
+                            <name>ROOT_LOG_LEVEL</name>
+                            <value>OFF</value>
+                        </property>
+                        <property>
+                            <name>APP_LOG_LEVEL</name>
+                            <value>OFF</value>
+                        </property>
+                    </systemProperties>
 
-        </configuration>
-      </plugin>
-     <plugin>
-         <groupId>org.jacoco</groupId>
-         <artifactId>jacoco-maven-plugin</artifactId>
-         <version>0.8.14</version>
-         <executions>
-             <execution>
-                 <goals>
-                     <goal>prepare-agent</goal>
-                 </goals>
-                 <phase>initialize</phase>
-             </execution>
-             <execution>
-                 <id>report</id>
-                 <phase>test</phase>
-                 <goals>
-                     <goal>report</goal>
-                 </goals>
-                 <configuration>
-                     <formats>
-                         <format>HTML</format>
-                         <format>XML</format>
-                     </formats>
-                 </configuration>
-             </execution>
-             <execution>
-                 <id>jacoco-check</id>
-                 <phase>test</phase>
-                 <goals>
-                     <goal>check</goal>
-                 </goals>
-                 <configuration>
-                     <haltOnFailure>false</haltOnFailure>
-                     <rules>
-                         <rule>
-                             <element>PACKAGE</element>
-                             <limits>
-                                 <limit>
-                                     <counter>LINE</counter>
-                                     <value>COVEREDRATIO</value>
-                                     <minimum>0.80</minimum>
-                                 </limit>
-                             </limits>
-                         </rule>
-                     </rules>
-                     <excludes>
-                         <exclude>**/*Test.class</exclude>
-                     </excludes>
-                 </configuration>
-             </execution>
-         </executions>
-     </plugin>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.14</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <formats>
+                                <format>HTML</format>
+                                <format>XML</format>
+                            </formats>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <haltOnFailure>false</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <exclude>**/*Test.class</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.5.0</version>
-      </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.5.0</version>
+            </plugin>
 
-      <plugin>
-        <groupId>io.micronaut.maven</groupId>
-        <artifactId>micronaut-maven-plugin</artifactId>
-      </plugin>
+            <plugin>
+                <groupId>io.micronaut.maven</groupId>
+                <artifactId>micronaut-maven-plugin</artifactId>
+            </plugin>
 
-      <plugin>
-        <groupId>org.codehaus.gmavenplus</groupId>
-        <artifactId>gmavenplus-plugin</artifactId>
-        <version>4.3.1</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <configScript>compiler.groovy</configScript>
-          <targetBytecode>17</targetBytecode>
-        </configuration>
-      </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>4.3.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <configScript>compiler.groovy</configScript>
+                    <targetBytecode>17</targetBytecode>
+                </configuration>
+            </plugin>
 
-      <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
-            So we delete the responsible files -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>truezip-maven-plugin</artifactId>
-        <version>1.2</version>
-        <executions>
-          <execution>
-            <id>remove-a-file-in-sub-archive</id>
-            <goals>
-              <goal>remove</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <fileset>
-                <directory>${project.build.directory}/${project.artifactId}-${project.version}.jar/META-INF/</directory>
-                <includes>
-                  <include>*.DSA</include>
-                  <include>*.RSA</include>
-                  <include>*.SF</include>
-                </includes>
-              </fileset>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+            <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
+                  So we delete the responsible files -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>truezip-maven-plugin</artifactId>
+                <version>1.2</version>
+                <executions>
+                    <execution>
+                        <id>remove-a-file-in-sub-archive</id>
+                        <goals>
+                            <goal>remove</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <fileset>
+                                <directory>
+                                    ${project.build.directory}/${project.artifactId}-${project.version}.jar/META-INF/
+                                </directory>
+                                <includes>
+                                    <include>*.DSA</include>
+                                    <include>*.RSA</include>
+                                    <include>*.SF</include>
+                                </includes>
+                            </fileset>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.15.0</version>
-        <configuration>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>com.cloudogu.versionName</groupId>
-              <artifactId>processor</artifactId>
-              <version>${versionNameVersion}</version>
-            </path>
-          </annotationProcessorPaths>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.15.0</version>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>com.cloudogu.versionName</groupId>
+                            <artifactId>processor</artifactId>
+                            <version>${versionNameVersion}</version>
+                        </path>
+                    </annotationProcessorPaths>
 
-          <compilerArgs>
-            <arg>-AversionName=${versionName}</arg>
-          </compilerArgs>
-        </configuration>
-      </plugin>
+                    <compilerArgs>
+                        <arg>-AversionName=${versionName}</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
 
-      <plugin>
-        <groupId>io.github.git-commit-id</groupId>
-        <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>10.0.0</version>
-        <executions>
-          <execution>
-            <id>get-the-git-infos</id>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <includeOnlyProperties>
-            <includeOnlyProperty>^git.tags$</includeOnlyProperty>
-            <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
-          </includeOnlyProperties>
-        </configuration>
-      </plugin>
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>10.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.tags$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
+            </plugin>
 
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.10.0</version>
-      </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.10.0</version>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>**/*IT</include>
-          </includes>
-        </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-              </goals>
-          </execution>
-        </executions>
-      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*IT</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <version>1.3.0</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>set-system-properties</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <property>
-                  <name>groovy.target.directory</name>
-                  <value>${project.build.directory}/classes</value>
-                </property>
-                <property>
-                  <name>groovy.parameters</name>
-                  <value>true</value>
-                </property>
-              </properties>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.3.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>set-system-properties</goal>
+                        </goals>
+                        <configuration>
+                            <properties>
+                                <property>
+                                    <name>groovy.target.directory</name>
+                                    <value>${project.build.directory}/classes</value>
+                                </property>
+                                <property>
+                                    <name>groovy.parameters</name>
+                                    <value>true</value>
+                                </property>
+                            </properties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-  <pluginRepositories>
-  </pluginRepositories>
+    <pluginRepositories>
+    </pluginRepositories>
 </project>

@@ -13,7 +13,6 @@ import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Slf4j
 
 import io.fabric8.kubernetes.api.model.*
-import io.fabric8.kubernetes.client.Client
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.ConfigBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -54,7 +53,7 @@ class K8sClient {
 	protected int DEFAULT_RETRIES = 120
 
 	KubernetesClient client
-com.cloudogu.gitops.config.Config gopConfig
+	com.cloudogu.gitops.config.Config gopConfig
 
 	K8sClient(com.cloudogu.gitops.config.Config gopConfig = null) {
 		Config config = new ConfigBuilder()
@@ -561,7 +560,9 @@ com.cloudogu.gitops.config.Config gopConfig
 			yamlFiles = yamlFiles.sort { it.absolutePath }
 
 			int appliedResources = 0
-			yamlFiles.each { File file -> appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+			yamlFiles.each { File file ->
+				appliedResources += applyYamlStream(file.newInputStream(),
+					file.absolutePath)
 			}
 
 			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
