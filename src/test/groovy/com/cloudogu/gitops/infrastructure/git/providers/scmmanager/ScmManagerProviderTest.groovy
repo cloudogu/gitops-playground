@@ -28,7 +28,7 @@ import retrofit2.Call
 import retrofit2.Response
 
 @ExtendWith(MockitoExtension)
-class ScmManagerTest {
+class ScmManagerProviderTest {
 
 	private Config config
 
@@ -61,8 +61,8 @@ class ScmManagerTest {
 		lenient().when(apiClient.repositoryApi()).thenReturn(repoApi)
 	}
 
-	private ScmManager newSchManager() {
-		return new ScmManager(config, scmmCfg, urls, apiClient)
+	private ScmManagerProvider newSchManager() {
+		return new ScmManagerProvider(config, scmmCfg, urls, apiClient)
 	}
 
 	private static Call<Void> callReturningSuccess(int code) {

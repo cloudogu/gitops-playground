@@ -17,7 +17,7 @@ import groovy.util.logging.Slf4j
 import retrofit2.Response
 
 @Slf4j
-class ScmManager implements GitProvider {
+class ScmManagerProvider implements GitProvider {
 
 	ScmManagerUrlResolver urls
 	ScmManagerApiClient apiClient
@@ -27,10 +27,10 @@ class ScmManager implements GitProvider {
 	K8sClient k8sClient
 	Config config
 
-	ScmManager(Config config,
-		ScmManagerConfig scmmConfig,
-		K8sClient k8sClient,
-		NetworkingUtils networkingUtils) {
+	ScmManagerProvider(Config config,
+	                   ScmManagerConfig scmmConfig,
+	                   K8sClient k8sClient,
+	                   NetworkingUtils networkingUtils) {
 		this.scmmConfig = scmmConfig
 		this.config = config
 		this.k8sClient = k8sClient
@@ -175,10 +175,10 @@ class ScmManager implements GitProvider {
 
 	/**
 	 * Test-only constructor.*/
-	ScmManager(Config config,
-		ScmManagerConfig scmmConfig,
-		ScmManagerUrlResolver urls,
-		ScmManagerApiClient apiClient) {
+	ScmManagerProvider(Config config,
+	                   ScmManagerConfig scmmConfig,
+	                   ScmManagerUrlResolver urls,
+	                   ScmManagerApiClient apiClient) {
 		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
 		this.config = Objects.requireNonNull(config, "config must not be null")
 		this.urls = Objects.requireNonNull(urls, "urls must not be null")

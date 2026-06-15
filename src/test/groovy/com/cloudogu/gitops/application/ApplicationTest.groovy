@@ -20,7 +20,7 @@ class ApplicationTest {
 			.getBean(Application)
 		def features = application.features.collect { it.class.simpleName }
 
-		assertThat(features).isEqualTo(['ScmManagerTool', 'Jenkins', 'Registry', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
+		assertThat(features).isEqualTo(['ScmManager', 'Jenkins', 'Registry', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
 	}
 
 	@Test

@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
-import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -18,13 +18,13 @@ class ScmManagerSetup {
 	private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
 	private static final String SCMM_RELEASE_NAME = 'scmm'
 
-	private final ScmManager scmManager
+	private final ScmManagerProvider scmManager
 	private final Deployer deployer
 
 	private Path tempValuesPath
 
-	ScmManagerSetup(ScmManager scmManager,
-		Deployer deployer) {
+	ScmManagerSetup(ScmManagerProvider scmManager,
+                    Deployer deployer) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 	}

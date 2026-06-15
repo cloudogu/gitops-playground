@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
-import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 
@@ -82,7 +82,7 @@ class GitHandler {
 				return new Gitlab(config, config.scm.gitlab)
 
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManager(config,
+				return new ScmManagerProvider(config,
 					config.scm.scmManager,
 					k8sClient,
 					networkingUtils)
@@ -98,7 +98,7 @@ class GitHandler {
 				return new Gitlab(config, config.multiTenant.gitlab)
 
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManager(config,
+				return new ScmManagerProvider(config,
 					config.multiTenant.scmManager,
 					k8sClient,
 					networkingUtils)

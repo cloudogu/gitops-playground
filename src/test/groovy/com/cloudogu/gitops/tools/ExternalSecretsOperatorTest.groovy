@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
@@ -17,6 +18,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -28,6 +30,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
+@CompileStatic
 @ExtendWith(MockitoExtension.class)
 @EnableKubernetesMockClient(crud = true)
 class ExternalSecretsOperatorTest {
@@ -62,7 +65,8 @@ class ExternalSecretsOperatorTest {
 	void "is disabled via active flag"() {
 		config.features.secrets.active = false
 		boolean enabled = createExternalSecretsOperator().install()
-		assertThat(enabled).isEqualTo(false)
+		assertFalse(enabled)
+
 	}
 
 	@Test

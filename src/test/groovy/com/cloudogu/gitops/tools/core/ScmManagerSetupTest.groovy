@@ -8,7 +8,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
-import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
@@ -20,7 +20,7 @@ import retrofit2.Response
 
 class ScmManagerSetupTest {
 
-	ScmManager scmManager = mock(ScmManager.class)
+	ScmManagerProvider scmManager = mock(ScmManagerProvider.class)
 
 	Deployer deployer = mock(Deployer.class)
 	HelmStrategy helmStrategy = mock(HelmStrategy.class)

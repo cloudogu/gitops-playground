@@ -1,12 +1,11 @@
-package com.cloudogu.gitops.tools.core
+package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
-import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 
 import io.micronaut.core.annotation.Order
 
@@ -16,7 +15,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(10)
-class ScmManagerTool extends Tool {
+class ScmManager extends Tool {
 
 	String namespace
 
@@ -24,9 +23,9 @@ class ScmManagerTool extends Tool {
 	private final GitHandler gitHandler
 	private final Deployer deployer
 
-	ScmManagerTool(Config config,
-		GitHandler gitHandler,
-		Deployer deployer) {
+	ScmManager(Config config,
+	           GitHandler gitHandler,
+	           Deployer deployer) {
 		this.config = config
 		this.gitHandler = gitHandler
 		this.deployer = deployer
@@ -46,7 +45,7 @@ class ScmManagerTool extends Tool {
 	void enable() {
 		log.info("Starting internal SCM-Manager setup.")
 
-		ScmManager scmManager = getTenantScmManager()
+		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer)
@@ -79,12 +78,12 @@ class ScmManagerTool extends Tool {
 		return "${prefix}${baseNamespace}".toString()
 	}
 
-	private ScmManager getTenantScmManager() {
-		if (!(gitHandler.tenant instanceof ScmManager)) {
+	private ScmManagerProvider getTenantScmManager() {
+		if (!(gitHandler.tenant instanceof ScmManagerProvider)) {
 			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: ${gitHandler.tenant?.class?.simpleName}")
 		}
 
-		return gitHandler.tenant as ScmManager
+		return gitHandler.tenant as ScmManagerProvider
 	}
 
 	private void setupRepositoriesAfterDeployment() {
