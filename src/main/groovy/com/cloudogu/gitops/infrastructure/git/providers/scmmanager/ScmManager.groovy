@@ -11,7 +11,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repositor
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
+
 import groovy.util.logging.Slf4j
+
 import retrofit2.Response
 
 @Slf4j
@@ -25,32 +27,26 @@ class ScmManager implements GitProvider {
 	K8sClient k8sClient
 	Config config
 
-	ScmManager(
-			Config config,
-			ScmManagerConfig scmmConfig,
-			K8sClient k8sClient,
-			NetworkingUtils networkingUtils
-	) {
+	ScmManager(Config config,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
 		this.scmmConfig = scmmConfig
 		this.config = config
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
 
-		this.urls = new ScmManagerUrlResolver(
-				this.config,
-				this.scmmConfig,
-				this.k8sClient,
-				this.networkingUtils
-		)
+		this.urls = new ScmManagerUrlResolver(this.config,
+			this.scmmConfig,
+			this.k8sClient,
+			this.networkingUtils)
 	}
 
 	ScmManagerApiClient getApiClient() {
 		if (this.apiClient == null) {
-			this.apiClient = new ScmManagerApiClient(
-					this.urls.clientApiBase().toString(),
-					this.scmmConfig.credentials,
-					this.config.application.insecure
-			)
+			this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(),
+				this.scmmConfig.credentials,
+				this.config.application.insecure)
 		}
 
 		return this.apiClient
@@ -76,8 +72,8 @@ class ScmManager implements GitProvider {
 		def permission = new Permission(principal, scmManagerRole, isGroup)
 
 		Response<Void> response = getApiClient().repositoryApi()
-				.createPermission(repoNamespace, repoName, permission)
-				.execute()
+			.createPermission(repoNamespace, repoName, permission)
+			.execute()
 
 		handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
 	}
@@ -171,27 +167,21 @@ class ScmManager implements GitProvider {
 		}
 
 		if (code != 201) {
-			throw new RuntimeException(
-					"Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}"
-			)
+			throw new RuntimeException("Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}")
 		}
 
 		return true
 	}
 
-	ScmManager(
-			Config config,
-			ScmManagerConfig scmmConfig,
-			ScmManagerUrlResolver urls,
-			ScmManagerApiClient apiClient
-	) {
+	ScmManager(Config config,
+		ScmManagerConfig scmmConfig,
+		ScmManagerUrlResolver urls,
+		ScmManagerApiClient apiClient) {
 		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
 		this.config = Objects.requireNonNull(config, "config must not be null")
 		this.urls = Objects.requireNonNull(urls, "urls must not be null")
-		this.apiClient = apiClient ?: new ScmManagerApiClient(
-				urls.clientApiBase().toString(),
-				scmmConfig.credentials,
-				config.application.insecure
-		)
+		this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
+			scmmConfig.credentials,
+			config.application.insecure)
 	}
 }

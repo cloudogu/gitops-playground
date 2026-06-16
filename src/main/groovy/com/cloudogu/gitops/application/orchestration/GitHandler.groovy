@@ -7,8 +7,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-import groovy.util.logging.Slf4j
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
@@ -21,11 +22,9 @@ class GitHandler {
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(
-			Config config,
-			K8sClient k8sClient,
-			NetworkingUtils networkingUtils
-	) {
+	GitHandler(Config config,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
@@ -39,8 +38,7 @@ class GitHandler {
 			log.debug("Setting configs for internal SCM-Manager")
 
 			config.scm.scmManager.internal = true
-			config.scm.scmManager.urlForJenkins =
-					"http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 		}
 
 		config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
@@ -50,9 +48,7 @@ class GitHandler {
 			config.scm.scmManager = null
 
 			if (!config.scm.gitlab.password || !config.scm.gitlab.parentGroupId) {
-				throw new RuntimeException(
-						'GitLab configuration incomplete: please provide both password (PAT) and parentGroupId'
-				)
+				throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
 			}
 		}
 	}
@@ -86,17 +82,13 @@ class GitHandler {
 				String prefixedNamespace = "${config.application.namePrefix}scm-manager"
 				config.scm.scmManager.namespace = prefixedNamespace
 
-				return new ScmManager(
-						config,
-						config.scm.scmManager,
-						k8sClient,
-						networkingUtils
-				)
+				return new ScmManager(config,
+					config.scm.scmManager,
+					k8sClient,
+					networkingUtils)
 
 			default:
-				throw new IllegalArgumentException(
-						"Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}"
-				)
+				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}")
 		}
 	}
 
@@ -106,17 +98,13 @@ class GitHandler {
 				return new Gitlab(config, config.multiTenant.gitlab)
 
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManager(
-						config,
-						config.multiTenant.scmManager,
-						k8sClient,
-						networkingUtils
-				)
+				return new ScmManager(config,
+					config.multiTenant.scmManager,
+					k8sClient,
+					networkingUtils)
 
 			default:
-				throw new IllegalArgumentException(
-						"Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}"
-				)
+				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
 		}
 	}
 }

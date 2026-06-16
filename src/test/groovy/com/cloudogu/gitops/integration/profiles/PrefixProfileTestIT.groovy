@@ -66,8 +66,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 		                                  registryNs,
 		                                  certManagerNs,
 		                                  monitoringNs]
-		namespacesToCheck.each { String ns ->
-			TestK8sHelper.waitForAllPodsRunningInNamespace(ns)
+		namespacesToCheck.each { String ns -> TestK8sHelper.waitForAllPodsRunningInNamespace(ns)
 		}
 	}
 }

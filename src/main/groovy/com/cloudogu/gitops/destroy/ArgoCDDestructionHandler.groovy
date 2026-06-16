@@ -7,11 +7,12 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import groovy.transform.CompileStatic
+
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 
 @Singleton
 @Order(100)

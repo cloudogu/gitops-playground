@@ -130,18 +130,16 @@ class ArgoCDTest {
 
 	@BeforeEach
 	void setupKubernetesClient() {
-		k8sClient = spy( new  K8sClientForTest())
+		k8sClient = spy(new K8sClientForTest())
 		k8sClient.client = client
 		k8sClient.SLEEPTIME = 1
 		k8sClient.DEFAULT_RETRIES = 1
 
 		// no need to wait in tests, we stub!
-		doNothing().when(k8sClient).waitForResourcePhase(
+		doNothing().when(k8sClient).waitForResourcePhase(any(String),
 			any(String),
 			any(String),
-			any(String),
-			any(String)
-		)
+			any(String))
 	}
 
 	@Test
@@ -660,6 +658,7 @@ class ArgoCDTest {
 		def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sClient, helmCommands)
 		return argoCD
 	}
+
 	private void prepareKubernetesObjectsForArgoCd() {
 		String namespace = "${config.application.namePrefix ?: ''}${config.features.argocd.namespace ?: 'argocd'}"
 
@@ -668,8 +667,7 @@ class ArgoCDTest {
 
 		createArgoCdCrds()
 
-		config.application.namespaces.getActiveNamespaces().each { String activeNamespace ->
-			createNamespaceIfMissing(activeNamespace)
+		config.application.namespaces.getActiveNamespaces().each { String activeNamespace -> createNamespaceIfMissing(activeNamespace)
 		}
 
 		createSecretIfMissing('argocd-secret', namespace)
@@ -1106,8 +1104,7 @@ class ArgoCDTest {
 
 		argoCD.install()
 
-		config.application.namespaces.getActiveNamespaces().each { namespace ->
-			assertThat(client.namespaces().withName(namespace).get()).isNotNull()
+		config.application.namespaces.getActiveNamespaces().each { namespace -> assertThat(client.namespaces().withName(namespace).get()).isNotNull()
 		}
 	}
 
@@ -1257,7 +1254,6 @@ class ArgoCDTest {
 		def sourceRepos = (List<String>) tenantProject['spec']['sourceRepos']
 		assertThat(sourceRepos[0]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git')
 	}
-
 
 	@Test
 	void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
@@ -1538,7 +1534,6 @@ class ArgoCDTest {
 
 		return createArgoCD()
 	}
-
 
 	private static void mockPrefixActiveNamespaces(Config config) {
 		def prefix = config.application.namePrefix ?: ""

@@ -2,7 +2,9 @@ package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api
 
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
+
 import groovy.util.logging.Slf4j
+
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Response

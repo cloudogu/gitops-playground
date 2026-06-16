@@ -1,16 +1,17 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api
 
-import com.cloudogu.gitops.config.Credentials
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
-
-import javax.net.ssl.SSLHandshakeException
-
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+
+import com.cloudogu.gitops.config.Credentials
+
+import javax.net.ssl.SSLHandshakeException
+
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 class UsersApiTest {
 

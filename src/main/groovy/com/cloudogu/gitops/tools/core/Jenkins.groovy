@@ -13,9 +13,11 @@ import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import groovy.util.logging.Slf4j
+
 import io.micronaut.core.annotation.Order
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton

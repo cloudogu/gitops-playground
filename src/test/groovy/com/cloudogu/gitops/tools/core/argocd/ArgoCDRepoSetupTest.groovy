@@ -1,18 +1,19 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertThrows
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.TestGitProvider
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class ArgoCDRepoSetupTest {
 

@@ -6,11 +6,11 @@ import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
-import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 
 @Slf4j
 @Singleton

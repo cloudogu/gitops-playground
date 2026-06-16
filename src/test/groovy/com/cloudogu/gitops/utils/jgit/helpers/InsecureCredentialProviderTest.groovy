@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.utils.jgit.helpers
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import org.eclipse.jgit.transport.CredentialItem
 import org.eclipse.jgit.transport.URIish
 import org.junit.jupiter.api.Test
-
-import static org.assertj.core.api.Assertions.assertThat
 
 class InsecureCredentialProviderTest {
 	@Test

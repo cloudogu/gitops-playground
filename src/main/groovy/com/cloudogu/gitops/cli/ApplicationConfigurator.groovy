@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import groovy.util.logging.Slf4j
 
 @Slf4j

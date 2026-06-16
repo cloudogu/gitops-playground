@@ -48,14 +48,10 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
 	}
 
 	private static Map<String, Closure<Boolean>> expectedCertManagerPods() {
-		[
-			'cert-manager'          : { String podName ->
-				podName.startsWith('cert-manager-') &&
-					!podName.startsWith('cert-manager-cainjector') &&
-					!podName.startsWith('cert-manager-webhook')
-			},
-			'cert-manager-cainjector': { String podName -> podName.startsWith('cert-manager-cainjector') },
-			'cert-manager-webhook'  : { String podName -> podName.startsWith('cert-manager-webhook') },
-		]
+		['cert-manager'           : {
+			String podName -> podName.startsWith('cert-manager-') && !podName.startsWith('cert-manager-cainjector') && !podName.startsWith('cert-manager-webhook')
+		},
+		 'cert-manager-cainjector': { String podName -> podName.startsWith('cert-manager-cainjector') },
+		 'cert-manager-webhook'   : { String podName -> podName.startsWith('cert-manager-webhook') },]
 	}
 }

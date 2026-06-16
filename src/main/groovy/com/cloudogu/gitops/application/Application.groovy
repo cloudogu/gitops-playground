@@ -6,10 +6,12 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
+
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -21,13 +23,11 @@ class Application {
 	final GitHandler gitHandler
 	final RepositoryProvisioning repositoryProvisioning
 
-	Application(
-			Config config,
-			K8sClient k8sClient,
-			GitHandler gitHandler,
-			RepositoryProvisioning repositoryProvisioning,
-			List<Tool> tools
-	) {
+	Application(Config config,
+		K8sClient k8sClient,
+		GitHandler gitHandler,
+		RepositoryProvisioning repositoryProvisioning,
+		List<Tool> tools) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.gitHandler = gitHandler

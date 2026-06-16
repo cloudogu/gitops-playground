@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -10,10 +12,10 @@ import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
-import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
+import groovy.yaml.YamlSlurper
+
+import org.junit.jupiter.api.Test
 
 class ArgoCdApplicationStrategyTest {
 	private File localTempDir
