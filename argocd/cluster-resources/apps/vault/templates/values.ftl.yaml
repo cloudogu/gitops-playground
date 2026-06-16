@@ -1,4 +1,5 @@
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+  <#assign vaultOidc = (config.features.secrets.vault.oidc)!{}>
 ui:
   enabled: true
   externalPort: 80
@@ -57,11 +58,11 @@ server:
           USERNAME=${config.application.username} \
           PASSWORD=${config.application.password} \
           ARGOCD=${config.features.argocd.active?c} \
-    <#if config.features.secrets.vault.oidc.clientSecret?has_content>
+    <#if vaultOidc.clientSecret?has_content>
           OIDC_ENABLED=true \
-          OIDC_CLIENT_ID=${config.features.secrets.vault.oidc.clientId} \
-          OIDC_CLIENT_SECRET=${config.features.secrets.vault.oidc.clientSecret} \
-          OIDC_DISCOVERY_URL=${config.features.secrets.vault.oidc.discoveryUrl} \
+    OIDC_CLIENT_ID=${vaultOidc.clientId} \
+    OIDC_CLIENT_SECRET=${vaultOidc.clientSecret} \
+    OIDC_DISCOVERY_URL=${vaultOidc.discoveryUrl} \
           VAULT_EXTERNAL_URL=http://${host} \
     <#else>
           OIDC_ENABLED=false \
