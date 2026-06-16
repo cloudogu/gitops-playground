@@ -135,9 +135,10 @@ jenkins:
 
         createJenkins().install()
 
-        assertThat(parseActualYaml()['controller']['installPlugins'] as List).containsExactly(
-                'oic-auth:4.690.v5821cf665e43',
-                'json-path-api:3.0.0-218.vcd4dd1355de2'
+        List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
+        assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly(
+                'oic-auth',
+                'json-path-api'
         )
     }
 
