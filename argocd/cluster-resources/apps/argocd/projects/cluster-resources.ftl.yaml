@@ -3,7 +3,7 @@ kind: AppProject
 metadata:
   name: cluster-resources
   # In a real-world scenario these might to into a separate namespace
-  namespace: ${config.application.namePrefix}argocd
+  namespace: ${config.application.namePrefix}${config.features.argocd.namespace}
   annotations:
 <#if config.features.mail.active?? && config.features.mail.active>
     notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToAdmin}
@@ -28,6 +28,9 @@ spec:
   - https://helm.releases.hashicorp.com
   - https://charts.external-secrets.io
   - https://charts.jetstack.io
+  - https://charts.jenkins.io
+  - https://twuni.github.io/docker-registry.helm
+  - https://packages.scm-manager.org/repository/helm-v2-releases/
 </#if>
 <#-- NEW: allow Helm repos from content.helmReleases -->
 <#if config.content.helmReleases?? && (config.content.helmReleases?size > 0)>
@@ -46,7 +49,7 @@ spec:
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
-    - '${config.application.namePrefix}argocd'
+    - '${config.application.namePrefix}${config.features.argocd.namespace}'
 
   # Allow all namespaced-scoped resources to be created
   namespaceResourceWhitelist:

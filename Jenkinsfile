@@ -8,7 +8,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '5'))
+        buildDiscarder(logRotator(numToKeepStr: '20'))
         timestamps()
         timeout(time: 120, unit: 'MINUTES')
     }
@@ -51,8 +51,12 @@ pipeline {
                     }}
                     steps {
                         sh 'mvn -B clean test'
-                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                        archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                    }
+                    post {
+                        always {
+                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                            archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                        }
                     }
                 }
 
@@ -106,20 +110,60 @@ pipeline {
                                 profiles = [params.chooseProfile]
                             }
 
-                            def withK3dCluster = { body ->
+                            def dumpKubernetesDebugInfo = { profile ->
+                                def dumpDir = "target/k8s-debug/${profile}"
+
+                                docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                    sh(script: """
+                                        set +e
+                                        apk add --no-cache kubectl
+                                        mkdir -p '${dumpDir}'
+                                        export KUBECONFIG='${env.WORKSPACE}/.kubeconfig.yaml'
+
+                                        kubectl cluster-info > '${dumpDir}/cluster-info.txt' 2>&1
+                                        kubectl get nodes -o wide > '${dumpDir}/nodes.txt' 2>&1
+                                        kubectl get namespaces -o wide > '${dumpDir}/namespaces.txt' 2>&1
+                                        kubectl get pods -A -o wide > '${dumpDir}/pods.txt' 2>&1
+                                        kubectl get events -A --sort-by=.lastTimestamp > '${dumpDir}/events.txt' 2>&1
+                                        kubectl get pvc,pv -A -o wide > '${dumpDir}/volumes.txt' 2>&1
+                                        kubectl get ingress -A -o wide > '${dumpDir}/ingress.txt' 2>&1
+                                        kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
+
+                                        : > '${dumpDir}/container-logs.txt'
+                                        kubectl get pods -A --no-headers \\
+                                          -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name |
+                                        while read -r namespace pod; do
+                                          echo "===== \${namespace}/\${pod} current =====" >> '${dumpDir}/container-logs.txt'
+                                          kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
+
+                                          echo >> '${dumpDir}/container-logs.txt'
+                                          echo "===== \${namespace}/\${pod} previous =====" >> '${dumpDir}/container-logs.txt'
+                                          kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
+                                          echo >> '${dumpDir}/container-logs.txt'
+                                        done
+                                    """, returnStatus: true)
+                                }
+
+                                  archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
+                              }
+
+                            def withK3dCluster = { profile, body ->
                                 try {
                                     sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
                                     body()
+                                } catch(Throwable t) {
+                                    dumpKubernetesDebugInfo(profile)
+                                    throw t
                                 } finally {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
                                 }}
 
                             profiles.each { profile ->
-                                withK3dCluster {
+                                withK3dCluster(profile) {
 
                                     if (profile.startsWith('operator')) {
                                         docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh 'apk add --no-cache make bash curl git kubectl && ./scripts/local/install-argocd-operator.sh'
+                                            sh 'apk add --no-cache make bash curl git kubectl && make install-operator'
                                         }
                                     }
 
@@ -130,9 +174,14 @@ pipeline {
                                         sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
                                     }
                                 }
-                                junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml",
-                                    allowEmptyResults: true
+
                             }
+                        }
+                    }
+                    post {
+                        always {
+                            junit testResults: "**/target/failsafe-reports/TEST-*.xml",
+                                    allowEmptyResults: true
                         }
                     }
                 }
@@ -160,7 +209,6 @@ pipeline {
                         currentBuild.description = "Image: ${env.FULL_IMAGE_TAG}"
                         image.push()
 
-                        if (params.forcePushImage || env.BRANCH_NAME == 'develop') { image.push(env.BRANCH_NAME) }
                         if (env.TAG_NAME) {
                             image.push('latest')
                             image.push(env.TAG_NAME)

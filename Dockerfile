@@ -45,7 +45,6 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 # STAGE 3: Downloader
 # ============================================================================
 # Purpose: Download and prepare all external dependencies and tools
-# - Kubectl CLI
 # - Helm CLI
 # - Git repositories
 # - Jenkins plugins
@@ -58,16 +57,9 @@ RUN apk add curl grep
 # -----------------------------------------------------------------------------
 # 3.1: Version Configuration
 # -----------------------------------------------------------------------------
-# When updating kubectl:
-# * Update checksum from https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
-# * Update in init-cluster.sh, vars.tf, Config.groovy and apply.sh
-# When upgrading to 1.26+ we can verify kubectl signature with cosign!
-# https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.35.4
-ARG KUBECTL_CHECKSUM=b529430df69a688fd61b64ad2299edb5fd71cb58be2a4779dba624c7d3510efd
 
 # When updating Helm, also upgrade helm image in Config.groovy
-ARG HELM_VERSION=4.1.4
+ARG HELM_VERSION=4.2.1
 
 # Install additional tools required for downloads
 # bash curl unzip required for Jenkins downloader
@@ -114,20 +106,7 @@ RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
-# -----------------------------------------------------------------------------
-# 3.4: Download and Install Kubectl
-# -----------------------------------------------------------------------------
-# Download kubectl binary
-RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
-    --output kubectl \
-    https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
 
-# Verify kubectl checksum (note: two spaces required!)
-RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
-
-# Install kubectl
-RUN chmod +x /tmp/kubectl
-RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 
 # -----------------------------------------------------------------------------
 # 3.5: Clone External Git Repositories
@@ -155,8 +134,9 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 # 3.7: Download Helm Charts
 # -----------------------------------------------------------------------------
 COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
+COPY src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy /tmp/ScmTenantSchema.groovy
 
 # -----------------------------------------------------------------------------
 # 3.8: Prepare Application Files
@@ -230,7 +210,7 @@ RUN apk update --no-cache && apk upgrade --no-cache && \
 # 4.3: Copy Distribution Files
 # -----------------------------------------------------------------------------
 # Copy all prepared files from downloader stage:
-# - Binaries (kubectl, helm)
+# - Binaries (helm)
 # - Git repositories
 # - Helm charts
 # - Jenkins plugins
@@ -266,7 +246,7 @@ LABEL org.opencontainers.image.title="gitops-playground" \
       org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
       org.opencontainers.image.licenses="AGPL3.0" \
-      org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \
+      org.opencontainers.image.description="Creates a complete GitOps-based operational stack / IDP on your Kubernetes clusters" \
       org.opencontainers.image.version="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.ref.name="${VCS_REF}" \

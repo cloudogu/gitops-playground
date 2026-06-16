@@ -4,16 +4,13 @@ import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 import static com.cloudogu.gitops.utils.MapUtils.deepMergeDefaults
 
-import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.CommonFeatureConfig
+import com.cloudogu.gitops.application.Application
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.kubernetes.api.K8sClient
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.CommonToolConfig
+import com.cloudogu.gitops.tools.common.Tool
 
 import io.micronaut.context.ApplicationContext
 
@@ -41,8 +38,8 @@ class GitopsPlaygroundCli {
 	K8sClient k8sClient
 	ApplicationConfigurator applicationConfigurator
 
-	GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
-			ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
+	GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(),
+		ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
 		this.k8sClient = k8sClient
 		this.applicationConfigurator = applicationConfigurator
 	}
@@ -102,7 +99,7 @@ class GitopsPlaygroundCli {
 			app = context.getBean(Application)
 			app.start()
 
-			printWelcomeScreen()
+			printWelcomeScreen(config.application.password)
 		}
 
 		return ReturnCode.SUCCESS
@@ -114,8 +111,8 @@ class GitopsPlaygroundCli {
 		if (versionName.trim().startsWith('(')) {
 			// When there is no git tag, print commit without parentheses
 			versionName = versionName.trim()
-					.replace('(', '')
-					.replace(')', '')
+				.replace('(', '')
+				.replace(')', '')
 		}
 		return "${APP_NAME} ${versionName}"
 	}
@@ -166,15 +163,15 @@ class GitopsPlaygroundCli {
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
 		def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
 		def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
-				.getEncoder() as PatternLayoutEncoder).pattern
+			.getEncoder() as PatternLayoutEncoder).pattern
 
 		// Avoid duplicate output by existing appender
 		rootLogger.detachAppender('STDOUT')
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder()
 		// Remove less relevant details from log pattern
 		encoder.setPattern(defaultPattern
-				.replaceAll(" \\S*%thread\\S* ", " ")
-				.replaceAll(" \\S*%logger\\S* ", " "))
+			.replaceAll(" \\S*%thread\\S* ", " ")
+			.replaceAll(" \\S*%logger\\S* ", " "))
 		encoder.setContext(loggerContext)
 		encoder.start()
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
@@ -231,8 +228,7 @@ class GitopsPlaygroundCli {
 		return map as Map
 	}
 
-	void printWelcomeScreen() {
-		def password = Config.DEFAULT_ADMIN_PW
+	void printWelcomeScreen(String password) {
 		log.info '''\n
   |----------------------------------------------------------------------------------------------|
   |                       Welcome to the GitOps playground by Cloudogu!
@@ -256,10 +252,10 @@ class GitopsPlaygroundCli {
 	}
 
 	static void runHook(Application app, String methodName, def config) {
-		([new CommonFeatureConfig(), *app.features]).each { feature ->
+		([new CommonToolConfig(), *app.features]).each { feature ->
 			// Executing only the method if the derived feature class has implemented the passed methodName
 			def mm = feature.metaClass.getMetaMethod(methodName, config)
-			if (mm && mm.declaringClass.theClass != Feature) {
+			if (mm && mm.declaringClass.theClass != Tool) {
 				log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
 				mm.invoke(feature, config)
 			}

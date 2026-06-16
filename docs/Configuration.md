@@ -10,13 +10,13 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 - [Scm](#scm)
 - [Application](#application)
 - [Content](#content)
-- [Features](#features)
-  - [Argocd](#feature-argocd)
-  - [Mail](#feature-mail)
-  - [Monitoring](#feature-monitoring)
-  - [Secrets](#feature-secrets)
-  - [Ingress](#feature-ingress)
-  - [Cert Manager](#feature-cert-manager)
+- [Tools](#tools)
+  - [Argocd](#tools-argocd)
+  - [Mail](#tools-mail)
+  - [Monitoring](#tools-monitoring)
+  - [Secrets](#tools-secrets)
+  - [Ingress](#tools-ingress)
+  - [Cert Manager](#tools-cert-manager)
 
 ## Registry
 
@@ -35,6 +35,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--registry-username-read-only` | `registry.readOnlyUsername` | String | `` | Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
 | `--registry-password-read-only` | `registry.readOnlyPassword` | String | `` | Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
 | `--create-image-pull-secrets` | `registry.createImagePullSecrets` | Boolean | `false` | Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication. |
+| `--registry-namespace` | `registry.namespace` | String | `registry` | Optional defines the kubernetes namespace for registry. |
 | - | `registry.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `registry.helm.chart` | String | `docker-registry` | Name of the Helm chart |
 | - | `registry.helm.repoURL` | String | `https://twuni.github.io/docker-registry.helm` | Repository url from which the Helm chart should be obtained |
@@ -42,23 +43,24 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 ## Jenkins
 
-| CLI                          | Config key                   | Type    | Default                     | Description                                                                                                                                                                                                                                                                                |
-|:-----------------------------|:-----------------------------|:--------|:----------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--jenkins`                  | `jenkins.active`             | Boolean | `false`                     | Installs Jenkins as CI server                                                                                                                                                                                                                                                              |
-| `--jenkins-skip-restart`     | `jenkins.skipRestart`        | Boolean | `false`                     | Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| `--jenkins-skip-plugins`     | `jenkins.skipPlugins`        | Boolean | `false`                     | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.                          |
-| `--jenkins-url`              | `jenkins.url`                | String  | ``                          | The url of your external jenkins                                                                                                                                                                                                                                                           |
-| `--jenkins-username`         | `jenkins.username`           | String  | `admin`                     | Mandatory when jenkins-url is set                                                                                                                                                                                                                                                          |
-| `--jenkins-password`         | `jenkins.password`           | String  | `8mVqsJNzYp8g`              | Mandatory when jenkins-url is set                                                                                                                                                                                                                                                          |
-| `--jenkins-metrics-username` | `jenkins.metricsUsername`    | String  | `metrics`                   | Mandatory when jenkins-url is set and monitoring enabled                                                                                                                                                                                                                                   |
-| `--jenkins-metrics-password` | `jenkins.metricsPassword`    | String  | `metrics`                   | Mandatory when jenkins-url is set and monitoring enabled                                                                                                                                                                                                                                   |
-| `--maven-central-mirror`     | `jenkins.mavenCentralMirror` | String  | ``                          | URL for maven mirror, used by applications built in Jenkins                                                                                                                                                                                                                                |
-| -                            | `jenkins.oidc`               | String  | ``                          | OIDC Config for this tool. See docs for more infos                                                                                                                                                                                                                                         |
-| `--jenkins-additional-envs`  | `jenkins.additionalEnvs`     | Map     | `[:]`                       | Set additional environments to Jenkins                                                                                                                                                                                                                                                     |
-| -                            | `jenkins.helm.values`        | Map     | `[:]`                       | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration                                                                                                                                                                     |
-| -                            | `jenkins.helm.chart`         | String  | `jenkins`                   | Name of the Helm chart                                                                                                                                                                                                                                                                     |
-| -                            | `jenkins.helm.repoURL`       | String  | `https://charts.jenkins.io` | Repository url from which the Helm chart should be obtained                                                                                                                                                                                                                                |
-| -                            | `jenkins.helm.version`       | String  | `5.9.18`                    | The version of the Helm chart to be installed                                                                                                                                                                                                                                              |
+| CLI | Config key | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `--jenkins` | `jenkins.active` | Boolean | `false` | Installs Jenkins as CI server |
+| `--jenkins-skip-restart` | `jenkins.skipRestart` | Boolean | `false` | Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
+| `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Boolean | `false` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
+| `--jenkins-url` | `jenkins.url` | String | `` | The url of your external jenkins |
+| `--jenkins-username` | `jenkins.username` | String | `admin` | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | String | `rY4jL2niDLKN` | Mandatory when jenkins-url is set |
+| `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
+| `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
+| `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
+| - | `jenkins.oidc` | String  | `` | OIDC Config for this tool. See docs for more infos |
+| `--jenkins-additional-envs` | `jenkins.additionalEnvs` | Map | `[:]` | Set additional environments to Jenkins |
+| - | `jenkins.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| - | `jenkins.helm.chart` | String | `jenkins` | Name of the Helm chart |
+| - | `jenkins.helm.repoURL` | String | `https://charts.jenkins.io` | Repository url from which the Helm chart should be obtained |
+| - | `jenkins.helm.version` | String | `5.9.18` | The version of the Helm chart to be installed |
+| `--jenkins-namespace` | `jenkins.namespace` | String | `jenkins` | Optional defines the kubernetes namespace for Jenkins. |
 
 ## Multi Tenant
 
@@ -100,34 +102,35 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 ## Application
 
-| CLI                      | Config key                         | Type               | Default              | Description                                                                                                                                                             |
-|:-------------------------|:-----------------------------------|:-------------------|:---------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--config-file`          | `application.configFiles`          | List&lt;String&gt; | `[]`                 | -                                                                                                                                                                       |
-| `--config-map`           | `application.configMaps`           | List&lt;String&gt; | `[]`                 | -                                                                                                                                                                       |
-| `-d`, `--debug`          | `application.debug`                | Boolean            | `-`                  | -                                                                                                                                                                       |
-| `-x`, `--trace`          | `application.trace`                | Boolean            | `-`                  | -                                                                                                                                                                       |
-| `--output-config-file`   | `application.outputConfigFile`     | Boolean            | `false`              | -                                                                                                                                                                       |
-| `-v`, `--version`        | `application.versionInfoRequested` | Boolean            | `false`              | -                                                                                                                                                                       |
-| `-h`, `--help`           | `application.usageHelpRequested`   | Boolean            | `false`              | -                                                                                                                                                                       |
-| `--insecure`             | `application.insecure`             | Boolean            | `false`              | Sets insecure-mode in cURL which skips cert validation                                                                                                                  |
-| `--openshift`            | `application.openshift`            | Boolean            | `false`              | When set, openshift specific resources and configurations are applied                                                                                                   |
-| `--username`             | `application.username`             | String             | `admin`              | Set initial admin username                                                                                                                                              |
-| `--password`             | `application.password`             | String             | `8mVqsJNzYp8g`       | Set initial admin passwords                                                                                                                                             |
-| `-y`, `--yes`            | `application.yes`                  | Boolean            | `false`              | Skip confirmation                                                                                                                                                       |
-| `--name-prefix`          | `application.namePrefix`           | String             | ``                   | Set name-prefix for repos, jobs, namespaces                                                                                                                             |
-| `--destroy`              | `application.destroy`              | Boolean            | `false`              | Unroll playground                                                                                                                                                       |
-| `--pod-resources`        | `application.podResources`         | Boolean            | `false`              | Write kubernetes resource requests and limits on each pod                                                                                                               |
-| `--git-name`             | `application.gitName`              | String             | `Cloudogu`           | Sets git author and committer name used for initial commits                                                                                                             |
-| `--git-email`            | `application.gitEmail`             | String             | `hello@cloudogu.com` | Sets git author and committer email used for initial commits                                                                                                            |
-| `--base-url`             | `application.baseUrl`              | String             | ``                   | the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence. |
-| `--url-separator-hyphen` | `application.urlSeparatorHyphen`   | Boolean            | `false`              | Use hyphens instead of dots to separate application name from base-url                                                                                                  |
-| `--mirror-repos`         | `application.mirrorRepos`          | Boolean            | `false`              | Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.                            |
-| `--skip-crds`            | `application.skipCrds`             | Boolean            | `false`              | Skip installation of CRDs. This requires prior installation of CRDs                                                                                                     |
-| `--namespace-isolation`  | `application.namespaceIsolation`   | Boolean            | `false`              | Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.        |
-| `--netpols`              | `application.netpols`              | Boolean            | `false`              | Sets Network Policies                                                                                                                                                   |
-| `--cluster-admin`        | `application.clusterAdmin`         | Boolean            | `false`              | Binds ArgoCD controllers to cluster-admin ClusterRole                                                                                                                   |
-| `-p`, `--profile`        | `application.profile`              | String             | `-`                  | Use predefined profile (full, only-argocd, operator-mandants aso.)                                                                                                      |
-| `--gop-namespace`        | `application.gopNamespace`         | String             | ``                   | If set, GOP stores specific information in this namespace.                                                                                                              |
+| CLI | Config key | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `--config-file` | `application.configFiles` | List&lt;String&gt; | `[]` | - |
+| `--config-map` | `application.configMaps` | List&lt;String&gt; | `[]` | - |
+| `-d`, `--debug` | `application.debug` | Boolean | `-` | - |
+| `-x`, `--trace` | `application.trace` | Boolean | `-` | - |
+| `--output-config-file` | `application.outputConfigFile` | Boolean | `false` | - |
+| `-v`, `--version` | `application.versionInfoRequested` | Boolean | `false` | - |
+| `-h`, `--help` | `application.usageHelpRequested` | Boolean | `false` | - |
+| `--insecure` | `application.insecure` | Boolean | `false` | Sets insecure-mode in cURL which skips cert validation |
+| `--openshift` | `application.openshift` | Boolean | `false` | When set, openshift specific resources and configurations are applied |
+| `--username` | `application.username` | String | `admin` | Set initial admin username |
+| `--password` | `application.password` | String | `rY4jL2niDLKN` | Set initial admin passwords |
+| `-y`, `--yes` | `application.yes` | Boolean | `false` | Skip confirmation |
+| `--name-prefix` | `application.namePrefix` | String | `` | Set name-prefix for repos, jobs, namespaces |
+| `--destroy` | `application.destroy` | Boolean | `false` | Unroll playground |
+| `--pod-resources` | `application.podResources` | Boolean | `false` | Write kubernetes resource requests and limits on each pod |
+| `--git-name` | `application.gitName` | String | `Cloudogu` | Sets git author and committer name used for initial commits |
+| `--git-email` | `application.gitEmail` | String | `hello@cloudogu.com` | Sets git author and committer email used for initial commits |
+| `--base-url` | `application.baseUrl` | String | `` | the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence. |
+| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | Boolean | `false` | Use hyphens instead of dots to separate application name from base-url |
+| `--mirror-repos` | `application.mirrorRepos` | Boolean | `false` | Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments. |
+| `--skip-crds` | `application.skipCrds` | Boolean | `false` | Skip installation of CRDs. This requires prior installation of CRDs |
+| `--namespace-isolation` | `application.namespaceIsolation` | Boolean | `false` | Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions. |
+| `--netpols` | `application.netpols` | Boolean | `false` | Sets Network Policies |
+| `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
+| `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
+| `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |
+| `-n`, `--namespace` | `application.namespace` | String | `` | If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes. |
 
 ## Content
 
@@ -140,11 +143,11 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
 
-## Features
+## Tools
 
-Configuration of optional features supported by gitops-playground.
+Configuration of optional tools supported by gitops-playground.
 
-### Feature: Argocd
+### Tool: Argocd
 
 | CLI                                    | Config key                                  | Type                                                          | Default                | Description                                                                                                                                                                                                                                                             |
 |:---------------------------------------|:--------------------------------------------|:--------------------------------------------------------------|:-----------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -160,7 +163,7 @@ Configuration of optional features supported by gitops-playground.
 | -                                      | `features.argocd.values`                    | Map                                                           | `[:]`                  | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration                                                                                                                                                  |
 | -                                      | `features.argocd.oidc`                      | String                                                        | ``                     | OIDC Config for this tool. See docs for more infos                                                                                                                                                                                                                      |
 
-### Feature: Mail
+### Tool: Mail
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -169,7 +172,7 @@ Configuration of optional features supported by gitops-playground.
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
 
-### Feature: Monitoring
+### Tool: Monitoring
 
 | CLI                                  | Config key                                               | Type    | Default                                              | Description                                                                                                             |
 |:-------------------------------------|:---------------------------------------------------------|:--------|:-----------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------|
@@ -187,8 +190,9 @@ Configuration of optional features supported by gitops-playground.
 | -                                    | `features.monitoring.helm.chart`                         | String  | `kube-prometheus-stack`                              | Name of the Helm chart                                                                                                  |
 | -                                    | `features.monitoring.helm.repoURL`                       | String  | `https://prometheus-community.github.io/helm-charts` | Repository url from which the Helm chart should be obtained                                                             |
 | -                                    | `features.monitoring.helm.version`                       | String  | `80.2.2`                                             | The version of the Helm chart to be installed                                                                           |
+| `--monitoring-namespace` | `features.monitoring.namespace` | String | `monitoring` | Optional defines the kubernetes namespace for monitoring. |
 
-### Feature: Secrets
+### Tool: Secrets
 
 | CLI                                       | Config key                                                  | Type   | Default                               | Description                                                                                                            |
 |:------------------------------------------|:------------------------------------------------------------|:-------|:--------------------------------------|:-----------------------------------------------------------------------------------------------------------------------|
@@ -208,8 +212,9 @@ Configuration of optional features supported by gitops-playground.
 | -                                         | `features.secrets.vault.helm.chart`                         | String | `vault`                               | Name of the Helm chart                                                                                                 |
 | -                                         | `features.secrets.vault.helm.repoURL`                       | String | `https://helm.releases.hashicorp.com` | Repository url from which the Helm chart should be obtained                                                            |
 | -                                         | `features.secrets.vault.helm.version`                       | String | `0.25.0`                              | The version of the Helm chart to be installed                                                                          |
+| `--secrets-namespace` | `features.secrets.namespace` | String | `secrets` | Optional defines the kubernetes namespace for secrets. |
 
-### Feature: Ingress
+### Tool: Ingress
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -219,13 +224,15 @@ Configuration of optional features supported by gitops-playground.
 | - | `features.ingress.helm.chart` | String | `traefik` | Name of the Helm chart |
 | - | `features.ingress.helm.repoURL` | String | `https://traefik.github.io/charts` | Repository url from which the Helm chart should be obtained |
 | - | `features.ingress.helm.version` | String | `39.0.0` | The version of the Helm chart to be installed |
+| `--ingress-namespace` | `features.ingress.ingressNamespace` | String | `ingress` | Optional defines the kubernetes namespace for Ingress Controller |
 
-### Feature: Cert Manager
+### Tool: Cert Manager
 
 | CLI | Config key | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `--cert-manager` | `features.certManager.active` | Boolean | `false` | Sets and enables Cert Manager |
 | `--cert-manager-issuer` | `features.certManager.issuer` | String | `cluster-selfsigned` | Sets and enables Cert Manager |
+| `--cert-manager-namespace` | `features.certManager.namespace` | String | `cert-manager` | Optional defines the kubernetes namespace for Cert Manager |
 | `--cert-manager-image` | `features.certManager.helm.image` | String | `` | Sets image for Cert Manager |
 | `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | String | `` | Sets webhook Image for Cert Manager |
 | `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | String | `` | Sets cainjector Image for Cert Manager |

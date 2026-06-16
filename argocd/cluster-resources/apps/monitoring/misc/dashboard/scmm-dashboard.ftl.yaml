@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kube-prometheus-stack-scmm-dashboard
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${config.application.namePrefix}${config.features.monitoring.namespace}
   labels:
     grafana_dashboard: "1"
 data:
@@ -3356,8 +3356,8 @@ data:
                   "allFormat": "glob",
                   "current": {
                       "selected": false,
-                      "text": "scmm.${config.application.namePrefix}scm-manager.svc.cluster.local:80",
-                      "value": "scmm.${config.application.namePrefix}scm-manager.svc.cluster.local:80"
+                      "text": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80",
+                      "value": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80"
                   },
                   "datasource": {
                       "type": "prometheus",

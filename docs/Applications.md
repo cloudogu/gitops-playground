@@ -79,7 +79,9 @@ The following Argo CD Applications live in `apps/argocd/applications`:
     * `example-apps` (application developers, fewer permissions)
 
 ### Multi-source applications for features
-Feature deployments (for example, monitoring, ingress, or other GOP features) are modeled as multi-source Argo CD Applications instead of using an App-of-Apps pattern.
+
+Tool deployments (for example, monitoring, ingress, or other GOP features) are modeled as multi-source Argo CD
+Applications instead of using an App-of-Apps pattern.
 
 For some features, the GitOps Playground Operator (GOP):
 1. Writes values files into the `cluster-resources` repository under:
@@ -135,7 +137,7 @@ To keep things simpler, the GitOps playground only uses one kubernetes cluster, 
 pattern. However, the repo structure could also be used to serve multiple clusters, in a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
 Additional clusters could either be defined in the `vaules.yaml` or as secrets via the `templates` folder.
 
-We're also working on an optional implementation of the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator).
+We're also working on an optional implementation of the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator). Note that when using one of the `operator-*` profiles, the Argo CD operator must be installed in the cluster beforehand.
 
 ### cluster-resources
 
@@ -159,7 +161,6 @@ The user has to have the following privileges:
 * set credentials
 * create jobs
 * restarting
-
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide

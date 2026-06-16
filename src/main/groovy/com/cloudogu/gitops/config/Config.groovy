@@ -3,7 +3,7 @@ package com.cloudogu.gitops.config
 import static com.cloudogu.gitops.config.ConfigConstants.*
 import static picocli.CommandLine.ScopeType
 
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.config.scm.ScmTenantSchema
 
 import java.security.SecureRandom
 import jakarta.inject.Singleton
@@ -53,9 +53,9 @@ import picocli.CommandLine.Option
 class Config {
 
 	// When updating please also update in Dockerfile
-	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.1.4-1"
+	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.2.1-1"
 	// When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-	public static final String K8S_VERSION = "1.35.4"
+	public static final String K8S_VERSION = "1.36.2"
 	public static final String DEFAULT_ADMIN_USER = 'admin'
 	public static final String DEFAULT_ADMIN_PW = generatePassword()
 	public static final int DEFAULT_REGISTRY_PORT = 30000
@@ -93,11 +93,11 @@ class Config {
 	 */
 	private static generatePassword() {
 		return new SecureRandom()
-				.with { sr ->
-					(1..12).collect {
-						('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
-					}.join('')
-				}
+			.with { sr ->
+				(1..12).collect {
+					('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&')[sr.nextInt(62)]
+				}.join('')
+			}
 	}
 
 	static class ContentSchema {
@@ -277,6 +277,10 @@ class Config {
 		@JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
 		Boolean createImagePullSecrets = false
 
+		@Option(names = ['--registry-namespace'], description = REGISTRY_NAMESPACE)
+		@JsonPropertyDescription(REGISTRY_NAMESPACE)
+		String namespace = 'registry'
+
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
 		                                                     repoURL: 'https://twuni.github.io/docker-registry.helm',
@@ -350,7 +354,9 @@ class Config {
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
 		                                                     repoURL: 'https://charts.jenkins.io',
-		                                                     version: '5.9.18')
+		                                                     version: '5.9.18')@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
+		@JsonPropertyDescription(JENKINS_NAMESPACE)
+		String namespace = "jenkins"
 	}
 
 	static class ApplicationSchema {
@@ -459,6 +465,10 @@ class Config {
 		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
+
+		@Option(names = ["-n", "--namespace"], description = APPLICATION_NAMESPACE)
+		@JsonPropertyDescription(APPLICATION_NAMESPACE)
+		String namespace = ''
 
 		static class NamespaceSchema {
 			LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
@@ -599,6 +609,11 @@ class Config {
 		                                                     version: '80.2.2',
 		                                                     values: [:] // Otherwise values is null 🤷‍♂️
 		)
+
+		@Option(names = ['--monitoring-namespace'], description = MONITORING_NAMESPACE)
+		@JsonPropertyDescription(MONITORING_NAMESPACE)
+		String namespace = 'monitoring'
+
 		static class MonitoringHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
 			@JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
@@ -632,6 +647,10 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(VAULT_DESCRIPTION)
 		VaultSchema vault = new VaultSchema()
+
+		@Option(names = ['--secrets-namespace'], description = SECRETS_NAMESPACE)
+		@JsonPropertyDescription(SECRETS_NAMESPACE)
+		String namespace = 'secrets'
 
 		static class ESOSchema {
 
@@ -705,7 +724,8 @@ class Config {
 			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
 			String image = ''
 		}
-
+		@Option(names = ['--ingress-namespace'], description = INGRESS_NAMESPACE)
+		@JsonPropertyDescription(INGRESS_NAMESPACE)
 		String ingressNamespace = 'ingress'
 	}
 
@@ -717,6 +737,10 @@ class Config {
 		@Option(names = ['--cert-manager-issuer'], description = CERTMANAGER_ENABLE_DESCRIPTION)
 		@JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
 		String issuer = 'cluster-selfsigned'
+
+		@Option(names = ['--cert-manager-namespace'], description = CERTMANAGER_NAMESPACE)
+		@JsonPropertyDescription(CERTMANAGER_NAMESPACE)
+		String namespace = 'cert-manager'
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -766,12 +790,12 @@ class Config {
 	}
 
 	private static final ObjectMapper objectMapper = new ObjectMapper()
-			.registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
-				@Override
-				void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-					jsonGenerator.writeString(value.toString())
-				}
-			}))
+		.registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
+			@Override
+			void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+				jsonGenerator.writeString(value.toString())
+			}
+		}))
 
 	static Config fromMap(Map map) {
 		objectMapper.convertValue(map, Config)
@@ -783,18 +807,18 @@ class Config {
 
 	String toYaml(boolean includeInternals) {
 		createYamlMapper(includeInternals)
-				.writeValueAsString(this)
+			.writeValueAsString(this)
 	}
 
 	private static YAMLMapper createYamlMapper(boolean includeInternals) {
 		if (!includeInternals) {
 			new YAMLMapper()
-					.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
-						@Override
-						List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
-							beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
-						}
-					})) as YAMLMapper
+				.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
+					@Override
+					List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+						beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
+					}
+				})) as YAMLMapper
 		} else {
 			new YAMLMapper()
 		}

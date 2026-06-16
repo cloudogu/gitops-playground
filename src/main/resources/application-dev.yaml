@@ -2,6 +2,18 @@
 application:
   baseUrl: http://localhost
   password: "admin"
+features:
+  certManager:
+    active: true
+  argocd:
+    active: true
+    operator: false
+  ingress:
+    active: true
+  monitoring:
+  secrets:
+    vault:
+      mode: "dev"
 jenkins:
   password: "admin"
 registry:
