@@ -3,7 +3,7 @@ package com.cloudogu.gitops.application.orchestration
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.infrastructure.git.providers.gitlab.Gitlab
+import com.cloudogu.gitops.infrastructure.git.providers.gitlab.GitlabProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
@@ -79,7 +79,7 @@ class GitHandler {
 	private GitProvider createTenantScmProvider() {
 		switch (config.scm.scmProviderType) {
 			case ScmProviderType.GITLAB:
-				return new Gitlab(config, config.scm.gitlab)
+				return new GitlabProvider(config, config.scm.gitlab)
 
 			case ScmProviderType.SCM_MANAGER:
 				return new ScmManagerProvider(config,
@@ -95,7 +95,7 @@ class GitHandler {
 	private GitProvider createCentralScmProvider() {
 		switch (config.multiTenant.scmProviderType) {
 			case ScmProviderType.GITLAB:
-				return new Gitlab(config, config.multiTenant.gitlab)
+				return new GitlabProvider(config, config.multiTenant.gitlab)
 
 			case ScmProviderType.SCM_MANAGER:
 				return new ScmManagerProvider(config,

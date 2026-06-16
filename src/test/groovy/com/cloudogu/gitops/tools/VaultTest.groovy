@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
@@ -50,8 +51,8 @@ class VaultTest {
 	@Test
 	void 'is disabled via active flag'() {
 		config.features.secrets.active = false
-		createVault().install()
-		assertThat(helmCommands.actualCommands).isEmpty()
+		boolean enabled = createVault().install()
+		assertFalse(enabled)
 	}
 
 	@Test

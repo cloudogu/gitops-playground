@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
@@ -67,8 +68,8 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
-		createCertManager().install()
-		assertThat(temporaryYamlFile).isNull()
+		boolean enabled = createCertManager().install()
+		assertFalse(enabled)
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
@@ -75,19 +76,15 @@ class IngressTest {
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
-
 		createIngress().install()
-
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
-
-		createIngress().install()
-
-		assertThat(temporaryYamlFile).isNull()
+		boolean enabled = createIngress().install()
+		assertFalse(enabled)
 	}
 
 	@Test

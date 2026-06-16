@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
@@ -90,7 +91,7 @@ class MonitoringTest {
 	void "is disabled via active flag"() {
 		config.features.monitoring.active = false
 		boolean enabled = createStack(scmManagerMock).install()
-		assertThat(enabled).isEqualTo(false)
+		assertFalse(enabled)
 	}
 
 	@Test

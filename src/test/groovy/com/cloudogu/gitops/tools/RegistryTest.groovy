@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 
@@ -34,7 +35,7 @@ class RegistryTest {
 	@Test
 	void 'is disabled when external registry is configured'() {
 		boolean enabled = createRegistry().install()
-		assertThat(enabled).isEqualTo(false)
+		assertFalse(enabled)
 	}
 
 	@Test

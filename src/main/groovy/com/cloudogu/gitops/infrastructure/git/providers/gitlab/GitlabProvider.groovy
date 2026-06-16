@@ -19,13 +19,13 @@ import org.gitlab4j.api.models.Project
 import org.gitlab4j.api.models.Visibility
 
 @Slf4j
-class Gitlab implements GitProvider {
+class GitlabProvider implements GitProvider {
 
 	private final Config config
 	private final GitLabApi api
 	private GitlabConfig gitlabConfig
 
-	Gitlab(Config config, GitlabConfig gitlabConfig) {
+    GitlabProvider(Config config, GitlabConfig gitlabConfig) {
 		this.config = config
 		this.gitlabConfig = gitlabConfig
 
