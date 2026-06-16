@@ -104,7 +104,7 @@ where <PROFILES> can be one of:
 Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
 This can be done by running:
 ```bash
-./scripts/local/install-argocd-operator.sh
+make install-operator
 ```
 
 ## Jenkins plugin installation issues

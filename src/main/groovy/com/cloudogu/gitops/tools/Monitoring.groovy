@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -11,12 +11,13 @@ import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
+
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
@@ -36,7 +37,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	Monitoring(Config config,
 		FileSystemUtils fileSystemUtils,
-		DeploymentStrategy deployer,
+		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitRepoFactory scmRepoProvider,
@@ -186,7 +187,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
+		String dashboardRoot = "${repoRoot}/apps/monitoring/misc/dashboard"
 
 		if (!config.features.ingress.active) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")

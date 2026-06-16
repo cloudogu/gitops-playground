@@ -102,15 +102,11 @@ class FullProfileTestIT extends ProfileTestSetup {
 
 	@Test
 	void ensureExternalSecretsPodsRunning() {
-		TestK8sHelper.waitForPodsMatchingRunningInNamespace('secrets', [
-			'external-secrets'                : { String podName ->
-				podName.startsWith('external-secrets-') &&
-					!podName.startsWith('external-secrets-webhook') &&
-					!podName.startsWith('external-secrets-cert-controller')
-			},
-			'external-secrets-webhook'        : { String podName -> podName.startsWith('external-secrets-webhook') },
-			'external-secrets-cert-controller': { String podName -> podName.startsWith('external-secrets-cert-controller') },
-		])
+		TestK8sHelper.waitForPodsMatchingRunningInNamespace('secrets', ['external-secrets'                : {
+			String podName -> podName.startsWith('external-secrets-') && !podName.startsWith('external-secrets-webhook') && !podName.startsWith('external-secrets-cert-controller')
+		},
+		                                                                'external-secrets-webhook'        : { String podName -> podName.startsWith('external-secrets-webhook') },
+		                                                                'external-secrets-cert-controller': { String podName -> podName.startsWith('external-secrets-cert-controller') },])
 	}
 
 }

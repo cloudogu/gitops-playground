@@ -1,21 +1,22 @@
 package com.cloudogu.gitops.testhelper.git
 
+import static org.mockito.ArgumentMatchers.anyBoolean
+import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.when
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.RepositoryApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
+
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import org.mockito.ArgumentMatchers
 import retrofit2.Call
 import retrofit2.Response
-
-import static org.mockito.ArgumentMatchers.anyBoolean
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
 
 class TestScmManagerApiClient extends ScmManagerApiClient {
 
@@ -48,7 +49,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
 					return responseCreated
 				}
 			}
-        when(repositoryApi.createPermission(anyString(), anyString(), ArgumentMatchers.any(Permission)))
+		when(repositoryApi.createPermission(anyString(), anyString(), ArgumentMatchers.any(Permission)))
 			.thenAnswer { invocation ->
 				String namespace = invocation.getArgument(0)
 				String name = invocation.getArgument(1)

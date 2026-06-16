@@ -1,9 +1,14 @@
 package com.cloudogu.gitops.tools.core
 
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
@@ -15,18 +20,14 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
+
+import java.nio.file.Path
 import groovy.yaml.YamlSlurper
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
 
 class JenkinsTest {
 	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: "testUrlJenkins")),
@@ -39,7 +40,7 @@ class JenkinsTest {
 	JobManager jobManger = mock(JobManager)
 	UserManager userManager = mock(UserManager)
 	PrometheusConfigurator prometheusConfigurator = mock(PrometheusConfigurator)
-	HelmStrategy deploymentStrategy = mock(HelmStrategy)
+	Deployer deployer = mock(Deployer)
 	Path temporaryYamlFile
 	NetworkingUtils networkingUtils = mock(NetworkingUtils.class)
 	K8sClient k8sClient = mock(K8sClient)
@@ -76,9 +77,9 @@ me:x:1000:''')
 
 		jenkins.install()
 
-		verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
+		verify(deployer).deployFeature('https://jen-repo', 'jenkins',
 			'jen-chart', '4.8.1', 'jenkins',
-			'jenkins', temporaryYamlFile, RepoType.HELM)
+			'jenkins', temporaryYamlFile, RepoType.HELM, true)
 		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
 		verify(k8sClient).labelRemove('node', '--all', '', 'node')
 		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
@@ -123,10 +124,10 @@ me:x:1000:''')
 	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
-
 		createJenkins().install()
-		verify(deploymentStrategy, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
-			anyString(), anyString(), any(Path))
+
+		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
+			anyString(), anyString(), any(Path), any(), anyBoolean())
 
 		assertThat(temporaryYamlFile).isNull()
 	}
@@ -354,9 +355,9 @@ me:x:1000:''')
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils =  new AirGappedUtils(config,null,fileSystemUtils,null, gitHandler)
+		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
-		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager,jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils, airGappedUtils, gitHandler )
+		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

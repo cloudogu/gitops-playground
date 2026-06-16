@@ -2,26 +2,22 @@ package com.cloudogu.gitops.testhelper.git
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import com.cloudogu.gitops.utils.NetworkingUtils
-
-import static org.mockito.Mockito.mock
 
 class GitHandlerForTests extends GitHandler {
 	private final GitProvider tenantProvider
 	private final GitProvider centralProvider
 
 	GitHandlerForTests(Config config, GitProvider tenantProvider, GitProvider centralProvider = null) {
-		super(config, mock(HelmStrategy), new FileSystemUtils(), new K8sClientForTest(), new NetworkingUtils())
+		super(config, new K8sClientForTest(), new NetworkingUtils())
 		this.tenantProvider = tenantProvider
 		this.centralProvider = centralProvider
 	}
 
 	@Override
-	void enable() {
+	void prepareProviders() {
 		// Inject the test providers into the base class before running the real logic
 		this.tenant = tenantProvider
 		this.central = centralProvider

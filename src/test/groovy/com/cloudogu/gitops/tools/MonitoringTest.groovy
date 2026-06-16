@@ -2,12 +2,13 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -65,7 +66,7 @@ class MonitoringTest {
 		           ingress   : [active: true]])
 
 	K8sClient k8sClient
-	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+	Deployer deployer = mock(Deployer)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 	Path temporaryYamlFilePrometheus = null
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
@@ -89,9 +90,8 @@ class MonitoringTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.monitoring.active = false
-		createStack(scmManagerMock).install()
-		assertThat(temporaryYamlFilePrometheus).isNull()
-		verifyNoMoreInteractions(deploymentStrategy)
+		boolean enabled = createStack(scmManagerMock).install()
+		assertFalse(enabled)
 	}
 
 	@Test
@@ -417,9 +417,9 @@ policies:
 	void 'helm release is installed'() {
 		createStack(scmManagerMock).install()
 
-		verify(deploymentStrategy).deployFeature('https://prom', 'monitoring',
+		verify(deployer).deployFeature('https://prom', 'monitoring',
 			'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM)
+			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM, false)
 		/* This corresponds to
 				'helm repo add prometheusstack https://prom'
 				'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
@@ -561,9 +561,9 @@ policies:
 		assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
 		assertThat(helmConfig.value.version).isEqualTo('19.2.2')
-		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
 			'monitoring', '.', '1.2.3', 'foo-monitoring',
-			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
+			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT, false)
 	}
 
 	@Test
@@ -639,7 +639,7 @@ matchExpressions:
 				temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, deploymentStrategy, k8sClient, airGappedUtils, repoProvider, gitHandler)
+		}, deployer, k8sClient, airGappedUtils, repoProvider, gitHandler)
 	}
 
 	private Map parseActualYaml() {

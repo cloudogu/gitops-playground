@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.application
 
+import static org.assertj.core.api.Assertions.assertThat
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import io.micronaut.context.ApplicationContext
-import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
+import io.micronaut.context.ApplicationContext
+
+import org.junit.jupiter.api.Test
 
 class ApplicationTest {
 
@@ -18,7 +20,7 @@ class ApplicationTest {
 			.getBean(Application)
 		def features = application.features.collect { it.class.simpleName }
 
-		assertThat(features).isEqualTo(['Registry', 'GitHandler', 'Jenkins', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
+		assertThat(features).isEqualTo(['ScmManager', 'Jenkins', 'Registry', 'ArgoCD', 'Ingress', 'CertManager', 'Monitoring', 'ExternalSecretsOperator', 'Vault', 'ContentLoader'])
 	}
 
 	@Test

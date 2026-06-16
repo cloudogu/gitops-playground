@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -277,7 +278,6 @@ class ApplicationConfigurator {
 		}
 	}
 
-
 	/**
 	 * Build*/
 	void buildAndValidateURLFromEnvironment(Config config) {
@@ -308,14 +308,13 @@ class ApplicationConfigurator {
 	}
 
 	/**
-	 * If application.namespace is set, overrides all tool namespaces and content namespaces to use that namespace.
-	 */
+	 * If application.namespace is set, overrides all tool namespaces and content namespaces to use that namespace.	*/
 	void checkAndSetNamespaces(Config config) {
 		// if set, all tools have use this namespace
-		if (config.application.namespace){
+		if (config.application.namespace) {
 			String namespace = config.application.namespace
 			// gop config
-			config.application.gopNamespace= namespace
+			config.application.gopNamespace = namespace
 			// startup tools
 			config.registry.namespace = namespace
 			config.jenkins.namespace = namespace
@@ -329,7 +328,7 @@ class ApplicationConfigurator {
 			// remove all namespaces by contentLoad and replace with given ns
 			config.content.namespaces.clear()
 			// content loader do not care about prefix like tools, thats why its needed here.
-			String contentNamespace = config.application.namePrefix+namespace
+			String contentNamespace = config.application.namePrefix + namespace
 			config.content.namespaces.add(contentNamespace)
 		}
 	}

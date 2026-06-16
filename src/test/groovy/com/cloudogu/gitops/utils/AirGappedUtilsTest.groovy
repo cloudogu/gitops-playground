@@ -1,5 +1,10 @@
 package com.cloudogu.gitops.utils
 
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -10,19 +15,15 @@ import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
+
+import java.nio.file.Files
+import java.nio.file.Path
 import groovy.yaml.YamlSlurper
+
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
 
 class AirGappedUtilsTest {
 
@@ -123,20 +124,12 @@ class AirGappedUtilsTest {
 		fileSystemUtils.writeYaml(prometheusChartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
 		if (chartLock == null) {
-			chartLock = [
-					dependencies: [
-							[
-									name      : 'crds',
-									repository: "",
-									version   : '0.0.0'
-							],
-							[
-									name      : 'grafana',
-									repository: 'https://grafana.github.io/helm-charts',
-									version   : '7.3.9'
-							]
-					]
-			]
+			chartLock = [dependencies: [[name      : 'crds',
+			                             repository: "",
+			                             version   : '0.0.0'],
+			                            [name      : 'grafana',
+			                             repository: 'https://grafana.github.io/helm-charts',
+			                             version   : '7.3.9']]]
 		}
 		fileSystemUtils.writeYaml(chartLock, sourceChart.resolve('Chart.lock').toFile())
 

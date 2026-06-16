@@ -1,13 +1,16 @@
 package com.cloudogu.gitops.application
 
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
+
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
@@ -16,11 +19,13 @@ class Application {
 	final List<Tool> features
 	final Config config
 	final K8sClient k8sClient
+	final GitHandler gitHandler
 
-	Application(Config config, K8sClient k8sClient,
-	            List<Tool> features) {
+	Application(Config config, K8sClient k8sClient, GitHandler gitHandler,
+		List<Tool> features) {
 		this.config = config
 		// Order is important. Enforced by @Order-Annotation on the Singletons
+		this.gitHandler = gitHandler
 		this.features = features
 		this.k8sClient = k8sClient
 	}
@@ -31,6 +36,9 @@ class Application {
 		setNamespaceListToConfig(config)
 		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(config)
+
+		gitHandler.validate()
+		gitHandler.prepareProviders()
 
 		features.forEach(feature -> {
 			feature.validate()
@@ -85,6 +93,5 @@ class Application {
 		config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
 	}
-
 
 }

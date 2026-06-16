@@ -1,10 +1,13 @@
 package com.cloudogu.gitops.application.content
 
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -14,23 +17,22 @@ import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+
+import io.micronaut.core.annotation.Order
+
+import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
 import com.fasterxml.jackson.annotation.JsonIgnore
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
 @Slf4j
 @Singleton
@@ -59,7 +61,7 @@ class ContentLoader extends Tool {
 		Jenkins jenkins,
 		GitHandler gitHandler,
 		FileSystemUtils fileSystemUtils,
-		DeploymentStrategy deployer) {
+		Deployer deployer) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
@@ -163,13 +165,15 @@ class ContentLoader extends Tool {
 
 			// always write a temp values file and pass its path to deployHelmChart
 			Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
+			String mergedValuesFilePath = mergedValuesFile.toString()
 
-			deployHelmChart(helmRelease.name,
-				helmRelease.releaseName ?: helmRelease.name,
-				helmRelease.namespace,
-				helmConfig,
-				mergedValuesFile.toString(),
-				config)
+			deployHelmChart(helmRelease.name as String,
+				(helmRelease.releaseName ?: helmRelease.name) as String,
+				helmRelease.namespace as String,
+				helmConfig as Config.HelmConfigWithValues,
+				mergedValuesFilePath as String,
+				config as Config,
+				false)
 		}
 	}
 

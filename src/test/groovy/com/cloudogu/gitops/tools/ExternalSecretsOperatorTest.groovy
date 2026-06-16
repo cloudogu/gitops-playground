@@ -1,14 +1,26 @@
 package com.cloudogu.gitops.tools
 
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
+
+import java.nio.file.Files
+import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import org.junit.jupiter.api.BeforeEach
@@ -18,15 +30,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
-
+@CompileStatic
 @ExtendWith(MockitoExtension.class)
 @EnableKubernetesMockClient(crud = true)
 class ExternalSecretsOperatorTest {
@@ -40,7 +44,7 @@ class ExternalSecretsOperatorTest {
 	Path temporaryYamlFile
 
 	@Mock
-	DeploymentStrategy deploymentStrategy
+	Deployer deployer
 	@Mock
 	AirGappedUtils airGappedUtils
 	@Mock
@@ -60,22 +64,24 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.secrets.active = false
-		createExternalSecretsOperator().install()
-		assertThat(commandExecutor.actualCommands).isEmpty()
+		boolean enabled = createExternalSecretsOperator().install()
+		assertFalse(enabled)
+
 	}
 
 	@Test
 	void 'helm release is installed'() {
 		createExternalSecretsOperator().install()
 
-		verify(deploymentStrategy).deployFeature('https://charts.external-secrets.io',
+		verify(deployer).deployFeature('https://charts.external-secrets.io',
 			'external-secrets-operator',
 			'external-secrets',
 			'0.9.16',
 			'foo-secrets',
 			'external-secrets',
 			temporaryYamlFile,
-			RepoType.HELM)
+			RepoType.HELM,
+			false)
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -147,9 +153,9 @@ class ExternalSecretsOperatorTest {
 		assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
-		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
 			'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-			'external-secrets', temporaryYamlFile, RepoType.GIT)
+			'external-secrets', temporaryYamlFile, RepoType.GIT, false)
 	}
 
 	@Test
@@ -178,7 +184,7 @@ class ExternalSecretsOperatorTest {
 					// Path after template invocation
 					return ret
 				}
-			}, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
+			}, deployer, k8sClient, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

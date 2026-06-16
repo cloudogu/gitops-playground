@@ -1,10 +1,14 @@
 package com.cloudogu.gitops.cli
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
+
 import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -15,14 +19,11 @@ import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito
-
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
 
 class ApplicationConfiguratorTest {
 
@@ -72,10 +73,10 @@ class ApplicationConfiguratorTest {
 		HelmClient helmClient = Mockito.mock(HelmClient)
 		GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
 
-		DeploymentStrategy deploymentStrategy = Mockito.mock(DeploymentStrategy)
+		Deployer deployer = Mockito.mock(Deployer)
 
 		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
-		featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deploymentStrategy))
+		featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
 		featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
 	}
 

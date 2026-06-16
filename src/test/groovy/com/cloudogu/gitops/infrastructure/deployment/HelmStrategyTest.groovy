@@ -1,16 +1,17 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.helm.HelmClient
-import org.junit.jupiter.api.Test
-
-import java.nio.file.Files
-import java.nio.file.Path
-
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
+
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.helm.HelmClient
+
+import java.nio.file.Files
+import java.nio.file.Path
+
+import org.junit.jupiter.api.Test
 
 class HelmStrategyTest {
 

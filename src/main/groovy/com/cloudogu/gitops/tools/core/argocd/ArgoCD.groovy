@@ -10,12 +10,14 @@ import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
-import groovy.util.logging.Slf4j
+
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
-import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
+import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
 @Singleton
@@ -26,7 +28,6 @@ class ArgoCD extends Tool {
 	private final Config config
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
-	private final FileSystemUtils fileSystemUtils
 	private final GitRepoFactory repoProvider
 	private final GitHandler gitHandler
 	private final String password
@@ -183,7 +184,6 @@ class ArgoCD extends Tool {
 	}
 
 	private void deployWithHelm() {
-
 		// Install umbrella chart from argocd/argocd
 		String umbrellaChartPath = clusterResourcesRepo.helmDir()
 		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -198,7 +198,6 @@ class ArgoCD extends Tool {
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 		k8sClient.patch('secret', 'argocd-secret', namespace,
 			[stringData: ['admin.password': bcryptArgoCDPassword]])
-
 	}
 
 	// The ArgoCD instance installed via an operator only manages its deployment namespace.

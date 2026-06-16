@@ -1,19 +1,18 @@
 package com.cloudogu.gitops.application.orchestration
 
+import static org.junit.jupiter.api.Assertions.*
+import static org.mockito.Mockito.mock
+
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.GitlabMock
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
-import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import org.junit.jupiter.api.Test
 
-import static org.junit.jupiter.api.Assertions.*
-import static org.mockito.Mockito.mock
+import org.junit.jupiter.api.Test
 
 class GitHandlerTest {
 
@@ -45,8 +44,6 @@ class GitHandlerTest {
 
 	private static GitHandler handler(Config cfg) {
 		return new GitHandler(cfg,
-			mock(HelmStrategy),
-			mock(FileSystemUtils),
 			mock(K8sClient),
 			mock(NetworkingUtils))
 	}
@@ -111,7 +108,7 @@ class GitHandlerTest {
 		def tenant = new ScmManagerMock()
 		def gitHandler = new GitHandlerForTests(cfg, tenant)
 
-		gitHandler.enable()
+		gitHandler.prepareProviders()
 
 		assertEquals('scm-manager', cfg.scm.scmManager.namespace)
 
@@ -136,7 +133,7 @@ class GitHandlerTest {
 		def central = new ScmManagerMock(namePrefix: 'fv40-')
 		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
 
-		gitHandler.enable()
+		gitHandler.prepareProviders()
 
 		// Central: argocd/cluster-resources
 		assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
@@ -162,7 +159,7 @@ class GitHandlerTest {
 		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url), namePrefix: 'fv40-')
 		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
 
-		gitHandler.enable()
+		gitHandler.prepareProviders()
 
 		// Central: argocd/cluster-resources
 		assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))

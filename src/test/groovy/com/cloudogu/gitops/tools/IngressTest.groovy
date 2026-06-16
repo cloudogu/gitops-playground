@@ -1,13 +1,24 @@
 package com.cloudogu.gitops.tools
 
+import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
+
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
+
+import java.nio.file.Files
+import java.nio.file.Path
 import groovy.yaml.YamlSlurper
+
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import org.junit.jupiter.api.BeforeEach
@@ -16,15 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
 
 @ExtendWith(MockitoExtension.class)
 @EnableKubernetesMockClient(crud = true)
@@ -37,7 +39,7 @@ class IngressTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@Mock
-	DeploymentStrategy deploymentStrategy
+	Deployer deployer
 	@Mock
 	AirGappedUtils airGappedUtils
 	@Mock
@@ -54,7 +56,6 @@ class IngressTest {
 		k8sClient.client = client
 	}
 
-
 	@Test
 	void 'Helm release is installed'() {
 		createIngress().install()
@@ -63,9 +64,9 @@ class IngressTest {
 		def actual = parseActualYaml()
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-		verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
+		verify(deployer).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
 			config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.HELM)
+			'traefik', temporaryYamlFile, RepoType.HELM, false)
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -75,19 +76,15 @@ class IngressTest {
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
-
 		createIngress().install()
-
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
-
-		createIngress().install()
-
-		assertThat(temporaryYamlFile).isNull()
+		boolean enabled = createIngress().install()
+		assertFalse(enabled)
 	}
 
 	@Test
@@ -127,9 +124,9 @@ class IngressTest {
 
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
-		verify(deploymentStrategy).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
 			'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.GIT)
+			'traefik', temporaryYamlFile, RepoType.GIT, false)
 	}
 
 	@Test
@@ -197,7 +194,7 @@ class IngressTest {
 				// Path after template invocation
 				return ret
 			}
-		}, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
+		}, deployer, k8sClient, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {
