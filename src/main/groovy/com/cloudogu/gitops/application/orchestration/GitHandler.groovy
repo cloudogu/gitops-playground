@@ -109,7 +109,7 @@ class GitHandler {
 	}
 
 	private void setupExternalRepositoriesIfPossible() {
-		final String namePrefix = (config?.application?.namePrefix ?: "").trim()
+		final String namePrefix = (config.application.namePrefix ?: "").trim()
 
 		if (shouldSkipRepositorySetupForInternalScmManager()) {
 			log.debug("Skipping repository setup in GitHandler because internal SCM-Manager is not deployed yet.")
