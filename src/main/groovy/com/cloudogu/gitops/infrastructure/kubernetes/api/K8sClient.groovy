@@ -513,7 +513,7 @@ class K8sClient {
 	 * @throws RuntimeException if the ConfigMap or key is not found
 	 */
 	String getConfigMap(String mapName, String key) {
-		String namespace = client.namespace ?: DEFAULT_NAMESPACE
+		String namespace = getCurrentNamespace()
 
 		log.debug("Getting ConfigMap ${namespace}/${mapName}, key: ${key}")
 
@@ -523,11 +523,11 @@ class K8sClient {
 			.get()
 
 		if (!configMap) {
-			throw new RuntimeException("Could not fetch configmap $mapName")
+			throw new RuntimeException("Could not fetch configmap $mapName from namespace $namespace")
 		}
 
 		if (!configMap.data?.containsKey(key)) {
-			throw new RuntimeException("Could not fetch $key within config-map $mapName")
+			throw new RuntimeException("Could not fetch $key within config-map $mapName from namespace $namespace")
 		}
 
 		return configMap.data[key]
