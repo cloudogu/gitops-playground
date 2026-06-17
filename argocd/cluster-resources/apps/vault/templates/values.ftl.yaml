@@ -58,15 +58,15 @@ server:
           USERNAME=${config.application.username} \
           PASSWORD=${config.application.password} \
           ARGOCD=${config.features.argocd.active?c} \
-    <#if vaultOidc.clientSecret?has_content>
+<#if vaultOidc.clientSecret?has_content>
           OIDC_ENABLED=true \
-    OIDC_CLIENT_ID=${vaultOidc.clientId} \
-    OIDC_CLIENT_SECRET=${vaultOidc.clientSecret} \
-    OIDC_DISCOVERY_URL=${vaultOidc.discoveryUrl} \
+          OIDC_CLIENT_ID=${vaultOidc.clientId} \
+          OIDC_CLIENT_SECRET=${vaultOidc.clientSecret} \
+          OIDC_DISCOVERY_URL=${vaultOidc.discoveryUrl} \
           VAULT_EXTERNAL_URL=http://${host} \
-    <#else>
+<#else>
           OIDC_ENABLED=false \
-    </#if>
+</#if>
           /var/opt/scripts/${dev.postStartScriptName} 2>&1 | tee /tmp/dev-post-start.log
 </#if>
 

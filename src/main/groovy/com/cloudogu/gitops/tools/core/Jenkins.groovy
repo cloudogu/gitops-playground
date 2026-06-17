@@ -26,6 +26,8 @@ import groovy.util.logging.Slf4j
 class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"
+	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api']
+
 	String namespace
 	private Config config
 	private CommandExecutor commandExecutor
@@ -91,6 +93,7 @@ class Jenkins extends Tool {
 			Config.HelmConfigWithValues helmConfig = config.jenkins.helm
 			String releaseName = "jenkins"
 			addHelmValuesData("dockerGid", findDockerGid())
+			addHelmValuesData("jenkinsBootPlugins", jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
 
 			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config, true)
 
@@ -156,8 +159,8 @@ class Jenkins extends Tool {
 
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
 
-		if (userManager.isUsingCasSecurityRealm()) {
-			log.trace("Using CAS Security Realm. Must not create user.")
+		if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
+			log.trace("Using a security realm without local user creation. Must not create user.")
 		} else {
 			userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
 		}
@@ -211,6 +214,32 @@ class Jenkins extends Tool {
 		}
 
 		jobManager.startJob(jobName)
+	}
+
+	private boolean jenkinsOidcConfigured() {
+		return config.jenkins.oidc?.trim()
+	}
+
+	private List<String> getJenkinsOidcBootPlugins() {
+		File pluginsFile = new File("${fileSystemUtils.rootDir}/scripts/jenkins/plugins/plugins.txt")
+		Map<String, String> pinnedPlugins = [:]
+
+		pluginsFile.eachLine { line ->
+			String pluginDefinition = line.trim()
+			if (pluginDefinition && !pluginDefinition.startsWith('#')) {
+				String pluginName = pluginDefinition.split(':', 2)[0]
+				if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
+					pinnedPlugins[pluginName] = pluginDefinition
+				}
+			}
+		}
+
+		List<String> missingPlugins = OIDC_BOOT_PLUGIN_NAMES.findAll { !pinnedPlugins.containsKey(it) }
+		if (missingPlugins) {
+			throw new IllegalStateException("Required Jenkins OIDC boot plugins missing from ${pluginsFile}: ${missingPlugins.join(', ')}")
+		}
+
+		return OIDC_BOOT_PLUGIN_NAMES.collect { pinnedPlugins[it] }
 	}
 
 	protected String findDockerGid() {

@@ -283,8 +283,8 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
-		                                                     repoURL: 'https://twuni.github.io/docker-registry.helm',
-		                                                     version: '3.0.0')
+			repoURL: 'https://twuni.github.io/docker-registry.helm',
+			version: '3.0.0')
 
 	}
 
@@ -353,8 +353,9 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
-		                                                     repoURL: 'https://charts.jenkins.io',
-		                                                     version: '5.9.18')@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
+			repoURL: 'https://charts.jenkins.io',
+			version: '5.9.18')
+		@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
 		@JsonPropertyDescription(JENKINS_NAMESPACE)
 		String namespace = "jenkins"
 	}
@@ -604,10 +605,10 @@ class Config {
 		@SuppressWarnings('GroovyAssignabilityCheck')
 		// Because of values
 		MonitoringHelmSchema helm = new MonitoringHelmSchema(chart: 'kube-prometheus-stack',
-		                                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-		                                                     /* When updating this make sure to also test if air-gapped mode still works */
-		                                                     version: '80.2.2',
-		                                                     values: [:] // Otherwise values is null 🤷‍♂️
+			repoURL: 'https://prometheus-community.github.io/helm-charts',
+			/* When updating this make sure to also test if air-gapped mode still works */
+			version: '80.2.2',
+			values: [:] // Otherwise values is null 🤷‍♂️
 		)
 
 		@Option(names = ['--monitoring-namespace'], description = MONITORING_NAMESPACE)
@@ -657,8 +658,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
-			                                       repoURL: 'https://charts.external-secrets.io',
-			                                       version: '0.9.16')
+				repoURL: 'https://charts.external-secrets.io',
+				version: '0.9.16')
 			static class ESOHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -689,8 +690,8 @@ class Config {
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
-			                                           repoURL: 'https://helm.releases.hashicorp.com',
-			                                           version: '0.25.0')
+				repoURL: 'https://helm.releases.hashicorp.com',
+				version: '0.25.0')
 			static class VaultHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
@@ -717,8 +718,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		IngressHelmSchema helm = new IngressHelmSchema(chart: 'traefik',
-		                                               repoURL: 'https://traefik.github.io/charts',
-		                                               version: '39.0.0')
+			repoURL: 'https://traefik.github.io/charts',
+			version: '39.0.0')
 		static class IngressHelmSchema extends HelmConfigWithValues {
 			@Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
 			@JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
@@ -745,8 +746,8 @@ class Config {
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		CertManagerHelmSchema helm = new CertManagerHelmSchema(chart: 'cert-manager',
-		                                                       repoURL: 'https://charts.jetstack.io',
-		                                                       version: '1.19.4')
+			repoURL: 'https://charts.jetstack.io',
+			version: '1.19.4')
 
 		static class CertManagerHelmSchema extends HelmConfigWithValues {
 
