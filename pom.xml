@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.cloudogu</groupId>
     <artifactId>gitops-playground-cli</artifactId>
@@ -10,8 +11,9 @@
     <parent>
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
-        <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-        <version>4.10.12</version>
+        <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml
+        without critical CVE -->
+        <version>4.10.16</version>
     </parent>
 
     <properties>
@@ -20,9 +22,11 @@
         <maven.compiler.target>17</maven.compiler.target>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
-        <!--suppress UnresolvedMavenProperty -->
+        <!--suppress
+        UnresolvedMavenProperty -->
         <!-- git is provided by git-commit-id-maven-plugin -->
-        <versionName>${git.tags} (${git.commit.id.abbrev},
+        <versionName>
+            ${git.tags} (${git.commit.id.abbrev},
             ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}
         </versionName>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
@@ -167,7 +171,8 @@
             <version>2.22.0</version>
         </dependency>
 
-        <!--Used for BCrypt functions-->
+        <!--Used
+        for BCrypt functions-->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
@@ -177,7 +182,8 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
+            <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read
+            the developers.md#JGit docs -->
             <version>7.6.0.202603022253-r</version>
         </dependency>
 
@@ -393,7 +399,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.5</version>
                 <configuration>
-                    <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
+                    <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's
+                    withEnvironmentVariable -->
                     <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
                     <systemProperties>
                         <property>
@@ -487,7 +494,8 @@
                 </configuration>
             </plugin>
 
-            <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
+            <!--  Since some dependencies are signed, and we have an uber jar, there will be some
+            security conflicts.
                   So we delete the responsible files -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
