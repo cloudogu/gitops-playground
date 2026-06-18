@@ -112,11 +112,13 @@ class ScmManagerUrlResolver {
 	}
 
 	private String releaseName() {
-		if (isTenantScmManager()) {
-			return "${config.application.namePrefix}scmm"
+		def prefix = (config.application.namePrefix ?: '').strip()
+
+		if (prefix) {
+			return "${prefix}scmm"
 		}
 
-		return "scmm"
+		return 'scmm'
 	}
 
 	private String serviceName() {
@@ -144,14 +146,4 @@ class ScmManagerUrlResolver {
 		def s = u.toString()
 		s.endsWith('/') ? URI.create(s.substring(0, s.length() - 1)) : u
 	}
-
-	private boolean isTenantScmManager() {
-		def prefix = (config.application.namePrefix ?: "").strip()
-		def namespace = (scmm.namespace ?: "scm-manager").strip()
-
-		return config.multiTenant.useDedicatedInstance &&
-			prefix &&
-			namespace == "${prefix}scm-manager"
-	}
-
 }

@@ -110,16 +110,27 @@ class GitHandler {
 
 	private void setupExternalRepositoriesIfPossible() {
 		final String namePrefix = (config.application.namePrefix ?: "").trim()
+		final boolean skipInternalScmRepositorySetup = shouldSkipRepositorySetupForInternalScmManager()
 
-		if (shouldSkipRepositorySetupForInternalScmManager()) {
-			log.debug("Skipping repository setup in GitHandler because internal SCM-Manager is not deployed yet.")
+		log.info(
+			"Evaluating external repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', skipInternalScmRepositorySetup={}",
+			central != null,
+			tenant != null,
+			namePrefix,
+			skipInternalScmRepositorySetup
+		)
+
+		if (skipInternalScmRepositorySetup) {
+			log.info("Skipping external repository setup because internal SCM-Manager is not deployed yet. namePrefix='{}'", namePrefix)
 			return
 		}
 
 		if (central) {
+			log.info("Setting up central and tenant repositories. namePrefix='{}'", namePrefix)
 			setupRepos(central, namePrefix)
 			setupRepos(tenant, namePrefix)
 		} else {
+			log.info("Setting up tenant repositories only. namePrefix='{}'", namePrefix)
 			setupRepos(tenant, namePrefix)
 		}
 	}

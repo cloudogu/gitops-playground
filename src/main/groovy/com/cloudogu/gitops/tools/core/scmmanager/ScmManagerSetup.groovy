@@ -103,11 +103,7 @@ class ScmManagerSetup {
 	private String scmmReleaseName() {
 		def prefix = (config.application.namePrefix ?: '').strip()
 
-		log.info("=====  useDedicatedInstance='{}', prefix='{}'",
-			config.multiTenant.useDedicatedInstance,
-			prefix
-		)
-		if (config.multiTenant.useDedicatedInstance && prefix) {
+		if (prefix) {
 			return "${prefix}scmm"
 		}
 
