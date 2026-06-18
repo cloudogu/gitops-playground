@@ -35,13 +35,21 @@ class ScmManagerSetup {
 	void setupHelm() {
 		Path valuesPath = prepareHelmValues()
 		def helmConfig = this.scmManager.scmmConfig.helm
+		String releaseName = scmmReleaseName()
+
+		log.info("Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+			releaseName,
+			this.scmManager.scmmConfig.namespace,
+			config.application.namePrefix,
+			config.multiTenant.useDedicatedInstance
+		)
 
 		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
-			scmmReleaseName(),
+			releaseName,
 			valuesPath,
 			DeploymentStrategy.RepoType.HELM)
 	}
@@ -49,24 +57,39 @@ class ScmManagerSetup {
 	void createArgocdApplication() {
 		Path valuesPath = tempValuesPath ?: prepareHelmValues()
 		def helmConfig = this.scmManager.scmmConfig.helm
+		String releaseName = scmmReleaseName()
+
+		log.info("Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+			releaseName,
+			this.scmManager.scmmConfig.namespace,
+			config.application.namePrefix,
+			config.multiTenant.useDedicatedInstance
+		)
 
 		deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
-			scmmReleaseName(),
+			releaseName,
 			valuesPath,
 			DeploymentStrategy.RepoType.HELM)
 	}
 
 	private Path prepareHelmValues() {
+		String releaseName = scmmReleaseName()
+
+		log.info("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
+			releaseName,
+			this.scmManager.scmmConfig.namespace
+		)
+
 		Map<String, Object> templateVars = [config     : this.scmManager.config,
 		                                    host       : this.scmManager.scmmConfig.ingress,
 		                                    username   : this.scmManager.scmmConfig.credentials.username,
 		                                    password   : this.scmManager.scmmConfig.credentials.password,
 		                                    helm       : this.scmManager.scmmConfig.helm,
-		                                    releaseName: scmmReleaseName()]
+		                                    releaseName: releaseName]
 
 		Map templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars)
 		Map values = this.scmManager.scmmConfig.helm.values as Map ?: [:]
@@ -78,8 +101,14 @@ class ScmManagerSetup {
 	}
 
 	private String scmmReleaseName() {
-		if (config.multiTenant.useDedicatedInstance) {
-			return "${config.application.namePrefix}scmm"
+		def prefix = (config.application.namePrefix ?: '').strip()
+
+		log.info("=====  useDedicatedInstance='{}', prefix='{}'",
+			config.multiTenant.useDedicatedInstance,
+			prefix
+		)
+		if (config.multiTenant.useDedicatedInstance && prefix) {
+			return "${prefix}scmm"
 		}
 
 		return 'scmm'
