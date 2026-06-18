@@ -104,7 +104,7 @@ class ScmManagerSetup {
 		def prefix = (config.application.namePrefix ?: '').strip()
 
 		if (prefix) {
-			return "${prefix}scmm"
+			return "${prefix}-scmm"
 		}
 
 		return 'scmm'
