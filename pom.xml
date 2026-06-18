@@ -79,6 +79,22 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
+            <!-- used for com.github.victools:jsonschema-generator -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.2.0</version>
+                <scope>compile</scope>
+            </dependency>
+            <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
+            <!-- used for com.github.victools:jsonschema-generator -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.2.0</version>
+                <scope>compile</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
