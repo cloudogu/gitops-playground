@@ -74,6 +74,7 @@ class ScmManagerUrlResolver {
 		withSlash(clientBase()).resolve("api/v2/metrics/prometheus")
 	}
 
+
 	// ---------- Base resolution ----------
 
 	private URI clientBaseRaw() {
@@ -87,7 +88,7 @@ class ScmManagerUrlResolver {
 
 	private URI serviceDnsBase() {
 		def namespace = (scmm.namespace ?: "scm-manager").strip()
-		URI.create("http://scmm.${namespace}.svc.cluster.local")
+		URI.create("http://${serviceName()}.${namespace}.svc.cluster.local")
 	}
 
 	private URI externalBase() {
@@ -104,10 +105,22 @@ class ScmManagerUrlResolver {
 
 		def namespace = (scmm.namespace ?: "scm-manager").strip()
 
-		final def port = k8s.waitForNodePort(releaseName, namespace)
+		final def port = k8s.waitForNodePort(serviceName(), namespace)
 		final def host = net.findClusterBindAddress()
 		cachedClusterBind = new URI("http://${host}:${port}")
 		return cachedClusterBind
+	}
+
+	private String releaseName() {
+		if (isTenantScmManager()) {
+			return "${config.application.namePrefix}scmm"
+		}
+
+		return "scmm"
+	}
+
+	private String serviceName() {
+		return releaseName()
 	}
 
 	// ---------- Helpers ----------
@@ -131,4 +144,14 @@ class ScmManagerUrlResolver {
 		def s = u.toString()
 		s.endsWith('/') ? URI.create(s.substring(0, s.length() - 1)) : u
 	}
+
+	private boolean isTenantScmManager() {
+		def prefix = (config.application.namePrefix ?: "").strip()
+		def namespace = (scmm.namespace ?: "scm-manager").strip()
+
+		return config.multiTenant.useDedicatedInstance &&
+			prefix &&
+			namespace == "${prefix}scm-manager"
+	}
+
 }

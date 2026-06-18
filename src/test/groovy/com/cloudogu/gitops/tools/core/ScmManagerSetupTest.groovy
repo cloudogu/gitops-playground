@@ -56,7 +56,7 @@ class ScmManagerSetupTest {
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
 		scmManagerSetup.setupHelm()
 
@@ -86,7 +86,7 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 
