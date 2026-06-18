@@ -103,6 +103,14 @@
                 <version>2.22.0</version>
                 <scope>compile</scope>
             </dependency>
+            <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+            <!-- used for io-fabric8, gitlab4j, groovy-yaml and retrofit -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.22.0</version>
+                <scope>compile</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
