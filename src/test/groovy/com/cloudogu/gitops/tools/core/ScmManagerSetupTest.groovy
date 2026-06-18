@@ -58,7 +58,10 @@ class ScmManagerSetupTest {
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
+		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		config.application.namePrefix =  "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
+
 
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
