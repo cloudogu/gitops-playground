@@ -43,7 +43,7 @@ pipeline {
 
             parallel {
 
-                stage("Build CLI") {
+                stage("Unit Test") {
                     agent { docker {
                         image "${env.MAVEN_IMAGE}"
                         args "-v maven-cache:/root/.m2"
@@ -67,6 +67,19 @@ pipeline {
                                             "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
                                             "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
+                        }
+                    }
+                }
+
+                stage("SonarScanner") {
+                    agent { docker {
+                        image "${env.MAVEN_IMAGE}"
+                        args "-v maven-cache:/root/.m2"
+                        reuseNode true
+                    }}
+                    steps {
+                        withSonarQubeEnv('ces-sonar') {
+                            sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                         }
                     }
                 }
