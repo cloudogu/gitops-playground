@@ -33,7 +33,7 @@ class ArgoCdApplicationStrategyTest {
 apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: "repoName"
+  name: "foo-repoName"
   namespace: "foo-argocd"
 spec:
   destination:

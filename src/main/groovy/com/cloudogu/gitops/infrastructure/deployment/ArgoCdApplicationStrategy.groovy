@@ -40,6 +40,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 
 		def namePrefix = config.application.namePrefix
+		def prefix = (namePrefix ?: '').strip()
 		def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
 		GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
@@ -50,14 +51,32 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String featureName = repoName
 		boolean isScmManager = featureName == 'scm-manager'
 
-		// DedicatedInstances
-		if (config.multiTenant.useDedicatedInstance) {
-			repoName = "${config.application.namePrefix}${repoName}"
-			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
-			project = config.application.namePrefix.replaceFirst(/-$/, "")
+		/*
+		 * Important:
+		 * featureName remains unprefixed because it is used for paths like apps/scm-manager.
+		 * repoName becomes the ArgoCD Application metadata.name.
+		 *
+		 * This avoids ArgoCD tracking-id collisions:
+		 *
+		 * central:
+		 *   metadata.name: scm-manager
+		 *
+		 * tenant:
+		 *   metadata.name: tenant1-scm-manager
+		 *
+		 * Without this, both central and tenant resources can get tracking IDs starting with:
+		 *   scm-manager:/...
+		 */
+		if (prefix) {
+			repoName = "${prefix}${repoName}"
 		}
 
-		// Feature-Name -> Ordner under apps/<feature>
+		// DedicatedInstances
+		if (config.multiTenant.useDedicatedInstance) {
+			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
+			project = prefix.replaceFirst(/-$/, "")
+		}
+
 		String featurePath = "apps/${featureName}"
 
 		// --- ensure folders exist before writing files ---
@@ -74,12 +93,13 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		if (isScmManager) {
 			log.info(
-				"Deploying SCM-Manager as bootstrap component: using inline Helm values and omitting self-referencing values source. releaseName='{}', namespace='{}'",
+				"Deploying SCM-Manager as bootstrap component: applicationName='{}', releaseName='{}', namespace='{}', using inline Helm values and omitting self-referencing values source",
+				repoName,
 				releaseName,
 				namespace
 			)
 		} else {
-			// Normal tools keep values in cluster-resources and consume them via $values.
+			// Normal features keep values in cluster-resources and consume them via $values.
 			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
 			// User values must NEVER be overwritten by GOP.
@@ -94,7 +114,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		]
 
 		if (isScmManager) {
-			// SCM-Manager is a bootstrap component. It must not reference values from the SCM it deploys itself.
+			/*
+			 * SCM-Manager is a bootstrap component.
+			 * It must not reference values from the SCM repository that it deploys itself.
+			 */
 			helmConfig.values = inlineValues
 		} else {
 			helmConfig.valueFiles = [
@@ -148,11 +171,21 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                                                                                         // Create namespaces for helm charts (while not using the argocd-operater mode)
 		                                                                                         shallCreateNamespace]]]])
 
+		/*
+		 * Keep the file path release-based.
+		 *
+		 * For tenant SCM this becomes:
+		 *   apps/argocd/applications/tenant1-scmm.yaml
+		 *
+		 * The important value for ArgoCD tracking is metadata.name above:
+		 *   tenant1-scm-manager
+		 */
 		String appManifestPath = "apps/argocd/applications/${releaseName}.yaml"
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " + "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
+		log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
+			"${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
 
 		clusterResourcesRepo.commitAndPush("Added $repoName/$chartOrPath to ArgoCD")
 	}
