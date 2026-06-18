@@ -65,7 +65,7 @@ class ScmManagerSetupTest {
 			eq('scm-manager'),
 			eq('3.11.2'),
 			eq('scm-manager'),
-			eq('scmm'),
+			eq('test-scmm'),
 			any(),
 			eq(DeploymentStrategy.RepoType.HELM))
 	}
