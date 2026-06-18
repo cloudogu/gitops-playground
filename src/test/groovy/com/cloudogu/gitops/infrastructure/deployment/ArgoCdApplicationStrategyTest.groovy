@@ -96,6 +96,31 @@ spec:
 	}
 
 	@Test
+	void 'deploys scm-manager as bootstrap application without values source'() {
+		def strategy = createStrategy()
+		File valuesYaml = File.createTempFile('values', 'yaml')
+		valuesYaml.text = """
+fullnameOverride: tenant1-scmm
+service:
+  type: NodePort
+"""
+
+		strategy.deployFeature("repoURL", "scm-manager", "scm-manager", "3.11.6",
+			"tenant1-scm-manager", "tenant1-scmm", valuesYaml.toPath())
+
+		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/tenant1-scmm.yaml")
+		def result = new YamlSlurper().parse(argoCdApplicationYaml)
+
+		def sources = result['spec']['sources'] as List
+
+		assertThat(sources).hasSize(1)
+		assertThat(sources[0]['repoURL']).isEqualTo('repoURL')
+		assertThat(sources[0]['chart']).isEqualTo('scm-manager')
+		assertThat(sources[0]['helm']['releaseName']).isEqualTo('tenant1-scmm')
+		assertThat(sources[0]['helm']['values'].toString()).contains('fullnameOverride: tenant1-scmm')
+	}
+
+	@Test
 	void 'deploys feature with argocdOperator false, setting CreateNamespace to true'() {
 		def strategy = createStrategy(false)
 		File valuesYaml = File.createTempFile('values', 'yaml')

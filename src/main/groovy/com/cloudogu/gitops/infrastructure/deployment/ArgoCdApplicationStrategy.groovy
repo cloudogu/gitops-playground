@@ -38,6 +38,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
 		String releaseName, Path helmValuesPath, RepoType repoType) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
+
 		def namePrefix = config.application.namePrefix
 		def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
@@ -47,7 +48,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String project = "cluster-resources"
 		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
 		String featureName = repoName
-		//DedicatedInstances
+		boolean isScmManager = featureName == 'scm-manager'
+
+		// DedicatedInstances
 		if (config.multiTenant.useDedicatedInstance) {
 			repoName = "${config.application.namePrefix}${repoName}"
 			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
@@ -61,40 +64,69 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
 		Path.of(repoRoot, featurePath).toFile().mkdirs()
 
-		// 1) GOP-managed values (may be overwritten each run)
+		// 1) GOP-managed values
 		String gopValuesPath = "${featurePath}/${featureName}-gop-helm.yaml"
-		// relative to repo-root
 		def inlineValues = helmValuesPath.toFile().text
-		clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
-		// 2) User values (must NEVER be overwritten by GOP)
+		// 2) User values
 		String userValuesPath = "${featurePath}/${featureName}-user-values.yaml"
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
-		if (!userValuesAbsPath.toFile().exists()) {
-			clusterResourcesRepo.writeFile(userValuesPath, "")
+
+		if (isScmManager) {
+			log.info(
+				"Deploying SCM-Manager as bootstrap component: using inline Helm values and omitting self-referencing values source. releaseName='{}', namespace='{}'",
+				releaseName,
+				namespace
+			)
+		} else {
+			// Normal tools keep values in cluster-resources and consume them via $values.
+			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
+
+			// User values must NEVER be overwritten by GOP.
+			if (!userValuesAbsPath.toFile().exists()) {
+				clusterResourcesRepo.writeFile(userValuesPath, "")
+			}
 		}
 
-		// 1) helm source (external chart source)
-		def helmSource = [repoURL                         : repoURL,
-		                  (chooseKeyChartOrPath(repoType)): chartOrPath,
-		                  targetRevision                  : version,
-		                  helm                            : [releaseName            : releaseName,
-		                                                     valueFiles             : ["\$values/${gopValuesPath}".toString(),
-		                                                                               "\$values/${userValuesPath}".toString()],
-		                                                     ignoreMissingValueFiles: true]]
+		// 1) Helm source
+		def helmConfig = [
+			releaseName: releaseName
+		]
 
-		// 2) Git source for values
-		//   - repoURL: cluster-resources repo
-		//   - ref: values → used in valueFiles as $values
-		//   - path: apps/<feature> → additional manifests
-		def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
-		def gitSource = [repoURL       : featureRepoUrl,
-		                 targetRevision: "main",
-		                 ref           : "values",
-		                 path          : featurePath,
-		                 directory     : [recurse: true]]
+		if (isScmManager) {
+			// SCM-Manager is a bootstrap component. It must not reference values from the SCM it deploys itself.
+			helmConfig.values = inlineValues
+		} else {
+			helmConfig.valueFiles = [
+				"\$values/${gopValuesPath}".toString(),
+				"\$values/${userValuesPath}".toString()
+			]
+			helmConfig.ignoreMissingValueFiles = true
+		}
 
-		def sources = [helmSource, gitSource]
+		def helmSource = [
+			repoURL                         : repoURL,
+			(chooseKeyChartOrPath(repoType)): chartOrPath,
+			targetRevision                  : version,
+			helm                            : helmConfig
+		]
+
+		// 2) Git source for values and additional manifests.
+		// SCM-Manager must not reference the SCM-Manager repo that it deploys itself.
+		def sources = [helmSource]
+
+		if (!isScmManager) {
+			def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+			def gitSource = [
+				repoURL       : featureRepoUrl,
+				targetRevision: "main",
+				ref           : "values",
+				path          : featurePath,
+				directory     : [recurse: true]
+			]
+
+			sources << gitSource
+		}
 
 		// Prepare ArgoCD Application YAML
 		def yamlMapper = YAMLMapper.builder()
