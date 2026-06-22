@@ -49,7 +49,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String project = "cluster-resources"
 		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
 		String featureName = repoName
-		boolean isScmManager = featureName == 'scm-manager'
+		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(featureName)
 
 		/*
 		 * Important:
@@ -91,9 +91,11 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String userValuesPath = "${featurePath}/${featureName}-user-values.yaml"
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
 
-		if (isScmManager) {
+		if (bootstrapDeploymentRequired) {
 			log.info(
-				"Deploying SCM-Manager as bootstrap component: applicationName='{}', releaseName='{}', namespace='{}', using inline Helm values and omitting self-referencing values source",
+				"Using bootstrap deployment for feature '{}': applicationName='{}', releaseName='{}', namespace='{}'. " +
+					"Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.",
+				featureName,
 				repoName,
 				releaseName,
 				namespace
@@ -113,11 +115,11 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			releaseName: releaseName
 		]
 
-		if (isScmManager) {
-			/*
-			 * SCM-Manager is a bootstrap component.
-			 * It must not reference values from the SCM repository that it deploys itself.
-			 */
+		if (bootstrapDeploymentRequired) {
+			log.debug(
+				"Embedding Helm values for bootstrap feature '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
+				featureName
+			)
 			helmConfig.values = inlineValues
 		} else {
 			helmConfig.valueFiles = [
@@ -198,5 +200,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 				break
 			default: throw new RuntimeException("Repo type ${repoType} not implemented for ${this.class.simpleName}")
 		}
+	}
+
+	private boolean requiresBootstrapDeployment(String featureName) {
+		return featureName == 'scm-manager'
 	}
 }
