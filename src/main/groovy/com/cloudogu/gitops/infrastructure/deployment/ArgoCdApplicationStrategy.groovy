@@ -45,7 +45,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		clusterResourcesRepo.cloneRepo()
 
 		String project = "cluster-resources"
-		String namespaceName = "${namePrefix}argocd"
+		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
 		String featureName = repoName
 		//DedicatedInstances
 		if (config.multiTenant.useDedicatedInstance) {

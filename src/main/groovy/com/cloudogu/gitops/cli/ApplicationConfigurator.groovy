@@ -19,7 +19,10 @@ class ApplicationConfigurator {
 	Config initConfig(Config newConfig) {
 
 		addAdditionalApplicationConfig(newConfig)
+
 		addNamePrefix(newConfig)
+
+		checkAndSetNamespaces(newConfig)
 
 		addScmConfig(newConfig)
 
@@ -112,7 +115,7 @@ class ApplicationConfigurator {
 			// We use the K8s service as default name here, because it is the only option:
 			// "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
 			// will not work on Windows and MacOS.
-			newConfig.scm.scmManager.urlForJenkins = "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
+			newConfig.scm.scmManager.urlForJenkins = "http://scmm.${newConfig.application.namePrefix}${newConfig.scm.scmManager.namespace}.svc.cluster.local/scm"
 
 			// More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
 		}
@@ -144,7 +147,8 @@ class ApplicationConfigurator {
 			// We use the K8s service as default name here, because it is the only option:
 			// "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
 			// will not work on Windows and MacOS.
-			newConfig.jenkins.urlForScm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
+			String defaultNamespace = newConfig.jenkins.namespace
+			newConfig.jenkins.urlForScm = "http://jenkins.${newConfig.application.namePrefix}${defaultNamespace}.svc.cluster.local"
 
 			// More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
 		} else {
@@ -302,4 +306,31 @@ class ApplicationConfigurator {
 			throw new RuntimeException(errorMessage, e)
 		}
 	}
+
+	/**
+	 * If application.namespace is set, overrides all tool namespaces and content namespaces to use that namespace.	*/
+	void checkAndSetNamespaces(Config config) {
+		// if set, all tools have use this namespace
+		if (config.application.namespace) {
+			String namespace = config.application.namespace
+			// gop config
+			config.application.gopNamespace = namespace
+			// startup tools
+			config.registry.namespace = namespace
+			config.jenkins.namespace = namespace
+			config.scm.scmManager.namespace = namespace
+			// all tools
+			config.features.argocd.namespace = namespace
+			config.features.monitoring.namespace = namespace
+			config.features.secrets.namespace = namespace
+			config.features.ingress.ingressNamespace = namespace
+			config.features.certManager.namespace = namespace
+			// remove all namespaces by contentLoad and replace with given ns
+			config.content.namespaces.clear()
+			// content loader do not care about prefix like tools, thats why its needed here.
+			String contentNamespace = config.application.namePrefix + namespace
+			config.content.namespaces.add(contentNamespace)
+		}
+	}
+
 }

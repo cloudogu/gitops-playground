@@ -2,13 +2,14 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -36,7 +37,7 @@ class CertManagerTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@Mock
-	DeploymentStrategy deploymentStrategy
+	Deployer deploymentStrategy
 	@Mock
 	AirGappedUtils airGappedUtils
 	@Mock
@@ -50,7 +51,7 @@ class CertManagerTest {
 
 		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
 			'cert-manager', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.HELM)
+				'cert-manager', temporaryYamlFile, RepoType.HELM, false)
 	}
 
 	@Test
@@ -67,8 +68,8 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
-		createCertManager().install()
-		assertThat(temporaryYamlFile).isNull()
+		boolean enabled = createCertManager().install()
+		assertFalse(enabled)
 	}
 
 	@Test
@@ -99,7 +100,7 @@ class CertManagerTest {
 		// important check: scmmRepoUrl is overridden with our values.
 		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
 			'cert-manager', '.', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.GIT)
+				'cert-manager', temporaryYamlFile, RepoType.GIT, false)
 	}
 
 	@Test

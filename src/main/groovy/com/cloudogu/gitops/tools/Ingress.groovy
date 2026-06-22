@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
@@ -19,7 +19,7 @@ import groovy.util.logging.Slf4j
 @Order(150)
 class Ingress extends Tool implements ToolWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/values.ftl.yaml"
 
 	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	Config config
@@ -27,7 +27,7 @@ class Ingress extends Tool implements ToolWithImage {
 
 	Ingress(Config config,
 		FileSystemUtils fileSystemUtils,
-		DeploymentStrategy deployer,
+		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {

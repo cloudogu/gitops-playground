@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
@@ -22,14 +22,14 @@ class Vault extends Tool implements ToolWithImage {
 	static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh"
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}secrets"
+	String namespace
 	Config config
 	K8sClient k8sClient
 
 	Vault(Config config,
 		FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
-		DeploymentStrategy deployer,
+		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
@@ -38,6 +38,7 @@ class Vault extends Tool implements ToolWithImage {
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
 	}
 
 	@Override

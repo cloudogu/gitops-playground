@@ -3,13 +3,14 @@ package com.cloudogu.gitops.tools.core
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
@@ -21,11 +22,10 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(70)
+@Order(20)
 class Jenkins extends Tool {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
-
+	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"
 	String namespace
 	private Config config
 	private CommandExecutor commandExecutor
@@ -43,9 +43,10 @@ class Jenkins extends Tool {
 		JobManager jobManager,
 		UserManager userManager,
 		PrometheusConfigurator prometheusConfigurator,
-		HelmStrategy deployer,
+		Deployer deployer,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
+		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.config = config
 		this.commandExecutor = commandExecutor
@@ -57,10 +58,11 @@ class Jenkins extends Tool {
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
+		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 
 		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}jenkins"
+			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
 		}
 	}
 
@@ -79,33 +81,37 @@ class Jenkins extends Tool {
 			// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
 			// Remove first (in case new nodes were added)
 			k8sClient.labelRemove('node', '--all', '', 'node')
-			def nodeName = k8sClient.waitForNode().replace('node/', '')
+			String nodeName = k8sClient.waitForNode().replace('node/', '')
 			k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
 
 			k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
 				new Tuple2('jenkins-admin-user', config.jenkins.username),
 				new Tuple2('jenkins-admin-password', config.jenkins.password))
 
-			def helmConfig = config.jenkins.helm
+			Config.HelmConfigWithValues helmConfig = config.jenkins.helm
 			String releaseName = "jenkins"
 			addHelmValuesData("dockerGid", findDockerGid())
 
-			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config)
+			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config, true)
 
 			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 			String serviceName = releaseName
 			// Update jenkins.url after it is deployed (and ports are known)
 			if (config.application.runningInsideK8s) {
-				log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
-				config.jenkins.url = networkingUtils.createUrl("${serviceName}.${namespace}.svc.cluster.local", "80")
+				log.debug('Setting jenkins url to k8s service, since installation is running inside k8s')
+				config.jenkins.url = networkingUtils.createUrl(serviceName + '.' + namespace + '.svc.cluster.local', '80')
 			} else {
-				log.debug("Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...")
-				def port = k8sClient.waitForNodePort(serviceName, namespace)
+				log.debug('Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...')
+				String port = k8sClient.waitForNodePort(serviceName, namespace)
 				String clusterBindAddress = networkingUtils.findClusterBindAddress()
 				config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
 			}
-		}
 
+		}
+		runSetupScript()
+	}
+
+	private void runSetupScript() {
 		commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [TRACE                     : config.application.trace,
 		                                                                                       INTERNAL_JENKINS          : config.jenkins.internal,
 		                                                                                       JENKINS_HELM_CHART_VERSION: config.jenkins.helm.version,
@@ -120,7 +126,7 @@ class Jenkins extends Tool {
 		                                                                                       NAME_PREFIX               : config.application.namePrefix,
 		                                                                                       INSECURE                  : config.application.insecure,
 		                                                                                       SKIP_RESTART              : config.jenkins.skipRestart,
-		                                                                                       SKIP_PLUGINS              : config.jenkins.skipPlugins])
+		                                                                                       SKIP_PLUGINS: config.jenkins.skipPlugins,])
 
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL", this.gitHandler.tenant.repoPrefix())
@@ -162,7 +168,6 @@ class Jenkins extends Tool {
 			// And external Jenkins can likely not be monitored
 			prometheusConfigurator.enableAuthentication()
 		}
-
 	}
 
 	void createJenkinsjob(String namespace, String repoName) {

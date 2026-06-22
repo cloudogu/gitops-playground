@@ -4,7 +4,7 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
@@ -20,7 +20,7 @@ import freemarker.template.DefaultObjectWrapperBuilder
 /**
  * A single tool to be deployed by GOP.
  *
- * Typically, this is a helm chart (see {@link DeploymentStrategy} and
+ * Typically, this is a helm chart (see {@link com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy} and
  * {@code downloadHelmCharts.sh}) with its own section in the config
  * (see {@link com.cloudogu.gitops.config.schema.Schema#features}).<br/><br/>
  *
@@ -45,7 +45,7 @@ import freemarker.template.DefaultObjectWrapperBuilder
 abstract class Tool {
 
 	protected FileSystemUtils fileSystemUtils
-	protected DeploymentStrategy deployer
+	protected Deployer deployer
 	protected AirGappedUtils airGappedUtils
 	protected GitHandler gitHandler
 	protected Map<String, Object> helmValuesTemplateData = [:]
@@ -63,6 +63,7 @@ abstract class Tool {
 			}
 
 			enable()
+			log.info("Tool installed: ${getClass().getSimpleName()}")
 			return true
 		} else {
 			log.debug("Feature ${getClass().getSimpleName()} is disabled")
@@ -94,7 +95,8 @@ abstract class Tool {
 		String namespace,
 		Config.HelmConfigWithValues helmConfig,
 		String helmValuesTemplatePath,
-		Config config) {
+		Config config,
+		boolean initByHelm = false) {
 		String repoURL = helmConfig.repoURL
 		String chartOrPath = helmConfig.chart
 		String version = helmConfig.version
@@ -129,8 +131,7 @@ abstract class Tool {
 			chartOrPath = '.'
 			repoType = RepoType.GIT
 			version = new YamlSlurper()
-				.parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-					'Chart.yaml'))['version']
+				.parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}", 'Chart.yaml'))['version']
 		}
 
 		log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
@@ -143,7 +144,8 @@ abstract class Tool {
 			namespace,
 			releaseName,
 			tempValuesPath,
-			repoType)
+			repoType,
+			initByHelm)
 	}
 
 	abstract boolean isEnabled()

@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.utils.MapUtils
 
 import jakarta.inject.Singleton
 import groovy.io.FileType
 import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
 import groovy.transform.TypeCheckingMode
@@ -18,6 +20,10 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.dsl.base.PatchContext
 import io.fabric8.kubernetes.client.dsl.base.PatchType
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext
+import io.fabric8.kubernetes.client.utils.Serialization
+import io.fabric8.openshift.api.model.Project
+import io.fabric8.openshift.api.model.ProjectBuilder
+import io.fabric8.openshift.client.OpenShiftClient
 
 /**
  * Kubernetes client using Fabric8 Kubernetes Client.*/
@@ -47,8 +53,9 @@ class K8sClient {
 	protected int DEFAULT_RETRIES = 120
 
 	KubernetesClient client
+	com.cloudogu.gitops.config.Config gopConfig
 
-	K8sClient() {
+	K8sClient(com.cloudogu.gitops.config.Config gopConfig = null) {
 		Config config = new ConfigBuilder()
 			.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
 			.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
@@ -57,7 +64,8 @@ class K8sClient {
 		this.client = new KubernetesClientBuilder()
 			.withConfig(config)
 			.build()
-
+		/* OpenShift client includes Kubernetes client APIs. */
+		this.gopConfig = gopConfig
 	}
 
 	// ========================================
@@ -247,17 +255,32 @@ class K8sClient {
 		if (!namespaceExists(name)) {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
-			Namespace namespace = new NamespaceBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.endMetadata()
-				.build()
+			if (runInOpenshift()) {
+				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
 
-			executeWithErrorHandling("create namespace ${name}") {
-				client.namespaces().resource(namespace).create()
+				Project project = new ProjectBuilder()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build()
+				executeWithErrorHandling("create project ${name}") {
+					osClient.projects().resource(project).create()
+				}
+				log.debug("Project ${name} created successfully.")
+			} else {
+
+				Namespace namespace = new NamespaceBuilder()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build()
+
+				executeWithErrorHandling("create namespace ${name}") {
+					client.namespaces().resource(namespace).create()
+				}
+
+				log.debug("Namespace ${name} created successfully.")
 			}
-
-			log.debug("Namespace ${name} created successfully.")
 		}
 	}
 
@@ -541,7 +564,9 @@ class K8sClient {
 			yamlFiles = yamlFiles.sort { it.absolutePath }
 
 			int appliedResources = 0
-			yamlFiles.each { File file -> appliedResources += applyYamlStream(file.newInputStream(), file.absolutePath)
+			yamlFiles.each { File file ->
+				appliedResources += applyYamlStream(file.newInputStream(),
+					file.absolutePath)
 			}
 
 			return "Applied ${appliedResources} resource(s) from directory $yamlLocation"
@@ -721,17 +746,19 @@ class K8sClient {
 	 * @param name The name of the pod
 	 * @param image The container image
 	 * @param namespace The namespace (defaults to "default")
-	 * @param overrides Additional pod spec overrides (not yet fully implemented)
+	 * @param overrides Additional pod overrides
 	 * @param params Additional parameters
-	 * @return A message indicating the pod was created
+	 * @return Either a creation message or the pod logs (when -i/-it/-ti/--rm is used)
 	 */
 	String run(String name, String image, String namespace = '', Map overrides = [:], String... params) {
 		log.debug("Running pod $name with image $image in namespace $namespace")
+		String resolvedNamespace = resolveNamespace(namespace)
+		List<String> runParams = params ? params.toList() : []
 
 		Pod pod = new PodBuilder()
 			.withNewMetadata()
 			.withName(name)
-			.withNamespace(resolveNamespace(namespace))
+			.withNamespace(resolvedNamespace)
 			.endMetadata()
 			.withNewSpec()
 			.addNewContainer()
@@ -741,19 +768,25 @@ class K8sClient {
 			.endSpec()
 			.build()
 
+		applyRunParams(pod, runParams)
+
 		if (overrides) {
 			log.debug("Applying overrides: $overrides")
-			// TODO: Implement deep merge of overrides
+			pod = applyPodOverrides(pod, overrides)
 		}
 
 		Pod createdPod = executeWithErrorHandling("run pod $name") {
 			client.pods()
-				.inNamespace(resolveNamespace(namespace))
+				.inNamespace(resolvedNamespace)
 				.resource(pod)
 				.create()
 		}
 
 		log.debug("Pod $name created successfully")
+		if (shouldReturnPodOutput(runParams)) {
+			return collectPodRunOutput(createdPod.metadata.name, resolvedNamespace, shouldRemovePod(runParams))
+		}
+
 		return "pod/${createdPod.metadata.name} created"
 	}
 
@@ -914,6 +947,88 @@ class K8sClient {
 	void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
 		waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase,
 			DEFAULT_TIMEOUT_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS)
+	}
+
+	private Pod applyPodOverrides(Pod pod, Map overrides) {
+		Map podAsMap = new JsonSlurper().parseText(Serialization.asJson(pod)) as Map
+		Map normalizedOverrides = normalizeOverrideValue(overrides) as Map
+		Map mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap)
+		return Serialization.unmarshal(Serialization.asJson(mergedPod), Pod) as Pod
+	}
+
+	private Object normalizeOverrideValue(Object value) {
+		if (value instanceof CharSequence) {
+			return value.toString()
+		}
+
+		if (value instanceof Map) {
+			return value.collectEntries { key, mapValue -> [(key.toString()): normalizeOverrideValue(mapValue)]
+			}
+		}
+
+		if (value instanceof Collection) {
+			return value.collect { entry -> normalizeOverrideValue(entry) }
+		}
+
+		return value
+	}
+
+	private void applyRunParams(Pod pod, List<String> params) {
+		String restartPolicy = params.find { it.startsWith('--restart=') }?.substring('--restart='.length())
+		if (restartPolicy) {
+			pod.spec.restartPolicy = restartPolicy
+		}
+	}
+
+	private boolean shouldReturnPodOutput(List<String> params) {
+		return params.any { it in ['--rm', '-i', '-it', '-ti'] }
+	}
+
+	private boolean shouldRemovePod(List<String> params) {
+		return params.contains('--rm')
+	}
+
+	private String collectPodRunOutput(String podName, String namespace, boolean removePod) {
+		String phase = null
+		try {
+			phase = waitForPodCompletion(podName, namespace)
+			String logOutput = client.pods()
+				                   .inNamespace(namespace)
+				                   .withName(podName)
+				                   .getLog() ?: ''
+
+			if (phase == 'Failed') {
+				throw new RuntimeException("Pod ${podName} failed:\n${logOutput}")
+			}
+
+			return logOutput
+		} finally {
+			if (removePod) {
+				delete('pod', namespace, podName)
+			}
+		}
+	}
+
+	private String waitForPodCompletion(String podName, String namespace) {
+		int tryCount = 0
+
+		while (tryCount < DEFAULT_RETRIES) {
+			Pod pod = client.pods()
+				.inNamespace(namespace)
+				.withName(podName)
+				.get()
+
+			String phase = pod?.status?.phase
+			if (phase in ['Succeeded', 'Failed']) {
+				return phase
+			}
+
+			tryCount++
+			log.debug("Still waiting for pod/${podName} to complete... (try $tryCount/$DEFAULT_RETRIES)")
+			sleep(SLEEPTIME)
+		}
+
+		throw new RuntimeException("Failed to retrieve completed pod/${podName} after ${DEFAULT_RETRIES} retries")
 	}
 
 	// ========================================
@@ -1209,6 +1324,11 @@ class K8sClient {
 	 */
 	String getCurrentNamespace() {
 		return this.client.getNamespace()
+	}
+
+	private boolean runInOpenshift() {
+		// gopConfig can be null, in tests or at startup
+		return this.gopConfig?.application?.openshift ?: false
 	}
 
 	// ========================================

@@ -2,12 +2,13 @@ package com.cloudogu.gitops.tools
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerMock
@@ -33,7 +34,7 @@ class VaultTest {
 
 	CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
-	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+	Deployer deployer = mock(Deployer)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 	Path temporaryYamlFile
@@ -50,8 +51,8 @@ class VaultTest {
 	@Test
 	void 'is disabled via active flag'() {
 		config.features.secrets.active = false
-		createVault().install()
-		assertThat(helmCommands.actualCommands).isEmpty()
+		boolean enabled = createVault().install()
+		assertFalse(enabled)
 	}
 
 	@Test
@@ -153,14 +154,15 @@ class VaultTest {
 			version: '42.23.0')
 		createVault().install()
 
-		verify(deploymentStrategy).deployFeature('https://vault-reg',
+		verify(deployer).deployFeature('https://vault-reg',
 			'vault',
 			'vault',
 			'42.23.0',
 			'foo-secrets',
 			'vault',
 			temporaryYamlFile,
-			RepoType.HELM)
+			RepoType.HELM,
+			false)
 
 		assertThat(parseActualYaml()).doesNotContainKey('global')
 	}
@@ -190,9 +192,9 @@ class VaultTest {
 		assertThat(helmConfig.value.chart).isEqualTo('vault')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
 		assertThat(helmConfig.value.version).isEqualTo('42.23.0')
-		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
+		verify(deployer).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
 			'vault', '.', '1.2.3', 'foo-secrets',
-			'vault', temporaryYamlFile, RepoType.GIT)
+			'vault', temporaryYamlFile, RepoType.GIT, false)
 	}
 
 	@Test
@@ -227,7 +229,7 @@ class VaultTest {
 				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, k8sClient, deploymentStrategy, airGappedUtils, gitHandler)
+		}, k8sClient, deployer, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

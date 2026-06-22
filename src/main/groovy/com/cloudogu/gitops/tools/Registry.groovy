@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import io.micronaut.core.annotation.Order
@@ -13,7 +14,7 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(80)
+@Order(30)
 class Registry extends Tool {
 
 	/**
@@ -27,15 +28,17 @@ class Registry extends Tool {
 	Registry(Config config,
 		FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
 		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
-		HelmStrategy deployer) {
+		Deployer deployer) {
 		this.deployer = deployer
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
+		this.airGappedUtils = airGappedUtils
 
 		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}registry"
+			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
 		}
 	}
 
@@ -52,7 +55,7 @@ class Registry extends Tool {
 			                              type    : 'NodePort'])
 
 			def helmConfig = config.registry.helm
-			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config)
+			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config, true)
 
 			if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
 				/* Add additional node port

@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.integration.features
+package com.cloudogu.gitops.integration.tools
 
 import com.cloudogu.gitops.integration.TestK8sHelper
 

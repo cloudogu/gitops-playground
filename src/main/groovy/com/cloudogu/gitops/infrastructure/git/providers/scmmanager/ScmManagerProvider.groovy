@@ -17,7 +17,7 @@ import groovy.util.logging.Slf4j
 import retrofit2.Response
 
 @Slf4j
-class ScmManager implements GitProvider {
+class ScmManagerProvider implements GitProvider {
 
 	ScmManagerUrlResolver urls
 	ScmManagerApiClient apiClient
@@ -27,10 +27,10 @@ class ScmManager implements GitProvider {
 	K8sClient k8sClient
 	Config config
 
-	ScmManager(Config config,
-		ScmManagerConfig scmmConfig,
-		K8sClient k8sClient,
-		NetworkingUtils networkingUtils) {
+	ScmManagerProvider(Config config,
+			ScmManagerConfig scmmConfig,
+			K8sClient k8sClient,
+			NetworkingUtils networkingUtils) {
 		this.scmmConfig = scmmConfig
 		this.config = config
 		this.k8sClient = k8sClient
@@ -80,22 +80,22 @@ class ScmManager implements GitProvider {
 
 	@Override
 	Credentials getCredentials() {
-		this.scmmConfig.credentials
+		return this.scmmConfig.credentials
 	}
 
 	@Override
 	String getGitOpsUsername() {
-		scmmConfig.gitOpsUsername
+		return scmmConfig.gitOpsUsername
 	}
 
 	@Override
 	String getUrl() {
-		urls.inClusterBase().toString()
+		return urls.inClusterBase().toString()
 	}
 
 	@Override
 	String repoPrefix() {
-		urls.inClusterRepoPrefix()
+		return urls.inClusterRepoPrefix()
 	}
 
 	@Override
@@ -112,17 +112,17 @@ class ScmManager implements GitProvider {
 
 	@Override
 	String getProtocol() {
-		urls.inClusterBase().scheme
+		return urls.inClusterBase().scheme
 	}
 
 	@Override
 	String getHost() {
-		urls.inClusterBase().host
+		return urls.inClusterBase().host
 	}
 
 	@Override
 	URI prometheusMetricsEndpoint() {
-		urls.prometheusEndpoint()
+		return urls.prometheusEndpoint()
 	}
 
 	@Override
@@ -173,10 +173,12 @@ class ScmManager implements GitProvider {
 		return true
 	}
 
-	ScmManager(Config config,
-		ScmManagerConfig scmmConfig,
-		ScmManagerUrlResolver urls,
-		ScmManagerApiClient apiClient) {
+	/**
+	 * Test-only constructor.*/
+	ScmManagerProvider(Config config,
+			ScmManagerConfig scmmConfig,
+			ScmManagerUrlResolver urls,
+			ScmManagerApiClient apiClient) {
 		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
 		this.config = Objects.requireNonNull(config, "config must not be null")
 		this.urls = Objects.requireNonNull(urls, "urls must not be null")

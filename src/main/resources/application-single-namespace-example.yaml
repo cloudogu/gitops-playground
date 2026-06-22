@@ -2,6 +2,7 @@
 application:
   "yes": true
   baseUrl: http://localhost
+  namespace: single-namespace
 features:
   argocd:
     active: true
@@ -36,15 +37,15 @@ content:
       overwriteMode: UPGRADE
       createJenkinsJob: true
     - url: https://github.com/cloudogu/gitops-examples
-      path: example-apps-via-content-loader/
+      path: single-namespace/
       ref: main
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE
 
   namespaces:
-    - ${config.application.namePrefix}example-apps-production
-    - ${config.application.namePrefix}example-apps-staging
+    - ${config.application.namePrefix}${config.application.namespace}
+
   variables:
     petclinic:
       baseDomain: "petclinic.localhost"
@@ -54,5 +55,5 @@ content:
       kubeval: "ghcr.io/cloudogu/helm:latest"
       helmKubeval: "ghcr.io/cloudogu/helm:latest"
       yamllint: "cytopia/yamllint:1.25-0.7"
-      petclinic: "eclipse-temurin:17-jre-alpine"
+      petclinic: "eclipse-temurin:17-jre"
       maven: ""

@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -29,7 +29,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
-	String namespace = "${config.application.namePrefix}monitoring"
+	String namespace
 	Config config
 	K8sClient k8sClient
 
@@ -37,7 +37,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	Monitoring(Config config,
 		FileSystemUtils fileSystemUtils,
-		DeploymentStrategy deployer,
+		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitRepoFactory scmRepoProvider,
@@ -49,6 +49,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		this.airGappedUtils = airGappedUtils
 		this.scmRepoProvider = scmRepoProvider
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 	}
 
 	@Override
@@ -162,7 +163,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	private static URI baseUriJenkins(Config config) {
 		if (config.jenkins.internal) {
-			return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+			return new URI("http://jenkins.${config.application.namePrefix}${config.jenkins.namespace}.svc.cluster.local/")
 		}
 		def urlString = config.jenkins?.url?.strip() ?: ""
 		if (!urlString) {
@@ -186,7 +187,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		String dashboardRoot = "${repoRoot}/apps/prometheusstack/misc/dashboard"
+		String dashboardRoot = "${repoRoot}/apps/monitoring/misc/dashboard"
 
 		if (!config.features.ingress.active) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")

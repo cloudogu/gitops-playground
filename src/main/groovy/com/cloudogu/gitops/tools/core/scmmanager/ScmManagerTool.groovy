@@ -6,7 +6,7 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
-import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -56,7 +56,7 @@ class ScmManagerTool extends Tool {
 
 		prepareWorkspace(workspace)
 
-		ScmManager scmManager = getTenantScmManager()
+		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(config,
 			config.scm.scmManager,
@@ -83,11 +83,11 @@ class ScmManagerTool extends Tool {
 			targetDir)
 	}
 
-	private ScmManager getTenantScmManager() {
-		if (!(gitHandler.tenant instanceof ScmManager)) {
+	private ScmManagerProvider getTenantScmManager() {
+		if (!(gitHandler.tenant instanceof ScmManagerProvider)) {
 			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: ${gitHandler.tenant?.class?.simpleName}")
 		}
 
-		return gitHandler.tenant as ScmManager
+		return gitHandler.tenant as ScmManagerProvider
 	}
 }

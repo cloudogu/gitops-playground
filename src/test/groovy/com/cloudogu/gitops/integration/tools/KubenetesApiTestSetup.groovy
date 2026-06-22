@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.integration.features
+package com.cloudogu.gitops.integration.tools
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail

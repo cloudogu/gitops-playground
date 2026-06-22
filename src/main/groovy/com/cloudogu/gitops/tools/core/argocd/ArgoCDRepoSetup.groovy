@@ -123,13 +123,13 @@ class ArgoCDRepoSetup {
 		if (config.features.ingress.active) {
 			clusterResourceSubDirs.add(RepoLayout.ingressSubdirRel())
 		}
-		if (config.jenkins.active) {
+		if (config.jenkins.internal) {
 			clusterResourceSubDirs.add(RepoLayout.jenkinsSubdirRel())
 		}
 		if (config.features.monitoring.active) {
 			clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
 		}
-		if (config.scm.scmManager?.url) {
+		if (config.scm.scmManager?.internal) {
 			clusterResourceSubDirs.add(RepoLayout.scmManagerSubdirRel())
 		}
 		if (config.features.secrets.active) {

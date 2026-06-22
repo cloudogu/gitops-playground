@@ -3,15 +3,18 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.json.JsonSlurper
 
 import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import io.fabric8.openshift.api.model.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -362,6 +365,68 @@ class K8sClientTest {
 	}
 
 	@Test
+	void 'createNamespace creates OpenShift project when openshift config is enabled'() {
+		// Given
+		Config config = Config.fromMap([application: [openshift: true]])
+		k8sApiClient.gopConfig = config
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/test-project")
+			.andReturn(404, "")
+			.once()
+
+		server.expect()
+			.post()
+			.withPath("/apis/project.openshift.io/v1/projects")
+			.andReturn(201, new ProjectBuilder()
+				.withNewMetadata()
+				.withName("test-project")
+				.endMetadata()
+				.build())
+			.once()
+
+		// When
+		k8sApiClient.createNamespace("test-project")
+
+		// Then
+		def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+		assertThat(requestBody["kind"]).isEqualTo("Project")
+		assertThat(requestBody["metadata"]["name"]).isEqualTo("test-project")
+	}
+
+	@Test
+	void 'createNamespace creates Kubernetes namespace when openshift config is disabled'() {
+		// Given
+		Config config = Config.fromMap([application: [openshift: false]])
+		k8sApiClient.gopConfig = config
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/test-ns")
+			.andReturn(404, "")
+			.once()
+
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces")
+			.andReturn(201, new NamespaceBuilder()
+				.withNewMetadata()
+				.withName("test-ns")
+				.endMetadata()
+				.build())
+			.once()
+
+		// When
+		k8sApiClient.createNamespace("test-ns")
+
+		// Then
+		def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+		assertThat(requestBody["kind"]).isEqualTo("Namespace")
+		assertThat(requestBody["metadata"]["name"]).isEqualTo("test-ns")
+	}
+
+	@Test
 	void 'createNamespace does not create existing namespace'() {
 		// Given
 		def namespace = new NamespaceBuilder()
@@ -379,7 +444,65 @@ class K8sClientTest {
 		// When
 		k8sApiClient.createNamespace("test-ns")
 
-		// Then - No POST request should be made
+		// Then
+		assertThat(server.getLastRequest().method).isEqualTo("GET")
+		assertThat(server.getLastRequest().path).isEqualTo("/api/v1/namespaces/test-ns")
+	}
+
+	@Test
+	void 'createNamespace creates Kubernetes namespace when config is null'() {
+		// Given
+		k8sApiClient.gopConfig = null
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/test-ns")
+			.andReturn(404, "")
+			.once()
+
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces")
+			.andReturn(201, new NamespaceBuilder()
+				.withNewMetadata()
+				.withName("test-ns")
+				.endMetadata()
+				.build())
+			.once()
+
+		// When
+		k8sApiClient.createNamespace("test-ns")
+
+		// Then
+		def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+		assertThat(requestBody["kind"]).isEqualTo("Namespace")
+		assertThat(requestBody["metadata"]["name"]).isEqualTo("test-ns")
+	}
+
+	@Test
+	void 'createNamespace does not create OpenShift project when namespace already exists'() {
+		// Given
+		Config config = Config.fromMap([application: [openshift: true]])
+		k8sApiClient.gopConfig = config
+
+		def namespace = new NamespaceBuilder()
+			.withNewMetadata()
+			.withName("existing-project")
+			.endMetadata()
+			.build()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/existing-project")
+			.andReturn(200, namespace)
+			.once()
+
+		// When
+		k8sApiClient.createNamespace("existing-project")
+
+		// Then
+		assertThat(server.getLastRequest().method).isEqualTo("GET")
+		assertThat(server.getLastRequest().path).isEqualTo("/api/v1/namespaces/existing-project")
 	}
 
 	@Test
@@ -868,6 +991,116 @@ metadata:
 
 		// Then
 		assertThat(result).contains("pod/test-pod created")
+	}
+
+	@Test
+	void 'run applies pod overrides instead of generated parameter values'() {
+		// Given
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces/jenkins/pods")
+			.andReturn(201, new PodBuilder()
+				.withNewMetadata()
+				.withName("test-pod")
+				.endMetadata()
+				.build())
+			.once()
+
+		String overrideImage = "bash:42"
+		Map overrides = [spec: [containers  : [[name        : "override-container",
+		                                        image       : "${overrideImage}",
+		                                        args        : ["cat", "/etc/group"],
+		                                        volumeMounts: [[name: "group", mountPath: "/etc/group", readOnly: true]]]],
+		                        nodeSelector: [node: "jenkins"],
+		                        volumes     : [[name: "group", hostPath: [path: "/etc/group"]]]]]
+
+		// When
+		k8sApiClient.run("test-pod", "nginx:latest", "jenkins", overrides)
+
+		// Then
+		def requestBody = new JsonSlurper().parseText(server.getLastRequest().getUtf8Body()) as Map
+		assertThat(requestBody["metadata"]["name"]).isEqualTo("test-pod")
+		assertThat(requestBody["metadata"]["namespace"]).isEqualTo("jenkins")
+		assertThat(requestBody["spec"]["nodeSelector"]["node"]).isEqualTo("jenkins")
+
+		List containers = requestBody["spec"]["containers"] as List
+		assertThat(containers).hasSize(1)
+		Map container = containers[0] as Map
+		assertThat(container["name"]).isEqualTo("override-container")
+		assertThat(container["image"]).isEqualTo("bash:42")
+		assertThat(container["args"] as List).containsExactly("cat", "/etc/group")
+
+		List volumeMounts = container["volumeMounts"] as List
+		Map volumeMount = volumeMounts[0] as Map
+		assertThat(volumeMount["mountPath"]).isEqualTo("/etc/group")
+		assertThat(volumeMount["readOnly"]).isEqualTo(true)
+
+		List volumes = requestBody["spec"]["volumes"] as List
+		Map volume = volumes[0] as Map
+		assertThat((volume["hostPath"] as Map)["path"]).isEqualTo("/etc/group")
+	}
+
+	@Test
+	void 'run returns pod logs and removes pod for interactive rm mode'() {
+		// Given
+		server.expect()
+			.post()
+			.withPath("/api/v1/namespaces/jenkins/pods")
+			.andReturn(201, new PodBuilder()
+				.withNewMetadata()
+				.withName("gid-pod")
+				.endMetadata()
+				.build())
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+			.andReturn(200, new PodBuilder()
+				.withNewMetadata()
+				.withName("gid-pod")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Succeeded")
+				.endStatus()
+				.build())
+			.once()
+
+		def succeededPod = new PodBuilder()
+			.withNewMetadata()
+			.withName("gid-pod")
+			.endMetadata()
+			.withNewStatus()
+			.withPhase("Succeeded")
+			.endStatus()
+			.build()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods?fieldSelector=metadata.name%3Dgid-pod")
+			.andReturn(200, new PodListBuilder().withItems(succeededPod).build())
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod/log?pretty=false")
+			.andReturn(200, "root:x:0:\ndocker:x:42:\n")
+			.once()
+
+		server.expect()
+			.delete()
+			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+			.andReturn(200, new StatusBuilder().build())
+			.once()
+
+		// When
+		String result = k8sApiClient.run("gid-pod", "bash:42", "jenkins", [:], "--restart=Never", "-ti", "--rm", "--quiet")
+
+		// Then
+		assertThat(result).isEqualTo("root:x:0:\ndocker:x:42:\n")
+
+		def createRequest = new JsonSlurper().parseText(server.takeRequest().getUtf8Body()) as Map
+		assertThat(createRequest["spec"]["restartPolicy"]).isEqualTo("Never")
 	}
 
 	// ========================================

@@ -8,7 +8,7 @@ import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -73,10 +73,10 @@ class ApplicationConfiguratorTest {
 		HelmClient helmClient = Mockito.mock(HelmClient)
 		GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
 
-		DeploymentStrategy deploymentStrategy = Mockito.mock(DeploymentStrategy)
+		Deployer deployer = Mockito.mock(Deployer)
 
 		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
-		featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deploymentStrategy))
+		featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
 		featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
 	}
 
@@ -543,6 +543,68 @@ class ApplicationConfiguratorTest {
 			}
 
 		assertThat(testLogger.getLogs().search("Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port")).isNotEmpty()
+	}
+
+	@Test
+	void "sets all tool namespaces to application namespace when configured"() {
+		Config config = minimalConfig()
+		config.application.namespace = 'platform'
+		config.application.namePrefix = 'tenant-a'
+
+		config.application.gopNamespace = 'custom-gop'
+		config.registry.namespace = 'custom-registry'
+		config.jenkins.namespace = 'custom-jenkins'
+		config.scm.scmManager.namespace = 'custom-scm'
+		config.features.argocd.namespace = 'custom-argocd'
+		config.features.monitoring.namespace = 'custom-monitoring'
+		config.features.secrets.namespace = 'custom-secrets'
+		config.features.ingress.ingressNamespace = 'custom-ingress'
+		config.features.certManager.namespace = 'custom-cert-manager'
+		config.content.namespaces = ['old-namespace', 'another-namespace']
+
+		Config actualConfig = applicationConfigurator.initConfig(config)
+
+		assertThat(actualConfig.application.gopNamespace).isEqualTo('platform')
+		assertThat(actualConfig.registry.namespace).isEqualTo('platform')
+		assertThat(actualConfig.jenkins.namespace).isEqualTo('platform')
+		assertThat(actualConfig.scm.scmManager.namespace).isEqualTo('platform')
+		assertThat(actualConfig.features.argocd.namespace).isEqualTo('platform')
+		assertThat(actualConfig.features.monitoring.namespace).isEqualTo('platform')
+		assertThat(actualConfig.features.secrets.namespace).isEqualTo('platform')
+		assertThat(actualConfig.features.ingress.ingressNamespace).isEqualTo('platform')
+		assertThat(actualConfig.features.certManager.namespace).isEqualTo('platform')
+		assertThat(actualConfig.content.namespaces).containsExactly('tenant-a-platform')
+	}
+
+	@Test
+	void "keeps individual tool namespaces when application namespace is not configured"() {
+		Config config = minimalConfig()
+		config.application.namespace = ''
+		config.application.namePrefix = 'tenant-a'
+
+		config.application.gopNamespace = 'custom-gop'
+		config.registry.namespace = 'custom-registry'
+		config.jenkins.namespace = 'custom-jenkins'
+		config.scm.scmManager.namespace = 'custom-scm'
+		config.features.argocd.namespace = 'custom-argocd'
+		config.features.monitoring.namespace = 'custom-monitoring'
+		config.features.secrets.namespace = 'custom-secrets'
+		config.features.ingress.ingressNamespace = 'custom-ingress'
+		config.features.certManager.namespace = 'custom-cert-manager'
+		config.content.namespaces = ['old-namespace', 'another-namespace']
+
+		Config actualConfig = applicationConfigurator.initConfig(config)
+
+		assertThat(actualConfig.application.gopNamespace).isEqualTo('custom-gop')
+		assertThat(actualConfig.registry.namespace).isEqualTo('custom-registry')
+		assertThat(actualConfig.jenkins.namespace).isEqualTo('custom-jenkins')
+		assertThat(actualConfig.scm.scmManager.namespace).isEqualTo('custom-scm')
+		assertThat(actualConfig.features.argocd.namespace).isEqualTo('custom-argocd')
+		assertThat(actualConfig.features.monitoring.namespace).isEqualTo('custom-monitoring')
+		assertThat(actualConfig.features.secrets.namespace).isEqualTo('custom-secrets')
+		assertThat(actualConfig.features.ingress.ingressNamespace).isEqualTo('custom-ingress')
+		assertThat(actualConfig.features.certManager.namespace).isEqualTo('custom-cert-manager')
+		assertThat(actualConfig.content.namespaces).containsExactly('old-namespace', 'another-namespace')
 	}
 
 	List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {

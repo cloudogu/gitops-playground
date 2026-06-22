@@ -28,7 +28,6 @@ class ArgoCD extends Tool {
 	private final Config config
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
-	private final FileSystemUtils fileSystemUtils
 	private final GitRepoFactory repoProvider
 	private final GitHandler gitHandler
 	private final String password
@@ -185,7 +184,6 @@ class ArgoCD extends Tool {
 	}
 
 	private void deployWithHelm() {
-
 		// Install umbrella chart from argocd/argocd
 		String umbrellaChartPath = clusterResourcesRepo.helmDir()
 		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -200,7 +198,6 @@ class ArgoCD extends Tool {
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 		k8sClient.patch('secret', 'argocd-secret', namespace,
 			[stringData: ['admin.password': bcryptArgoCDPassword]])
-
 	}
 
 	// The ArgoCD instance installed via an operator only manages its deployment namespace.

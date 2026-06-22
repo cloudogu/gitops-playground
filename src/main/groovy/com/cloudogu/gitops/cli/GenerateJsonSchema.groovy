@@ -58,8 +58,8 @@ class GenerateJsonSchema {
 		// Table of contents
 		md << '## Table of Contents\n\n'
 		topFields.each { f -> md << "- [${sectionTitle(f.name)}](#${anchor(f.name)})\n" }
-		md << '- [Features](#features)\n'
-		schemaFields(Config.FeaturesSchema).each { f -> md << "  - [${sectionTitle(f.name)}](#feature-${anchor(f.name)})\n"
+		md << '- [Tools](#tools)\n'
+		schemaFields(Config.FeaturesSchema).each { f -> md << "  - [${sectionTitle(f.name)}](#tools-${anchor(f.name)})\n"
 		}
 		md << '\n'
 
@@ -70,12 +70,12 @@ class GenerateJsonSchema {
 			md << buildTable(field.get(config), field.type, field.name)
 		}
 
-		// Features sub-sections
-		md << '## Features\n\n'
-		md << 'Configuration of optional features supported by gitops-playground.\n\n'
+		// Tools sub-sections
+		md << '## Tools\n\n'
+		md << 'Configuration of optional tools supported by gitops-playground.\n\n'
 		schemaFields(Config.FeaturesSchema).each { field ->
 			field.accessible = true
-			md << "### Feature: ${sectionTitle(field.name)}\n\n"
+			md << "### Tool: ${sectionTitle(field.name)}\n\n"
 			md << buildTable(field.get(config.features), field.type, "features.${field.name}")
 		}
 

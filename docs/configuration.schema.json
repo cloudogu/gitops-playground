@@ -82,6 +82,13 @@
           "type" : [ "string", "null" ],
           "description" : "Set name-prefix for repos, jobs, namespaces"
         },
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes."
+        },
         "namespaceIsolation" : {
           "type" : [ "boolean", "null" ],
           "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
@@ -389,6 +396,13 @@
             "issuer" : {
               "type" : [ "string", "null" ],
               "description" : "Sets and enables Cert Manager"
+            },
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for Cert Manager"
             }
           },
           "additionalProperties" : false,
@@ -427,6 +441,13 @@
               },
               "additionalProperties" : false,
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "ingressNamespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for Ingress Controller"
             }
           },
           "additionalProperties" : false,
@@ -516,6 +537,13 @@
               },
               "additionalProperties" : false,
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for monitoring."
             }
           },
           "additionalProperties" : false,
@@ -565,6 +593,13 @@
               },
               "additionalProperties" : false,
               "description" : "Config parameters for the external secrets operator"
+            },
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for secrets."
             },
             "vault" : {
               "type" : [ "object", "null" ],
@@ -654,6 +689,13 @@
         "metricsUsername" : {
           "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set and monitoring enabled"
+        },
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional defines the kubernetes namespace for Jenkins."
         },
         "password" : {
           "type" : [ "string", "null" ],
@@ -766,6 +808,13 @@
         "internalPort" : {
           "type" : [ "integer", "null" ],
           "description" : "Port of registry registry. Ignored when a registry*url params are set"
+        },
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional defines the kubernetes namespace for registry."
         },
         "password" : {
           "type" : [ "string", "null" ],

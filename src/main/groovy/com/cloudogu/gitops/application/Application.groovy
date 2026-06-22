@@ -40,6 +40,7 @@ class Application {
 		log.debug('Starting Application')
 
 		setNamespaceListToConfig(config)
+		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(config)
 
 		gitHandler.validate()
@@ -62,7 +63,7 @@ class Application {
 		// Fallback, if run from IDE
 		if (!config.application.gopNamespace.isEmpty()) {
 			// if set, take namespace from configuration
-			namespace = "${config.application.gopNamespace}"
+			namespace = "${config.application.namePrefix}${config.application.gopNamespace}"
 		} else if (this.k8sClient.getCurrentNamespace() != null) {
 			// if gop-namespace not set, take namespace from running GOP
 			namespace = this.k8sClient.getCurrentNamespace()
@@ -70,7 +71,7 @@ class Application {
 		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '${namespace}'")
 		k8sClient.createNamespace(namespace)
 		k8sClient.createSecret('generic', 'gop-configuration', namespace,
-			new Tuple2('gop-initial-password', config.DEFAULT_ADMIN_PW),
+			new Tuple2('gop-initial-password', config.application.password),
 			new Tuple2('gop-config', config.toYaml(true)))
 	}
 

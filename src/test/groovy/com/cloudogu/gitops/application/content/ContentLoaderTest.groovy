@@ -14,7 +14,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
@@ -67,7 +67,7 @@ class ContentLoaderTest {
 	Jenkins jenkins = mock(Jenkins.class)
 	ScmManagerMock scmManagerMock = new ScmManagerMock()
 	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
-	DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+	Deployer deployer = mock(Deployer)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@TempDir
@@ -967,7 +967,7 @@ class ContentLoaderTest {
 	private void assertRegistrySecrets(String regUser, String regPw) {}
 
 	private ContentLoaderForTest createContent(Config config) {
-		new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deploymentStrategy)
+		new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 	}
 
 	private static parseActualYaml(File pathToYamlFile) {
@@ -1025,8 +1025,8 @@ class ContentLoaderTest {
 		CloneCommand cloneSpy
 
 		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
-			DeploymentStrategy deploymentStrategy) {
-			super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deploymentStrategy)
+			Deployer deployer) {
+			super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 		}
 
 		@Override
@@ -1035,13 +1035,15 @@ class ContentLoaderTest {
 			String namespace,
 			Config.HelmConfigWithValues helmConfig,
 			String helmValuesTemplatePath,
-			Config config) {
+			Config config,
+			boolean initByHelm) {
 			deployCalls << new DeployCall(featureName: featureName,
 				releaseName: releaseName,
 				namespace: namespace,
 				helmConfig: helmConfig,
 				valuesPath: helmValuesTemplatePath,
-				config: config)
+				config: config,
+				initByHelm: initByHelm)
 		}
 
 		@Override
@@ -1057,5 +1059,6 @@ class ContentLoaderTest {
 		Config.HelmConfigWithValues helmConfig
 		String valuesPath
 		Config config
+		boolean initByHelm
 	}
 }

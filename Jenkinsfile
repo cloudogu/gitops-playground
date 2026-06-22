@@ -43,7 +43,7 @@ pipeline {
 
             parallel {
 
-                stage("Build CLI") {
+                stage("Unit Test") {
                     agent { docker {
                         image "${env.MAVEN_IMAGE}"
                         args "-v maven-cache:/root/.m2"
@@ -67,6 +67,19 @@ pipeline {
                                             "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
                                             "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
+                        }
+                    }
+                }
+
+                stage("SonarScanner") {
+                    agent { docker {
+                        image "${env.MAVEN_IMAGE}"
+                        args "-v maven-cache:/root/.m2"
+                        reuseNode true
+                    }}
+                    steps {
+                        withSonarQubeEnv('ces-sonar') {
+                            sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                         }
                     }
                 }
@@ -163,7 +176,7 @@ pipeline {
 
                                     if (profile.startsWith('operator')) {
                                         docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh 'apk add --no-cache make bash curl git kubectl && ./scripts/local/install-argocd-operator.sh'
+                                            sh 'apk add --no-cache make bash curl git kubectl && make install-operator'
                                         }
                                     }
 

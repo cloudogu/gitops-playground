@@ -1,44 +1,103 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 import java.nio.file.Path
+import jakarta.inject.Provider
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.InOrder
 
 class DeployerTest {
-	private ArgoCdApplicationStrategy argoCdStrat = mock(ArgoCdApplicationStrategy.class)
-	private HelmStrategy helmStrat = mock(HelmStrategy.class)
 
-	@Test
-	void 'When argocd disabled, deploys imperatively via helm'() {
-		def deployer = createDeployer(false)
+	private Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider
+	private ArgoCdApplicationStrategy argoCdStrategy
+	private HelmStrategy helmStrategy
+	private Path helmValuesPath
+	private Deployer deployer
 
-		deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
+	private static final String REPO_URL = "https://example.com/repo.git"
+	private static final String REPO_NAME = "repo-name"
+	private static final String CHART_OR_PATH = "chart-or-path"
+	private static final String VERSION = "1.2.3"
+	private static final String NAMESPACE = "namespace"
+	private static final String RELEASE_NAME = "release-name"
+	private static final RepoType REPO_TYPE = RepoType.HELM
 
-		verify(argoCdStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
-		verify(helmStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace",
-			"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
+	@BeforeEach
+	void setup() {
+		argoCdStrategyProvider = mock(Provider)
+		argoCdStrategy = mock(ArgoCdApplicationStrategy)
+		helmStrategy = mock(HelmStrategy)
+		helmValuesPath = mock(Path)
+
+		deployer = new Deployer(argoCdStrategyProvider, helmStrategy)
 	}
 
 	@Test
-	void 'When Argo CD enabled, deploys natively via Argo CD'() {
-		def deployer = createDeployer(true)
+	void "deploys via ArgoCD when ArgoCD is enabled and init by Helm is disabled"() {
+		when(argoCdStrategyProvider.get()).thenReturn(argoCdStrategy)
 
-		deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
+		deployFeature(false)
 
-		verify(argoCdStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace",
-			"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
-		verify(helmStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
+		verify(argoCdStrategyProvider).get()
+
+		verify(argoCdStrategy).deployFeature(REPO_URL,
+			REPO_NAME,
+			CHART_OR_PATH,
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			helmValuesPath,
+			REPO_TYPE)
+
+		verifyNoInteractions(helmStrategy)
+		verifyNoMoreInteractions(argoCdStrategyProvider, argoCdStrategy)
 	}
 
-	private Deployer createDeployer(boolean argoCDActive) {
-		Config config = new Config(features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(active: argoCDActive)))
+	@Test
+	void "deploys via Helm before ArgoCD when ArgoCD is enabled and init by Helm is enabled"() {
+		when(argoCdStrategyProvider.get()).thenReturn(argoCdStrategy)
 
-		return new Deployer(config, argoCdStrat, helmStrat)
+		deployFeature(true)
+
+		InOrder inOrder = inOrder(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
+
+		inOrder.verify(helmStrategy).deployFeature(REPO_URL,
+			REPO_NAME,
+			CHART_OR_PATH,
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			helmValuesPath,
+			REPO_TYPE)
+
+		inOrder.verify(argoCdStrategyProvider).get()
+
+		inOrder.verify(argoCdStrategy).deployFeature(REPO_URL,
+			REPO_NAME,
+			CHART_OR_PATH,
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			helmValuesPath,
+			REPO_TYPE)
+
+		verifyNoMoreInteractions(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
+	}
+
+	private void deployFeature(boolean initByHelm) {
+		deployer.deployFeature(REPO_URL,
+			REPO_NAME,
+			CHART_OR_PATH,
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			helmValuesPath,
+			REPO_TYPE,
+			initByHelm)
 	}
 }

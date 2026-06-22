@@ -19,13 +19,13 @@ import org.gitlab4j.api.models.Project
 import org.gitlab4j.api.models.Visibility
 
 @Slf4j
-class Gitlab implements GitProvider {
+class GitlabProvider implements GitProvider {
 
 	private final Config config
 	private final GitLabApi api
 	private GitlabConfig gitlabConfig
 
-	Gitlab(Config config, GitlabConfig gitlabConfig) {
+	GitlabProvider(Config config, GitlabConfig gitlabConfig) {
 		this.config = config
 		this.gitlabConfig = gitlabConfig
 
@@ -279,116 +279,4 @@ class Gitlab implements GitProvider {
 				throw new IllegalArgumentException("Unknown role: ${role}")
 		}
 	}
-
-	//TODO when git abctraction feature is ready, we will create before merge to main a branch, that
-	// contain this code as preservation for oop
-	/*   ================================= SETUP CODE ====================================
-	  void setup() {
-		  log.info("Creating Gitlab Groups")
-		  def mainGroupName = "${config.application.namePrefix}scm".toString()
-		  Group mainSCMGroup = this.gitlabApi.groupApi.getGroup(mainGroupName)
-		  if (!mainSCMGroup) {
-			  def tempGroup = new Group()
-					  .withName(mainGroupName)
-					  .withPath(mainGroupName.toLowerCase())
-					  .withParentId(null)
-
-			  mainSCMGroup = this.gitlabApi.groupApi.addGroup(tempGroup)
-		  }
-
-		  String argoCDGroupName = 'argocd'
-		  Optional<Group> argoCDGroup = getGroup("${mainGroupName}/${argoCDGroupName}")
-		  if (argoCDGroup.isEmpty()) {
-			  def tempGroup = new Group()
-					  .withName(argoCDGroupName)
-					  .withPath(argoCDGroupName.toLowerCase())
-					  .withParentId(mainSCMGroup.id)
-
-			  argoCDGroup = addGroup(tempGroup)
-		  }
-
-		  argoCDGroup.ifPresent(this.&createArgoCDRepos)
-
-		  String dependencysGroupName = '3rd-party-dependencies'
-		  Optional<Group> dependencysGroup = getGroup("${mainGroupName}/${dependencysGroupName}")
-		  if (dependencysGroup.isEmpty()) {
-			  def tempGroup = new Group()
-					  .withName(dependencysGroupName)
-					  .withPath(dependencysGroupName.toLowerCase())
-					  .withParentId(mainSCMGroup.id)
-
-			  addGroup(tempGroup)
-		  }
-
-		  String exercisesGroupName = 'exercises'
-		  Optional<Group> exercisesGroup = getGroup("${mainGroupName}/${exercisesGroupName}")
-		  if (exercisesGroup.isEmpty()) {
-			  def tempGroup = new Group()
-					  .withName(exercisesGroupName)
-					  .withPath(exercisesGroupName.toLowerCase())
-					  .withParentId(mainSCMGroup.id)
-
-			  exercisesGroup = addGroup(tempGroup)
-		  }
-
-		  exercisesGroup.ifPresent(this.&createExercisesRepos)
-	  }
-
-	  void createRepo(String name, String description) {
-		  Optional<Project> project = getProject("${parentGroup.getFullPath()}/${name}".toString())
-		  if (project.isEmpty()) {
-			  Project projectSpec = new Project()
-					  .withName(name)
-					  .withDescription(description)
-					  .withIssuesEnabled(true)
-					  .withMergeRequestsEnabled(true)
-					  .withWikiEnabled(true)
-					  .withSnippetsEnabled(true)
-					  .withPublic(false)
-					  .withNamespaceId(this.gitlabConfig.parentGroup.toLong())
-					  .withInitializeWithReadme(true)
-
-			  project = Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))
-			  log.info("Project ${projectSpec} created in Gitlab!")
-		  }
-		  removeBranchProtection(project.get())
-	  }
-
-	  void removeBranchProtection(Project project) {
-		  try {
-			  this.gitlabApi.getProtectedBranchesApi().unprotectBranch(project.getId(), project.getDefaultBranch())
-			  log.debug("Unprotected default branch: " + project.getDefaultBranch())
-		  } catch (Exception ex) {
-			  log.error("Failed to unprotect default branch '${project.getDefaultBranch()}' for project '${project.getName()}' (ID: ${project.getId()})", ex)
-		  }
-	  }
-
-
-	  private Optional<Group> getGroup(String groupName) {
-		  try {
-			  return Optional.ofNullable(this.gitlabApi.groupApi.getGroup(groupName))
-		  } catch (Exception e) {
-			  return Optional.empty()
-		  }
-	  }
-
-	  private Optional<Group> addGroup(Group group) {
-		  try {
-			  return Optional.ofNullable(this.gitlabApi.groupApi.addGroup(group))
-		  } catch (Exception e) {
-			  return Optional.empty()
-		  }
-	  }
-
-	  private Optional<Project> getProject(String projectPath) {
-		  try {
-			  return Optional.ofNullable(this.gitlabApi.projectApi.getProject(projectPath))
-		  } catch (Exception e) {
-			  return Optional.empty()
-
-
-	   }
-	  }
-  */
-
 }
