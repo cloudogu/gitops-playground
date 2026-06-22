@@ -111,18 +111,14 @@ class ScmManagerUrlResolver {
 		return cachedClusterBind
 	}
 
-	private String releaseName() {
+	private String serviceName() {
 		def prefix = (config.application.namePrefix ?: '').strip()
 
 		if (prefix) {
-			return "${prefix}scmm"
+			return "${prefix}${releaseName}"
 		}
 
-		return 'scmm'
-	}
-
-	private String serviceName() {
-		return releaseName()
+		return releaseName
 	}
 
 	// ---------- Helpers ----------
