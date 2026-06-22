@@ -4,8 +4,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
@@ -27,25 +26,26 @@ class ScmManagerTool extends Tool {
 
 	private final Config config
 	private final GitHandler gitHandler
-	private final HelmStrategy helmStrategy
 	private final FileSystemUtils fileSystemUtils
 	private final RepositoryProvisioning repositoryProvisioning
+	private final Deployer deployer
 
 	ScmManagerTool(Config config,
 		GitHandler gitHandler,
-		HelmStrategy helmStrategy,
+		Deployer deployer,
 		FileSystemUtils fileSystemUtils,
 		RepositoryProvisioning repositoryProvisioning) {
 		this.config = config
 		this.gitHandler = gitHandler
-		this.helmStrategy = helmStrategy
+		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	@Override
 	boolean isEnabled() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+		//		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+		return false
 	}
 
 	@Override
@@ -58,11 +58,8 @@ class ScmManagerTool extends Tool {
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
-		ScmManagerSetup setup = new ScmManagerSetup(config,
-			config.scm.scmManager,
-			helmStrategy,
-			scmManager,
-			fileSystemUtils)
+		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
+			deployer)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
