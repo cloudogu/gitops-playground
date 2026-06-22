@@ -57,15 +57,11 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		 * repoName becomes the ArgoCD Application metadata.name.
 		 *
 		 * This avoids ArgoCD tracking-id collisions:
-		 *
 		 * central:
 		 *   metadata.name: scm-manager
-		 *
 		 * tenant:
 		 *   metadata.name: tenant1-scm-manager
-		 *
-		 * Without this, both central and tenant resources can get tracking IDs starting with:
-		 *   scm-manager:/...
+		 * Without this, both central and tenant resources can get tracking IDs starting with: scm-manager:/...
 		 */
 		if (prefix) {
 			repoName = "${prefix}${repoName}"
@@ -140,7 +136,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		// SCM-Manager must not reference the SCM-Manager repo that it deploys itself.
 		def sources = [helmSource]
 
-		if (!isScmManager) {
+		if (!bootstrapDeploymentRequired) {
 			def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
 			def gitSource = [
 				repoURL       : featureRepoUrl,
