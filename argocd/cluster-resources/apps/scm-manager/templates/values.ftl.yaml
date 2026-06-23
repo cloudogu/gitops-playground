@@ -31,3 +31,11 @@ ingress:
         - ${host}
 </#if>
 </#if>
+  
+  <#if config.scm.scmManager.scmmImage?has_content>
+  <#assign scmmImage = DockerImageParser.parse(config.scm.scmManager.scmmImage)>
+image:
+  repository: ${scmmImage.registry}/${scmmImage.repository}
+  tag: ${scmmImage.tag}
+
+  </#if>
