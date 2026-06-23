@@ -154,6 +154,8 @@ pipeline {
                                           kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
                                           echo >> '${dumpDir}/container-logs.txt'
                                         done
+
+                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} '${dumpDir}'
                                     """, returnStatus: true)
                                 }
 
