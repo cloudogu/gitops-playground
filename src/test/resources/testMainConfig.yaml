@@ -20,6 +20,7 @@ jenkins:
   password: "admin"
   metricsUsername: "metrics"
   metricsPassword: "metrics"
+  jenkinsImage: ""
   mavenCentralMirror: ""
   helm:
     values: {}
@@ -29,6 +30,7 @@ scm:
     url: "http://172.18.0.2:9091/scm"
     username: "admin"
     password: "admin"
+    scmmImage: ""
     helm:
       chart: "scm-manager"
       repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/"

@@ -19,6 +19,11 @@ PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/promet
 GRAFANA_IMAGE="docker://docker.io/grafana/grafana:12.3.0"
 K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.1.2"
 
+JENKINS_IMAGE_TAG="5.9.18"
+SCM_MANAGER_IMAGE_TAG="3.11.6"
+JENKINS_IMAGE="docker://ghcr.io/cloudogu/jenkins-helm:${JENKINS_IMAGE_TAG}"
+SCM_MANAGER_IMAGE="docker://docker.io/scmmanager/scm-manager:${SCM_MANAGER_IMAGE_TAG}"
+
 CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.16.1"
 CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1"
 CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
@@ -38,6 +43,7 @@ if [[ -n $HARBOR ]]; then
 
     operations=("Proxy" "Registry")
     readOnlyUser='RegistryRead'
+    declare -A projectIds
 
     for operation in "${operations[@]}"; do
 
@@ -45,19 +51,26 @@ if [[ -n $HARBOR ]]; then
         lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
 
         echo "creating project ${lower_operation}"
-        projectId=$(curl -is --fail "$REGISTRY_BASE_URL/api/v2.0/projects" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
+        projectResponse=$(curl -is "$REGISTRY_BASE_URL/api/v2.0/projects" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" || true)
+        projectId=$(echo "$projectResponse" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]' || true)
+
+        if [[ -z "$projectId" ]]; then
+            projectId=$(curl -s --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${lower_operation}" -u admin:Harbor12345 | sed -n 's/.*"project_id":\([0-9]*\).*/\1/p')
+        fi
+
+        projectIds[$lower_operation]=$projectId
 
         echo creating user ${operation} with PW ${operation}12345
-        curl -s  --fail "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
+        curl -s "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}" || true
 
         echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
-        curl --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
+        curl "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}" || true
     done
 
     echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
-    curl -s  --fail "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
-    echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
-    curl  --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":5,\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
+    curl -s "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}" || true
+    echo "Adding member ${readOnlyUser} to project proxy; ID=${projectIds[proxy]}"
+    curl "$REGISTRY_BASE_URL/api/v2.0/projects/${projectIds[proxy]}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":5,\"member_user\":{\"username\":\"${readOnlyUser}\"}}" || true
 
     # sleep 5 seconds just to make sure the registry is ready
     sleep 5
@@ -73,6 +86,10 @@ if [[ -n $HARBOR ]]; then
     skopeo copy $PROMETHEUS_OPERATOR_CONFIG_RELOADER --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/prometheus-config-reloader
     skopeo copy $GRAFANA_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/grafana
     skopeo copy $K8S_SIDECAR --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/k8s-sidecar
+
+    # Core tools
+    skopeo copy $JENKINS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/jenkins-helm:${JENKINS_IMAGE_TAG}
+    skopeo copy $SCM_MANAGER_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/scm-manager:${SCM_MANAGER_IMAGE_TAG}
 
     # Cert Manager images
     skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-controller
@@ -100,6 +117,10 @@ skopeo copy $PROMETHEUS_OPERATOR_IMAGE --dest-creds admin:Harbor12345 --dest-tls
 skopeo copy $PROMETHEUS_OPERATOR_CONFIG_RELOADER --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/prometheus-config-reloader
 skopeo copy $GRAFANA_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/grafana
 skopeo copy $K8S_SIDECAR --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/k8s-sidecar
+
+# Core tools
+skopeo copy $JENKINS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/jenkins-helm:${JENKINS_IMAGE_TAG}
+skopeo copy $SCM_MANAGER_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/scm-manager:${SCM_MANAGER_IMAGE_TAG}
 
 # Cert Manager images
 skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-controller

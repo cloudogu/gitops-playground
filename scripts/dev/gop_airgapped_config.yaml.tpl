@@ -1,6 +1,11 @@
 application:
   baseUrl: "http://localhost"
   insecure: true
+jenkins:
+  jenkinsImage: "<address>/library/jenkins-helm:5.9.18"
+scm:
+  scmManager:
+    scmmImage: "<address>/library/scm-manager:3.11.6"
 features:
   argocd:
     active: true

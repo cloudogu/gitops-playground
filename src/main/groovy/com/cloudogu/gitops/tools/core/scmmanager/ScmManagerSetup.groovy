@@ -12,6 +12,9 @@ import com.cloudogu.gitops.utils.TemplatingEngine
 import java.nio.file.Path
 import groovy.util.logging.Slf4j
 
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
+
 @Slf4j
 class ScmManagerSetup {
 
@@ -24,7 +27,7 @@ class ScmManagerSetup {
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
-                    Deployer deployer) {
+		Deployer deployer) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 	}
@@ -63,7 +66,8 @@ class ScmManagerSetup {
 		                                    username   : this.scmManager.scmmConfig.credentials.username,
 		                                    password   : this.scmManager.scmmConfig.credentials.password,
 		                                    helm       : this.scmManager.scmmConfig.helm,
-		                                    releaseName: SCMM_RELEASE_NAME]
+		                                    releaseName: SCMM_RELEASE_NAME,
+		                                    statics    : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()]
 
 		Map templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars)
 		Map values = this.scmManager.scmmConfig.helm.values as Map ?: [:]
