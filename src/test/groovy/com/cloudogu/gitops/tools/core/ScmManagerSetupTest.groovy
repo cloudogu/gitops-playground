@@ -62,8 +62,10 @@ class ScmManagerSetupTest {
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 		config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
+		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		config.application.namePrefix =  "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
 		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
@@ -72,7 +74,7 @@ class ScmManagerSetupTest {
 			eq('scm-manager'),
 			eq('3.11.2'),
 			eq('scm-manager'),
-			eq('scmm'),
+			eq('test-scmm'),
 			valuesPathCaptor.capture(),
 			eq(DeploymentStrategy.RepoType.HELM))
 
@@ -97,7 +99,7 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 

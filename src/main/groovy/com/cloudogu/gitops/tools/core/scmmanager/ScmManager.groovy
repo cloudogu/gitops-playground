@@ -63,7 +63,7 @@ class ScmManager extends Tool implements ToolWithImage {
 		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
-			deployer)
+			deployer, config)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()

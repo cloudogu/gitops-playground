@@ -4,6 +4,8 @@ metadata:
   name: argocd
   namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
 spec:
+  extraConfig:
+    application.resourceTrackingMethod: annotation
   applicationSet:
     enabled: true
     resources:
