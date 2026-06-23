@@ -17,6 +17,7 @@ features:
 jenkins:
   password: "admin"
 registry:
+  active: true
   password: "admin"
 scm:
   scmManager:
