@@ -59,7 +59,7 @@ class ScmManagerTool extends Tool {
 		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
-			deployer)
+			deployer, config)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()

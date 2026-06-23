@@ -3356,8 +3356,8 @@ data:
                   "allFormat": "glob",
                   "current": {
                       "selected": false,
-                    "text": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80",
-                    "value": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80"
+                      "text": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80",
+                      "value": "scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local:80"
                   },
                   "datasource": {
                       "type": "prometheus",
