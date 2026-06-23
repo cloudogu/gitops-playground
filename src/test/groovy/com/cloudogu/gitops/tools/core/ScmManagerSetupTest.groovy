@@ -56,16 +56,19 @@ class ScmManagerSetupTest {
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
+		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		config.application.namePrefix =  "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
+
 
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
 			eq('3.11.2'),
 			eq('scm-manager'),
-			eq('scmm'),
+			eq('test-scmm'),
 			any(),
 			eq(DeploymentStrategy.RepoType.HELM))
 	}
@@ -86,7 +89,7 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 
