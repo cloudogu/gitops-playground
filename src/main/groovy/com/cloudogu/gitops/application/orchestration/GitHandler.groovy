@@ -110,21 +110,35 @@ class GitHandler {
 
 	private void setupExternalRepositoriesIfPossible() {
 		final String namePrefix = (config.application.namePrefix ?: "").trim()
+		final boolean repositorySetupBlockedByInternalScmBootstrap = isRepositorySetupBlockedByInternalScmBootstrap()
 
-		if (shouldSkipRepositorySetupForInternalScmManager()) {
-			log.debug("Skipping repository setup in GitHandler because internal SCM-Manager is not deployed yet.")
+		log.info(
+			"Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
+			central != null,
+			tenant != null,
+			namePrefix,
+			repositorySetupBlockedByInternalScmBootstrap
+		)
+
+		if (repositorySetupBlockedByInternalScmBootstrap) {
+			log.info(
+				"Skipping repository setup because the configured internal SCM-Manager is not deployed yet. " +
+					"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
+				namePrefix
+			)
 			return
 		}
 
 		if (central) {
+			log.info("Setting up central and tenant repositories. namePrefix='{}'", namePrefix)
 			setupRepos(central, namePrefix)
 			setupRepos(tenant, namePrefix)
 		} else {
+			log.info("Setting up tenant repositories only. namePrefix='{}'", namePrefix)
 			setupRepos(tenant, namePrefix)
 		}
 	}
-
-	private boolean shouldSkipRepositorySetupForInternalScmManager() {
+	private boolean isRepositorySetupBlockedByInternalScmBootstrap() {
 		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
 	}
 

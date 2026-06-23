@@ -71,6 +71,7 @@ argo-cd:
     cm:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
+      application.resourceTrackingMethod: annotation
       <#if config.features.argocd.oidc?has_content>
       oidc.config: |                                                                                                                                                    
                    ${config.features.argocd.oidc?trim?replace("\n", "\n                   ")}
