@@ -44,7 +44,7 @@ class ScmManagerUrlResolverTest {
 	// ---------- Client base & API ----------
 	@Test
 	void "clientBase(): internal + outside K8s uses NodePort and appends 'scm' (no trailing slash) and only resolves NodePort once"() {
-		when(k8s.waitForNodePort(eq('scmm'), any())).thenReturn("30080")
+		when(k8s.waitForNodePort(eq('fv40-scmm'), any())).thenReturn("30080")
 		when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
 		def r = resolverWith()
@@ -54,14 +54,14 @@ class ScmManagerUrlResolverTest {
 		assertEquals("http://10.0.0.1:30080/scm", base1.toString())
 		assertEquals(base1, base2)
 
-		verify(k8s, times(1)).waitForNodePort("scmm", "scm-manager")
+		verify(k8s, times(1)).waitForNodePort("fv40-scmm", "scm-manager")
 		verify(net, times(1)).findClusterBindAddress()
 		verifyNoMoreInteractions(k8s, net)
 	}
 
 	@Test
 	void "clientApiBase(): appends 'api' to the client base"() {
-		when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
+		when(k8s.waitForNodePort("fv40-scmm", "scm-manager")).thenReturn("30080")
 		when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
 		var urlResolver = resolverWith()
@@ -71,7 +71,7 @@ class ScmManagerUrlResolverTest {
 	// ---------- Repo base & URLs ----------
 	@Test
 	void "clientRepoUrl(): trims repoTarget and removes trailing slash"() {
-		when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
+		when(k8s.waitForNodePort("fv40-scmm", "scm-manager")).thenReturn("30080")
 		when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
 		var urlResolver = resolverWith()
@@ -83,19 +83,19 @@ class ScmManagerUrlResolverTest {
 	@Test
 	void "inClusterBase(): internal uses service DNS "() {
 		def r = resolverWith(namespace: "custom-ns", internal: true)
-		assertEquals("http://scmm.custom-ns.svc.cluster.local/scm", r.inClusterBase().toString())
+		assertEquals("http://fv40-scmm.custom-ns.svc.cluster.local/scm", r.inClusterBase().toString())
 	}
 
 	@Test
 	void "inClusterBase(): external uses external base + 'scm'"() {
-		var r = resolverWith(internal: false, url: "https://scmm.external")
-		assertEquals("https://scmm.external/scm", r.inClusterBase().toString())
+		var r = resolverWith(internal: false, url: "https://fv40-scmm.external")
+		assertEquals("https://fv40-scmm.external/scm", r.inClusterBase().toString())
 	}
 
 	@Test
 	void "inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash"() {
 		var urlResolver = resolverWith()
-		assertEquals("http://scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
+		assertEquals("http://fv40-scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
 			urlResolver.inClusterRepoUrl("admin/admin"))
 	}
 
@@ -104,7 +104,7 @@ class ScmManagerUrlResolverTest {
 		// with non-empty namePrefix
 		config.application.namePrefix = 'fv40-'
 		def r1 = resolverWith()
-		assertEquals('http://scmm.scm-manager.svc.cluster.local/scm/repo/fv40-', r1.inClusterRepoPrefix())
+		assertEquals('http://fv40-scmm.scm-manager.svc.cluster.local/scm/repo/fv40-', r1.inClusterRepoPrefix())
 
 		// with empty/blank namePrefix
 		config.application.namePrefix = '   '
@@ -134,7 +134,7 @@ class ScmManagerUrlResolverTest {
 
 	@Test
 	void "nodePortBase(): falls back to default namespace 'scm-manager' when none provided"() {
-		when(k8s.waitForNodePort(eq('scmm'), eq('scm-manager'))).thenReturn("30080")
+		when(k8s.waitForNodePort(eq('fv40-scmm'), eq('scm-manager'))).thenReturn("30080")
 		when(net.findClusterBindAddress()).thenReturn('10.0.0.1')
 
 		def r = resolverWith(namespace: null)
@@ -144,14 +144,14 @@ class ScmManagerUrlResolverTest {
 	// ---------- helpers behavior ----------
 	@Test
 	void "ensureScm(): adds 'scm' if missing and keeps it if present"() {
-		def r1 = resolverWith(internal: false, url: 'https://scmm.localhost')
-		assertEquals('https://scmm.localhost/scm', r1.clientBase().toString())
+		def r1 = resolverWith(internal: false, url: 'https://fv40-scmm.localhost')
+		assertEquals('https://fv40-scmm.localhost/scm', r1.clientBase().toString())
 	}
 
 	// ---------- prometheus endpoint ----------
 	@Test
 	void "prometheusEndpoint(): resolves "() {
-		def r = resolverWith(internal: false, url: 'https://scmm.localhost')
-		assertEquals('https://scmm.localhost/scm/api/v2/metrics/prometheus', r.prometheusEndpoint().toString())
+		def r = resolverWith(internal: false, url: 'https://fv40-scmm.localhost')
+		assertEquals('https://fv40-scmm.localhost/scm/api/v2/metrics/prometheus', r.prometheusEndpoint().toString())
 	}
 }

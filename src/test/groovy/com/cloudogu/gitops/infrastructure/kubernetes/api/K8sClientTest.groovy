@@ -756,14 +756,14 @@ class K8sClientTest {
 		def configMap = new ConfigMapBuilder()
 			.withNewMetadata()
 			.withName("my-config")
-			.withNamespace("default")
+			.withNamespace("test")
 			.endMetadata()
 			.withData(["key1": "value1", "key2": "value2"])
 			.build()
 
 		server.expect()
 			.get()
-			.withPath("/api/v1/namespaces/default/configmaps/my-config")
+			.withPath("/api/v1/namespaces/test/configmaps/my-config")
 			.andReturn(200, configMap)
 			.once()
 
@@ -780,14 +780,14 @@ class K8sClientTest {
 		def configMap = new ConfigMapBuilder()
 			.withNewMetadata()
 			.withName("my-config")
-			.withNamespace("default")
+			.withNamespace("test")
 			.endMetadata()
 			.withData(["key1": "value1"])
 			.build()
 
 		server.expect()
 			.get()
-			.withPath("/api/v1/namespaces/default/configmaps/my-config")
+			.withPath("/api/v1/namespaces/test/configmaps/my-config")
 			.andReturn(200, configMap)
 			.once()
 
