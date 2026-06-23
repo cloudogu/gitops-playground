@@ -6,14 +6,11 @@ import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-
-import jakarta.inject.Singleton
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@CompileStatic
 class RepositoryProvisioning {
 
 	static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
@@ -26,9 +23,11 @@ class RepositoryProvisioning {
 	private boolean remoteRepositoriesEnsured = false
 	private boolean repositoriesCloned = false
 
-	RepositoryProvisioning(Config config,
+	RepositoryProvisioning(
+		Config config,
 		GitRepoFactory gitRepoFactory,
-		GitHandler gitHandler) {
+		GitHandler gitHandler
+	) {
 		this.config = config
 		this.gitRepoFactory = gitRepoFactory
 		this.gitHandler = gitHandler
@@ -38,7 +37,10 @@ class RepositoryProvisioning {
 		provideWorkspace()
 
 		if (mustWaitForInternalScmManagerDeployment()) {
-			log.debug('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
+			log.info(
+				"Preparing local repository workspace only because internal SCM-Manager is not deployed yet."
+			)
+
 			workspace.prepareLocalDirectories()
 			return
 		}
@@ -53,9 +55,9 @@ class RepositoryProvisioning {
 		}
 
 		if (config.multiTenant.useDedicatedInstance) {
-			workspace = workspaceForDedicatedInstance()
+			workspace = createDedicatedInstanceWorkspace()
 		} else {
-			workspace = workspaceForSingleInstance()
+			workspace = createSingleInstanceWorkspace()
 		}
 
 		return workspace
@@ -67,18 +69,30 @@ class RepositoryProvisioning {
 			return
 		}
 
-		if (workspace == null) {
-			throw new IllegalStateException('Repository workspace must be prepared before remote repositories can be ensured.')
-		}
+		assertWorkspacePrepared()
 
-		ensureRepositoryExists(workspace.clusterResourcesRepo.gitProvider,
-			clusterResourcesRepoTarget(),
-			'GitOps repo for cluster resources')
+		log.info(
+			"Ensuring cluster resources repository. repoTarget='{}'",
+			workspace.clusterResourcesRepository.repoTarget
+		)
 
-		if (workspace.hasTenantBootstrapRepo()) {
-			ensureRepositoryExists(workspace.tenantBootstrapRepoOrFail().gitProvider,
-				clusterResourcesRepoTarget(),
-				'GitOps repo for tenant bootstrap resources')
+		ensureRepositoryExists(
+			workspace.clusterResourcesRepository.gitProvider,
+			workspace.clusterResourcesRepository.repoTarget,
+			'GitOps repo for basic cluster-resources'
+		)
+
+		if (workspace.hasTenantBootstrapRepository()) {
+			log.info(
+				"Ensuring tenant bootstrap repository. repoTarget='{}'",
+				workspace.tenantBootstrapRepositoryOrFail().repoTarget
+			)
+
+			ensureRepositoryExists(
+				workspace.tenantBootstrapRepositoryOrFail().gitProvider,
+				workspace.tenantBootstrapRepositoryOrFail().repoTarget,
+				'GitOps repo for tenant bootstrap resources'
+			)
 		}
 
 		remoteRepositoriesEnsured = true
@@ -90,9 +104,7 @@ class RepositoryProvisioning {
 			return
 		}
 
-		if (workspace == null) {
-			throw new IllegalStateException('Repository workspace must be prepared before repositories can be cloned.')
-		}
+		assertWorkspacePrepared()
 
 		workspace.cloneRepositories()
 		repositoriesCloned = true
@@ -101,83 +113,96 @@ class RepositoryProvisioning {
 	void publishInitialStateAfterScmManagerDeployment() {
 		ensureRemoteRepositoriesExist()
 
-		if (workspace == null) {
-			throw new IllegalStateException('Repository workspace must be prepared before initial state can be published.')
-		}
+		assertWorkspacePrepared()
 
 		workspace.initLocalRepositoriesIfNeeded()
 
-		workspace.commitAndPushClusterChanges('Initial repository state with SCM-Manager resources')
+		workspace.commitAndPushClusterResourcesChanges(
+			'Initial repository state with SCM-Manager resources'
+		)
 
-		if (workspace.hasTenantBootstrapRepo()) {
-			workspace.commitAndPushTenantBootstrapChanges('Initial tenant bootstrap repository state')
+		if (workspace.hasTenantBootstrapRepository()) {
+			workspace.commitAndPushTenantBootstrapChanges(
+				'Initial tenant bootstrap repository state'
+			)
 		}
 	}
 
-	void publishClusterChanges(String toolName, String message = null) {
+	void publishClusterResourcesRepositoryChanges(
+		String toolName,
+		String message = null
+	) {
 		assertWorkspacePrepared()
-		String commitMessage = message ?: "Update ${toolName} resources".toString()
-		workspace.commitAndPushClusterChanges(commitMessage)
+
+		workspace.commitAndPushClusterResourcesChanges(
+			message ?: "Update ${toolName} resources"
+		)
 	}
 
-	void publishAllWorkspaceChanges(String toolName, String message = null) {
+	void publishClusterResourcesAndTenantBootstrapRepositoryChanges(
+		String toolName,
+		String message = null
+	) {
 		assertWorkspacePrepared()
-		String commitMessage = message ?: "Update ${toolName} resources".toString()
-		workspace.commitAndPushAllChanges(commitMessage)
+
+		workspace.commitAndPushClusterResourcesAndTenantBootstrapChanges(
+			message ?: "Update ${toolName} resources"
+		)
 	}
 
+	//TODO At the moment GitRepo prefixed repoTarget, later it should be done here, because this is logic and GitRepo is technical unit
 	String clusterResourcesRepoTarget() {
-		return withOrgPrefix(namePrefix(), CLUSTER_RESOURCES_REPO_TARGET)
+		CLUSTER_RESOURCES_REPO_TARGET
 	}
 
-	private static String withOrgPrefix(String prefix, String repoPath) {
-		if (!prefix) {
-			return repoPath
-		}
+	private RepositoryWorkspace createSingleInstanceWorkspace() {
+		log.debug('Creating single-instance repository workspace.')
 
-		return prefix + repoPath
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(
+			clusterResourcesRepoTarget(),
+			gitHandler.getResourcesScm()
+		)
+
+		return new RepositoryWorkspace(clusterResourcesRepository)
 	}
 
-	private static void ensureRepositoryExists(GitProvider gitProvider,
-		String repoTarget,
-		String description) {
-		gitProvider.createRepository(repoTarget, description, true)
+	private RepositoryWorkspace createDedicatedInstanceWorkspace() {
+		log.debug('Creating dedicated-instance repository workspace.')
+
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(
+			clusterResourcesRepoTarget(),
+			gitHandler.getResourcesScm()
+		)
+
+		GitRepo tenantBootstrapRepository = gitRepoFactory.create(
+			clusterResourcesRepoTarget(),
+			gitHandler.tenant
+		)
+
+		return new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		)
 	}
 
 	private void assertWorkspacePrepared() {
 		if (workspace == null) {
-			throw new IllegalStateException('Repository workspace must be prepared before changes can be published.')
+			throw new IllegalStateException(
+				'Repository workspace must be prepared before repository changes can be published.'
+			)
 		}
 	}
 
-	private RepositoryWorkspace workspaceForSingleInstance() {
-		log.debug('Creating single-instance repository workspace.')
-
-		GitRepo clusterResourcesRepo = gitRepoFactory.create(clusterResourcesRepoTarget(),
-			gitHandler.tenant)
-
-		return new RepositoryWorkspace(clusterResourcesRepo)
-	}
-
-	private RepositoryWorkspace workspaceForDedicatedInstance() {
-		log.debug('Creating dedicated-instance repository workspace.')
-
-		GitRepo centralClusterResourcesRepo = gitRepoFactory.create(clusterResourcesRepoTarget(),
-			gitHandler.central)
-
-		GitRepo tenantBootstrapRepo = gitRepoFactory.create(clusterResourcesRepoTarget(),
-			gitHandler.tenant)
-
-		return new RepositoryWorkspace(centralClusterResourcesRepo,
-			tenantBootstrapRepo)
-	}
-
-	private String namePrefix() {
-		return (config?.application?.namePrefix ?: '').trim()
-	}
-
 	private boolean mustWaitForInternalScmManagerDeployment() {
-		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
+			config.scm.scmManager?.internal
 	}
 
+	private static void ensureRepositoryExists(
+		GitProvider gitProvider,
+		String repoTarget,
+		String description
+	) {
+		gitProvider.createRepository(repoTarget, description, true)
+	}
 }

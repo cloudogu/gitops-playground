@@ -3,107 +3,108 @@ package com.cloudogu.gitops.application.repository
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 
 import java.nio.file.Path
-import groovy.transform.CompileStatic
 
-@CompileStatic
 class RepositoryWorkspace {
 
-	private static final String APPS_DIR = 'apps'
-	final GitRepo clusterResourcesRepo
-	final GitRepo tenantBootstrapRepo
+	final GitRepo clusterResourcesRepository
+	final GitRepo tenantBootstrapRepository
 
-	RepositoryWorkspace(GitRepo clusterResourcesRepo,
-		GitRepo tenantBootstrapRepo = null) {
-		this.clusterResourcesRepo = clusterResourcesRepo
-		this.tenantBootstrapRepo = tenantBootstrapRepo
+	RepositoryWorkspace(
+		GitRepo clusterResourcesRepository,
+		GitRepo tenantBootstrapRepository = null
+	) {
+		this.clusterResourcesRepository = clusterResourcesRepository
+		this.tenantBootstrapRepository = tenantBootstrapRepository
 	}
 
-	boolean hasTenantBootstrapRepo() {
-		return tenantBootstrapRepo != null
+	boolean hasTenantBootstrapRepository() {
+		tenantBootstrapRepository != null
 	}
 
-	GitRepo tenantBootstrapRepoOrFail() {
-		if (tenantBootstrapRepo == null) {
-			throw new IllegalStateException('Tenant bootstrap repository is not available in single-instance mode.')
+	GitRepo tenantBootstrapRepositoryOrFail() {
+		if (tenantBootstrapRepository == null) {
+			throw new IllegalStateException(
+				'Tenant bootstrap repository is not available in single-instance mode.'
+			)
 		}
 
-		return tenantBootstrapRepo
+		return tenantBootstrapRepository
 	}
 
 	void prepareLocalDirectories() {
-		Path.of(clusterRootDir()).toFile().mkdirs()
-		Path.of(clusterAppsDir()).toFile().mkdirs()
+		Path.of(clusterResourcesRootDir()).toFile().mkdirs()
+		Path.of(clusterResourcesAppsDir()).toFile().mkdirs()
 
-		if (hasTenantBootstrapRepo()) {
-			Path.of(tenantRootDir()).toFile().mkdirs()
-			Path.of(tenantAppsDir()).toFile().mkdirs()
+		if (hasTenantBootstrapRepository()) {
+			Path.of(tenantBootstrapRootDir()).toFile().mkdirs()
+			Path.of(tenantBootstrapAppsDir()).toFile().mkdirs()
 		}
 	}
 
 	void cloneRepositories() {
-		clusterResourcesRepo.cloneRepo()
+		clusterResourcesRepository.cloneRepo()
 
-		if (hasTenantBootstrapRepo()) {
-			tenantBootstrapRepoOrFail().cloneRepo()
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().cloneRepo()
 		}
 	}
 
 	void initLocalRepositoriesIfNeeded() {
-		clusterResourcesRepo.initLocalRepoIfNeeded()
+		clusterResourcesRepository.initLocalRepoIfNeeded()
 
-		if (hasTenantBootstrapRepo()) {
-			tenantBootstrapRepoOrFail().initLocalRepoIfNeeded()
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().initLocalRepoIfNeeded()
 		}
 	}
 
-	String clusterRootDir() {
-		return clusterResourcesRepo.absoluteLocalRepoTmpDir
+	String clusterResourcesRootDir() {
+		clusterResourcesRepository.getAbsoluteLocalRepoTmpDir()
 	}
 
-	String clusterAppsDir() {
-		return Path.of(clusterRootDir(), APPS_DIR).toString()
+	String clusterResourcesAppsDir() {
+		Path.of(clusterResourcesRootDir(), 'apps').toString()
 	}
 
-	String clusterAppDir(String toolName) {
-		return Path.of(clusterAppsDir(), toolName).toString()
+	String clusterResourcesAppDir(String toolName) {
+		Path.of(clusterResourcesAppsDir(), toolName).toString()
 	}
 
-	String tenantRootDir() {
-		return tenantBootstrapRepoOrFail().absoluteLocalRepoTmpDir
+	String tenantBootstrapRootDir() {
+		tenantBootstrapRepositoryOrFail().getAbsoluteLocalRepoTmpDir()
 	}
 
-	String tenantAppsDir() {
-		return Path.of(tenantRootDir(), APPS_DIR).toString()
+	String tenantBootstrapAppsDir() {
+		Path.of(tenantBootstrapRootDir(), 'apps').toString()
 	}
 
-	String tenantAppDir(String toolName) {
-		return Path.of(tenantAppsDir(), toolName).toString()
+	String tenantBootstrapAppDir(String toolName) {
+		Path.of(tenantBootstrapAppsDir(), toolName).toString()
 	}
 
-	String clusterResourcesRepoUrl() {
-		return "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git"
+	String clusterResourcesRepositoryUrl() {
+		"${clusterResourcesRepository.gitProvider.repoPrefix()}${clusterResourcesRepository.repoTarget}.git"
 	}
 
-	void writeClusterFile(String relativePath, String content) {
-		clusterResourcesRepo.writeFile(relativePath, content)
+	void writeClusterResourcesFile(String relativePath, String content) {
+		clusterResourcesRepository.writeFile(relativePath, content)
 	}
 
 	void writeTenantBootstrapFile(String relativePath, String content) {
-		tenantBootstrapRepoOrFail().writeFile(relativePath, content)
+		tenantBootstrapRepositoryOrFail().writeFile(relativePath, content)
 	}
 
-	void commitAndPushClusterChanges(String message) {
-		clusterResourcesRepo.commitAndPush(message)
+	void commitAndPushClusterResourcesChanges(String message) {
+		clusterResourcesRepository.commitAndPush(message)
 	}
 
 	void commitAndPushTenantBootstrapChanges(String message) {
-		tenantBootstrapRepoOrFail().commitAndPush(message)
+		tenantBootstrapRepositoryOrFail().commitAndPush(message)
 	}
 
-	void commitAndPushAllChanges(String message) {
-		commitAndPushClusterChanges(message)
+	void commitAndPushClusterResourcesAndTenantBootstrapChanges(String message) {
+		commitAndPushClusterResourcesChanges(message)
 
-		if (hasTenantBootstrapRepo()) {
+		if (hasTenantBootstrapRepository()) {
 			commitAndPushTenantBootstrapChanges(message)
 		}
 	}
