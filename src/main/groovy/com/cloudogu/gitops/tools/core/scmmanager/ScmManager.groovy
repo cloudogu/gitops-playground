@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -14,15 +13,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
-import java.nio.file.Path
-
 @Slf4j
 @Singleton
 @Order(10)
 class ScmManager extends Tool {
-
-	private static final String TOOL_NAME = 'scm-manager'
-	private static final String SCM_MANAGER_SOURCE_DIR = 'argocd/cluster-resources/apps/scm-manager'
 
 	String namespace
 
@@ -56,9 +50,6 @@ class ScmManager extends Tool {
 	void enable() {
 		log.info('Starting internal SCM-Manager setup.')
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		prepareWorkspace(workspace)
-
 		ScmManagerProvider scmManager = getResourcesScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(
@@ -71,25 +62,13 @@ class ScmManager extends Tool {
 		setup.waitForScmmAvailable()
 		setup.configure()
 
-		repositoryProvisioning.publishInitialStateAfterScmManagerDeployment()
+		repositoryProvisioning.bootstrapRepositoriesAfterScmManagerDeployment()
 
 		// Creating ArgoCD Application AFTER repos are created and initially pushed.
 		// This fixes the bootstrap problem because the GitOps repository must exist first.
 		setup.createArgocdApplication()
 
 		log.info('Internal SCM-Manager setup finished.')
-	}
-
-	private void prepareWorkspace(RepositoryWorkspace workspace) {
-		log.debug('Preparing SCM-Manager workspace resources.')
-
-		String targetDir = workspace.clusterResourcesAppDir(TOOL_NAME)
-		Path.of(targetDir).toFile().mkdirs()
-
-		fileSystemUtils.copyDirectory(
-			SCM_MANAGER_SOURCE_DIR,
-			targetDir
-		)
 	}
 
 	private boolean isInternalScmManagerConfigured() {

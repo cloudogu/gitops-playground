@@ -2,7 +2,7 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import java.nio.file.Path
 
-class RepoLayout {
+class ArgoCDRepoLayout {
 	private static final String APPS_MONITORING_DIR = 'apps/monitoring'
 	private static final String APPS_SECRETS_DIR = 'apps/external-secrets'
 	private static final String APPS_VAULT_DIR = 'apps/vault'
@@ -22,7 +22,7 @@ class RepoLayout {
 
 	private final String repoRootDir
 
-	RepoLayout(String repoRootDir) {
+	ArgoCDRepoLayout(String repoRootDir) {
 		this.repoRootDir = repoRootDir
 	}
 

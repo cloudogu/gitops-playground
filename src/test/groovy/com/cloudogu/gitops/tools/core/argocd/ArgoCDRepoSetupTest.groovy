@@ -178,14 +178,14 @@ class ArgoCDRepoSetupTest {
 		def setup = createSetup(new FileSystemUtils())
 		def dirs = setup.clusterResources.subDirsToCopy as Set<String>
 
-		assertThat(dirs).contains(RepoLayout.argocdSubdirRel())
-		assertThat(dirs).contains(RepoLayout.ingressSubdirRel())
+		assertThat(dirs).contains(ArgoCDRepoLayout.argocdSubdirRel())
+		assertThat(dirs).contains(ArgoCDRepoLayout.ingressSubdirRel())
 
-		assertThat(dirs).doesNotContain(RepoLayout.monitoringSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.secretsSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.vaultSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.jenkinsSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.certManagerSubdirRel())
+		assertThat(dirs).doesNotContain(ArgoCDRepoLayout.monitoringSubdirRel())
+		assertThat(dirs).doesNotContain(ArgoCDRepoLayout.secretsSubdirRel())
+		assertThat(dirs).doesNotContain(ArgoCDRepoLayout.vaultSubdirRel())
+		assertThat(dirs).doesNotContain(ArgoCDRepoLayout.jenkinsSubdirRel())
+		assertThat(dirs).doesNotContain(ArgoCDRepoLayout.certManagerSubdirRel())
 	}
 
 	@Test
@@ -195,7 +195,7 @@ class ArgoCDRepoSetupTest {
 		def setup = createSetup(new FileSystemUtils())
 		def dirs = setup.clusterResources.subDirsToCopy as Set<String>
 
-		assertThat(dirs).contains(RepoLayout.secretsSubdirRel())
-		assertThat(dirs).contains(RepoLayout.vaultSubdirRel())
+		assertThat(dirs).contains(ArgoCDRepoLayout.secretsSubdirRel())
+		assertThat(dirs).contains(ArgoCDRepoLayout.vaultSubdirRel())
 	}
 }

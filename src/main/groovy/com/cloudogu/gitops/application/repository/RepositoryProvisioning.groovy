@@ -110,7 +110,7 @@ class RepositoryProvisioning {
 		repositoriesCloned = true
 	}
 
-	void publishInitialStateAfterScmManagerDeployment() {
+	void bootstrapRepositoriesAfterScmManagerDeployment() {
 		ensureRemoteRepositoriesExist()
 
 		assertWorkspacePrepared()
@@ -150,8 +150,10 @@ class RepositoryProvisioning {
 		)
 	}
 
-	//TODO At the moment GitRepo prefixed repoTarget, later it should be done here, because this is logic and GitRepo is technical unit
 	String clusterResourcesRepoTarget() {
+		// TODO: Move GOP-specific repo target prefixing from GitRepo to RepositoryProvisioning.
+		// GitRepo currently applies config.application.namePrefix internally.
+		// Therefore this method must return the unprefixed repository target for now.
 		CLUSTER_RESOURCES_REPO_TARGET
 	}
 

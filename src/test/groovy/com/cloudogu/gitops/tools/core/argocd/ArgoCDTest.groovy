@@ -126,7 +126,7 @@ class ArgoCDTest {
 	GitRepo clusterResourcesRepo
 	List<GitRepo> petClinicRepos = []
 	ArgoCD argocd
-	RepoLayout clusterResourcesRepoLayout
+	ArgoCDRepoLayout clusterResourcesRepoLayout
 
 	@BeforeEach
 	void setupKubernetesClient() {
@@ -556,7 +556,7 @@ class ArgoCDTest {
 		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
 	}
 
-	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, RepoLayout repoLayout) {
+	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, ArgoCDRepoLayout repoLayout) {
 
 		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
 			def yaml = parseActualYaml(file.toString())
@@ -1582,7 +1582,7 @@ class ArgoCDTest {
 			return getRepoSetup().clusterResources?.repo
 		}
 
-		RepoLayout getClusterRepoLayout() {
+		ArgoCDRepoLayout getClusterRepoLayout() {
 			return getRepoSetup().clusterRepoLayout()
 		}
 
