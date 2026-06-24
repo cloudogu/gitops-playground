@@ -1147,7 +1147,7 @@ throw new RuntimeException("Resource $resource/$name not found")
 
 
 			default:
-				log.debug("Seraching CRD resourceType=${resourceType} with name=${name}, ns=${ns} ++++++++++++++")
+log.debug("Searching API resource via discovery for resourceType=${resourceType}, name=${name}, ns=${ns}")
 				return getCustomResourceClient(resourceType, name, ns)
 		}
 	}
