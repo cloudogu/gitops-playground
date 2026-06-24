@@ -34,10 +34,16 @@ class RepositoryWorkspace {
 	void prepareLocalDirectories() {
 		Path.of(clusterResourcesRootDir()).toFile().mkdirs()
 		Path.of(clusterResourcesAppsDir()).toFile().mkdirs()
+		Path.of(clusterResourcesArgoCdDir()).toFile().mkdirs()
+		Path.of(clusterResourcesApplicationsDir()).toFile().mkdirs()
+		Path.of(clusterResourcesProjectsDir()).toFile().mkdirs()
 
 		if (hasTenantBootstrapRepository()) {
 			Path.of(tenantBootstrapRootDir()).toFile().mkdirs()
 			Path.of(tenantBootstrapAppsDir()).toFile().mkdirs()
+			Path.of(tenantBootstrapArgoCdDir()).toFile().mkdirs()
+			Path.of(tenantBootstrapApplicationsDir()).toFile().mkdirs()
+			Path.of(tenantBootstrapProjectsDir()).toFile().mkdirs()
 		}
 	}
 
@@ -65,8 +71,16 @@ class RepositoryWorkspace {
 		Path.of(clusterResourcesRootDir(), 'apps').toString()
 	}
 
-	String clusterResourcesAppDir(String toolName) {
-		Path.of(clusterResourcesAppsDir(), toolName).toString()
+	String clusterResourcesArgoCdDir() {
+		Path.of(clusterResourcesAppsDir(), 'argocd').toString()
+	}
+
+	String clusterResourcesApplicationsDir() {
+		Path.of(clusterResourcesArgoCdDir(), 'applications').toString()
+	}
+
+	String clusterResourcesProjectsDir() {
+		Path.of(clusterResourcesArgoCdDir(), 'projects').toString()
 	}
 
 	String tenantBootstrapRootDir() {
@@ -81,16 +95,20 @@ class RepositoryWorkspace {
 		Path.of(tenantBootstrapAppsDir(), toolName).toString()
 	}
 
+	String tenantBootstrapArgoCdDir() {
+		Path.of(tenantBootstrapAppsDir(), 'argocd').toString()
+	}
+
+	String tenantBootstrapApplicationsDir() {
+		Path.of(tenantBootstrapArgoCdDir(), 'applications').toString()
+	}
+
+	String tenantBootstrapProjectsDir() {
+		Path.of(tenantBootstrapArgoCdDir(), 'projects').toString()
+	}
+
 	String clusterResourcesRepositoryUrl() {
 		"${clusterResourcesRepository.gitProvider.repoPrefix()}${clusterResourcesRepository.repoTarget}.git"
-	}
-
-	void writeClusterResourcesFile(String relativePath, String content) {
-		clusterResourcesRepository.writeFile(relativePath, content)
-	}
-
-	void writeTenantBootstrapFile(String relativePath, String content) {
-		tenantBootstrapRepositoryOrFail().writeFile(relativePath, content)
 	}
 
 	void commitAndPushClusterResourcesChanges(String message) {

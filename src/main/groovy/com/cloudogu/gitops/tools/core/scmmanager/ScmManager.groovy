@@ -8,7 +8,6 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -23,20 +22,17 @@ class ScmManager extends Tool {
 	private final Config config
 	private final GitHandler gitHandler
 	private final Deployer deployer
-	private final FileSystemUtils fileSystemUtils
 	private final RepositoryProvisioning repositoryProvisioning
 
 	ScmManager(
 		Config config,
 		GitHandler gitHandler,
 		Deployer deployer,
-		FileSystemUtils fileSystemUtils,
 		RepositoryProvisioning repositoryProvisioning
 	) {
 		this.config = config
 		this.gitHandler = gitHandler
 		this.deployer = deployer
-		this.fileSystemUtils = fileSystemUtils
 		this.repositoryProvisioning = repositoryProvisioning
 		this.namespace = configuredNamespace()
 	}
@@ -64,9 +60,14 @@ class ScmManager extends Tool {
 
 		repositoryProvisioning.bootstrapRepositoriesAfterScmManagerDeployment()
 
-		// Creating ArgoCD Application AFTER repos are created and initially pushed.
-		// This fixes the bootstrap problem because the GitOps repository must exist first.
+		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
+		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
+
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
+			'scm-manager',
+			'Add SCM-Manager ArgoCD application'
+		)
 
 		log.info('Internal SCM-Manager setup finished.')
 	}

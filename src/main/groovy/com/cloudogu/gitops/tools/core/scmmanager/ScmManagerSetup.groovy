@@ -37,21 +37,32 @@ class ScmManagerSetup {
 		def helmConfig = this.scmManager.scmmConfig.helm
 		String releaseName = scmmReleaseName()
 
-		log.info("Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+		log.info(
+			"Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
 			config.multiTenant.useDedicatedInstance
 		)
 
-		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
+		/*
+		 * Important:
+		 * SCM-Manager must be installed imperatively first because the Git repository
+		 * used by ArgoCD does not exist before SCM-Manager is available.
+		 *
+		 * Do not call deployer.deployFeature(..., initByHelm = true) here because
+		 * Deployer would also call the ArgoCD strategy afterwards.
+		 */
+		deployer.helmStrategy.deployFeature(
+			helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
 			releaseName,
 			valuesPath,
-			DeploymentStrategy.RepoType.HELM)
+			DeploymentStrategy.RepoType.HELM
+		)
 	}
 
 	void createArgocdApplication() {
@@ -59,21 +70,32 @@ class ScmManagerSetup {
 		def helmConfig = this.scmManager.scmmConfig.helm
 		String releaseName = scmmReleaseName()
 
-		log.info("Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+		log.info(
+			"Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
 			config.multiTenant.useDedicatedInstance
 		)
 
-		deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
+		/*
+		 * This writes the SCM-Manager ArgoCD Application through ArgoCdApplicationStrategy.
+		 *
+		 * With the adjusted strategy this does not clone or push anymore.
+		 * It only writes apps/argocd/applications/<releaseName>.yaml into the shared
+		 * RepositoryWorkspace. The push is triggered afterwards by RepositoryProvisioning.
+		 */
+		deployer.deployFeature(
+			helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
 			releaseName,
 			valuesPath,
-			DeploymentStrategy.RepoType.HELM)
+			DeploymentStrategy.RepoType.HELM,
+			false
+		)
 	}
 
 	private Path prepareHelmValues() {

@@ -37,10 +37,7 @@ class RepositoryProvisioning {
 		provideWorkspace()
 
 		if (mustWaitForInternalScmManagerDeployment()) {
-			log.info(
-				"Preparing local repository workspace only because internal SCM-Manager is not deployed yet."
-			)
-
+			log.info('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
 			workspace.prepareLocalDirectories()
 			return
 		}
@@ -116,14 +113,15 @@ class RepositoryProvisioning {
 		assertWorkspacePrepared()
 
 		workspace.initLocalRepositoriesIfNeeded()
+		workspace.prepareLocalDirectories()
 
 		workspace.commitAndPushClusterResourcesChanges(
-			'Initial repository state with SCM-Manager resources'
+			'Bootstrap cluster-resources repository after SCM-Manager deployment'
 		)
 
 		if (workspace.hasTenantBootstrapRepository()) {
 			workspace.commitAndPushTenantBootstrapChanges(
-				'Initial tenant bootstrap repository state'
+				'Bootstrap tenant repository after SCM-Manager deployment'
 			)
 		}
 	}
@@ -154,7 +152,7 @@ class RepositoryProvisioning {
 		// TODO: Move GOP-specific repo target prefixing from GitRepo to RepositoryProvisioning.
 		// GitRepo currently applies config.application.namePrefix internally.
 		// Therefore this method must return the unprefixed repository target for now.
-		CLUSTER_RESOURCES_REPO_TARGET
+		return CLUSTER_RESOURCES_REPO_TARGET
 	}
 
 	private RepositoryWorkspace createSingleInstanceWorkspace() {
