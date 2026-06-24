@@ -646,7 +646,7 @@ class K8sClient {
 			HasMetadata existingResource = resourceClient.get() as HasMetadata
 
 			if (!existingResource) {
-				throw new KubernetesApiResourceNotFoundException("$resource/$name")
+throw new RuntimeException("Resource $resource/$name not found")
 			}
 
 			def existingLabels = existingResource.metadata?.labels ?: [:]
