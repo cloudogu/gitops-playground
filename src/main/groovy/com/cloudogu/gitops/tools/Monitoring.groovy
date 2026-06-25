@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
@@ -33,24 +34,25 @@ class Monitoring extends Tool implements ToolWithImage {
 	Config config
 	K8sClient k8sClient
 
-	private GitRepoFactory scmRepoProvider
+	private final RepositoryProvisioning repositoryProvisioning
 
 	Monitoring(Config config,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitRepoFactory scmRepoProvider,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		RepositoryProvisioning repositoryProvisioning) {
 		this.config = config
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
-		this.scmRepoProvider = scmRepoProvider
 		this.gitHandler = gitHandler
+		this.repositoryProvisioning = repositoryProvisioning
 		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 	}
+
 
 	@Override
 	boolean isEnabled() {
@@ -74,19 +76,34 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		GitRepo clusterResourcesRepo = scmRepoProvider.create('argocd/cluster-resources', this.gitHandler.resourcesScm)
-		clusterResourcesRepo.cloneRepo()
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
 		if (config.application.namespaceIsolation || config.application.netpols) {
-			if (config.application.namespaceIsolation) { generateNamespaceIsolationRBAC(clusterResourcesRepo) }
-			if (config.application.netpols) { generateNetpols(clusterResourcesRepo) }
+			if (config.application.namespaceIsolation) {
+				generateNamespaceIsolationRBAC(clusterResourcesRepo)
+			}
+			if (config.application.netpols) {
+				generateNetpols(clusterResourcesRepo)
+			}
 		}
 
 		// Remove dashboards for features that are not enabled
 		cleanupUnusedDashboards(clusterResourcesRepo)
 
-		clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
-		deployHelmChart('monitoring', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
+			'monitoring',
+			'Update Prometheus dashboards, RBAC and network policies.'
+		)
+
+		deployHelmChart(
+			'monitoring',
+			'kube-prometheus-stack',
+			namespace,
+			config.features.monitoring.helm,
+			HELM_VALUES_PATH,
+			config
+		)
 	}
 
 	private void setupMonitoringSecrets() {
@@ -198,7 +215,7 @@ class Monitoring extends Tool implements ToolWithImage {
 			fileSystemUtils.deleteFile("${dashboardRoot}/jenkins-dashboard.yaml")
 		}
 
-		if (!config.scm.scmManager?.url) {
+		if (!hasScmManagerMetricsEndpoint()) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/scmm-dashboard.yaml")
 		}
 	}
@@ -216,5 +233,12 @@ class Monitoring extends Tool implements ToolWithImage {
 	@Override
 	Config getConfig() {
 		return config
+	}
+
+	private boolean hasScmManagerMetricsEndpoint() {
+		URI uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
+
+		return uri != null &&
+			((uri.scheme ?: '').trim() || (uri.authority ?: '').trim() || (uri.path ?: '').trim())
 	}
 }
