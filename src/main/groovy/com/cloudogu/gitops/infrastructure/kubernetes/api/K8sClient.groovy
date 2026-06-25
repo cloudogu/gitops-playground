@@ -594,11 +594,15 @@ class K8sClient {
 			executeWithErrorHandling("apply resource from $sourceDescription") {
 				def resourceClient = client.resource(resource)
 
+				if (log.isTraceEnabled()) {
+					log.trace(Serialization.asYaml(resource))
+				}
+
 				if (resource.metadata?.namespace) {
 					resourceClient = resourceClient.inNamespace(resource.metadata.namespace)
 				}
 
-				resourceClient.createOrReplace()
+				resourceClient.create()
 			}
 		}
 
