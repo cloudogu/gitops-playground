@@ -67,7 +67,7 @@ class ContentLoaderTest {
 	K8sClient k8sClient = new K8sClient()
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-	Jenkins jenkins = mock(Jenkins.class)
+	Jenkins jenkins = mock(Jenkins)
 	ScmManagerMock scmManagerMock = new ScmManagerMock()
 	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
 	Deployer deployer = mock(Deployer)
@@ -77,17 +77,17 @@ class ContentLoaderTest {
 	@TempDir
 	File tmpDir
 
-	List<RepoCoordinate> expectedTargetRepos = [new RepoCoordinate(namespace: "common", repoName: "repo"),
-	                                            new RepoCoordinate(namespace: "ns1a", repoName: "repo1a1"),
-	                                            new RepoCoordinate(namespace: "ns1a", repoName: "repo1a2"),
-	                                            new RepoCoordinate(namespace: "ns1b", repoName: "repo1b1"),
-	                                            new RepoCoordinate(namespace: "ns1b", repoName: "repo1b2"),
-	                                            new RepoCoordinate(namespace: "ns2a", repoName: "repo2a1"),
-	                                            new RepoCoordinate(namespace: "ns2a", repoName: "repo2a2"),
-	                                            new RepoCoordinate(namespace: "ns2b", repoName: "repo2b1"),
-	                                            new RepoCoordinate(namespace: "ns2b", repoName: "repo2b2"),
-	                                            new RepoCoordinate(namespace: "copy", repoName: "repo1"),
-	                                            new RepoCoordinate(namespace: "copy", repoName: "repo2"),]
+	List<RepoCoordinate> expectedTargetRepos = [new RepoCoordinate(namespace: 'common', repoName: 'repo'),
+	                                            new RepoCoordinate(namespace: 'ns1a', repoName: 'repo1a1'),
+	                                            new RepoCoordinate(namespace: 'ns1a', repoName: 'repo1a2'),
+	                                            new RepoCoordinate(namespace: 'ns1b', repoName: 'repo1b1'),
+	                                            new RepoCoordinate(namespace: 'ns1b', repoName: 'repo1b2'),
+	                                            new RepoCoordinate(namespace: 'ns2a', repoName: 'repo2a1'),
+	                                            new RepoCoordinate(namespace: 'ns2a', repoName: 'repo2a2'),
+	                                            new RepoCoordinate(namespace: 'ns2b', repoName: 'repo2b1'),
+	                                            new RepoCoordinate(namespace: 'ns2b', repoName: 'repo2b2'),
+	                                            new RepoCoordinate(namespace: 'copy', repoName: 'repo1'),
+	                                            new RepoCoordinate(namespace: 'copy', repoName: 'repo2'),]
 
 	List<ContentRepositorySchema> contentRepos = [// copy-typed repo writing to their own target
 	                                              new ContentRepositorySchema(url: createContentRepo('copyRepo1'), type: ContentRepoType.COPY, target: 'copy/repo1'),
@@ -110,7 +110,7 @@ class ContentLoaderTest {
 
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
+	@Disabled('TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known')
 	@Test
 	void 'deploys image pull secrets'() {
 		config.registry.createImagePullSecrets = true
@@ -121,7 +121,7 @@ class ContentLoaderTest {
 		assertRegistrySecrets('reg-user', 'reg-pw')
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
+	@Disabled('TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known')
 	@Test
 	void 'deploys image pull secrets from read-only vars'() {
 		config.registry.createImagePullSecrets = true
@@ -134,7 +134,7 @@ class ContentLoaderTest {
 		assertRegistrySecrets('other-user', 'other-pw')
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
+	@Disabled('TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known')
 	@Test
 	void 'deploys additional image pull secrets for proxy registry'() {
 		config.registry.createImagePullSecrets = true
@@ -156,22 +156,22 @@ class ContentLoaderTest {
 
 		def repos = createContent(config).cloneContentRepos()
 
-		expectedTargetRepos.each { expected -> assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repoName}/file")).exists().isFile()
+		expectedTargetRepos.each { expected -> assertThat(new File(findRoot(repos), expected.namespace + '/' + expected.repoName + '/file')).exists().isFile()
 		}
 
-		assertThat(new File(findRoot(repos), "common/repo/file").text).contains("folderBasedRepo2") // Last repo "wins"
+		assertThat(new File(findRoot(repos), 'common/repo/file').text).contains("folderBasedRepo2") // Last repo "wins"
 
-		assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo1")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo2")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/repo/copyRepo1")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/repo/copyRepo2")).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/repo/folderBasedRepo1')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/repo/folderBasedRepo2')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/repo/copyRepo1')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/repo/copyRepo2')).exists().isFile()
 
 		// Assert Templating
-		assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
-		assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
+		assertThat(new File(findRoot(repos), 'common/repo/some.yaml')).exists()
+		assertThat(new File(findRoot(repos), 'common/repo/some.yaml').text).contains('namePrefix: foo-')
 		// Assert not templating for this folder-based repo
-		assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl")).exists()
-		assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl").text).contains('namePrefix: ${config.application.namePrefix}')
+		assertThat(new File(findRoot(repos), 'common/repo/someOther.yaml.ftl')).exists()
+		assertThat(new File(findRoot(repos), 'common/repo/someOther.yaml.ftl').text).contains('namePrefix: ${config.application.namePrefix}')
 	}
 
 	@Test
@@ -182,9 +182,9 @@ class ContentLoaderTest {
 		def repos = createContent(config).cloneContentRepos()
 
 		// Assert Templating
-		assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
-		assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
-		assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("myvar: this is a custom variable")
+		assertThat(new File(findRoot(repos), 'common/repo/some.yaml')).exists()
+		assertThat(new File(findRoot(repos), 'common/repo/some.yaml').text).contains('namePrefix: foo-')
+		assertThat(new File(findRoot(repos), 'common/repo/some.yaml').text).contains('myvar: this is a custom variable')
 	}
 
 	@Test
@@ -203,21 +203,21 @@ class ContentLoaderTest {
 	}
 
 	@Test
-	@DisplayName("Authenticates content Repos with secret")
+	@DisplayName('Authenticates content Repos with secret')
 	void authenticatesContentReposWithSecret() {
 		this.k8sClient.client = client
 		Secret secret = new SecretBuilder()
 			.withNewMetadata()
-			.withName("secret-test-name")
-			.withNamespace("default")
+			.withName('secret-test-name')
+			.withNamespace('default')
 			.endMetadata()
-			.withType("Opaque")
-			.withData(Map.of("username", "YWRtaW4=",
+			.withType('Opaque')
+			.withData(Map.of('username', 'YWRtaW4=',
 				"password", "czNjcjN0"))
 			.build()
 
 		this.k8sClient.client.secrets()
-			.inNamespace("default")
+			.inNamespace('default')
 			.resource(secret)
 			.create()
 
@@ -244,14 +244,14 @@ class ContentLoaderTest {
 
 		def repos = createContent(config).cloneContentRepos()
 
-		assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
+		assertThat(new File(findRoot(repos), 'common/tag/README.md')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/tag/README.md').text).contains('someTag')
 
-		assertThat(new File(findRoot(repos), "common/ref/README.md")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/ref/README.md").text).contains("main")
+		assertThat(new File(findRoot(repos), 'common/ref/README.md')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/ref/README.md').text).contains('main')
 
-		assertThat(new File(findRoot(repos), "common/branch/README.md")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/branch/README.md").text).contains("someBranch")
+		assertThat(new File(findRoot(repos), 'common/branch/README.md')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/branch/README.md').text).contains('someBranch')
 	}
 
 	@Test
@@ -260,8 +260,8 @@ class ContentLoaderTest {
 
 		def repos = createContent(config).cloneContentRepos()
 
-		assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
-		assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
+		assertThat(new File(findRoot(repos), 'common/default/README.md')).exists().isFile()
+		assertThat(new File(findRoot(repos), 'common/default/README.md').text).contains('different')
 	}
 
 	@Test
@@ -286,7 +286,7 @@ class ContentLoaderTest {
 
 		def repos = createContent(config).cloneContentRepos()
 
-		assertThat(new File(findRoot(repos), "common/repo/file").text).contains("copyRepo1")
+		assertThat(new File(findRoot(repos), 'common/repo/file').text).contains('copyRepo1')
 		// Last repo "wins"
 	}
 
@@ -303,14 +303,14 @@ class ContentLoaderTest {
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
 		try (def git = cloneRepo(expectedRepo, tmpDir)) {
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo2") // Last repo "wins"
-			assertThat(new File(tmpDir, "mirrorRepo1")).exists().isFile()
-			assertThat(new File(tmpDir, "copyRepo2")).exists().isFile()
-			assertThat(new File(tmpDir, "folderBasedRepo1")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo2') // Last repo "wins"
+			assertThat(new File(tmpDir, 'mirrorRepo1')).exists().isFile()
+			assertThat(new File(tmpDir, 'copyRepo2')).exists().isFile()
+			assertThat(new File(tmpDir, 'folderBasedRepo1')).exists().isFile()
 
 			// Assert mirrors branches and tags of non-folderBased repos
 			// Verify tag exists and points to correct content
-			git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+			git.fetch().setRefSpecs('refs/*:refs/*').call() // Fetch all tags and branches
 
 			assertTag(git, 'someTag')
 			assertBranch(git, 'someBranch')
@@ -330,13 +330,13 @@ class ContentLoaderTest {
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
 		try (def git = cloneRepo(expectedRepo, tmpDir)) {
-			assertThat(new File(tmpDir, "file").text).contains("mirrorRepo1") // Last repo "wins"
-			assertThat(new File(tmpDir, "folderBasedRepo1")).doesNotExist()
-			assertThat(new File(tmpDir, "copyRepo2")).doesNotExist()
+			assertThat(new File(tmpDir, 'file').text).contains('mirrorRepo1') // Last repo "wins"
+			assertThat(new File(tmpDir, 'folderBasedRepo1')).doesNotExist()
+			assertThat(new File(tmpDir, 'copyRepo2')).doesNotExist()
 
 			// Assert mirrors branches and tags of non-folderBased repos
 			// Verify tag exists and points to correct content
-			git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+			git.fetch().setRefSpecs('refs/*:refs/*').call() // Fetch all tags and branches
 
 			assertTag(git, 'someTag')
 			assertBranch(git, 'someBranch')
@@ -358,10 +358,10 @@ class ContentLoaderTest {
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
 		try (def git = cloneRepo(expectedRepo, tmpDir)) {
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo2") // Last repo "wins"
-			assertThat(new File(tmpDir, "mirrorRepo1")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo2') // Last repo "wins"
+			assertThat(new File(tmpDir, 'mirrorRepo1')).exists().isFile()
 
-			git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+			git.fetch().setRefSpecs('refs/*:refs/*').call() // Fetch all tags and branches
 
 			assertTag(git, 'someTag')
 			assertBranch(git, 'someBranch')
@@ -387,18 +387,18 @@ class ContentLoaderTest {
 		createContent(config).install()
 
 		// From branch to branch or tag to tag
-		assertTagAndReadme('mirror/tag', 'my-tag', "someTag")
-		assertBranchAndReadme('mirror/branch', 'my-branch', "someBranch")
+		assertTagAndReadme('mirror/tag', 'my-tag', 'someTag')
+		assertBranchAndReadme('mirror/branch', 'my-branch', 'someBranch')
 
-		assertTagAndReadme('copy/tag', 'my-tag', "someTag")
-		assertBranchAndReadme('copy/branch', 'my-branch', "someBranch")
+		assertTagAndReadme('copy/tag', 'my-tag', 'someTag')
+		assertBranchAndReadme('copy/branch', 'my-branch', 'someBranch')
 
 		// From tag to branch or the other way round
-		assertTagAndReadme('mirror/branch2tag', 'my-tag', "someBranch")
-		assertBranchAndReadme('mirror/tag2branch', 'my-branch', "someTag")
+		assertTagAndReadme('mirror/branch2tag', 'my-tag', 'someBranch')
+		assertBranchAndReadme('mirror/tag2branch', 'my-branch', 'someTag')
 
-		assertTagAndReadme('copy/branch2tag', 'my-tag', "someBranch")
-		assertBranchAndReadme('copy/tag2branch', 'my-branch', "someTag")
+		assertTagAndReadme('copy/branch2tag', 'my-tag', 'someBranch')
+		assertBranchAndReadme('copy/tag2branch', 'my-branch', 'someTag')
 	}
 
 	@Test
@@ -470,15 +470,15 @@ class ContentLoaderTest {
 			def commitMsg = git.log().call().iterator().next().getFullMessage()
 			assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo1")
-			assertThat(new File(tmpDir, "copyRepo1")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo1')
+			assertThat(new File(tmpDir, 'copyRepo1')).exists().isFile()
 		}
 
 		expectedRepo = 'common/mirror'
 		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 			// Assert mirrors branches and tags of non-folderBased repos
 			// Verify tag exists and points to correct content
-			git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+			git.fetch().setRefSpecs('refs/*:refs/*').call() // Fetch all tags and branches
 
 			assertTag(git, 'someTag')
 			assertBranch(git, 'someBranch')
@@ -487,7 +487,7 @@ class ContentLoaderTest {
 		expectedRepo = 'common/mirrorWithBranchRef'
 		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
-			git.fetch().setRefSpecs("refs/*:refs/*").call()
+			git.fetch().setRefSpecs('refs/*:refs/*').call()
 
 			assertNoTags(git)
 			assertOnlyBranch(git, 'main')
@@ -496,7 +496,7 @@ class ContentLoaderTest {
 		expectedRepo = 'common/mirrorWithTagRef'
 		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
-			git.fetch().setRefSpecs("refs/*:refs/*").call()
+			git.fetch().setRefSpecs('refs/*:refs/*').call()
 
 			assertTag(git, 'someTag')
 			assertOnlyBranch(git, 'main')
@@ -528,13 +528,9 @@ class ContentLoaderTest {
 
 	@Test
 	void 'merges cluster-resources content into shared repository workspace'() {
-		config.content.repos = [
-			new ContentRepositorySchema(
-				url: createContentRepo('copyRepo1'),
-				type: ContentRepoType.COPY,
-				target: 'argocd/cluster-resources'
-			)
-		]
+		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'),
+			type: ContentRepoType.COPY,
+			target: 'argocd/cluster-resources')]
 
 		File workspaceRoot = tmpDir.toPath()
 			.resolve('cluster-resources-workspace')
@@ -553,30 +549,22 @@ class ContentLoaderTest {
 			.isFile()
 
 		verify(repositoryProvisioning).provideWorkspace()
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges(
-			'content-loader',
-			'Merge ContentLoader content into argocd/cluster-resources'
-		)
+		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('content-loader',
+			'Merge ContentLoader content into argocd/cluster-resources')
 	}
 
 	@Test
 	void 'merges cluster-resources content without removing existing workspace files'() {
-		config.content.repos = [
-			new ContentRepositorySchema(
-				url: createContentRepo('copyRepo1'),
-				type: ContentRepoType.COPY,
-				target: 'argocd/cluster-resources'
-			)
-		]
+		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'),
+			type: ContentRepoType.COPY,
+			target: 'argocd/cluster-resources')]
 
 		File workspaceRoot = tmpDir.toPath()
 			.resolve('cluster-resources-workspace')
 			.toFile()
 
-		File existingDashboard = new File(
-			workspaceRoot,
-			'apps/monitoring/misc/dashboard/scmm-dashboard.yaml'
-		)
+		File existingDashboard = new File(workspaceRoot,
+			'apps/monitoring/misc/dashboard/scmm-dashboard.yaml')
 		existingDashboard.parentFile.mkdirs()
 		existingDashboard.text = 'existing scm-manager dashboard'
 
@@ -595,10 +583,8 @@ class ContentLoaderTest {
 			.exists()
 			.isFile()
 
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges(
-			'content-loader',
-			'Merge ContentLoader content into argocd/cluster-resources'
-		)
+		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('content-loader',
+			'Merge ContentLoader content into argocd/cluster-resources')
 	}
 
 	static void assertOnlyBranch(Git git, String branch) {
@@ -653,13 +639,13 @@ class ContentLoaderTest {
 		// clone repo, to ensure, changes in remote repo.
 		try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-			verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
+			verify(repo).createRepositoryAndSetPermission(any(String), eq(false))
 
 			def commitMsg = git.log().call().iterator().next().getFullMessage()
 			assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo2")
-			assertThat(new File(tmpDir, "copyRepo2")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo2')
+			assertThat(new File(tmpDir, 'copyRepo2')).exists().isFile()
 		}
 
 		/**
@@ -678,9 +664,9 @@ class ContentLoaderTest {
 
 			assertThat(git2).isNotNull()
 			// because copyRepo1 is only part of repo1
-			assertThat(new File(folderAfterReset, "file").text).contains("copyRepo1")
+			assertThat(new File(folderAfterReset, 'file').text).contains('copyRepo1')
 			// should not exists, if RESET to first repo
-			assertThat(new File(folderAfterReset, "copyRepo2").exists()).isFalse()
+			assertThat(new File(folderAfterReset, 'copyRepo2').exists()).isFalse()
 
 		}
 
@@ -708,13 +694,13 @@ class ContentLoaderTest {
 		// clone repo, to ensure, changes in remote repo.
 		try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-			verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
+			verify(repo).createRepositoryAndSetPermission(any(String), eq(false))
 
 			def commitMsg = git.log().call().iterator().next().getFullMessage()
 			assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo1")
-			assertThat(new File(tmpDir, "copyRepo1")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo1')
+			assertThat(new File(tmpDir, 'copyRepo1')).exists().isFile()
 
 		}
 		/**
@@ -732,9 +718,9 @@ class ContentLoaderTest {
 
 			assertThat(git2).isNotNull()
 			// because copyRepo1 is only part of repo1
-			assertThat(new File(folderAfterReset, "file").text).contains("copyRepo2")
+			assertThat(new File(folderAfterReset, 'file').text).contains('copyRepo2')
 			// should not exists, if RESET to first repo
-			assertThat(new File(folderAfterReset, "copyRepo2").exists()).isTrue()
+			assertThat(new File(folderAfterReset, 'copyRepo2').exists()).isTrue()
 
 		}
 	}
@@ -761,13 +747,13 @@ class ContentLoaderTest {
 		// clone repo, to ensure, changes in remote repo.
 		try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-			verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
+			verify(repo).createRepositoryAndSetPermission(any(String), eq(false))
 
 			def commitMsg = git.log().call().iterator().next().getFullMessage()
 			assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-			assertThat(new File(tmpDir, "file").text).contains("copyRepo2")
-			assertThat(new File(tmpDir, "copyRepo2")).exists().isFile()
+			assertThat(new File(tmpDir, 'file').text).contains('copyRepo2')
+			assertThat(new File(tmpDir, 'copyRepo2')).exists().isFile()
 		}
 
 		/**
@@ -787,9 +773,9 @@ class ContentLoaderTest {
 
 			assertThat(git).isNotNull()
 			// because copyRepo1 is only part of repo1
-			assertThat(new File(folderAfterReset, "file").text).contains("copyRepo2")
+			assertThat(new File(folderAfterReset, 'file').text).contains('copyRepo2')
 			// should not exists, if RESET to first repo
-			assertThat(new File(folderAfterReset, "copyRepo2").exists()).isTrue()
+			assertThat(new File(folderAfterReset, 'copyRepo2').exists()).isTrue()
 
 		}
 
@@ -856,11 +842,11 @@ class ContentLoaderTest {
 	@Test
 	void 'deployHelmReleasesFromContent calls deployHelmChart with valuesPath and helm config'() {
 		// Arrange: create a real values file on disk
-		Path valuesFile = Files.createTempFile("harbor-values-", ".yaml")
-		Files.writeString(valuesFile, """
+		Path valuesFile = Files.createTempFile('harbor-values-', '.yaml')
+		Files.writeString(valuesFile, '''
         expose:
           type: ingress
-        """.stripIndent())
+        '''.stripIndent())
 
 		def cfg = Config.fromMap(content: [helmReleases: [[name       : 'harbor',
 		                                                   repoURL    : 'https://helm.goharbor.io',
@@ -894,12 +880,12 @@ class ContentLoaderTest {
 	@Test
 	void 'deployHelmReleasesFromContent reads values file and inline values override file values'(@TempDir Path tempDir) {
 		// values file: replicas=1
-		Path valuesFile = tempDir.resolve("harbor-values.yaml")
-		Files.writeString(valuesFile, """
+		Path valuesFile = tempDir.resolve('harbor-values.yaml')
+		Files.writeString(valuesFile, '''
         replicas: 1
         service:
           type: ClusterIP
-        """.stripIndent())
+        '''.stripIndent())
 
 		def cfg = Config.fromMap(content: [helmReleases: [[name       : 'harbor',
 		                                                   repoURL    : 'https://helm.goharbor.io',
@@ -932,10 +918,10 @@ class ContentLoaderTest {
 
 	@Test
 	void 'deployHelmReleasesFromContent uses values file when inline values are empty'(@TempDir Path tempDir) {
-		Path valuesFile = tempDir.resolve("values.yaml")
-		Files.writeString(valuesFile, """
+		Path valuesFile = tempDir.resolve('values.yaml')
+		Files.writeString(valuesFile, '''
         replicas: 1
-        """.stripIndent())
+        '''.stripIndent())
 
 		def cfg = Config.fromMap(content: [helmReleases: [[name      : 'elasticsearch',
 		                                                   repoURL   : 'https://helm.elastic.co',
@@ -1008,7 +994,7 @@ class ContentLoaderTest {
 		bareRepoDir.deleteOnExit()
 		foldersToDelete << bareRepoDir
 		// init with bare repo
-		FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
+		FileUtils.copyDirectory(new File(System.getProperty('user.dir') + "/src/test/groovy/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
 		def bareRepoUri = 'file://' + bareRepoDir.absolutePath
 		log.debug("Repo $initPath: bare repo $bareRepoUri")
 
@@ -1024,9 +1010,9 @@ class ContentLoaderTest {
 				.setDirectory(tempRepo)
 				.call()) {
 
-				FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
+				FileUtils.copyDirectory(new File(System.getProperty('user.dir') + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
 
-				git.add().addFilepattern(".").call()
+				git.add().addFilepattern('.').call()
 
 				// Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
 				SystemReader.getInstance().userConfig.clear()
@@ -1046,16 +1032,14 @@ class ContentLoaderTest {
 	private void assertRegistrySecrets(String regUser, String regPw) {}
 
 	private ContentLoaderForTest createContent(Config config) {
-		new ContentLoaderForTest(
-			config,
+		return new ContentLoaderForTest(config,
 			k8sClient,
 			scmmRepoProvider,
 			jenkins,
 			gitHandler,
 			fileSystemUtils,
 			deployer,
-			repositoryProvisioning
-		)
+			repositoryProvisioning)
 	}
 
 	private RepositoryWorkspace mockClusterResourcesWorkspaceAt(File workspaceRoot) {
@@ -1074,7 +1058,7 @@ class ContentLoaderTest {
 
 	private static String findRoot(List<RepoCoordinate> repos) {
 		def result = new File(repos.get(0).getClonedContentRepo().getParent()).getParent()
-		return result;
+		return result
 
 	}
 
@@ -1083,7 +1067,7 @@ class ContentLoaderTest {
 		def url = repo.getGitRepositoryUrl()
 
 		def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
-		git.getRepository().getConfig().setBoolean("gc", null, "autoDetach", false)
+		git.getRepository().getConfig().setBoolean('gc', null, 'autoDetach', false)
 		return git
 	}
 
@@ -1096,24 +1080,24 @@ class ContentLoaderTest {
 	void assertTagAndReadme(String repo, String expectedTag, String expectedReadmeContent) {
 		def repoFolder = createRandomSubDir()
 		try (def git = cloneRepo(repo, repoFolder)) {
-			git.fetch().setRefSpecs("refs/*:refs/*").call()
+			git.fetch().setRefSpecs('refs/*:refs/*').call()
 			assertTag(git, expectedTag)
 
 			git.checkout().setName(expectedTag).call()
-			assertThat(new File(repoFolder, "README.md")).exists().isFile()
-			assertThat(new File(repoFolder, "README.md").text).contains(expectedReadmeContent)
+			assertThat(new File(repoFolder, 'README.md')).exists().isFile()
+			assertThat(new File(repoFolder, 'README.md').text).contains(expectedReadmeContent)
 		}
 	}
 
 	void assertBranchAndReadme(String repo, String expectedBranch, String expectedReadmeContent) {
 		def repoFolder = createRandomSubDir()
 		try (def git = cloneRepo(repo, repoFolder)) {
-			git.fetch().setRefSpecs("refs/*:refs/*").call()
+			git.fetch().setRefSpecs('refs/*:refs/*').call()
 			assertBranch(git, expectedBranch)
 
 			git.checkout().setName(expectedBranch).call()
-			assertThat(new File(repoFolder, "README.md")).exists().isFile()
-			assertThat(new File(repoFolder, "README.md").text).contains(expectedReadmeContent)
+			assertThat(new File(repoFolder, 'README.md')).exists().isFile()
+			assertThat(new File(repoFolder, 'README.md').text).contains(expectedReadmeContent)
 		}
 	}
 
@@ -1129,16 +1113,14 @@ class ContentLoaderTest {
 			FileSystemUtils fileSystemUtils,
 			Deployer deployer,
 			RepositoryProvisioning repositoryProvisioning) {
-			super(
-				config,
+			super(config,
 				k8sClient,
 				repoProvider,
 				jenkins,
 				gitHandler,
 				fileSystemUtils,
 				deployer,
-				repositoryProvisioning
-			)
+				repositoryProvisioning)
 		}
 
 		@Override
@@ -1160,7 +1142,7 @@ class ContentLoaderTest {
 
 		@Override
 		protected CloneCommand gitClone() {
-			cloneSpy = spy(super.gitClone().setNoCheckout(true))
+			return cloneSpy = spy(super.gitClone().setNoCheckout(true))
 		}
 	}
 
