@@ -9,23 +9,19 @@ class RepositoryWorkspace {
 	final GitRepo clusterResourcesRepository
 	final GitRepo tenantBootstrapRepository
 
-	RepositoryWorkspace(
-		GitRepo clusterResourcesRepository,
-		GitRepo tenantBootstrapRepository = null
-	) {
+	RepositoryWorkspace(GitRepo clusterResourcesRepository,
+		GitRepo tenantBootstrapRepository = null) {
 		this.clusterResourcesRepository = clusterResourcesRepository
 		this.tenantBootstrapRepository = tenantBootstrapRepository
 	}
 
 	boolean hasTenantBootstrapRepository() {
-		tenantBootstrapRepository != null
+		return tenantBootstrapRepository != null
 	}
 
 	GitRepo tenantBootstrapRepositoryOrFail() {
 		if (tenantBootstrapRepository == null) {
-			throw new IllegalStateException(
-				'Tenant bootstrap repository is not available in single-instance mode.'
-			)
+			throw new IllegalStateException('Tenant bootstrap repository is not available in single-instance mode.')
 		}
 
 		return tenantBootstrapRepository
@@ -63,52 +59,44 @@ class RepositoryWorkspace {
 		}
 	}
 
-	void pullRebaseRepositories() {
-		clusterResourcesRepository.pullRebaseMain()
-
-		if (hasTenantBootstrapRepository()) {
-			tenantBootstrapRepositoryOrFail().pullRebaseMain()
-		}
-	}
-
 	String clusterResourcesRootDir() {
-		clusterResourcesRepository.getAbsoluteLocalRepoTmpDir()
+		return clusterResourcesRepository.getAbsoluteLocalRepoTmpDir()
 	}
 
 	String clusterResourcesAppsDir() {
-		Path.of(clusterResourcesRootDir(), 'apps').toString()
+		return Path.of(clusterResourcesRootDir(), 'apps').toString()
 	}
 
 	String clusterResourcesArgoCdDir() {
-		Path.of(clusterResourcesAppsDir(), 'argocd').toString()
+		return Path.of(clusterResourcesAppsDir(), 'argocd').toString()
 	}
 
 	String clusterResourcesApplicationsDir() {
-		Path.of(clusterResourcesArgoCdDir(), 'applications').toString()
+		return Path.of(clusterResourcesArgoCdDir(), 'applications').toString()
 	}
 
 	String clusterResourcesProjectsDir() {
-		Path.of(clusterResourcesArgoCdDir(), 'projects').toString()
+		return Path.of(clusterResourcesArgoCdDir(), 'projects').toString()
 	}
 
 	String tenantBootstrapRootDir() {
-		tenantBootstrapRepositoryOrFail().getAbsoluteLocalRepoTmpDir()
+		return tenantBootstrapRepositoryOrFail().getAbsoluteLocalRepoTmpDir()
 	}
 
 	String tenantBootstrapAppsDir() {
-		Path.of(tenantBootstrapRootDir(), 'apps').toString()
+		return Path.of(tenantBootstrapRootDir(), 'apps').toString()
 	}
 
 	String tenantBootstrapArgoCdDir() {
-		Path.of(tenantBootstrapAppsDir(), 'argocd').toString()
+		return Path.of(tenantBootstrapAppsDir(), 'argocd').toString()
 	}
 
 	String tenantBootstrapApplicationsDir() {
-		Path.of(tenantBootstrapArgoCdDir(), 'applications').toString()
+		return Path.of(tenantBootstrapArgoCdDir(), 'applications').toString()
 	}
 
 	String tenantBootstrapProjectsDir() {
-		Path.of(tenantBootstrapArgoCdDir(), 'projects').toString()
+		return Path.of(tenantBootstrapArgoCdDir(), 'projects').toString()
 	}
 
 	void commitAndPushClusterResourcesChanges(String message) {
@@ -126,4 +114,13 @@ class RepositoryWorkspace {
 			commitAndPushTenantBootstrapChanges(message)
 		}
 	}
+
+	void checkoutMainFromRemoteIfLocalMainMissing() {
+		clusterResourcesRepository.checkoutMainFromRemoteIfLocalMainMissing()
+
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().checkoutMainFromRemoteIfLocalMainMissing()
+		}
+	}
+
 }

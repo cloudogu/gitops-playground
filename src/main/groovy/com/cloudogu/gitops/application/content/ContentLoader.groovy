@@ -101,7 +101,7 @@ class ContentLoader extends Tool {
 		config.content.repos.each { repo ->
 
 			if (!repo.url) {
-				throw new RuntimeException("content.repos requires a url parameter.")
+				throw new RuntimeException('content.repos requires a url parameter.')
 			}
 			if (repo.target) {
 				if (repo.target.count('/') == 0) {
@@ -140,14 +140,14 @@ class ContentLoader extends Tool {
 
 	protected void deployHelmReleasesFromContent() {
 		if (!config.content?.helmReleases) {
-			log.debug("No content.helmReleases configured - skipping.")
+			log.debug('No content.helmReleases configured - skipping.')
 			return
 		}
 
 		config.content.helmReleases.each { helmRelease ->
 			String version = helmRelease.version?.trim()
 			if (!version) {
-				version = "*"
+				version = '*'
 			}
 
 			Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(repoURL: helmRelease.repoURL,
@@ -323,7 +323,7 @@ class ContentLoader extends Tool {
 	}
 
 	private static List<File> findRepoDirectories(File srcRepo) {
-		srcRepo.listFiles().findAll {
+		return srcRepo.listFiles().findAll {
 			it.isDirectory() && // Exclude .git for example
 				!it.name.startsWith('.')
 		}
@@ -366,7 +366,7 @@ class ContentLoader extends Tool {
 			if (credentialsProvider) {
 				fetch.setCredentialsProvider(credentialsProvider)
 			}
-			fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
+			fetch.setRefSpecs('+refs/*:refs/*').call() // Fetch all branches and tags
 		}
 
 		if (repoConfig.ref) {
@@ -411,7 +411,7 @@ class ContentLoader extends Tool {
 			}
 
 			GitRepo targetRepo = repoProvider.create(repoCoordinate.fullRepoName, this.gitHandler.tenant)
-			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
+			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission('', false)
 
 			if (isValidForPush(isNewRepo, repoCoordinate)) {
 				targetRepo.cloneRepo()
@@ -428,7 +428,6 @@ class ContentLoader extends Tool {
 
 				createJenkinsJobIfApplicable(repoCoordinate, targetRepo)
 
-				// cleaning tmp folders
 				repoCoordinate.clonedContentRepo.deleteDir()
 				new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
 			}
@@ -436,85 +435,67 @@ class ContentLoader extends Tool {
 	}
 
 	private boolean isClusterResourcesRepo(RepoCoordinate repoCoordinate) {
-		repoCoordinate.repoName == 'cluster-resources' &&
-			knownClusterResourcesNamespaces().contains(repoCoordinate.namespace)
+		return repoCoordinate.repoName == 'cluster-resources' && knownClusterResourcesNamespaces().contains(repoCoordinate.namespace)
 	}
 
 	private Set<String> knownClusterResourcesNamespaces() {
 		String namePrefix = config.application.namePrefix ?: ''
 		String argocdNamespace = config.features.argocd.namespace ?: 'argocd'
 
-		return [
-			'argocd',
-			argocdNamespace,
-			"${namePrefix}${argocdNamespace}".toString()
-		].findAll { it } as Set<String>
+		return ['argocd',
+		        argocdNamespace,
+		        "${namePrefix}${argocdNamespace}".toString()].findAll { it } as Set<String>
 	}
 
 	private void mergeClusterResourcesIntoRepositoryWorkspace(RepoCoordinate repoCoordinate) {
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 
 		if (!repoCoordinate.clonedContentRepo.exists()) {
-			log.warn(
-				"Skipping ContentLoader merge for '{}': source folder does not exist: {}",
+			log.warn("Skipping ContentLoader merge for '{}': source folder does not exist: {}",
 				repoCoordinate.fullRepoName,
-				repoCoordinate.clonedContentRepo
-			)
+				repoCoordinate.clonedContentRepo)
 			return
 		}
 
 		if (repoCoordinate.clonedContentRepo.listFiles()?.length == 0) {
-			log.warn(
-				"Skipping ContentLoader merge for '{}': source folder is empty: {}",
+			log.warn("Skipping ContentLoader merge for '{}': source folder is empty: {}",
 				repoCoordinate.fullRepoName,
-				repoCoordinate.clonedContentRepo
-			)
+				repoCoordinate.clonedContentRepo)
 			return
 		}
 
-		log.debug(
-			"Merging ContentLoader content for repo '{}' into shared RepositoryWorkspace from '{}'.",
+		log.debug("Merging ContentLoader content for repo '{}' into shared RepositoryWorkspace from '{}'.",
 			repoCoordinate.fullRepoName,
-			repoCoordinate.clonedContentRepo.absolutePath
-		)
+			repoCoordinate.clonedContentRepo.absolutePath)
 
-		log.debug(
-			"ContentLoader source files for '{}': {}",
+		log.debug("ContentLoader source files for '{}': {}",
 			repoCoordinate.fullRepoName,
-			repoCoordinate.clonedContentRepo.listFiles()?.collect { it.name }
-		)
+			repoCoordinate.clonedContentRepo.listFiles()?.collect { it.name })
 
 		/*
-		 * cluster-resources is now managed by RepositoryProvisioning.
+		 * Important:
+		 * Do not synchronize or reset the shared workspace here.
 		 *
-		 * Do not create, clone, clear or initialize a separate GitRepo here.
-		 * Also do not use GitRepo.copyDirectoryContents(...), because that may replace
-		 * existing folders like apps/cert-manager, apps/vault, apps/jenkins, etc.
+		 * The workspace already contains generated GOP resources from ArgoCD,
+		 * ArgoCdApplicationStrategy and previous tool deployments.
 		 *
-		 * The ContentLoader content must be merged additively into the existing shared workspace.
+		 * The ContentLoader must only merge its content into the existing workspace.
+		 * Existing files with the same path may be overwritten, but unrelated files
+		 * and directories must stay untouched.
 		 */
-		FileUtils.copyDirectory(
-			repoCoordinate.clonedContentRepo,
+		FileUtils.copyDirectory(repoCoordinate.clonedContentRepo,
 			new File(workspace.clusterResourcesRootDir()),
-			new FileSystemUtils.IgnoreDotGitFolderFilter()
-		)
+			new FileSystemUtils.IgnoreDotGitFolderFilter())
 
-		log.debug(
-			"Cluster-resources workspace files after ContentLoader merge: {}",
-			new File(workspace.clusterResourcesRootDir()).listFiles()?.collect { it.name }
-		)
+		log.debug('Cluster-resources workspace files after ContentLoader merge: {}',
+			new File(workspace.clusterResourcesRootDir()).listFiles()?.collect { it.name })
 
-		log.debug(
-			"Cluster-resources apps after ContentLoader merge: {}",
-			new File(workspace.clusterResourcesAppsDir()).listFiles()?.collect { it.name }
-		)
+		log.debug('Cluster-resources apps after ContentLoader merge: {}',
+			new File(workspace.clusterResourcesAppsDir()).listFiles()?.collect { it.name })
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			'content-loader',
-			"Merge ContentLoader content into ${repoCoordinate.fullRepoName}"
-		)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges('content-loader',
+			"Merge ContentLoader content into ${repoCoordinate.fullRepoName}")
 	}
-
 
 	/**
 	 * Copies repoCoordinate to targetRepo, commits and pushes
@@ -546,17 +527,20 @@ class ContentLoader extends Tool {
 		} else {
 			refSpec = "HEAD:refs/heads/${targetRefShort}"
 		}
-		refSpec
+		return refSpec
 	}
 
 	private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
 		if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
 			if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
-				log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+				log.info('OverwriteMode ' + String.valueOf(OverwriteMode.RESET) + ' set for repo \'' + repoCoordinate.fullRepoName + '\': ' +
 					"Deleting existing files in repo and replacing them with new content.")
 				targetRepo.clearRepo()
 			} else {
-				log.debug("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " + "Merging new content into existing repo. ")
+				log.debug('OverwriteMode ' + String.valueOf(OverwriteMode.UPGRADE) +
+					' set for repo \'' +
+					repoCoordinate.fullRepoName +
+					'\': ' + "Merging new content into existing repo. ")
 			}
 		}
 	}
@@ -617,7 +601,7 @@ class ContentLoader extends Tool {
 	/**
 	 * Overwrite for testing purposes*/
 	protected CloneCommand gitClone() {
-		Git.cloneRepository()
+		return Git.cloneRepository()
 	}
 
 	/**
@@ -644,7 +628,10 @@ class ContentLoader extends Tool {
 	static boolean isValidForPush(boolean isNewRepo, RepoCoordinate repoCoordinate) {
 
 		if (!isNewRepo && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
-			log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " + "and repo already exists in target:  Not pushing content!" +
+			log.warn('OverwriteMode ' + String.valueOf(OverwriteMode.INIT) +
+				' set for repo \'' +
+				repoCoordinate.fullRepoName +
+				'\' ' + "and repo already exists in target:  Not pushing content!" +
 				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}
@@ -679,14 +666,14 @@ class ContentLoader extends Tool {
 		 * @return all epoCoordinate with the same fullRepoName. There can be one with either COPY/FOLDER_BASED and many MIRRORs.
 		 */
 		List<RepoCoordinate> findSame(List<RepoCoordinate> repoCoordinates) {
-			repoCoordinates.findAll() { it.fullRepoName == fullRepoName }
+			return repoCoordinates.findAll() { it.fullRepoName == fullRepoName }
 		}
 
 		/**
 		 * @return RepoCoordinate with the same fullRepoName and repoConfig.type not MIRROR. There can only ever be one!
 		 */
 		RepoCoordinate findSameNotMirror(List<RepoCoordinate> repoCoordinates) {
-			repoCoordinates.find() {
+			return repoCoordinates.find() {
 				it.fullRepoName == fullRepoName && ContentRepoType.MIRROR != it.repoConfig.type
 			}
 		}
