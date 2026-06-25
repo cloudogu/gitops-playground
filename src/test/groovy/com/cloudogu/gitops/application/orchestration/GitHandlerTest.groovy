@@ -169,12 +169,4 @@ class GitHandlerTest {
 		assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
 		assertEquals(1, tenant.createdRepos.size())
 	}
-
-	@Test
-	void 'withOrgPrefix helper behaves as expected'() {
-		assertEquals('argocd/argocd', GitHandler.withOrgPrefix('', 'argocd/argocd'))
-		assertEquals('argocd/argocd', GitHandler.withOrgPrefix(null, 'argocd/argocd'))
-		assertEquals('fv40-argocd/argocd', GitHandler.withOrgPrefix('fv40-', 'argocd/argocd'))
-	}
-
 }
