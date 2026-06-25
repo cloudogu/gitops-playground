@@ -18,20 +18,21 @@ class GitHandlerTest {
 
 	private static Config config(Map overrides = [:]) {
 		Map base = [application: [namePrefix: ''],
-		            scm        : [scmProviderType: ScmProviderType.SCM_MANAGER, // default
+		            scm        : [scmProviderType: ScmProviderType.SCM_MANAGER,
 		                          scmManager     : [internal: true],
 		                          gitlab         : [url: '']],
 		            multiTenant: [scmManager          : [url: ''],
 		                          gitlab              : [url: ''],
 		                          useDedicatedInstance: false]]
+
 		Map merged = deepMerge(base, overrides)
 		return new Config().fromMap(merged)
 	}
 
-	/** simple deep merge for nested maps */
 	@SuppressWarnings('unchecked')
 	private static Map deepMerge(Map left, Map right) {
 		Map out = [:] + left
+
 		right.each { k, v ->
 			if (v instanceof Map && left[k] instanceof Map) {
 				out[k] = deepMerge((Map) left[k], (Map) v)
@@ -39,6 +40,7 @@ class GitHandlerTest {
 				out[k] = v
 			}
 		}
+
 		return out
 	}
 
@@ -53,7 +55,9 @@ class GitHandlerTest {
 	@Test
 	void 'validate(): ScmManager external url sets internal=false and urlForJenkins equals url'() {
 		def cfg = config([application: [namePrefix: 'fv40-'],
-		                  scm        : [scmManager: [url: 'https://scmm.example.com/scm', internal: true]]])
+		                  scm        : [scmManager: [url     : 'https://scmm.example.com/scm',
+		                                             internal: true]]])
+
 		def gh = handler(cfg)
 
 		gh.validate()
@@ -63,11 +67,15 @@ class GitHandlerTest {
 	}
 
 	@Test
-	void 'validate(): GitLab chosen,  provider switched, scmm nulled, missing PAT or parentGroupId throws'() {
+	void 'validate(): GitLab chosen, provider switched, scmm nulled, missing PAT or parentGroupId throws'() {
 		def cfg = config([scm: [gitlab: [url: 'https://gitlab.example.com']]])
+
 		def gh = handler(cfg)
 
-		def ex = assertThrows(RuntimeException) { gh.validate() }
+		def ex = assertThrows(RuntimeException) {
+			gh.validate()
+		}
+
 		assertTrue(ex.message.toLowerCase().contains('gitlab'))
 		assertEquals(ScmProviderType.GITLAB, cfg.scm.scmProviderType)
 		assertNull(cfg.scm.scmManager)
@@ -92,17 +100,24 @@ class GitHandlerTest {
 		def gitHandler = handler(cfg)
 
 		gitHandler.tenant = mock(GitProvider)
+
 		assertSame(gitHandler.tenant, gitHandler.getResourcesScm())
 
 		gitHandler.tenant = null
-		def ex = assertThrows(IllegalStateException) { gitHandler.getResourcesScm() }
+
+		def ex = assertThrows(IllegalStateException) {
+			gitHandler.getResourcesScm()
+		}
+
 		assertTrue(ex.message.contains('No SCM provider'))
 	}
 
-	// ---------- enable(): SCM_MANAGER tenant only ------------------------------------
+	// ---------- prepareProviders(): SCM_MANAGER ---------------------------------------
+
 	@Test
-	void 'ScmManager tenant-only: tenant gets 1 repository'() {
-		def cfg = new Config().fromMap([scm        : [scmManager: [internal: true], gitlab: [url: '']],
+	void 'prepareProviders(): ScmManager tenant-only creates tenant provider only'() {
+		def cfg = new Config().fromMap([scm        : [scmManager: [internal: true],
+		                                              gitlab    : [url: '']],
 		                                multiTenant: [useDedicatedInstance: false]])
 
 		def tenant = new ScmManagerMock()
@@ -112,15 +127,27 @@ class GitHandlerTest {
 
 		assertEquals('scm-manager', cfg.scm.scmManager.namespace)
 
-		assertTrue(tenant.createdRepos.contains('argocd/cluster-resources'))
-		assertEquals(1, tenant.createdRepos.size())
-
-		// No central provider in tenant-only scenario
-		assertNull(gitHandler.getCentral())
+		assertSame(tenant, gitHandler.tenant)
+		assertNull(gitHandler.central)
+		assertSame(tenant, gitHandler.getResourcesScm())
 	}
 
 	@Test
-	void 'ScmManager dedicated: central gets 1 repo, tenant gets 1 repo'() {
+	void 'prepareProviders(): ScmManager tenant-only does not create repositories'() {
+		def cfg = new Config().fromMap([scm        : [scmManager: [internal: true],
+		                                              gitlab    : [url: '']],
+		                                multiTenant: [useDedicatedInstance: false]])
+
+		def tenant = new ScmManagerMock()
+		def gitHandler = new GitHandlerForTests(cfg, tenant)
+
+		gitHandler.prepareProviders()
+
+		assertTrue(tenant.createdRepos.isEmpty())
+	}
+
+	@Test
+	void 'prepareProviders(): ScmManager dedicated creates tenant and central providers'() {
 		def cfg = config([application: [namePrefix: 'fv40-'],
 		                  scm        : [scmProviderType: ScmProviderType.SCM_MANAGER,
 		                                scmManager     : [internal: true],
@@ -135,38 +162,87 @@ class GitHandlerTest {
 
 		gitHandler.prepareProviders()
 
-		// Central: argocd/cluster-resources
-		assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
-		assertEquals(1, central.createdRepos.size())
-
-		// Tenant: argocd/cluster-resources
-		assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
-		assertEquals(1, tenant.createdRepos.size())
+		assertSame(tenant, gitHandler.tenant)
+		assertSame(central, gitHandler.central)
+		assertSame(central, gitHandler.getResourcesScm())
 	}
 
 	@Test
-	void 'Gitlab dedicated: same layout as ScmManager dedicated'() {
+	void 'prepareProviders(): ScmManager dedicated does not create repositories'() {
 		def cfg = config([application: [namePrefix: 'fv40-'],
-		                  scm        : [scmProviderType: ScmProviderType.GITLAB,
-		                                gitlab         : [url: 'https://gitlab.example.com', password: 'pat', parentGroupId: 123],
-		                                scmManager     : [internal: true]],
+		                  scm        : [scmProviderType: ScmProviderType.SCM_MANAGER,
+		                                scmManager     : [internal: true],
+		                                gitlab         : [url: '']],
 		                  multiTenant: [useDedicatedInstance: true,
-		                                gitlab              : [url: 'https://gitlab.example.com', password: 'pat2', parentGroupId: 456],
-		                                scmManager          : [url: '']]])
+		                                scmManager          : [url: ''],
+		                                gitlab              : [url: '']]])
 
-		// Assumes your GitlabMock has a similar contract to ScmManagerMock (collects createdRepos)
-		def tenant = new GitlabMock(base: new URI(cfg.scm.gitlab.url), namePrefix: 'fv40-')
-		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url), namePrefix: 'fv40-')
+		def tenant = new ScmManagerMock(namePrefix: 'fv40-')
+		def central = new ScmManagerMock(namePrefix: 'fv40-')
 		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
 
 		gitHandler.prepareProviders()
 
-		// Central: argocd/cluster-resources
-		assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
-		assertEquals(1, central.createdRepos.size())
+		assertTrue(tenant.createdRepos.isEmpty())
+		assertTrue(central.createdRepos.isEmpty())
+	}
 
-		// Tenant: argocd/cluster-resources
-		assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
-		assertEquals(1, tenant.createdRepos.size())
+	// ---------- prepareProviders(): GITLAB -------------------------------------------
+
+	@Test
+	void 'prepareProviders(): Gitlab dedicated creates tenant and central providers'() {
+		def cfg = config([application: [namePrefix: 'fv40-'],
+		                  scm        : [scmProviderType: ScmProviderType.GITLAB,
+		                                gitlab         : [url          : 'https://gitlab.example.com',
+		                                                  password     : 'pat',
+		                                                  parentGroupId: 123],
+		                                scmManager     : [internal: true]],
+		                  multiTenant: [useDedicatedInstance: true,
+		                                gitlab              : [url          : 'https://gitlab.example.com',
+		                                                       password     : 'pat2',
+		                                                       parentGroupId: 456],
+		                                scmManager          : [url: '']]])
+
+		def tenant = new GitlabMock(base: new URI(cfg.scm.gitlab.url),
+			namePrefix: 'fv40-')
+
+		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url),
+			namePrefix: 'fv40-')
+
+		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+
+		gitHandler.prepareProviders()
+
+		assertSame(tenant, gitHandler.tenant)
+		assertSame(central, gitHandler.central)
+		assertSame(central, gitHandler.getResourcesScm())
+	}
+
+	@Test
+	void 'prepareProviders(): Gitlab dedicated does not create repositories'() {
+		def cfg = config([application: [namePrefix: 'fv40-'],
+		                  scm        : [scmProviderType: ScmProviderType.GITLAB,
+		                                gitlab         : [url          : 'https://gitlab.example.com',
+		                                                  password     : 'pat',
+		                                                  parentGroupId: 123],
+		                                scmManager     : [internal: true]],
+		                  multiTenant: [useDedicatedInstance: true,
+		                                gitlab              : [url          : 'https://gitlab.example.com',
+		                                                       password     : 'pat2',
+		                                                       parentGroupId: 456],
+		                                scmManager          : [url: '']]])
+
+		def tenant = new GitlabMock(base: new URI(cfg.scm.gitlab.url),
+			namePrefix: 'fv40-')
+
+		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url),
+			namePrefix: 'fv40-')
+
+		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+
+		gitHandler.prepareProviders()
+
+		assertTrue(tenant.createdRepos.isEmpty())
+		assertTrue(central.createdRepos.isEmpty())
 	}
 }
