@@ -132,8 +132,9 @@ class RepositoryProvisioning {
 	) {
 		assertWorkspacePrepared()
 
+		workspace.pullRebaseRepositories()
 		workspace.commitAndPushClusterResourcesChanges(
-			message ?: "Update ${toolName} resources"
+			(message ?: "Update ${toolName} resources").toString()
 		)
 	}
 
@@ -144,7 +145,7 @@ class RepositoryProvisioning {
 		assertWorkspacePrepared()
 
 		workspace.commitAndPushClusterResourcesAndTenantBootstrapChanges(
-			message ?: "Update ${toolName} resources"
+			(message ?: "Update ${toolName} resources").toString()
 		)
 	}
 

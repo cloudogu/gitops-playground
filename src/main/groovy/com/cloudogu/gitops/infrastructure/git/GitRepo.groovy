@@ -22,6 +22,7 @@ import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
+import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
@@ -108,7 +109,28 @@ class GitRepo {
 			.setDirectory(localRepoDir)
 			.call()
 
+		// Configure the 'origin' remote so init'd repos behave like cloned ones.
+		// pullRebaseMain() pulls from the remote name 'origin'; without this the
+		// repo has no remote.origin.url and JGit fails with
+		// "No value for key remote.origin.url found in configuration".
+		git.remoteAdd()
+			.setName('origin')
+			.setUri(new URIish(getGitRepositoryUrl()))
+			.call()
+
 		git.close()
+	}
+
+	void pullRebaseMain() {
+		log.debug("Pulling remote main with rebase for repo {}", repoTarget)
+
+		getGit()
+			.pull()
+			.setRemote('origin')
+			.setRemoteBranchName('main')
+			.setRebase(true)
+			.setCredentialsProvider(getCredentialProvider())
+			.call()
 	}
 
 	void commitAndPush(String message, String tag) {
@@ -143,6 +165,26 @@ class GitRepo {
 
 			log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
 			pushCommand.call()
+			def pushResults = createPushCommand(refSpec).call()
+
+			pushResults.each { result ->
+				result.remoteUpdates.each { update ->
+					log.debug(
+						"Push result for repo '{}': remoteName='{}', status='{}', message='{}'",
+						repoTarget,
+						update.remoteName,
+						update.status,
+						update.message
+					)
+
+					if (update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK &&
+						update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+						throw new RuntimeException(
+							"Push failed for repo '${repoTarget}', remoteName='${update.remoteName}', status='${update.status}', message='${update.message}'"
+						)
+					}
+				}
+			}
 		} else {
 			log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
 		}
@@ -166,6 +208,7 @@ class GitRepo {
 	void pushRef(String ref, String targetRef, boolean force) {
 		createPushCommand("${ref}:${targetRef}").setForce(force).call()
 	}
+
 
 	/**
 	 * Delete all files in this repository*/

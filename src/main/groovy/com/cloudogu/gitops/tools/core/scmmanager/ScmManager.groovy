@@ -64,11 +64,6 @@ class ScmManager extends Tool {
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			'scm-manager',
-			'Add SCM-Manager ArgoCD application'
-		)
-
 		log.info('Internal SCM-Manager setup finished.')
 	}
 

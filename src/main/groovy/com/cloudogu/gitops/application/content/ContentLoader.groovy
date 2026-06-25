@@ -4,6 +4,8 @@ import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
@@ -48,7 +50,7 @@ class ContentLoader extends Tool {
 	// used to clone repos in validation phase
 	private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
 	private GitHandler gitHandler
-
+	private RepositoryProvisioning repositoryProvisioning
 	protected File mergedReposFolder
 
 	//For security reasons we safe the credentialsProvider for each repo here and not in config pro each repo
@@ -61,7 +63,8 @@ class ContentLoader extends Tool {
 		Jenkins jenkins,
 		GitHandler gitHandler,
 		FileSystemUtils fileSystemUtils,
-		Deployer deployer) {
+		Deployer deployer,
+		RepositoryProvisioning repositoryProvisioning) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
@@ -69,6 +72,7 @@ class ContentLoader extends Tool {
 		this.gitHandler = gitHandler
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
+		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	@Override
@@ -400,6 +404,12 @@ class ContentLoader extends Tool {
 	private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
 		repoCoordinates.each { repoCoordinate ->
 
+			if (isClusterResourcesRepo(repoCoordinate)) {
+				mergeClusterResourcesIntoRepositoryWorkspace(repoCoordinate)
+				repoCoordinate.clonedContentRepo.deleteDir()
+				return
+			}
+
 			GitRepo targetRepo = repoProvider.create(repoCoordinate.fullRepoName, this.gitHandler.tenant)
 			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
 
@@ -410,7 +420,6 @@ class ContentLoader extends Tool {
 					case ContentRepoType.MIRROR:
 						handleRepoMirroring(repoCoordinate, targetRepo)
 						break
-						// COPY and FOLDER_BASED same treatment
 					case ContentRepoType.FOLDER_BASED:
 					case ContentRepoType.COPY:
 						handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo)
@@ -422,10 +431,90 @@ class ContentLoader extends Tool {
 				// cleaning tmp folders
 				repoCoordinate.clonedContentRepo.deleteDir()
 				new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
-			} // no else needed
+			}
+		}
+	}
+
+	private boolean isClusterResourcesRepo(RepoCoordinate repoCoordinate) {
+		repoCoordinate.repoName == 'cluster-resources' &&
+			knownClusterResourcesNamespaces().contains(repoCoordinate.namespace)
+	}
+
+	private Set<String> knownClusterResourcesNamespaces() {
+		String namePrefix = config.application.namePrefix ?: ''
+		String argocdNamespace = config.features.argocd.namespace ?: 'argocd'
+
+		return [
+			'argocd',
+			argocdNamespace,
+			"${namePrefix}${argocdNamespace}".toString()
+		].findAll { it } as Set<String>
+	}
+
+	private void mergeClusterResourcesIntoRepositoryWorkspace(RepoCoordinate repoCoordinate) {
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+
+		if (!repoCoordinate.clonedContentRepo.exists()) {
+			log.warn(
+				"Skipping ContentLoader merge for '{}': source folder does not exist: {}",
+				repoCoordinate.fullRepoName,
+				repoCoordinate.clonedContentRepo
+			)
+			return
 		}
 
+		if (repoCoordinate.clonedContentRepo.listFiles()?.length == 0) {
+			log.warn(
+				"Skipping ContentLoader merge for '{}': source folder is empty: {}",
+				repoCoordinate.fullRepoName,
+				repoCoordinate.clonedContentRepo
+			)
+			return
+		}
+
+		log.debug(
+			"Merging ContentLoader content for repo '{}' into shared RepositoryWorkspace from '{}'.",
+			repoCoordinate.fullRepoName,
+			repoCoordinate.clonedContentRepo.absolutePath
+		)
+
+		log.debug(
+			"ContentLoader source files for '{}': {}",
+			repoCoordinate.fullRepoName,
+			repoCoordinate.clonedContentRepo.listFiles()?.collect { it.name }
+		)
+
+		/*
+		 * cluster-resources is now managed by RepositoryProvisioning.
+		 *
+		 * Do not create, clone, clear or initialize a separate GitRepo here.
+		 * Also do not use GitRepo.copyDirectoryContents(...), because that may replace
+		 * existing folders like apps/cert-manager, apps/vault, apps/jenkins, etc.
+		 *
+		 * The ContentLoader content must be merged additively into the existing shared workspace.
+		 */
+		FileUtils.copyDirectory(
+			repoCoordinate.clonedContentRepo,
+			new File(workspace.clusterResourcesRootDir()),
+			new FileSystemUtils.IgnoreDotGitFolderFilter()
+		)
+
+		log.debug(
+			"Cluster-resources workspace files after ContentLoader merge: {}",
+			new File(workspace.clusterResourcesRootDir()).listFiles()?.collect { it.name }
+		)
+
+		log.debug(
+			"Cluster-resources apps after ContentLoader merge: {}",
+			new File(workspace.clusterResourcesAppsDir()).listFiles()?.collect { it.name }
+		)
+
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
+			'content-loader',
+			"Merge ContentLoader content into ${repoCoordinate.fullRepoName}"
+		)
 	}
+
 
 	/**
 	 * Copies repoCoordinate to targetRepo, commits and pushes

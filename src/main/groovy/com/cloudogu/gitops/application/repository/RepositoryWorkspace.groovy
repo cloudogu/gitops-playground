@@ -63,6 +63,14 @@ class RepositoryWorkspace {
 		}
 	}
 
+	void pullRebaseRepositories() {
+		clusterResourcesRepository.pullRebaseMain()
+
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().pullRebaseMain()
+		}
+	}
+
 	String clusterResourcesRootDir() {
 		clusterResourcesRepository.getAbsoluteLocalRepoTmpDir()
 	}
@@ -91,10 +99,6 @@ class RepositoryWorkspace {
 		Path.of(tenantBootstrapRootDir(), 'apps').toString()
 	}
 
-	String tenantBootstrapAppDir(String toolName) {
-		Path.of(tenantBootstrapAppsDir(), toolName).toString()
-	}
-
 	String tenantBootstrapArgoCdDir() {
 		Path.of(tenantBootstrapAppsDir(), 'argocd').toString()
 	}
@@ -105,10 +109,6 @@ class RepositoryWorkspace {
 
 	String tenantBootstrapProjectsDir() {
 		Path.of(tenantBootstrapArgoCdDir(), 'projects').toString()
-	}
-
-	String clusterResourcesRepositoryUrl() {
-		"${clusterResourcesRepository.gitProvider.repoPrefix()}${clusterResourcesRepository.repoTarget}.git"
 	}
 
 	void commitAndPushClusterResourcesChanges(String message) {
