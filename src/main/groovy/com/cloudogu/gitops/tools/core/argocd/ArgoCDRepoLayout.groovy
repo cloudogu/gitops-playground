@@ -9,7 +9,6 @@ class ArgoCDRepoLayout {
 	private static final String APPS_CERTMANAGER_DIR = 'apps/cert-manager'
 	private static final String APPS_JENKINS_DIR = 'apps/jenkins'
 	private static final String APPS_INGRESS_DIR = 'apps/ingress'
-	private static final String APPS_SCMMANAGER_DIR = 'apps/scm-manager'
 	private static final String APPS_ARGOCD_DIR = 'apps/argocd'
 
 	private static final String OPERATOR_DIR = 'operator'
@@ -109,10 +108,6 @@ class ArgoCDRepoLayout {
 
 	static String ingressSubdirRel() {
 		APPS_INGRESS_DIR
-	}
-
-	static String scmManagerSubdirRel() {
-		APPS_SCMMANAGER_DIR
 	}
 
 	static String argocdSubdirRel() {
