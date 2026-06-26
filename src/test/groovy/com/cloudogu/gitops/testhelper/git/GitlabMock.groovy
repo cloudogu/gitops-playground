@@ -55,15 +55,6 @@ class GitlabMock implements GitProvider {
 	}
 
 	@Override
-	void deleteRepository(String n, String r, boolean p) {}
-
-	@Override
-	void deleteUser(String name) {}
-
-	@Override
-	void setDefaultBranch(String target, String branch) {}
-
-	@Override
 	String getUrl() {
 		return base.toString()
 	}

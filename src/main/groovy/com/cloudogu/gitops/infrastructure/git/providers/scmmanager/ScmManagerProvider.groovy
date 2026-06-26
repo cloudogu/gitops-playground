@@ -133,6 +133,11 @@ class ScmManagerProvider implements GitProvider {
 				return Permission.Role.READ
 			case AccessRole.WRITE:
 				return Permission.Role.WRITE
+			case AccessRole.MAINTAIN:
+				log.warn("SCM-Manager: Mapping MAINTAIN to WRITE")
+				return Permission.Role.WRITE
+			case AccessRole.ADMIN:
+				return Permission.Role.OWNER
 			case AccessRole.OWNER:
 				return Permission.Role.OWNER
 			default:
