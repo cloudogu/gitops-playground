@@ -2,6 +2,11 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
 
+import groovy.util.logging.Slf4j
+
+import io.fabric8.kubernetes.client.utils.Serialization
+
+@Slf4j
 class Role {
 	String name
 	String namespace
@@ -18,6 +23,9 @@ class Role {
 		this.namespace = namespace
 		this.variant = variant
 		this.config = config
+
+		log.trace("Role object created with name='${name}' namespace='${namespace}' variant='${variant}' config=next rows!")
+		log.trace(Serialization.asYaml(config.toYaml(false)))
 	}
 
 	enum Variant {
@@ -41,6 +49,9 @@ class Role {
 		if (variant == Variant.CLUSTER_ADMIN) {
 			throw new IllegalStateException("cluster-admin role shall not be created")
 		}
+		Variant.ARGOCD.templatePath
+		log.trace("Role templatefile='${Variant.ARGOCD.templatePath}' returned with='${name}' namespace='${namespace}' variant='${variant}' config=next rows!")
+		log.trace(Serialization.asYaml(config.toYaml(false)))
 		return new File(variant.getTemplatePath())
 	}
 

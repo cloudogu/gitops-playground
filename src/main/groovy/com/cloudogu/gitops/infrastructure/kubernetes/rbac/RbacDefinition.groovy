@@ -3,9 +3,9 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
-import groovy.util.logging.Slf4j
 
 import java.nio.file.Path
+import groovy.util.logging.Slf4j
 
 @Slf4j
 class RbacDefinition {
@@ -81,9 +81,14 @@ class RbacDefinition {
 
 		def role = new Role(name, namespace, variant, config)
 
+		log.trace("Role Template Params='${role.toTemplateParams()}'")
 		templater.template(role.getTemplateFile(),
 			role.getOutputFile(outputDir),
 			role.toTemplateParams())
+
+		if (log.traceEnabled) {
+			log.trace("RBAC Files in outputDir after role generation:\n${listFilesRecursive(outputDir)}")
+		}
 	}
 
 	private void generateRoleBinding(File outputDir) {
@@ -96,6 +101,16 @@ class RbacDefinition {
 		templater.template(binding.getTemplateFile(),
 			binding.getOutputFile(outputDir),
 			binding.toTemplateParams())
+	}
+
+	private String listFilesRecursive(File dir) {
+		dir.listFiles()?.collect { File f ->
+			if (f.isDirectory()) {
+				listFilesRecursive(f)
+			} else {
+				"${f.absolutePath} (${f.length()} bytes)"
+			}
+		}?.join('\n') ?: "(empty)"
 	}
 
 }
