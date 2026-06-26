@@ -1,35 +1,25 @@
 package com.cloudogu.gitops.application.context
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
 
 class DeploymentContext {
 
 	final Config config
 	final TenantMode tenantMode
-	final ScmManagerMode scmManagerMode
-	final Boolean certManagerActive
+	final DeploymentMode scmManagerDeploymentMode
 	final Boolean airgapped
-	final ScmProviderType centralScmProviderType
-	final ScmProviderType tenantScmProviderType
-	final Platform platform
+	final ClusterDistribution clusterDistribution
 
 	DeploymentContext(Config config,
 		TenantMode tenantMode,
-		ScmManagerMode scmManagerMode,
-		Boolean certManagerActive,
+		DeploymentMode scmManagerDeploymentMode,
 		Boolean airgapped,
-		ScmProviderType centralScmProviderType,
-		ScmProviderType tenantScmProviderType,
-		Platform platform) {
+		ClusterDistribution clusterDistribution) {
 		this.config = config
 		this.tenantMode = tenantMode
-		this.scmManagerMode = scmManagerMode
-		this.certManagerActive = certManagerActive
+		this.scmManagerDeploymentMode = scmManagerDeploymentMode
 		this.airgapped = airgapped
-		this.centralScmProviderType = centralScmProviderType
-		this.tenantScmProviderType = tenantScmProviderType
-		this.platform = platform
+		this.clusterDistribution = clusterDistribution
 	}
 
 	Boolean isMultiTenant() {
@@ -41,11 +31,11 @@ class DeploymentContext {
 	}
 
 	Boolean isInternalScmManager() {
-		return scmManagerMode == ScmManagerMode.INTERNAL
+		return scmManagerDeploymentMode == DeploymentMode.INTERNAL
 	}
 
 	Boolean isExternalScmManager() {
-		return scmManagerMode == ScmManagerMode.EXTERNAL
+		return scmManagerDeploymentMode == DeploymentMode.EXTERNAL
 	}
 
 	Boolean isNonAirgapped() {
@@ -53,7 +43,7 @@ class DeploymentContext {
 	}
 
 	Boolean isOpenshift() {
-		return platform == Platform.OPENSHIFT
+		return clusterDistribution == ClusterDistribution.OPENSHIFT
 	}
 
 	enum TenantMode {
@@ -61,12 +51,12 @@ class DeploymentContext {
 		MULTI_TENANT
 	}
 
-	enum ScmManagerMode {
+	enum DeploymentMode {
 		INTERNAL,
 		EXTERNAL
 	}
 
-	enum Platform {
+	enum ClusterDistribution {
 		KUBERNETES,
 		OPENSHIFT
 	}

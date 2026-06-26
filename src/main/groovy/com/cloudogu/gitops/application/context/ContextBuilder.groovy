@@ -16,11 +16,8 @@ class ContextBuilder {
 	DeploymentContext build() {
 		return new DeploymentContext(config,
 			config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT,
-			config.scm.scmManager?.internal ? DeploymentContext.ScmManagerMode.INTERNAL : DeploymentContext.ScmManagerMode.EXTERNAL,
-			config.features.certManager.active,
+			config.scm.scmManager?.internal ? DeploymentContext.DeploymentMode.INTERNAL : DeploymentContext.DeploymentMode.EXTERNAL,
 			config.application.mirrorRepos,
-			config.multiTenant.scmProviderType,
-			config.scm.scmProviderType,
-			config.application.openshift ? DeploymentContext.Platform.OPENSHIFT : DeploymentContext.Platform.KUBERNETES)
+			config.application.openshift ? DeploymentContext.ClusterDistribution.OPENSHIFT : DeploymentContext.ClusterDistribution.KUBERNETES)
 	}
 }
