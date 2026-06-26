@@ -238,7 +238,14 @@ class Monitoring extends Tool implements ToolWithImage {
 	private boolean hasScmManagerMetricsEndpoint() {
 		URI uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
 
-		return uri != null &&
-			((uri.scheme ?: '').trim() || (uri.authority ?: '').trim() || (uri.path ?: '').trim())
+		if (uri == null) {
+			return false
+		}
+
+		return hasText(uri.scheme) || hasText(uri.authority) || hasText(uri.path)
+	}
+
+	private static boolean hasText(String value) {
+		value != null && value.trim()
 	}
 }

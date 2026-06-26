@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -30,6 +32,7 @@ import org.mockito.ArgumentCaptor
 
 @EnableKubernetesMockClient(crud = true)
 class MonitoringTest {
+
 	Config config = Config.fromMap(registry: [internal              : true,
 	                                          createImagePullSecrets: false],
 		scm: [scmManager: [internal: true]],
@@ -73,18 +76,20 @@ class MonitoringTest {
 	File clusterResourcesRepoDir
 
 	GitHandler gitHandler = mock(GitHandler.class)
+	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 	ScmManagerMock scmManagerMock
 
 	KubernetesClient client
-	//Client to set mock data, gets injected by annotation
+	// Client to set mock data, gets injected by annotation
 	KubernetesMockServer server
-	//Use server for non CRUD
+	// Use server for non CRUD
 
 	@BeforeEach
 	void setup() {
 		scmManagerMock = new ScmManagerMock()
 		k8sClient = mock(K8sClient)
 		k8sClient.client = client
+		repositoryProvisioning = mock(RepositoryProvisioning)
 	}
 
 	@Test
@@ -96,7 +101,7 @@ class MonitoringTest {
 
 	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
-		config.features.mail.active = null // user should not do this in real.
+		config.features.mail.active = null
 		createStack(scmManagerMock).install()
 
 		def yaml = parseActualYaml()
@@ -138,7 +143,6 @@ class MonitoringTest {
 		config.features.mail.smtpAddress = 'smtp.example.com'
 		config.features.mail.smtpPort = 1010110
 		config.features.monitoring.grafanaEmailTo = 'grafana@example.com'
-		// needed to check that yaml is inserted correctly
 
 		createStack(scmManagerMock).install()
 		def contactPointsYaml = parseActualYaml()
@@ -209,7 +213,6 @@ policies:
 		config.features.mail.smtpPassword = '1101ABCabc&/+*~'
 
 		createStack(scmManagerMock).install()
-
 	}
 
 	@Test
@@ -225,7 +228,7 @@ policies:
 
 	@Test
 	void 'When external Mailserver is NOT set'() {
-		config.features.mail.active = null // user should not do this in real.
+		config.features.mail.active = null
 		createStack(scmManagerMock).install()
 		def contactPointsYaml = parseActualYaml()
 
@@ -265,11 +268,11 @@ policies:
 		config.features.monitoring.active = true
 		config.features.ingress.active = false
 		config.jenkins.active = false
-		config.scm.scmManager.url = null // triggers scmm dashboard cleanup
+		scmManagerMock.prometheus = null
 
 		createStack(scmManagerMock).install()
 
-		File dashboardDir = new File(clusterResourcesRepoDir, "apps/prometheusstack/misc/dashboard")
+		File dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
 
 		assertThat(new File(dashboardDir, "traefik-dashboard.yaml")).doesNotExist()
 		assertThat(new File(dashboardDir, "traefik-dashboard-requests-handling.yaml")).doesNotExist()
@@ -278,8 +281,25 @@ policies:
 	}
 
 	@Test
+	void 'cleanupUnusedDashboards keeps scmm dashboard when internal scm metrics endpoint exists'() {
+		config.features.monitoring.active = true
+		config.features.ingress.active = false
+		config.jenkins.active = false
+		config.scm.scmManager.url = null
+		scmManagerMock.prometheus = new URI('http://localhost:8080/scm/api/v2/metrics/prometheus')
+
+		createStack(scmManagerMock).install()
+
+		File dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
+
+		assertThat(new File(dashboardDir, "traefik-dashboard.yaml")).doesNotExist()
+		assertThat(new File(dashboardDir, "traefik-dashboard-requests-handling.yaml")).doesNotExist()
+		assertThat(new File(dashboardDir, "jenkins-dashboard.yaml")).doesNotExist()
+		assertThat(new File(dashboardDir, "scmm-dashboard.yaml")).exists()
+	}
+
+	@Test
 	void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
-		// Arrange
 		config.features.monitoring.active = true
 		config.application.mirrorRepos = true
 		config.application.skipCrds = false
@@ -289,7 +309,7 @@ policies:
 
 		Path crdFile = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml")
 		Files.createDirectories(crdFile.parent)
-		Files.writeString(crdFile, "dummy") // content can be anything for this test
+		Files.writeString(crdFile, "dummy")
 
 		Path chartYaml = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/Chart.yaml")
 		Files.createDirectories(chartYaml.parent)
@@ -301,22 +321,19 @@ policies:
 	@Test
 	void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
 		config.features.monitoring.active = true
-		config.application.mirrorRepos = false // optional, but makes intent explicit
-		config.application.skipCrds = false // optional, but makes intent explicit
+		config.application.mirrorRepos = false
+		config.application.skipCrds = false
 
 		createStack(scmManagerMock).install()
-
 	}
 
 	@Test
 	void 'does not apply ServiceMonitor CRD when monitoring is disabled'() {
-		config.features.monitoring.active = false // important
-		config.application.skipCrds = false // so it would apply if enabled
-		config.application.mirrorRepos = false // avoid local chart access
+		config.features.monitoring.active = false
+		config.application.skipCrds = false
+		config.application.mirrorRepos = false
 
 		createStack(scmManagerMock).install()
-
-		// no CRD apply should happen at all
 	}
 
 	@Test
@@ -328,7 +345,6 @@ policies:
 		assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
 		assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
 
-		// scrape config for jenkins is unchanged
 		assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.foo-jenkins.svc.cluster.local')
 		assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('http')
 		assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/prometheus')
@@ -341,7 +357,6 @@ policies:
 		createStack(scmManagerMock).install()
 		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
 
-		// scrape config for scmm is unchanged
 		assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
 		assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
 		assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
@@ -420,10 +435,6 @@ policies:
 		verify(deployer).deployFeature('https://prom', 'monitoring',
 			'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
 			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM, false)
-		/* This corresponds to
-				'helm repo add prometheusstack https://prom'
-				'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
-						" --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
@@ -451,6 +462,16 @@ policies:
 
 		assertThat(yaml['crds']).isNull()
 		assertThat(new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
+	}
+
+	@Test
+	void 'publishes monitoring resources through repository provisioning'() {
+		createStack(scmManagerMock).install()
+
+		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges(
+			'monitoring',
+			'Update Prometheus dashboards, RBAC and network policies.'
+		)
 	}
 
 	@Test
@@ -496,8 +517,8 @@ policies:
 
 		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNotNull()
 		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['fsGroup']).isNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsGroup']).isNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsUser']).isNull()
+		assertThat(yaml['prometheus']['prometheusSpec']['runAsGroup']).isNull()
+		assertThat(yaml['prometheus']['prometheusSpec']['runAsUser']).isNull()
 	}
 
 	@Test
@@ -529,7 +550,6 @@ policies:
 	@Test
 	void 'network policies are created for prometheus'() {
 		config.application.netpols = true
-		//config.application.namespaces.dedicatedNamespaces = ["testnamespace1", "testnamespace2"]
 		def prometheusStack = createStack(scmManagerMock)
 		prometheusStack.install()
 
@@ -609,16 +629,16 @@ matchExpressions:
 	}
 
 	private Monitoring createStack(ScmManagerMock scmManagerMock) {
-		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 		when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
+
 		def configuration = config
+
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
 			GitRepo create(String repoTarget, GitProvider scm) {
 				def repo = super.create(repoTarget, scmManagerMock)
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
-				// Create dummy dashboards so cleanupUnusedDashboards can delete them
 				def dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
 				dashboardDir.mkdirs()
 
@@ -629,8 +649,16 @@ matchExpressions:
 
 				return repo
 			}
-
 		}
+
+		GitRepo clusterResourcesRepo = repoProvider.create(
+			'argocd/cluster-resources',
+			scmManagerMock
+		)
+
+		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+
+		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
 		new Monitoring(configuration, new FileSystemUtils() {
 			@Override
@@ -639,7 +667,7 @@ matchExpressions:
 				temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, deployer, k8sClient, airGappedUtils, repoProvider, gitHandler)
+		}, deployer, k8sClient, airGappedUtils, gitHandler, repositoryProvisioning)
 	}
 
 	private Map parseActualYaml() {
