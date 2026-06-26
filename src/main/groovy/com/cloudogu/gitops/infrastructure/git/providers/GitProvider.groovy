@@ -24,23 +24,6 @@ interface GitProvider {
 
 	URI prometheusMetricsEndpoint()
 
-	/**
-	 * Deletes the given repository on the provider, if supported.
-	 * Note: This capability is not used by the current destruction flow,
-	 * which talks directly to provider-specific clients (e.g. ScmManagerApiClient).*/
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace)
-
-	/**
-	 * Deletes a user account on the provider, if supported.
-	 * Note: Not used by the current destruction flow; kept as an optional capability
-	 * on the GitProvider abstraction */
-	void deleteUser(String name)
-
-	/**
-	 * Sets the default branch of a repository, if supported by the provider;
-	 * kept as an optional capability on the GitProvider abstraction */
-	void setDefaultBranch(String repoTarget, String branch)
-
 	String getUrl()
 
 	String getProtocol()
