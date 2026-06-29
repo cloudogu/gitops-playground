@@ -51,12 +51,12 @@ class MonitoringTest {
 		              gitName           : 'Cloudogu',
 		              gitEmail          : 'hello@cloudogu.com',
 		              netpols           : false,
-		              namespaces        : [dedicatedNamespaces: ["test1-default",
-		                                                         "test1-argocd",
-		                                                         "test1-monitoring",
-		                                                         "test1-secrets"] as LinkedHashSet,
-		                                   tenantNamespaces   : ["test1-example-apps-staging",
-		                                                         "test1-example-apps-production"] as LinkedHashSet]],
+		              namespaces        : [dedicatedNamespaces: ['test1-default',
+		                                                         'test1-argocd',
+		                                                         'test1-monitoring',
+		                                                         'test1-secrets'] as LinkedHashSet,
+		                                   tenantNamespaces   : ['test1-example-apps-staging',
+		                                                         'test1-example-apps-production'] as LinkedHashSet]],
 		features: [argocd    : [active: true],
 		           monitoring: [active          : true,
 		                        grafanaUrl      : '',
@@ -75,7 +75,7 @@ class MonitoringTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	File clusterResourcesRepoDir
 
-	GitHandler gitHandler = mock(GitHandler.class)
+	GitHandler gitHandler = mock(GitHandler)
 	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 	ScmManagerMock scmManagerMock
 
@@ -237,8 +237,8 @@ policies:
 
 	@Test
 	void "configures admin user if requested"() {
-		config.application.username = "my-user"
-		config.application.password = "hunter2"
+		config.application.username = 'my-user'
+		config.application.password = 'hunter2'
 		createStack(scmManagerMock).install()
 
 		assertThat(parseActualYaml()['grafana']['adminUser']).isEqualTo('my-user')
@@ -272,12 +272,12 @@ policies:
 
 		createStack(scmManagerMock).install()
 
-		File dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
+		File dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
 
-		assertThat(new File(dashboardDir, "traefik-dashboard.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "traefik-dashboard-requests-handling.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "jenkins-dashboard.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "scmm-dashboard.yaml")).doesNotExist()
+		assertThat(new File(dashboardDir, 'traefik-dashboard.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'jenkins-dashboard.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'scmm-dashboard.yaml')).doesNotExist()
 	}
 
 	@Test
@@ -290,12 +290,12 @@ policies:
 
 		createStack(scmManagerMock).install()
 
-		File dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
+		File dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
 
-		assertThat(new File(dashboardDir, "traefik-dashboard.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "traefik-dashboard-requests-handling.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "jenkins-dashboard.yaml")).doesNotExist()
-		assertThat(new File(dashboardDir, "scmm-dashboard.yaml")).exists()
+		assertThat(new File(dashboardDir, 'traefik-dashboard.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'jenkins-dashboard.yaml')).doesNotExist()
+		assertThat(new File(dashboardDir, 'scmm-dashboard.yaml')).exists()
 	}
 
 	@Test
@@ -309,11 +309,11 @@ policies:
 
 		Path crdFile = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml")
 		Files.createDirectories(crdFile.parent)
-		Files.writeString(crdFile, "dummy")
+		Files.writeString(crdFile, 'dummy')
 
 		Path chartYaml = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/Chart.yaml")
 		Files.createDirectories(chartYaml.parent)
-		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n")
+		Files.writeString(chartYaml, 'apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n')
 
 		createStack(scmManagerMock).install()
 	}
@@ -352,8 +352,8 @@ policies:
 
 	@Test
 	void 'uses remote jenkins url if requested'() {
-		config.jenkins["internal"] = false
-		config.jenkins["url"] = 'https://localhost:9090/jenkins'
+		config.jenkins['internal'] = false
+		config.jenkins['url'] = 'https://localhost:9090/jenkins'
 		createStack(scmManagerMock).install()
 		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
 
@@ -368,8 +368,8 @@ policies:
 
 	@Test
 	void 'configures custom metrics user for jenkins'() {
-		config.jenkins["metricsUsername"] = 'external-metrics-username'
-		config.jenkins["metricsPassword"] = 'hunter2'
+		config.jenkins['metricsUsername'] = 'external-metrics-username'
+		config.jenkins['metricsPassword'] = 'hunter2'
 		createStack(scmManagerMock).install()
 
 		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
@@ -378,7 +378,7 @@ policies:
 
 	@Test
 	void "configures custom image for grafana"() {
-		config.features.monitoring.helm.grafanaImage = "localhost:5000/grafana/grafana:the-tag"
+		config.features.monitoring.helm.grafanaImage = 'localhost:5000/grafana/grafana:the-tag'
 		createStack(scmManagerMock).install()
 
 		assertThat(parseActualYaml()['grafana']['image']['registry']).isEqualTo('localhost:5000')
@@ -388,7 +388,7 @@ policies:
 
 	@Test
 	void "configures custom image for grafana-sidecar"() {
-		config.features.monitoring.helm.grafanaSidecarImage = "localhost:5000/grafana/sidecar:the-tag"
+		config.features.monitoring.helm.grafanaSidecarImage = 'localhost:5000/grafana/sidecar:the-tag'
 		createStack(scmManagerMock).install()
 
 		assertThat(parseActualYaml()['grafana']['sidecar']['image']['registry']).isEqualTo('localhost:5000')
@@ -398,9 +398,9 @@ policies:
 
 	@Test
 	void "configures custom image for prometheus and operator"() {
-		config.features.monitoring.helm.prometheusImage = "localhost:5000/prometheus/prometheus:v1"
-		config.features.monitoring.helm.prometheusOperatorImage = "localhost:5000/prometheus-operator/prometheus-operator:v2"
-		config.features.monitoring.helm.prometheusConfigReloaderImage = "localhost:5000/prometheus-operator/prometheus-config-reloader:v3"
+		config.features.monitoring.helm.prometheusImage = 'localhost:5000/prometheus/prometheus:v1'
+		config.features.monitoring.helm.prometheusOperatorImage = 'localhost:5000/prometheus-operator/prometheus-operator:v2'
+		config.features.monitoring.helm.prometheusConfigReloaderImage = 'localhost:5000/prometheus-operator/prometheus-config-reloader:v3'
 
 		createStack(scmManagerMock).install()
 
@@ -468,10 +468,8 @@ policies:
 	void 'publishes monitoring resources through repository provisioning'() {
 		createStack(scmManagerMock).install()
 
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges(
-			'monitoring',
-			'Update Prometheus dashboards, RBAC and network policies.'
-		)
+		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('monitoring',
+			'Update Prometheus dashboards, RBAC and network policies.')
 	}
 
 	@Test
@@ -534,7 +532,7 @@ policies:
 		for (String namespace : config.application.namespaces.getActiveNamespaces()) {
 			def rbacYaml = new File("$clusterResourcesRepoDir/apps/monitoring/misc/rbac/${namespace}.yaml")
 			assertThat(rbacYaml.text).contains("namespace: ${namespace}")
-			assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
+			assertThat(rbacYaml.text).contains('    namespace: foo-monitoring')
 		}
 
 		assertThat(yaml['kubeApiServer']['enabled']).isEqualTo(false)
@@ -573,7 +571,7 @@ policies:
 		Map prometheusChartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
 
-		scmManagerMock.inClusterBase = new URI("http://scmm.foo-scm-manager.svc.cluster.local/scm")
+		scmManagerMock.inClusterBase = new URI('http://scmm.foo-scm-manager.svc.cluster.local/scm')
 		createStack(scmManagerMock).install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
@@ -602,15 +600,15 @@ policies:
 
 	@Test
 	void 'ServiceMonitor selectors'() {
-		config.application.namePrefix = "test1-"
+		config.application.namePrefix = 'test1-'
 		config.features.argocd.active = true
 		config.features.secrets.active = true
 		config.features.ingress.active = false
-		LinkedHashSet<String> namespaceList = ["test1-argocd",
-		                                       "test1-monitoring",
-		                                       "test1-example-apps-staging",
-		                                       "test1-example-apps-production",
-		                                       "test1-secrets"]
+		LinkedHashSet<String> namespaceList = ['test1-argocd',
+		                                       'test1-monitoring',
+		                                       'test1-example-apps-staging',
+		                                       'test1-example-apps-production',
+		                                       'test1-secrets']
 		config.application.namespaces.dedicatedNamespaces = namespaceList
 		createStack(scmManagerMock).install()
 		def actual = parseActualYaml()
@@ -639,32 +637,30 @@ matchExpressions:
 				def repo = super.create(repoTarget, scmManagerMock)
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
-				def dashboardDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/dashboard")
+				def dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
 				dashboardDir.mkdirs()
 
-				new File(dashboardDir, "traefik-dashboard.yaml").text = "dummy"
-				new File(dashboardDir, "traefik-dashboard-requests-handling.yaml").text = "dummy"
-				new File(dashboardDir, "jenkins-dashboard.yaml").text = "dummy"
-				new File(dashboardDir, "scmm-dashboard.yaml").text = "dummy"
+				new File(dashboardDir, 'traefik-dashboard.yaml').text = 'dummy'
+				new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml').text = 'dummy'
+				new File(dashboardDir, 'jenkins-dashboard.yaml').text = 'dummy'
+				new File(dashboardDir, 'scmm-dashboard.yaml').text = 'dummy'
 
 				return repo
 			}
 		}
 
-		GitRepo clusterResourcesRepo = repoProvider.create(
-			'argocd/cluster-resources',
-			scmManagerMock
-		)
+		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
+			scmManagerMock)
 
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
 		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
-		new Monitoring(configuration, new FileSystemUtils() {
+		return new Monitoring(configuration, new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
-				temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFilePrometheus = Path.of(ret.toString().replace('.ftl', ''))
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler, repositoryProvisioning)
