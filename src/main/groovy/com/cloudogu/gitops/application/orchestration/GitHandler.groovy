@@ -35,7 +35,7 @@ class GitHandler {
 			config.scm.scmManager.internal = false
 			config.scm.scmManager.urlForJenkins = config.scm.scmManager.url
 		} else {
-			log.debug("Setting configs for internal SCM-Manager")
+			log.debug('Setting configs for internal SCM-Manager')
 
 			config.scm.scmManager.internal = true
 			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local/scm"
@@ -73,19 +73,19 @@ class GitHandler {
 			return tenant
 		}
 
-		throw new IllegalStateException("No SCM provider found.")
+		throw new IllegalStateException('No SCM provider found.')
 	}
 
 	private GitProvider createTenantScmProvider() {
 		switch (config.scm.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(config, config.scm.gitlab)
-
 			case ScmProviderType.SCM_MANAGER:
 				return new ScmManagerProvider(config,
 					config.scm.scmManager,
 					k8sClient,
-					networkingUtils)
+					networkingUtils,
+					config.application.namePrefix ?: '')
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}")
@@ -96,12 +96,12 @@ class GitHandler {
 		switch (config.multiTenant.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(config, config.multiTenant.gitlab)
-
 			case ScmProviderType.SCM_MANAGER:
 				return new ScmManagerProvider(config,
 					config.multiTenant.scmManager,
 					k8sClient,
-					networkingUtils)
+					networkingUtils,
+					centralScmManagerServicePrefix())
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
@@ -109,23 +109,19 @@ class GitHandler {
 	}
 
 	private void setupExternalRepositoriesIfPossible() {
-		final String namePrefix = (config.application.namePrefix ?: "").trim()
+		final String namePrefix = (config.application.namePrefix ?: '').trim()
 		final boolean repositorySetupBlockedByInternalScmBootstrap = isRepositorySetupBlockedByInternalScmBootstrap()
 
-		log.info(
-			"Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
+		log.info("Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
 			central != null,
 			tenant != null,
 			namePrefix,
-			repositorySetupBlockedByInternalScmBootstrap
-		)
+			repositorySetupBlockedByInternalScmBootstrap)
 
 		if (repositorySetupBlockedByInternalScmBootstrap) {
-			log.info(
-				"Skipping repository setup because the configured internal SCM-Manager is not deployed yet. " +
-					"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
-				namePrefix
-			)
+			log.info('Skipping repository setup because the configured internal SCM-Manager is not deployed yet. ' +
+				"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
+				namePrefix)
 			return
 		}
 
@@ -138,13 +134,14 @@ class GitHandler {
 			setupRepos(tenant, namePrefix)
 		}
 	}
+
 	private boolean isRepositorySetupBlockedByInternalScmBootstrap() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
 	}
 
-	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
-		gitProvider.createRepository(withOrgPrefix(namePrefix, "argocd/cluster-resources"),
-			"GitOps repo for basic cluster-resources")
+	static void setupRepos(GitProvider gitProvider, String namePrefix = '') {
+		gitProvider.createRepository(withOrgPrefix(namePrefix, 'argocd/cluster-resources'),
+			'GitOps repo for basic cluster-resources')
 	}
 
 	static String withOrgPrefix(String prefix, String repoPath) {
@@ -153,5 +150,17 @@ class GitHandler {
 		}
 
 		return prefix + repoPath
+	}
+
+
+	private String centralScmManagerServicePrefix() {
+		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
+		def baseNamespace = 'scm-manager'
+
+		if (namespace == baseNamespace || !namespace.endsWith(baseNamespace)) {
+			return ''
+		}
+
+		return namespace.substring(0, namespace.length() - baseNamespace.length())
 	}
 }
