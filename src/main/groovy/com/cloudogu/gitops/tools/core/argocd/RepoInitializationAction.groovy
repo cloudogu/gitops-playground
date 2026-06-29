@@ -3,8 +3,10 @@ package com.cloudogu.gitops.tools.core.argocd
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import freemarker.template.DefaultObjectWrapperBuilder
+
 import groovy.util.logging.Slf4j
+
+import freemarker.template.DefaultObjectWrapperBuilder
 
 @Slf4j
 class RepoInitializationAction {
@@ -26,14 +28,30 @@ class RepoInitializationAction {
 	 * Afterwards we can edit these files.*/
 	void initLocalRepo() {
 		repo.cloneRepo()
-
 		log.debug("Initializing repo ${repo.repoTarget} from ${copyFromDirectory} with subdirs: ${subDirsToCopy}")
+		if (log.isTraceEnabled()) {
+			File forTraceOnly = new File(copyFromDirectory).canonicalFile
+			log.trace("Content of source Directory ${copyFromDirectory}")
+			log.trace(listFilesRecursive(forTraceOnly))
+			log.trace("Content of repo before copy")
+			log.trace(listFilesRecursive(new File(repo.getAbsoluteLocalRepoTmpDir())))
+		}
+
 		repo.copyDirectoryContents(copyFromDirectory, createSubdirFilter())
+		if (log.isTraceEnabled()) {
+			log.trace("Content of After copy")
+			log.trace(listFilesRecursive(new File(repo.getAbsoluteLocalRepoTmpDir())))
+		}
 		replaceTemplates()
+		if (log.isTraceEnabled()) {
+			log.trace("Content of After copy")
+			log.trace(listFilesRecursive(new File(repo.getAbsoluteLocalRepoTmpDir())))
+		}
 	}
 
 	void replaceTemplates() {
 		Map<String, Object> templateModel = buildTemplateValues(config)
+		log.trace("templateModel=${templateModel}")
 		repo.replaceTemplates(templateModel)
 	}
 
@@ -120,6 +138,17 @@ class RepoInitializationAction {
 				}
 			}
 		} as FileFilter
+	}
+
+	// TODO: Thomas delete after debug
+	private String listFilesRecursive(File dir) {
+		dir.listFiles()?.collect { File f ->
+			if (f.isDirectory()) {
+				listFilesRecursive(f)
+			} else {
+				"${f.absolutePath} (${f.length()} bytes)"
+			}
+		}?.join('\n') ?: "(empty)"
 	}
 
 }
