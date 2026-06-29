@@ -140,30 +140,6 @@ class GitlabProvider implements GitProvider {
 		return null
 	}
 
-	/**
-	 * No-op by design. GitLab repository deletion is not managed through this abstraction.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-		// intentionally left blank
-	}
-
-	/**
-	 * No-op by design. User deletion is not supported or handled through this provider.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void deleteUser(String name) {
-		// intentionally left blank
-	}
-
-	/**
-	 * No-op by design. Default branch management is not implemented via this abstraction.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void setDefaultBranch(String repoTarget, String branch) {
-		// intentionally left blank
-	}
-
 	private Group parentGroup() {
 		String raw = gitlabConfig?.parentGroupId?.trim()
 		if (!raw) throw new IllegalArgumentException("--gitlab-group-id is required")

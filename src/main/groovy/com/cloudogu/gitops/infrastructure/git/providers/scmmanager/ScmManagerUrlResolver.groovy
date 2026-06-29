@@ -15,16 +15,22 @@ class ScmManagerUrlResolver {
 	private final ScmManagerConfig scmm
 	private final K8sClient k8s
 	private final NetworkingUtils net
+	private final String servicePrefix
 
 	private URI cachedClusterBind
 
 	private final String releaseName = 'scmm'
 
-	ScmManagerUrlResolver(DeploymentContext context, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
+	ScmManagerUrlResolver(DeploymentContext context,
+		ScmManagerConfig scmm,
+		K8sClient k8s,
+		NetworkingUtils net,
+		String servicePrefix = '') {
 		this.context = context
 		this.scmm = scmm
 		this.k8s = k8s
 		this.net = net
+		this.servicePrefix = servicePrefix ?: ''
 	}
 
 	private Config getConfig() {
@@ -35,27 +41,27 @@ class ScmManagerUrlResolver {
 
 	/** Client base …/scm (no trailing slash) */
 	URI clientBase() {
-		noTrailSlash(ensureScm(clientBaseRaw()))
+		return noTrailSlash(ensureScm(clientBaseRaw()))
 	}
 
 	/** Client API base …/scm/api/ */
 	URI clientApiBase() {
-		withSlash(clientBase()).resolve("api/")
+		return withSlash(clientBase()).resolve('api/')
 	}
 
 	/** Client repo base …/scm/repo (no trailing slash) */
 	URI clientRepoBase() {
-		noTrailSlash(withSlash(clientBase()).resolve("${root()}/"))
+		return noTrailSlash(withSlash(clientBase()).resolve("${root()}/"))
 	}
 
 	/** In-cluster base …/scm (no trailing slash) */
 	URI inClusterBase() {
-		noTrailSlash(ensureScm(inClusterBaseRaw()))
+		return noTrailSlash(ensureScm(inClusterBaseRaw()))
 	}
 
 	/** In-cluster repo prefix …/scm/repo/[<namePrefix>] */
 	String inClusterRepoPrefix() {
-		def prefix = (config.application.namePrefix ?: "").strip()
+		def prefix = (config.application.namePrefix ?: '').strip()
 		def base = withSlash(inClusterBase())
 		def url = withSlash(base.resolve(root()))
 
@@ -65,18 +71,18 @@ class ScmManagerUrlResolver {
 	/** In-cluster repo URL …/scm/repo/<ns>/<name> */
 	String inClusterRepoUrl(String repoTarget) {
 		def repo = repoTarget.strip()
-		noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
+		return noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
 	}
 
 	/** Client repo URL …/scm/repo/<ns>/<name> (no trailing slash) */
 	String clientRepoUrl(String repoTarget) {
 		def repo = repoTarget.strip()
-		noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
+		return noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
 	}
 
 	/** …/scm/api/v2/metrics/prometheus */
 	URI prometheusEndpoint() {
-		withSlash(clientBase()).resolve("api/v2/metrics/prometheus")
+		return withSlash(clientBase()).resolve('api/v2/metrics/prometheus')
 	}
 
 	// ---------- Base resolution ----------
@@ -91,38 +97,46 @@ class ScmManagerUrlResolver {
 	}
 
 	private URI serviceDnsBase() {
-		def namespace = (scmm.namespace ?: "scm-manager").strip()
-		URI.create("http://${serviceName()}.${namespace}.svc.cluster.local")
+		return URI.create("http://${serviceName()}.${serviceNamespace()}.svc.cluster.local")
 	}
 
 	private URI externalBase() {
-		def url = (scmm.url ?: "").strip()
+		def url = (scmm.url ?: '').strip()
 		if (url) return URI.create(url)
 
-		def ingress = (scmm.ingress ?: "").strip()
+		def ingress = (scmm.ingress ?: '').strip()
 		if (ingress) return URI.create("http://${ingress}")
-		throw new IllegalArgumentException("Either scmm.url or scmm.ingress must be set when internal=false")
+		throw new IllegalArgumentException('Either scmm.url or scmm.ingress must be set when internal=false')
 	}
 
 	private URI nodePortBase() {
 		if (cachedClusterBind) return cachedClusterBind
 
-		def namespace = (scmm.namespace ?: "scm-manager").strip()
-
-		final def port = k8s.waitForNodePort(serviceName(), namespace)
+		final def port = k8s.waitForNodePort(serviceName(), serviceNamespace())
 		final def host = net.findClusterBindAddress()
 		cachedClusterBind = new URI("http://${host}:${port}")
 		return cachedClusterBind
 	}
 
 	private String serviceName() {
-		def prefix = (config.application.namePrefix ?: '').strip()
+		def prefix = servicePrefix.strip()
 
 		if (prefix) {
 			return "${prefix}${releaseName}"
 		}
 
 		return releaseName
+	}
+
+	private String serviceNamespace() {
+		def namespace = (scmm.namespace ?: 'scm-manager').strip()
+		def prefix = servicePrefix.strip()
+
+		if (prefix && !namespace.startsWith(prefix)) {
+			return "${prefix}${namespace}"
+		}
+
+		return namespace
 	}
 
 	// ---------- Helpers ----------
@@ -133,17 +147,17 @@ class ScmManagerUrlResolver {
 
 	private static URI ensureScm(URI u) {
 		def us = withSlash(u)
-		def path = us.path ?: ""
-		path.endsWith("/scm/") ? us : us.resolve("scm/")
+		def path = us.path ?: ''
+		return path.endsWith('/scm/') ? us : us.resolve('scm/')
 	}
 
 	private static URI withSlash(URI u) {
 		def s = u.toString()
-		s.endsWith('/') ? u : URI.create(s + '/')
+		return s.endsWith('/') ? u : URI.create(s + '/')
 	}
 
 	private static URI noTrailSlash(URI u) {
 		def s = u.toString()
-		s.endsWith('/') ? URI.create(s.substring(0, s.length() - 1)) : u
+		return s.endsWith('/') ? URI.create(s[0..-2]) : u
 	}
 }
