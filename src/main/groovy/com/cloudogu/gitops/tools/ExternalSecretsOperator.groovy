@@ -21,7 +21,7 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
+	String namespace
 	K8sClient k8sClient
 
 	ExternalSecretsOperator(DeploymentContext context,

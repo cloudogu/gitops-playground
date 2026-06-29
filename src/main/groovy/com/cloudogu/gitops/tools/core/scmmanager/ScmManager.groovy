@@ -19,10 +19,6 @@ class ScmManager extends Tool {
 
 	String namespace
 
-	private final DeploymentContext context
-	private final GitHandler gitHandler
-	private final Deployer deployer
-
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer) {

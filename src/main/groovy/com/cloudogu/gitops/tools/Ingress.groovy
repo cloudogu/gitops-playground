@@ -21,7 +21,7 @@ class Ingress extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
+	String namespace
 	K8sClient k8sClient
 
 	Ingress(DeploymentContext context,
@@ -36,6 +36,7 @@ class Ingress extends Tool implements ToolWithImage {
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	}
 
 	@Override
