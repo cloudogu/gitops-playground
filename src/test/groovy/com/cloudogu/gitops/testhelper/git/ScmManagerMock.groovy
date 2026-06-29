@@ -92,11 +92,13 @@ class ScmManagerMock implements GitProvider {
 		return credentials
 	}
 
+	/** …/scm/api/v2/metrics/prometheus */
 	@Override
 	URI prometheusMetricsEndpoint() {
 		return prometheus
 	}
 
+	/** In-cluster base …/scm (without trailing slash) */
 	@Override
 	String getUrl() {
 		return withoutTrailingSlash(inClusterBase).toString()

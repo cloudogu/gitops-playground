@@ -7,8 +7,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.gitlab.GitlabProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-import groovy.util.logging.Slf4j
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
@@ -21,11 +22,9 @@ class GitHandler {
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(
-		Config config,
+	GitHandler(Config config,
 		K8sClient k8sClient,
-		NetworkingUtils networkingUtils
-	) {
+		NetworkingUtils networkingUtils) {
 		this.config = config
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
@@ -36,7 +35,7 @@ class GitHandler {
 			config.scm.scmManager.internal = false
 			config.scm.scmManager.urlForJenkins = config.scm.scmManager.url
 		} else {
-			log.debug("Setting configs for internal SCM-Manager")
+			log.debug('Setting configs for internal SCM-Manager')
 
 			config.scm.scmManager.internal = true
 			config.scm.scmManager.namespace = prefixedNamespace(config.scm.scmManager.namespace)
@@ -51,13 +50,10 @@ class GitHandler {
 			config.scm.scmManager = null
 
 			if (!config.scm.gitlab.password || !config.scm.gitlab.parentGroupId) {
-				throw new RuntimeException(
-					'GitLab configuration incomplete: please provide both password (PAT) and parentGroupId'
-				)
+				throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
 			}
 		}
 	}
-
 
 	void prepareProviders() {
 		this.tenant = createTenantScmProvider()
@@ -76,7 +72,7 @@ class GitHandler {
 			return tenant
 		}
 
-		throw new IllegalStateException("No SCM provider found.")
+		throw new IllegalStateException('No SCM provider found.')
 	}
 
 	private GitProvider createTenantScmProvider() {

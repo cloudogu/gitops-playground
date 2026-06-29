@@ -29,7 +29,7 @@ class ScmManagerUrlResolver {
 		this.scmm = scmm
 		this.k8s = k8s
 		this.net = net
-		this.servicePrefix = servicePrefix
+		this.servicePrefix = servicePrefix ?: ''
 	}
 
 	// ---------- Public API used by ScmManager ----------
