@@ -62,8 +62,17 @@ class ArgoCDRepoSetupTest {
 		RepositoryWorkspace repositoryWorkspace
 
 		if (config.multiTenant.useDedicatedInstance) {
+			/*
+			 * Test-only workspace separation:
+			 *
+			 * In the real dedicated multi-tenant setup, central cluster-resources and
+			 * tenant bootstrap use the same logical repo target in different SCM-Manager
+			 * instances. For this unit test, TestGitRepoFactory derives the local workspace
+			 * from the repo target. Therefore we use a dedicated test target here to avoid
+			 * both GitRepo objects pointing to the same local directory.
+			 */
 			GitRepo tenantBootstrapRepo = repoFactory.create(
-				'argocd/cluster-resources',
+				'argocd/tenant-bootstrap-cluster-resources',
 				tenantProvider
 			)
 
@@ -200,7 +209,6 @@ class ArgoCDRepoSetupTest {
 	@Test
 	void 'prepareRepositories in dedicated mode keeps central and tenant bootstrap templates separated'() {
 		config.application.namePrefix = 'testPrefix-'
-		config.application.tenantName = 'testPrefix'
 		config.multiTenant.useDedicatedInstance = true
 		config.multiTenant.scmManager.url = 'scmm.testhost/scm'
 		config.multiTenant.centralArgocdNamespace = 'argocd'
@@ -238,13 +246,27 @@ class ArgoCDRepoSetupTest {
 			.as('tenant bootstrap.yaml should contain tenant bootstrap Applications')
 			.isInstanceOf(List)
 
-		assertThat(tenantBootstrapYaml['metadata']['name'])
+		List<Map> tenantBootstrapDocuments = tenantBootstrapYaml as List<Map>
+
+		List<String> tenantApplicationNames = tenantBootstrapDocuments.collect { Map document ->
+			document['metadata']['name'] as String
+		}
+
+		List<String> tenantApplicationNamespaces = tenantBootstrapDocuments.collect { Map document ->
+			document['metadata']['namespace'] as String
+		}
+
+		List<String> tenantApplicationProjects = tenantBootstrapDocuments.collect { Map document ->
+			document['spec']['project'] as String
+		}
+
+		assertThat(tenantApplicationNames)
 			.containsExactly('bootstrap', 'projects')
 
-		assertThat(tenantBootstrapYaml['metadata']['namespace'])
+		assertThat(tenantApplicationNamespaces)
 			.containsOnly('testPrefix-argocd')
 
-		assertThat(tenantBootstrapYaml['spec']['project'])
+		assertThat(tenantApplicationProjects)
 			.containsOnly('argocd')
 	}
 
