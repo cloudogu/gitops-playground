@@ -156,14 +156,46 @@ class RepositoryProvisioning {
 	private RepositoryWorkspace createDedicatedInstanceWorkspace() {
 		log.debug('Creating dedicated-instance repository workspace.')
 
+		/*
+		 * Dedicated Multi-Tenant mode:
+		 *
+		 * clusterResourcesRepository:
+		 *   - points to the tenant cluster-resources repository in the central SCM-Manager
+		 *   - is used by the central ArgoCD bootstrap
+		 *
+		 * tenantBootstrapRepository:
+		 *   - points to the tenant cluster-resources repository in the tenant SCM-Manager
+		 *   - contains the bootstrap resources for the tenant ArgoCD instance
+		 *
+		 * Both repositories use the same logical repo target, but they must not share the
+		 * same local workspace. The central and tenant templates contain overlapping paths
+		 * such as apps/argocd/applications/bootstrap.yaml.
+		 */
 		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())
 
 		GitRepo tenantBootstrapRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.tenant)
 
-		return new RepositoryWorkspace(clusterResourcesRepository,
+		RepositoryWorkspace dedicatedWorkspace = new RepositoryWorkspace(clusterResourcesRepository,
 			tenantBootstrapRepository)
+
+		validateDedicatedWorkspace(dedicatedWorkspace)
+
+		return dedicatedWorkspace
+	}
+
+	private static void validateDedicatedWorkspace(RepositoryWorkspace workspace) {
+		String clusterRoot = new File(workspace.clusterResourcesRootDir()).canonicalPath
+		String tenantRoot = new File(workspace.tenantBootstrapRootDir()).canonicalPath
+
+		if (clusterRoot == tenantRoot) {
+			throw new IllegalStateException(
+				"Dedicated Multi-Tenant mode requires separate local workspaces for " +
+					"central cluster-resources and tenant bootstrap repositories. " +
+					"Both resolved to: ${clusterRoot}"
+			)
+		}
 	}
 
 	private void assertWorkspacePrepared() {

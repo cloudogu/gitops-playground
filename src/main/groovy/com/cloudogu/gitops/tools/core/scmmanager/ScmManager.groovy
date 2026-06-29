@@ -39,14 +39,14 @@ class ScmManager extends Tool {
 
 	@Override
 	boolean isEnabled() {
-		isInternalScmManagerConfigured()
+		isInternalTenantScmManagerConfigured()
 	}
 
 	@Override
 	void enable() {
 		log.info('Starting internal SCM-Manager setup.')
 
-		ScmManagerProvider scmManager = getResourcesScmManager()
+		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(
 			scmManager,
@@ -67,35 +67,25 @@ class ScmManager extends Tool {
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
-	private boolean isInternalScmManagerConfigured() {
-		if (config.multiTenant.useDedicatedInstance) {
-			return config.multiTenant.scmProviderType == ScmProviderType.SCM_MANAGER &&
-				config.multiTenant.scmManager != null &&
-				config.multiTenant.scmManager.internal
-		}
-
+	private boolean isInternalTenantScmManagerConfigured() {
 		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
 			config.scm.scmManager != null &&
 			config.scm.scmManager.internal
 	}
 
 	private String configuredNamespace() {
-		if (config.multiTenant.useDedicatedInstance) {
-			return config.multiTenant.scmManager?.namespace ?: 'scm-manager'
-		}
-
 		return config.scm.scmManager?.namespace ?: 'scm-manager'
 	}
 
-	private ScmManagerProvider getResourcesScmManager() {
-		GitProvider resourcesScm = gitHandler.getResourcesScm()
+	private ScmManagerProvider getTenantScmManager() {
+		GitProvider tenantScm = gitHandler.tenant
 
-		if (!(resourcesScm instanceof ScmManagerProvider)) {
+		if (!(tenantScm instanceof ScmManagerProvider)) {
 			throw new IllegalStateException(
-				"Resources SCM provider is not an SCM-Manager. Actual provider: ${resourcesScm?.class?.simpleName}"
+				"Tenant SCM provider is not an SCM-Manager. Actual provider: ${tenantScm?.class?.simpleName}"
 			)
 		}
 
-		return resourcesScm as ScmManagerProvider
+		return tenantScm as ScmManagerProvider
 	}
 }

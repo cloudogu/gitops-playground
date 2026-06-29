@@ -60,10 +60,35 @@ class ArgoCDRepoSetup {
 	}
 
 	void prepareRepositories() {
+		validateRepositoryWorkspace()
+
 		prepareClusterResourcesRepo()
 
 		if (config.multiTenant.useDedicatedInstance) {
 			prepareTenantBootstrapRepo()
+		}
+	}
+
+	private void validateRepositoryWorkspace() {
+		if (!config.multiTenant.useDedicatedInstance) {
+			return
+		}
+
+		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
+			throw new IllegalStateException(
+				"Dedicated Multi-Tenant mode requires a tenant bootstrap repository."
+			)
+		}
+
+		String clusterRoot = new File(repositoryWorkspace.clusterResourcesRootDir()).canonicalPath
+		String tenantRoot = new File(repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath
+
+		if (clusterRoot == tenantRoot) {
+			throw new IllegalStateException(
+				"Dedicated Multi-Tenant mode requires separate local workspaces for " +
+					"central cluster-resources and tenant bootstrap repositories. " +
+					"Both resolved to: ${clusterRoot}"
+			)
 		}
 	}
 
@@ -122,15 +147,15 @@ class ArgoCDRepoSetup {
 					"tenant=${layout.multiTenantDir()}/tenant"
 			)
 
-			FileSystemUtils.deleteDir(layout.applicationsDir())
-			FileSystemUtils.deleteDir(layout.projectsDir())
+			fileSystemUtils.deleteDir(layout.applicationsDir())
+			fileSystemUtils.deleteDir(layout.projectsDir())
 
 			fileSystemUtils.moveDirectoryMergeOverwrite(
 				Path.of(layout.multiTenantDir(), 'central'),
 				Path.of(layout.argocdRoot())
 			)
 
-			FileSystemUtils.deleteDir(layout.multiTenantDir())
+			fileSystemUtils.deleteDir(layout.multiTenantDir())
 		} else {
 			fileSystemUtils.deleteDir(layout.multiTenantDir())
 		}

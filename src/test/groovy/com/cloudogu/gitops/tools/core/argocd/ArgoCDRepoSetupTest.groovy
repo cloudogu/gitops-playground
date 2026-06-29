@@ -15,6 +15,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
 
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -25,6 +26,7 @@ class ArgoCDRepoSetupTest {
 	@BeforeEach
 	void setUp() {
 		config = Config.fromMap(application: [namePrefix: '',
+		                                      tenantName: '',
 		                                      netpols   : true,
 		                                      namespaces: [dedicatedNamespaces: ["argocd", "monitoring", "secrets"],
 		                                                   tenantNamespaces   : ["example-apps-staging", "example-apps-production"]]],
@@ -42,7 +44,7 @@ class ArgoCDRepoSetupTest {
 			           ingress    : [active: true],
 			           monitoring : [active: true, helm: [chart: 'kube-prometheus-stack', version: '42.0.3']],
 			           mail       : [active: false],
-			           secrets    : [active: true],])
+			           secrets    : [active: true]])
 	}
 
 	private ArgoCDRepoSetupTestContext createSetup(FileSystemUtils fs) {
@@ -118,6 +120,16 @@ class ArgoCDRepoSetupTest {
 	}
 
 	@Test
+	void 'dedicated mode uses separate local workspaces for central and tenant bootstrap repositories'() {
+		config.multiTenant.useDedicatedInstance = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		assertThat(new File(testContext.repositoryWorkspace.clusterResourcesRootDir()).canonicalPath)
+			.isNotEqualTo(new File(testContext.repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath)
+	}
+
+	@Test
 	void 'tenantRepoLayout throws in single instance mode'() {
 		config.multiTenant.useDedicatedInstance = false
 
@@ -183,6 +195,57 @@ class ArgoCDRepoSetupTest {
 		assertThat(Path.of(clusterRepoLayout.applicationsDir())).exists()
 		assertThat(Path.of(clusterRepoLayout.projectsDir())).exists()
 		assertThat(Path.of(clusterRepoLayout.multiTenantDir())).doesNotExist()
+	}
+
+	@Test
+	void 'prepareRepositories in dedicated mode keeps central and tenant bootstrap templates separated'() {
+		config.application.namePrefix = 'testPrefix-'
+		config.application.tenantName = 'testPrefix'
+		config.multiTenant.useDedicatedInstance = true
+		config.multiTenant.scmManager.url = 'scmm.testhost/scm'
+		config.multiTenant.centralArgocdNamespace = 'argocd'
+		config.features.argocd.operator = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		def clusterRepoLayout = testContext.setup.clusterRepoLayout()
+		def tenantRepoLayout = testContext.setup.tenantRepoLayout()
+
+		File centralBootstrapFile = new File(clusterRepoLayout.applicationsDir(), 'bootstrap.yaml')
+		File tenantBootstrapFile = new File(tenantRepoLayout.applicationsDir(), 'bootstrap.yaml')
+
+		assertThat(centralBootstrapFile).exists()
+		assertThat(tenantBootstrapFile).exists()
+
+		def centralBootstrapYaml = new YamlSlurper().parse(centralBootstrapFile)
+		def tenantBootstrapYaml = new YamlSlurper().parse(tenantBootstrapFile)
+
+		assertThat(centralBootstrapYaml)
+			.as('central bootstrap.yaml must contain exactly one central Application')
+			.isInstanceOf(Map)
+
+		assertThat(centralBootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
+		assertThat(centralBootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
+		assertThat(centralBootstrapYaml['spec']['destination']['namespace']).isEqualTo('testPrefix-argocd')
+		assertThat(centralBootstrapYaml['spec']['project']).isEqualTo('testPrefix')
+		assertThat(centralBootstrapYaml['spec']['source']['path']).isEqualTo('apps/argocd/applications/')
+		assertThat(centralBootstrapYaml['spec']['source']['repoURL'])
+			.isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git')
+
+		assertThat(tenantBootstrapYaml)
+			.as('tenant bootstrap.yaml should contain tenant bootstrap Applications')
+			.isInstanceOf(List)
+
+		assertThat(tenantBootstrapYaml['metadata']['name'])
+			.containsExactly('bootstrap', 'projects')
+
+		assertThat(tenantBootstrapYaml['metadata']['namespace'])
+			.containsOnly('testPrefix-argocd')
+
+		assertThat(tenantBootstrapYaml['spec']['project'])
+			.containsOnly('argocd')
 	}
 
 	@Test
