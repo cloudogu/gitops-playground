@@ -127,10 +127,13 @@ me:x:1000:''')
 	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
+		config.registry.createImagePullSecrets = true
 		createJenkins().install()
 
 		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
 			anyString(), anyString(), any(Path), any(), anyBoolean())
+		verify(k8sClient, never()).createNamespace(any())
+		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
 
 		assertThat(temporaryYamlFile).isNull()
 	}
