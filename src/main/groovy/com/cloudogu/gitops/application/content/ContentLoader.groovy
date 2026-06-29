@@ -94,7 +94,7 @@ class ContentLoader extends Tool {
 
 	@Override
 	void preConfigInit(Config configToSet) {
-		config.content.repos.each { repo ->
+		configToSet.content.repos.each { repo ->
 
 			if (!repo.url) {
 				throw new RuntimeException("content.repos requires a url parameter.")
