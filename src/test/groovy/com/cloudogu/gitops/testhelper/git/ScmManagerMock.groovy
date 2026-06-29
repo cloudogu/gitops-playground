@@ -98,21 +98,6 @@ class ScmManagerMock implements GitProvider {
 	}
 
 	@Override
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-		// intentionally left blank
-	}
-
-	@Override
-	void deleteUser(String name) {
-		// intentionally left blank
-	}
-
-	@Override
-	void setDefaultBranch(String repoTarget, String branch) {
-		// intentionally left blank
-	}
-
-	@Override
 	String getUrl() {
 		return withoutTrailingSlash(inClusterBase).toString()
 	}

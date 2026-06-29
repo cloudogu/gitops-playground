@@ -46,11 +46,6 @@ class GitHandler {
 
 		config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
 
-		if (config.multiTenant.useDedicatedInstance && config.multiTenant.scmManager) {
-			config.multiTenant.scmManager.namespace =
-				prefixedNamespace(config.multiTenant.scmManager.namespace)
-		}
-
 		if (config.scm.gitlab.url) {
 			config.scm.scmProviderType = ScmProviderType.GITLAB
 			config.scm.scmManager = null
@@ -88,19 +83,15 @@ class GitHandler {
 		switch (config.scm.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(config, config.scm.gitlab)
-
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManagerProvider(
-					config,
+				return new ScmManagerProvider(config,
 					config.scm.scmManager,
 					k8sClient,
-					networkingUtils
-				)
+					networkingUtils,
+					config.application.namePrefix ?: '')
 
 			default:
-				throw new IllegalArgumentException(
-					"Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}"
-				)
+				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}")
 		}
 	}
 
@@ -108,22 +99,17 @@ class GitHandler {
 		switch (config.multiTenant.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(config, config.multiTenant.gitlab)
-
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManagerProvider(
-					config,
+				return new ScmManagerProvider(config,
 					config.multiTenant.scmManager,
 					k8sClient,
-					networkingUtils
-				)
+					networkingUtils,
+					centralScmManagerServicePrefix())
 
 			default:
-				throw new IllegalArgumentException(
-					"Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}"
-				)
+				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
 		}
 	}
-
 
 	private String prefixedNamespace(String namespace) {
 		String prefix = config.application.namePrefix ?: ''
@@ -134,5 +120,17 @@ class GitHandler {
 		}
 
 		return "${prefix}${baseNamespace}".toString()
+	}
+
+
+	private String centralScmManagerServicePrefix() {
+		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
+		def baseNamespace = 'scm-manager'
+
+		if (namespace == baseNamespace || !namespace.endsWith(baseNamespace)) {
+			return ''
+		}
+
+		return namespace.substring(0, namespace.length() - baseNamespace.length())
 	}
 }
