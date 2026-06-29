@@ -101,7 +101,7 @@ class GitHandler {
 					config.multiTenant.scmManager,
 					k8sClient,
 					networkingUtils,
-					'')
+					centralScmManagerServicePrefix())
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
@@ -150,5 +150,17 @@ class GitHandler {
 		}
 
 		return prefix + repoPath
+	}
+
+
+	private String centralScmManagerServicePrefix() {
+		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
+		def baseNamespace = 'scm-manager'
+
+		if (namespace == baseNamespace || !namespace.endsWith(baseNamespace)) {
+			return ''
+		}
+
+		return namespace.substring(0, namespace.length() - baseNamespace.length())
 	}
 }
