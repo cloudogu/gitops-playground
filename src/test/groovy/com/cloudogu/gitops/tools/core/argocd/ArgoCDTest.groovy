@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -1566,7 +1567,7 @@ class ArgoCDTest {
 			CommandExecutorForTest helmCommands,
 			GitProvider tenantProvider,
 			GitProvider centralProvider) {
-			super(cfg,
+			super(new ContextBuilder(cfg).build(),
 				k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),

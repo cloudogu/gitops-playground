@@ -8,6 +8,8 @@ import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
 
+import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -15,6 +17,10 @@ import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 
 class JobManagerTest {
+
+	private static DeploymentContext context(Config config) {
+		return new ContextBuilder(config).build()
+	}
 
 	@Test
 	void 'creates credential'() {
@@ -28,7 +34,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathMatching(".*createCredentials.*"))
 				.willReturn(ok()))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			jobManager.createCredential('the-jobname', 'the-id', 'the-username', 'the-password', 'some description')
@@ -59,7 +65,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathMatching(".*createCredentials.*"))
 				.willReturn(aResponse().withStatus(404)))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def exception = shouldFail(RuntimeException) {
@@ -83,7 +89,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/job/the-jobname/build.*"))
 				.willReturn(ok()))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			jobManager.startJob('the-jobname')
@@ -108,7 +114,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/job/the-jobname/build.*"))
 				.willReturn(aResponse().withStatus(400)))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def exception = shouldFail(RuntimeException) {
@@ -164,7 +170,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
 				.willReturn(ok()))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def exists = jobManager.jobExists('the-jobname')
@@ -188,7 +194,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
 				.willReturn(aResponse().withStatus(404)))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def exists = jobManager.jobExists('the-jobname')
@@ -212,7 +218,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathMatching("/jenkins/createItem.*"))
 				.willReturn(ok()))
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
@@ -243,7 +249,7 @@ class JobManagerTest {
 			wireMockServer.stubFor(post(urlPathEqualTo("/jenkins/job/the-jobname"))
 				.willReturn(ok())) // 200 OK means "Job Exists"
 
-			def jobManager = new JobManager(new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins")),
+			def jobManager = new JobManager(new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: wireMockServer.baseUrl() + "/jenkins"))),
 				new OkHttpClient()))
 
 			def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')

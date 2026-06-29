@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
@@ -25,21 +26,25 @@ class ScmManagerProvider implements GitProvider {
 
 	NetworkingUtils networkingUtils
 	K8sClient k8sClient
-	Config config
+	DeploymentContext context
 
-	ScmManagerProvider(Config config,
-	                   ScmManagerConfig scmmConfig,
-	                   K8sClient k8sClient,
-	                   NetworkingUtils networkingUtils) {
+	ScmManagerProvider(DeploymentContext context,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
 		this.scmmConfig = scmmConfig
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
 
-		this.urls = new ScmManagerUrlResolver(this.config,
+		this.urls = new ScmManagerUrlResolver(this.context,
 			this.scmmConfig,
 			this.k8sClient,
 			this.networkingUtils)
+	}
+
+	Config getConfig() {
+		return context.config
 	}
 
 	ScmManagerApiClient getApiClient() {
@@ -175,15 +180,15 @@ class ScmManagerProvider implements GitProvider {
 
 	/**
 	 * Test-only constructor.*/
-	ScmManagerProvider(Config config,
-	                   ScmManagerConfig scmmConfig,
-	                   ScmManagerUrlResolver urls,
-	                   ScmManagerApiClient apiClient) {
+	ScmManagerProvider(DeploymentContext context,
+		ScmManagerConfig scmmConfig,
+		ScmManagerUrlResolver urls,
+		ScmManagerApiClient apiClient) {
 		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
-		this.config = Objects.requireNonNull(config, "config must not be null")
+		this.context = Objects.requireNonNull(context, "context must not be null")
 		this.urls = Objects.requireNonNull(urls, "urls must not be null")
 		this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
 			scmmConfig.credentials,
-			config.application.insecure)
+			this.config.application.insecure)
 	}
 }

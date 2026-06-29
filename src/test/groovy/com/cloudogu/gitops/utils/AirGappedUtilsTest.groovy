@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -172,6 +173,6 @@ class AirGappedUtilsTest {
 	}
 
 	AirGappedUtils createAirGappedUtils() {
-		new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
+		new AirGappedUtils(new ContextBuilder(config).build(), gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
 	}
 }

@@ -2,9 +2,11 @@ package com.cloudogu.gitops.application.context
 
 import com.cloudogu.gitops.config.Config
 
+import io.micronaut.context.annotation.Factory
+
 import jakarta.inject.Singleton
 
-@Singleton
+@Factory
 class ContextBuilder {
 
 	private final Config config
@@ -13,6 +15,7 @@ class ContextBuilder {
 		this.config = config
 	}
 
+	@Singleton
 	DeploymentContext build() {
 		return new DeploymentContext(config,
 			config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT,

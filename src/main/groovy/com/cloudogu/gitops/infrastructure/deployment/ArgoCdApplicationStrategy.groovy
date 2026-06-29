@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -17,19 +18,23 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	private FileSystemUtils fileSystemUtils
-	private Config config
+	private DeploymentContext context
 	private final GitRepoFactory gitRepoProvider
 
 	private GitHandler gitHandler
 
-	ArgoCdApplicationStrategy(Config config,
+	ArgoCdApplicationStrategy(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		GitRepoFactory gitRepoProvider,
 		GitHandler gitHandler) {
 		this.gitRepoProvider = gitRepoProvider
 		this.fileSystemUtils = fileSystemUtils
-		this.config = config
+		this.context = context
 		this.gitHandler = gitHandler
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	@Override
@@ -68,7 +73,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 
 		// DedicatedInstances
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
 			project = prefix.replaceFirst(/-$/, "")
 		}
@@ -88,14 +93,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
 
 		if (bootstrapDeploymentRequired) {
-			log.info(
-				"Using bootstrap deployment for feature '{}': applicationName='{}', releaseName='{}', namespace='{}'. " +
-					"Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.",
+			log.info("Using bootstrap deployment for feature '{}': applicationName='{}', releaseName='{}', namespace='{}'. " +
+				"Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.",
 				featureName,
 				repoName,
 				releaseName,
-				namespace
-			)
+				namespace)
 		} else {
 			// Normal features keep values in cluster-resources and consume them via $values.
 			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
@@ -107,30 +110,22 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 
 		// 1) Helm source
-		def helmConfig = [
-			releaseName: releaseName
-		]
+		def helmConfig = [releaseName: releaseName]
 
 		if (bootstrapDeploymentRequired) {
-			log.debug(
-				"Embedding Helm values for bootstrap feature '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
-				featureName
-			)
+			log.debug("Embedding Helm values for bootstrap feature '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
+				featureName)
 			helmConfig.values = inlineValues
 		} else {
-			helmConfig.valueFiles = [
-				"\$values/${gopValuesPath}".toString(),
-				"\$values/${userValuesPath}".toString()
-			]
+			helmConfig.valueFiles = ["\$values/${gopValuesPath}".toString(),
+			                         "\$values/${userValuesPath}".toString()]
 			helmConfig.ignoreMissingValueFiles = true
 		}
 
-		def helmSource = [
-			repoURL                         : repoURL,
-			(chooseKeyChartOrPath(repoType)): chartOrPath,
-			targetRevision                  : version,
-			helm                            : helmConfig
-		]
+		def helmSource = [repoURL                         : repoURL,
+		                  (chooseKeyChartOrPath(repoType)): chartOrPath,
+		                  targetRevision                  : version,
+		                  helm                            : helmConfig]
 
 		// 2) Git source for values and additional manifests.
 		// SCM-Manager must not reference the SCM-Manager repo that it deploys itself.
@@ -138,13 +133,11 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		if (!bootstrapDeploymentRequired) {
 			def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
-			def gitSource = [
-				repoURL       : featureRepoUrl,
-				targetRevision: "main",
-				ref           : "values",
-				path          : featurePath,
-				directory     : [recurse: true]
-			]
+			def gitSource = [repoURL       : featureRepoUrl,
+			                 targetRevision: "main",
+			                 ref           : "values",
+			                 path          : featurePath,
+			                 directory     : [recurse: true]]
 
 			sources << gitSource
 		}
@@ -182,8 +175,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
-			"${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
+		log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " + "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
 
 		clusterResourcesRepo.commitAndPush("Added $repoName/$chartOrPath to ArgoCD")
 	}

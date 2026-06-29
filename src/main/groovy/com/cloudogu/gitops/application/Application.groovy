@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.application
 
-import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -22,9 +21,9 @@ class Application {
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 
-	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler,
+	Application(DeploymentContext context, K8sClient k8sClient, GitHandler gitHandler,
 		List<Tool> features) {
-		this.context = contextBuilder.build()
+		this.context = context
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.gitHandler = gitHandler
 		this.features = features

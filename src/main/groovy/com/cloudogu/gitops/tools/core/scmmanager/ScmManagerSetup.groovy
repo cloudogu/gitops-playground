@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -20,16 +21,20 @@ class ScmManagerSetup {
 
 	private final ScmManagerProvider scmManager
 	private final Deployer deployer
-	private final Config config
+	private final DeploymentContext context
 
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
-		Config config) {
+		DeploymentContext context) {
 		this.scmManager = scmManager
 		this.deployer = deployer
-		this.config = config
+		this.context = context
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	void setupHelm() {
@@ -41,8 +46,7 @@ class ScmManagerSetup {
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
-			config.multiTenant.useDedicatedInstance
-		)
+			context.isMultiTenant())
 
 		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
@@ -63,8 +67,7 @@ class ScmManagerSetup {
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
-			config.multiTenant.useDedicatedInstance
-		)
+			context.isMultiTenant())
 
 		deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
@@ -81,8 +84,7 @@ class ScmManagerSetup {
 
 		log.info("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
 			releaseName,
-			this.scmManager.scmmConfig.namespace
-		)
+			this.scmManager.scmmConfig.namespace)
 
 		Map<String, Object> templateVars = [config     : this.scmManager.config,
 		                                    host       : this.scmManager.scmmConfig.ingress,

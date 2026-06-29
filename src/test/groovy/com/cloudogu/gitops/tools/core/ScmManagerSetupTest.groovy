@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -56,12 +57,11 @@ class ScmManagerSetupTest {
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
-		config.application.namePrefix =  "${config.application.namePrefix}-"
+		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
-
 
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
@@ -89,7 +89,7 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools.common
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -48,6 +49,7 @@ abstract class Tool {
 	protected Deployer deployer
 	protected AirGappedUtils airGappedUtils
 	protected GitHandler gitHandler
+	protected DeploymentContext context
 	protected Map<String, Object> helmValuesTemplateData = [:]
 
 	protected void addHelmValuesData(String key, Object value) {
@@ -95,8 +97,9 @@ abstract class Tool {
 		String namespace,
 		Config.HelmConfigWithValues helmConfig,
 		String helmValuesTemplatePath,
-		Config config,
+		DeploymentContext context,
 		boolean initByHelm = false) {
+		Config config = context.config
 		String repoURL = helmConfig.repoURL
 		String chartOrPath = helmConfig.chart
 		String version = helmConfig.version
@@ -123,7 +126,7 @@ abstract class Tool {
 		helmValuesData = MapUtils.deepMerge(helmConfig.values, helmValuesData)
 		Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData)
 
-		if (config.application.mirrorRepos) {
+		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
 			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
@@ -149,6 +152,14 @@ abstract class Tool {
 	}
 
 	abstract boolean isEnabled()
+
+	Config getConfig() {
+		return context.config
+	}
+
+	DeploymentContext getContext() {
+		return context
+	}
 
 	/*
 	 *  Hooks for enabling or disabling a feature. Both optional, because not always needed.

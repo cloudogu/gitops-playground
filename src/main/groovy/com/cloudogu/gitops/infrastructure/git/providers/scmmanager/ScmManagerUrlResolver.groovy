@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -10,7 +11,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class ScmManagerUrlResolver {
 
-	private final Config config
+	private final DeploymentContext context
 	private final ScmManagerConfig scmm
 	private final K8sClient k8s
 	private final NetworkingUtils net
@@ -19,11 +20,15 @@ class ScmManagerUrlResolver {
 
 	private final String releaseName = 'scmm'
 
-	ScmManagerUrlResolver(Config config, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
-		this.config = config
+	ScmManagerUrlResolver(DeploymentContext context, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
+		this.context = context
 		this.scmm = scmm
 		this.k8s = k8s
 		this.net = net
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	// ---------- Public API used by ScmManager ----------
@@ -73,7 +78,6 @@ class ScmManagerUrlResolver {
 	URI prometheusEndpoint() {
 		withSlash(clientBase()).resolve("api/v2/metrics/prometheus")
 	}
-
 
 	// ---------- Base resolution ----------
 

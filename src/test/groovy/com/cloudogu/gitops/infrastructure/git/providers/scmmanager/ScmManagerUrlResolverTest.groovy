@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -38,7 +39,7 @@ class ScmManagerUrlResolverTest {
 		scmmCofig.url = (args.containsKey('url') ? args.url : "")
 		scmmCofig.ingress = (args.containsKey('ingress') ? args.ingress : "")
 
-		return new ScmManagerUrlResolver(config, scmmCofig, k8s, net)
+		return new ScmManagerUrlResolver(new ContextBuilder(config).build(), scmmCofig, k8s, net)
 	}
 
 	// ---------- Client base & API ----------

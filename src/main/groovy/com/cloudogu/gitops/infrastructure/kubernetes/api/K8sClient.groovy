@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.utils.MapUtils
 
@@ -53,9 +54,9 @@ class K8sClient {
 	protected int DEFAULT_RETRIES = 120
 
 	KubernetesClient client
-	com.cloudogu.gitops.config.Config gopConfig
+	DeploymentContext context
 
-	K8sClient(com.cloudogu.gitops.config.Config gopConfig = null) {
+	K8sClient(DeploymentContext context = null) {
 		Config config = new ConfigBuilder()
 			.withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
 			.withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
@@ -65,7 +66,7 @@ class K8sClient {
 			.withConfig(config)
 			.build()
 		/* OpenShift client includes Kubernetes client APIs. */
-		this.gopConfig = gopConfig
+		this.context = context
 	}
 
 	// ========================================
@@ -1332,8 +1333,8 @@ class K8sClient {
 	}
 
 	private boolean runInOpenshift() {
-		// gopConfig can be null, in tests or at startup
-		return this.gopConfig?.application?.openshift ?: false
+		// context can be null in tests or at startup
+		return this.context?.isOpenshift() ?: false
 	}
 
 	// ========================================

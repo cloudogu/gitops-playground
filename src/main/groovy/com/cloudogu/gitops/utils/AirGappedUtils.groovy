@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
@@ -16,19 +17,23 @@ import groovy.yaml.YamlSlurper
 @Singleton
 class AirGappedUtils {
 
-	private Config config
+	private DeploymentContext context
 	private GitRepoFactory repoProvider
 	private FileSystemUtils fileSystemUtils
 	private HelmClient helmClient
 	private GitHandler gitHandler
 
-	AirGappedUtils(Config config, GitRepoFactory repoProvider,
+	AirGappedUtils(DeploymentContext context, GitRepoFactory repoProvider,
 		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
-		this.config = config
+		this.context = context
 		this.repoProvider = repoProvider
 		this.fileSystemUtils = fileSystemUtils
 		this.helmClient = helmClient
 		this.gitHandler = gitHandler
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	/**

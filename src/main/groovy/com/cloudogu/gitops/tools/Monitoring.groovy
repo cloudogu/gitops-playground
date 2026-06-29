@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -30,19 +31,18 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
 	String namespace
-	Config config
 	K8sClient k8sClient
 
 	private GitRepoFactory scmRepoProvider
 
-	Monitoring(Config config,
+	Monitoring(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitRepoFactory scmRepoProvider,
 		GitHandler gitHandler) {
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
 		this.k8sClient = k8sClient
@@ -60,7 +60,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	@Override
 	void enable() {
 		String uid = ''
-		if (config.application.openshift) {
+		if (context.isOpenshift()) {
 			uid = findValidOpenShiftUid()
 		}
 
@@ -86,7 +86,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		cleanupUnusedDashboards(clusterResourcesRepo)
 
 		clusterResourcesRepo.commitAndPush('Update Prometheus dashboards, RBAC and network policies.')
-		deployHelmChart('monitoring', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, config)
+		deployHelmChart('monitoring', 'kube-prometheus-stack', namespace, config.features.monitoring.helm, HELM_VALUES_PATH, context)
 	}
 
 	private void setupMonitoringSecrets() {
@@ -141,7 +141,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	protected void createMonitoringCrd() {
 		if (!config.application.skipCrds) {
 			def serviceMonitorCrdYaml
-			if (config.application.mirrorRepos) {
+			if (context.isAirgapped()) {
 				serviceMonitorCrdYaml = Path.of("${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml").toString()
 			} else {
 				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
@@ -213,8 +213,4 @@ class Monitoring extends Tool implements ToolWithImage {
 		return k8sClient
 	}
 
-	@Override
-	Config getConfig() {
-		return config
-	}
 }

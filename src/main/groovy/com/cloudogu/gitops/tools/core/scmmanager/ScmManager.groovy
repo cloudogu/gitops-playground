@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
@@ -19,14 +19,14 @@ class ScmManager extends Tool {
 
 	String namespace
 
-	private final Config config
+	private final DeploymentContext context
 	private final GitHandler gitHandler
 	private final Deployer deployer
 
-	ScmManager(Config config,
-	           GitHandler gitHandler,
-	           Deployer deployer) {
-		this.config = config
+	ScmManager(DeploymentContext context,
+		GitHandler gitHandler,
+		Deployer deployer) {
+		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 
@@ -48,7 +48,7 @@ class ScmManager extends Tool {
 		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
-			deployer, config)
+			deployer, context)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
@@ -64,7 +64,7 @@ class ScmManager extends Tool {
 	}
 
 	private boolean isInternalScmManagerConfigured() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager != null && config.scm.scmManager.internal
+		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager != null && context.isInternalScmManager()
 	}
 
 	private String prefixedNamespace() {

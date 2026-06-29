@@ -3,6 +3,8 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows
 
+import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -22,7 +24,8 @@ class RbacDefinitionTest {
 	                                                            gitName   : 'Test User',
 	                                                            gitEmail  : 'test@example.com']])
 
-	private final GitRepo repo = new GitRepo(config, null, "my-repo", new FileSystemUtils())
+	private final DeploymentContext context = new ContextBuilder(config).build()
+	private final GitRepo repo = new GitRepo(context, null, "my-repo", new FileSystemUtils())
 
 	@Test
 	void 'generates at least one RBAC YAML file'() {
@@ -31,7 +34,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -49,7 +52,7 @@ class RbacDefinitionTest {
 				.withNamespace("testing")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withConfig(config)
+				.withContext(context)
 				.generate()
 		}
 
@@ -63,7 +66,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withConfig(config)
+				.withContext(context)
 				.generate()
 		}
 
@@ -77,7 +80,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withNamespace("testing")
 				.withRepo(repo)
-				.withConfig(config)
+				.withContext(context)
 				.withServiceAccounts([]) // leer übergeben
 				.generate()
 		}
@@ -93,7 +96,7 @@ class RbacDefinitionTest {
 			.withNamespace("myns")
 			.withServiceAccounts([sa])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File f = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac/rolebinding-direct-myns.yaml")
@@ -109,7 +112,7 @@ class RbacDefinitionTest {
 			.withSubfolder(custom)
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File out = new File(repo.getAbsoluteLocalRepoTmpDir(), custom)
@@ -127,7 +130,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader", "writer", "admin"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File[] files = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac").listFiles()
@@ -142,7 +145,7 @@ class RbacDefinitionTest {
 			.withNamespace("custom-ns")
 			.withServiceAccountsFrom("custom-ns", ["sa1"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -160,7 +163,7 @@ class RbacDefinitionTest {
 			.withServiceAccountsFrom("ns", ["sa1"])
 			.withSubfolder(nested)
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), nested)
@@ -176,7 +179,7 @@ class RbacDefinitionTest {
 				.withName("failtest")
 				.withNamespace("ns")
 				.withServiceAccountsFrom("ns", ["sa1"])
-				.withConfig(config)
+				.withContext(context)
 				.generate()
 		}
 
@@ -193,7 +196,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, saList)
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		String path = "rbac/rolebinding-test-${ns}.yaml".toString()
@@ -223,7 +226,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, ["sa1"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		String path = "rbac/role-${name}-${ns}.yaml".toString()
@@ -238,14 +241,14 @@ class RbacDefinitionTest {
 	void 'renders node access rules in argocd-role only when not on OpenShift'() {
 		config.application.openshift = false
 
-		GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
+		GitRepo tempRepo = new GitRepo(context, null, "rbac-test", new FileSystemUtils())
 
 		new RbacDefinition(Role.Variant.ARGOCD)
 			.withName("nodecheck")
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -263,14 +266,14 @@ class RbacDefinitionTest {
 	void 'does not render node access rules in argocd-role  when on OpenShift'() {
 		config.application.openshift = true
 
-		GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
+		GitRepo tempRepo = new GitRepo(context, null, "rbac-test", new FileSystemUtils())
 
 		new RbacDefinition(Role.Variant.ARGOCD)
 			.withName("nodecheck")
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withConfig(config)
+			.withContext(context)
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -294,8 +297,7 @@ class RbacDefinitionTest {
 				.generate()
 		}
 
-		assertThat(ex.message).contains("Config must not be null")
-		// oder je nach deiner tatsächlichen Exception-Message
+		assertThat(ex.message).contains("DeploymentContext must not be null")
 	}
 
 }

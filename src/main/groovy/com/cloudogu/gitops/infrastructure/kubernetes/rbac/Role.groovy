@@ -1,23 +1,23 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
-import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.application.context.DeploymentContext
 
 class Role {
 	String name
 	String namespace
 	Variant variant
-	Config config
+	DeploymentContext context
 
-	Role(String name, String namespace, Variant variant, Config config) {
+	Role(String name, String namespace, Variant variant, DeploymentContext context) {
 		if (!name?.trim()) throw new IllegalArgumentException("Role name must not be blank")
 		if (!namespace?.trim()) throw new IllegalArgumentException("Role namespace must not be blank")
 		if (!variant) throw new IllegalArgumentException("Role variant must not be null")
-		if (!config) throw new IllegalArgumentException("Config must not be null")
+		if (!context) throw new IllegalArgumentException("DeploymentContext must not be null")
 
 		this.name = name
 		this.namespace = namespace
 		this.variant = variant
-		this.config = config
+		this.context = context
 	}
 
 	enum Variant {
@@ -34,7 +34,7 @@ class Role {
 	Map<String, Object> toTemplateParams() {
 		return [name     : name,
 		        namespace: namespace,
-		        config   : config]
+		        config   : context.config]
 	}
 
 	File getTemplateFile() {

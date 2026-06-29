@@ -2,6 +2,7 @@ package com.cloudogu.gitops.infrastructure.deployment
 
 import static org.assertj.core.api.Assertions.assertThat
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -153,6 +154,6 @@ service:
 			}
 		}
 
-		return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider, gitHandler)
+		return new ArgoCdApplicationStrategy(new ContextBuilder(config).build(), new FileSystemUtils(), repoProvider, gitHandler)
 	}
 }

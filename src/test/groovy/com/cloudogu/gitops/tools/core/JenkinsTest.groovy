@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -355,9 +356,9 @@ me:x:1000:''')
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
+		AirGappedUtils airGappedUtils = new AirGappedUtils(new ContextBuilder(config).build(), null, fileSystemUtils, null, gitHandler)
 
-		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		new Jenkins(new ContextBuilder(config).build(), commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

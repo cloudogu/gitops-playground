@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 
 import groovy.util.logging.Slf4j
@@ -13,11 +13,11 @@ class RepoInitializationAction {
 	private GitRepo repo
 	private String copyFromDirectory
 	Set<String> subDirsToCopy = [] as Set<String>
-	private Config config
+	private DeploymentContext context
 	private GitHandler gitHandler
 
-	RepoInitializationAction(Config config, GitRepo repo, GitHandler gitHandler, String copyFromDirectory) {
-		this.config = config
+	RepoInitializationAction(DeploymentContext context, GitRepo repo, GitHandler gitHandler, String copyFromDirectory) {
+		this.context = context
 		this.repo = repo
 		this.copyFromDirectory = copyFromDirectory
 		this.gitHandler = gitHandler
@@ -35,7 +35,7 @@ class RepoInitializationAction {
 	}
 
 	void replaceTemplates() {
-		Map<String, Object> templateModel = buildTemplateValues(config)
+		Map<String, Object> templateModel = buildTemplateValues()
 		repo.replaceTemplates(templateModel)
 	}
 
@@ -43,7 +43,8 @@ class RepoInitializationAction {
 		return repo
 	}
 
-	private Map<String, Object> buildTemplateValues(Config config) {
+	private Map<String, Object> buildTemplateValues() {
+		def config = context.config
 		def model = [tenantName: config.application.tenantName,
 		             argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""],
 		             scm       : [baseUrl      : this.repo.gitProvider.url,

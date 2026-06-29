@@ -3,6 +3,7 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 
@@ -368,7 +369,7 @@ class K8sClientTest {
 	void 'createNamespace creates OpenShift project when openshift config is enabled'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: true]])
-		k8sApiClient.gopConfig = config
+		k8sApiClient.context = new ContextBuilder(config).build()
 
 		server.expect()
 			.get()
@@ -399,7 +400,7 @@ class K8sClientTest {
 	void 'createNamespace creates Kubernetes namespace when openshift config is disabled'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: false]])
-		k8sApiClient.gopConfig = config
+		k8sApiClient.context = new ContextBuilder(config).build()
 
 		server.expect()
 			.get()
@@ -452,7 +453,7 @@ class K8sClientTest {
 	@Test
 	void 'createNamespace creates Kubernetes namespace when config is null'() {
 		// Given
-		k8sApiClient.gopConfig = null
+		k8sApiClient.context = null
 
 		server.expect()
 			.get()
@@ -483,7 +484,7 @@ class K8sClientTest {
 	void 'createNamespace does not create OpenShift project when namespace already exists'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: true]])
-		k8sApiClient.gopConfig = config
+		k8sApiClient.context = new ContextBuilder(config).build()
 
 		def namespace = new NamespaceBuilder()
 			.withNewMetadata()

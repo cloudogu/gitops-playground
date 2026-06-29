@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
@@ -62,7 +63,7 @@ class ScmManagerProviderTest {
 	}
 
 	private ScmManagerProvider newSchManager() {
-		return new ScmManagerProvider(config, scmmCfg, urls, apiClient)
+		return new ScmManagerProvider(new ContextBuilder(config).build(), scmmCfg, urls, apiClient)
 	}
 
 	private static Call<Void> callReturningSuccess(int code) {

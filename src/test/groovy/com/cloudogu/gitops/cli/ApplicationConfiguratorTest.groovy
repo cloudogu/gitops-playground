@@ -5,6 +5,7 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.application.content.ContentLoader
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -76,8 +77,9 @@ class ApplicationConfiguratorTest {
 		Deployer deployer = Mockito.mock(Deployer)
 
 		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
-		featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
-		featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
+		def context = new ContextBuilder(testConfig).build()
+		featureContent = Mockito.spy(new ContentLoader(context, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
+		featureArgoCd = Mockito.spy(new ArgoCD(context, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
 	}
 
 	@Test

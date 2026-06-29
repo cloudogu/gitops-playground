@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
@@ -27,7 +28,6 @@ class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"
 	String namespace
-	private Config config
 	private CommandExecutor commandExecutor
 	private GlobalPropertyManager globalPropertyManager
 	private JobManager jobManager
@@ -36,7 +36,7 @@ class Jenkins extends Tool {
 	private K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
-	Jenkins(Config config,
+	Jenkins(DeploymentContext context,
 		CommandExecutor commandExecutor,
 		FileSystemUtils fileSystemUtils,
 		GlobalPropertyManager globalPropertyManager,
@@ -48,7 +48,7 @@ class Jenkins extends Tool {
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
-		this.config = config
+		this.context = context
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -92,7 +92,7 @@ class Jenkins extends Tool {
 			String releaseName = "jenkins"
 			addHelmValuesData("dockerGid", findDockerGid())
 
-			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, config, true)
+			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, context, true)
 
 			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 			String serviceName = releaseName

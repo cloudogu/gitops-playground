@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
@@ -84,9 +85,9 @@ class RegistryTest {
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null)
+		AirGappedUtils airGappedUtils = new AirGappedUtils(new ContextBuilder(config).build(), null, fileUtil, helmClient, null)
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new Registry(config, fileUtil, k8sClient, airGappedUtils, deployer)
+		new Registry(new ContextBuilder(config).build(), fileUtil, k8sClient, airGappedUtils, deployer)
 	}
 
 	private Map parseActualYaml() {

@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Path
@@ -11,10 +11,10 @@ import groovy.util.logging.Slf4j
 @Singleton
 class HelmStrategy implements DeploymentStrategy {
 	private HelmClient helmClient
-	private Config config
+	private DeploymentContext context
 
-	HelmStrategy(Config config, HelmClient helmClient) {
-		this.config = config
+	HelmStrategy(DeploymentContext context, HelmClient helmClient) {
+		this.context = context
 		this.helmClient = helmClient
 	}
 
