@@ -24,7 +24,7 @@ class ScmManager extends Tool implements ToolWithImage {
 	private final Config config
 	private final GitHandler gitHandler
 	private final Deployer deployer
-	K8sClient k8sClient
+	private final K8sClient k8sClient
 
 	ScmManager(Config config,
 		GitHandler gitHandler,
