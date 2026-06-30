@@ -117,7 +117,7 @@ class GitHandler {
 
 	private void setupExternalRepositoriesIfPossible() {
 		final String namePrefix = (config.application.namePrefix ?: '').trim()
-		final boolean repositorySetupBlockedByInternalScmBootstrap = isRepositorySetupBlockedByInternalScmBootstrap()
+		final boolean repositorySetupBlockedByInternalScmBootstrap = context.isInternalScmManager()
 
 		log.info("Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
 			central != null,
@@ -142,16 +142,12 @@ class GitHandler {
 		}
 	}
 
-	private boolean isRepositorySetupBlockedByInternalScmBootstrap() {
-		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && context.isInternalScmManager()
-	}
-
 	static void setupRepos(GitProvider gitProvider, String namePrefix = '') {
-		gitProvider.createRepository(withOrgPrefix(namePrefix, 'argocd/cluster-resources'),
+		gitProvider.createRepository(withPrefix(namePrefix, 'argocd/cluster-resources'),
 			'GitOps repo for basic cluster-resources')
 	}
 
-	static String withOrgPrefix(String prefix, String repoPath) {
+	static String withPrefix(String prefix, String repoPath) {
 		if (!prefix) {
 			return repoPath
 		}
