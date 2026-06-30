@@ -70,18 +70,18 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
 
-                stage("SonarScanner") {
-                    agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
-                        reuseNode true
-                    }}
-                    steps {
-                        withSonarQubeEnv('ces-sonar') {
-                            sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
-                        }
-                    }
+        stage("SonarScanner") {
+            agent { docker {
+                image "${env.MAVEN_IMAGE}"
+                args "-v maven-cache:/root/.m2"
+                reuseNode true
+            }}
+            steps {
+                withSonarQubeEnv('ces-sonar') {
+                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                 }
             }
         }
