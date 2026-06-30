@@ -58,7 +58,7 @@ abstract class Tool {
 
 	boolean install() {
 		if (isEnabled()) {
-			log.info("Installing Feature ${getClass().getSimpleName()}")
+			log.info("Installing Tool ${getClass().getSimpleName()}")
 
 			if (this instanceof ToolWithImage) {
 				(this as ToolWithImage).createImagePullSecret()
@@ -68,7 +68,7 @@ abstract class Tool {
 			log.info("Tool installed: ${getClass().getSimpleName()}")
 			return true
 		} else {
-			log.debug("Feature ${getClass().getSimpleName()} is disabled")
+			log.debug("Tool ${getClass().getSimpleName()} is disabled")
 			disable()
 			return false
 		}

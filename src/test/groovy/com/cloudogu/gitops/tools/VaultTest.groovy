@@ -105,7 +105,7 @@ class VaultTest {
 		assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
 		assertThat(actualPostStart[1]).isEqualTo('-c')
 
-		assertThat(actualPostStart[2]).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=true /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 
 		List actualVolumes = actualYaml['server']['volumes'] as List
 		List actualVolumeMounts = actualYaml['server']['volumeMounts'] as List
@@ -127,7 +127,23 @@ class VaultTest {
 
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
-		assertThat(actualPostStart[2]).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+	}
+
+	@Test
+	void 'Dev mode enables OIDC only when configured'() {
+		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.url = 'http://vault.localhost'
+		config.features.secrets.vault.oidc = new Config.SecretsSchema.VaultSchema.VaultOidcSchema(clientId: 'vault-client',
+			clientSecret: 'vault-secret',
+			discoveryUrl: 'http://keycloak.local.gd/realms/gop')
+		config.application.password = 'admin'
+
+		createVault().install()
+
+		def actualYaml = parseActualYaml()
+		List actualPostStart = (List) actualYaml['server']['postStart']
+		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 	}
 
 	@Test
@@ -236,5 +252,12 @@ class VaultTest {
 	private Map parseActualYaml() {
 		def ys = new YamlSlurper()
 		return ys.parse(temporaryYamlFile) as Map
+	}
+
+	private static String normalizeShellCommand(String command) {
+		command
+			.replaceAll(/\\\s*\r?\n\s*/, ' ')
+			.replaceAll(/\s+/, ' ')
+			.trim()
 	}
 }

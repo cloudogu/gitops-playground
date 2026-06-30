@@ -175,4 +175,6 @@ interface ConfigConstants {
 	String HELM_CONFIG_VERSION_DESCRIPTION = 'The version of the Helm chart to be installed'
 	String HELM_CONFIG_IMAGE_DESCRIPTION = 'The image of the Helm chart to be installed'
 	String HELM_CONFIG_VALUES_DESCRIPTION = 'Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration'
+
+	String OIDC_DESCPRIPTION = 'OIDC Config for this tool. See docs for more infos'
 }

@@ -97,19 +97,27 @@ class UserManagerTest {
 	}
 
 	@Test
-	void 'checks whether cas security realm is used'() {
+	void 'checks whether security realm without local user creation is used for cas'() {
 		def client = mock(JenkinsApiClient)
 		when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.cas.CasSecurityRealm")
 
-		assertThat(new UserManager(client).isUsingCasSecurityRealm()).isTrue()
+		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isTrue()
 	}
 
 	@Test
-	void 'checks whether cas security realm is not used'() {
+	void 'checks whether security realm without local user creation is used for oic'() {
+		def client = mock(JenkinsApiClient)
+		when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.oic.OicSecurityRealm")
+
+		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isTrue()
+	}
+
+	@Test
+	void 'checks whether local user creation is supported'() {
 		def client = mock(JenkinsApiClient)
 		when(client.runScript(anyString())).thenReturn("class hudson.security.HudsonPrivateSecurityRealm")
 
-		assertThat(new UserManager(client).isUsingCasSecurityRealm()).isFalse()
+		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isFalse()
 	}
 
 	@Test
@@ -118,7 +126,7 @@ class UserManagerTest {
 		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
 		shouldFail(RuntimeException) {
-			new UserManager(client).isUsingCasSecurityRealm()
+			new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()
 		}
 	}
 }

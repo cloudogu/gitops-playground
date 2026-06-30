@@ -93,6 +93,7 @@ me:x:1000:''')
 		assertThat(parseActualYaml()['controller']['image']['registry']).isEqualTo('localhost:5000')
 		assertThat(parseActualYaml()['controller']['image']['repository']).isEqualTo('proxy/jenkins-helm')
 		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('custom')
+		assertThat(parseActualYaml()['controller']['installPlugins']).isEqualTo(false)
 
 		assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
 		assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
@@ -123,6 +124,22 @@ me:x:1000:''')
 
 		assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo('0')
 		assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo('133')
+	}
+
+	@Test
+	void 'Installs OIDC plugin before Jenkins startup when OIDC is configured'() {
+		config.jenkins.oidc = '''
+jenkins:
+  securityRealm:
+    oic:
+      clientId: "jenkins"
+'''
+
+		createJenkins().install()
+
+		List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
+		assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly('oic-auth',
+			'json-path-api')
 	}
 
 	@Test
@@ -298,9 +315,9 @@ me:x:1000:''')
 	}
 
 	@Test
-	void 'Does not create create job credentials when argo cd is deactivated'() {
+	void 'Does not create metrics user if security realm does not support local user creation'() {
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-		when(userManager.isUsingCasSecurityRealm()).thenReturn(true)
+		when(userManager.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
 
 		createJenkins().install()
 

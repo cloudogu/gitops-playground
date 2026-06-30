@@ -1,0 +1,57 @@
+features:
+  argocd:
+    oidc: |
+      name: Keycloak
+      issuer: http://keycloak.local.gd/realms/gop
+      clientID: argocd
+      clientSecret: Cq3U2Dvx6WR5ep2ZLH8rZXNKFNcIX5Zx
+      requestedScopes: ["openid", "profile", "email"]
+
+  secrets:
+    vault:
+      oidc:
+        clientId: "vault"
+        clientSecret: "XySg7UyAzVkcaU4Visqfe9EChDvARYA1"
+        discoveryUrl: "http://keycloak.local.gd/realms/gop"
+
+  monitoring:
+    oidc: |
+      server:
+        domain: grafana.localhost
+        root_url: http://grafana.localhost
+      auth.generic_oauth:
+         enabled: true
+         name: Keycloak
+         allow_sign_up: true
+         client_id: grafana
+         client_secret: 46uALR2HeqLPtJxzkkn6tK6FVC9vMmRc
+         scopes: openid profile email
+         auth_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/auth
+         token_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/token
+         api_url: http://keycloak.local.gd/realms/gop/protocol/openid-connect/userinfo
+         signout_redirect_url: http://grafana.localhost
+         # Keycloak-Rollen Binding
+         # role_attribute_path: contains(realm_access.roles[*], 'grafana-admin') && 'Admin' || contains(realm_access.roles[*], 'grafana-editor') && 'Editor' || 'Viewer'
+jenkins:
+  oidc: |
+    jenkins:
+      securityRealm:
+        oic:
+          clientId: "jenkins"
+          clientSecret: "mtuIbUdggI2ZSy7jSsQW0WkwK0CwMbvO"
+          serverConfiguration:
+            wellKnown:
+              wellKnownOpenIDConfigurationUrl: "http://keycloak.local.gd/realms/gop/.well-known/openid-configuration"
+              scopesOverride: "openid profile email"
+          userNameField: "preferred_username"
+          fullNameFieldName: "name"
+          emailFieldName: "email"
+          logoutFromOpenidProvider: true
+          postLogoutRedirectUrl: "http://jenkins.localhost"
+          properties:
+            - escapeHatch:
+                username: "admin"
+                secret: "admin"
+      authorizationStrategy:
+        loggedInUsersCanDoAnything:
+          allowAnonymousRead: false

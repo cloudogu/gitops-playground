@@ -141,7 +141,13 @@ kubeProxy:
 alertmanager:
   enabled: false
 grafana:
+  assertNoLeakedSecrets: false
   grafana.ini:
+<#if config.features.monitoring.oidc?has_content>
+    <#list config.features.monitoring.oidc?trim?split("\n") as line>
+    ${line}
+    </#list>
+</#if>
     analytics:
       check_for_updates: false
 <#if config.application.openshift == true>

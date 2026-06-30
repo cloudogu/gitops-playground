@@ -1,933 +1,1545 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$defs" : {
-    "HelmConfigWithValues-nullable" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "chart" : {
-          "type" : [ "string", "null" ],
-          "description" : "Name of the Helm chart"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "HelmConfigWithValues-nullable": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "chart": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Name of the Helm chart"
         },
-        "repoURL" : {
-          "type" : [ "string", "null" ],
-          "description" : "Repository url from which the Helm chart should be obtained"
+        "repoURL": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Repository url from which the Helm chart should be obtained"
         },
-        "values" : {
-          "$ref" : "#/$defs/Map(String,Object)-nullable",
-          "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+        "values": {
+          "$ref": "#/$defs/Map(String,Object)-nullable",
+          "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
         },
-        "version" : {
-          "type" : [ "string", "null" ],
-          "description" : "The version of the Helm chart to be installed"
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The version of the Helm chart to be installed"
         }
       },
-      "additionalProperties" : false
+      "additionalProperties": false
     },
-    "Map(String,Object)-nullable" : {
-      "type" : [ "object", "null" ]
+    "Map(String,Object)-nullable": {
+      "type": [
+        "object",
+        "null"
+      ]
     },
-    "Map(String,String)" : {
-      "type" : "object",
-      "additionalProperties" : {
-        "type" : "string"
+    "Map(String,String)": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
       }
     },
-    "ScmProviderType-nullable" : {
-      "anyOf" : [ {
-        "type" : "null"
-      }, {
-        "type" : "string",
-        "enum" : [ "GITLAB", "SCM_MANAGER" ]
-      } ]
+    "ScmProviderType-nullable": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "GITLAB",
+            "SCM_MANAGER"
+          ]
+        }
+      ]
     }
   },
-  "type" : "object",
-  "properties" : {
-    "application" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "baseUrl" : {
-          "type" : [ "string", "null" ],
-          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence."
+  "type": "object",
+  "properties": {
+    "application": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "baseUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana and vault take precedence."
         },
-        "clusterAdmin" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Binds ArgoCD controllers to cluster-admin ClusterRole"
+        "clusterAdmin": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Binds ArgoCD controllers to cluster-admin ClusterRole"
         },
-        "destroy" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Unroll playground"
+        "destroy": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Unroll playground"
         },
-        "gitEmail" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets git author and committer email used for initial commits"
+        "gitEmail": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Sets git author and committer email used for initial commits"
         },
-        "gitName" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets git author and committer name used for initial commits"
+        "gitName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Sets git author and committer name used for initial commits"
         },
-        "gopNamespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "If set, GOP stores specific information in this namespace."
+        "gopNamespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "If set, GOP stores specific information in this namespace."
         },
-        "insecure" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Sets insecure-mode in cURL which skips cert validation"
+        "insecure": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Sets insecure-mode in cURL which skips cert validation"
         },
-        "mirrorRepos" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments."
+        "mirrorRepos": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments."
         },
-        "namePrefix" : {
-          "type" : [ "string", "null" ],
-          "description" : "Set name-prefix for repos, jobs, namespaces"
+        "namePrefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Set name-prefix for repos, jobs, namespaces"
         },
-        "namespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes."
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "If set, GOP uses the same Kubernetes namespace for all tools and examples. Attention! Only use for test purposes."
         },
-        "namespaceIsolation" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
+        "namespaceIsolation": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
         },
-        "netpols" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Sets Network Policies"
+        "netpols": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Sets Network Policies"
         },
-        "openshift" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "When set, openshift specific resources and configurations are applied"
+        "openshift": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "When set, openshift specific resources and configurations are applied"
         },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "Set initial admin passwords"
+        "password": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Set initial admin passwords"
         },
-        "podResources" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Write kubernetes resource requests and limits on each pod"
+        "podResources": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Write kubernetes resource requests and limits on each pod"
         },
-        "profile" : {
-          "type" : [ "string", "null" ],
-          "description" : "Use predefined profile (full, only-argocd, operator-mandants aso.)"
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Use predefined profile (full, only-argocd, operator-mandants aso.)"
         },
-        "skipCrds" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skip installation of CRDs. This requires prior installation of CRDs"
+        "skipCrds": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Skip installation of CRDs. This requires prior installation of CRDs"
         },
-        "urlSeparatorHyphen" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Use hyphens instead of dots to separate application name from base-url"
+        "urlSeparatorHyphen": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Use hyphens instead of dots to separate application name from base-url"
         },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "Set initial admin username"
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Set initial admin username"
         },
-        "yes" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skip confirmation"
+        "yes": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Skip confirmation"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Application configuration parameter for GOP"
+      "additionalProperties": false,
+      "description": "Application configuration parameter for GOP"
     },
-    "content" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "allowedStaticsWhitelist" : {
-          "description" : "Whitelist for Statics freemarker is allowing in user templates",
-          "type" : [ "array", "null" ],
-          "items" : {
-            "type" : "string"
+    "content": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "allowedStaticsWhitelist": {
+          "description": "Whitelist for Statics freemarker is allowing in user templates",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
           }
         },
-        "helmReleases" : {
-          "description" : "",
-          "type" : [ "array", "null" ],
-          "items" : {
-            "type" : "object",
-            "properties" : {
-              "chart" : {
-                "type" : [ "string", "null" ],
-                "description" : "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+        "helmReleases": {
+          "description": "",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "chart": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
               },
-              "name" : {
-                "type" : [ "string", "null" ],
-                "description" : "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
               },
-              "namespace" : {
-                "type" : [ "string", "null" ],
-                "description" : "Kubernetes namespace to deploy the release into."
+              "namespace": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Kubernetes namespace to deploy the release into."
               },
-              "releaseName" : {
-                "type" : [ "string", "null" ],
-                "description" : "Helm release name. If empty, the value of 'name' is used."
+              "releaseName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Helm release name. If empty, the value of 'name' is used."
               },
-              "repoURL" : {
-                "type" : [ "string", "null" ],
-                "description" : "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
+              "repoURL": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
               },
-              "values" : {
-                "$ref" : "#/$defs/Map(String,Object)-nullable",
-                "description" : "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
+              "values": {
+                "$ref": "#/$defs/Map(String,Object)-nullable",
+                "description": "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
               },
-              "valuesPath" : {
-                "type" : [ "string", "null" ],
-                "description" : "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
+              "valuesPath": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
               },
-              "version" : {
-                "type" : [ "string", "null" ],
-                "description" : "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
               }
             },
-            "additionalProperties" : false
+            "additionalProperties": false
           }
         },
-        "namespaces" : {
-          "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",
-          "type" : [ "array", "null" ],
-          "items" : {
-            "type" : "string"
+        "namespaces": {
+          "description": "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
           }
         },
-        "repos" : {
-          "description" : "ContentLoader repos to push into target environment",
-          "type" : [ "array", "null" ],
-          "items" : {
-            "type" : "object",
-            "properties" : {
-              "createJenkinsJob" : {
-                "type" : [ "boolean", "null" ],
-                "description" : "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
+        "repos": {
+          "description": "ContentLoader repos to push into target environment",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "createJenkinsJob": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
               },
-              "credentials" : {
-                "type" : [ "object", "null" ],
-                "properties" : {
-                  "passwordKey" : {
-                    "type" : [ "string", "null" ],
-                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+              "credentials": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "passwordKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
                   },
-                  "secretName" : {
-                    "type" : [ "string", "null" ],
-                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  "secretName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
                   },
-                  "secretNamespace" : {
-                    "type" : [ "string", "null" ],
-                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  "secretNamespace": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
                   },
-                  "username" : {
-                    "type" : [ "string", "null" ],
-                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  "username": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
                   },
-                  "usernameKey" : {
-                    "type" : [ "string", "null" ],
-                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  "usernameKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
                   }
                 },
-                "additionalProperties" : false,
-                "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                "additionalProperties": false,
+                "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
               },
-              "overwriteMode" : {
-                "anyOf" : [ {
-                  "type" : "null"
-                }, {
-                  "type" : "string",
-                  "enum" : [ "INIT", "RESET", "UPGRADE" ]
-                } ],
-                "description" : "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
+              "overwriteMode": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "INIT",
+                      "RESET",
+                      "UPGRADE"
+                    ]
+                  }
+                ],
+                "description": "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
               },
-              "path" : {
-                "type" : [ "string", "null" ],
-                "description" : "Path within the content repo to process"
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Path within the content repo to process"
               },
-              "ref" : {
-                "type" : [ "string", "null" ],
-                "description" : "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
+              "ref": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
               },
-              "target" : {
-                "type" : [ "string", "null" ],
-                "description" : "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
+              "target": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
               },
-              "targetRef" : {
-                "type" : [ "string", "null" ],
-                "description" : "Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref."
+              "targetRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref."
               },
-              "templating" : {
-                "type" : [ "boolean", "null" ],
-                "description" : "When true, template all files ending in .ftl within the repo"
+              "templating": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "When true, template all files ending in .ftl within the repo"
               },
-              "type" : {
-                "anyOf" : [ {
-                  "type" : "null"
-                }, {
-                  "type" : "string",
-                  "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
-                } ],
-                "description" : "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
+              "type": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "FOLDER_BASED",
+                      "COPY",
+                      "MIRROR"
+                    ]
+                  }
+                ],
+                "description": "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
               },
-              "url" : {
-                "type" : [ "string", "null" ],
-                "description" : "URL of the content repo. Mandatory for each type."
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "URL of the content repo. Mandatory for each type."
               }
             },
-            "additionalProperties" : false
+            "additionalProperties": false
           }
         },
-        "useWhitelist" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Enables the whitelist for statics in content templating"
+        "useWhitelist": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Enables the whitelist for statics in content templating"
         },
-        "variables" : {
-          "$ref" : "#/$defs/Map(String,Object)-nullable",
-          "description" : "Additional variables to use in custom templates."
+        "variables": {
+          "$ref": "#/$defs/Map(String,Object)-nullable",
+          "description": "Additional variables to use in custom templates."
         }
       },
-      "additionalProperties" : false,
-      "description" : "Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources"
+      "additionalProperties": false,
+      "description": "Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources"
     },
-    "features" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "argocd" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "active" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Install ArgoCD"
+    "features": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "argocd": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "active": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Install ArgoCD"
             },
-            "emailFrom" : {
-              "type" : [ "string", "null" ],
-              "description" : "Notifications, define Argo CD sender email address"
+            "emailFrom": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Notifications, define Argo CD sender email address"
             },
-            "emailToAdmin" : {
-              "type" : [ "string", "null" ],
-              "description" : "Notifications, define Argo CD admin recipient email address"
+            "emailToAdmin": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Notifications, define Argo CD admin recipient email address"
             },
-            "emailToUser" : {
-              "type" : [ "string", "null" ],
-              "description" : "Notifications, define Argo CD user / app-team recipient email address"
+            "emailToUser": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Notifications, define Argo CD user / app-team recipient email address"
             },
-            "env" : {
-              "description" : "Pass a list of env vars to Argo CD components. Currently only works with operator",
-              "type" : [ "array", "null" ],
-              "items" : {
-                "$ref" : "#/$defs/Map(String,String)",
-                "additionalProperties" : {
-                  "type" : "string"
+            "env": {
+              "description": "Pass a list of env vars to Argo CD components. Currently only works with operator",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Map(String,String)",
+                "additionalProperties": {
+                  "type": "string"
                 }
               }
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Defines the kubernetes namespace for ArgoCD"
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Defines the kubernetes namespace for ArgoCD"
             },
-            "operator" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Install ArgoCD via an already running ArgoCD Operator"
+            "oidc": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OIDC Config for this tool. See docs for more infos"
             },
-            "resourceInclusionsCluster" : {
-              "type" : [ "string", "null" ],
-              "description" : "Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
+            "operator": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Install ArgoCD via an already running ArgoCD Operator"
             },
-            "url" : {
-              "type" : [ "string", "null" ],
-              "description" : "The URL where argocd is accessible. It has to be the full URL with http:// or https://"
+            "resourceInclusionsCluster": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
             },
-            "values" : {
-              "$ref" : "#/$defs/Map(String,Object)-nullable",
-              "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The URL where argocd is accessible. It has to be the full URL with http:// or https://"
+            },
+            "values": {
+              "$ref": "#/$defs/Map(String,Object)-nullable",
+              "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config Parameter for the ArgoCD Operator"
+          "additionalProperties": false,
+          "description": "Config Parameter for the ArgoCD Operator"
         },
-        "certManager" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "active" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Sets and enables Cert Manager"
+        "certManager": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "active": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Sets and enables Cert Manager"
             },
-            "helm" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "acmeSolverImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets acmeSolver Image for Cert Manager"
+            "helm": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "acmeSolverImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets acmeSolver Image for Cert Manager"
                 },
-                "cainjectorImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets cainjector Image for Cert Manager"
+                "cainjectorImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets cainjector Image for Cert Manager"
                 },
-                "chart" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Name of the Helm chart"
+                "chart": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Name of the Helm chart"
                 },
-                "image" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for Cert Manager"
+                "image": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for Cert Manager"
                 },
-                "repoURL" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Repository url from which the Helm chart should be obtained"
+                "repoURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Repository url from which the Helm chart should be obtained"
                 },
-                "startupAPICheckImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets startupAPICheck Image for Cert Manager"
+                "startupAPICheckImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets startupAPICheck Image for Cert Manager"
                 },
-                "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)-nullable",
-                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                "values": {
+                  "$ref": "#/$defs/Map(String,Object)-nullable",
+                  "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
-                "version" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The version of the Helm chart to be installed"
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The version of the Helm chart to be installed"
                 },
-                "webhookImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets webhook Image for Cert Manager"
+                "webhookImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets webhook Image for Cert Manager"
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+              "additionalProperties": false,
+              "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
-            "issuer" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets and enables Cert Manager"
+            "issuer": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets and enables Cert Manager"
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Optional defines the kubernetes namespace for Cert Manager"
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for Cert Manager"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config parameters for the Cert Manager"
+          "additionalProperties": false,
+          "description": "Config parameters for the Cert Manager"
         },
-        "ingress" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "active" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Sets and enables Ingress Controller"
+        "ingress": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "active": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Sets and enables Ingress Controller"
             },
-            "helm" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "chart" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Name of the Helm chart"
+            "helm": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "chart": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Name of the Helm chart"
                 },
-                "image" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The image of the Helm chart to be installed"
+                "image": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The image of the Helm chart to be installed"
                 },
-                "repoURL" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Repository url from which the Helm chart should be obtained"
+                "repoURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Repository url from which the Helm chart should be obtained"
                 },
-                "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)-nullable",
-                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                "values": {
+                  "$ref": "#/$defs/Map(String,Object)-nullable",
+                  "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
-                "version" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The version of the Helm chart to be installed"
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The version of the Helm chart to be installed"
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+              "additionalProperties": false,
+              "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
-            "ingressNamespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Optional defines the kubernetes namespace for Ingress Controller"
+            "ingressNamespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for Ingress Controller"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config parameters for the Ingress Controller"
+          "additionalProperties": false,
+          "description": "Config parameters for the Ingress Controller"
         },
-        "mail" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "smtpAddress" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets smtp port of external Mailserver"
+        "mail": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "smtpAddress": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets smtp port of external Mailserver"
             },
-            "smtpPassword" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets smtp password of external Mailserver"
+            "smtpPassword": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets smtp password of external Mailserver"
             },
-            "smtpPort" : {
-              "type" : [ "integer", "null" ],
-              "description" : "Sets smtp port of external Mailserver"
+            "smtpPort": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Sets smtp port of external Mailserver"
             },
-            "smtpUser" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets smtp username for external Mailserver"
+            "smtpUser": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets smtp username for external Mailserver"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config parameters for mail servers"
+          "additionalProperties": false,
+          "description": "Config parameters for mail servers"
         },
-        "monitoring" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "active" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+        "monitoring": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "active": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
             },
-            "grafanaEmailFrom" : {
-              "type" : [ "string", "null" ],
-              "description" : "Notifications, define grafana alerts sender email address"
+            "grafanaEmailFrom": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Notifications, define grafana alerts sender email address"
             },
-            "grafanaEmailTo" : {
-              "type" : [ "string", "null" ],
-              "description" : "Notifications, define grafana alerts recipient email address"
+            "grafanaEmailTo": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Notifications, define grafana alerts recipient email address"
             },
-            "grafanaUrl" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets url for grafana"
+            "grafanaUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets url for grafana"
             },
-            "helm" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "chart" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Name of the Helm chart"
+            "helm": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "chart": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Name of the Helm chart"
                 },
-                "grafanaImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for grafana"
+                "grafanaImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for grafana"
                 },
-                "grafanaSidecarImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for grafana's sidecar"
+                "grafanaSidecarImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for grafana's sidecar"
                 },
-                "prometheusConfigReloaderImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for prometheus-operator's config-reloader"
+                "prometheusConfigReloaderImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for prometheus-operator's config-reloader"
                 },
-                "prometheusImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for prometheus"
+                "prometheusImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for prometheus"
                 },
-                "prometheusOperatorImage" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets image for prometheus-operator"
+                "prometheusOperatorImage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets image for prometheus-operator"
                 },
-                "repoURL" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Repository url from which the Helm chart should be obtained"
+                "repoURL": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Repository url from which the Helm chart should be obtained"
                 },
-                "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)-nullable",
-                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                "values": {
+                  "$ref": "#/$defs/Map(String,Object)-nullable",
+                  "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
-                "version" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "The version of the Helm chart to be installed"
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The version of the Helm chart to be installed"
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+              "additionalProperties": false,
+              "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Optional defines the kubernetes namespace for monitoring."
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for monitoring."
+            },
+            "oidc": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OIDC Config for this tool. See docs for more infos"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config parameters for the Monitoring system (prometheus)"
+          "additionalProperties": false,
+          "description": "Config parameters for the Monitoring system (prometheus)"
         },
-        "secrets" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "externalSecrets" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "helm" : {
-                  "type" : [ "object", "null" ],
-                  "properties" : {
-                    "certControllerImage" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Sets image for external secrets operator's controller"
+        "secrets": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "externalSecrets": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "helm": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "certControllerImage": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Sets image for external secrets operator's controller"
                     },
-                    "chart" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Name of the Helm chart"
+                    "chart": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Name of the Helm chart"
                     },
-                    "image" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Sets image for external secrets operator"
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Sets image for external secrets operator"
                     },
-                    "repoURL" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Repository url from which the Helm chart should be obtained"
+                    "repoURL": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Repository url from which the Helm chart should be obtained"
                     },
-                    "values" : {
-                      "$ref" : "#/$defs/Map(String,Object)-nullable",
-                      "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                    "values": {
+                      "$ref": "#/$defs/Map(String,Object)-nullable",
+                      "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                     },
-                    "version" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "The version of the Helm chart to be installed"
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The version of the Helm chart to be installed"
                     },
-                    "webhookImage" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Sets image for external secrets operator's webhook"
+                    "webhookImage": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Sets image for external secrets operator's webhook"
                     }
                   },
-                  "additionalProperties" : false,
-                  "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+                  "additionalProperties": false,
+                  "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Config parameters for the external secrets operator"
+              "additionalProperties": false,
+              "description": "Config parameters for the external secrets operator"
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Optional defines the kubernetes namespace for secrets."
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional defines the kubernetes namespace for secrets."
             },
-            "vault" : {
-              "type" : [ "object", "null" ],
-              "properties" : {
-                "helm" : {
-                  "type" : [ "object", "null" ],
-                  "properties" : {
-                    "chart" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Name of the Helm chart"
+            "vault": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "helm": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "chart": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Name of the Helm chart"
                     },
-                    "image" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Sets image for vault"
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Sets image for vault"
                     },
-                    "repoURL" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "Repository url from which the Helm chart should be obtained"
+                    "repoURL": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Repository url from which the Helm chart should be obtained"
                     },
-                    "values" : {
-                      "$ref" : "#/$defs/Map(String,Object)-nullable",
-                      "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                    "values": {
+                      "$ref": "#/$defs/Map(String,Object)-nullable",
+                      "description": "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                     },
-                    "version" : {
-                      "type" : [ "string", "null" ],
-                      "description" : "The version of the Helm chart to be installed"
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The version of the Helm chart to be installed"
                     }
                   },
-                  "additionalProperties" : false,
-                  "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+                  "additionalProperties": false,
+                  "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
                 },
-                "mode" : {
-                  "anyOf" : [ {
-                    "type" : "null"
-                  }, {
-                    "type" : "string",
-                    "enum" : [ "dev", "prod" ]
-                  } ],
-                  "description" : "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
+                "mode": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "dev",
+                        "prod"
+                      ]
+                    }
+                  ],
+                  "description": "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
                 },
-                "url" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Sets url for vault ui"
+                "oidc": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "clientId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC client ID"
+                    },
+                    "clientSecret": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC client secret"
+                    },
+                    "discoveryUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "OIDC discovery URL"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "OIDC Config for this tool. See docs for more infos"
+                },
+                "url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Sets url for vault ui"
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Config parameters for the secrets-vault"
+              "additionalProperties": false,
+              "description": "Config parameters for the secrets-vault"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config parameters for the secrets management"
+          "additionalProperties": false,
+          "description": "Config parameters for the secrets management"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Config parameters for features or tools"
+      "additionalProperties": false,
+      "description": "Config parameters for features or tools"
     },
-    "jenkins" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "active" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Installs Jenkins as CI server"
+    "jenkins": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "active": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Installs Jenkins as CI server"
         },
-        "additionalEnvs" : {
-          "anyOf" : [ {
-            "type" : "null"
-          }, {
-            "$ref" : "#/$defs/Map(String,String)"
-          } ],
-          "description" : "Set additional environments to Jenkins",
-          "additionalProperties" : {
-            "type" : "string"
+        "additionalEnvs": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Map(String,String)"
+            }
+          ],
+          "description": "Set additional environments to Jenkins",
+          "additionalProperties": {
+            "type": "string"
           }
         },
-        "helm" : {
-          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
-          "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+        "helm": {
+          "$ref": "#/$defs/HelmConfigWithValues-nullable",
+          "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "jenkinsImage" : {
           "type" : [ "string", "null" ],
           "description" : "Sets image for Jenkins"
         },
-        "mavenCentralMirror" : {
-          "type" : [ "string", "null" ],
-          "description" : "URL for maven mirror, used by applications built in Jenkins"
+        "mavenCentralMirror": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "URL for maven mirror, used by applications built in Jenkins"
         },
-        "metricsPassword" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when jenkins-url is set and monitoring enabled"
+        "metricsPassword": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Mandatory when jenkins-url is set and monitoring enabled"
         },
-        "metricsUsername" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when jenkins-url is set and monitoring enabled"
+        "metricsUsername": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Mandatory when jenkins-url is set and monitoring enabled"
         },
-        "namespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional defines the kubernetes namespace for Jenkins."
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional defines the kubernetes namespace for Jenkins."
         },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when jenkins-url is set"
+        "oidc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC Config for this tool. See docs for more infos"
         },
-        "skipPlugins" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+        "password": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Mandatory when jenkins-url is set"
         },
-        "skipRestart" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+        "skipPlugins": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
         },
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "The url of your external jenkins"
+        "skipRestart": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
         },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when jenkins-url is set"
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The url of your external jenkins"
+        },
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Mandatory when jenkins-url is set"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Config parameters for Jenkins CI/CD Pipeline Server"
+      "additionalProperties": false,
+      "description": "Config parameters for Jenkins CI/CD Pipeline Server"
     },
-    "multiTenant" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "centralArgocdNamespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "Namespace for the centralized Argocd"
+    "multiTenant": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "centralArgocdNamespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Namespace for the centralized Argocd"
         },
-        "gitlab" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "parentGroupId" : {
-              "type" : [ "string", "null" ],
-              "description" : "Main Group for Gitlab where the GOP creates it's groups/repos"
+        "gitlab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "parentGroupId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Main Group for Gitlab where the GOP creates it's groups/repos"
             },
-            "password" : {
-              "type" : [ "string", "null" ],
-              "description" : "Password for SCM Manager authentication"
+            "password": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Password for SCM Manager authentication"
             },
-            "url" : {
-              "type" : [ "string", "null" ],
-              "description" : "URL for external Gitlab"
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "URL for external Gitlab"
             },
-            "username" : {
-              "type" : [ "string", "null" ],
-              "description" : "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
+            "username": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config for GITLAB"
+          "additionalProperties": false,
+          "description": "Config for GITLAB"
         },
-        "scmManager" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "internal" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
+        "scmManager": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "internal": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Namespace where to find the Central SCMM"
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Namespace where to find the Central SCMM"
             },
-            "password" : {
-              "type" : [ "string", "null" ],
-              "description" : "CENTRAL SCMM password"
+            "password": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "CENTRAL SCMM password"
             },
-            "url" : {
-              "type" : [ "string", "null" ],
-              "description" : "URL for the centralized Management Repo"
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "URL for the centralized Management Repo"
             },
-            "username" : {
-              "type" : [ "string", "null" ],
-              "description" : "CENTRAL SCMM username"
+            "username": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "CENTRAL SCMM username"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config for GITLAB"
+          "additionalProperties": false,
+          "description": "Config for GITLAB"
         },
-        "scmProviderType" : {
-          "$ref" : "#/$defs/ScmProviderType-nullable",
-          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
+        "scmProviderType": {
+          "$ref": "#/$defs/ScmProviderType-nullable",
+          "description": "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
         },
-        "useDedicatedInstance" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Toggles the Dedicated Instances Mode. See docs for more info"
+        "useDedicatedInstance": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Toggles the Dedicated Instances Mode. See docs for more info"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Multi Tenant Configs"
+      "additionalProperties": false,
+      "description": "Multi Tenant Configs"
     },
-    "registry" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "active" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!"
+    "registry": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "active": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!"
         },
-        "createImagePullSecrets" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
+        "createImagePullSecrets": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
         },
-        "helm" : {
-          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
-          "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+        "helm": {
+          "$ref": "#/$defs/HelmConfigWithValues-nullable",
+          "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
-        "internalPort" : {
-          "type" : [ "integer", "null" ],
-          "description" : "Port of registry registry. Ignored when a registry*url params are set"
+        "internalPort": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Port of registry registry. Ignored when a registry*url params are set"
         },
-        "namespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional defines the kubernetes namespace for registry."
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional defines the kubernetes namespace for registry."
         },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional when registry-url is set"
+        "password": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional when registry-url is set"
         },
-        "path" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional when registry-url is set"
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional when registry-url is set"
         },
-        "proxyPassword" : {
-          "type" : [ "string", "null" ],
-          "description" : "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
+        "proxyPassword": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
         },
-        "proxyPath" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional when registry-proxy-url is set and the registry is running on a non root web path."
+        "proxyPath": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional when registry-proxy-url is set and the registry is running on a non root web path."
         },
-        "proxyUrl" : {
-          "type" : [ "string", "null" ],
-          "description" : "The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields."
+        "proxyUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields."
         },
-        "proxyUsername" : {
-          "type" : [ "string", "null" ],
-          "description" : "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
+        "proxyUsername": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
         },
-        "readOnlyPassword" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
+        "readOnlyPassword": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
         },
-        "readOnlyUsername" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
+        "readOnlyUsername": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
         },
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "The url of your external registry, used for pushing images"
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The url of your external registry, used for pushing images"
         },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "Optional when registry-url is set"
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional when registry-url is set"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Config parameters for Registry"
+      "additionalProperties": false,
+      "description": "Config parameters for Registry"
     },
-    "scm" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "gitlab" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "gitOpsUsername" : {
-              "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+    "scm": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "gitlab": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "gitOpsUsername": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Username for the Gitops User"
             },
-            "internal" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
+            "internal": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
             },
-            "parentGroupId" : {
-              "type" : [ "string", "null" ],
-              "description" : "Number for the Gitlab Group where the repos and subgroups should be created"
+            "parentGroupId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Number for the Gitlab Group where the repos and subgroups should be created"
             },
-            "password" : {
-              "type" : [ "string", "null" ],
-              "description" : "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
+            "password": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
             },
-            "url" : {
-              "type" : [ "string", "null" ],
-              "description" : "Base URL for the Gitlab instance"
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Base URL for the Gitlab instance"
             },
-            "username" : {
-              "type" : [ "string", "null" ],
-              "description" : "Defaults to: oauth2.0 when PAT token is given."
+            "username": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Defaults to: oauth2.0 when PAT token is given."
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config for GITLAB"
+          "additionalProperties": false,
+          "description": "Config for GITLAB"
         },
-        "scmManager" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "gitOpsUsername" : {
-              "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+        "scmManager": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "gitOpsUsername": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Username for the Gitops User"
             },
-            "helm" : {
-              "$ref" : "#/$defs/HelmConfigWithValues-nullable",
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            "helm": {
+              "$ref": "#/$defs/HelmConfigWithValues-nullable",
+              "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
-            "namespace" : {
-              "type" : [ "string", "null" ],
-              "description" : "Namespace where SCM-Manager should run"
+            "namespace": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Namespace where SCM-Manager should run"
             },
-            "password" : {
-              "type" : [ "string", "null" ],
-              "description" : "Mandatory when scmm-url is set"
+            "password": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Mandatory when scmm-url is set"
             },
             "scmmImage" : {
               "type" : [ "string", "null" ],
               "description" : "Sets image for SCM-Manager"
             },
-            "skipPlugins" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+            "skipPlugins": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
             },
-            "skipRestart" : {
-              "type" : [ "boolean", "null" ],
-              "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
+            "skipRestart": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
             },
-            "url" : {
-              "type" : [ "string", "null" ],
-              "description" : "The host of your external scm-manager"
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The host of your external scm-manager"
             },
-            "username" : {
-              "type" : [ "string", "null" ],
-              "description" : "Mandatory when scmm-url is set"
+            "username": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Mandatory when scmm-url is set"
             }
           },
-          "additionalProperties" : false,
-          "description" : "Config for GITLAB"
+          "additionalProperties": false,
+          "description": "Config for GITLAB"
         },
-        "scmProviderType" : {
-          "$ref" : "#/$defs/ScmProviderType-nullable",
-          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
+        "scmProviderType": {
+          "$ref": "#/$defs/ScmProviderType-nullable",
+          "description": "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
         }
       },
-      "additionalProperties" : false,
-      "description" : "Config parameters for Scm"
+      "additionalProperties": false,
+      "description": "Config parameters for Scm"
     }
   },
-  "additionalProperties" : false
+  "additionalProperties": false
 }
