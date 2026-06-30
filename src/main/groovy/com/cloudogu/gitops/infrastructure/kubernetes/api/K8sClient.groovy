@@ -256,7 +256,7 @@ class K8sClient {
 		if (!namespaceExists(name)) {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
-			if (runInOpenshift()) {
+			if (context.isOpenshift()) {
 				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
 
 				Project project = new ProjectBuilder()
@@ -1330,11 +1330,6 @@ class K8sClient {
 	 */
 	String getCurrentNamespace() {
 		return this.client.getNamespace()
-	}
-
-	private boolean runInOpenshift() {
-		// context can be null in tests or at startup
-		return this.context?.isOpenshift() ?: false
 	}
 
 	// ========================================
