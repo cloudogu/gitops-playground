@@ -53,6 +53,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-password` | `jenkins.password` | String | `rY4jL2niDLKN` | Mandatory when jenkins-url is set |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword` | String | `metrics` | Mandatory when jenkins-url is set and monitoring enabled |
+| `--jenkins-image` | `jenkins.jenkinsImage` | String | `` | Sets image for Jenkins |
 | `--maven-central-mirror` | `jenkins.mavenCentralMirror` | String | `` | URL for maven mirror, used by applications built in Jenkins |
 | `--jenkins-additional-envs` | `jenkins.additionalEnvs` | Map | `[:]` | Set additional environments to Jenkins |
 | - | `jenkins.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
@@ -95,6 +96,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `scm.scmManager.helm.chart` | String | `-` | Name of the Helm chart |
 | - | `scm.scmManager.helm.repoURL` | String | `-` | Repository url from which the Helm chart should be obtained |
 | - | `scm.scmManager.helm.version` | String | `-` | The version of the Helm chart to be installed |
+| `--scmm-image` | `scm.scmManager.scmmImage` | String | `-` | Sets image for SCM-Manager |
 | `--scmm-skip-restart` | `scm.scmManager.skipRestart` | Boolean | `-` | Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.' |
 | `--scmm-skip-plugins` | `scm.scmManager.skipPlugins` | Boolean | `-` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
 | - | `scm.scmManager.gitOpsUsername` | String | `-` | Username for the Gitops User |

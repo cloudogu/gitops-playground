@@ -5,7 +5,9 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.tools.common.ToolWithImage
 
 import io.micronaut.core.annotation.Order
 
@@ -15,20 +17,23 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(10)
-class ScmManager extends Tool {
+class ScmManager extends Tool implements ToolWithImage {
 
 	String namespace
 
 	private final Config config
 	private final GitHandler gitHandler
 	private final Deployer deployer
+	private final K8sClient k8sClient
 
 	ScmManager(Config config,
-	           GitHandler gitHandler,
-	           Deployer deployer) {
+		GitHandler gitHandler,
+		Deployer deployer,
+		K8sClient k8sClient) {
 		this.config = config
 		this.gitHandler = gitHandler
 		this.deployer = deployer
+		this.k8sClient = k8sClient
 
 		if (isInternalScmManagerConfigured()) {
 			this.namespace = prefixedNamespace()
@@ -39,6 +44,16 @@ class ScmManager extends Tool {
 	@Override
 	boolean isEnabled() {
 		isInternalScmManagerConfigured()
+	}
+
+	@Override
+	Config getConfig() {
+		return config
+	}
+
+	@Override
+	K8sClient getK8sClient() {
+		return k8sClient
 	}
 
 	@Override

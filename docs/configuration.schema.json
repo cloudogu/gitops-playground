@@ -663,6 +663,10 @@
           "$ref" : "#/$defs/HelmConfigWithValues-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
+        "jenkinsImage" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for Jenkins"
+        },
         "mavenCentralMirror" : {
           "type" : [ "string", "null" ],
           "description" : "URL for maven mirror, used by applications built in Jenkins"
@@ -891,6 +895,10 @@
             "password" : {
               "type" : [ "string", "null" ],
               "description" : "Mandatory when scmm-url is set"
+            },
+            "scmmImage" : {
+              "type" : [ "string", "null" ],
+              "description" : "Sets image for SCM-Manager"
             },
             "skipPlugins" : {
               "type" : [ "boolean", "null" ],

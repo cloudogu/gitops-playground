@@ -66,6 +66,7 @@ class JenkinsTest {
 		config.jenkins.helm.version = '4.8.1'
 		config.jenkins.username = 'jenusr'
 		config.jenkins.password = 'jenpw'
+		config.jenkins.jenkinsImage = 'localhost:5000/proxy/jenkins-helm:custom'
 		config.jenkins.internalBashImage = 'bash:42'
 		config.jenkins.internalDockerClientVersion = '23'
 
@@ -88,7 +89,9 @@ me:x:1000:''')
 
 		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 
-		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+		assertThat(parseActualYaml()['controller']['image']['registry']).isEqualTo('localhost:5000')
+		assertThat(parseActualYaml()['controller']['image']['repository']).isEqualTo('proxy/jenkins-helm')
+		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('custom')
 
 		assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
 		assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
@@ -124,10 +127,13 @@ me:x:1000:''')
 	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
+		config.registry.createImagePullSecrets = true
 		createJenkins().install()
 
 		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
 			anyString(), anyString(), any(Path), any(), anyBoolean())
+		verify(k8sClient, never()).createNamespace(any())
+		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
 
 		assertThat(temporaryYamlFile).isNull()
 	}
