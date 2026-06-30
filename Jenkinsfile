@@ -50,6 +50,7 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
+                        sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
                         sh 'mvn -B clean test'
                     }
                     post {
@@ -155,7 +156,7 @@ pipeline {
                                           echo >> '${dumpDir}/container-logs.txt'
                                         done
 
-                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} '${dumpDir}'
+                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} target
                                     """, returnStatus: true)
                                 }
 
@@ -186,7 +187,11 @@ pipeline {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
+                                        try {
+                                            sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                        } finally {
+                                            sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                        }
                                     }
                                 }
 
