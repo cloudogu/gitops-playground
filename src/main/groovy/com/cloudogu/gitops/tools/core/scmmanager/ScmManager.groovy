@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -21,21 +20,18 @@ class ScmManager extends Tool implements ToolWithImage {
 
 	String namespace
 
-	private final Config config
-	private final GitHandler gitHandler
-	private final Deployer deployer
-	private final K8sClient k8sClient
+	final K8sClient k8sClient
 
-	ScmManager(Config config,
+	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
 		K8sClient k8sClient) {
-		this.config = config
+		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 
-		if (isInternalScmManagerConfigured()) {
+		if (context.isInternalScmManager()) {
 			this.namespace = prefixedNamespace()
 			this.config.scm.scmManager.namespace = this.namespace
 		}
@@ -43,27 +39,17 @@ class ScmManager extends Tool implements ToolWithImage {
 
 	@Override
 	boolean isEnabled() {
-		isInternalScmManagerConfigured()
-	}
-
-	@Override
-	Config getConfig() {
-		return config
-	}
-
-	@Override
-	K8sClient getK8sClient() {
-		return k8sClient
+		return context.isInternalScmManager()
 	}
 
 	@Override
 	void enable() {
-		log.info("Starting internal SCM-Manager setup.")
+		log.info('Starting internal SCM-Manager setup.')
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
-			deployer, config)
+			deployer, context)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
@@ -75,16 +61,12 @@ class ScmManager extends Tool implements ToolWithImage {
 		// This fixes the bootstrap problem because the GitOps repository must exist first.
 		setup.createArgocdApplication()
 
-		log.info("Internal SCM-Manager setup finished.")
-	}
-
-	private boolean isInternalScmManagerConfigured() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager != null && config.scm.scmManager.internal
+		log.info('Internal SCM-Manager setup finished.')
 	}
 
 	private String prefixedNamespace() {
-		String prefix = config.application.namePrefix ?: ""
-		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
+		String prefix = config.application.namePrefix ?: ''
+		String baseNamespace = config.scm.scmManager.namespace ?: 'scm-manager'
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace
@@ -102,7 +84,7 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	private void setupRepositoriesAfterDeployment() {
-		final String namePrefix = (config?.application?.namePrefix ?: "").trim()
+		final String namePrefix = (config?.application?.namePrefix ?: '').trim()
 
 		GitHandler.setupRepos(gitHandler.tenant, namePrefix)
 

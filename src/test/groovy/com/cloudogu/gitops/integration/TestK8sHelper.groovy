@@ -32,9 +32,7 @@ class TestK8sHelper {
 	static final Set<String> FATAL_CONTAINER_WAITING_REASONS = ['CrashLoopBackOff',
 	                                                            'CreateContainerConfigError',
 	                                                            'CreateContainerError',
-	                                                            'ErrImagePull',
 	                                                            'ImageInspectError',
-	                                                            'ImagePullBackOff',
 	                                                            'InvalidImageName',
 	                                                            'RunContainerError'] as Set
 

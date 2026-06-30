@@ -25,11 +25,10 @@ class FullProfileTestIT extends ProfileTestSetup {
 	@BeforeAll
 	static void labelMyTest() {
 		log.info '########### K8S SMOKE TESTS PROFILE full ###########'
-		waitUntilAllPodsRunning()
 	}
 
-	private static void waitUntilAllPodsRunning() {
-		// if cert-manager is online, argocd is online, too!
+	@Test
+	void ensureExampleAppsAreRunning() {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, "", 40, TimeUnit.MINUTES)
 	}
 

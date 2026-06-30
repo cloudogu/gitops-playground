@@ -25,9 +25,9 @@ trait ToolWithImage {
 		}
 	}
 
+	abstract Config getConfig()
+
 	abstract String getNamespace()
 
 	abstract K8sClient getK8sClient()
-
-	abstract Config getConfig()
 }

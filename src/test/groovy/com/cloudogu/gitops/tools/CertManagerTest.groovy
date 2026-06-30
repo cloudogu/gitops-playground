@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -149,7 +150,7 @@ class CertManagerTest {
 
 	private CertManager createCertManager() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new CertManager(config, new FileSystemUtils() {
+		new CertManager(new ContextBuilder(config).build(), new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)

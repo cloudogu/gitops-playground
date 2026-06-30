@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -62,7 +63,7 @@ class ScmManagerSetupTest {
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 		config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
 		config.application.namePrefix = "${config.application.namePrefix}-"
@@ -91,7 +92,7 @@ class ScmManagerSetupTest {
 		config.features.certManager.active = true
 		config.features.certManager.issuer = 'cluster-selfsigned'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
 		config.application.namePrefix = "${config.application.namePrefix}-"
@@ -133,7 +134,7 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 

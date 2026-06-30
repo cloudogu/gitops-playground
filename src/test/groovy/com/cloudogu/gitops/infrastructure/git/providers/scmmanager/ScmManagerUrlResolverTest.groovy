@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -39,7 +40,7 @@ class ScmManagerUrlResolverTest {
 		scmmConfig.url = (args.containsKey('url') ? args.url : '')
 		scmmConfig.ingress = (args.containsKey('ingress') ? args.ingress : '')
 
-		return new ScmManagerUrlResolver(config, scmmConfig, k8s, net, servicePrefix)
+		return new ScmManagerUrlResolver(new ContextBuilder(config).build(), scmmConfig, k8s, net, servicePrefix)
 	}
 
 	// ---------- Client base & API ----------

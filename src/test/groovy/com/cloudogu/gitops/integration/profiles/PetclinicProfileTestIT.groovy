@@ -32,11 +32,18 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 		println "###### Testing Petclinic ######"
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
+			waitForContentExamplePrerequisites()
 			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
 		}
+	}
+
+	private static void waitForContentExamplePrerequisites() {
+		TestK8sHelper.waitForNamespaces(['jenkins', 'registry', exampleStagingNs])
+		TestK8sHelper.waitForAllPodsRunningInNamespace('registry', 'docker-registry', 40)
+		TestK8sHelper.waitForAllPodsRunningInNamespace('jenkins', 'jenkins', 40)
 	}
 
 	@Test

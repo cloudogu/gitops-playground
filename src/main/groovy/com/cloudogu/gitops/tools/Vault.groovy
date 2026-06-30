@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.tools
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -23,17 +23,16 @@ class Vault extends Tool implements ToolWithImage {
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
 
 	String namespace
-	Config config
-	K8sClient k8sClient
+	final K8sClient k8sClient
 
-	Vault(Config config,
+	Vault(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
@@ -75,6 +74,6 @@ class Vault extends Tool implements ToolWithImage {
 			                          postStartScriptName    : postStartScript.name])
 		}
 
-		deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, config)
+		deployHelmChart('vault', 'vault', namespace, helmConfig, HELM_VALUES_PATH, context)
 	}
 }
