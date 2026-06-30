@@ -85,7 +85,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	@Override
 	void createImagePullSecret() {
 		if (config.jenkins.internal) {
-		super.createImagePullSecret()
+			ToolWithImage.super.createImagePullSecret()
 		}
 	}
 
