@@ -356,7 +356,7 @@ me:x:1000:''')
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils = new AirGappedUtils(new ContextBuilder(config).build(), null, fileSystemUtils, null, gitHandler)
+		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
 		new Jenkins(new ContextBuilder(config).build(), commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
 	}
