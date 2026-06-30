@@ -31,7 +31,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
 	String namespace
-	K8sClient k8sClient
+	final K8sClient k8sClient
 
 	private GitRepoFactory scmRepoProvider
 

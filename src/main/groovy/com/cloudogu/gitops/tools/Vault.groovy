@@ -23,7 +23,7 @@ class Vault extends Tool implements ToolWithImage {
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
 
 	String namespace
-	K8sClient k8sClient
+	final K8sClient k8sClient
 
 	Vault(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,

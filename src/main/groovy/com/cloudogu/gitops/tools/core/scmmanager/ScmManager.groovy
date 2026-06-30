@@ -20,7 +20,7 @@ class ScmManager extends Tool implements ToolWithImage {
 
 	String namespace
 
-	private final K8sClient k8sClient
+	final K8sClient k8sClient
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
@@ -40,11 +40,6 @@ class ScmManager extends Tool implements ToolWithImage {
 	@Override
 	boolean isEnabled() {
 		return context.isInternalScmManager()
-	}
-
-	@Override
-	K8sClient getK8sClient() {
-		return k8sClient
 	}
 
 	@Override

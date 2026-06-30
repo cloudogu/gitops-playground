@@ -34,7 +34,8 @@ class Jenkins extends Tool implements ToolWithImage {
 	private JobManager jobManager
 	private UserManager userManager
 	private PrometheusConfigurator prometheusConfigurator
-	private K8sClient k8sClient
+
+	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
 	Jenkins(DeploymentContext context,
@@ -70,11 +71,6 @@ class Jenkins extends Tool implements ToolWithImage {
 	@Override
 	boolean isEnabled() {
 		return config.jenkins.active
-	}
-
-	@Override
-	K8sClient getK8sClient() {
-		return k8sClient
 	}
 
 	@Override
