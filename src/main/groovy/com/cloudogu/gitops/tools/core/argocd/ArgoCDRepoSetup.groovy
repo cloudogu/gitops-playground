@@ -47,13 +47,13 @@ class ArgoCDRepoSetup {
 
 		if (context.isMultiTenant()) {
 			// Dedicated instance: tenant bootstrap (tenant provider) + cluster-resources (central provider)
-			tenant = createRepoInitializationAction(context, repoFactory, gitHandler,
+			tenant = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
 				'argocd/cluster-resources',
 				gitHandler.tenant)
 			all.add(tenant)
 
-			cluster = createRepoInitializationAction(context, repoFactory, gitHandler,
+			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources',
 				'argocd/cluster-resources',
 				gitHandler.central)
@@ -61,7 +61,7 @@ class ArgoCDRepoSetup {
 
 		} else {
 			// Single instance: only cluster-resources (tenant provider)
-			cluster = createRepoInitializationAction(context, repoFactory, gitHandler,
+			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources',
 				'argocd/cluster-resources',
 				gitHandler.tenant)
@@ -146,13 +146,13 @@ class ArgoCDRepoSetup {
 		return clusterResourceSubDirs
 	}
 
-	private static RepoInitializationAction createRepoInitializationAction(DeploymentContext context,
+	private static RepoInitializationAction createRepoInitializationAction(Config config,
 		GitRepoFactory repoFactory,
 		GitHandler gitHandler,
 		String localSrcDir,
 		String scmRepoTarget,
 		GitProvider gitProvider) {
-		new RepoInitializationAction(context,
+		new RepoInitializationAction(config,
 			repoFactory.getRepo(scmRepoTarget, gitProvider),
 			gitHandler,
 			localSrcDir)
