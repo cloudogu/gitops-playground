@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
-import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 
@@ -16,7 +16,7 @@ class RbacDefinition {
 	private List<ServiceAccountRef> serviceAccounts = []
 	private String subfolder = "rbac"
 	private GitRepo repo
-	private DeploymentContext context
+	private Config config
 
 	private final TemplatingEngine templater = new TemplatingEngine()
 
@@ -53,8 +53,8 @@ class RbacDefinition {
 		return this
 	}
 
-	RbacDefinition withContext(DeploymentContext context) {
-		this.context = context
+	RbacDefinition withConfig(Config config) {
+		this.config = config
 		return this
 	}
 
@@ -79,7 +79,7 @@ class RbacDefinition {
 			return
 		}
 
-		def role = new Role(name, namespace, variant, context)
+		def role = new Role(name, namespace, variant, config)
 
 		templater.template(role.getTemplateFile(),
 			role.getOutputFile(outputDir),

@@ -238,7 +238,7 @@ class ArgoCD extends Tool {
 					.withNamespace(ns)
 					.withServiceAccountsFrom(namespace,
 						["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"])
-					.withContext(context)
+					.withConfig(config)
 					.withRepo(repoSetup.clusterResources.repo)
 					.withSubfolder(clusterResourcesRepo.operatorRbacTenantSubfolder())
 					.generate()
@@ -252,7 +252,7 @@ class ArgoCD extends Tool {
 					.withNamespace(ns)
 					.withServiceAccountsFrom(config.multiTenant.centralArgocdNamespace,
 						["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"])
-					.withContext(context)
+					.withConfig(config)
 					.withRepo(repoSetup.clusterResources.repo)
 					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
 					.generate()
@@ -264,7 +264,7 @@ class ArgoCD extends Tool {
 					.withNamespace(ns)
 					.withServiceAccountsFrom(namespace,
 						["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"])
-					.withContext(context)
+					.withConfig(config)
 					.withRepo(repoSetup.clusterResources.repo)
 					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
 					.generate()
@@ -276,7 +276,7 @@ class ArgoCD extends Tool {
 					.withNamespace(namespace)
 					.withServiceAccountsFrom(namespace,
 						["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"])
-					.withContext(context)
+					.withConfig(config)
 					.withRepo(repoSetup.clusterResources.repo)
 					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
 					.generate()

@@ -34,7 +34,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -52,7 +52,7 @@ class RbacDefinitionTest {
 				.withNamespace("testing")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withContext(context)
+				.withConfig(config)
 				.generate()
 		}
 
@@ -66,7 +66,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withContext(context)
+				.withConfig(config)
 				.generate()
 		}
 
@@ -80,7 +80,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withNamespace("testing")
 				.withRepo(repo)
-				.withContext(context)
+				.withConfig(config)
 				.withServiceAccounts([]) // leer übergeben
 				.generate()
 		}
@@ -96,7 +96,7 @@ class RbacDefinitionTest {
 			.withNamespace("myns")
 			.withServiceAccounts([sa])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File f = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac/rolebinding-direct-myns.yaml")
@@ -112,7 +112,7 @@ class RbacDefinitionTest {
 			.withSubfolder(custom)
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File out = new File(repo.getAbsoluteLocalRepoTmpDir(), custom)
@@ -130,7 +130,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader", "writer", "admin"])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File[] files = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac").listFiles()
@@ -145,7 +145,7 @@ class RbacDefinitionTest {
 			.withNamespace("custom-ns")
 			.withServiceAccountsFrom("custom-ns", ["sa1"])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -163,7 +163,7 @@ class RbacDefinitionTest {
 			.withServiceAccountsFrom("ns", ["sa1"])
 			.withSubfolder(nested)
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), nested)
@@ -179,7 +179,7 @@ class RbacDefinitionTest {
 				.withName("failtest")
 				.withNamespace("ns")
 				.withServiceAccountsFrom("ns", ["sa1"])
-				.withContext(context)
+				.withConfig(config)
 				.generate()
 		}
 
@@ -196,7 +196,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, saList)
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		String path = "rbac/rolebinding-test-${ns}.yaml".toString()
@@ -226,7 +226,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, ["sa1"])
 			.withRepo(repo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		String path = "rbac/role-${name}-${ns}.yaml".toString()
@@ -248,7 +248,7 @@ class RbacDefinitionTest {
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -273,7 +273,7 @@ class RbacDefinitionTest {
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withContext(context)
+			.withConfig(config)
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -297,7 +297,7 @@ class RbacDefinitionTest {
 				.generate()
 		}
 
-		assertThat(ex.message).contains("DeploymentContext must not be null")
+		assertThat(ex.message).contains("Config must not be null")
 	}
 
 }
