@@ -88,8 +88,8 @@ if [[ -n $HARBOR ]]; then
     skopeo copy $K8S_SIDECAR --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/k8s-sidecar
 
     # Core tools
-    skopeo copy $JENKINS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/jenkins-helm:${JENKINS_IMAGE_TAG}
-    skopeo copy $SCM_MANAGER_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/scm-manager:${SCM_MANAGER_IMAGE_TAG}
+    skopeo copy $JENKINS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/jenkins-helm
+    skopeo copy $SCM_MANAGER_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/scm-manager
 
     # Cert Manager images
     skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-controller
@@ -119,8 +119,8 @@ skopeo copy $GRAFANA_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=fals
 skopeo copy $K8S_SIDECAR --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/k8s-sidecar
 
 # Core tools
-skopeo copy $JENKINS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/jenkins-helm:${JENKINS_IMAGE_TAG}
-skopeo copy $SCM_MANAGER_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/scm-manager:${SCM_MANAGER_IMAGE_TAG}
+skopeo copy $JENKINS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/jenkins-helm
+skopeo copy $SCM_MANAGER_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/scm-manager
 
 # Cert Manager images
 skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-controller

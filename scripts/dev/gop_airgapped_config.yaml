@@ -2,10 +2,10 @@ application:
   baseUrl: "http://localhost"
   insecure: true
 jenkins:
-  jenkinsImage: "k3d-agreg:5000/library/jenkins-helm:5.9.18"
+  jenkinsImage: "k3d-agreg:5000/library/jenkins-helm:latest"
 scm:
   scmManager:
-    scmmImage: "k3d-agreg:5000/library/scm-manager:3.11.6"
+    scmmImage: "k3d-agreg:5000/library/scm-manager:latest"
 features:
   argocd:
     active: true

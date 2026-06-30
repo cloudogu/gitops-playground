@@ -68,10 +68,10 @@ registry:
   createImagePullSecrets: true
 jenkins:
   active: true
-  jenkinsImage: "localhost:30000/proxy/jenkins-helm:5.9.18"
+  jenkinsImage: "localhost:30000/proxy/jenkins-helm:latest"
 scm:
   scmManager:
-    scmmImage: "localhost:30000/proxy/scm-manager:3.11.6"
+    scmmImage: "localhost:30000/proxy/scm-manager:latest"
 application:
   baseUrl: "http://localhost"
   insecure: true
