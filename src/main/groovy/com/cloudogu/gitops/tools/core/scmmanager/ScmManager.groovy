@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.tools.common.Tool
@@ -26,7 +25,7 @@ class ScmManager extends Tool {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 
-		if (isInternalScmManagerConfigured()) {
+		if (context.isInternalScmManager()) {
 			this.namespace = prefixedNamespace()
 			this.config.scm.scmManager.namespace = this.namespace
 		}
@@ -34,12 +33,12 @@ class ScmManager extends Tool {
 
 	@Override
 	boolean isEnabled() {
-		isInternalScmManagerConfigured()
+		return context.isInternalScmManager()
 	}
 
 	@Override
 	void enable() {
-		log.info("Starting internal SCM-Manager setup.")
+		log.info('Starting internal SCM-Manager setup.')
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
@@ -56,16 +55,12 @@ class ScmManager extends Tool {
 		// This fixes the bootstrap problem because the GitOps repository must exist first.
 		setup.createArgocdApplication()
 
-		log.info("Internal SCM-Manager setup finished.")
-	}
-
-	private boolean isInternalScmManagerConfigured() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager != null && context.isInternalScmManager()
+		log.info('Internal SCM-Manager setup finished.')
 	}
 
 	private String prefixedNamespace() {
-		String prefix = config.application.namePrefix ?: ""
-		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
+		String prefix = config.application.namePrefix ?: ''
+		String baseNamespace = config.scm.scmManager.namespace ?: 'scm-manager'
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace
@@ -83,7 +78,7 @@ class ScmManager extends Tool {
 	}
 
 	private void setupRepositoriesAfterDeployment() {
-		final String namePrefix = (config?.application?.namePrefix ?: "").trim()
+		final String namePrefix = (config?.application?.namePrefix ?: '').trim()
 
 		GitHandler.setupRepos(gitHandler.tenant, namePrefix)
 

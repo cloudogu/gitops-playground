@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
 
-import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
@@ -42,6 +41,6 @@ class HelmStrategyTest {
 	}
 
 	protected HelmStrategy createStrategy() {
-		new HelmStrategy(new ContextBuilder(new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))).build(), helmClient)
+		new HelmStrategy(new Config(application: new Config.ApplicationSchema(namePrefix: "foo-")), helmClient)
 	}
 }

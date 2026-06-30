@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Path
@@ -11,10 +11,10 @@ import groovy.util.logging.Slf4j
 @Singleton
 class HelmStrategy implements DeploymentStrategy {
 	private HelmClient helmClient
-	private DeploymentContext context
+	private Config config
 
-	HelmStrategy(DeploymentContext context, HelmClient helmClient) {
-		this.context = context
+	HelmStrategy(Config config, HelmClient helmClient) {
+		this.config = config
 		this.helmClient = helmClient
 	}
 
@@ -24,7 +24,7 @@ class HelmStrategy implements DeploymentStrategy {
 
 		if (repoType == RepoType.GIT) {
 			// This would be possible with plugins or by pulling the repo first, but for now, we don't need it
-			throw new RuntimeException("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" + "Repo URL: ${repoURL}")
+			throw new RuntimeException('Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n' + "Repo URL: ${repoURL}")
 		}
 
 		log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")
