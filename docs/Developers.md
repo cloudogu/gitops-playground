@@ -409,8 +409,9 @@ Don't disconnect from the internet yet, because
   In this case when the first PVC gets provisioned.
 * SCMM needs to download the plugins from the internet
 * Helm repo updates need access to the internet
-* But also because we would have to replace the images for registry, scmm, jenkins (several images!) and argocd in the
-  source code, as there are no parameters to do so.
+* Argo CD images are not configurable yet and may still be pulled on demand.
+* Jenkins and SCM-Manager images can be pointed at the prepared registry via `jenkins.jenkinsImage` and
+  `scm.scmManager.scmmImage`; see `scripts/dev/gop_airgapped_config.yaml`.
 
 So, start the installation and once Argo CD is running, go offline.
 ```bash

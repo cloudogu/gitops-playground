@@ -11,6 +11,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -24,7 +25,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(20)
-class Jenkins extends Tool {
+class Jenkins extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"
 	String namespace
@@ -69,6 +70,23 @@ class Jenkins extends Tool {
 	@Override
 	boolean isEnabled() {
 		return config.jenkins.active
+	}
+
+	@Override
+	Config getConfig() {
+		return config
+	}
+
+	@Override
+	K8sClient getK8sClient() {
+		return k8sClient
+	}
+
+	@Override
+	void createImagePullSecret() {
+		if (config.jenkins.internal) {
+			ToolWithImage.super.createImagePullSecret()
+		}
 	}
 
 	@Override

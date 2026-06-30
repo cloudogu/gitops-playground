@@ -70,18 +70,18 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
 
-                stage("SonarScanner") {
-                    agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
-                        reuseNode true
-                    }}
-                    steps {
-                        withSonarQubeEnv('ces-sonar') {
-                            sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
-                        }
-                    }
+        stage("SonarScanner") {
+            agent { docker {
+                image "${env.MAVEN_IMAGE}"
+                args "-v maven-cache:/root/.m2"
+                reuseNode true
+            }}
+            steps {
+                withSonarQubeEnv('ces-sonar') {
+                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                 }
             }
         }
@@ -155,7 +155,7 @@ pipeline {
                                           echo >> '${dumpDir}/container-logs.txt'
                                         done
 
-                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} '${dumpDir}'
+                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} target
                                     """, returnStatus: true)
                                 }
 
@@ -186,7 +186,11 @@ pipeline {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
+                                        try {
+                                            sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                        } finally {
+                                            sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                        }
                                     }
                                 }
 

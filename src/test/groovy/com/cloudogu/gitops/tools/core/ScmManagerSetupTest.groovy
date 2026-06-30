@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core
 
+import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
@@ -15,7 +16,11 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManage
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 
+import java.nio.file.Path
+import groovy.yaml.YamlSlurper
+
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 import retrofit2.Call
 import retrofit2.Response
 
@@ -56,6 +61,7 @@ class ScmManagerSetupTest {
 		when(scmManager.getConfig()).thenReturn(config)
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
+		config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
@@ -63,14 +69,53 @@ class ScmManagerSetupTest {
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
 			eq('3.11.2'),
 			eq('scm-manager'),
 			eq('test-scmm'),
-			any(),
+			valuesPathCaptor.capture(),
 			eq(DeploymentStrategy.RepoType.HELM))
+
+		Map values = new YamlSlurper().parse(valuesPathCaptor.value) as Map
+		assertThat((values.image as Map).repository).isEqualTo('localhost:5000/proxy/scm-manager')
+		assertThat((values.image as Map).tag).isEqualTo('custom')
+	}
+
+	@Test
+	void 'Helm values contain cert manager ingress configuration'() {
+		when(scmManager.getConfig()).thenReturn(config)
+		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
+		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
+		config.features.certManager.active = true
+		config.features.certManager.issuer = 'cluster-selfsigned'
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+
+		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		config.application.namePrefix = "${config.application.namePrefix}-"
+		scmManagerSetup.setupHelm()
+
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
+		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
+			eq('scm-manager'),
+			eq('scm-manager'),
+			eq('3.11.2'),
+			eq('scm-manager'),
+			eq('test-scmm'),
+			valuesPathCaptor.capture(),
+			eq(DeploymentStrategy.RepoType.HELM))
+
+		Map values = new YamlSlurper().parse(valuesPathCaptor.value) as Map
+		Map ingress = values.ingress as Map
+		List tls = ingress.tls as List
+		Map tlsEntry = tls[0] as Map
+
+		assertThat((ingress.annotations as Map)['cert-manager.io/cluster-issuer']).isEqualTo('cluster-selfsigned')
+		assertThat(tlsEntry.secretName).isEqualTo('scm-manager-tls')
+		assertThat(tlsEntry.hosts as List).containsExactly('scmm.master.localhost')
 	}
 
 	@Test
