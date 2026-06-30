@@ -73,11 +73,6 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	Config getConfig() {
-		return config
-	}
-
-	@Override
 	K8sClient getK8sClient() {
 		return k8sClient
 	}
