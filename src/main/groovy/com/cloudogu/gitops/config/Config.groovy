@@ -340,6 +340,10 @@ class Config {
 		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		String metricsPassword = "metrics"
 
+		@Option(names = ['--jenkins-image'], description = JENKINS_IMAGE_DESCRIPTION)
+		@JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
+		String jenkinsImage = ''
+
 		@Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
 		@JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
 		String mavenCentralMirror = ''

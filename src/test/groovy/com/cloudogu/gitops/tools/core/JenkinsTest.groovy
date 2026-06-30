@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -66,6 +67,7 @@ class JenkinsTest {
 		config.jenkins.helm.version = '4.8.1'
 		config.jenkins.username = 'jenusr'
 		config.jenkins.password = 'jenpw'
+		config.jenkins.jenkinsImage = 'localhost:5000/proxy/jenkins-helm:custom'
 		config.jenkins.internalBashImage = 'bash:42'
 		config.jenkins.internalDockerClientVersion = '23'
 
@@ -88,7 +90,9 @@ me:x:1000:''')
 
 		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 
-		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+		assertThat(parseActualYaml()['controller']['image']['registry']).isEqualTo('localhost:5000')
+		assertThat(parseActualYaml()['controller']['image']['repository']).isEqualTo('proxy/jenkins-helm')
+		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('custom')
 		assertThat(parseActualYaml()['controller']['installPlugins']).isEqualTo(false)
 
 		assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
@@ -141,10 +145,13 @@ jenkins:
 	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
+		config.registry.createImagePullSecrets = true
 		createJenkins().install()
 
 		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
 			anyString(), anyString(), any(Path), any(), anyBoolean())
+		verify(k8sClient, never()).createNamespace(any())
+		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
 
 		assertThat(temporaryYamlFile).isNull()
 	}
@@ -374,7 +381,7 @@ jenkins:
 		}
 		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
-		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		new Jenkins(new ContextBuilder(config).build(), commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

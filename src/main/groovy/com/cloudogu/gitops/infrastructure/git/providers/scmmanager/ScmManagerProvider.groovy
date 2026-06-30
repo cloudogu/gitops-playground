@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
@@ -25,21 +26,27 @@ class ScmManagerProvider implements GitProvider {
 
 	NetworkingUtils networkingUtils
 	K8sClient k8sClient
-	Config config
+	DeploymentContext context
 
-	ScmManagerProvider(Config config,
-	                   ScmManagerConfig scmmConfig,
-	                   K8sClient k8sClient,
-	                   NetworkingUtils networkingUtils) {
+	ScmManagerProvider(DeploymentContext context,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils,
+		String servicePrefix = '') {
 		this.scmmConfig = scmmConfig
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
 
-		this.urls = new ScmManagerUrlResolver(this.config,
+		this.urls = new ScmManagerUrlResolver(this.context,
 			this.scmmConfig,
 			this.k8sClient,
-			this.networkingUtils)
+			this.networkingUtils,
+			servicePrefix)
+	}
+
+	Config getConfig() {
+		return context.config
 	}
 
 	ScmManagerApiClient getApiClient() {
@@ -56,7 +63,7 @@ class ScmManagerProvider implements GitProvider {
 	boolean createRepository(String repoTarget, String description, boolean initialize = true) {
 		def repoNamespace = repoTarget.split('/', 2)[0]
 		def repoName = repoTarget.split('/', 2)[1]
-		def repo = new Repository(repoNamespace, repoName, description ?: "")
+		def repo = new Repository(repoNamespace, repoName, description ?: '')
 
 		Response<Void> response = getApiClient().repositoryApi().create(repo, initialize).execute()
 		return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
@@ -125,21 +132,6 @@ class ScmManagerProvider implements GitProvider {
 		return urls.prometheusEndpoint()
 	}
 
-	@Override
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-		// intentionally left blank
-	}
-
-	@Override
-	void deleteUser(String name) {
-		// intentionally left blank
-	}
-
-	@Override
-	void setDefaultBranch(String repoTarget, String branch) {
-		// intentionally left blank
-	}
-
 	private static Permission.Role mapToScmManager(AccessRole role) {
 		switch (role) {
 			case AccessRole.READ:
@@ -158,32 +150,17 @@ class ScmManagerProvider implements GitProvider {
 		}
 	}
 
-	private static boolean handle201or409(Response<?> response, String what) {
-		int code = response.code()
+	private static boolean handle201or409(Response<Void> response, String resourceName) {
+		if (response.code() == 201) {
+			log.debug("${resourceName} created successfully")
+			return true
+		}
 
-		if (code == 409) {
-			log.debug("${what} already exists - ignoring HTTP 409")
+		if (response.code() == 409) {
+			log.debug("${resourceName} already exists")
 			return false
 		}
 
-		if (code != 201) {
-			throw new RuntimeException("Could not create ${what}. HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody()?.string()}")
-		}
-
-		return true
-	}
-
-	/**
-	 * Test-only constructor.*/
-	ScmManagerProvider(Config config,
-	                   ScmManagerConfig scmmConfig,
-	                   ScmManagerUrlResolver urls,
-	                   ScmManagerApiClient apiClient) {
-		this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
-		this.config = Objects.requireNonNull(config, "config must not be null")
-		this.urls = Objects.requireNonNull(urls, "urls must not be null")
-		this.apiClient = apiClient ?: new ScmManagerApiClient(urls.clientApiBase().toString(),
-			scmmConfig.credentials,
-			config.application.insecure)
+		throw new RuntimeException("Failed to create ${resourceName}. HTTP Status: ${response.code()} - ${response.message()}")
 	}
 }

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -20,35 +21,39 @@ class ArgoCDRepoSetup {
 	// may be null
 	final List<RepoInitializationAction> allRepos
 
-	private final Config config
+	private final DeploymentContext context
 	private final FileSystemUtils fileSystemUtils
 
-	private ArgoCDRepoSetup(Config config,
+	private ArgoCDRepoSetup(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		RepoInitializationAction clusterResources,
 		RepoInitializationAction tenantBootstrap,
 		List<RepoInitializationAction> allRepos) {
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.clusterResources = clusterResources
 		this.tenantBootstrap = tenantBootstrap
 		this.allRepos = allRepos
 	}
 
-	static ArgoCDRepoSetup create(Config config, FileSystemUtils fileSystemUtils, GitRepoFactory repoFactory, GitHandler gitHandler) {
+	private Config getConfig() {
+		return context.config
+	}
+
+	static ArgoCDRepoSetup create(DeploymentContext context, FileSystemUtils fileSystemUtils, GitRepoFactory repoFactory, GitHandler gitHandler) {
 		RepoInitializationAction cluster
 		RepoInitializationAction tenant
 		List<RepoInitializationAction> all = []
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			// Dedicated instance: tenant bootstrap (tenant provider) + cluster-resources (central provider)
-			tenant = createRepoInitializationAction(config, repoFactory, gitHandler,
+			tenant = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
 				'argocd/cluster-resources',
 				gitHandler.tenant)
 			all.add(tenant)
 
-			cluster = createRepoInitializationAction(config, repoFactory, gitHandler,
+			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources',
 				'argocd/cluster-resources',
 				gitHandler.central)
@@ -56,7 +61,7 @@ class ArgoCDRepoSetup {
 
 		} else {
 			// Single instance: only cluster-resources (tenant provider)
-			cluster = createRepoInitializationAction(config, repoFactory, gitHandler,
+			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
 				'argocd/cluster-resources',
 				'argocd/cluster-resources',
 				gitHandler.tenant)
@@ -64,9 +69,9 @@ class ArgoCDRepoSetup {
 		}
 
 		// Configure which subdirectories should be copied into the cluster-resources repo
-		cluster.subDirsToCopy = determineClusterResourceSubDirs(config)
+		cluster.subDirsToCopy = determineClusterResourceSubDirs(context)
 
-		return new ArgoCDRepoSetup(config, fileSystemUtils, cluster, tenant, all)
+		return new ArgoCDRepoSetup(context, fileSystemUtils, cluster, tenant, all)
 	}
 
 	RepoLayout clusterRepoLayout() {
@@ -93,7 +98,7 @@ class ArgoCDRepoSetup {
 			fileSystemUtils.deleteDir(layout.operatorDir())
 		}
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${clusterRepoLayout().applicationsDir()}, projects=${clusterRepoLayout().projectsDir()}, tenant=${clusterRepoLayout().multiTenantDir()}/tenant")
 			FileSystemUtils.deleteDir clusterRepoLayout().applicationsDir()
 			FileSystemUtils.deleteDir clusterRepoLayout().projectsDir()
@@ -112,7 +117,8 @@ class ArgoCDRepoSetup {
 		allRepos.each { it.repo.commitAndPush(message) }
 	}
 
-	private static Set<String> determineClusterResourceSubDirs(Config config) {
+	private static Set<String> determineClusterResourceSubDirs(DeploymentContext context) {
+		def config = context.config
 		Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
 
 		clusterResourceSubDirs.add(RepoLayout.argocdSubdirRel())
@@ -129,7 +135,7 @@ class ArgoCDRepoSetup {
 		if (config.features.monitoring.active) {
 			clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
 		}
-		if (config.scm.scmManager?.internal) {
+		if (context.isInternalScmManager()) {
 			clusterResourceSubDirs.add(RepoLayout.scmManagerSubdirRel())
 		}
 		if (config.features.secrets.active) {

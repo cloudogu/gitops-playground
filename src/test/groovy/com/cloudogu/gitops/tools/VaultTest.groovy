@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -238,7 +239,7 @@ class VaultTest {
 	private Vault createVault() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-		new Vault(config, new FileSystemUtils() {
+		new Vault(new ContextBuilder(config).build(), new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)

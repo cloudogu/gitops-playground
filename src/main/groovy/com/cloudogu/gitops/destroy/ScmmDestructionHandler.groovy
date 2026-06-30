@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
 
@@ -11,10 +12,10 @@ import jakarta.inject.Singleton
 @Order(200)
 class ScmmDestructionHandler implements DestructionHandler {
 	private ScmManagerApiClient scmmApiClient
-	private Config config
+	private DeploymentContext context
 
-	ScmmDestructionHandler(Config config) {
-		this.config = config
+	ScmmDestructionHandler(DeploymentContext context) {
+		this.context = context
 		this.scmmApiClient = scmmApiClient
 	}
 
@@ -45,5 +46,9 @@ class ScmmDestructionHandler implements DestructionHandler {
 		if (response.code() != 204) {
 			throw new RuntimeException("Could not delete user $name (${response.code()} ${response.message()}): ${response.errorBody().string()}")
 		}
+	}
+
+	private Config getConfig() {
+		context.config
 	}
 }

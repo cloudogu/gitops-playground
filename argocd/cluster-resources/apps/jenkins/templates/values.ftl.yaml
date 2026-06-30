@@ -1,20 +1,32 @@
 dockerClientVersion: ${config.jenkins.internalDockerClientVersion}
 
 controller:
+<#if config.jenkins.jenkinsImage?has_content>
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+  <#assign jenkinsImage = DockerImageParser.parse(config.jenkins.jenkinsImage)>
+  image:
+    registry: ${jenkinsImage.registry}
+    repository: ${jenkinsImage.repository}
+    tag: "${jenkinsImage.tag}"
+<#else>
   image:
     registry: ghcr.io
     repository: cloudogu/jenkins-helm
     # The image corresponds to the helm version,
     # because it contains the default plugins for this particular chart version
     tag: "${config.jenkins.helm.version}"
-  <#if jenkinsBootPlugins?has_content>
+</#if>
+<#if config.registry.createImagePullSecrets == true>
+  imagePullSecretName: proxy-registry
+</#if>
+<#if jenkinsBootPlugins?has_content>
   installPlugins:
     <#list jenkinsBootPlugins as plugin>
     - ${plugin}
     </#list>
-  <#else>
+<#else>
   installPlugins: false
-  </#if>
+</#if>
 
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
@@ -23,7 +35,7 @@ controller:
   servicePort: 80
 
   jenkinsUrl: ${config.jenkins.url}
-  
+
   <#if config.application.baseUrl?has_content>
   ingress:
     enabled: true

@@ -1383,4 +1383,87 @@ metadata:
 		assertThat(cr.namespace).isEqualTo("test-ns")
 		assertThat(cr.name).isEqualTo("test-name")
 	}
+
+	@Test
+	void 'waitForResourcePhase resolves ArgoCD custom resource via discovery'() {
+		// Given
+		server.expect()
+			.get()
+			.withPath("/apis")
+			.andReturn(200, [groups: [[name            : "argoproj.io",
+			                           preferredVersion: [version: "v1beta1"],
+			                           versions        : [[version: "v1beta1"]]]]])
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1")
+			.andReturn(200, [resources: [[name        : "argocds",
+			                              singularName: "argocd",
+			                              namespaced  : true,
+			                              kind        : "ArgoCD",
+			                              shortNames  : []]]])
+			.once()
+
+		GenericKubernetesResource argocdResource = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1beta1")
+			.withKind("ArgoCD")
+			.withNewMetadata()
+			.withName("argocd")
+			.withNamespace("argocd")
+			.endMetadata()
+			.addToAdditionalProperties("status", [phase: "Available"])
+			.build()
+
+		boolean argocdResourceWasRequested = false
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1/namespaces/argocd/argocds/argocd")
+			.andReply(200, { request ->
+				argocdResourceWasRequested = true
+				return argocdResource
+			})
+			.once()
+
+		// When
+		k8sApiClient.waitForResourcePhase("argocd", "argocd", "argocd", "Available", 5, 1)
+
+		// Then
+		assertThat(argocdResourceWasRequested).isTrue()
+		assertThat(argocdResource.apiVersion).isEqualTo("argoproj.io/v1beta1")
+		assertThat(argocdResource.kind).isEqualTo("ArgoCD")
+		assertThat(argocdResource.metadata.name).isEqualTo("argocd")
+		assertThat(argocdResource.metadata.namespace).isEqualTo("argocd")
+	}
+
+	@Test
+	void 'throws KubernetesApiResourceNotFoundException when custom resource cannot be resolved'() {
+		// Given
+		server.expect()
+			.get()
+			.withPath("/apis")
+			.andReturn(200, [groups: [[name            : "argoproj.io",
+			                           preferredVersion: [version: "v1beta1"],
+			                           versions        : [[version: "v1beta1"]]]]])
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1")
+			.andReturn(200, [resources: [[name        : "argocds",
+			                              singularName: "argocd",
+			                              namespaced  : true,
+			                              kind        : "ArgoCD",
+			                              shortNames  : []]]])
+			.once()
+
+		// When/Then
+		def exception = shouldFail(K8sClient.KubernetesApiResourceNotFoundException) {
+			k8sApiClient.getAnnotation("does-not-exist", "some-resource", "some-annotation", "argocd")
+		}
+
+		assertThat(exception.message)
+			.isEqualTo("No API resource found for custom resource type 'does-not-exist'")
+	}
 }

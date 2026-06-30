@@ -513,7 +513,7 @@ class K8sClient {
 	 * @throws RuntimeException if the ConfigMap or key is not found
 	 */
 	String getConfigMap(String mapName, String key) {
-		String namespace = client.namespace ?: DEFAULT_NAMESPACE
+		String namespace = getCurrentNamespace()
 
 		log.debug("Getting ConfigMap ${namespace}/${mapName}, key: ${key}")
 
@@ -523,11 +523,11 @@ class K8sClient {
 			.get()
 
 		if (!configMap) {
-			throw new RuntimeException("Could not fetch configmap $mapName")
+			throw new RuntimeException("Could not fetch configmap $mapName from namespace $namespace")
 		}
 
 		if (!configMap.data?.containsKey(key)) {
-			throw new RuntimeException("Could not fetch $key within config-map $mapName")
+			throw new RuntimeException("Could not fetch $key within config-map $mapName from namespace $namespace")
 		}
 
 		return configMap.data[key]
@@ -1147,6 +1147,7 @@ class K8sClient {
 
 
 			default:
+				log.debug("Searching API resource via discovery for resourceType=${resourceType}, name=${name}, ns=${ns}")
 				return getCustomResourceClient(resourceType, name, ns)
 		}
 	}
@@ -1155,43 +1156,76 @@ class K8sClient {
 	private getCustomResourceClient(String resourceType, String name, String namespace) {
 		String normalized = resourceType.toLowerCase()
 
-		def crd = client.apiextensions()
-			.v1()
-			.customResourceDefinitions()
-			.list()
-			.items
-			.find { crd ->
-				crd.spec.names.kind?.equalsIgnoreCase(resourceType) || crd.spec.names.plural?.equalsIgnoreCase(normalized) ||
-					crd.spec.names.singular?.equalsIgnoreCase(normalized) ||
-					crd.spec.names.shortNames?.any { it.equalsIgnoreCase(normalized) }
-			}
+		// Resolve via the Kubernetes Discovery API (/apis, /apis/<group>/<version>) instead
+		// of listing CustomResourceDefinitions. Avoids the cluster-wide
+		// "list customresourcedefinitions.apiextensions.k8s.io" permission, which is not
+		// always available (e.g. namespace-scoped service accounts).
+		Map match = findApiResourceViaDiscovery(normalized, resourceType)
 
-		if (!crd) {
-			throw new RuntimeException("No CRD found for custom resource type '${resourceType}'")
+		if (!match) {
+			throw new KubernetesApiResourceNotFoundException(resourceType)
 		}
 
-		def version = crd.spec.versions.find { it.storage && it.served }?.name ?: crd.spec.versions.find { it.storage }?.name ?: crd.spec.versions.find { it.served }?.name
-		log.debug("Using CRD ${crd.metadata.name} with version ${version}, kind=${crd.spec.names.kind}, plural=${crd.spec.names.plural}")
-
-		if (!version) {
-			throw new RuntimeException("No served version found for CRD '${crd.metadata.name}'")
-		}
+		log.debug("Resolved '${resourceType}' via discovery to ${match.group}/${match.version} kind=${match.kind} plural=${match.plural}")
 
 		ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
-			.withGroup(crd.spec.group)
-			.withVersion(version)
-			.withKind(crd.spec.names.kind)
-			.withPlural(crd.spec.names.plural)
-			.withNamespaced(crd.spec.scope == "Namespaced")
+			.withGroup(match.group as String)
+			.withVersion(match.version as String)
+			.withKind(match.kind as String)
+			.withPlural(match.plural as String)
+			.withNamespaced(match.namespaced as boolean)
 			.build()
 
 		def resourceClient = client.genericKubernetesResources(context)
+		return match.namespaced ? resourceClient.inNamespace(namespace).withName(name) : resourceClient.withName(name)
+	}
 
-		if (crd.spec.scope == "Namespaced") {
-			return resourceClient.inNamespace(namespace).withName(name)
+	@CompileStatic(TypeCheckingMode.SKIP)
+	private Map findApiResourceViaDiscovery(String normalized, String original) {
+		def apiGroups
+		try {
+			apiGroups = client.getApiGroups()?.groups ?: []
+		} catch (Exception e) {
+			log.warn("Failed to discover API groups: ${e.message}")
+			return null
 		}
 
-		return resourceClient.withName(name)
+		for (def group : apiGroups) {
+			List<String> versions = []
+			if (group.preferredVersion?.version) {
+				versions << (group.preferredVersion.version as String)
+			}
+			group.versions?.each { v ->
+				if (v.version && !(v.version in versions)) {
+					versions << (v.version as String)
+				}
+			}
+
+			for (String version : versions) {
+				def resources
+				try {
+					resources = client.getApiResources("${group.name}/${version}")?.resources ?: []
+				} catch (Exception e) {
+					log.trace("Failed to fetch ${group.name}/${version}: ${e.message}")
+					continue
+				}
+
+				def resolvedResult = resources.find { res ->
+					!res.name?.contains('/') && (res.kind?.equalsIgnoreCase(original) || res.name?.equalsIgnoreCase(normalized) ||
+						res.singularName?.equalsIgnoreCase(normalized) ||
+						res.shortNames?.any { it.equalsIgnoreCase(normalized) })
+				}
+
+				if (resolvedResult) {
+					return [group     : group.name as String,
+					        version   : version,
+					        kind      : resolvedResult.kind as String,
+					        plural    : resolvedResult.name as String,
+					        namespaced: resolvedResult.namespaced as boolean]
+				}
+			}
+		}
+		return null
 	}
 
 	/**
@@ -1346,5 +1380,11 @@ class K8sClient {
 	static class CustomResource {
 		String namespace
 		String name
+	}
+
+	static class KubernetesApiResourceNotFoundException extends RuntimeException {
+		KubernetesApiResourceNotFoundException(String resourceType) {
+			super("No API resource found for custom resource type '${resourceType}'")
+		}
 	}
 }

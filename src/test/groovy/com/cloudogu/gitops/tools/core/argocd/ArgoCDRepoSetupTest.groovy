@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools.core.argocd
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
@@ -52,7 +53,7 @@ class ArgoCDRepoSetupTest {
 		repoFactory.defaultProvider = tenantProvider
 
 		def gitHandler = new GitHandlerForTests(config, tenantProvider, centralProvider)
-		return ArgoCDRepoSetup.create(config, fs, repoFactory, gitHandler)
+		return ArgoCDRepoSetup.create(new ContextBuilder(config).build(), fs, repoFactory, gitHandler)
 	}
 
 	@Test

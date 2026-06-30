@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -25,7 +26,6 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 class ArgoCD extends Tool {
 
 	private final String namespace
-	private final Config config
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
 	private final GitRepoFactory repoProvider
@@ -35,14 +35,14 @@ class ArgoCD extends Tool {
 	private ArgoCDRepoSetup repoSetup
 	private RepoLayout clusterResourcesRepo
 
-	ArgoCD(Config config,
+	ArgoCD(DeploymentContext context,
 		K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
 		GitRepoFactory repoProvider,
 		GitHandler gitHandler) {
 		this.repoProvider = repoProvider
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
@@ -79,7 +79,7 @@ class ArgoCD extends Tool {
 
 	@Override
 	void enable() {
-		this.repoSetup = ArgoCDRepoSetup.create(config, fileSystemUtils, repoProvider, gitHandler)
+		this.repoSetup = ArgoCDRepoSetup.create(context, fileSystemUtils, repoProvider, gitHandler)
 		this.clusterResourcesRepo = repoSetup.clusterRepoLayout()
 
 		log.debug('Cloning Repositories')
@@ -122,7 +122,7 @@ class ArgoCD extends Tool {
 			deployWithHelm()
 		}
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			//Bootstrapping dedicated instance
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "tenant.yaml").toString())
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
@@ -205,12 +205,12 @@ class ArgoCD extends Tool {
 	void updatingArgoCDManagedNamespaces() {
 
 		log.debug("Updating managed namespaces in ArgoCD configuration secret.")
-		def namespaceList = !config.multiTenant.useDedicatedInstance ? config.application.namespaces.activeNamespaces : config.application.namespaces.tenantNamespaces
+		def namespaceList = context.isSingleTenant() ? config.application.namespaces.activeNamespaces : config.application.namespaces.tenantNamespaces
 
 		k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
 			[stringData: ['namespaces': namespaceList.join(',')]])
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			// Append new namespaces to existing ones from the secret.
 			// `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
 			// This ensures all centrally managed namespaces are preserved.
@@ -230,7 +230,7 @@ class ArgoCD extends Tool {
 
 		log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			//Generating Tenant Namespace RBACs for Tenant Argocd
 			for (String ns : config.application.namespaces.tenantNamespaces) {
 				new RbacDefinition(Role.Variant.ARGOCD)
@@ -294,7 +294,7 @@ class ArgoCD extends Tool {
 			gitHandler.tenant.credentials.username,
 			gitHandler.tenant.credentials.password)
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
 
 			// Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -22,17 +23,16 @@ class Registry extends Tool {
 	public static final String CONTAINER_PORT = '5000'
 
 	String namespace
-	private Config config
 	private K8sClient k8sClient
 
-	Registry(Config config,
+	Registry(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
 		Deployer deployer) {
 		this.deployer = deployer
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
@@ -55,7 +55,7 @@ class Registry extends Tool {
 			                              type    : 'NodePort'])
 
 			def helmConfig = config.registry.helm
-			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", config, true)
+			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", context, true)
 
 			if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
 				/* Add additional node port

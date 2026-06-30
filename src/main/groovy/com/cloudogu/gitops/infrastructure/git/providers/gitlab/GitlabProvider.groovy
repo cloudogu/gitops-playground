@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.gitlab
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.GitlabConfig
@@ -21,18 +22,22 @@ import org.gitlab4j.api.models.Visibility
 @Slf4j
 class GitlabProvider implements GitProvider {
 
-	private final Config config
+	private final DeploymentContext context
 	private final GitLabApi api
 	private GitlabConfig gitlabConfig
 
-    GitlabProvider(Config config, GitlabConfig gitlabConfig) {
-		this.config = config
+	GitlabProvider(DeploymentContext context, GitlabConfig gitlabConfig) {
+		this.context = context
 		this.gitlabConfig = gitlabConfig
 
 		String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url").trim()
 		String pat = Objects.requireNonNull(gitlabConfig.getCredentials()?.password, "Missing gitlab token").trim()
 		this.api = new GitLabApi(url, pat)
 		this.api.enableRequestResponseLogging(Level.ALL)
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	@Override
@@ -133,30 +138,6 @@ class GitlabProvider implements GitProvider {
 	@Override
 	URI prometheusMetricsEndpoint() {
 		return null
-	}
-
-	/**
-	 * No-op by design. GitLab repository deletion is not managed through this abstraction.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-		// intentionally left blank
-	}
-
-	/**
-	 * No-op by design. User deletion is not supported or handled through this provider.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void deleteUser(String name) {
-		// intentionally left blank
-	}
-
-	/**
-	 * No-op by design. Default branch management is not implemented via this abstraction.
-	 * Kept for interface compatibility only.*/
-	@Override
-	void setDefaultBranch(String repoTarget, String branch) {
-		// intentionally left blank
 	}
 
 	private Group parentGroup() {

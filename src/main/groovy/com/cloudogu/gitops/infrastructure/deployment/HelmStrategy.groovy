@@ -24,7 +24,7 @@ class HelmStrategy implements DeploymentStrategy {
 
 		if (repoType == RepoType.GIT) {
 			// This would be possible with plugins or by pulling the repo first, but for now, we don't need it
-			throw new RuntimeException("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" + "Repo URL: ${repoURL}")
+			throw new RuntimeException('Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n' + "Repo URL: ${repoURL}")
 		}
 
 		log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")

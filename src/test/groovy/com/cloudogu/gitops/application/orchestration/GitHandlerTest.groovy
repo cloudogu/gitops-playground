@@ -3,6 +3,7 @@ package com.cloudogu.gitops.application.orchestration
 import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.Mockito.mock
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -43,7 +44,7 @@ class GitHandlerTest {
 	}
 
 	private static GitHandler handler(Config cfg) {
-		return new GitHandler(cfg,
+		return new GitHandler(new ContextBuilder(cfg).build(),
 			mock(K8sClient),
 			mock(NetworkingUtils))
 	}
@@ -171,10 +172,10 @@ class GitHandlerTest {
 	}
 
 	@Test
-	void 'withOrgPrefix helper behaves as expected'() {
-		assertEquals('argocd/argocd', GitHandler.withOrgPrefix('', 'argocd/argocd'))
-		assertEquals('argocd/argocd', GitHandler.withOrgPrefix(null, 'argocd/argocd'))
-		assertEquals('fv40-argocd/argocd', GitHandler.withOrgPrefix('fv40-', 'argocd/argocd'))
+	void 'withPrefix helper behaves as expected'() {
+		assertEquals('argocd/argocd', GitHandler.withPrefix('', 'argocd/argocd'))
+		assertEquals('argocd/argocd', GitHandler.withPrefix(null, 'argocd/argocd'))
+		assertEquals('fv40-argocd/argocd', GitHandler.withPrefix('fv40-', 'argocd/argocd'))
 	}
 
 }

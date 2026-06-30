@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -175,7 +176,7 @@ class ExternalSecretsOperatorTest {
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
-		new ExternalSecretsOperator(config,
+		new ExternalSecretsOperator(new ContextBuilder(config).build(),
 			new FileSystemUtils() {
 				@Override
 				Path writeTempFile(Map mergeMap) {

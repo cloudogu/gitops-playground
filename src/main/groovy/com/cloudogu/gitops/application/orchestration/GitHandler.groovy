@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.application.orchestration
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -15,29 +16,35 @@ import groovy.util.logging.Slf4j
 @Singleton
 class GitHandler {
 
-	Config config
+	DeploymentContext context
 	NetworkingUtils networkingUtils
 	K8sClient k8sClient
 
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(Config config,
+	GitHandler(DeploymentContext context,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils) {
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
+	}
+
+	protected Config getConfig() {
+		return context.config
 	}
 
 	void validate() {
 		if (config.scm.scmManager.url) {
 			config.scm.scmManager.internal = false
+			context.scmManagerDeploymentMode = DeploymentContext.DeploymentMode.EXTERNAL
 			config.scm.scmManager.urlForJenkins = config.scm.scmManager.url
 		} else {
-			log.debug("Setting configs for internal SCM-Manager")
+			log.debug('Setting configs for internal SCM-Manager')
 
 			config.scm.scmManager.internal = true
+			context.scmManagerDeploymentMode = DeploymentContext.DeploymentMode.INTERNAL
 			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local/scm"
 
 		}
@@ -57,7 +64,7 @@ class GitHandler {
 	void prepareProviders() {
 		this.tenant = createTenantScmProvider()
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			this.central = createCentralScmProvider()
 		}
 
@@ -73,19 +80,19 @@ class GitHandler {
 			return tenant
 		}
 
-		throw new IllegalStateException("No SCM provider found.")
+		throw new IllegalStateException('No SCM provider found.')
 	}
 
 	private GitProvider createTenantScmProvider() {
 		switch (config.scm.scmProviderType) {
 			case ScmProviderType.GITLAB:
-				return new GitlabProvider(config, config.scm.gitlab)
-
+				return new GitlabProvider(context, config.scm.gitlab)
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManagerProvider(config,
+				return new ScmManagerProvider(context,
 					config.scm.scmManager,
 					k8sClient,
-					networkingUtils)
+					networkingUtils,
+					config.application.namePrefix ?: '')
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: ${config.scm.scmProviderType}")
@@ -95,13 +102,13 @@ class GitHandler {
 	private GitProvider createCentralScmProvider() {
 		switch (config.multiTenant.scmProviderType) {
 			case ScmProviderType.GITLAB:
-				return new GitlabProvider(config, config.multiTenant.gitlab)
-
+				return new GitlabProvider(context, config.multiTenant.gitlab)
 			case ScmProviderType.SCM_MANAGER:
-				return new ScmManagerProvider(config,
+				return new ScmManagerProvider(context,
 					config.multiTenant.scmManager,
 					k8sClient,
-					networkingUtils)
+					networkingUtils,
+					centralScmManagerServicePrefix())
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
@@ -109,23 +116,19 @@ class GitHandler {
 	}
 
 	private void setupExternalRepositoriesIfPossible() {
-		final String namePrefix = (config.application.namePrefix ?: "").trim()
-		final boolean repositorySetupBlockedByInternalScmBootstrap = isRepositorySetupBlockedByInternalScmBootstrap()
+		final String namePrefix = (config.application.namePrefix ?: '').trim()
+		final boolean repositorySetupBlockedByInternalScmBootstrap = context.isInternalScmManager()
 
-		log.info(
-			"Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
+		log.info("Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
 			central != null,
 			tenant != null,
 			namePrefix,
-			repositorySetupBlockedByInternalScmBootstrap
-		)
+			repositorySetupBlockedByInternalScmBootstrap)
 
 		if (repositorySetupBlockedByInternalScmBootstrap) {
-			log.info(
-				"Skipping repository setup because the configured internal SCM-Manager is not deployed yet. " +
-					"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
-				namePrefix
-			)
+			log.info('Skipping repository setup because the configured internal SCM-Manager is not deployed yet. ' +
+				"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
+				namePrefix)
 			return
 		}
 
@@ -138,20 +141,29 @@ class GitHandler {
 			setupRepos(tenant, namePrefix)
 		}
 	}
-	private boolean isRepositorySetupBlockedByInternalScmBootstrap() {
-		config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+
+	static void setupRepos(GitProvider gitProvider, String namePrefix = '') {
+		gitProvider.createRepository(withPrefix(namePrefix, 'argocd/cluster-resources'),
+			'GitOps repo for basic cluster-resources')
 	}
 
-	static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
-		gitProvider.createRepository(withOrgPrefix(namePrefix, "argocd/cluster-resources"),
-			"GitOps repo for basic cluster-resources")
-	}
-
-	static String withOrgPrefix(String prefix, String repoPath) {
+	static String withPrefix(String prefix, String repoPath) {
 		if (!prefix) {
 			return repoPath
 		}
 
 		return prefix + repoPath
+	}
+
+
+	private String centralScmManagerServicePrefix() {
+		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
+		def baseNamespace = 'scm-manager'
+
+		if (namespace == baseNamespace || !namespace.endsWith(baseNamespace)) {
+			return ''
+		}
+
+		return namespace.substring(0, namespace.length() - baseNamespace.length())
 	}
 }

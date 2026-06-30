@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
@@ -1026,7 +1028,7 @@ class ContentLoaderTest {
 
 		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
 			Deployer deployer) {
-			super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+			super(new ContextBuilder(config).build(), k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 		}
 
 		@Override
@@ -1035,14 +1037,14 @@ class ContentLoaderTest {
 			String namespace,
 			Config.HelmConfigWithValues helmConfig,
 			String helmValuesTemplatePath,
-			Config config,
+			DeploymentContext context,
 			boolean initByHelm) {
 			deployCalls << new DeployCall(featureName: featureName,
 				releaseName: releaseName,
 				namespace: namespace,
 				helmConfig: helmConfig,
 				valuesPath: helmValuesTemplatePath,
-				config: config,
+				config: context.config,
 				initByHelm: initByHelm)
 		}
 

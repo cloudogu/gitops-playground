@@ -86,21 +86,6 @@ class ScmManagerMock implements GitProvider {
 		return prometheus
 	}
 
-	@Override
-	void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
-	}
-
-	@Override
-	void deleteUser(String name) {
-
-	}
-
-	@Override
-	void setDefaultBranch(String repoTarget, String branch) {
-
-	}
-
 	/** In-cluster base …/scm (without trailing slash) */
 	@Override
 	String getUrl() {

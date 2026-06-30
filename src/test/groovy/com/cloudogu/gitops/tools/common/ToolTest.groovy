@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.common
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 
@@ -38,7 +39,7 @@ class ToolTest {
 
 	protected ToolWithImageForTest createFeatureWithImage() {
 		Tool feature = new ToolWithImageForTest()
-		feature.config = config
+		feature.context = new ContextBuilder(config).build()
 		feature.k8sClient = k8sClient
 		feature.namespace = 'foo-my-ns'
 		feature
@@ -69,7 +70,6 @@ class ToolTest {
 	class ToolWithImageForTest extends Tool implements ToolWithImage {
 
 		String namespace
-		Config config
 		K8sClient k8sClient
 
 		@Override
