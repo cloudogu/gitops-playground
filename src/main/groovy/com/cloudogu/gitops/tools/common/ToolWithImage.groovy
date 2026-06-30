@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.common
 
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 
 import org.slf4j.Logger
@@ -12,7 +13,6 @@ trait ToolWithImage {
 	final Logger log = LoggerFactory.getLogger(this.class)
 
 	void createImagePullSecret() {
-		def config = context.config
 		if (config.registry.createImagePullSecrets) {
 
 			log.trace("Creating image pull secret 'proxy-registry' in namespace ${this.namespace}")
@@ -24,6 +24,8 @@ trait ToolWithImage {
 			k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
 		}
 	}
+
+	abstract Config getConfig()
 
 	abstract String getNamespace()
 

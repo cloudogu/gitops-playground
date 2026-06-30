@@ -92,7 +92,7 @@ class ScmManagerSetupTest {
 		config.features.certManager.active = true
 		config.features.certManager.issuer = 'cluster-selfsigned'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, config)
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
 
 		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
 		config.application.namePrefix = "${config.application.namePrefix}-"

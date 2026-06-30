@@ -20,15 +20,13 @@ class ScmManager extends Tool implements ToolWithImage {
 
 	String namespace
 
-	private final DeploymentContext context
-	private final GitHandler gitHandler
-	private final Deployer deployer
 	private final K8sClient k8sClient
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
 		K8sClient k8sClient) {
+		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.k8sClient = k8sClient
