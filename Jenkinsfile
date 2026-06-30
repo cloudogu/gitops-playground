@@ -50,7 +50,6 @@ pipeline {
                         reuseNode true
                     }}
                     steps {
-                        sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
                         sh 'mvn -B clean test'
                     }
                     post {
