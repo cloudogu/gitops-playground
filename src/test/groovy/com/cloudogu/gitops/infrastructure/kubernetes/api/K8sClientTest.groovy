@@ -3,7 +3,6 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
-import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 
@@ -369,7 +368,7 @@ class K8sClientTest {
 	void 'createNamespace creates OpenShift project when openshift config is enabled'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: true]])
-		k8sApiClient.context = new ContextBuilder(config).build()
+		k8sApiClient.gopConfig = config
 
 		server.expect()
 			.get()
@@ -400,7 +399,7 @@ class K8sClientTest {
 	void 'createNamespace creates Kubernetes namespace when openshift config is disabled'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: false]])
-		k8sApiClient.context = new ContextBuilder(config).build()
+		k8sApiClient.gopConfig = config
 
 		server.expect()
 			.get()
@@ -453,7 +452,7 @@ class K8sClientTest {
 	@Test
 	void 'createNamespace creates Kubernetes namespace when config is null'() {
 		// Given
-		k8sApiClient.context = null
+		k8sApiClient.gopConfig = null
 
 		server.expect()
 			.get()
@@ -484,7 +483,7 @@ class K8sClientTest {
 	void 'createNamespace does not create OpenShift project when namespace already exists'() {
 		// Given
 		Config config = Config.fromMap([application: [openshift: true]])
-		k8sApiClient.context = new ContextBuilder(config).build()
+		k8sApiClient.gopConfig = config
 
 		def namespace = new NamespaceBuilder()
 			.withNewMetadata()
@@ -1383,5 +1382,88 @@ metadata:
 		// Then
 		assertThat(cr.namespace).isEqualTo("test-ns")
 		assertThat(cr.name).isEqualTo("test-name")
+	}
+
+	@Test
+	void 'waitForResourcePhase resolves ArgoCD custom resource via discovery'() {
+		// Given
+		server.expect()
+			.get()
+			.withPath("/apis")
+			.andReturn(200, [groups: [[name            : "argoproj.io",
+			                           preferredVersion: [version: "v1beta1"],
+			                           versions        : [[version: "v1beta1"]]]]])
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1")
+			.andReturn(200, [resources: [[name        : "argocds",
+			                              singularName: "argocd",
+			                              namespaced  : true,
+			                              kind        : "ArgoCD",
+			                              shortNames  : []]]])
+			.once()
+
+		GenericKubernetesResource argocdResource = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1beta1")
+			.withKind("ArgoCD")
+			.withNewMetadata()
+			.withName("argocd")
+			.withNamespace("argocd")
+			.endMetadata()
+			.addToAdditionalProperties("status", [phase: "Available"])
+			.build()
+
+		boolean argocdResourceWasRequested = false
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1/namespaces/argocd/argocds/argocd")
+			.andReply(200, { request ->
+				argocdResourceWasRequested = true
+				return argocdResource
+			})
+			.once()
+
+		// When
+		k8sApiClient.waitForResourcePhase("argocd", "argocd", "argocd", "Available", 5, 1)
+
+		// Then
+		assertThat(argocdResourceWasRequested).isTrue()
+		assertThat(argocdResource.apiVersion).isEqualTo("argoproj.io/v1beta1")
+		assertThat(argocdResource.kind).isEqualTo("ArgoCD")
+		assertThat(argocdResource.metadata.name).isEqualTo("argocd")
+		assertThat(argocdResource.metadata.namespace).isEqualTo("argocd")
+	}
+
+	@Test
+	void 'throws KubernetesApiResourceNotFoundException when custom resource cannot be resolved'() {
+		// Given
+		server.expect()
+			.get()
+			.withPath("/apis")
+			.andReturn(200, [groups: [[name            : "argoproj.io",
+			                           preferredVersion: [version: "v1beta1"],
+			                           versions        : [[version: "v1beta1"]]]]])
+			.once()
+
+		server.expect()
+			.get()
+			.withPath("/apis/argoproj.io/v1beta1")
+			.andReturn(200, [resources: [[name        : "argocds",
+			                              singularName: "argocd",
+			                              namespaced  : true,
+			                              kind        : "ArgoCD",
+			                              shortNames  : []]]])
+			.once()
+
+		// When/Then
+		def exception = shouldFail(K8sClient.KubernetesApiResourceNotFoundException) {
+			k8sApiClient.getAnnotation("does-not-exist", "some-resource", "some-annotation", "argocd")
+		}
+
+		assertThat(exception.message)
+			.isEqualTo("No API resource found for custom resource type 'does-not-exist'")
 	}
 }
