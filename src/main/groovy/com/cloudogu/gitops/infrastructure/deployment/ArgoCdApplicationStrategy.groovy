@@ -46,19 +46,19 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		def namePrefix = config.application.namePrefix
 		def prefix = (namePrefix ?: '').strip()
-		def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
+		def shallCreateNamespace = config.features['argocd']['operator'] ? 'CreateNamespace=false' : 'CreateNamespace=true'
 
 		GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
 		clusterResourcesRepo.cloneRepo()
 
-		String project = "cluster-resources"
+		String project = 'cluster-resources'
 		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
-		String featureName = repoName
-		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(featureName)
+		String toolName = repoName
+		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName)
 
 		/*
 		 * Important:
-		 * featureName remains unprefixed because it is used for paths like apps/scm-manager.
+		 * toolName remains unprefixed because it is used for paths like apps/scm-manager.
 		 * repoName becomes the ArgoCD Application metadata.name.
 		 *
 		 * This avoids ArgoCD tracking-id collisions:
@@ -75,37 +75,37 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		// DedicatedInstances
 		if (context.isMultiTenant()) {
 			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
-			project = prefix.replaceFirst(/-$/, "")
+			project = prefix.replaceFirst(/-$/, '')
 		}
 
-		String featurePath = "apps/${featureName}"
+		String toolPath = "apps/${toolName}"
 
 		// --- ensure folders exist before writing files ---
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		Path.of(repoRoot, featurePath).toFile().mkdirs()
+		Path.of(repoRoot, toolPath).toFile().mkdirs()
 
 		// 1) GOP-managed values
-		String gopValuesPath = "${featurePath}/${featureName}-gop-helm.yaml"
+		String gopValuesPath = "${toolPath}/${toolName}-gop-helm.yaml"
 		def inlineValues = helmValuesPath.toFile().text
 
 		// 2) User values
-		String userValuesPath = "${featurePath}/${featureName}-user-values.yaml"
+		String userValuesPath = "${toolPath}/${toolName}-user-values.yaml"
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
 
 		if (bootstrapDeploymentRequired) {
-			log.info("Using bootstrap deployment for feature '{}': applicationName='{}', releaseName='{}', namespace='{}'. " +
-				"Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.",
-				featureName,
+			log.info('Using bootstrap deployment for tool \'{}\': applicationName=\'{}\', releaseName=\'{}\', namespace=\'{}\'. ' +
+				'Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.',
+				toolName,
 				repoName,
 				releaseName,
 				namespace)
 		} else {
-			// Normal features keep values in cluster-resources and consume them via $values.
+			// Normal tools keep values in cluster-resources and consume them via $values.
 			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
 			// User values must NEVER be overwritten by GOP.
 			if (!userValuesAbsPath.toFile().exists()) {
-				clusterResourcesRepo.writeFile(userValuesPath, "")
+				clusterResourcesRepo.writeFile(userValuesPath, '')
 			}
 		}
 
@@ -113,8 +113,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		def helmConfig = [releaseName: releaseName]
 
 		if (bootstrapDeploymentRequired) {
-			log.debug("Embedding Helm values for bootstrap feature '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
-				featureName)
+			log.trace("Embedding Helm values for bootstrap tool '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
+				toolName)
 			helmConfig.values = inlineValues
 		} else {
 			helmConfig.valueFiles = ["\$values/${gopValuesPath}".toString(),
@@ -132,11 +132,11 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		def sources = [helmSource]
 
 		if (!bootstrapDeploymentRequired) {
-			def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
-			def gitSource = [repoURL       : featureRepoUrl,
-			                 targetRevision: "main",
-			                 ref           : "values",
-			                 path          : featurePath,
+			def toolRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+			def gitSource = [repoURL       : toolRepoUrl,
+			                 targetRevision: 'main',
+			                 ref           : 'values',
+			                 path          : toolPath,
 			                 directory     : [recurse: true]]
 
 			sources << gitSource
@@ -147,18 +147,18 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
 			.build()
 
-		def yamlResult = yamlMapper.writeValueAsString([apiVersion: "argoproj.io/v1alpha1",
-		                                                kind      : "Application",
+		def yamlResult = yamlMapper.writeValueAsString([apiVersion: 'argoproj.io/v1alpha1',
+		                                                kind      : 'Application',
 		                                                metadata  : [name     : repoName,
 		                                                             namespace: namespaceName],
-		                                                spec      : [destination: [server   : "https://kubernetes.default.svc",
+		                                                spec      : [destination: [server   : 'https://kubernetes.default.svc',
 		                                                                           namespace: namespace],
 		                                                             project    : project,
 		                                                             sources    : sources,
 		                                                             syncPolicy : [automated  : [prune   : true,
 		                                                                                         selfHeal: true],
 		                                                                           syncOptions: [// So that we can apply very large resources (e.g. prometheus CRD)
-		                                                                                         "ServerSideApply=true",
+		                                                                                         'ServerSideApply=true',
 		                                                                                         // Create namespaces for helm charts (while not using the argocd-operater mode)
 		                                                                                         shallCreateNamespace]]]])
 
@@ -190,7 +190,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 	}
 
-	private boolean requiresBootstrapDeployment(String featureName) {
-		return featureName == 'scm-manager'
+	private boolean requiresBootstrapDeployment(String toolName) {
+		return toolName == 'scm-manager'
 	}
 }
