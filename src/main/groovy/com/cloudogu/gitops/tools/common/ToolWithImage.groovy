@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools.common
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 
 import org.slf4j.Logger
@@ -29,6 +28,4 @@ trait ToolWithImage {
 	abstract String getNamespace()
 
 	abstract K8sClient getK8sClient()
-
-	abstract DeploymentContext getContext()
 }
