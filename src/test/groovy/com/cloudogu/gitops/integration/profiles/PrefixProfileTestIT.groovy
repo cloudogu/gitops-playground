@@ -36,7 +36,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 		log.info "###### Integration test for Prefix ######"
 
 		try {
-			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES)
+			TestK8sHelper.waitForAllPodsRunningInNamespace(certManagerNs, "", 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
