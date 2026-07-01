@@ -27,8 +27,6 @@ class ScmManager extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	private final RepositoryProvisioning repositoryProvisioning
 
-
-
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
@@ -38,8 +36,12 @@ class ScmManager extends Tool implements ToolWithImage {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.repositoryProvisioning = repositoryProvisioning
-		this.namespace = configuredNamespace()
 		this.k8sClient = k8sClient
+
+		if (context.isInternalScmManager()) {
+			this.namespace = prefixedNamespace()
+			this.config.scm.scmManager.namespace = this.namespace
+		}
 	}
 
 	@Override
@@ -53,11 +55,9 @@ class ScmManager extends Tool implements ToolWithImage {
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
-		ScmManagerSetup setup = new ScmManagerSetup(
-			scmManager,
+		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer,
-			context
-		)
+			context)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
@@ -72,18 +72,22 @@ class ScmManager extends Tool implements ToolWithImage {
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
+	private String prefixedNamespace() {
+		String prefix = config.application.namePrefix ?: ""
+		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
 
-	private String configuredNamespace() {
-		return config.scm.scmManager?.namespace ?: 'scm-manager'
+		if (prefix && baseNamespace.startsWith(prefix)) {
+			return baseNamespace
+		}
+
+		return "${prefix}${baseNamespace}".toString()
 	}
 
 	private ScmManagerProvider getTenantScmManager() {
 		GitProvider tenantScm = gitHandler.tenant
 
 		if (!(tenantScm instanceof ScmManagerProvider)) {
-			throw new IllegalStateException(
-				"Tenant SCM provider is not an SCM-Manager. Actual provider: ${tenantScm?.class?.simpleName}"
-			)
+			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: ${tenantScm?.class?.simpleName}")
 		}
 
 		return tenantScm as ScmManagerProvider
