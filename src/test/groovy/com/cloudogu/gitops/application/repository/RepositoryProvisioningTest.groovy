@@ -207,47 +207,6 @@ class RepositoryProvisioningTest {
 	}
 
 	@Test
-	void 'cloneRepositories delegates to cluster resources repository once'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(clusterResourcesRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-
-		provisioning.cloneRepositories()
-		provisioning.cloneRepositories()
-
-		verify(clusterResourcesRepo, times(1)).cloneRepo()
-	}
-
-	@Test
-	void 'cloneRepositories delegates to both repositories once in dedicated mode'() {
-		config.multiTenant.useDedicatedInstance = true
-
-		doReturn(centralProvider).when(gitHandler).getResourcesScm()
-		doReturn(tenantProvider).when(gitHandler).getTenant()
-
-		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
-		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
-
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
-			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(tenantBootstrapRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-
-		provisioning.cloneRepositories()
-		provisioning.cloneRepositories()
-
-		verify(clusterResourcesRepo, times(1)).cloneRepo()
-		verify(tenantBootstrapRepo, times(1)).cloneRepo()
-	}
-
-	@Test
 	void 'bootstrapRepositoriesAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
 		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
 			.thenReturn(clusterResourcesRepo)
@@ -304,21 +263,6 @@ class RepositoryProvisioningTest {
 	}
 
 	@Test
-	void 'publishClusterResourcesRepositoryChanges commits cluster resources repository with custom message'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(clusterResourcesRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-
-		provisioning.publishClusterResourcesRepositoryChanges('argocd',
-			'Custom message')
-
-		verify(clusterResourcesRepo).commitAndPush('Custom message')
-	}
-
-	@Test
 	void 'publishClusterResourcesRepositoryChanges uses default message when no message is provided'() {
 		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
 			.thenReturn(clusterResourcesRepo)
@@ -333,73 +277,11 @@ class RepositoryProvisioningTest {
 	}
 
 	@Test
-	void 'publishClusterResourcesAndTenantBootstrapRepositoryChanges commits only cluster resources repository in single-instance mode'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(clusterResourcesRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-
-		provisioning.publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
-
-		verify(clusterResourcesRepo).commitAndPush('Update ArgoCD repository content')
-		verifyNoInteractions(tenantBootstrapRepo)
-	}
-
-	@Test
-	void 'publishClusterResourcesAndTenantBootstrapRepositoryChanges commits both repositories in dedicated mode'() {
-		config.multiTenant.useDedicatedInstance = true
-
-		doReturn(centralProvider).when(gitHandler).getResourcesScm()
-		doReturn(tenantProvider).when(gitHandler).getTenant()
-
-		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
-		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
-
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
-			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(tenantBootstrapRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-
-		provisioning.publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
-
-		verify(clusterResourcesRepo).commitAndPush('Update ArgoCD repository content')
-		verify(tenantBootstrapRepo).commitAndPush('Update ArgoCD repository content')
-	}
-
-	@Test
 	void 'publish fails when workspace has not been prepared'() {
 		RepositoryProvisioning provisioning = createProvisioning()
 
 		assertThatThrownBy {
 			provisioning.publishClusterResourcesRepositoryChanges('argocd')
-		}.isInstanceOf(IllegalStateException)
-			.hasMessage('Repository workspace must be prepared before repository changes can be published.')
-	}
-
-	@Test
-	void 'ensureRemoteRepositoriesExist fails when workspace has not been prepared'() {
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		assertThatThrownBy {
-			provisioning.ensureRemoteRepositoriesExist()
-		}.isInstanceOf(IllegalStateException)
-			.hasMessage('Repository workspace must be prepared before repository changes can be published.')
-	}
-
-	@Test
-	void 'cloneRepositories fails when workspace has not been prepared'() {
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		assertThatThrownBy {
-			provisioning.cloneRepositories()
 		}.isInstanceOf(IllegalStateException)
 			.hasMessage('Repository workspace must be prepared before repository changes can be published.')
 	}
@@ -471,7 +353,6 @@ class RepositoryProvisioningTest {
 		doNothing().when(gitRepo).cloneRepo()
 		doNothing().when(gitRepo).initLocalRepoIfNeeded()
 		doNothing().when(gitRepo).checkoutMainFromRemoteIfLocalMainMissing()
-		doNothing().when(gitRepo).clearRepo()
 		doNothing().when(gitRepo).commitAndPush(any(String))
 
 		return gitRepo
