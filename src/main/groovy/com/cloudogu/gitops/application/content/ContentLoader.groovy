@@ -468,10 +468,6 @@ class ContentLoader extends Tool {
 			repoCoordinate.fullRepoName,
 			repoCoordinate.clonedContentRepo.absolutePath)
 
-		log.debug("ContentLoader source files for '{}': {}",
-			repoCoordinate.fullRepoName,
-			repoCoordinate.clonedContentRepo.listFiles()?.collect { it.name })
-
 		/*
 		 * Important:
 		 * Do not synchronize or reset the shared workspace here.
@@ -486,12 +482,6 @@ class ContentLoader extends Tool {
 		FileUtils.copyDirectory(repoCoordinate.clonedContentRepo,
 			new File(workspace.clusterResourcesRootDir()),
 			new FileSystemUtils.IgnoreDotGitFolderFilter())
-
-		log.debug('Cluster-resources workspace files after ContentLoader merge: {}',
-			new File(workspace.clusterResourcesRootDir()).listFiles()?.collect { it.name })
-
-		log.debug('Cluster-resources apps after ContentLoader merge: {}',
-			new File(workspace.clusterResourcesAppsDir()).listFiles()?.collect { it.name })
 
 		repositoryProvisioning.publishClusterResourcesRepositoryChanges('content-loader',
 			"Merge ContentLoader content into ${repoCoordinate.fullRepoName}")
@@ -533,14 +523,18 @@ class ContentLoader extends Tool {
 	private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
 		if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
 			if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
-				log.info('OverwriteMode ' + String.valueOf(OverwriteMode.RESET) + ' set for repo \'' + repoCoordinate.fullRepoName + '\': ' +
+				log.info('OverwriteMode ' + String.valueOf(OverwriteMode.RESET) +
+					' set for repo \'' +
+					repoCoordinate.fullRepoName +
+					'\': ' +
 					"Deleting existing files in repo and replacing them with new content.")
 				targetRepo.clearRepo()
 			} else {
 				log.debug('OverwriteMode ' + String.valueOf(OverwriteMode.UPGRADE) +
 					' set for repo \'' +
 					repoCoordinate.fullRepoName +
-					'\': ' + "Merging new content into existing repo. ")
+					'\': ' +
+					"Merging new content into existing repo. ")
 			}
 		}
 	}
@@ -631,7 +625,8 @@ class ContentLoader extends Tool {
 			log.warn('OverwriteMode ' + String.valueOf(OverwriteMode.INIT) +
 				' set for repo \'' +
 				repoCoordinate.fullRepoName +
-				'\' ' + "and repo already exists in target:  Not pushing content!" +
+				'\' ' +
+				"and repo already exists in target:  Not pushing content!" +
 				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}
