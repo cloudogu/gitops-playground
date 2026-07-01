@@ -69,14 +69,15 @@ class UserManager {
 		return result == "class hudson.security.GlobalMatrixAuthorizationStrategy" || result == "class hudson.security.ProjectMatrixAuthorizationStrategy"
 	}
 
-	boolean isUsingCasSecurityRealm() {
+	boolean isUsingSecurityRealmWithoutLocalUserCreation() {
 		def result = apiClient.runScript("print(Jenkins.getInstance().getSecurityRealm().class)")
 
 		if (!result.startsWith("class ")) {
 			throw new RuntimeException("Error when trying to determine security realm: $result")
 		}
 
-		return result == "class org.jenkinsci.plugins.cas.CasSecurityRealm"
+		return result in ["class org.jenkinsci.plugins.cas.CasSecurityRealm",
+		                  "class org.jenkinsci.plugins.oic.OicSecurityRealm",]
 	}
 
 	private String escapeString(String str) {

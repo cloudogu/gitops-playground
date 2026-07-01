@@ -65,6 +65,7 @@ interface ConfigConstants {
 	String JENKINS_PASSWORD_DESCRIPTION = 'Mandatory when jenkins-url is set'
 	String JENKINS_METRICS_USERNAME_DESCRIPTION = 'Mandatory when jenkins-url is set and monitoring enabled'
 	String JENKINS_METRICS_PASSWORD_DESCRIPTION = 'Mandatory when jenkins-url is set and monitoring enabled'
+	String JENKINS_IMAGE_DESCRIPTION = 'Sets image for Jenkins'
 	String MAVEN_CENTRAL_MIRROR_DESCRIPTION = 'URL for maven mirror, used by applications built in Jenkins'
 	String JENKINS_ADDITIONAL_ENVS_DESCRIPTION = 'Set additional environments to Jenkins'
 	String JENKINS_NAMESPACE = 'Optional defines the kubernetes namespace for Jenkins.'
@@ -174,4 +175,6 @@ interface ConfigConstants {
 	String HELM_CONFIG_VERSION_DESCRIPTION = 'The version of the Helm chart to be installed'
 	String HELM_CONFIG_IMAGE_DESCRIPTION = 'The image of the Helm chart to be installed'
 	String HELM_CONFIG_VALUES_DESCRIPTION = 'Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration'
+
+	String OIDC_DESCPRIPTION = 'OIDC Config for this tool. See docs for more infos'
 }

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -11,12 +12,14 @@ import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
-import groovy.util.logging.Slf4j
+
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
-import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
+import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
+
+import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
 @Singleton
@@ -24,7 +27,6 @@ import java.nio.file.Path
 class ArgoCD extends Tool {
 
 	private final String namespace
-	private final Config config
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
 	private final FileSystemUtils fileSystemUtils
@@ -36,15 +38,14 @@ class ArgoCD extends Tool {
 	private ArgoCDRepoSetup repoSetup
 	private ArgoCDRepoLayout clusterResourcesRepo
 
-	ArgoCD(
-		Config config,
+	ArgoCD(DeploymentContext context,
 		K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning
 	) {
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
@@ -61,6 +62,7 @@ class ArgoCD extends Tool {
 
 	@Override
 	void postConfigInit(Config configToSet) {
+		// Exit early if not in operator mode or if env list is empty
 		if (!configToSet.features.argocd.operator || !configToSet.features.argocd.env) {
 			log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")
 			return
@@ -81,10 +83,11 @@ class ArgoCD extends Tool {
 
 	@Override
 	void enable() {
+		this.repoSetup = ArgoCDRepoSetup.create(context, fileSystemUtils, repoProvider, gitHandler)
 		this.repositoryWorkspace = repositoryProvisioning.provideWorkspace()
 
 		this.repoSetup = ArgoCDRepoSetup.create(
-			config,
+			context,
 			fileSystemUtils,
 			gitHandler,
 			repositoryWorkspace
@@ -138,7 +141,8 @@ class ArgoCD extends Tool {
 			deployWithHelm()
 		}
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
+			//Bootstrapping dedicated instance
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), "tenant.yaml").toString())
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
 
@@ -150,15 +154,15 @@ class ArgoCD extends Tool {
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString())
 		}
 
-		k8sClient.delete(
-			'secret',
-			namespace,
-			new Tuple2('owner', 'helm'),
-			new Tuple2('name', 'argocd')
-		)
+		// Delete helm-argo secrets to decouple from helm.
+		// This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
+		// For development keeping it in helm makes it easier (e.g. for helm uninstall).
+		k8sClient.delete('secret', namespace,
+			new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
 	}
 
 	private void deployWithOperator() {
+		// Apply argocd yaml from operator folder
 		String argocdConfigPath = clusterResourcesRepo.operatorConfigFile()
 
 		if (this.config.features.argocd?.values) {
@@ -175,9 +179,15 @@ class ArgoCD extends Tool {
 
 		k8sClient.applyYaml(argocdConfigPath)
 
+		// ArgoCD is not installed until the ArgoCD-Operator did his job.
+		// This can take some time, so we wait for the status of the custom resource to become "Available"
 		k8sClient.waitForResourcePhase("argocd", "argocd", namespace, "Available")
 
 		log.debug("Setting new argocd admin password")
+		// Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo
+		// The Operator uses an extra secret to store the admin Password, which is not bcrypted
+		k8sClient.patch('secret', 'argocd-cluster', namespace,
+			[stringData: ['admin.password': password]])
 
 		k8sClient.patch(
 			'secret',
@@ -186,6 +196,8 @@ class ArgoCD extends Tool {
 			[stringData: ['admin.password': password]]
 		)
 
+		// In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
+		// but we want to set our own admin password so we set the password in both Secrets for consistency
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 
 		k8sClient.patch(
@@ -202,8 +214,11 @@ class ArgoCD extends Tool {
 	}
 
 	private void deployWithHelm() {
+		// Install umbrella chart from argocd/argocd
 		String umbrellaChartPath = clusterResourcesRepo.helmDir()
 
+		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
+		// See https://github.com/helm/helm/issues/8036#issuecomment-872502901
 		List helmDependencies = fileSystemUtils
 			.readYaml(Path.of(clusterResourcesRepo.chartYaml()))['dependencies']
 			.collect { it }
@@ -224,10 +239,12 @@ class ArgoCD extends Tool {
 		)
 	}
 
+	// The ArgoCD instance installed via an operator only manages its deployment namespace.
+	// To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
 	void updatingArgoCDManagedNamespaces() {
 		log.debug("Updating managed namespaces in ArgoCD configuration secret.")
 
-		def namespaceList = !config.multiTenant.useDedicatedInstance ?
+		def namespaceList = context.isSingleTenant() ?
 		                    config.application.namespaces.activeNamespaces :
 		                    config.application.namespaces.tenantNamespaces
 
@@ -238,12 +255,11 @@ class ArgoCD extends Tool {
 			[stringData: ['namespaces': namespaceList.join(',')]]
 		)
 
-		if (config.multiTenant.useDedicatedInstance) {
-			String base64Namespaces = k8sClient.getArgoCDNamespacesSecret(
-				'argocd-default-cluster-config',
-				config.multiTenant.centralArgocdNamespace
-			)
-
+		if (context.isMultiTenant()) {
+			// Append new namespaces to existing ones from the secret.
+			// `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
+			// This ensures all centrally managed namespaces are preserved.
+			String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace)
 			byte[] decodedBytes = Base64.decoder.decode(base64Namespaces)
 			String decoded = new String(decodedBytes, "UTF-8")
 
@@ -265,7 +281,8 @@ class ArgoCD extends Tool {
 	private void generateRBAC() {
 		log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
+			//Generating Tenant Namespace RBACs for Tenant Argocd
 			for (String ns : config.application.namespaces.tenantNamespaces) {
 				new RbacDefinition(Role.Variant.ARGOCD)
 					.withName("argocd")
@@ -284,6 +301,7 @@ class ArgoCD extends Tool {
 					.generate()
 			}
 
+			//Generating Central ArgoCD RBACs for managed namespaces
 			for (String ns : config.application.namespaces.activeNamespaces) {
 				log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
 
@@ -345,6 +363,7 @@ class ArgoCD extends Tool {
 	protected void createSCMCredentialsSecret() {
 		log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
 
+		// Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
 		createRepoCredentialsSecret(
 			'argocd-repo-creds-scm',
 			namespace,
@@ -353,7 +372,7 @@ class ArgoCD extends Tool {
 			gitHandler.tenant.credentials.password
 		)
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
 
 			createRepoCredentialsSecret(

@@ -37,6 +37,7 @@ jaxb:2.3.9-143.v5979df3304e6
 joda-time-api:2.14.1-187.vdf2def02b_8a_1
 jquery3-api:3.7.1-682.vfa_cdce169929
 json-api:20250517-173.v596efb_962a_31
+json-path-api:3.0.0-218.vcd4dd1355de2
 junit:1403.vd9d1413fd205
 kubernetes:4423.vb_59f230b_ce53
 kubernetes-client-api:7.3.1-256.v788a_0b_787114
@@ -83,3 +84,4 @@ workflow-multibranch:821.vc3b_4ea_780798
 workflow-scm-step:466.va_d69e602552b_
 workflow-step-api:724.v538c2362b_dfb_
 workflow-support:1015.v785e5a_b_b_8b_22
+oic-auth:4.690.v5821cf665e43

@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.tools
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -21,22 +21,22 @@ class Ingress extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/values.ftl.yaml"
 
-	String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
-	Config config
-	K8sClient k8sClient
+	String namespace
+	final K8sClient k8sClient
 
-	Ingress(Config config,
+	Ingress(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	}
 
 	@Override
@@ -47,6 +47,6 @@ class Ingress extends Tool implements ToolWithImage {
 	@Override
 	void enable() {
 		def helmConfig = config.features.ingress.helm
-		deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, config)
+		deployHelmChart('traefik', 'traefik', namespace, helmConfig, HELM_VALUES_PATH, context)
 	}
 }

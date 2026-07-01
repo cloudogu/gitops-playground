@@ -4,8 +4,9 @@ argo-cd:
   crds:
     install: false
 </#if>
-<#if config.application.netpols == true>
   global:
+    domain: ${argocd.host}
+<#if config.application.netpols == true>
     networkPolicy:
       create: true
 </#if>
@@ -71,6 +72,10 @@ argo-cd:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
       application.resourceTrackingMethod: annotation
+      <#if config.features.argocd.oidc?has_content>
+      oidc.config: |                                                                                                                                                    
+                   ${config.features.argocd.oidc?trim?replace("\n", "\n                   ")}
+      </#if>
 
   notifications:
     # secrets are created dynamically in groovy, so they are not stored in git

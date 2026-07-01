@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -656,7 +657,7 @@ matchExpressions:
 
 		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
-		return new Monitoring(configuration, new FileSystemUtils() {
+		return new Monitoring(new ContextBuilder(configuration).build(), new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)

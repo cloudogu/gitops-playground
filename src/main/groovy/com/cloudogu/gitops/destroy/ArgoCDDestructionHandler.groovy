@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -21,11 +22,11 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	private K8sClient k8sClient
 	private HelmClient helmClient
 	private GitRepoFactory repoProvider
-	private Config config
+	private DeploymentContext context
 	private FileSystemUtils fileSystemUtils
 	private GitHandler gitHandler
 
-	ArgoCDDestructionHandler(Config config,
+	ArgoCDDestructionHandler(DeploymentContext context,
 		K8sClient k8sClient,
 		HelmClient helmClient,
 		GitRepoFactory repoProvider,
@@ -34,7 +35,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.repoProvider = repoProvider
-		this.config = config
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
 	}
@@ -92,5 +93,9 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
 		helmClient.dependencyBuild(umbrellaChartPath)
 		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${argocdNamespace}"])
+	}
+
+	private Config getConfig() {
+		context.config
 	}
 }

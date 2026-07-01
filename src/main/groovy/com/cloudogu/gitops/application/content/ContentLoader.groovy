@@ -3,6 +3,7 @@ package com.cloudogu.gitops.application.content
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -41,7 +42,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Tool {
-	private Config config
 	private K8sClient k8sClient
 	private GitRepoFactory repoProvider
 	private Jenkins jenkins
@@ -57,7 +57,7 @@ class ContentLoader extends Tool {
 	@JsonIgnore
 	UsernamePasswordCredentialsProvider credentialsProvider
 
-	ContentLoader(Config config,
+	ContentLoader(DeploymentContext context,
 		K8sClient k8sClient,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
@@ -65,7 +65,7 @@ class ContentLoader extends Tool {
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		RepositoryProvisioning repositoryProvisioning) {
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
 		this.jenkins = jenkins
@@ -98,7 +98,7 @@ class ContentLoader extends Tool {
 
 	@Override
 	void preConfigInit(Config configToSet) {
-		config.content.repos.each { repo ->
+		configToSet.content.repos.each { repo ->
 
 			if (!repo.url) {
 				throw new RuntimeException('content.repos requires a url parameter.')
@@ -176,7 +176,7 @@ class ContentLoader extends Tool {
 				helmRelease.namespace as String,
 				helmConfig as Config.HelmConfigWithValues,
 				mergedValuesFilePath as String,
-				config as Config,
+				context,
 				false)
 		}
 	}

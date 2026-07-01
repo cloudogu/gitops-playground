@@ -104,7 +104,7 @@ class RetryInterceptorTest {
 			.whenScenarioStateIs("Started")
 			.willReturn(aResponse()
 				.withStatus(200)
-				.withFixedDelay(100)) // Delay longer than read timeout
+				.withFixedDelay(2000)) // Delay longer than read timeout
 			.willSetStateTo("After Timeout"))
 
 		wireMock.stubFor(get(urlEqualTo(path))

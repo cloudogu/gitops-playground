@@ -285,9 +285,7 @@ main() {
     fi
 
     echo "Cleaning up locks"
-    find "$REF_DIR" -regex ".*.lock" | while read -r filepath; do
-        rm -r "$filepath"
-    done
+    find "$REF_DIR" -type d -name "*.lock" -prune -exec rm -rf {} +
 
 }
 

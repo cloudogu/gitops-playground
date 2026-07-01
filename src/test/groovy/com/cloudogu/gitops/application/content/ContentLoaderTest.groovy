@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -1113,7 +1115,7 @@ class ContentLoaderTest {
 			FileSystemUtils fileSystemUtils,
 			Deployer deployer,
 			RepositoryProvisioning repositoryProvisioning) {
-			super(config,
+			super(new ContextBuilder(config).build(),
 				k8sClient,
 				repoProvider,
 				jenkins,
@@ -1129,14 +1131,14 @@ class ContentLoaderTest {
 			String namespace,
 			Config.HelmConfigWithValues helmConfig,
 			String helmValuesTemplatePath,
-			Config config,
+			DeploymentContext context,
 			boolean initByHelm) {
 			deployCalls << new DeployCall(featureName: featureName,
 				releaseName: releaseName,
 				namespace: namespace,
 				helmConfig: helmConfig,
 				valuesPath: helmValuesTemplatePath,
-				config: config,
+				config: context.config,
 				initByHelm: initByHelm)
 		}
 

@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -38,11 +39,11 @@ import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDTest {
-
 	Map buildImages = [kubectl    : 'kubectl-value',
 	                   helm       : 'helm-value',
 	                   kubeval    : 'kubeval-value',
@@ -135,6 +136,7 @@ class ArgoCDTest {
 		k8sClient.SLEEPTIME = 1
 		k8sClient.DEFAULT_RETRIES = 1
 
+		// no need to wait in tests, we stub!
 		doNothing().when(k8sClient).waitForResourcePhase(any(String),
 			any(String),
 			any(String),
@@ -143,10 +145,10 @@ class ArgoCDTest {
 
 	@Test
 	void 'Installs argoCD'() {
+		// Simulate argocd Namespace does not exist
+
 		def argocd = createArgoCD()
-
 		argocd.install()
-
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
@@ -154,6 +156,7 @@ class ArgoCDTest {
 
 		assertThat(client.namespaces().withName('argocd').get()).isNotNull()
 
+		// check values.yaml
 		List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepoLayout.rootDir()),
 			clusterResourcesRepo.gitProvider.url)
 		assertThat(filesWithInternalSCMM).isNotEmpty()
@@ -172,6 +175,7 @@ class ArgoCDTest {
 		assertThat(repoCredentialsSecret).isNotNull()
 		assertThat(repoCredentialsSecret.metadata.labels['argocd.argoproj.io/secret-type']).isEqualTo('repo-creds')
 
+		// Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
 		assertThat(helmCommands.actualCommands[0].trim())
 			.isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
 		assertThat(helmCommands.actualCommands[1].trim())
@@ -198,16 +202,20 @@ class ArgoCDTest {
 			.list()
 			.items).isEmpty()
 
+		// Operator disabled -> operator Ordner sollte fehlen
 		assertThat(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toFile()).doesNotExist()
 		assertThat(Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()).doesNotExist()
 
+		// Projects (jetzt unter argocd/projects)
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), 'cluster-resources.yaml'))
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://prometheus-community.github.io/helm-charts')
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
+		// Applications (jetzt unter argocd/applications)
 		def argocdYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.applicationsDir(), 'argocd.yaml'))
 		assertThat(argocdYaml['spec']['source']['directory']).isNull()
 
+		// Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
 		assertThat(argocdYaml['spec']['source']['path'] as String)
 			.isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
 	}
@@ -514,6 +522,23 @@ class ArgoCDTest {
 	}
 
 	@Test
+	void 'SecurityContext null in Openshift'() {
+		config.application.openshift = true
+		createArgoCD().install()
+
+		for (def petclinicRepo : petClinicRepos) {
+			if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
+				assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsUser: null')
+				assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsGroup: null')
+			}
+			if (petclinicRepo.repoTarget.contains('argocd/petclinic-helm')) {
+				assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsUser: null')
+				assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
+			}
+		}
+	}
+
+	@Test
 	void 'Skips CRDs for argo cd'() {
 		config.application.skipCrds = true
 
@@ -589,6 +614,7 @@ class ArgoCDTest {
 				.isEqualTo("${expectedPrefix}argocd".toString())
 		}
 
+		//checks all other folder for prefixed yaml files except "apps/argocd"
 		assertAllYamlFiles(new File(repoLayout.rootDir()), 'apps', 9,
 			['/apps/argocd/']) { Path it ->
 
@@ -938,6 +964,7 @@ class ArgoCDTest {
 	void 'Correctly sets resourceInclusions from config'() {
 		def argocd = setupOperatorTest()
 
+		// Set the config to a custom resourceInclusionsCluster value
 		config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
 
 		argocd.install()
@@ -948,9 +975,11 @@ class ArgoCDTest {
 
 		def expectedClusterUrl = 'https://192.168.0.1:6443'
 
+		// Retrieve and parse the resourceInclusions string into structured YAML
 		def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
 		def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
 
+		// Iterate over the parsed resource inclusions and check the 'clusters' field
 		parsedResourceInclusions.each { resource ->
 			assertThat(resource as Map).containsKey('clusters')
 			assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrl)
@@ -961,6 +990,7 @@ class ArgoCDTest {
 	void 'resourceInclusionsCluster from config file trumps ENVs'() {
 		def argocd = setupOperatorTest()
 
+		// Set the config to a custom internalKubernetesApiUrl value
 		config.application.internalKubernetesApiUrl = 'https://192.168.0.1:6443'
 
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '100.125.0.1')
@@ -975,9 +1005,11 @@ class ArgoCDTest {
 		def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
 		def expectedClusterUrlFromConfig = 'https://192.168.0.1:6443'
 
+		// Retrieve and parse the resourceInclusions string into structured YAML
 		def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
 		def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
 
+		// Ensure that the clusters field uses the config value, not the env variables
 		parsedResourceInclusions.each { resource ->
 			assertThat(resource as Map).containsKey('clusters')
 			assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrlFromConfig)
@@ -1001,6 +1033,7 @@ class ArgoCDTest {
 		def expectedEnv = [[name: 'ENV_VAR_1', value: 'value1'],
 		                   [name: 'ENV_VAR_2', value: 'value2']]
 
+		// Check that the env variables are added to the relevant components
 		assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
 		assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
 		assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
@@ -1012,6 +1045,7 @@ class ArgoCDTest {
 	void 'Does not set env variables when none are provided'() {
 		def argocd = setupOperatorTest()
 
+		// Ensure env is an empty list (default)
 		config.features.argocd.env = []
 
 		argocd.install()
@@ -1020,6 +1054,7 @@ class ArgoCDTest {
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
 		def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
 
+		// Check that the env variables are not present
 		assertThat(yaml['spec']['applicationSet'] as Map).doesNotContainKey('env')
 		assertThat(yaml['spec']['notifications'] as Map).doesNotContainKey('env')
 		assertThat(yaml['spec']['controller'] as Map).doesNotContainKey('env')
@@ -1042,6 +1077,7 @@ class ArgoCDTest {
 
 		def expectedEnv = [[name: 'ENV_VAR_SINGLE', value: 'singleValue']]
 
+		// Check that the single env variable is added to the relevant components
 		assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
 		assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
 		assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
@@ -1345,6 +1381,8 @@ class ArgoCDTest {
 		argocd.install()
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
+		print config.toMap()
+
 		File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()
 		File roleFile = new File(rbacDir, 'role-argocd-testprefix-monitoring.yaml')
 
@@ -1530,7 +1568,6 @@ class ArgoCDTest {
 	}
 
 	static class ArgoCDForTest extends ArgoCD {
-
 		final Config cfg
 		final GitProvider tenantProvider
 		final GitProvider centralProvider
@@ -1604,7 +1641,7 @@ class ArgoCDTest {
 			GitProvider tenantProvider,
 			GitProvider centralProvider,
 			ArgoCDTestContext testContext) {
-			super(cfg,
+			super(new ContextBuilder(cfg).build(),
 				k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),

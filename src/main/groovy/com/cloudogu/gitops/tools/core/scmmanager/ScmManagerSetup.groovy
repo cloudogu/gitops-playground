@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -13,6 +14,9 @@ import com.cloudogu.gitops.utils.TemplatingEngine
 import java.nio.file.Path
 import groovy.util.logging.Slf4j
 
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
+
 @Slf4j
 class ScmManagerSetup {
 
@@ -20,16 +24,20 @@ class ScmManagerSetup {
 
 	private final ScmManagerProvider scmManager
 	private final Deployer deployer
-	private final Config config
+	private final DeploymentContext context
 
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
-		Config config) {
+		DeploymentContext context) {
 		this.scmManager = scmManager
 		this.deployer = deployer
-		this.config = config
+		this.context = context
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	void setupHelm() {
@@ -42,8 +50,7 @@ class ScmManagerSetup {
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
-			config.multiTenant.useDedicatedInstance
-		)
+			context.isMultiTenant())
 
 		/*
 		 * Important:
@@ -75,8 +82,7 @@ class ScmManagerSetup {
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
-			config.multiTenant.useDedicatedInstance
-		)
+			context.isMultiTenant())
 
 		/*
 		 * This writes the SCM-Manager ArgoCD Application through ArgoCdApplicationStrategy.
@@ -103,15 +109,15 @@ class ScmManagerSetup {
 
 		log.info("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
 			releaseName,
-			this.scmManager.scmmConfig.namespace
-		)
+			this.scmManager.scmmConfig.namespace)
 
 		Map<String, Object> templateVars = [config     : this.scmManager.config,
 		                                    host       : this.scmManager.scmmConfig.ingress,
 		                                    username   : this.scmManager.scmmConfig.credentials.username,
 		                                    password   : this.scmManager.scmmConfig.credentials.password,
 		                                    helm       : this.scmManager.scmmConfig.helm,
-		                                    releaseName: releaseName]
+		                                    releaseName: releaseName,
+		                                    statics    : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()]
 
 		Map templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars)
 		Map values = this.scmManager.scmmConfig.helm.values as Map ?: [:]

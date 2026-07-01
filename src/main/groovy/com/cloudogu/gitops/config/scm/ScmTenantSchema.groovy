@@ -85,8 +85,8 @@ class ScmTenantSchema {
 		static final String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
 		static final String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
 		static final String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
-		static final String SCMM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
 		static final String SCMM_NAMESPACE_DESCRIPTION = 'Namespace where SCM-Manager should run'
+		static final String SCMM_IMAGE = 'Sets image for SCM-Manager'
 
 		Boolean internal = true
 
@@ -112,6 +112,10 @@ class ScmTenantSchema {
 			repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
 			version: '3.11.6',
 			values: [:])
+
+		@Option(names = ['--scmm-image'], description = SCMM_IMAGE)
+		@JsonPropertyDescription(SCMM_IMAGE)
+		String scmmImage = ''
 
 		/* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
 		   the SCMM URL used by jenkins.

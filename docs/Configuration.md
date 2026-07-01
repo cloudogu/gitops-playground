@@ -1,6 +1,7 @@
 # Overview of all CLI and config options
 
-All options can be set via a [config file](./configuration.schema.json). Most options are also available as CLI parameters.
+All options can be set via a [config file](./configuration.schema.json). Most options are also available as CLI
+parameters.
 
 ## Table of Contents
 
@@ -50,10 +51,12 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--jenkins-skip-plugins`     | `jenkins.skipPlugins`        | Boolean | `false`                     | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.                          |
 | `--jenkins-url`              | `jenkins.url`                | String  | ``                          | The url of your external jenkins                                                                                                                                                                                                                                                           |
 | `--jenkins-username`         | `jenkins.username`           | String  | `admin`                     | Mandatory when jenkins-url is set                                                                                                                                                                                                                                                          |
-| `--jenkins-password`         | `jenkins.password`           | String  | `rY4jL2niDLKN`              | Mandatory when jenkins-url is set                                                                                                                                                                                                                                                          |
+| `--jenkins-password`         | `jenkins.password`           | String  | `xHX6SPqtRtpo`              | Mandatory when jenkins-url is set                                                                                                                                                                                                                                                          |
 | `--jenkins-metrics-username` | `jenkins.metricsUsername`    | String  | `metrics`                   | Mandatory when jenkins-url is set and monitoring enabled                                                                                                                                                                                                                                   |
 | `--jenkins-metrics-password` | `jenkins.metricsPassword`    | String  | `metrics`                   | Mandatory when jenkins-url is set and monitoring enabled                                                                                                                                                                                                                                   |
+| `--jenkins-image` | `jenkins.jenkinsImage` | String | `` | Sets image for Jenkins |
 | `--maven-central-mirror`     | `jenkins.mavenCentralMirror` | String  | ``                          | URL for maven mirror, used by applications built in Jenkins                                                                                                                                                                                                                                |
+| -                            | `jenkins.oidc`               | String  | ``                          | OIDC Config for this tool. See docs for more infos                                                                                                                                                                                                                                         |
 | `--jenkins-additional-envs`  | `jenkins.additionalEnvs`     | Map     | `[:]`                       | Set additional environments to Jenkins                                                                                                                                                                                                                                                     |
 | -                            | `jenkins.helm.values`        | Map     | `[:]`                       | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration                                                                                                                                                                     |
 | -                            | `jenkins.helm.chart`         | String  | `jenkins`                   | Name of the Helm chart                                                                                                                                                                                                                                                                     |
@@ -63,41 +66,42 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 ## Multi Tenant
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `--central-gitlab-url` | `multiTenant.gitlab.url` | String | `-` | URL for external Gitlab |
-| `--central-gitlab-username` | `multiTenant.gitlab.username` | String | `-` | GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication |
-| `--central-gitlab-token` | `multiTenant.gitlab.password` | String | `-` | Password for SCM Manager authentication |
-| `--central-gitlab-group-id` | `multiTenant.gitlab.parentGroupId` | String | `-` | Main Group for Gitlab where the GOP creates it's groups/repos |
-| `--central-scmm-internal` | `multiTenant.scmManager.internal` | Boolean | `-` | SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access |
-| `--central-scmm-url` | `multiTenant.scmManager.url` | String | `-` | URL for the centralized Management Repo |
-| `--central-scmm-username` | `multiTenant.scmManager.username` | String | `-` | CENTRAL SCMM username |
-| `--central-scmm-password` | `multiTenant.scmManager.password` | String | `-` | CENTRAL SCMM password |
-| `--central-scmm-namespace` | `multiTenant.scmManager.namespace` | String | `-` | Namespace where to find the Central SCMM |
-| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | String | `argocd` | Namespace for the centralized Argocd |
-| `--dedicated-instance` | `multiTenant.useDedicatedInstance` | Boolean | `false` | Toggles the Dedicated Instances Mode. See docs for more info |
+| CLI                          | Config key                           | Type    | Default  | Description                                                                                            |
+|:-----------------------------|:-------------------------------------|:--------|:---------|:-------------------------------------------------------------------------------------------------------|
+| `--central-gitlab-url`       | `multiTenant.gitlab.url`             | String  | `-`      | URL for external Gitlab                                                                                |
+| `--central-gitlab-username`  | `multiTenant.gitlab.username`        | String  | `-`      | GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication |
+| `--central-gitlab-token`     | `multiTenant.gitlab.password`        | String  | `-`      | Password for SCM Manager authentication                                                                |
+| `--central-gitlab-group-id`  | `multiTenant.gitlab.parentGroupId`   | String  | `-`      | Main Group for Gitlab where the GOP creates it's groups/repos                                          |
+| `--central-scmm-internal`    | `multiTenant.scmManager.internal`    | Boolean | `-`      | SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access |
+| `--central-scmm-url`         | `multiTenant.scmManager.url`         | String  | `-`      | URL for the centralized Management Repo                                                                |
+| `--central-scmm-username`    | `multiTenant.scmManager.username`    | String  | `-`      | CENTRAL SCMM username                                                                                  |
+| `--central-scmm-password`    | `multiTenant.scmManager.password`    | String  | `-`      | CENTRAL SCMM password                                                                                  |
+| `--central-scmm-namespace`   | `multiTenant.scmManager.namespace`   | String  | `-`      | Namespace where to find the Central SCMM                                                               |
+| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | String  | `argocd` | Namespace for the centralized Argocd                                                                   |
+| `--dedicated-instance`       | `multiTenant.useDedicatedInstance`   | Boolean | `false`  | Toggles the Dedicated Instances Mode. See docs for more info                                           |
 
 ## Scm
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| - | `scm.gitlab.internal` | Boolean | `-` | True if Gitlab is running in the same K8s cluster. For now we only support access by external URL |
-| `--gitlab-url` | `scm.gitlab.url` | String | `-` | Base URL for the Gitlab instance |
-| `--gitlab-username` | `scm.gitlab.username` | String | `-` | Defaults to: oauth2.0 when PAT token is given. |
-| `--gitlab-token` | `scm.gitlab.password` | String | `-` | PAT Token for the account. Needs read/write repo permissions. See docs for mor information |
-| `--gitlab-group-id` | `scm.gitlab.parentGroupId` | String | `-` | Number for the Gitlab Group where the repos and subgroups should be created |
-| - | `scm.gitlab.gitOpsUsername` | String | `-` | Username for the Gitops User |
-| `--scmm-url` | `scm.scmManager.url` | String | `-` | The host of your external scm-manager |
-| `--scmm-namespace` | `scm.scmManager.namespace` | String | `-` | Namespace where SCM-Manager should run |
-| `--scmm-username` | `scm.scmManager.username` | String | `-` | Mandatory when scmm-url is set |
-| `--scmm-password` | `scm.scmManager.password` | String | `-` | Mandatory when scmm-url is set |
-| - | `scm.scmManager.helm.values` | Map | `-` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-| - | `scm.scmManager.helm.chart` | String | `-` | Name of the Helm chart |
-| - | `scm.scmManager.helm.repoURL` | String | `-` | Repository url from which the Helm chart should be obtained |
-| - | `scm.scmManager.helm.version` | String | `-` | The version of the Helm chart to be installed |
-| `--scmm-skip-restart` | `scm.scmManager.skipRestart` | Boolean | `-` | Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.' |
-| `--scmm-skip-plugins` | `scm.scmManager.skipPlugins` | Boolean | `-` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| - | `scm.scmManager.gitOpsUsername` | String | `-` | Username for the Gitops User |
+| CLI                   | Config key                      | Type    | Default | Description                                                                                                                                                                                                                                                                                     |
+|:----------------------|:--------------------------------|:--------|:--------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -                     | `scm.gitlab.internal`           | Boolean | `-`     | True if Gitlab is running in the same K8s cluster. For now we only support access by external URL                                                                                                                                                                                               |
+| `--gitlab-url`        | `scm.gitlab.url`                | String  | `-`     | Base URL for the Gitlab instance                                                                                                                                                                                                                                                                |
+| `--gitlab-username`   | `scm.gitlab.username`           | String  | `-`     | Defaults to: oauth2.0 when PAT token is given.                                                                                                                                                                                                                                                  |
+| `--gitlab-token`      | `scm.gitlab.password`           | String  | `-`     | PAT Token for the account. Needs read/write repo permissions. See docs for mor information                                                                                                                                                                                                      |
+| `--gitlab-group-id`   | `scm.gitlab.parentGroupId`      | String  | `-`     | Number for the Gitlab Group where the repos and subgroups should be created                                                                                                                                                                                                                     |
+| -                     | `scm.gitlab.gitOpsUsername`     | String  | `-`     | Username for the Gitops User                                                                                                                                                                                                                                                                    |
+| `--scmm-url`          | `scm.scmManager.url`            | String  | `-`     | The host of your external scm-manager                                                                                                                                                                                                                                                           |
+| `--scmm-namespace`    | `scm.scmManager.namespace`      | String  | `-`     | Namespace where SCM-Manager should run                                                                                                                                                                                                                                                          |
+| `--scmm-username`     | `scm.scmManager.username`       | String  | `-`     | Mandatory when scmm-url is set                                                                                                                                                                                                                                                                  |
+| `--scmm-password`     | `scm.scmManager.password`       | String  | `-`     | Mandatory when scmm-url is set                                                                                                                                                                                                                                                                  |
+| -                     | `scm.scmManager.helm.values`    | Map     | `-`     | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration                                                                                                                                                                          |
+| -                     | `scm.scmManager.helm.chart`     | String  | `-`     | Name of the Helm chart                                                                                                                                                                                                                                                                          |
+| -                     | `scm.scmManager.helm.repoURL`   | String  | `-`     | Repository url from which the Helm chart should be obtained                                                                                                                                                                                                                                     |
+| -                     | `scm.scmManager.helm.version`   | String  | `-`     | The version of the Helm chart to be installed                                                                                                                                                                                                                                                   |
+| `--scmm-image` | `scm.scmManager.scmmImage` | String | `-` | Sets image for SCM-Manager |
+| `--scmm-skip-restart` | `scm.scmManager.skipRestart`    | Boolean | `-`     | Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.' |
+| `--scmm-skip-plugins` | `scm.scmManager.skipPlugins`    | Boolean | `-`     | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.                               |
+| -                     | `scm.scmManager.gitOpsUsername` | String  | `-`     | Username for the Gitops User                                                                                                                                                                                                                                                                    |
 
 ## Application
 
@@ -113,7 +117,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--insecure`             | `application.insecure`             | Boolean            | `false`              | Sets insecure-mode in cURL which skips cert validation                                                                                                                  |
 | `--openshift`            | `application.openshift`            | Boolean            | `false`              | When set, openshift specific resources and configurations are applied                                                                                                   |
 | `--username`             | `application.username`             | String             | `admin`              | Set initial admin username                                                                                                                                              |
-| `--password`             | `application.password`             | String             | `rY4jL2niDLKN`       | Set initial admin passwords                                                                                                                                             |
+| `--password`             | `application.password`             | String             | `xHX6SPqtRtpo`       | Set initial admin passwords                                                                                                                                             |
 | `-y`, `--yes`            | `application.yes`                  | Boolean            | `false`              | Skip confirmation                                                                                                                                                       |
 | `--name-prefix`          | `application.namePrefix`           | String             | ``                   | Set name-prefix for repos, jobs, namespaces                                                                                                                             |
 | `--destroy`              | `application.destroy`              | Boolean            | `false`              | Unroll playground                                                                                                                                                       |
@@ -133,14 +137,14 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 
 ## Content
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| - | `content.namespaces` | List&lt;String&gt; | `[]` | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
-| - | `content.repos` | List&lt;ContentRepositorySchema&gt; | `[]` | ContentLoader repos to push into target environment |
-| - | `content.variables` | Map | `[:]` | Additional variables to use in custom templates. |
-| - | `content.helmReleases` | List&lt;HelmReleaseSchema&gt; | `[]` | - |
-| `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
-| - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[]` | Whitelist for Statics freemarker is allowing in user templates |
+| CLI                   | Config key                        | Type                                | Default | Description                                                                                                                                                                                                  |
+|:----------------------|:----------------------------------|:------------------------------------|:--------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -                     | `content.namespaces`              | List&lt;String&gt;                  | `[]`    | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
+| -                     | `content.repos`                   | List&lt;ContentRepositorySchema&gt; | `[]`    | ContentLoader repos to push into target environment                                                                                                                                                          |
+| -                     | `content.variables`               | Map                                 | `[:]`   | Additional variables to use in custom templates.                                                                                                                                                             |
+| -                     | `content.helmReleases`            | List&lt;HelmReleaseSchema&gt;       | `[]`    | -                                                                                                                                                                                                            |
+| `--content-whitelist` | `content.useWhitelist`            | Boolean                             | `false` | Enables the whitelist for statics in content templating                                                                                                                                                      |
+| -                     | `content.allowedStaticsWhitelist` | Set&lt;String&gt;                   | `[]`    | Whitelist for Statics freemarker is allowing in user templates                                                                                                                                               |
 
 ## Tools
 
@@ -148,27 +152,28 @@ Configuration of optional tools supported by gitops-playground.
 
 ### Tool: Argocd
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `--argocd` | `features.argocd.active` | Boolean | `false` | Install ArgoCD |
-| `--argocd-operator` | `features.argocd.operator` | Boolean | `false` | Install ArgoCD via an already running ArgoCD Operator |
-| `--argocd-url` | `features.argocd.url` | String | `` | The URL where argocd is accessible. It has to be the full URL with http:// or https:// |
-| - | `features.argocd.env` | List&lt;java.util.Map<java.lang.String, java.lang.String>&gt; | `-` | Pass a list of env vars to Argo CD components. Currently only works with operator |
-| `--argocd-email-from` | `features.argocd.emailFrom` | String | `argocd@example.org` | Notifications, define Argo CD sender email address |
-| `--argocd-email-to-user` | `features.argocd.emailToUser` | String | `app-team@example.org` | Notifications, define Argo CD user / app-team recipient email address |
-| `--argocd-email-to-admin` | `features.argocd.emailToAdmin` | String | `infra@example.org` | Notifications, define Argo CD admin recipient email address |
-| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | String | `` | Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443 |
-| `--argocd-namespace` | `features.argocd.namespace` | String | `argocd` | Defines the kubernetes namespace for ArgoCD |
-| - | `features.argocd.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI                                    | Config key                                  | Type                                                          | Default                | Description                                                                                                                                                                                                                                                             |
+|:---------------------------------------|:--------------------------------------------|:--------------------------------------------------------------|:-----------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--argocd`                             | `features.argocd.active`                    | Boolean                                                       | `false`                | Install ArgoCD                                                                                                                                                                                                                                                          |
+| `--argocd-operator`                    | `features.argocd.operator`                  | Boolean                                                       | `false`                | Install ArgoCD via an already running ArgoCD Operator                                                                                                                                                                                                                   |
+| `--argocd-url`                         | `features.argocd.url`                       | String                                                        | ``                     | The URL where argocd is accessible. It has to be the full URL with http:// or https://                                                                                                                                                                                  |
+| -                                      | `features.argocd.env`                       | List&lt;java.util.Map<java.lang.String, java.lang.String>&gt; | `-`                    | Pass a list of env vars to Argo CD components. Currently only works with operator                                                                                                                                                                                       |
+| `--argocd-email-from`                  | `features.argocd.emailFrom`                 | String                                                        | `argocd@example.org`   | Notifications, define Argo CD sender email address                                                                                                                                                                                                                      |
+| `--argocd-email-to-user`               | `features.argocd.emailToUser`               | String                                                        | `app-team@example.org` | Notifications, define Argo CD user / app-team recipient email address                                                                                                                                                                                                   |
+| `--argocd-email-to-admin`              | `features.argocd.emailToAdmin`              | String                                                        | `infra@example.org`    | Notifications, define Argo CD admin recipient email address                                                                                                                                                                                                             |
+| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | String                                                        | ``                     | Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443 |
+| `--argocd-namespace`                   | `features.argocd.namespace`                 | String                                                        | `argocd`               | Defines the kubernetes namespace for ArgoCD                                                                                                                                                                                                                             |
+| -                                      | `features.argocd.values`                    | Map                                                           | `[:]`                  | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration                                                                                                                                                  |
+| -                                      | `features.argocd.oidc`                      | String                                                        | ``                     | OIDC Config for this tool. See docs for more infos                                                                                                                                                                                                                      |
 
 ### Tool: Mail
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `--smtp-address` | `features.mail.smtpAddress` | String | `` | Sets smtp port of external Mailserver |
-| `--smtp-port` | `features.mail.smtpPort` | Integer | `-` | Sets smtp port of external Mailserver |
-| `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
-| `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
+| CLI               | Config key                   | Type    | Default | Description                                |
+|:------------------|:-----------------------------|:--------|:--------|:-------------------------------------------|
+| `--smtp-address`  | `features.mail.smtpAddress`  | String  | ``      | Sets smtp port of external Mailserver      |
+| `--smtp-port`     | `features.mail.smtpPort`     | Integer | `-`     | Sets smtp port of external Mailserver      |
+| `--smtp-user`     | `features.mail.smtpUser`     | String  | ``      | Sets smtp username for external Mailserver |
+| `--smtp-password` | `features.mail.smtpPassword` | String  | ``      | Sets smtp password of external Mailserver  |
 
 ### Tool: Monitoring
 
@@ -178,6 +183,7 @@ Configuration of optional tools supported by gitops-playground.
 | `--grafana-url`                      | `features.monitoring.grafanaUrl`                         | String  | ``                                                   | Sets url for grafana                                                                                                    |
 | `--grafana-email-from`               | `features.monitoring.grafanaEmailFrom`                   | String  | `grafana@example.org`                                | Notifications, define grafana alerts sender email address                                                               |
 | `--grafana-email-to`                 | `features.monitoring.grafanaEmailTo`                     | String  | `infra@example.org`                                  | Notifications, define grafana alerts recipient email address                                                            |
+| -                                    | `features.monitoring.oidc`                               | String  | ``                                                   | OIDC Config for this tool. See docs for more infos                                                                      |
 | `--grafana-image`                    | `features.monitoring.helm.grafanaImage`                  | String  | ``                                                   | Sets image for grafana                                                                                                  |
 | `--grafana-sidecar-image`            | `features.monitoring.helm.grafanaSidecarImage`           | String  | ``                                                   | Sets image for grafana's sidecar                                                                                        |
 | `--prometheus-image`                 | `features.monitoring.helm.prometheusImage`               | String  | ``                                                   | Sets image for prometheus                                                                                               |
@@ -201,6 +207,9 @@ Configuration of optional tools supported by gitops-playground.
 | -                                         | `features.secrets.externalSecrets.helm.repoURL`             | String | `https://charts.external-secrets.io`  | Repository url from which the Helm chart should be obtained                                                            |
 | -                                         | `features.secrets.externalSecrets.helm.version`             | String | `0.9.16`                              | The version of the Helm chart to be installed                                                                          |
 | `--vault-url`                             | `features.secrets.vault.url`                                | String | ``                                    | Sets url for vault ui                                                                                                  |
+| -                                         | `features.secrets.vault.oidc.clientId`                      | String | `-`                                   | OIDC client ID                                                                                                         |
+| -                                         | `features.secrets.vault.oidc.clientSecret`                  | String | `-`                                   | OIDC client secret                                                                                                     |
+| -                                         | `features.secrets.vault.oidc.discoveryUrl`                  | String | `-`                                   | OIDC discovery URL                                                                                                     |
 | `--vault-image`                           | `features.secrets.vault.helm.image`                         | String | ``                                    | Sets image for vault                                                                                                   |
 | -                                         | `features.secrets.vault.helm.values`                        | Map    | `[:]`                                 | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | -                                         | `features.secrets.vault.helm.chart`                         | String | `vault`                               | Name of the Helm chart                                                                                                 |
@@ -236,4 +245,3 @@ Configuration of optional tools supported by gitops-playground.
 | -                                        | `features.certManager.helm.chart`                | String  | `cert-manager`               | Name of the Helm chart                                                                                                 |
 | -                                        | `features.certManager.helm.repoURL`              | String  | `https://charts.jetstack.io` | Repository url from which the Helm chart should be obtained                                                            |
 | -                                        | `features.certManager.helm.version`              | String  | `1.19.4`                     | The version of the Helm chart to be installed                                                                          |
-

@@ -43,7 +43,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		application.setNamespaceListToConfig(config)
+		application.setNamespaceListToConfig()
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}
 
@@ -68,7 +68,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		application.setNamespaceListToConfig(config)
+		application.setNamespaceListToConfig()
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}
 
@@ -79,7 +79,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		application.setNamespaceListToConfig(config)
+		application.setNamespaceListToConfig()
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsAll(["example-apps-staging",
 		                                                                             "example-apps-production",])
 	}
@@ -89,7 +89,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		application.setNamespaceListToConfig(config)
+		application.setNamespaceListToConfig()
 		// No exception == happy
 	}
 
@@ -116,7 +116,7 @@ class ApplicationTest {
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
 			.getBean(Application)
-		application.setNamespaceListToConfig(config)
+		application.setNamespaceListToConfig()
 		assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
 	}
 }

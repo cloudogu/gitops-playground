@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -66,6 +67,7 @@ class JenkinsTest {
 		config.jenkins.helm.version = '4.8.1'
 		config.jenkins.username = 'jenusr'
 		config.jenkins.password = 'jenpw'
+		config.jenkins.jenkinsImage = 'localhost:5000/proxy/jenkins-helm:custom'
 		config.jenkins.internalBashImage = 'bash:42'
 		config.jenkins.internalDockerClientVersion = '23'
 
@@ -88,7 +90,10 @@ me:x:1000:''')
 
 		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 
-		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+		assertThat(parseActualYaml()['controller']['image']['registry']).isEqualTo('localhost:5000')
+		assertThat(parseActualYaml()['controller']['image']['repository']).isEqualTo('proxy/jenkins-helm')
+		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('custom')
+		assertThat(parseActualYaml()['controller']['installPlugins']).isEqualTo(false)
 
 		assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
 		assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
@@ -122,12 +127,31 @@ me:x:1000:''')
 	}
 
 	@Test
+	void 'Installs OIDC plugin before Jenkins startup when OIDC is configured'() {
+		config.jenkins.oidc = '''
+jenkins:
+  securityRealm:
+    oic:
+      clientId: "jenkins"
+'''
+
+		createJenkins().install()
+
+		List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
+		assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly('oic-auth',
+			'json-path-api')
+	}
+
+	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
+		config.registry.createImagePullSecrets = true
 		createJenkins().install()
 
 		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
 			anyString(), anyString(), any(Path), any(), anyBoolean())
+		verify(k8sClient, never()).createNamespace(any())
+		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
 
 		assertThat(temporaryYamlFile).isNull()
 	}
@@ -291,9 +315,9 @@ me:x:1000:''')
 	}
 
 	@Test
-	void 'Does not create create job credentials when argo cd is deactivated'() {
+	void 'Does not create metrics user if security realm does not support local user creation'() {
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-		when(userManager.isUsingCasSecurityRealm()).thenReturn(true)
+		when(userManager.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
 
 		createJenkins().install()
 
@@ -357,7 +381,7 @@ me:x:1000:''')
 		}
 		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
-		new Jenkins(config, commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		new Jenkins(new ContextBuilder(config).build(), commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
 	}
 
 	private Map parseActualYaml() {

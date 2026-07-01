@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -20,7 +21,6 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 class ArgoCdApplicationStrategyTest {
-
 	private File localTempDir
 	private RepositoryProvisioning repositoryProvisioning
 
@@ -283,7 +283,7 @@ param1: value1
 		repositoryProvisioning = mock(RepositoryProvisioning)
 		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
-		return new ArgoCdApplicationStrategy(config,
+		return new ArgoCdApplicationStrategy(new ContextBuilder(config).build(),
 			new FileSystemUtils(),
 			repositoryProvisioning)
 	}

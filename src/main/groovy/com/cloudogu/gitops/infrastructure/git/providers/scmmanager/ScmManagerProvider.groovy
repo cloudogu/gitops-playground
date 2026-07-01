@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig
@@ -25,23 +26,27 @@ class ScmManagerProvider implements GitProvider {
 
 	NetworkingUtils networkingUtils
 	K8sClient k8sClient
-	Config config
+	DeploymentContext context
 
-	ScmManagerProvider(Config config,
+	ScmManagerProvider(DeploymentContext context,
 		ScmManagerConfig scmmConfig,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
 		String servicePrefix = '') {
 		this.scmmConfig = scmmConfig
-		this.config = config
+		this.context = context
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
 
-		this.urls = new ScmManagerUrlResolver(this.config,
+		this.urls = new ScmManagerUrlResolver(this.context,
 			this.scmmConfig,
 			this.k8sClient,
 			this.networkingUtils,
 			servicePrefix)
+	}
+
+	Config getConfig() {
+		return context.config
 	}
 
 	ScmManagerApiClient getApiClient() {

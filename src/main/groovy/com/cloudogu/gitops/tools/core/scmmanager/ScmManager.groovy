@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
@@ -7,39 +8,43 @@ import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
-import groovy.util.logging.Slf4j
+import com.cloudogu.gitops.tools.common.ToolWithImage
+
 import io.micronaut.core.annotation.Order
+
 import jakarta.inject.Singleton
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
 @Order(10)
-class ScmManager extends Tool {
+class ScmManager extends Tool implements ToolWithImage {
 
 	String namespace
 
-	private final Config config
-	private final GitHandler gitHandler
-	private final Deployer deployer
+	final K8sClient k8sClient
 	private final RepositoryProvisioning repositoryProvisioning
 
-	ScmManager(
-		Config config,
+
+
+	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
-		RepositoryProvisioning repositoryProvisioning
-	) {
-		this.config = config
+		RepositoryProvisioning repositoryProvisioning,
+		K8sClient k8sClient) {
+		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.repositoryProvisioning = repositoryProvisioning
 		this.namespace = configuredNamespace()
+		this.k8sClient = k8sClient
 	}
 
 	@Override
 	boolean isEnabled() {
-		isInternalTenantScmManagerConfigured()
+		return context.isInternalScmManager()
 	}
 
 	@Override
@@ -51,7 +56,7 @@ class ScmManager extends Tool {
 		ScmManagerSetup setup = new ScmManagerSetup(
 			scmManager,
 			deployer,
-			config
+			context
 		)
 
 		setup.setupHelm()
@@ -67,11 +72,6 @@ class ScmManager extends Tool {
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
-	private boolean isInternalTenantScmManagerConfigured() {
-		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER &&
-			config.scm.scmManager != null &&
-			config.scm.scmManager.internal
-	}
 
 	private String configuredNamespace() {
 		return config.scm.scmManager?.namespace ?: 'scm-manager'

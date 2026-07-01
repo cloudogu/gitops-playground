@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -16,35 +17,29 @@ class ArgoCDRepoSetup {
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TENANT_BOOTSTRAP_SOURCE_DIR = 'argocd/cluster-resources/apps/argocd/multiTenant/tenant'
 
-	private final Config config
+	private final DeploymentContext context
 	private final FileSystemUtils fileSystemUtils
 	private final GitHandler gitHandler
 	private final RepositoryWorkspace repositoryWorkspace
 
-	private ArgoCDRepoSetup(
-		Config config,
+	private ArgoCDRepoSetup(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
-		RepositoryWorkspace repositoryWorkspace
-	) {
-		this.config = config
+		RepositoryWorkspace repositoryWorkspace) {
+		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
 		this.repositoryWorkspace = repositoryWorkspace
 	}
 
-	static ArgoCDRepoSetup create(
-		Config config,
+	static ArgoCDRepoSetup create(Config config,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
-		RepositoryWorkspace repositoryWorkspace
-	) {
-		new ArgoCDRepoSetup(
-			config,
+		RepositoryWorkspace repositoryWorkspace) {
+		new ArgoCDRepoSetup(config,
 			fileSystemUtils,
 			gitHandler,
-			repositoryWorkspace
-		)
+			repositoryWorkspace)
 	}
 
 	ArgoCDRepoLayout clusterRepoLayout() {
@@ -64,31 +59,26 @@ class ArgoCDRepoSetup {
 
 		prepareClusterResourcesRepo()
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			prepareTenantBootstrapRepo()
 		}
 	}
 
 	private void validateRepositoryWorkspace() {
-		if (!config.multiTenant.useDedicatedInstance) {
+		if (context.isSingleTenant()) {
 			return
 		}
 
 		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
-			throw new IllegalStateException(
-				"Dedicated Multi-Tenant mode requires a tenant bootstrap repository."
-			)
+			throw new IllegalStateException("Dedicated Multi-Tenant mode requires a tenant bootstrap repository.")
 		}
 
 		String clusterRoot = new File(repositoryWorkspace.clusterResourcesRootDir()).canonicalPath
 		String tenantRoot = new File(repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException(
-				"Dedicated Multi-Tenant mode requires separate local workspaces for " +
-					"central cluster-resources and tenant bootstrap repositories. " +
-					"Both resolved to: ${clusterRoot}"
-			)
+			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. " +
+				"Both resolved to: ${clusterRoot}")
 		}
 	}
 
@@ -97,18 +87,12 @@ class ArgoCDRepoSetup {
 
 		Set<String> subDirsToCopy = determineLegacyClusterResourceSubDirs(config)
 
-		log.debug(
-			"Preparing cluster-resources repo ${clusterResourcesRepo.repoTarget} from ${CLUSTER_RESOURCES_SOURCE_DIR} with subdirs: ${subDirsToCopy}"
-		)
+		log.debug("Preparing cluster-resources repo ${clusterResourcesRepo.repoTarget} from ${CLUSTER_RESOURCES_SOURCE_DIR} with subdirs: ${subDirsToCopy}")
 
-		clusterResourcesRepo.copyDirectoryContents(
-			CLUSTER_RESOURCES_SOURCE_DIR,
-			createSubdirFilter(CLUSTER_RESOURCES_SOURCE_DIR, subDirsToCopy)
-		)
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
+			createSubdirFilter(CLUSTER_RESOURCES_SOURCE_DIR, subDirsToCopy))
 
-		clusterResourcesRepo.replaceTemplates(
-			buildTemplateValues(clusterResourcesRepo)
-		)
+		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo))
 
 		prepareClusterResourcesLayout()
 	}
@@ -116,18 +100,12 @@ class ArgoCDRepoSetup {
 	private void prepareTenantBootstrapRepo() {
 		GitRepo tenantBootstrapRepo = repositoryWorkspace.tenantBootstrapRepositoryOrFail()
 
-		log.debug(
-			"Preparing tenant bootstrap repo ${tenantBootstrapRepo.repoTarget} from ${TENANT_BOOTSTRAP_SOURCE_DIR}"
-		)
+		log.debug("Preparing tenant bootstrap repo ${tenantBootstrapRepo.repoTarget} from ${TENANT_BOOTSTRAP_SOURCE_DIR}")
 
-		tenantBootstrapRepo.copyDirectoryContents(
-			TENANT_BOOTSTRAP_SOURCE_DIR,
-			allowAllFilter()
-		)
+		tenantBootstrapRepo.copyDirectoryContents(TENANT_BOOTSTRAP_SOURCE_DIR,
+			allowAllFilter())
 
-		tenantBootstrapRepo.replaceTemplates(
-			buildTemplateValues(tenantBootstrapRepo)
-		)
+		tenantBootstrapRepo.replaceTemplates(buildTemplateValues(tenantBootstrapRepo))
 	}
 
 	private void prepareClusterResourcesLayout() {
@@ -139,21 +117,16 @@ class ArgoCDRepoSetup {
 			fileSystemUtils.deleteDir(layout.operatorDir())
 		}
 
-		if (config.multiTenant.useDedicatedInstance) {
-			log.debug(
-				"Deleting unnecessary non dedicated instances folders from argocd repo: " +
-					"applications=${layout.applicationsDir()}, " +
-					"projects=${layout.projectsDir()}, " +
-					"tenant=${layout.multiTenantDir()}/tenant"
-			)
+		if (context.isMultiTenant()) {
+			log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: " + "applications=${layout.applicationsDir()}, " +
+				"projects=${layout.projectsDir()}, " +
+				"tenant=${layout.multiTenantDir()}/tenant")
 
 			fileSystemUtils.deleteDir(layout.applicationsDir())
 			fileSystemUtils.deleteDir(layout.projectsDir())
 
-			fileSystemUtils.moveDirectoryMergeOverwrite(
-				Path.of(layout.multiTenantDir(), 'central'),
-				Path.of(layout.argocdRoot())
-			)
+			fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(layout.multiTenantDir(), 'central'),
+				Path.of(layout.argocdRoot()))
 
 			fileSystemUtils.deleteDir(layout.multiTenantDir())
 		} else {
@@ -199,25 +172,15 @@ class ArgoCDRepoSetup {
 	}
 
 	private Map<String, Object> buildTemplateValues(GitRepo repo) {
-		[
-			tenantName: config.application.tenantName,
-			argocd    : [
-				host: config.features.argocd.url ?
-				      new URL(config.features.argocd.url).host :
-				      ''
-			],
-			scm       : [
-				baseUrl      : repo.gitProvider.url,
-				host         : repo.gitProvider.host,
-				protocol     : repo.gitProvider.protocol,
-				repoUrl      : repo.gitProvider.repoPrefix(),
-				centralScmUrl: gitHandler.central?.repoPrefix() ?: ''
-			],
-			config    : config,
-			statics   : new DefaultObjectWrapperBuilder(
-				freemarker.template.Configuration.VERSION_2_3_32
-			).build().getStaticModels()
-		] as Map<String, Object>
+		[tenantName: config.application.tenantName,
+		 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
+		 scm       : [baseUrl      : repo.gitProvider.url,
+		              host         : repo.gitProvider.host,
+		              protocol     : repo.gitProvider.protocol,
+		              repoUrl      : repo.gitProvider.repoPrefix(),
+		              centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
+		 config    : config,
+		 statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
 	}
 
 	private static FileFilter allowAllFilter() {
@@ -237,9 +200,7 @@ class ArgoCDRepoSetup {
 			norm + '/'
 		} as Set<String>
 
-		Set<String> templateIncludePrefixes = [
-			'apps/argocd/argocd/templates/'
-		] as Set<String>
+		Set<String> templateIncludePrefixes = ['apps/argocd/argocd/templates/'] as Set<String>
 
 		return { File f ->
 			File canon = f.canonicalFile
@@ -253,8 +214,7 @@ class ArgoCDRepoSetup {
 			boolean isDir = f.isDirectory()
 			String relDir = rel.endsWith('/') ? rel : rel + '/'
 
-			if (templateIncludePrefixes.any { String p ->
-				(isDir ? relDir : rel).startsWith(p)
+			if (templateIncludePrefixes.any { String p -> (isDir ? relDir : rel).startsWith(p)
 			}) {
 				return true
 			}
@@ -264,13 +224,11 @@ class ArgoCDRepoSetup {
 			}
 
 			if (isDir) {
-				return prefixes.any { String p ->
-					relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
+				return prefixes.any { String p -> relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
 				}
 			}
 
-			prefixes.any { String p ->
-				rel.startsWith(p)
+			prefixes.any { String p -> rel.startsWith(p)
 			}
 		} as FileFilter
 	}

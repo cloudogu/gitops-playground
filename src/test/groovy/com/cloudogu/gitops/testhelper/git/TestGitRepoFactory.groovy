@@ -3,6 +3,7 @@ package com.cloudogu.gitops.testhelper.git
 import static org.mockito.Mockito.doAnswer
 import static org.mockito.Mockito.spy
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -16,7 +17,7 @@ class TestGitRepoFactory extends GitRepoFactory {
 	GitProvider defaultProvider
 
 	TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
-		super(config, fileSystemUtils)
+		super(new ContextBuilder(config).build(), fileSystemUtils)
 	}
 
 	@Override
@@ -31,7 +32,7 @@ class TestGitRepoFactory extends GitRepoFactory {
 			return repos[repoTarget]
 		}
 
-		GitRepo repoNew = new GitRepo(config, scm, repoTarget, fileSystemUtils) {
+		GitRepo repoNew = new GitRepo(context, scm, repoTarget, fileSystemUtils) {
 			String remoteGitRepoUrl = ''
 
 			@Override

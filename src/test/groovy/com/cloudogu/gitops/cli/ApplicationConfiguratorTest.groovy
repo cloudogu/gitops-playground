@@ -5,6 +5,7 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.application.content.ContentLoader
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
@@ -57,6 +58,13 @@ class ApplicationConfiguratorTest {
 	                                    multiTenant: [scmManager: [url: '']],
 	                                    features   : [secrets: [vault: [mode: EXPECTED_VAULT_MODE]],]])
 
+	//    // We have to set this value using env vars, which makes tests complicated, so ignore it
+	//    Config almostEmptyConfig = Config.fromMap([
+	//            application: [
+	//                    localHelmChartFolder: 'someValue',
+	//            ],
+	//    ])
+
 	@BeforeEach
 	void setup() {
 		fileSystemUtils = new FileSystemUtils()
@@ -71,8 +79,9 @@ class ApplicationConfiguratorTest {
 		repositoryProvisioning = Mockito.mock(RepositoryProvisioning)
 
 		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
+		def context = new ContextBuilder(testConfig).build()
 
-		featureContent = Mockito.spy(new ContentLoader(testConfig,
+		featureContent = Mockito.spy(new ContentLoader(context,
 			k8sClient,
 			gitRepoFactory,
 			Mockito.mock(Jenkins),
@@ -81,7 +90,7 @@ class ApplicationConfiguratorTest {
 			deployer,
 			repositoryProvisioning))
 
-		featureArgoCd = Mockito.spy(new ArgoCD(testConfig,
+		featureArgoCd = Mockito.spy(new ArgoCD(context,
 			k8sClient,
 			helmClient,
 			fileSystemUtils,
@@ -91,6 +100,7 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void "correct config with no programm arguments"() {
+
 		def actualConfig = applicationConfigurator.initConfig(testConfig)
 
 		assertThat(actualConfig.jenkins.url).isEqualTo(EXPECTED_JENKINS_URL)
@@ -233,6 +243,7 @@ class ApplicationConfiguratorTest {
 		testConfig.application.localHelmChartFolder = ''
 
 		applicationConfigurator.initConfig(testConfig)
+		// no exceptions means success
 	}
 
 	@Test
@@ -384,6 +395,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
 		                                  [name: 'ENV_VAR_2', value: 'value2']] as List<Map<String, String>>
 
+		// No exception should be thrown
 		applicationConfigurator.initConfig(testConfig)
 	}
 
@@ -438,6 +450,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
 		testConfig.features.argocd.env
 
+		// No exception should be thrown
 		applicationConfigurator.initConfig(testConfig)
 	}
 
@@ -447,6 +460,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
 		                                  [value: 'value2']] as List<Map<String, String>>
 
+		// No exception should be thrown
 		applicationConfigurator.initConfig(testConfig)
 	}
 
@@ -454,6 +468,7 @@ class ApplicationConfiguratorTest {
 	void "should skip resourceInclusionsCluster setup when ArgoCD operator is not enabled"() {
 		testConfig.features.argocd.operator = false
 
+		// Calling the method should not make any changes to the config
 		applicationConfigurator.initConfig(testConfig)
 
 		assertThat(testLogger.getLogs().search('ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.'))
@@ -465,6 +480,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://valid-url.com'
 
+		// Calling the method should accept the valid URL and not throw any exception
 		applicationConfigurator.initConfig(testConfig)
 
 		assertThat(testConfig.features.argocd.resourceInclusionsCluster).isEqualTo('https://valid-url.com')

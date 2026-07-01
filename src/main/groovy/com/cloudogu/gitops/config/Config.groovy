@@ -340,9 +340,16 @@ class Config {
 		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		String metricsPassword = "metrics"
 
+		@Option(names = ['--jenkins-image'], description = JENKINS_IMAGE_DESCRIPTION)
+		@JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
+		String jenkinsImage = ''
+
 		@Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
 		@JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
 		String mavenCentralMirror = ''
+
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
+		String oidc = ''
 
 		@Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
 		@JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
@@ -352,11 +359,9 @@ class Config {
 		HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
 			repoURL: 'https://charts.jenkins.io',
 			version: '5.9.18')
-
 		@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
 		@JsonPropertyDescription(JENKINS_NAMESPACE)
 		String namespace = "jenkins"
-
 	}
 
 	static class ApplicationSchema {
@@ -552,6 +557,10 @@ class Config {
 
 		@JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
 		Map<String, Object> values = [:]
+
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
+		String oidc = ''
+
 	}
 
 	static class MailSchema {
@@ -591,6 +600,9 @@ class Config {
 		@Option(names = ['--grafana-email-to'], description = GRAFANA_EMAIL_TO_DESCRIPTION)
 		@JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
 		String grafanaEmailTo = 'infra@example.org'
+
+		@JsonPropertyDescription(OIDC_DESCPRIPTION)
+		String oidc = ''
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -652,7 +664,6 @@ class Config {
 			ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
 				repoURL: 'https://charts.external-secrets.io',
 				version: '0.9.16')
-
 			static class ESOHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -677,6 +688,9 @@ class Config {
 			@JsonPropertyDescription(VAULT_URL_DESCRIPTION)
 			String url = ''
 
+			@JsonPropertyDescription(OIDC_DESCPRIPTION)
+			VaultOidcSchema oidc
+
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
@@ -686,6 +700,15 @@ class Config {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
 				String image = ''
+			}
+
+			static class VaultOidcSchema {
+				@JsonPropertyDescription("OIDC client ID")
+				String clientId = 'vault'
+				@JsonPropertyDescription("OIDC client secret")
+				String clientSecret = ''
+				@JsonPropertyDescription("OIDC discovery URL")
+				String discoveryUrl = ''
 			}
 		}
 	}

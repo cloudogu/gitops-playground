@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
+import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -16,19 +18,22 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 @Singleton
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
-
 	private FileSystemUtils fileSystemUtils
-	private Config config
+	private DeploymentContext context
 	private final RepositoryProvisioning repositoryProvisioning
 
 	ArgoCdApplicationStrategy(
-		Config config,
+		DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		RepositoryProvisioning repositoryProvisioning
 	) {
 		this.fileSystemUtils = fileSystemUtils
-		this.config = config
+		this.context = context
 		this.repositoryProvisioning = repositoryProvisioning
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	@Override
@@ -55,12 +60,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		String project = 'cluster-resources'
 		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
-		String featureName = repoName
-		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(featureName)
+		String toolName = repoName
+		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName)
 
 		/*
 		 * Important:
-		 * featureName remains unprefixed because it is used for paths like apps/scm-manager.
+		 * toolName remains unprefixed because it is used for paths like apps/scm-manager.
 		 * repoName becomes the ArgoCD Application metadata.name.
 		 *
 		 * This avoids ArgoCD tracking-id collisions:
@@ -75,37 +80,36 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 
 		// DedicatedInstances
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
 			project = prefix.replaceFirst(/-$/, '')
 		}
 
-		String featurePath = "apps/${featureName}"
+		String toolPath = "apps/${toolName}"
 
 		// --- ensure folders exist before writing files ---
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		Path.of(repoRoot, featurePath).toFile().mkdirs()
+		Path.of(repoRoot, toolPath).toFile().mkdirs()
 		Path.of(repoRoot, 'apps/argocd/applications').toFile().mkdirs()
 
+
 		// 1) GOP-managed values
-		String gopValuesPath = "${featurePath}/${featureName}-gop-helm.yaml"
+		String gopValuesPath = "${toolPath}/${toolName}-gop-helm.yaml"
 		def inlineValues = helmValuesPath.toFile().text
 
 		// 2) User values
-		String userValuesPath = "${featurePath}/${featureName}-user-values.yaml"
+		String userValuesPath = "${toolPath}/${toolName}-user-values.yaml"
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
 
 		if (bootstrapDeploymentRequired) {
-			log.info(
-				"Using bootstrap deployment for feature '{}': applicationName='{}', releaseName='{}', namespace='{}'. " +
-					"Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.",
-				featureName,
+			log.info('Using bootstrap deployment for tool \'{}\': applicationName=\'{}\', releaseName=\'{}\', namespace=\'{}\'. ' +
+				'Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.',
+				toolName,
 				repoName,
 				releaseName,
-				namespace
-			)
+				namespace)
 		} else {
-			// Normal features keep values in cluster-resources and consume them via $values.
+			// Normal tools keep values in cluster-resources and consume them via $values.
 			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
 			// User values must NEVER be overwritten by GOP.
@@ -115,30 +119,22 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 
 		// 1) Helm source
-		def helmConfig = [
-			releaseName: releaseName
-		]
+		def helmConfig = [releaseName: releaseName]
 
 		if (bootstrapDeploymentRequired) {
-			log.debug(
-				"Embedding Helm values for bootstrap feature '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
-				featureName
-			)
+			log.trace("Embedding Helm values for bootstrap tool '{}' directly into the ArgoCD Application to avoid a self-referencing values source.",
+				toolName)
 			helmConfig.values = inlineValues
 		} else {
-			helmConfig.valueFiles = [
-				"\$values/${gopValuesPath}".toString(),
-				"\$values/${userValuesPath}".toString()
-			]
+			helmConfig.valueFiles = ["\$values/${gopValuesPath}".toString(),
+			                         "\$values/${userValuesPath}".toString()]
 			helmConfig.ignoreMissingValueFiles = true
 		}
 
-		def helmSource = [
-			repoURL                         : repoURL,
-			(chooseKeyChartOrPath(repoType)): chartOrPath,
-			targetRevision                  : version,
-			helm                            : helmConfig
-		]
+		def helmSource = [repoURL                         : repoURL,
+		                  (chooseKeyChartOrPath(repoType)): chartOrPath,
+		                  targetRevision                  : version,
+		                  helm                            : helmConfig]
 
 		// 2) Git source for values and additional manifests.
 		// SCM-Manager must not reference the SCM-Manager repo that it deploys itself.
@@ -157,10 +153,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			 *
 			 * Until prefixing is moved out of GitRepo, keep the repo target unprefixed here.
 			 */
-			def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+			def toolRepoUrl  = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
 
 			def gitSource = [
-				repoURL       : featureRepoUrl,
+				repoURL       : toolRepoUrl ,
 				targetRevision: 'main',
 				ref           : 'values',
 				path          : featurePath,
@@ -239,7 +235,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		}
 	}
 
-	private boolean requiresBootstrapDeployment(String featureName) {
-		return featureName == 'scm-manager'
+	private boolean requiresBootstrapDeployment(String toolName) {
+		return toolName == 'scm-manager'
 	}
 }

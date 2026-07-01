@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.testhelper.git
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -11,7 +12,7 @@ class GitHandlerForTests extends GitHandler {
 	private final GitProvider centralProvider
 
 	GitHandlerForTests(Config config, GitProvider tenantProvider, GitProvider centralProvider = null) {
-		super(config, new K8sClientForTest(), new NetworkingUtils())
+		super(new ContextBuilder(config).build(), new K8sClientForTest(), new NetworkingUtils())
 		this.tenantProvider = tenantProvider
 		this.centralProvider = centralProvider
 	}
