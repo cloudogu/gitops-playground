@@ -32,14 +32,18 @@ class ArgoCDRepoSetup {
 		this.repositoryWorkspace = repositoryWorkspace
 	}
 
-	static ArgoCDRepoSetup create(Config config,
+	static ArgoCDRepoSetup create(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
 		RepositoryWorkspace repositoryWorkspace) {
-		new ArgoCDRepoSetup(config,
+		new ArgoCDRepoSetup(context,
 			fileSystemUtils,
 			gitHandler,
 			repositoryWorkspace)
+	}
+
+	private Config getConfig() {
+		return context.config
 	}
 
 	ArgoCDRepoLayout clusterRepoLayout() {

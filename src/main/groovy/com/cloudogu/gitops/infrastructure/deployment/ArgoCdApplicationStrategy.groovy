@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
 import com.cloudogu.gitops.application.context.DeploymentContext
-import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -22,11 +21,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	private DeploymentContext context
 	private final RepositoryProvisioning repositoryProvisioning
 
-	ArgoCdApplicationStrategy(
-		DeploymentContext context,
+	ArgoCdApplicationStrategy(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
-		RepositoryProvisioning repositoryProvisioning
-	) {
+		RepositoryProvisioning repositoryProvisioning) {
 		this.fileSystemUtils = fileSystemUtils
 		this.context = context
 		this.repositoryProvisioning = repositoryProvisioning
@@ -39,16 +36,14 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	@Override
 	@SuppressWarnings('GroovyGStringKey')
 	// Using dynamic strings as keys seems an easy to read way to avoid more ifs
-	void deployFeature(
-		String repoURL,
+	void deployFeature(String repoURL,
 		String repoName,
 		String chartOrPath,
 		String version,
 		String namespace,
 		String releaseName,
 		Path helmValuesPath,
-		RepoType repoType
-	) {
+		RepoType repoType) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
@@ -153,15 +148,13 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			 *
 			 * Until prefixing is moved out of GitRepo, keep the repo target unprefixed here.
 			 */
-			def toolRepoUrl  = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+			def toolRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
 
-			def gitSource = [
-				repoURL       : toolRepoUrl ,
-				targetRevision: 'main',
-				ref           : 'values',
-				path          : featurePath,
-				directory     : [recurse: true]
-			]
+			def gitSource = [repoURL       : toolRepoUrl,
+			                 targetRevision: 'main',
+			                 ref           : 'values',
+			                 path          : toolPath,
+			                 directory     : [recurse: true]]
 
 			sources << gitSource
 		}
@@ -171,34 +164,20 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
 			.build()
 
-		def yamlResult = yamlMapper.writeValueAsString([
-			apiVersion: 'argoproj.io/v1alpha1',
-			kind      : 'Application',
-			metadata  : [
-				name     : repoName,
-				namespace: namespaceName
-			],
-			spec      : [
-				destination: [
-					server   : 'https://kubernetes.default.svc',
-					namespace: namespace
-				],
-				project    : project,
-				sources    : sources,
-				syncPolicy : [
-					automated  : [
-						prune   : true,
-						selfHeal: true
-					],
-					syncOptions: [
-						// So that we can apply very large resources, e.g. prometheus CRD.
-						'ServerSideApply=true',
-						// Create namespaces for helm charts while not using the argocd-operator mode.
-						shallCreateNamespace
-					]
-				]
-			]
-		])
+		def yamlResult = yamlMapper.writeValueAsString([apiVersion: 'argoproj.io/v1alpha1',
+		                                                kind      : 'Application',
+		                                                metadata  : [name     : repoName,
+		                                                             namespace: namespaceName],
+		                                                spec      : [destination: [server   : 'https://kubernetes.default.svc',
+		                                                                           namespace: namespace],
+		                                                             project    : project,
+		                                                             sources    : sources,
+		                                                             syncPolicy : [automated  : [prune   : true,
+		                                                                                         selfHeal: true],
+		                                                                           syncOptions: [// So that we can apply very large resources, e.g. prometheus CRD.
+		                                                                                         'ServerSideApply=true',
+		                                                                                         // Create namespaces for helm charts while not using the argocd-operator mode.
+		                                                                                         shallCreateNamespace]]]])
 
 		/*
 		 * Keep the file path release-based.
@@ -213,15 +192,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug(
-			"Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-				"version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}"
-		)
+		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			featureName,
-			"Add ${repoName}/${chartOrPath} to ArgoCD"
-		)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(toolName,
+			"Add ${repoName}/${chartOrPath} to ArgoCD")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {
