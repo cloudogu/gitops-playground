@@ -6,10 +6,11 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
-import freemarker.template.DefaultObjectWrapperBuilder
-import groovy.util.logging.Slf4j
 
 import java.nio.file.Path
+import groovy.util.logging.Slf4j
+
+import freemarker.template.DefaultObjectWrapperBuilder
 
 @Slf4j
 class ArgoCDRepoSetup {
@@ -36,7 +37,7 @@ class ArgoCDRepoSetup {
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
 		RepositoryWorkspace repositoryWorkspace) {
-		new ArgoCDRepoSetup(context,
+		return new ArgoCDRepoSetup(context,
 			fileSystemUtils,
 			gitHandler,
 			repositoryWorkspace)
@@ -47,15 +48,15 @@ class ArgoCDRepoSetup {
 	}
 
 	ArgoCDRepoLayout clusterRepoLayout() {
-		new ArgoCDRepoLayout(repositoryWorkspace.clusterResourcesRootDir())
+		return new ArgoCDRepoLayout(repositoryWorkspace.clusterResourcesRootDir())
 	}
 
 	ArgoCDRepoLayout tenantRepoLayout() {
 		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
-			throw new IllegalStateException("tenantBootstrap repo is not initialized in single-instance mode.")
+			throw new IllegalStateException('tenantBootstrap repo is not initialized in single-instance mode.')
 		}
 
-		new ArgoCDRepoLayout(repositoryWorkspace.tenantBootstrapRootDir())
+		return new ArgoCDRepoLayout(repositoryWorkspace.tenantBootstrapRootDir())
 	}
 
 	void prepareRepositories() {
@@ -74,14 +75,14 @@ class ArgoCDRepoSetup {
 		}
 
 		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
-			throw new IllegalStateException("Dedicated Multi-Tenant mode requires a tenant bootstrap repository.")
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires a tenant bootstrap repository.')
 		}
 
 		String clusterRoot = new File(repositoryWorkspace.clusterResourcesRootDir()).canonicalPath
 		String tenantRoot = new File(repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. " +
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires separate local workspaces for ' + 'central cluster-resources and tenant bootstrap repositories. ' +
 				"Both resolved to: ${clusterRoot}")
 		}
 	}
@@ -122,7 +123,7 @@ class ArgoCDRepoSetup {
 		}
 
 		if (context.isMultiTenant()) {
-			log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: " + "applications=${layout.applicationsDir()}, " +
+			log.debug('Deleting unnecessary non dedicated instances folders from argocd repo: ' + "applications=${layout.applicationsDir()}, " +
 				"projects=${layout.projectsDir()}, " +
 				"tenant=${layout.multiTenantDir()}/tenant")
 
@@ -176,15 +177,15 @@ class ArgoCDRepoSetup {
 	}
 
 	private Map<String, Object> buildTemplateValues(GitRepo repo) {
-		[tenantName: config.application.tenantName,
-		 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
-		 scm       : [baseUrl      : repo.gitProvider.url,
-		              host         : repo.gitProvider.host,
-		              protocol     : repo.gitProvider.protocol,
-		              repoUrl      : repo.gitProvider.repoPrefix(),
-		              centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
-		 config    : config,
-		 statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
+		return [tenantName: config.application.tenantName,
+		        argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
+		        scm       : [baseUrl      : repo.gitProvider.url,
+		                     host         : repo.gitProvider.host,
+		                     protocol     : repo.gitProvider.protocol,
+		                     repoUrl      : repo.gitProvider.repoPrefix(),
+		                     centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
+		        config    : config,
+		        statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
 	}
 
 	private static FileFilter allowAllFilter() {

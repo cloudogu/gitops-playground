@@ -49,16 +49,15 @@ class ArgoCDRepoSetupTest {
 	}
 
 	private ArgoCDRepoSetupTestContext createSetup(FileSystemUtils fs) {
+
 		def providers = TestGitProvider.buildProviders(config)
 		GitProvider tenantProvider = providers.tenant as GitProvider
 		GitProvider centralProvider = providers.central as GitProvider
 
 		def repoFactory = new TestGitRepoFactory(config, new FileSystemUtils())
 
-		GitRepo clusterResourcesRepo = repoFactory.create(
-			'argocd/cluster-resources',
-			config.multiTenant.useDedicatedInstance ? centralProvider : tenantProvider
-		)
+		GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
+			config.multiTenant.useDedicatedInstance ? centralProvider : tenantProvider)
 
 		RepositoryWorkspace repositoryWorkspace
 
@@ -72,34 +71,24 @@ class ArgoCDRepoSetupTest {
 			 * from the repo target. Therefore we use a dedicated test target here to avoid
 			 * both GitRepo objects pointing to the same local directory.
 			 */
-			GitRepo tenantBootstrapRepo = repoFactory.create(
-				'argocd/tenant-bootstrap-cluster-resources',
-				tenantProvider
-			)
+			GitRepo tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
+				tenantProvider)
 
-			repositoryWorkspace = new RepositoryWorkspace(
-				clusterResourcesRepo,
-				tenantBootstrapRepo
-			)
+			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
+				tenantBootstrapRepo)
 		} else {
 			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 		}
 
-		def gitHandler = new GitHandlerForTests(
-			config,
+		def gitHandler = new GitHandlerForTests(config,
 			tenantProvider,
-			centralProvider
-		)
+			centralProvider)
 
-		return new ArgoCDRepoSetupTestContext(
-			setup: ArgoCDRepoSetup.create(
-				config,
-				fs,
-				gitHandler,
-				repositoryWorkspace
-			),
-			repositoryWorkspace: repositoryWorkspace
-		)
+		return new ArgoCDRepoSetupTestContext(setup: ArgoCDRepoSetup.create(new ContextBuilder(config).build(),
+			fs,
+			gitHandler,
+			repositoryWorkspace),
+			repositoryWorkspace: repositoryWorkspace)
 	}
 
 	@Test
@@ -249,16 +238,13 @@ class ArgoCDRepoSetupTest {
 
 		List<Map> tenantBootstrapDocuments = tenantBootstrapYaml as List<Map>
 
-		List<String> tenantApplicationNames = tenantBootstrapDocuments.collect { Map document ->
-			document['metadata']['name'] as String
+		List<String> tenantApplicationNames = tenantBootstrapDocuments.collect { Map document -> document['metadata']['name'] as String
 		}
 
-		List<String> tenantApplicationNamespaces = tenantBootstrapDocuments.collect { Map document ->
-			document['metadata']['namespace'] as String
+		List<String> tenantApplicationNamespaces = tenantBootstrapDocuments.collect { Map document -> document['metadata']['namespace'] as String
 		}
 
-		List<String> tenantApplicationProjects = tenantBootstrapDocuments.collect { Map document ->
-			document['spec']['project'] as String
+		List<String> tenantApplicationProjects = tenantBootstrapDocuments.collect { Map document -> document['spec']['project'] as String
 		}
 
 		assertThat(tenantApplicationNames)
@@ -320,10 +306,8 @@ class ArgoCDRepoSetupTest {
 
 		testContext.setup.prepareRepositories()
 
-		assertThat(Path.of(
-			testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.ingressSubdirRel()
-		)).exists()
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.ingressSubdirRel())).exists()
 	}
 
 	@Test
@@ -334,10 +318,8 @@ class ArgoCDRepoSetupTest {
 
 		testContext.setup.prepareRepositories()
 
-		assertThat(Path.of(
-			testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.monitoringSubdirRel()
-		)).doesNotExist()
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.monitoringSubdirRel())).doesNotExist()
 	}
 
 	@Test
@@ -348,15 +330,11 @@ class ArgoCDRepoSetupTest {
 
 		testContext.setup.prepareRepositories()
 
-		assertThat(Path.of(
-			testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.secretsSubdirRel()
-		)).exists()
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.secretsSubdirRel())).exists()
 
-		assertThat(Path.of(
-			testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.vaultSubdirRel()
-		)).exists()
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.vaultSubdirRel())).exists()
 	}
 
 	@Test

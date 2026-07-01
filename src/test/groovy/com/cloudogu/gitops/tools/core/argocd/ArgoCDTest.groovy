@@ -117,13 +117,13 @@ class ArgoCDTest {
 		           secrets   : [active: true]])
 
 	KubernetesClient client
-	KubernetesMockServer server
 	K8sClient k8sClient
 
 	CommandExecutorForTest helmCommands = new CommandExecutorForTest()
 
 	String actualHelmValuesFile
 	GitRepo clusterResourcesRepo
+	List<GitRepo> petClinicRepos = []
 	ArgoCD argocd
 	ArgoCDRepoLayout clusterResourcesRepoLayout
 	RepositoryProvisioning repositoryProvisioning
@@ -1612,7 +1612,18 @@ class ArgoCDTest {
 			GitRepo tenantBootstrapRepo = null
 
 			if (cfg.multiTenant.useDedicatedInstance) {
-				tenantBootstrapRepo = repoFactory.create('argocd/cluster-resources',
+				/*
+				 * Test-only workspace separation:
+				 *
+				 * In the real dedicated multi-tenant setup, the central cluster-resources repo
+				 * and the tenant bootstrap repo use the same logical repo target in different
+				 * SCM-Manager instances.
+				 *
+				 * TestGitRepoFactory derives the local workspace from the repo target only.
+				 * Therefore both GitRepo objects would otherwise point to the same local directory
+				 * and tenant bootstrap templates would overwrite central bootstrap templates.
+				 */
+				tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
 					tenantProvider)
 
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
