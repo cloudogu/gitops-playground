@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.application.repository
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -16,7 +15,7 @@ class RepositoryProvisioning {
 
 	static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
 
-	private final Config config
+	private final DeploymentContext context
 	private final GitRepoFactory gitRepoFactory
 	private final GitHandler gitHandler
 
@@ -24,10 +23,10 @@ class RepositoryProvisioning {
 	private boolean remoteRepositoriesEnsured = false
 	private boolean repositoriesCloned = false
 
-	RepositoryProvisioning(Config config,
+	RepositoryProvisioning(DeploymentContext context,
 		GitRepoFactory gitRepoFactory,
 		GitHandler gitHandler) {
-		this.config = config
+		this.context = context
 		this.gitRepoFactory = gitRepoFactory
 		this.gitHandler = gitHandler
 	}
@@ -50,7 +49,7 @@ class RepositoryProvisioning {
 			return workspace
 		}
 
-		if (config.multiTenant.useDedicatedInstance) {
+		if (context.isMultiTenant()) {
 			workspace = createDedicatedInstanceWorkspace()
 		} else {
 			workspace = createSingleInstanceWorkspace()
@@ -139,7 +138,7 @@ class RepositoryProvisioning {
 
 	String clusterResourcesRepoTarget() {
 		// TODO: Move GOP-specific repo target prefixing from GitRepo to RepositoryProvisioning.
-		// GitRepo currently applies config.application.namePrefix internally.
+		// GitRepo currently applies context.config.application.namePrefix internally.
 		// Therefore this method must return the unprefixed repository target for now.
 		return CLUSTER_RESOURCES_REPO_TARGET
 	}
@@ -190,11 +189,8 @@ class RepositoryProvisioning {
 		String tenantRoot = new File(workspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException(
-				"Dedicated Multi-Tenant mode requires separate local workspaces for " +
-					"central cluster-resources and tenant bootstrap repositories. " +
-					"Both resolved to: ${clusterRoot}"
-			)
+			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. " +
+				"Both resolved to: ${clusterRoot}")
 		}
 	}
 
@@ -205,7 +201,7 @@ class RepositoryProvisioning {
 	}
 
 	private boolean mustWaitForInternalScmManagerDeployment() {
-		return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER && config.scm.scmManager?.internal
+		return context.isInternalScmManager()
 	}
 
 	private static void ensureRepositoryExists(GitProvider gitProvider,
