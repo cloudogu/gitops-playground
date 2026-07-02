@@ -142,11 +142,11 @@ class RepositoryWorkspace {
 
 	/**
 	 * Aligns locally initialized repositories with the remote main branch if it already exists.	*/
-	void checkoutMainFromRemoteIfLocalMainMissing() {
-		clusterResourcesRepository.checkoutMainFromRemoteIfLocalMainMissing()
+	void alignWithRemoteMainIfPresent() {
+		clusterResourcesRepository.checkoutRemoteMainIfLocalMainMissing()
 
 		if (hasTenantBootstrapRepository()) {
-			tenantBootstrapRepositoryOrFail().checkoutMainFromRemoteIfLocalMainMissing()
+			tenantBootstrapRepositoryOrFail().checkoutRemoteMainIfLocalMainMissing()
 		}
 	}
 

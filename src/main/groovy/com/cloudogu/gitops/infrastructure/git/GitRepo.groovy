@@ -245,7 +245,7 @@ class GitRepo {
 		return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
 	}
 
-	void checkoutMainFromRemoteIfLocalMainMissing() {
+	void checkoutRemoteMainIfLocalMainMissing() {
 		initLocalRepoIfNeeded()
 
 		def git = getGit()

@@ -30,7 +30,7 @@ class RepositoryBootstrapper {
 		 * The locally initialized workspace must start from that remote main branch,
 		 * otherwise the first push from GOP may be rejected as non-fast-forward.
 		 */
-		workspace.checkoutMainFromRemoteIfLocalMainMissing()
+		workspace.alignWithRemoteMainIfPresent()
 		workspace.createLocalDirectories()
 
 		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
