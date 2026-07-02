@@ -301,12 +301,12 @@ class TestK8sHelper {
 	}
 
 	private static boolean isPodRunning(Pod pod) {
-		return (pod.status?.phase == RUNNING || pod.status?.phase == COMPLETED) && !hasFatalContainerState(pod)
+		return (pod.status?.phase == RUNNING || pod.status?.phase == SUCCEEDED || pod.status?.phase == COMPLETED) && !hasFatalContainerState(pod)
 	}
 
 	private static boolean isPodFatal(Pod pod) {
 		String phase = pod.status?.phase
-		return phase == FAILED || phase == SUCCEEDED || hasFatalContainerState(pod)
+		return phase == FAILED || hasFatalContainerState(pod)
 	}
 
 	private static boolean hasFatalContainerState(Pod pod) {
