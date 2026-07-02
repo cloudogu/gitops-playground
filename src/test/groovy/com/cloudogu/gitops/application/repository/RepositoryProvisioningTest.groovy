@@ -207,62 +207,6 @@ class RepositoryProvisioningTest {
 	}
 
 	@Test
-	void 'bootstrapRepositoriesAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(clusterResourcesRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-		provisioning.bootstrapRepositoriesAfterScmManagerDeployment()
-
-		verify(tenantProvider).createRepository('argocd/cluster-resources',
-			'GitOps repo for basic cluster-resources',
-			true)
-
-		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
-		verify(clusterResourcesRepo).checkoutMainFromRemoteIfLocalMainMissing()
-		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
-	}
-
-	@Test
-	void 'bootstrapRepositoriesAfterScmManagerDeployment initializes and pushes both repositories in dedicated mode'() {
-		config.multiTenant.useDedicatedInstance = true
-
-		doReturn(centralProvider).when(gitHandler).getResourcesScm()
-		doReturn(tenantProvider).when(gitHandler).getTenant()
-
-		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
-		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
-
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
-			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
-			.thenReturn(tenantBootstrapRepo)
-
-		RepositoryProvisioning provisioning = createProvisioning()
-
-		provisioning.provideWorkspace()
-		provisioning.bootstrapRepositoriesAfterScmManagerDeployment()
-
-		verify(centralProvider).createRepository('argocd/cluster-resources',
-			'GitOps repo for basic cluster-resources',
-			true)
-
-		verify(tenantProvider).createRepository('argocd/cluster-resources',
-			'GitOps repo for tenant bootstrap resources',
-			true)
-
-		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
-		verify(clusterResourcesRepo).checkoutMainFromRemoteIfLocalMainMissing()
-		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
-
-		verify(tenantBootstrapRepo).initLocalRepoIfNeeded()
-		verify(tenantBootstrapRepo).checkoutMainFromRemoteIfLocalMainMissing()
-		verify(tenantBootstrapRepo).commitAndPush('Bootstrap tenant repository after SCM-Manager deployment')
-	}
-
-	@Test
 	void 'publishClusterResourcesRepositoryChanges uses default message when no message is provided'() {
 		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
 			.thenReturn(clusterResourcesRepo)

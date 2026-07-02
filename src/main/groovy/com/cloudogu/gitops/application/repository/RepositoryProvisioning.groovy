@@ -97,31 +97,6 @@ class RepositoryProvisioning {
 		repositoriesCloned = true
 	}
 
-	void bootstrapRepositoriesAfterScmManagerDeployment() {
-		ensureRemoteRepositoriesExist()
-
-		assertWorkspacePrepared()
-
-		workspace.initLocalRepositoriesIfNeeded()
-
-		/*
-		 * After the internal SCM-Manager has created the remote repositories,
-		 * the remote main branch may already contain an initial commit, for example
-		 * a README.md created by SCM-Manager.
-		 *
-		 * The locally initialized workspace must start from that remote main branch,
-		 * otherwise the first push from GOP may be rejected as non-fast-forward.
-		 */
-		workspace.checkoutMainFromRemoteIfLocalMainMissing()
-		workspace.prepareLocalDirectories()
-
-		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
-
-		if (workspace.hasTenantBootstrapRepository()) {
-			workspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
-		}
-	}
-
 	void publishClusterResourcesRepositoryChanges(String toolName,
 		String message = null) {
 		assertWorkspacePrepared()
@@ -137,7 +112,6 @@ class RepositoryProvisioning {
 	}
 
 	String clusterResourcesRepoTarget() {
-		// TODO: Move GOP-specific repo target prefixing from GitRepo to RepositoryProvisioning.
 		// GitRepo currently applies context.config.application.namePrefix internally.
 		// Therefore this method must return the unprefixed repository target for now.
 		return CLUSTER_RESOURCES_REPO_TARGET

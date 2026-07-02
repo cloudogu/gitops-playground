@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryBootstrapper
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
@@ -26,6 +27,7 @@ class ScmManager extends Tool implements ToolWithImage {
 
 	final K8sClient k8sClient
 	private final RepositoryProvisioning repositoryProvisioning
+	private final RepositoryBootstrapper repositoryBootstrapper
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
@@ -63,7 +65,7 @@ class ScmManager extends Tool implements ToolWithImage {
 		setup.waitForScmmAvailable()
 		setup.configure()
 
-		repositoryProvisioning.bootstrapRepositoriesAfterScmManagerDeployment()
+		repositoryBootstrapper.bootstrapAfterScmManagerDeployment()
 
 		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
