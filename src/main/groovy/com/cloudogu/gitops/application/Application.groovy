@@ -51,7 +51,7 @@ class Application {
 		repositoryProvisioning.prepare()
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 
-		deploymentOrchestrator.execute(context,
+		deploymentOrchestrator.deployTools(context,
 			workspace)
 
 		log.debug('Application finished')

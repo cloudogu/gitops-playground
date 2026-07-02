@@ -80,8 +80,13 @@ abstract class Tool {
 		RepositoryWorkspace workspace) {
 		this.context = context
 		this.repositoryWorkspace = workspace
-
 		return install()
+	}
+
+	// Transitional bridge until tools receive dedicated lifecycle input models
+	boolean isEnabled(DeploymentContext context) {
+		this.context = context
+		return isEnabled()
 	}
 
 	String getActiveNamespaceFromFeature() {

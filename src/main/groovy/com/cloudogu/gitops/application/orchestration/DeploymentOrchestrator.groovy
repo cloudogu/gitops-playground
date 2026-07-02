@@ -31,9 +31,9 @@ class DeploymentOrchestrator {
 		Vault vault,
 		ContentLoader contentLoader) {
 		this([scmManager,
+		      argoCD,
 		      jenkins,
 		      registry,
-		      argoCD,
 		      ingress,
 		      certManager,
 		      monitoring,
@@ -46,16 +46,12 @@ class DeploymentOrchestrator {
 		this.tools = tools
 	}
 
-	void execute(DeploymentContext context,
+	void deployTools(DeploymentContext context,
 		RepositoryWorkspace workspace) {
 		log.debug('Starting tool orchestration.')
 
-		tools.each { Tool tool ->
-			log.debug("Validating tool ${tool.class.simpleName}")
-			tool.validate()
-		}
-
-		tools.each { Tool tool ->
+		tools.findAll { Tool tool -> tool.isEnabled(context)
+		}.each { Tool tool ->
 			log.debug("Executing tool ${tool.class.simpleName}")
 			tool.execute(context,
 				workspace)

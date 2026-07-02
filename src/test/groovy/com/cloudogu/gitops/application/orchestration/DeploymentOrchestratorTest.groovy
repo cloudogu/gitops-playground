@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.application.orchestration
 
-import static org.mockito.Mockito.inOrder
-import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
@@ -16,23 +15,29 @@ import org.mockito.InOrder
 class DeploymentOrchestratorTest {
 
 	@Test
-	void 'executes tools in configured order with context and workspace'() {
+	void 'deploys enabled tools in configured order with context and workspace'() {
 		DeploymentContext context = new ContextBuilder(new Config()).build()
 		RepositoryWorkspace workspace = new RepositoryWorkspace(mock(GitRepo))
 		Tool firstTool = mock(Tool)
 		Tool secondTool = mock(Tool)
+		Tool disabledTool = mock(Tool)
+
+		when(firstTool.isEnabled(context)).thenReturn(true)
+		when(secondTool.isEnabled(context)).thenReturn(true)
 
 		new DeploymentOrchestrator([firstTool,
-		                            secondTool]).execute(context,
+		                            disabledTool,
+		                            secondTool]).deployTools(context,
 			workspace)
 
 		InOrder order = inOrder(firstTool,
 			secondTool)
-		order.verify(firstTool).validate()
-		order.verify(secondTool).validate()
 		order.verify(firstTool).execute(context,
 			workspace)
 		order.verify(secondTool).execute(context,
+			workspace)
+
+		verify(disabledTool, never()).execute(context,
 			workspace)
 	}
 }
