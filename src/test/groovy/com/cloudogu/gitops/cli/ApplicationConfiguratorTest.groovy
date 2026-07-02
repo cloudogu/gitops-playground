@@ -87,8 +87,7 @@ class ApplicationConfiguratorTest {
 			Mockito.mock(Jenkins),
 			gitHandler,
 			fileSystemUtils,
-			deployer,
-			repositoryProvisioning))
+			deployer))
 
 		featureArgoCd = Mockito.spy(new ArgoCD(context,
 			k8sClient,
