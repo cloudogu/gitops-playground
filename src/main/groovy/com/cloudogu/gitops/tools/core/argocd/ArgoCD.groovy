@@ -181,11 +181,6 @@ class ArgoCD extends Tool {
 		k8sClient.patch('secret', 'argocd-cluster', namespace,
 			[stringData: ['admin.password': password]])
 
-		k8sClient.patch('secret',
-			'argocd-cluster',
-			namespace,
-			[stringData: ['admin.password': password]])
-
 		// In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
 		// but we want to set our own admin password so we set the password in both Secrets for consistency
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
