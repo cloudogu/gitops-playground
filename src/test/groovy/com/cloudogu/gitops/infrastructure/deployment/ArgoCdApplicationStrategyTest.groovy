@@ -12,7 +12,7 @@ import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.config.scm.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -264,7 +264,7 @@ param1: value1
 				password: 'dont-care-password')),
 			features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(operator: argocdOperator)))
 
-		GitProvider gitProvider = new ScmManagerMock()
+		GitProvider gitProvider = new ScmManagerProviderMock()
 		def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
 			GitRepo create(String repoTarget, GitProvider provider) {

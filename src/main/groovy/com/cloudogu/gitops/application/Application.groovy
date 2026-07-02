@@ -19,7 +19,6 @@ import freemarker.template.DefaultObjectWrapperBuilder
 class Application {
 
 	final List<Tool> tools
-	final Config config
 	final DeploymentContext context
 	final K8sClient k8sClient
 	final GitHandler gitHandler

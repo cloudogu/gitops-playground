@@ -16,7 +16,7 @@ import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
@@ -44,7 +44,7 @@ class ApplicationConfiguratorTest {
 	private RepositoryProvisioning repositoryProvisioning
 
 	@Mock
-	ScmManagerMock scmManagerMock = new ScmManagerMock()
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	Config testConfig = Config.fromMap([application: [localHelmChartFolder: 'someValue',
 	                                                  namePrefix          : ''],
@@ -87,8 +87,7 @@ class ApplicationConfiguratorTest {
 			Mockito.mock(Jenkins),
 			gitHandler,
 			fileSystemUtils,
-			deployer,
-			repositoryProvisioning))
+			deployer))
 
 		featureArgoCd = Mockito.spy(new ArgoCD(context,
 			k8sClient,

@@ -26,18 +26,17 @@ class ScmManager extends Tool implements ToolWithImage {
 	String namespace
 
 	final K8sClient k8sClient
-	private final RepositoryProvisioning repositoryProvisioning
 	private final RepositoryBootstrapper repositoryBootstrapper
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
-		RepositoryProvisioning repositoryProvisioning,
+		RepositoryBootstrapper repositoryBootstrapper,
 		K8sClient k8sClient) {
 		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
-		this.repositoryProvisioning = repositoryProvisioning
+		this.repositoryBootstrapper = repositoryBootstrapper
 		this.k8sClient = k8sClient
 
 		if (context.isInternalScmManager()) {

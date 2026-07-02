@@ -16,8 +16,8 @@ class TestGitProvider {
 		String tenantInCluster = (cfg.scm.scmManager?.url ?: serviceDns) as String
 		String centralInCluster = (cfg.multiTenant.scmManager?.url ?: tenantInCluster) as String
 
-		def tenant = new ScmManagerMock(inClusterBase: new URI(tenantInCluster), namePrefix: cfg.application.namePrefix)
-		def central = cfg.multiTenant.useDedicatedInstance ? new ScmManagerMock(inClusterBase: new URI(centralInCluster), namePrefix: cfg.application.namePrefix) : null
+		def tenant = new ScmManagerProviderMock(inClusterBase: new URI(tenantInCluster), namePrefix: cfg.application.namePrefix)
+		def central = cfg.multiTenant.useDedicatedInstance ? new ScmManagerProviderMock(inClusterBase: new URI(centralInCluster), namePrefix: cfg.application.namePrefix) : null
 		return [tenant: tenant, central: central]
 	}
 }
