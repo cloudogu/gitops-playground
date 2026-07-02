@@ -296,7 +296,7 @@ class RepositoryProvisioningTest {
 
 		doNothing().when(gitRepo).cloneRepo()
 		doNothing().when(gitRepo).initLocalRepoIfNeeded()
-		doNothing().when(gitRepo).checkoutMainFromRemoteIfLocalMainMissing()
+		doNothing().when(gitRepo).checkoutRemoteMainIfLocalMainMissing()
 		doNothing().when(gitRepo).commitAndPush(any(String))
 
 		return gitRepo

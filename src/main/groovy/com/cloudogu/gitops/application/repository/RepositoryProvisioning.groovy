@@ -9,6 +9,29 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
+/**
+ * Prepares and makes the required GitOps repositories available during a GOP deployment.
+ *
+ * <p>This class is responsible for creating the shared {@link RepositoryWorkspace},
+ * ensuring that the required remote repositories exist, and cloning those repositories
+ * when they are already available.</p>
+ *
+ * <p>The main repository managed here is the {@code cluster-resources} repository.
+ * It contains the generated GitOps resources that are consumed by ArgoCD, for example
+ * applications and projects.</p>
+ *
+ * <p>In dedicated multi-tenant setups, two repository workspaces are required:</p>
+ * <ul>
+ *   <li>the cluster-resources repository in the central SCM-Manager, used by the central ArgoCD instance</li>
+ *   <li>the tenant bootstrap repository in the tenant SCM-Manager, used to bootstrap the tenant ArgoCD instance</li>
+ * </ul>
+ *
+ * <p>Both repositories can have the same logical repository target, but they must use
+ * separate local workspaces because their templates may contain overlapping paths.</p>
+ *
+ * <p>This class does not generate tool-specific resources. Tools write their files into
+ * the prepared {@link RepositoryWorkspace}. Repository provisioning only coordinates
+ * repository availability, local workspace preparation, and commit/push entry points.</p>*/
 @Slf4j
 @Singleton
 class RepositoryProvisioning {
@@ -32,6 +55,12 @@ class RepositoryProvisioning {
 	}
 
 	void prepare() {
+
+		/**
+		 * Returns the shared repository workspace for the current deployment.
+		 *
+		 * <p>The workspace is created lazily and reused afterwards so all tools write to the same
+		 * local repository checkout.</p>		*/
 		provideWorkspace()
 
 		if (mustWaitForInternalScmManagerDeployment()) {
@@ -40,7 +69,18 @@ class RepositoryProvisioning {
 			return
 		}
 
+		/**
+		 * Ensures that all remote repositories required by the current workspace exist.
+		 *
+		 * <p>In single-instance setups this only affects the cluster-resources repository.
+		 * In dedicated multi-tenant setups this also ensures the tenant bootstrap repository.</p>		*/
 		ensureRemoteRepositoriesExist()
+
+		/**
+		 * Clones all repositories that belong to the prepared workspace.
+		 *
+		 * <p>This is only done once per deployment run to keep all tools working on the same
+		 * local checkout.</p>		*/
 		cloneRepositories()
 	}
 
@@ -97,6 +137,10 @@ class RepositoryProvisioning {
 		repositoriesCloned = true
 	}
 
+	/**
+	 * Commits and pushes changes in the cluster-resources repository.
+	 *
+	 * <p>This is used after tools have written generated resources into the shared workspace.</p>	*/
 	void publishClusterResourcesRepositoryChanges(String toolName,
 		String message = null) {
 		assertWorkspacePrepared()
@@ -104,6 +148,12 @@ class RepositoryProvisioning {
 		workspace.commitAndPushClusterResourcesChanges((message ?: "Update ${toolName} resources").toString())
 	}
 
+	/**
+	 * Commits and pushes changes in both the cluster-resources repository and, if available,
+	 * the tenant bootstrap repository.
+	 *
+	 * <p>This is mainly relevant for dedicated multi-tenant setups where resources may be
+	 * written to both repository workspaces.</p>	*/
 	void publishClusterResourcesAndTenantBootstrapRepositoryChanges(String toolName,
 		String message = null) {
 		assertWorkspacePrepared()
@@ -130,19 +180,10 @@ class RepositoryProvisioning {
 		log.debug('Creating dedicated-instance repository workspace.')
 
 		/*
-		 * Dedicated Multi-Tenant mode:
-		 *
-		 * clusterResourcesRepository:
-		 *   - points to the tenant cluster-resources repository in the central SCM-Manager
-		 *   - is used by the central ArgoCD bootstrap
-		 *
-		 * tenantBootstrapRepository:
-		 *   - points to the tenant cluster-resources repository in the tenant SCM-Manager
-		 *   - contains the bootstrap resources for the tenant ArgoCD instance
-		 *
-		 * Both repositories use the same logical repo target, but they must not share the
-		 * same local workspace. The central and tenant templates contain overlapping paths
-		 * such as apps/argocd/applications/bootstrap.yaml.
+		 * In dedicated multi-tenant mode, the cluster-resources repository used by the central
+		 * ArgoCD and the tenant bootstrap repository belong to different SCM contexts.
+		 * Therefore both repositories are represented explicitly, even though they use the same
+		 * logical repository target.
 		 */
 		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())

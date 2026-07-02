@@ -247,24 +247,24 @@ class RepositoryWorkspaceTest {
 	}
 
 	@Test
-	void 'checkoutMainFromRemoteIfLocalMainMissing checks out only cluster resources repository in single-instance mode'() {
+	void 'alignWithRemoteMainIfPresent checks out only cluster resources repository in single-instance mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository)
 
-		workspace.checkoutMainFromRemoteIfLocalMainMissing()
+		workspace.alignWithRemoteMainIfPresent()
 
-		verify(clusterResourcesRepository).checkoutMainFromRemoteIfLocalMainMissing()
+		verify(clusterResourcesRepository).checkoutRemoteMainIfLocalMainMissing()
 		verifyNoInteractions(tenantBootstrapRepository)
 	}
 
 	@Test
-	void 'checkoutMainFromRemoteIfLocalMainMissing checks out both repositories in dedicated mode'() {
+	void 'alignWithRemoteMainIfPresent checks out both repositories in dedicated mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
 			tenantBootstrapRepository)
 
-		workspace.checkoutMainFromRemoteIfLocalMainMissing()
+		workspace.alignWithRemoteMainIfPresent()
 
-		verify(clusterResourcesRepository).checkoutMainFromRemoteIfLocalMainMissing()
-		verify(tenantBootstrapRepository).checkoutMainFromRemoteIfLocalMainMissing()
+		verify(clusterResourcesRepository).checkoutRemoteMainIfLocalMainMissing()
+		verify(tenantBootstrapRepository).checkoutRemoteMainIfLocalMainMissing()
 	}
 
 	private static String createTempDir(String prefix) {

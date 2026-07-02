@@ -3,6 +3,8 @@ package com.cloudogu.gitops.application.repository
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
+/**
+ * Executes the post-SCM-Manager repository bootstrap.*/
 @Slf4j
 @Singleton
 class RepositoryBootstrapper {
@@ -28,7 +30,7 @@ class RepositoryBootstrapper {
 		 * The locally initialized workspace must start from that remote main branch,
 		 * otherwise the first push from GOP may be rejected as non-fast-forward.
 		 */
-		workspace.checkoutMainFromRemoteIfLocalMainMissing()
+		workspace.alignWithRemoteMainIfPresent()
 		workspace.createLocalDirectories()
 
 		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')

@@ -52,7 +52,7 @@ class RepositoryBootstrapperTest {
 		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
-		verify(clusterResourcesRepo).checkoutMainFromRemoteIfLocalMainMissing()
+		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
 		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 	}
 
@@ -70,11 +70,11 @@ class RepositoryBootstrapperTest {
 		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
-		verify(clusterResourcesRepo).checkoutMainFromRemoteIfLocalMainMissing()
+		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
 		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 
 		verify(tenantBootstrapRepo).initLocalRepoIfNeeded()
-		verify(tenantBootstrapRepo).checkoutMainFromRemoteIfLocalMainMissing()
+		verify(tenantBootstrapRepo).checkoutRemoteMainIfLocalMainMissing()
 		verify(tenantBootstrapRepo).commitAndPush('Bootstrap tenant repository after SCM-Manager deployment')
 	}
 
