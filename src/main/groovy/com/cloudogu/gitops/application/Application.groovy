@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.application
 
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -23,18 +24,19 @@ class Application {
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 	final RepositoryProvisioning repositoryProvisioning
+	final DeploymentOrchestrator deploymentOrchestrator
 
 	Application(DeploymentContext context,
 		K8sClient k8sClient,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning,
-		List<Tool> tools) {
+		DeploymentOrchestrator deploymentOrchestrator) {
 		this.context = context
 		this.k8sClient = k8sClient
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
-		// Order is important. Enforced by @Order-Annotation on the Tool Singletons
-		this.tools = tools
+		this.deploymentOrchestrator = deploymentOrchestrator
+		this.tools = deploymentOrchestrator.tools
 	}
 
 	def start() {
@@ -47,14 +49,10 @@ class Application {
 		gitHandler.validate()
 		gitHandler.prepareProviders()
 		repositoryProvisioning.prepare()
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 
-		tools.forEach(tool -> {
-			tool.validate()
-		})
-
-		tools.forEach(tool -> {
-			tool.install()
-		})
+		deploymentOrchestrator.execute(context,
+			workspace)
 
 		log.debug('Application finished')
 	}

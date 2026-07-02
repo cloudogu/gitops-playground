@@ -4,6 +4,7 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -50,6 +51,7 @@ abstract class Tool {
 	protected AirGappedUtils airGappedUtils
 	protected GitHandler gitHandler
 	protected DeploymentContext context
+	protected RepositoryWorkspace repositoryWorkspace
 	protected Map<String, Object> helmValuesTemplateData = [:]
 
 	protected void addHelmValuesData(String key, Object value) {
@@ -72,6 +74,14 @@ abstract class Tool {
 			disable()
 			return false
 		}
+	}
+
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+
+		return install()
 	}
 
 	String getActiveNamespaceFromFeature() {
@@ -159,6 +169,10 @@ abstract class Tool {
 
 	DeploymentContext getContext() {
 		return context
+	}
+
+	RepositoryWorkspace getRepositoryWorkspace() {
+		return repositoryWorkspace
 	}
 
 	/*
