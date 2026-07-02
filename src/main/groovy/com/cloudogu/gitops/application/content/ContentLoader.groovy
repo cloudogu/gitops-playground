@@ -468,6 +468,10 @@ class ContentLoader extends Tool {
 			repoCoordinate.fullRepoName,
 			repoCoordinate.clonedContentRepo.absolutePath)
 
+		log.trace("ContentLoader source files for '{}': {}",
+			repoCoordinate.fullRepoName,
+			repoCoordinate.clonedContentRepo.listFiles()?.collect { it.name })
+
 		/*
 		 * Important:
 		 * Do not synchronize or reset the shared workspace here.
@@ -482,6 +486,12 @@ class ContentLoader extends Tool {
 		FileUtils.copyDirectory(repoCoordinate.clonedContentRepo,
 			new File(workspace.clusterResourcesRootDir()),
 			new FileSystemUtils.IgnoreDotGitFolderFilter())
+
+		log.trace('Cluster-resources workspace files after ContentLoader merge: {}',
+			new File(workspace.clusterResourcesRootDir()).listFiles()?.collect { it.name })
+
+		log.trace('Cluster-resources apps after ContentLoader merge: {}',
+			new File(workspace.clusterResourcesAppsDir()).listFiles()?.collect { it.name })
 
 		repositoryProvisioning.publishClusterResourcesRepositoryChanges('content-loader',
 			"Merge ContentLoader content into ${repoCoordinate.fullRepoName}")
