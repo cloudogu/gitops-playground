@@ -19,7 +19,7 @@ class Deployer {
 	}
 
 	void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
-		String releaseName, Path helmValuesPath, RepoType repoType, boolean initByHelm = false) {
+			String releaseName, Path helmValuesPath, RepoType repoType, boolean initByHelm = false) {
 
 		if (initByHelm) {
 			helmStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)

@@ -67,8 +67,6 @@ class GitHandler {
 		if (context.isMultiTenant()) {
 			this.central = createCentralScmProvider()
 		}
-
-		setupExternalRepositoriesIfPossible()
 	}
 
 	GitProvider getResourcesScm() {
@@ -115,44 +113,15 @@ class GitHandler {
 		}
 	}
 
-	private void setupExternalRepositoriesIfPossible() {
-		final String namePrefix = (config.application.namePrefix ?: '').trim()
-		final boolean repositorySetupBlockedByInternalScmBootstrap = context.isInternalScmManager()
+	private String prefixedNamespace(String namespace) {
+		String prefix = config.application.namePrefix ?: ''
+		String baseNamespace = namespace ?: 'scm-manager'
 
-		log.info("Evaluating repository setup: centralConfigured={}, tenantConfigured={}, namePrefix='{}', repositorySetupBlockedByInternalScmBootstrap={}",
-			central != null,
-			tenant != null,
-			namePrefix,
-			repositorySetupBlockedByInternalScmBootstrap)
-
-		if (repositorySetupBlockedByInternalScmBootstrap) {
-			log.info('Skipping repository setup because the configured internal SCM-Manager is not deployed yet. ' +
-				"Repository setup can continue immediately when an external SCM-Manager is configured. namePrefix='{}'",
-				namePrefix)
-			return
+		if (prefix && baseNamespace.startsWith(prefix)) {
+			return baseNamespace
 		}
 
-		if (central) {
-			log.info("Setting up central and tenant repositories. namePrefix='{}'", namePrefix)
-			setupRepos(central, namePrefix)
-			setupRepos(tenant, namePrefix)
-		} else {
-			log.info("Setting up tenant repositories only. namePrefix='{}'", namePrefix)
-			setupRepos(tenant, namePrefix)
-		}
-	}
-
-	static void setupRepos(GitProvider gitProvider, String namePrefix = '') {
-		gitProvider.createRepository(withPrefix(namePrefix, 'argocd/cluster-resources'),
-			'GitOps repo for basic cluster-resources')
-	}
-
-	static String withPrefix(String prefix, String repoPath) {
-		if (!prefix) {
-			return repoPath
-		}
-
-		return prefix + repoPath
+		return "${prefix}${baseNamespace}".toString()
 	}
 
 

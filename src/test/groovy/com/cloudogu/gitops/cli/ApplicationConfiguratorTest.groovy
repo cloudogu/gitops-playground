@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import com.cloudogu.gitops.application.content.ContentLoader
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -15,7 +16,7 @@ import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.TestLogger
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
@@ -40,15 +41,16 @@ class ApplicationConfiguratorTest {
 	private CommonToolConfig commonFeatureConfig
 	private ContentLoader featureContent
 	private ArgoCD featureArgoCd
+	private RepositoryProvisioning repositoryProvisioning
 
 	@Mock
-	ScmManagerMock scmManagerMock = new ScmManagerMock()
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	Config testConfig = Config.fromMap([application: [localHelmChartFolder: 'someValue',
 	                                                  namePrefix          : ''],
 	                                    registry   : [url          : EXPECTED_REGISTRY_URL,
-	                                                  proxyUrl     : "proxy-$EXPECTED_REGISTRY_URL",
-	                                                  proxyUsername: "proxy-user",
+	                                                  proxyUrl     : 'proxy-' + EXPECTED_REGISTRY_URL,
+	                                                  proxyUsername: 'proxy-user',
 	                                                  proxyPassword: "proxy-pw",
 	                                                  internalPort : EXPECTED_REGISTRY_INTERNAL_PORT,],
 	                                    jenkins    : [url: EXPECTED_JENKINS_URL],
@@ -73,13 +75,26 @@ class ApplicationConfiguratorTest {
 		K8sClient k8sClient = Mockito.mock(K8sClient)
 		HelmClient helmClient = Mockito.mock(HelmClient)
 		GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
-
 		Deployer deployer = Mockito.mock(Deployer)
+		repositoryProvisioning = Mockito.mock(RepositoryProvisioning)
 
 		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
 		def context = new ContextBuilder(testConfig).build()
-		featureContent = Mockito.spy(new ContentLoader(context, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler, fileSystemUtils, deployer))
-		featureArgoCd = Mockito.spy(new ArgoCD(context, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
+
+		featureContent = Mockito.spy(new ContentLoader(context,
+			k8sClient,
+			gitRepoFactory,
+			Mockito.mock(Jenkins),
+			gitHandler,
+			fileSystemUtils,
+			deployer))
+
+		featureArgoCd = Mockito.spy(new ArgoCD(context,
+			k8sClient,
+			helmClient,
+			fileSystemUtils,
+			gitHandler,
+			repositoryProvisioning))
 	}
 
 	@Test
@@ -97,7 +112,7 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void "sets config application runningInsideK8s"() {
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
+		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '127.0.0.1').execute {
 			Config actualConfig = applicationConfigurator.initConfig(testConfig)
 			assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
 		}
@@ -144,14 +159,13 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void 'Fails if content repo is set without mandatory params'() {
-
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: ''),]
 		def exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
 		assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
 
-		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),]
+		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: 'missing_slash'),]
 		exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
@@ -165,6 +179,23 @@ class ApplicationConfiguratorTest {
 			featureContent.preConfigInit(testConfig)
 		}
 		assertThat(exception.message).isEqualTo('content.repos.type COPY requires content.repos.target to be set. Repo: abc')
+	}
+
+	@Test
+	void 'Allows COPY content repo targeting cluster-resources'() {
+		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc',
+			type: Config.ContentRepoType.COPY,
+			target: 'argocd/cluster-resources')]
+
+		Throwable exception = null
+
+		try {
+			featureContent.preConfigInit(testConfig)
+		} catch (Throwable thrown) {
+			exception = thrown
+		}
+
+		assertThat(exception).isNull()
 	}
 
 	@Test
@@ -184,22 +215,19 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void 'Fails if MIRROR repo has invalid configuration'() {
-		// Test missing target parameter
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR),]
 		def exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
 		assertThat(exception.message).isEqualTo('content.repos.type MIRROR requires content.repos.target to be set. Repo: abc')
 
-		// Test setting path
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
 			target: 'namespace/repo', path: 'non-default-path'),]
 		exception = shouldFail(RuntimeException) {
 			featureContent.preConfigInit(testConfig)
 		}
-		assertThat(exception.message).isEqualTo("content.repos.type MIRROR does not support path. Current path: non-default-path. Repo: abc")
+		assertThat(exception.message).isEqualTo('content.repos.type MIRROR does not support path. Current path: non-default-path. Repo: abc')
 
-		// Test templating enabled
 		testConfig.content.repos = [new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
 			target: 'namespace/repo', templating: true),]
 		exception = shouldFail(RuntimeException) {
@@ -227,11 +255,11 @@ class ApplicationConfiguratorTest {
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-		assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd.localhost")
-		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
-		assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
-		assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm.localhost")
-		assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
+		assertThat(actualConfig.features.argocd.url).isEqualTo('http://argocd.localhost')
+		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo('http://grafana.localhost')
+		assertThat(actualConfig.features.secrets.vault.url).isEqualTo('http://vault.localhost')
+		assertThat(actualConfig.scm.scmManager.ingress).isEqualTo('scmm.localhost')
+		assertThat(actualConfig.jenkins.ingress).isEqualTo('jenkins.localhost')
 	}
 
 	@Test
@@ -245,11 +273,11 @@ class ApplicationConfiguratorTest {
 
 		def actualConfig = applicationConfigurator.initConfig(testConfig)
 
-		assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd-localhost")
-		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
-		assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
-		assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm-localhost")
-		assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
+		assertThat(actualConfig.features.argocd.url).isEqualTo('http://argocd-localhost')
+		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo('http://grafana-localhost')
+		assertThat(actualConfig.features.secrets.vault.url).isEqualTo('http://vault-localhost')
+		assertThat(actualConfig.scm.scmManager.ingress).isEqualTo('scmm-localhost')
+		assertThat(actualConfig.jenkins.ingress).isEqualTo('jenkins-localhost')
 	}
 
 	@Test
@@ -259,7 +287,7 @@ class ApplicationConfiguratorTest {
 
 		def actualConfig = applicationConfigurator.initConfig(testConfig)
 
-		assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd.localhost:8080")
+		assertThat(actualConfig.features.argocd.url).isEqualTo('http://argocd.localhost:8080')
 	}
 
 	@Test
@@ -270,7 +298,7 @@ class ApplicationConfiguratorTest {
 
 		def actualConfig = applicationConfigurator.initConfig(testConfig)
 
-		assertThat(actualConfig.features.argocd.url).isEqualTo("http://argocd-localhost:6502")
+		assertThat(actualConfig.features.argocd.url).isEqualTo('http://argocd-localhost:6502')
 	}
 
 	@Test
@@ -302,9 +330,9 @@ class ApplicationConfiguratorTest {
 
 		def actualConfig = applicationConfigurator.initConfig(testConfig)
 
-		assertThat(actualConfig.features.argocd.url).isEqualTo("argocd")
-		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("grafana")
-		assertThat(actualConfig.features.secrets.vault.url).isEqualTo("vault")
+		assertThat(actualConfig.features.argocd.url).isEqualTo('argocd')
+		assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo('grafana')
+		assertThat(actualConfig.features.secrets.vault.url).isEqualTo('vault')
 	}
 
 	@Test
@@ -363,8 +391,8 @@ class ApplicationConfiguratorTest {
 	void "validateEnvConfig allows valid env entries"() {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
-		testConfig.features.argocd.env = [[name: "ENV_VAR_1", value: "value1"],
-		                                  [name: "ENV_VAR_2", value: "value2"]] as List<Map<String, String>>
+		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
+		                                  [name: 'ENV_VAR_2', value: 'value2']] as List<Map<String, String>>
 
 		// No exception should be thrown
 		applicationConfigurator.initConfig(testConfig)
@@ -374,9 +402,8 @@ class ApplicationConfiguratorTest {
 	void "validateEnvConfig throws exception for missing 'name' in env entry"() {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
-		testConfig.features.argocd.env = [[name: "ENV_VAR_1", value: "value1"],
-		                                  [value: "value2"] // Missing 'name'
-		] as List<Map<String, String>>
+		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
+		                                  [value: 'value2']] as List<Map<String, String>>
 
 		def exception = shouldFail(IllegalArgumentException) {
 			applicationConfigurator.initConfig(testConfig)
@@ -390,9 +417,8 @@ class ApplicationConfiguratorTest {
 	void "validateEnvConfig throws exception for missing 'value' in env entry"() {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
-		testConfig.features.argocd.env = [[name: "ENV_VAR_1", value: "value1"],
-		                                  [name: "ENV_VAR_2"] // Missing 'value'
-		] as List<Map<String, String>>
+		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
+		                                  [name: 'ENV_VAR_2']] as List<Map<String, String>>
 
 		def exception = shouldFail(IllegalArgumentException) {
 			applicationConfigurator.initConfig(testConfig)
@@ -406,9 +432,8 @@ class ApplicationConfiguratorTest {
 	void "validateEnvConfig throws exception for non-map env entry"() {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
-		testConfig.features.argocd.env = [[name: "ENV_VAR_1", value: "value1"],
-		                                  "invalid_entry" // Invalid entry
-		] as List<Map<String, String>>
+		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
+		                                  'invalid_entry'] as List<Map<String, String>>
 
 		def exception = shouldFail(IllegalArgumentException) {
 			applicationConfigurator.initConfig(testConfig)
@@ -431,9 +456,8 @@ class ApplicationConfiguratorTest {
 	@Test
 	void "validateEnvConfig skips validation when operator is false"() {
 		testConfig.features.argocd.operator = false
-		testConfig.features.argocd.env = [[name: "ENV_VAR_1", value: "value1"],
-		                                  [value: "value2"] // Invalid entry, but should be ignored
-		] as List<Map<String, String>>
+		testConfig.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
+		                                  [value: 'value2']] as List<Map<String, String>>
 
 		// No exception should be thrown
 		applicationConfigurator.initConfig(testConfig)
@@ -446,29 +470,29 @@ class ApplicationConfiguratorTest {
 		// Calling the method should not make any changes to the config
 		applicationConfigurator.initConfig(testConfig)
 
-		assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup."))
+		assertThat(testLogger.getLogs().search('ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.'))
 			.isNotEmpty()
 	}
 
 	@Test
 	void "should validate and accept user-provided valid resourceInclusionsCluster URL"() {
 		testConfig.features.argocd.operator = true
-		testConfig.features.argocd.resourceInclusionsCluster = "https://valid-url.com"
+		testConfig.features.argocd.resourceInclusionsCluster = 'https://valid-url.com'
 
 		// Calling the method should accept the valid URL and not throw any exception
 		applicationConfigurator.initConfig(testConfig)
 
-		assertThat(testConfig.features.argocd.resourceInclusionsCluster).isEqualTo("https://valid-url.com")
-		assertThat(testLogger.getLogs().search("Validating user-provided features.argocd.resourceInclusionsCluster URL: https://valid-url.com"))
+		assertThat(testConfig.features.argocd.resourceInclusionsCluster).isEqualTo('https://valid-url.com')
+		assertThat(testLogger.getLogs().search('Validating user-provided features.argocd.resourceInclusionsCluster URL: https://valid-url.com'))
 			.isNotEmpty()
-		assertThat(testLogger.getLogs().search("Found valid URL in features.argocd.resourceInclusionsCluster: https://valid-url.com"))
+		assertThat(testLogger.getLogs().search('Found valid URL in features.argocd.resourceInclusionsCluster: https://valid-url.com'))
 			.isNotEmpty()
 	}
 
 	@Test
 	void "should throw exception for user-provided invalid resourceInclusionsCluster URL"() {
 		testConfig.features.argocd.operator = true
-		testConfig.features.argocd.resourceInclusionsCluster = "invalid-url"
+		testConfig.features.argocd.resourceInclusionsCluster = 'invalid-url'
 
 		def exception = shouldFail(IllegalArgumentException) {
 			applicationConfigurator.initConfig(testConfig)
@@ -482,25 +506,24 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = null
 
-		// Set Kubernetes ENV variables
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '127.0.0.1')
 			.and("KUBERNETES_SERVICE_PORT", "6443")
 			.execute {
 				Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-				assertThat(actualConfig.features.argocd.resourceInclusionsCluster).isEqualTo("https://127.0.0.1:6443")
+				assertThat(actualConfig.features.argocd.resourceInclusionsCluster).isEqualTo('https://127.0.0.1:6443')
 
-				assertThat(testLogger.getLogs().search("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"))
+				assertThat(testLogger.getLogs().search('Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443'))
 					.isNotEmpty()
 			}
 	}
 
 	@Test
 	void "MultiTenant Mode Central SCM Url"() {
-		testConfig.multiTenant.scmManager.url = "scmm.localhost/scm"
-		testConfig.application.namePrefix = "foo"
+		testConfig.multiTenant.scmManager.url = 'scmm.localhost/scm'
+		testConfig.application.namePrefix = 'foo'
 		applicationConfigurator.initConfig(testConfig)
-		assertThat(testConfig.multiTenant.scmManager.url).toString() == "scmm.localhost/scm/"
+		assertThat(testConfig.multiTenant.scmManager.url).toString() == 'scmm.localhost/scm/'
 	}
 
 	@Test
@@ -529,12 +552,10 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void "should throw exception for invalid Kubernetes constructed URL"() {
-		// Set ArgoCD operator to true
 		testConfig.features.argocd.operator = true
 		testConfig.features.argocd.resourceInclusionsCluster = null
 
-		// Set invalid Kubernetes ENV variables
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "invalid_host")
+		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', 'invalid_host')
 			.and("KUBERNETES_SERVICE_PORT", "not_a_port")
 			.execute {
 				def exception = shouldFail(RuntimeException) {
@@ -544,7 +565,7 @@ class ApplicationConfiguratorTest {
 				assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true.")
 			}
 
-		assertThat(testLogger.getLogs().search("Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port")).isNotEmpty()
+		assertThat(testLogger.getLogs().search('Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port')).isNotEmpty()
 	}
 
 	@Test
@@ -612,7 +633,7 @@ class ApplicationConfiguratorTest {
 	List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
 		clazz.declaredFields.each { field ->
 			def currentField = parentField + field.name
-			if (field.type instanceof Class && !field.type.isArray() && field.type.name.startsWith(Config.class.getPackageName())) {
+			if (field.type instanceof Class && !field.type.isArray() && field.type.name.startsWith(Config.getPackageName())) {
 				println "nested class $field.type, $currentField + '.', $fieldNames"
 				getAllFieldNames(field.type, currentField + '.', fieldNames)
 			} else {

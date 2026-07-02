@@ -16,7 +16,7 @@ class GitRepoFactory {
 		this.context = context
 	}
 
-	GitRepo getRepo(String repoTarget, GitProvider gitProvider) {
+	GitRepo create(String repoTarget, GitProvider gitProvider) {
 		return new GitRepo(context, gitProvider, repoTarget, fileSystemUtils)
 	}
 

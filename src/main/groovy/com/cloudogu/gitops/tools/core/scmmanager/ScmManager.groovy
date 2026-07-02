@@ -2,7 +2,12 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryBootstrapper
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -21,14 +26,17 @@ class ScmManager extends Tool implements ToolWithImage {
 	String namespace
 
 	final K8sClient k8sClient
+	private final RepositoryBootstrapper repositoryBootstrapper
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
+		RepositoryBootstrapper repositoryBootstrapper,
 		K8sClient k8sClient) {
 		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
+		this.repositoryBootstrapper = repositoryBootstrapper
 		this.k8sClient = k8sClient
 
 		if (context.isInternalScmManager()) {
@@ -49,24 +57,25 @@ class ScmManager extends Tool implements ToolWithImage {
 		ScmManagerProvider scmManager = getTenantScmManager()
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
-			deployer, context)
+			deployer,
+			context)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
 		setup.configure()
 
-		setupRepositoriesAfterDeployment()
+		repositoryBootstrapper.bootstrapAfterScmManagerDeployment()
 
-		// Creating ArgoCD Application AFTER repos are created.
-		// This fixes the bootstrap problem because the GitOps repository must exist first.
+		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
+		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
 
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
 	private String prefixedNamespace() {
-		String prefix = config.application.namePrefix ?: ''
-		String baseNamespace = config.scm.scmManager.namespace ?: 'scm-manager'
+		String prefix = config.application.namePrefix ?: ""
+		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace
@@ -76,20 +85,12 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	private ScmManagerProvider getTenantScmManager() {
-		if (!(gitHandler.tenant instanceof ScmManagerProvider)) {
-			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: ${gitHandler.tenant?.class?.simpleName}")
+		GitProvider tenantScm = gitHandler.tenant
+
+		if (!(tenantScm instanceof ScmManagerProvider)) {
+			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: ${tenantScm?.class?.simpleName}")
 		}
 
-		return gitHandler.tenant as ScmManagerProvider
-	}
-
-	private void setupRepositoriesAfterDeployment() {
-		final String namePrefix = (config?.application?.namePrefix ?: '').trim()
-
-		GitHandler.setupRepos(gitHandler.tenant, namePrefix)
-
-		if (gitHandler.central) {
-			GitHandler.setupRepos(gitHandler.central, namePrefix)
-		}
+		return tenantScm as ScmManagerProvider
 	}
 }

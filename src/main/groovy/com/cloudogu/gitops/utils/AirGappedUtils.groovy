@@ -46,7 +46,7 @@ class AirGappedUtils {
 
 		validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-		GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
+		GitRepo repo = repoProvider.create(repoNamespaceAndName, gitHandler.tenant)
 
 		repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 

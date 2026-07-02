@@ -2,95 +2,119 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
-import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
 import groovy.util.logging.Slf4j
 
-/**
- * Holds ArgoCD-related repo initialization actions (cluster-resources + optional tenant bootstrap)
- * and encapsulates the initialization logic (single-instance vs. dedicated instance).*/
+import freemarker.template.DefaultObjectWrapperBuilder
+
 @Slf4j
 class ArgoCDRepoSetup {
 
-	final RepoInitializationAction clusterResources
-	final RepoInitializationAction tenantBootstrap
-	// may be null
-	final List<RepoInitializationAction> allRepos
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
+	private static final String TENANT_BOOTSTRAP_SOURCE_DIR = 'argocd/cluster-resources/apps/argocd/multiTenant/tenant'
 
 	private final DeploymentContext context
 	private final FileSystemUtils fileSystemUtils
+	private final GitHandler gitHandler
+	private final RepositoryWorkspace repositoryWorkspace
 
 	private ArgoCDRepoSetup(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
-		RepoInitializationAction clusterResources,
-		RepoInitializationAction tenantBootstrap,
-		List<RepoInitializationAction> allRepos) {
+		GitHandler gitHandler,
+		RepositoryWorkspace repositoryWorkspace) {
 		this.context = context
 		this.fileSystemUtils = fileSystemUtils
-		this.clusterResources = clusterResources
-		this.tenantBootstrap = tenantBootstrap
-		this.allRepos = allRepos
+		this.gitHandler = gitHandler
+		this.repositoryWorkspace = repositoryWorkspace
+	}
+
+	static ArgoCDRepoSetup create(DeploymentContext context,
+		FileSystemUtils fileSystemUtils,
+		GitHandler gitHandler,
+		RepositoryWorkspace repositoryWorkspace) {
+		return new ArgoCDRepoSetup(context,
+			fileSystemUtils,
+			gitHandler,
+			repositoryWorkspace)
 	}
 
 	private Config getConfig() {
 		return context.config
 	}
 
-	static ArgoCDRepoSetup create(DeploymentContext context, FileSystemUtils fileSystemUtils, GitRepoFactory repoFactory, GitHandler gitHandler) {
-		RepoInitializationAction cluster
-		RepoInitializationAction tenant
-		List<RepoInitializationAction> all = []
+	ArgoCDRepoLayout clusterRepoLayout() {
+		return new ArgoCDRepoLayout(repositoryWorkspace.clusterResourcesRootDir())
+	}
+
+	ArgoCDRepoLayout tenantRepoLayout() {
+		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
+			throw new IllegalStateException('tenantBootstrap repo is not initialized in single-instance mode.')
+		}
+
+		return new ArgoCDRepoLayout(repositoryWorkspace.tenantBootstrapRootDir())
+	}
+
+	void prepareRepositories() {
+		validateRepositoryWorkspace()
+
+		prepareClusterResourcesRepo()
 
 		if (context.isMultiTenant()) {
-			// Dedicated instance: tenant bootstrap (tenant provider) + cluster-resources (central provider)
-			tenant = createRepoInitializationAction(context.config, repoFactory, gitHandler,
-				'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
-				'argocd/cluster-resources',
-				gitHandler.tenant)
-			all.add(tenant)
+			prepareTenantBootstrapRepo()
+		}
+	}
 
-			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
-				'argocd/cluster-resources',
-				'argocd/cluster-resources',
-				gitHandler.central)
-			all.add(cluster)
-
-		} else {
-			// Single instance: only cluster-resources (tenant provider)
-			cluster = createRepoInitializationAction(context.config, repoFactory, gitHandler,
-				'argocd/cluster-resources',
-				'argocd/cluster-resources',
-				gitHandler.tenant)
-			all.add(cluster)
+	private void validateRepositoryWorkspace() {
+		if (context.isSingleTenant()) {
+			return
 		}
 
-		// Configure which subdirectories should be copied into the cluster-resources repo
-		cluster.subDirsToCopy = determineClusterResourceSubDirs(context)
-
-		return new ArgoCDRepoSetup(context, fileSystemUtils, cluster, tenant, all)
-	}
-
-	RepoLayout clusterRepoLayout() {
-		new RepoLayout(clusterResources.repo.getAbsoluteLocalRepoTmpDir())
-	}
-
-	RepoLayout tenantRepoLayout() {
-		if (tenantBootstrap == null) {
-			throw new IllegalStateException("tenantBootstrap repo is not initialized (single-instance mode).")
+		if (!repositoryWorkspace.hasTenantBootstrapRepository()) {
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires a tenant bootstrap repository.')
 		}
-		new RepoLayout(tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
+
+		String clusterRoot = new File(repositoryWorkspace.clusterResourcesRootDir()).canonicalPath
+		String tenantRoot = new File(repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath
+
+		if (clusterRoot == tenantRoot) {
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires separate local workspaces for ' + 'central cluster-resources and tenant bootstrap repositories. ' +
+				"Both resolved to: ${clusterRoot}")
+		}
 	}
 
-	void initLocalRepos() {
-		allRepos.each { it.initLocalRepo() }
+	private void prepareClusterResourcesRepo() {
+		GitRepo clusterResourcesRepo = repositoryWorkspace.clusterResourcesRepository
+
+		Set<String> subDirsToCopy = determineLegacyClusterResourceSubDirs(config)
+
+		log.debug("Preparing cluster-resources repo ${clusterResourcesRepo.repoTarget} from ${CLUSTER_RESOURCES_SOURCE_DIR} with subdirs: ${subDirsToCopy}")
+
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
+			createSubdirFilter(CLUSTER_RESOURCES_SOURCE_DIR, subDirsToCopy))
+
+		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo))
+
+		prepareClusterResourcesLayout()
 	}
 
-	void prepareClusterResourcesRepo() {
-		RepoLayout layout = clusterRepoLayout()
+	private void prepareTenantBootstrapRepo() {
+		GitRepo tenantBootstrapRepo = repositoryWorkspace.tenantBootstrapRepositoryOrFail()
+
+		log.debug("Preparing tenant bootstrap repo ${tenantBootstrapRepo.repoTarget} from ${TENANT_BOOTSTRAP_SOURCE_DIR}")
+
+		tenantBootstrapRepo.copyDirectoryContents(TENANT_BOOTSTRAP_SOURCE_DIR,
+			allowAllFilter())
+
+		tenantBootstrapRepo.replaceTemplates(buildTemplateValues(tenantBootstrapRepo))
+	}
+
+	private void prepareClusterResourcesLayout() {
+		ArgoCDRepoLayout layout = clusterRepoLayout()
 
 		if (config.features.argocd.operator) {
 			fileSystemUtils.deleteDir(layout.helmDir())
@@ -99,11 +123,17 @@ class ArgoCDRepoSetup {
 		}
 
 		if (context.isMultiTenant()) {
-			log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${clusterRepoLayout().applicationsDir()}, projects=${clusterRepoLayout().projectsDir()}, tenant=${clusterRepoLayout().multiTenantDir()}/tenant")
-			FileSystemUtils.deleteDir clusterRepoLayout().applicationsDir()
-			FileSystemUtils.deleteDir clusterRepoLayout().projectsDir()
-			fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(clusterRepoLayout().multiTenantDir() + "/central"), Path.of(clusterRepoLayout().argocdRoot()))
-			FileSystemUtils.deleteDir clusterRepoLayout().multiTenantDir()
+			log.debug('Deleting unnecessary non dedicated instances folders from argocd repo: ' + "applications=${layout.applicationsDir()}, " +
+				"projects=${layout.projectsDir()}, " +
+				"tenant=${layout.multiTenantDir()}/tenant")
+
+			fileSystemUtils.deleteDir(layout.applicationsDir())
+			fileSystemUtils.deleteDir(layout.projectsDir())
+
+			fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(layout.multiTenantDir(), 'central'),
+				Path.of(layout.argocdRoot()))
+
+			fileSystemUtils.deleteDir(layout.multiTenantDir())
 		} else {
 			fileSystemUtils.deleteDir(layout.multiTenantDir())
 		}
@@ -113,48 +143,98 @@ class ArgoCDRepoSetup {
 		}
 	}
 
-	void commitAndPushAll(String message) {
-		allRepos.each { it.repo.commitAndPush(message) }
-	}
-
-	private static Set<String> determineClusterResourceSubDirs(DeploymentContext context) {
-		def config = context.config
+	private static Set<String> determineLegacyClusterResourceSubDirs(Config config) {
 		Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
 
-		clusterResourceSubDirs.add(RepoLayout.argocdSubdirRel())
+		// ArgoCD remains owned by ArgoCDRepoSetup.
+		clusterResourceSubDirs.add(ArgoCDRepoLayout.argocdSubdirRel())
 
+		// Transitional behavior:
+		// These tool directories are still copied here to preserve the current behavior.
+		// In the target architecture each tool prepares its own apps/<tool> directory.
 		if (config.features.certManager.active) {
-			clusterResourceSubDirs.add(RepoLayout.certManagerSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())
 		}
+
 		if (config.features.ingress.active) {
-			clusterResourceSubDirs.add(RepoLayout.ingressSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
 		}
+
 		if (config.jenkins.internal) {
-			clusterResourceSubDirs.add(RepoLayout.jenkinsSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
 		}
+
 		if (config.features.monitoring.active) {
-			clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
 		}
-		if (context.isInternalScmManager()) {
-			clusterResourceSubDirs.add(RepoLayout.scmManagerSubdirRel())
-		}
+
 		if (config.features.secrets.active) {
-			clusterResourceSubDirs.add(RepoLayout.secretsSubdirRel())
-			clusterResourceSubDirs.add(RepoLayout.vaultSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
+			clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
 		}
 
 		return clusterResourceSubDirs
 	}
 
-	private static RepoInitializationAction createRepoInitializationAction(Config config,
-		GitRepoFactory repoFactory,
-		GitHandler gitHandler,
-		String localSrcDir,
-		String scmRepoTarget,
-		GitProvider gitProvider) {
-		new RepoInitializationAction(config,
-			repoFactory.getRepo(scmRepoTarget, gitProvider),
-			gitHandler,
-			localSrcDir)
+	private Map<String, Object> buildTemplateValues(GitRepo repo) {
+		return [tenantName: config.application.tenantName,
+		        argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
+		        scm       : [baseUrl      : repo.gitProvider.url,
+		                     host         : repo.gitProvider.host,
+		                     protocol     : repo.gitProvider.protocol,
+		                     repoUrl      : repo.gitProvider.repoPrefix(),
+		                     centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
+		        config    : config,
+		        statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
+	}
+
+	private static FileFilter allowAllFilter() {
+		return { File f -> true } as FileFilter
+	}
+
+	private static FileFilter createSubdirFilter(String copyFromDirectory, Set<String> subDirsToCopy) {
+		if (!subDirsToCopy || subDirsToCopy.isEmpty()) {
+			return allowAllFilter()
+		}
+
+		File srcRoot = new File(copyFromDirectory).canonicalFile
+
+		Set<String> prefixes = subDirsToCopy.collect { String s ->
+			String norm = s.replace('\\', '/')
+			norm = norm.replaceAll('^/+', '').replaceAll('/+$', '')
+			norm + '/'
+		} as Set<String>
+
+		Set<String> templateIncludePrefixes = ['apps/argocd/argocd/templates/'] as Set<String>
+
+		return { File f ->
+			File canon = f.canonicalFile
+			String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
+			rel = rel.replace('\\', '/')
+
+			if (rel == '' || rel == '.') {
+				return true
+			}
+
+			boolean isDir = f.isDirectory()
+			String relDir = rel.endsWith('/') ? rel : rel + '/'
+
+			if (templateIncludePrefixes.any { String p -> (isDir ? relDir : rel).startsWith(p)
+			}) {
+				return true
+			}
+
+			if (rel.startsWith('apps/') && relDir.contains('/templates/')) {
+				return false
+			}
+
+			if (isDir) {
+				return prefixes.any { String p -> relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
+				}
+			}
+
+			prefixes.any { String p -> rel.startsWith(p)
+			}
+		} as FileFilter
 	}
 }

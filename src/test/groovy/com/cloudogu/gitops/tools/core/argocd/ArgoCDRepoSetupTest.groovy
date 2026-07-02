@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.scm.util.ScmProviderType
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.TestGitProvider
@@ -13,23 +16,24 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
 
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class ArgoCDRepoSetupTest {
 
 	Config config
-	GitProvider tenantProvider
-	GitProvider centralProvider
 
 	@BeforeEach
 	void setUp() {
 		config = Config.fromMap(application: [namePrefix: '',
+		                                      tenantName: '',
 		                                      netpols   : true,
 		                                      namespaces: [dedicatedNamespaces: ["argocd", "monitoring", "secrets"],
 		                                                   tenantNamespaces   : ["example-apps-staging", "example-apps-production"]]],
-			scm: [scmManager: [internal: true],
-			      gitlab    : [url: '']],
+			scm: [scmProviderType: ScmProviderType.SCM_MANAGER,
+			      scmManager     : [internal: true],
+			      gitlab         : [url: '']],
 			multiTenant: [scmManager            : [url: ''],
 			              gitlab                : [url: ''],
 			              useDedicatedInstance  : false,
@@ -41,49 +45,94 @@ class ArgoCDRepoSetupTest {
 			           ingress    : [active: true],
 			           monitoring : [active: true, helm: [chart: 'kube-prometheus-stack', version: '42.0.3']],
 			           mail       : [active: false],
-			           secrets    : [active: true],])
+			           secrets    : [active: true]])
+	}
+
+	private ArgoCDRepoSetupTestContext createSetup(FileSystemUtils fs) {
 
 		def providers = TestGitProvider.buildProviders(config)
-		tenantProvider = providers.tenant as GitProvider
-		centralProvider = providers.central as GitProvider
-	}
+		GitProvider tenantProvider = providers.tenant as GitProvider
+		GitProvider centralProvider = providers.central as GitProvider
 
-	private ArgoCDRepoSetup createSetup(FileSystemUtils fs) {
 		def repoFactory = new TestGitRepoFactory(config, new FileSystemUtils())
-		repoFactory.defaultProvider = tenantProvider
 
-		def gitHandler = new GitHandlerForTests(config, tenantProvider, centralProvider)
-		return ArgoCDRepoSetup.create(new ContextBuilder(config).build(), fs, repoFactory, gitHandler)
+		GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
+			config.multiTenant.useDedicatedInstance ? centralProvider : tenantProvider)
+
+		RepositoryWorkspace repositoryWorkspace
+
+		if (config.multiTenant.useDedicatedInstance) {
+			/*
+			 * Test-only workspace separation:
+			 *
+			 * In the real dedicated multi-tenant setup, central cluster-resources and
+			 * tenant bootstrap use the same logical repo target in different SCM-Manager
+			 * instances. For this unit test, TestGitRepoFactory derives the local workspace
+			 * from the repo target. Therefore we use a dedicated test target here to avoid
+			 * both GitRepo objects pointing to the same local directory.
+			 */
+			GitRepo tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
+				tenantProvider)
+
+			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
+				tenantBootstrapRepo)
+		} else {
+			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		}
+
+		def gitHandler = new GitHandlerForTests(config,
+			tenantProvider,
+			centralProvider)
+
+		return new ArgoCDRepoSetupTestContext(setup: ArgoCDRepoSetup.create(new ContextBuilder(config).build(),
+			fs,
+			gitHandler,
+			repositoryWorkspace),
+			repositoryWorkspace: repositoryWorkspace)
 	}
 
 	@Test
-	void 'create() single instance creates only cluster-resources and no tenantBootstrap'() {
+	void 'create() single instance uses cluster-resources repository only'() {
 		config.multiTenant.useDedicatedInstance = false
 
-		def setup = createSetup(new FileSystemUtils())
+		def testContext = createSetup(new FileSystemUtils())
 
-		assertThat(setup.tenantBootstrap).isNull()
-		assertThat(setup.clusterResources).isNotNull()
-		assertThat(setup.allRepos).hasSize(1)
-		assertThat(setup.clusterResources.repo.repoTarget).isEqualTo('argocd/cluster-resources')
+		assertThat(testContext.repositoryWorkspace.clusterResourcesRepository).isNotNull()
+		assertThat(testContext.repositoryWorkspace.clusterResourcesRepository.repoTarget).isEqualTo('argocd/cluster-resources')
+		assertThat(testContext.repositoryWorkspace.hasTenantBootstrapRepository()).isFalse()
+
+		assertThat(testContext.setup.clusterRepoLayout()).isNotNull()
 	}
 
 	@Test
-	void 'create() dedicated instance creates tenantBootstrap and clusterResources'() {
+	void 'create() dedicated instance uses cluster-resources and tenant-bootstrap repositories from workspace'() {
 		config.multiTenant.useDedicatedInstance = true
 
-		def setup = createSetup(new FileSystemUtils())
+		def testContext = createSetup(new FileSystemUtils())
 
-		assertThat(setup.tenantBootstrap).isNotNull()
-		assertThat(setup.clusterResources).isNotNull()
-		assertThat(setup.allRepos).hasSize(2)
+		assertThat(testContext.repositoryWorkspace.clusterResourcesRepository).isNotNull()
+		assertThat(testContext.repositoryWorkspace.tenantBootstrapRepository).isNotNull()
+		assertThat(testContext.repositoryWorkspace.hasTenantBootstrapRepository()).isTrue()
+
+		assertThat(testContext.setup.clusterRepoLayout()).isNotNull()
+		assertThat(testContext.setup.tenantRepoLayout()).isNotNull()
+	}
+
+	@Test
+	void 'dedicated mode uses separate local workspaces for central and tenant bootstrap repositories'() {
+		config.multiTenant.useDedicatedInstance = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		assertThat(new File(testContext.repositoryWorkspace.clusterResourcesRootDir()).canonicalPath)
+			.isNotEqualTo(new File(testContext.repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath)
 	}
 
 	@Test
 	void 'tenantRepoLayout throws in single instance mode'() {
 		config.multiTenant.useDedicatedInstance = false
 
-		def setup = createSetup(new FileSystemUtils())
+		def setup = createSetup(new FileSystemUtils()).setup
 
 		assertThrows(IllegalStateException) {
 			setup.tenantRepoLayout()
@@ -91,46 +140,54 @@ class ArgoCDRepoSetupTest {
 	}
 
 	@Test
-	void 'prepareClusterResourcesRepo deletes helmDir when operator is enabled'() {
+	void 'tenantRepoLayout is available in dedicated instance mode'() {
+		config.multiTenant.useDedicatedInstance = true
+
+		def setup = createSetup(new FileSystemUtils()).setup
+
+		assertThat(setup.tenantRepoLayout()).isNotNull()
+	}
+
+	@Test
+	void 'prepareRepositories deletes helmDir when operator is enabled'() {
 		config.features.argocd.operator = true
 		config.multiTenant.useDedicatedInstance = false
 		config.application.netpols = true
-		def setup = createSetup(new FileSystemUtils())
 
-		setup.initLocalRepos()
-		setup.prepareClusterResourcesRepo()
+		def setup = createSetup(new FileSystemUtils()).setup
+
+		setup.prepareRepositories()
 
 		def clusterRepoLayout = setup.clusterRepoLayout()
+
 		assertThat(Path.of(clusterRepoLayout.helmDir())).doesNotExist()
 	}
 
 	@Test
-	void 'prepareClusterResourcesRepo deletes operatorDir when operator is disabled'() {
+	void 'prepareRepositories deletes operatorDir when operator is disabled'() {
 		config.features.argocd.operator = false
 		config.multiTenant.useDedicatedInstance = false
 		config.application.netpols = true
 
-		def setup = createSetup(new FileSystemUtils())
+		def setup = createSetup(new FileSystemUtils()).setup
 
-		setup.initLocalRepos()
-		setup.prepareClusterResourcesRepo()
+		setup.prepareRepositories()
 
 		def clusterRepoLayout = setup.clusterRepoLayout()
+
 		assertThat(Path.of(clusterRepoLayout.operatorDir())).doesNotExist()
 		assertThat(Path.of(clusterRepoLayout.helmDir())).exists()
-
 	}
 
 	@Test
-	void 'prepareClusterResourcesRepo in dedicated mode deletes multiTenant folder'() {
+	void 'prepareRepositories in dedicated mode replaces single-instance resources with central resources'() {
 		config.features.argocd.operator = false
 		config.multiTenant.useDedicatedInstance = true
 		config.application.netpols = true
 
-		def setup = createSetup(new FileSystemUtils())
+		def setup = createSetup(new FileSystemUtils()).setup
 
-		setup.initLocalRepos()
-		setup.prepareClusterResourcesRepo()
+		setup.prepareRepositories()
 
 		def clusterRepoLayout = setup.clusterRepoLayout()
 
@@ -140,63 +197,171 @@ class ArgoCDRepoSetupTest {
 	}
 
 	@Test
-	void 'prepareClusterResourcesRepo in single instance deletes multiTenant folder'() {
+	void 'prepareRepositories in dedicated mode keeps central and tenant bootstrap templates separated'() {
+		config.application.namePrefix = 'testPrefix-'
+		config.multiTenant.useDedicatedInstance = true
+		config.multiTenant.scmManager.url = 'scmm.testhost/scm'
+		config.multiTenant.centralArgocdNamespace = 'argocd'
+		config.features.argocd.operator = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		def clusterRepoLayout = testContext.setup.clusterRepoLayout()
+		def tenantRepoLayout = testContext.setup.tenantRepoLayout()
+
+		File centralBootstrapFile = new File(clusterRepoLayout.applicationsDir(), 'bootstrap.yaml')
+		File tenantBootstrapFile = new File(tenantRepoLayout.applicationsDir(), 'bootstrap.yaml')
+
+		assertThat(centralBootstrapFile).exists()
+		assertThat(tenantBootstrapFile).exists()
+
+		def centralBootstrapYaml = new YamlSlurper().parse(centralBootstrapFile)
+		def tenantBootstrapYaml = new YamlSlurper().parse(tenantBootstrapFile)
+
+		assertThat(centralBootstrapYaml)
+			.as('central bootstrap.yaml must contain exactly one central Application')
+			.isInstanceOf(Map)
+
+		assertThat(centralBootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
+		assertThat(centralBootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
+		assertThat(centralBootstrapYaml['spec']['destination']['namespace']).isEqualTo('testPrefix-argocd')
+		assertThat(centralBootstrapYaml['spec']['project']).isEqualTo('testPrefix')
+		assertThat(centralBootstrapYaml['spec']['source']['path']).isEqualTo('apps/argocd/applications/')
+		assertThat(centralBootstrapYaml['spec']['source']['repoURL'])
+			.isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git')
+
+		assertThat(tenantBootstrapYaml)
+			.as('tenant bootstrap.yaml should contain tenant bootstrap Applications')
+			.isInstanceOf(List)
+
+		List<Map> tenantBootstrapDocuments = tenantBootstrapYaml as List<Map>
+
+		List<String> tenantApplicationNames = tenantBootstrapDocuments.collect { Map document -> document['metadata']['name'] as String
+		}
+
+		List<String> tenantApplicationNamespaces = tenantBootstrapDocuments.collect { Map document -> document['metadata']['namespace'] as String
+		}
+
+		List<String> tenantApplicationProjects = tenantBootstrapDocuments.collect { Map document -> document['spec']['project'] as String
+		}
+
+		assertThat(tenantApplicationNames)
+			.containsExactly('bootstrap', 'projects')
+
+		assertThat(tenantApplicationNamespaces)
+			.containsOnly('testPrefix-argocd')
+
+		assertThat(tenantApplicationProjects)
+			.containsOnly('argocd')
+	}
+
+	@Test
+	void 'prepareRepositories in single instance deletes multiTenant folder'() {
 		config.features.argocd.operator = false
 		config.multiTenant.useDedicatedInstance = false
 		config.application.netpols = true
 
-		def setup = createSetup(new FileSystemUtils())
+		def setup = createSetup(new FileSystemUtils()).setup
 
-		setup.initLocalRepos()
-		setup.prepareClusterResourcesRepo()
+		setup.prepareRepositories()
 
 		def clusterRepoLayout = setup.clusterRepoLayout()
+
 		assertThat(Path.of(clusterRepoLayout.multiTenantDir())).doesNotExist()
 	}
 
 	@Test
-	void 'prepareClusterResourcesRepo deletes netpol file when netpols disabled'() {
+	void 'prepareRepositories deletes netpol file when netpols disabled'() {
 		config.application.netpols = false
 
-		def setup = createSetup(new FileSystemUtils())
+		def setup = createSetup(new FileSystemUtils()).setup
 
-		setup.initLocalRepos()
-		setup.prepareClusterResourcesRepo()
+		setup.prepareRepositories()
 
 		def clusterRepoLayout = setup.clusterRepoLayout()
+
 		assertThat(Path.of(clusterRepoLayout.netpolFile())).doesNotExist()
 	}
 
 	@Test
-	void 'create() sets subDirsToCopy based on enabled features'() {
-		config.features.ingress.active = true
-		config.features.monitoring.active = false
-		config.features.secrets.active = false
-		config.jenkins.internal = false
-		config.features.mail.active = false
-		config.features.certManager.active = false
+	void 'prepareRepositories keeps netpol file when netpols enabled'() {
+		config.application.netpols = true
 
-		def setup = createSetup(new FileSystemUtils())
-		def dirs = setup.clusterResources.subDirsToCopy as Set<String>
+		def setup = createSetup(new FileSystemUtils()).setup
 
-		assertThat(dirs).contains(RepoLayout.argocdSubdirRel())
-		assertThat(dirs).contains(RepoLayout.ingressSubdirRel())
+		setup.prepareRepositories()
 
-		assertThat(dirs).doesNotContain(RepoLayout.monitoringSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.secretsSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.vaultSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.jenkinsSubdirRel())
-		assertThat(dirs).doesNotContain(RepoLayout.certManagerSubdirRel())
+		def clusterRepoLayout = setup.clusterRepoLayout()
+
+		assertThat(Path.of(clusterRepoLayout.netpolFile())).exists()
 	}
 
 	@Test
-	void 'create() includes secrets + vault subdirs when secrets feature active'() {
+	void 'prepareRepositories copies ingress resources when ingress feature is active'() {
+		config.features.ingress.active = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.ingressSubdirRel())).exists()
+	}
+
+	@Test
+	void 'prepareRepositories does not copy monitoring resources when monitoring feature is inactive'() {
+		config.features.monitoring.active = false
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.monitoringSubdirRel())).doesNotExist()
+	}
+
+	@Test
+	void 'prepareRepositories copies secrets and vault resources when secrets feature is active'() {
 		config.features.secrets.active = true
 
-		def setup = createSetup(new FileSystemUtils())
-		def dirs = setup.clusterResources.subDirsToCopy as Set<String>
+		def testContext = createSetup(new FileSystemUtils())
 
-		assertThat(dirs).contains(RepoLayout.secretsSubdirRel())
-		assertThat(dirs).contains(RepoLayout.vaultSubdirRel())
+		testContext.setup.prepareRepositories()
+
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.secretsSubdirRel())).exists()
+
+		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
+			ArgoCDRepoLayout.vaultSubdirRel())).exists()
+	}
+
+	@Test
+	void 'prepareRepositories prepares tenant bootstrap repository in dedicated mode'() {
+		config.multiTenant.useDedicatedInstance = true
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		assertThat(Path.of(testContext.repositoryWorkspace.tenantBootstrapRootDir())).exists()
+		assertThat(Path.of(testContext.repositoryWorkspace.tenantBootstrapRootDir()).toFile().listFiles()).isNotEmpty()
+	}
+
+	@Test
+	void 'prepareRepositories does not prepare tenant bootstrap repository in single instance mode'() {
+		config.multiTenant.useDedicatedInstance = false
+
+		def testContext = createSetup(new FileSystemUtils())
+
+		testContext.setup.prepareRepositories()
+
+		assertThat(testContext.repositoryWorkspace.hasTenantBootstrapRepository()).isFalse()
+	}
+
+	static class ArgoCDRepoSetupTestContext {
+		ArgoCDRepoSetup setup
+		RepositoryWorkspace repositoryWorkspace
 	}
 }

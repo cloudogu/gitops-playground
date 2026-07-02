@@ -252,7 +252,7 @@ class GitopsPlaygroundCli {
 	}
 
 	static void runHook(Application app, String methodName, def config) {
-		([new CommonToolConfig(), *app.features]).each { feature ->
+		([new CommonToolConfig(), *app.tools]).each { feature ->
 			// Executing only the method if the derived feature class has implemented the passed methodName
 			def mm = feature.metaClass.getMetaMethod(methodName, config)
 			if (mm && mm.declaringClass.theClass != Tool) {

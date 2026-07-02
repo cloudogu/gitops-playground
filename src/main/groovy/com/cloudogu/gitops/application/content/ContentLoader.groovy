@@ -97,7 +97,7 @@ class ContentLoader extends Tool {
 		configToSet.content.repos.each { repo ->
 
 			if (!repo.url) {
-				throw new RuntimeException("content.repos requires a url parameter.")
+				throw new RuntimeException('content.repos requires a url parameter.')
 			}
 			if (repo.target) {
 				if (repo.target.count('/') == 0) {
@@ -136,14 +136,14 @@ class ContentLoader extends Tool {
 
 	protected void deployHelmReleasesFromContent() {
 		if (!config.content?.helmReleases) {
-			log.debug("No content.helmReleases configured - skipping.")
+			log.debug('No content.helmReleases configured - skipping.')
 			return
 		}
 
 		config.content.helmReleases.each { helmRelease ->
 			String version = helmRelease.version?.trim()
 			if (!version) {
-				version = "*"
+				version = '*'
 			}
 
 			Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues(repoURL: helmRelease.repoURL,
@@ -319,7 +319,7 @@ class ContentLoader extends Tool {
 	}
 
 	private static List<File> findRepoDirectories(File srcRepo) {
-		srcRepo.listFiles().findAll {
+		return srcRepo.listFiles().findAll {
 			it.isDirectory() && // Exclude .git for example
 				!it.name.startsWith('.')
 		}
@@ -329,7 +329,7 @@ class ContentLoader extends Tool {
 		if (repoConfig.templating) {
 			def engine = getTemplatingEngine()
 
-			GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
+			GitRepo repo = this.repoProvider.create(repoConfig.target, this.gitHandler.tenant)
 
 			engine.replaceTemplates(srcPath, [config : config,
 			                                  scm    : [baseUrl : repo.gitProvider.url,
@@ -362,7 +362,7 @@ class ContentLoader extends Tool {
 			if (credentialsProvider) {
 				fetch.setCredentialsProvider(credentialsProvider)
 			}
-			fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
+			fetch.setRefSpecs('+refs/*:refs/*').call() // Fetch all branches and tags
 		}
 
 		if (repoConfig.ref) {
@@ -400,8 +400,21 @@ class ContentLoader extends Tool {
 	private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
 		repoCoordinates.each { repoCoordinate ->
 
-			GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName, this.gitHandler.tenant)
-			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
+			log.trace("Preparing ContentLoader target repo '{}'. type='{}', overwriteMode='{}', targetRef='{}', refIsTag='{}', source='{}'",
+				repoCoordinate.fullRepoName,
+				repoCoordinate.repoConfig.type,
+				repoCoordinate.repoConfig.overwriteMode,
+				repoCoordinate.repoConfig.targetRef,
+				repoCoordinate.refIsTag,
+				repoCoordinate.clonedContentRepo?.absolutePath)
+
+			GitRepo targetRepo = repoProvider.create(repoCoordinate.fullRepoName, this.gitHandler.tenant)
+
+			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission('', false)
+			log.trace("ContentLoader target repo '{}'. isNewRepo='{}', localTargetRepo='{}'",
+				repoCoordinate.fullRepoName,
+				isNewRepo,
+				targetRepo.absoluteLocalRepoTmpDir)
 
 			if (isValidForPush(isNewRepo, repoCoordinate)) {
 				targetRepo.cloneRepo()
@@ -410,7 +423,6 @@ class ContentLoader extends Tool {
 					case ContentRepoType.MIRROR:
 						handleRepoMirroring(repoCoordinate, targetRepo)
 						break
-						// COPY and FOLDER_BASED same treatment
 					case ContentRepoType.FOLDER_BASED:
 					case ContentRepoType.COPY:
 						handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo)
@@ -419,18 +431,33 @@ class ContentLoader extends Tool {
 
 				createJenkinsJobIfApplicable(repoCoordinate, targetRepo)
 
-				// cleaning tmp folders
+				log.trace("Cleaning ContentLoader temp folders for repo '{}'. source='{}', target='{}'",
+					repoCoordinate.fullRepoName,
+					repoCoordinate.clonedContentRepo?.absolutePath,
+					targetRepo.absoluteLocalRepoTmpDir)
+
 				repoCoordinate.clonedContentRepo.deleteDir()
 				new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
-			} // no else needed
+			} else {
+				log.debug("Skipping ContentLoader push for repo '{}'. isNewRepo='{}', overwriteMode='{}'",
+					repoCoordinate.fullRepoName,
+					isNewRepo,
+					repoCoordinate.repoConfig.overwriteMode)
+			}
 		}
-
 	}
 
 	/**
-	 * Copies repoCoordinate to targetRepo, commits and pushes
-	 * Same logic for both FOLDER_BASED and COPY repo types.*/
+	 * Copies repoCoordinate to targetRepo, commits and pushes.
+	 * Same logic for both FOLDER_BASED and COPY repo types.	*/
 	private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, GitRepo targetRepo, boolean isNewRepo) {
+		log.trace("Copying ContentLoader content into repo '{}'. isNewRepo='{}', overwriteMode='{}', source='{}', target='{}'",
+			repoCoordinate.fullRepoName,
+			isNewRepo,
+			repoCoordinate.repoConfig.overwriteMode,
+			repoCoordinate.clonedContentRepo?.absolutePath,
+			targetRepo.absoluteLocalRepoTmpDir)
+
 		if (!isNewRepo) {
 			clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
 		}
@@ -441,13 +468,19 @@ class ContentLoader extends Tool {
 
 		String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
 		String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
+
 		if (targetRefShort) {
 			String refSpec = setRefSpec(repoCoordinate, targetRefShort)
+			log.trace("Committing ContentLoader repo '{}'. targetRefShort='{}', refSpec='{}'",
+				repoCoordinate.fullRepoName,
+				targetRefShort,
+				refSpec)
 			targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
 		} else {
+			log.trace("Committing ContentLoader repo '{}' to default main branch.",
+				repoCoordinate.fullRepoName)
 			targetRepo.commitAndPush(commitMessage)
 		}
-
 	}
 
 	private static String setRefSpec(RepoCoordinate repoCoordinate, String targetRefShort) {
@@ -457,17 +490,24 @@ class ContentLoader extends Tool {
 		} else {
 			refSpec = "HEAD:refs/heads/${targetRefShort}"
 		}
-		refSpec
+		return refSpec
 	}
 
 	private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
 		if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
 			if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
-				log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+				log.info('OverwriteMode ' + String.valueOf(OverwriteMode.RESET) +
+					' set for repo \'' +
+					repoCoordinate.fullRepoName +
+					'\': ' +
 					"Deleting existing files in repo and replacing them with new content.")
 				targetRepo.clearRepo()
 			} else {
-				log.debug("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " + "Merging new content into existing repo. ")
+				log.debug('OverwriteMode ' + String.valueOf(OverwriteMode.UPGRADE) +
+					' set for repo \'' +
+					repoCoordinate.fullRepoName +
+					'\': ' +
+					"Merging new content into existing repo. ")
 			}
 		}
 	}
@@ -528,7 +568,7 @@ class ContentLoader extends Tool {
 	/**
 	 * Overwrite for testing purposes*/
 	protected CloneCommand gitClone() {
-		Git.cloneRepository()
+		return Git.cloneRepository()
 	}
 
 	/**
@@ -555,7 +595,11 @@ class ContentLoader extends Tool {
 	static boolean isValidForPush(boolean isNewRepo, RepoCoordinate repoCoordinate) {
 
 		if (!isNewRepo && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
-			log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " + "and repo already exists in target:  Not pushing content!" +
+			log.warn('OverwriteMode ' + String.valueOf(OverwriteMode.INIT) +
+				' set for repo \'' +
+				repoCoordinate.fullRepoName +
+				'\' ' +
+				"and repo already exists in target:  Not pushing content!" +
 				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}
@@ -590,14 +634,14 @@ class ContentLoader extends Tool {
 		 * @return all epoCoordinate with the same fullRepoName. There can be one with either COPY/FOLDER_BASED and many MIRRORs.
 		 */
 		List<RepoCoordinate> findSame(List<RepoCoordinate> repoCoordinates) {
-			repoCoordinates.findAll() { it.fullRepoName == fullRepoName }
+			return repoCoordinates.findAll() { it.fullRepoName == fullRepoName }
 		}
 
 		/**
 		 * @return RepoCoordinate with the same fullRepoName and repoConfig.type not MIRROR. There can only ever be one!
 		 */
 		RepoCoordinate findSameNotMirror(List<RepoCoordinate> repoCoordinates) {
-			repoCoordinates.find() {
+			return repoCoordinates.find() {
 				it.fullRepoName == fullRepoName && ContentRepoType.MIRROR != it.repoConfig.type
 			}
 		}

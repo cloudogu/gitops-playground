@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
 import com.cloudogu.gitops.application.context.DeploymentContext
-import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
@@ -19,18 +19,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	private FileSystemUtils fileSystemUtils
 	private DeploymentContext context
-	private final GitRepoFactory gitRepoProvider
-
-	private GitHandler gitHandler
+	private final RepositoryProvisioning repositoryProvisioning
 
 	ArgoCdApplicationStrategy(DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
-		GitRepoFactory gitRepoProvider,
-		GitHandler gitHandler) {
-		this.gitRepoProvider = gitRepoProvider
+		RepositoryProvisioning repositoryProvisioning) {
 		this.fileSystemUtils = fileSystemUtils
 		this.context = context
-		this.gitHandler = gitHandler
+		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	private Config getConfig() {
@@ -40,16 +36,22 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	@Override
 	@SuppressWarnings('GroovyGStringKey')
 	// Using dynamic strings as keys seems an easy to read way to avoid more ifs
-	void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
-		String releaseName, Path helmValuesPath, RepoType repoType) {
+	void deployFeature(String repoURL,
+		String repoName,
+		String chartOrPath,
+		String version,
+		String namespace,
+		String releaseName,
+		Path helmValuesPath,
+		RepoType repoType) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
+
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
 		def namePrefix = config.application.namePrefix
 		def prefix = (namePrefix ?: '').strip()
 		def shallCreateNamespace = config.features['argocd']['operator'] ? 'CreateNamespace=false' : 'CreateNamespace=true'
-
-		GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
-		clusterResourcesRepo.cloneRepo()
 
 		String project = 'cluster-resources'
 		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
@@ -83,6 +85,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		// --- ensure folders exist before writing files ---
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
 		Path.of(repoRoot, toolPath).toFile().mkdirs()
+		Path.of(repoRoot, 'apps/argocd/applications').toFile().mkdirs()
+
 
 		// 1) GOP-managed values
 		String gopValuesPath = "${toolPath}/${toolName}-gop-helm.yaml"
@@ -132,7 +136,20 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		def sources = [helmSource]
 
 		if (!bootstrapDeploymentRequired) {
+			/*
+			 * Important:
+			 * Do not use workspace.clusterResourcesRepositoryUrl() yet.
+			 *
+			 * GitRepo currently applies config.application.namePrefix internally.
+			 * Using clusterResourcesRepository.repoTarget here can therefore lead to
+			 * a double prefix like:
+			 *
+			 *   my-prefix-my-prefix-argocd/cluster-resources
+			 *
+			 * Until prefixing is moved out of GitRepo, keep the repo target unprefixed here.
+			 */
 			def toolRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+
 			def gitSource = [repoURL       : toolRepoUrl,
 			                 targetRevision: 'main',
 			                 ref           : 'values',
@@ -157,9 +174,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                                                             sources    : sources,
 		                                                             syncPolicy : [automated  : [prune   : true,
 		                                                                                         selfHeal: true],
-		                                                                           syncOptions: [// So that we can apply very large resources (e.g. prometheus CRD)
+		                                                                           syncOptions: [// So that we can apply very large resources, e.g. prometheus CRD.
 		                                                                                         'ServerSideApply=true',
-		                                                                                         // Create namespaces for helm charts (while not using the argocd-operater mode)
+		                                                                                         // Create namespaces for helm charts while not using the argocd-operator mode.
 		                                                                                         shallCreateNamespace]]]])
 
 		/*
@@ -175,18 +192,20 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " + "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
+		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 
-		clusterResourcesRepo.commitAndPush("Added $repoName/$chartOrPath to ArgoCD")
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(toolName,
+			"Add ${repoName}/${chartOrPath} to ArgoCD")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {
 		switch (repoType) {
-			case RepoType.HELM: 'chart'
-				break
-			case RepoType.GIT: 'path'
-				break
-			default: throw new RuntimeException("Repo type ${repoType} not implemented for ${this.class.simpleName}")
+			case RepoType.HELM:
+				return 'chart'
+			case RepoType.GIT:
+				return 'path'
+			default:
+				throw new RuntimeException("Repo type ${repoType} not implemented for ${this.class.simpleName}")
 		}
 	}
 

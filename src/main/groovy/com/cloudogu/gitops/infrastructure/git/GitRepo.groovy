@@ -20,10 +20,7 @@ import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
-import org.eclipse.jgit.transport.ChainingCredentialsProvider
-import org.eclipse.jgit.transport.CredentialsProvider
-import org.eclipse.jgit.transport.RefSpec
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.transport.*
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
 
@@ -96,38 +93,98 @@ class GitRepo {
 			.call()
 	}
 
+	void initLocalRepoIfNeeded() {
+		File localRepoDir = new File(getAbsoluteLocalRepoTmpDir())
+		File gitDir = new File(localRepoDir, '.git')
+
+		if (gitDir.exists()) {
+			log.debug("Local git repository already initialized at ${localRepoDir}")
+			return
+		}
+
+		log.debug("Initializing local git repository at ${localRepoDir}")
+
+		localRepoDir.mkdirs()
+
+		Git git = Git.init()
+			.setDirectory(localRepoDir)
+			.call()
+
+		// Configure the 'origin' remote so init'd repos behave like cloned ones.
+		// pullRebaseMain() pulls from the remote name 'origin'; without this the
+		// repo has no remote.origin.url and JGit fails with
+		// "No value for key remote.origin.url found in configuration".
+		git.remoteAdd()
+			.setName('origin')
+			.setUri(new URIish(getGitRepositoryUrl()))
+			.call()
+
+		git.close()
+	}
+
+	void pullRebaseMain() {
+		log.debug('Pulling remote main with rebase for repo {}', repoTarget)
+
+		getGit()
+			.pull()
+			.setRemote('origin')
+			.setRemoteBranchName('main')
+			.setRebase(true)
+			.setCredentialsProvider(getCredentialProvider())
+			.call()
+	}
+
 	void commitAndPush(String message, String tag) {
 		commitAndPush(message, tag, 'HEAD:refs/heads/main')
 	}
 
 	void commitAndPush(String commitMessage, String tag, String refSpec) {
 		log.debug("Adding files to ${repoTarget}")
+
 		def git = getGit()
-		git.add().addFilepattern(".").call()
+		git.add().addFilepattern('.').call()
 
 		if (git.status().call().hasUncommittedChanges()) {
 			log.debug("Commiting ${repoTarget}")
+
 			git.commit()
 				.setSign(false)
 				.setMessage(commitMessage)
 				.setAuthor(gitName, gitEmail)
-				.setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(', '')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
+				.setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(', '')}", gitEmail)
 				.call()
 
 			def pushCommand = createPushCommand(refSpec)
 
 			if (tag) {
 				log.debug("Setting tag '${tag}' on repo: ${repoTarget}")
+
 				// Delete existing tags first to get idempotence
 				git.tagDelete().setTags(tag).call()
 				git.tag()
 					.setName(tag)
 					.call()
+
 				pushCommand.setPushTags()
 			}
 
 			log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
-			pushCommand.call()
+
+			def pushResults = pushCommand.call()
+
+			pushResults.each { result ->
+				result.remoteUpdates.each { update ->
+					log.debug("Push result for repo '{}': remoteName='{}', status='{}', message='{}'",
+						repoTarget,
+						update.remoteName,
+						update.status,
+						update.message)
+
+					if (update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK && update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+						throw new RuntimeException("Push failed for repo '${repoTarget}', remoteName='${update.remoteName}', status='${update.status}', message='${update.message}'")
+					}
+				}
+			}
 		} else {
 			log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
 		}
@@ -155,7 +212,7 @@ class GitRepo {
 	/**
 	 * Delete all files in this repository*/
 	void clearRepo() {
-		fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
+		fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), '.git')
 	}
 
 	void copyDirectoryContents(String srcDir) {
@@ -164,7 +221,7 @@ class GitRepo {
 
 	void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
 		if (!srcDir) {
-			log.warn("Source directory is not defined. Nothing to copy?")
+			log.warn('Source directory is not defined. Nothing to copy?')
 			return
 		}
 
@@ -186,6 +243,40 @@ class GitRepo {
 
 	String getGitRepositoryUrl() {
 		return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
+	}
+
+	void checkoutRemoteMainIfLocalMainMissing() {
+		initLocalRepoIfNeeded()
+
+		def git = getGit()
+
+		git.fetch()
+			.setRemote('origin')
+			.setCredentialsProvider(getCredentialProvider())
+			.call()
+
+		def localMain = git.repository.findRef('refs/heads/main')
+		def remoteMain = git.repository.findRef('refs/remotes/origin/main')
+
+		if (localMain != null) {
+			git.checkout()
+				.setName('main')
+				.call()
+			return
+		}
+
+		if (remoteMain != null) {
+			log.debug("Creating local main branch from origin/main for repo '{}'", repoTarget)
+
+			git.checkout()
+				.setCreateBranch(true)
+				.setName('main')
+				.setStartPoint('origin/main')
+				.call()
+			return
+		}
+
+		log.debug("No local or remote main branch exists yet for repo '{}'. Keeping initialized repository.", repoTarget)
 	}
 
 	static boolean isCommit(File repoPath, String ref) {
@@ -264,12 +355,12 @@ class GitRepo {
 			return false
 		}
 		try (def git = Git.open(repo)) {
-			git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
+			git.tagList().call().any { it.name.endsWith('/' + ref) || it.name == ref }
 		}
 	}
 
 	private PushCommand createPushCommand(String refSpec) {
-		getGit()
+		return getGit()
 			.push()
 			.setRemote(getGitRepositoryUrl())
 			.setRefSpecs(new RefSpec(refSpec))

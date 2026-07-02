@@ -7,11 +7,14 @@ import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope
 import com.cloudogu.gitops.infrastructure.git.providers.Scope
 
 /**
- * Lightweight test double for ScmManager/GitProvider.
- * - Configurable in-cluster and client bases
- * - Optional namePrefix to model “tenant” behavior
- * - Records createRepository / setRepositoryPermission calls for assertions*/
-class ScmManagerMock implements GitProvider {
+ * Lightweight test double for ScmManagerProvider via the GitProvider interface.
+ *
+ * Models the SCM-Manager specific GitProvider behavior that is relevant for tests:
+ * - configurable in-cluster and client base URLs
+ * - optional namePrefix to model tenant behavior
+ * - repository URL/prefix generation
+ * - createRepository/setRepositoryPermission call recording*/
+class ScmManagerProviderMock implements GitProvider {
 
 	private final Set<String> initOnceRepos = [] as Set
 	private final Map<String, Integer> createCalls = [:].withDefault { 0 }
@@ -21,33 +24,36 @@ class ScmManagerMock implements GitProvider {
 	}
 
 	void clearInitOnce() {
-		initOnceRepos.clear(); createCalls.clear()
+		initOnceRepos.clear()
+		createCalls.clear()
 	}
 
-	// --- configurable  ---
-	URI inClusterBase = new URI("http://scmm.scm-manager.svc.cluster.local/scm")
-	URI clientBase = new URI("http://localhost:8080/scm")
-	String namePrefix = ""
-	// e.g., "fv40-" for tenant mode
-	Credentials credentials = new Credentials("gitops", "gitops")
-	String gitOpsUsername = "gitops"
-	URI prometheus = new URI("http://localhost:8080/scm/api/v2/metrics/prometheus")
+	// --- configurable ---
+	URI inClusterBase = new URI('http://scmm.scm-manager.svc.cluster.local/scm')
+	URI clientBase = new URI('http://localhost:8080/scm')
+	String namePrefix = ''
+	Credentials credentials = new Credentials('gitops', "gitops")
+	String gitOpsUsername = 'gitops'
+	URI prometheus = new URI('http://localhost:8080/scm/api/v2/metrics/prometheus')
 
 	// --- call recordings for assertions ---
 	final List<String> createdRepos = []
 	final List<Map> permissionCalls = []
-	/** Optional sequence to control createRepository() return values per call */
+
+	/**
+	 * Optional sequence to control createRepository() return values per call.
+	 *
+	 * Empty list means: return true by default.	*/
 	List<Boolean> nextCreateResults = []
-	// empty -> default true
 
 	@Override
 	boolean createRepository(String repoTarget, String description, boolean initialize) {
-		if (initOnceRepos.contains(repoTarget)) {
-			return ++createCalls[repoTarget] == 1 // 1. call true, then false
-		}
 		createdRepos << repoTarget
-		// Pretend repository was created successfully.
-		// If you need idempotency checks, examine createdRepos.count(repoTarget) in your tests.
+
+		if (initOnceRepos.contains(repoTarget)) {
+			return ++createCalls[repoTarget] == 1
+		}
+
 		return nextCreateResults ? nextCreateResults.remove(0) : true
 	}
 
@@ -59,19 +65,25 @@ class ScmManagerMock implements GitProvider {
 		                    scope     : scope]
 	}
 
-	/** …/scm/repo/<ns>/<name> */
+	/**
+	 * Builds a repository URL like:
+	 * .../scm/repo/<namespace>/<repository>	*/
 	@Override
 	String repoUrl(String repoTarget, RepoUrlScope scope) {
-		URI base = (scope == RepoUrlScope.CLIENT) ? clientBase : inClusterBase
-		def cleanedBase = withoutTrailingSlash(base).toString()
+		URI base = scope == RepoUrlScope.CLIENT ? clientBase : inClusterBase
+		String cleanedBase = withoutTrailingSlash(base).toString()
+
 		return "${cleanedBase}/repo/${repoTarget}"
 	}
 
-	/** In-cluster repo prefix: …/scm/repo/[<namePrefix>] */
+	/**
+	 * Builds the in-cluster repository prefix like:
+	 * .../scm/repo/<namePrefix>	*/
 	@Override
 	String repoPrefix() {
-		def base = withoutTrailingSlash(inClusterBase).toString()
-		def prefix = (namePrefix ?: "").strip()
+		String base = withoutTrailingSlash(inClusterBase).toString()
+		String prefix = namePrefix ?: ''
+
 		return "${base}/repo/${prefix}"
 	}
 
@@ -89,17 +101,17 @@ class ScmManagerMock implements GitProvider {
 	/** In-cluster base …/scm (without trailing slash) */
 	@Override
 	String getUrl() {
-		return inClusterBase.toString()
+		return withoutTrailingSlash(inClusterBase).toString()
 	}
 
 	@Override
 	String getProtocol() {
-		return inClusterBase.scheme // e.g., "http"
+		return inClusterBase.scheme
 	}
 
 	@Override
 	String getHost() {
-		return inClusterBase.host // e.g., "scmm.ns.svc.cluster.local"
+		return inClusterBase.host
 	}
 
 	@Override
@@ -107,9 +119,8 @@ class ScmManagerMock implements GitProvider {
 		return gitOpsUsername
 	}
 
-	// --- helpers ---
 	private static URI withoutTrailingSlash(URI uri) {
-		def s = uri.toString()
-		return new URI(s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
+		String s = uri.toString()
+		return new URI(s.endsWith('/') ? s.substring(0, s.length() - 1) : s)
 	}
 }
