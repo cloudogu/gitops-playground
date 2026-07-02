@@ -74,7 +74,7 @@ class RepositoryProvisioning {
 			'GitOps repo for basic cluster-resources')
 
 		if (workspace.hasTenantBootstrapRepository()) {
-			log.info("Ensuring tenant bootstrap repository. repoTarget='{}'",
+			log.debug("Ensuring tenant bootstrap repository. repoTarget='{}'",
 				workspace.tenantBootstrapRepositoryOrFail().repoTarget)
 
 			ensureRepositoryExists(workspace.tenantBootstrapRepositoryOrFail().gitProvider,
