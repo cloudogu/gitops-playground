@@ -66,7 +66,7 @@ class RepositoryProvisioning {
 
 		assertWorkspacePrepared()
 
-		log.info("Ensuring cluster resources repository. repoTarget='{}'",
+		log.debug("Ensuring cluster resources repository. repoTarget='{}'",
 			workspace.clusterResourcesRepository.repoTarget)
 
 		ensureRepositoryExists(workspace.clusterResourcesRepository.gitProvider,
