@@ -27,7 +27,7 @@ class RepositoryWorkspace {
 		return tenantBootstrapRepository
 	}
 
-	void prepareLocalDirectories() {
+	void createLocalDirectories() {
 		Path.of(clusterResourcesRootDir()).toFile().mkdirs()
 		Path.of(clusterResourcesAppsDir()).toFile().mkdirs()
 		Path.of(clusterResourcesArgoCdDir()).toFile().mkdirs()
