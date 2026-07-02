@@ -13,13 +13,10 @@ import static org.mockito.Mockito.*
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
-import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
@@ -69,11 +66,10 @@ class ContentLoaderTest {
 	K8sClient k8sClient = new K8sClient()
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-	Jenkins jenkins = mock(Jenkins)
+	Jenkins jenkins = mock(Jenkins.class)
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
 	Deployer deployer = mock(Deployer)
-	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@TempDir
@@ -528,67 +524,6 @@ class ContentLoaderTest {
 		// The other tests are already asserting correct combining (including order) and parsing of the repos.
 	}
 
-	@Test
-	void 'merges cluster-resources content into shared repository workspace'() {
-		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'),
-			type: ContentRepoType.COPY,
-			target: 'argocd/cluster-resources')]
-
-		File workspaceRoot = tmpDir.toPath()
-			.resolve('cluster-resources-workspace')
-			.toFile()
-
-		mockClusterResourcesWorkspaceAt(workspaceRoot)
-
-		createContent(config).install()
-
-		assertThat(new File(workspaceRoot, 'file'))
-			.exists()
-			.isFile()
-
-		assertThat(new File(workspaceRoot, 'copyRepo1'))
-			.exists()
-			.isFile()
-
-		verify(repositoryProvisioning).provideWorkspace()
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('content-loader',
-			'Merge ContentLoader content into argocd/cluster-resources')
-	}
-
-	@Test
-	void 'merges cluster-resources content without removing existing workspace files'() {
-		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'),
-			type: ContentRepoType.COPY,
-			target: 'argocd/cluster-resources')]
-
-		File workspaceRoot = tmpDir.toPath()
-			.resolve('cluster-resources-workspace')
-			.toFile()
-
-		File existingDashboard = new File(workspaceRoot,
-			'apps/monitoring/misc/dashboard/scmm-dashboard.yaml')
-		existingDashboard.parentFile.mkdirs()
-		existingDashboard.text = 'existing scm-manager dashboard'
-
-		mockClusterResourcesWorkspaceAt(workspaceRoot)
-
-		createContent(config).install()
-
-		assertThat(existingDashboard)
-			.exists()
-			.isFile()
-
-		assertThat(existingDashboard.text)
-			.isEqualTo('existing scm-manager dashboard')
-
-		assertThat(new File(workspaceRoot, 'file'))
-			.exists()
-			.isFile()
-
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('content-loader',
-			'Merge ContentLoader content into argocd/cluster-resources')
-	}
-
 	static void assertOnlyBranch(Git git, String branch) {
 		def branches = assertBranch(git, branch)
 		def otherBranches = branches.findAll { !it.name.contains(branch) }
@@ -1034,28 +969,12 @@ class ContentLoaderTest {
 	private void assertRegistrySecrets(String regUser, String regPw) {}
 
 	private ContentLoaderForTest createContent(Config config) {
-		return new ContentLoaderForTest(config,
-			k8sClient,
-			scmmRepoProvider,
-			jenkins,
-			gitHandler,
-			fileSystemUtils,
-			deployer,
-			repositoryProvisioning)
+		new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 	}
 
-	private RepositoryWorkspace mockClusterResourcesWorkspaceAt(File workspaceRoot) {
-		GitRepo clusterResourcesRepo = mock(GitRepo)
-
-		when(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir())
-			.thenReturn(workspaceRoot.absolutePath)
-
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
-
-		when(repositoryProvisioning.provideWorkspace())
-			.thenReturn(workspace)
-
-		return workspace
+	private static parseActualYaml(File pathToYamlFile) {
+		def ys = new YamlSlurper()
+		return ys.parse(pathToYamlFile)
 	}
 
 	private static String findRoot(List<RepoCoordinate> repos) {
@@ -1107,22 +1026,9 @@ class ContentLoaderTest {
 		List<DeployCall> deployCalls = []
 		CloneCommand cloneSpy
 
-		ContentLoaderForTest(Config config,
-			K8sClient k8sClient,
-			GitRepoFactory repoProvider,
-			Jenkins jenkins,
-			GitHandler gitHandler,
-			FileSystemUtils fileSystemUtils,
-			Deployer deployer,
-			RepositoryProvisioning repositoryProvisioning) {
-			super(new ContextBuilder(config).build(),
-				k8sClient,
-				repoProvider,
-				jenkins,
-				gitHandler,
-				fileSystemUtils,
-				deployer,
-				repositoryProvisioning)
+		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
+			Deployer deployer) {
+			super(new ContextBuilder(config).build(), k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
 		}
 
 		@Override
