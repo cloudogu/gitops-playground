@@ -23,7 +23,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 import com.cloudogu.gitops.tools.core.Jenkins
@@ -70,7 +70,7 @@ class ContentLoaderTest {
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	Jenkins jenkins = mock(Jenkins)
-	ScmManagerMock scmManagerMock = new ScmManagerMock()
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
 	Deployer deployer = mock(Deployer)
 	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
@@ -690,7 +690,7 @@ class ContentLoaderTest {
 		createContent(config).install()
 
 		def expectedRepo = 'common/repo'
-		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerMock())
+		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerProviderMock())
 
 		def url = repo.getGitRepositoryUrl()
 		// clone repo, to ensure, changes in remote repo.
@@ -1065,7 +1065,7 @@ class ContentLoaderTest {
 	}
 
 	Git cloneRepo(String expectedRepo, File repoFolder) {
-		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerMock())
+		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerProviderMock())
 		def url = repo.getGitRepositoryUrl()
 
 		def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()

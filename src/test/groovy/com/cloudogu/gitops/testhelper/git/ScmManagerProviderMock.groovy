@@ -14,7 +14,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope
  * - optional namePrefix to model tenant behavior
  * - repository URL/prefix generation
  * - createRepository/setRepositoryPermission call recording*/
-class ScmManagerMock implements GitProvider {
+class ScmManagerProviderMock implements GitProvider {
 
 	private final Set<String> initOnceRepos = [] as Set
 	private final Map<String, Integer> createCalls = [:].withDefault { 0 }

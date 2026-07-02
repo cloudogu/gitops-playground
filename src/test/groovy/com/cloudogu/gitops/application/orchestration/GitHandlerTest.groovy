@@ -10,7 +10,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.GitlabMock
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.utils.NetworkingUtils
 
 import org.junit.jupiter.api.Test
@@ -121,7 +121,7 @@ class GitHandlerTest {
 		                                              gitlab    : [url: '']],
 		                                multiTenant: [useDedicatedInstance: false]])
 
-		def tenant = new ScmManagerMock()
+		def tenant = new ScmManagerProviderMock()
 		def gitHandler = new GitHandlerForTests(cfg, tenant)
 
 		gitHandler.prepareProviders()
@@ -139,7 +139,7 @@ class GitHandlerTest {
 		                                              gitlab    : [url: '']],
 		                                multiTenant: [useDedicatedInstance: false]])
 
-		def tenant = new ScmManagerMock()
+		def tenant = new ScmManagerProviderMock()
 		def gitHandler = new GitHandlerForTests(cfg, tenant)
 
 		gitHandler.prepareProviders()
@@ -157,8 +157,8 @@ class GitHandlerTest {
 		                                scmManager          : [url: ''],
 		                                gitlab              : [url: '']]])
 
-		def tenant = new ScmManagerMock(namePrefix: 'fv40-')
-		def central = new ScmManagerMock(namePrefix: 'fv40-')
+		def tenant = new ScmManagerProviderMock(namePrefix: 'fv40-')
+		def central = new ScmManagerProviderMock(namePrefix: 'fv40-')
 		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
 
 		gitHandler.prepareProviders()
@@ -178,8 +178,8 @@ class GitHandlerTest {
 		                                scmManager          : [url: ''],
 		                                gitlab              : [url: '']]])
 
-		def tenant = new ScmManagerMock(namePrefix: 'fv40-')
-		def central = new ScmManagerMock(namePrefix: 'fv40-')
+		def tenant = new ScmManagerProviderMock(namePrefix: 'fv40-')
+		def central = new ScmManagerProviderMock(namePrefix: 'fv40-')
 		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
 
 		gitHandler.prepareProviders()

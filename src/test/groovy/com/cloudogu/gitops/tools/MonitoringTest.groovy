@@ -15,7 +15,7 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -78,7 +78,7 @@ class MonitoringTest {
 
 	GitHandler gitHandler = mock(GitHandler)
 	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-	ScmManagerMock scmManagerMock
+	ScmManagerProviderMock scmManagerMock
 
 	KubernetesClient client
 	// Client to set mock data, gets injected by annotation
@@ -87,7 +87,7 @@ class MonitoringTest {
 
 	@BeforeEach
 	void setup() {
-		scmManagerMock = new ScmManagerMock()
+		scmManagerMock = new ScmManagerProviderMock()
 		k8sClient = mock(K8sClient)
 		k8sClient.client = client
 		repositoryProvisioning = mock(RepositoryProvisioning)
@@ -627,7 +627,7 @@ matchExpressions:
 '''))
 	}
 
-	private Monitoring createStack(ScmManagerMock scmManagerMock) {
+	private Monitoring createStack(ScmManagerProviderMock scmManagerMock) {
 		when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
 
 		def configuration = config
