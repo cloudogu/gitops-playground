@@ -55,7 +55,7 @@ content:
     - ${config.application.namePrefix}example-apps-staging
   variables:
     petclinic:
-      baseDomain: "petclinic.localhost"
+      baseDomain: "petclinic"
     images:
       kubectl: "alpine/kubectl:latest"
       helm: "ghcr.io/cloudogu/helm:latest"
