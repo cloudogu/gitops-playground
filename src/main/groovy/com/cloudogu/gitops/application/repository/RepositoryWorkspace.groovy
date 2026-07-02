@@ -4,6 +4,22 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 
 import java.nio.file.Path
 
+/**
+ * Represents the prepared local GitOps repository workspace used during a GOP deployment.
+ *
+ * <p>The workspace provides access to the local checkout of the {@code cluster-resources}
+ * repository. This repository contains the generated GitOps resources that are consumed by
+ * ArgoCD, for example applications and projects.</p>
+ *
+ * <p>In single-instance setups only the {@code cluster-resources} repository is required.
+ * In dedicated multi-tenant setups an additional tenant bootstrap repository is required.
+ * This second repository contains the bootstrap resources for the tenant ArgoCD instance,
+ * while the regular {@code cluster-resources} repository is used by the central ArgoCD
+ * instance to bootstrap/manage tenant resources.</p>
+ *
+ * <p>This class does not decide which repositories are needed. That decision belongs to
+ * {@link RepositoryProvisioning}. This class only exposes the prepared repositories and
+ * the directory structure that tools can write to.</p>*/
 class RepositoryWorkspace {
 
 	final GitRepo clusterResourcesRepository
@@ -19,6 +35,9 @@ class RepositoryWorkspace {
 		return tenantBootstrapRepository != null
 	}
 
+	/**
+	 * Returns the tenant bootstrap repository or fails if this workspace was created for
+	 * a single-instance setup.	*/
 	GitRepo tenantBootstrapRepositoryOrFail() {
 		if (tenantBootstrapRepository == null) {
 			throw new IllegalStateException('Tenant bootstrap repository is not available in single-instance mode.')
@@ -51,6 +70,12 @@ class RepositoryWorkspace {
 		}
 	}
 
+	/**
+	 * Initializes local repositories when they cannot be cloned yet.
+	 *
+	 * <p>This is needed when GOP deploys an internal SCM-Manager first. In that case,
+	 * the remote repositories are not available at the beginning of the deployment,
+	 * but tools still need local directories to write their generated resources.</p>	*/
 	void initLocalRepositoriesIfNeeded() {
 		clusterResourcesRepository.initLocalRepoIfNeeded()
 
@@ -99,14 +124,6 @@ class RepositoryWorkspace {
 		return Path.of(tenantBootstrapArgoCdDir(), 'projects').toString()
 	}
 
-	void commitAndPushClusterResourcesChanges(String message) {
-		clusterResourcesRepository.commitAndPush(message)
-	}
-
-	void commitAndPushTenantBootstrapChanges(String message) {
-		tenantBootstrapRepositoryOrFail().commitAndPush(message)
-	}
-
 	void commitAndPushClusterResourcesAndTenantBootstrapChanges(String message) {
 		commitAndPushClusterResourcesChanges(message)
 
@@ -115,6 +132,16 @@ class RepositoryWorkspace {
 		}
 	}
 
+	void commitAndPushTenantBootstrapChanges(String message) {
+		tenantBootstrapRepositoryOrFail().commitAndPush(message)
+	}
+
+	void commitAndPushClusterResourcesChanges(String message) {
+		clusterResourcesRepository.commitAndPush(message)
+	}
+
+	/**
+	 * Aligns locally initialized repositories with the remote main branch if it already exists.	*/
 	void checkoutMainFromRemoteIfLocalMainMissing() {
 		clusterResourcesRepository.checkoutMainFromRemoteIfLocalMainMissing()
 

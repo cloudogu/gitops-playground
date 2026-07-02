@@ -3,6 +3,8 @@ package com.cloudogu.gitops.application.repository
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
+/**
+ * Executes the post-SCM-Manager repository bootstrap.*/
 @Slf4j
 @Singleton
 class RepositoryBootstrapper {
