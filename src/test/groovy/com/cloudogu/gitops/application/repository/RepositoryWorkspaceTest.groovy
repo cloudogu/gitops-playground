@@ -66,10 +66,10 @@ class RepositoryWorkspaceTest {
 	}
 
 	@Test
-	void 'prepareLocalDirectories creates cluster resources directory structure in single-instance mode'() {
+	void 'createLocalDirectories creates cluster resources directory structure in single-instance mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository)
 
-		workspace.prepareLocalDirectories()
+		workspace.createLocalDirectories()
 
 		assertThat(Path.of(clusterResourcesRootDir)).exists()
 		assertThat(Path.of(clusterResourcesRootDir, 'apps')).exists()
@@ -81,11 +81,11 @@ class RepositoryWorkspaceTest {
 	}
 
 	@Test
-	void 'prepareLocalDirectories creates cluster resources and tenant bootstrap directory structures in dedicated mode'() {
+	void 'createLocalDirectories creates cluster resources and tenant bootstrap directory structures in dedicated mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
 			tenantBootstrapRepository)
 
-		workspace.prepareLocalDirectories()
+		workspace.createLocalDirectories()
 
 		assertThat(Path.of(clusterResourcesRootDir)).exists()
 		assertThat(Path.of(clusterResourcesRootDir, 'apps')).exists()

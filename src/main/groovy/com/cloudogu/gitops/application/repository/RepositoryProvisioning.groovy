@@ -36,7 +36,7 @@ class RepositoryProvisioning {
 
 		if (mustWaitForInternalScmManagerDeployment()) {
 			log.info('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
-			workspace.prepareLocalDirectories()
+			workspace.createLocalDirectories()
 			return
 		}
 

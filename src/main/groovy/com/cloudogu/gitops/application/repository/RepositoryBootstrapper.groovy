@@ -29,7 +29,7 @@ class RepositoryBootstrapper {
 		 * otherwise the first push from GOP may be rejected as non-fast-forward.
 		 */
 		workspace.checkoutMainFromRemoteIfLocalMainMissing()
-		workspace.prepareLocalDirectories()
+		workspace.createLocalDirectories()
 
 		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
 
