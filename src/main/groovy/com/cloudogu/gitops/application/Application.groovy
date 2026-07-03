@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.application
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -17,13 +18,13 @@ import freemarker.template.DefaultObjectWrapperBuilder
 class Application {
 
 	final List<Tool> features
-	final DeploymentContext context
+	final ContextBuilder contextBuilder
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 
-	Application(DeploymentContext context, K8sClient k8sClient, GitHandler gitHandler,
+	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler,
 		List<Tool> features) {
-		this.context = context
+		this.contextBuilder = contextBuilder
 		// Order is important. Enforced by @Order-Annotation on the Singletons
 		this.gitHandler = gitHandler
 		this.features = features
@@ -32,6 +33,8 @@ class Application {
 
 	def start() {
 		log.debug("Starting Application")
+
+		DeploymentContext context = contextBuilder.build()
 
 		setNamespaceListToConfig(context)
 		// if set, stores configuration in a secret.
