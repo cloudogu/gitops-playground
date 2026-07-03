@@ -1,5 +1,10 @@
 package com.cloudogu.gitops.application.repository
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatThrownBy
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -8,13 +13,9 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThatThrownBy
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
 
 class RepositoryProvisioningTest {
 
@@ -282,7 +283,7 @@ class RepositoryProvisioningTest {
 	private DeploymentContext createDeploymentContext() {
 		return new DeploymentContext(config,
 			config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT,
-			config.scm.scmManager?.internal ? DeploymentContext.DeploymentMode.INTERNAL : DeploymentContext.DeploymentMode.EXTERNAL,
+			config.scm.scmManager?.internal ? DeploymentContext.ScmManagerDeploymentMode.INTERNAL : DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			config.application.mirrorRepos,
 			config.application.openshift ? DeploymentContext.ClusterDistribution.OPENSHIFT : DeploymentContext.ClusterDistribution.KUBERNETES)
 	}

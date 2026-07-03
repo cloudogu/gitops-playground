@@ -16,26 +16,22 @@ import groovy.util.logging.Slf4j
 @Singleton
 class GitHandler {
 
-	DeploymentContext context
 	NetworkingUtils networkingUtils
 	K8sClient k8sClient
 
 	GitProvider tenant
 	GitProvider central
 
-	GitHandler(DeploymentContext context,
+	GitHandler(
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils) {
-		this.context = context
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
 	}
 
-	protected Config getConfig() {
-		return context.config
-	}
+	void validate(DeploymentContext context) {
+		Config config = context.config
 
-	void validate() {
 		if (config.scm.gitlab.url) {
 			config.scm.scmProviderType = ScmProviderType.GITLAB
 			config.scm.scmManager = null
@@ -50,11 +46,11 @@ class GitHandler {
 		config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
 	}
 
-	void prepareProviders() {
-		this.tenant = createTenantScmProvider()
+	void prepareProviders(DeploymentContext context) {
+		this.tenant = createTenantScmProvider(context)
 
 		if (context.isMultiTenant()) {
-			this.central = createCentralScmProvider()
+			this.central = createCentralScmProvider(context)
 		}
 	}
 
@@ -70,7 +66,9 @@ class GitHandler {
 		throw new IllegalStateException('No SCM provider found.')
 	}
 
-	private GitProvider createTenantScmProvider() {
+	private GitProvider createTenantScmProvider(DeploymentContext context) {
+		Config config = context.config
+
 		switch (config.scm.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(context, config.scm.gitlab)
@@ -86,7 +84,9 @@ class GitHandler {
 		}
 	}
 
-	private GitProvider createCentralScmProvider() {
+	private GitProvider createCentralScmProvider(DeploymentContext context) {
+		Config config = context.config
+
 		switch (config.multiTenant.scmProviderType) {
 			case ScmProviderType.GITLAB:
 				return new GitlabProvider(context, config.multiTenant.gitlab)
@@ -101,18 +101,6 @@ class GitHandler {
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
 		}
 	}
-
-	private String prefixedNamespace(String namespace) {
-		String prefix = config.application.namePrefix ?: ''
-		String baseNamespace = namespace ?: 'scm-manager'
-
-		if (prefix && baseNamespace.startsWith(prefix)) {
-			return baseNamespace
-		}
-
-		return "${prefix}${baseNamespace}".toString()
-	}
-
 
 	private String centralScmManagerServicePrefix() {
 		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()

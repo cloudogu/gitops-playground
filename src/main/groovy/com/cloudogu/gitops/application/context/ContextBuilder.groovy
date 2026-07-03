@@ -2,11 +2,9 @@ package com.cloudogu.gitops.application.context
 
 import com.cloudogu.gitops.config.Config
 
-import io.micronaut.context.annotation.Factory
-
 import jakarta.inject.Singleton
 
-@Factory
+@Singleton
 class ContextBuilder {
 
 	private final Config config
@@ -15,7 +13,6 @@ class ContextBuilder {
 		this.config = config
 	}
 
-	@Singleton
 	DeploymentContext build() {
 		return new DeploymentContext(
 			config,

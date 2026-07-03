@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.application
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator
 import com.cloudogu.gitops.application.orchestration.GitHandler
@@ -20,18 +21,18 @@ import freemarker.template.DefaultObjectWrapperBuilder
 class Application {
 
 	final List<Tool> tools
-	final DeploymentContext context
+	final ContextBuilder contextBuilder
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 	final RepositoryProvisioning repositoryProvisioning
 	final DeploymentOrchestrator deploymentOrchestrator
 
-	Application(DeploymentContext context,
-		K8sClient k8sClient,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning,
+	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler,RepositoryProvisioning repositoryProvisioning,
 		DeploymentOrchestrator deploymentOrchestrator) {
-		this.context = context
+
+		this.contextBuilder = contextBuilder
+		// Order is important. Enforced by @Order-Annotation on the Singletons
+		this.gitHandler = gitHandler
 		this.k8sClient = k8sClient
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
@@ -42,12 +43,14 @@ class Application {
 	def start() {
 		log.debug('Starting Application')
 
+		DeploymentContext context = contextBuilder.build()
+
 		setNamespaceListToConfig(context)
 		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(context)
 
-		gitHandler.validate()
-		gitHandler.prepareProviders()
+		gitHandler.validate(context)
+		gitHandler.prepareProviders(context)
 		repositoryProvisioning.prepare()
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 
@@ -100,9 +103,5 @@ class Application {
 		context.config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
 		context.config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", context.config.application.namespaces.activeNamespaces)
-	}
-
-	void setNamespaceListToConfig() {
-		setNamespaceListToConfig(context)
 	}
 }
