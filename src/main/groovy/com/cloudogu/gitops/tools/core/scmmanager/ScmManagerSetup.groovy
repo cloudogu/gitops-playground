@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -25,15 +27,18 @@ class ScmManagerSetup {
 	private final ScmManagerProvider scmManager
 	private final Deployer deployer
 	private final DeploymentContext context
+	private final RepositoryProvisioning repositoryProvisioning
 
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
-		DeploymentContext context) {
+		DeploymentContext context,
+		RepositoryProvisioning repositoryProvisioning) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 		this.context = context
+		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	private Config getConfig() {
@@ -45,8 +50,7 @@ class ScmManagerSetup {
 		def helmConfig = this.scmManager.scmmConfig.helm
 		String releaseName = scmmReleaseName()
 
-		log.info(
-			"Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+		log.info("Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
@@ -60,16 +64,14 @@ class ScmManagerSetup {
 		 * Do not call deployer.deployFeature(..., initByHelm = true) here because
 		 * Deployer would also call the ArgoCD strategy afterwards.
 		 */
-		deployer.helmStrategy.deployFeature(
-			helmConfig.repoURL as String,
+		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
 			releaseName,
 			valuesPath,
-			DeploymentStrategy.RepoType.HELM
-		)
+			DeploymentStrategy.RepoType.HELM)
 	}
 
 	void createArgocdApplication() {
@@ -77,8 +79,7 @@ class ScmManagerSetup {
 		def helmConfig = this.scmManager.scmmConfig.helm
 		String releaseName = scmmReleaseName()
 
-		log.info(
-			"Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+		log.info("Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
 			this.scmManager.scmmConfig.namespace,
 			config.application.namePrefix,
@@ -91,8 +92,7 @@ class ScmManagerSetup {
 		 * It only writes apps/argocd/applications/<releaseName>.yaml into the shared
 		 * RepositoryWorkspace. The push is triggered afterwards by RepositoryProvisioning.
 		 */
-		deployer.deployFeature(
-			helmConfig.repoURL as String,
+		deployer.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
@@ -100,8 +100,32 @@ class ScmManagerSetup {
 			releaseName,
 			valuesPath,
 			DeploymentStrategy.RepoType.HELM,
-			false
-		)
+			false)
+	}
+
+	void bootstrapAfterScmManagerDeployment() {
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+
+		repositoryProvisioning.ensureRemoteRepositoriesExist()
+
+		workspace.initLocalRepositoriesIfNeeded()
+
+		/*
+		 * After the internal SCM-Manager has created the remote repositories,
+		 * the remote main branch may already contain an initial commit, for example
+		 * a README.md created by SCM-Manager.
+		 *
+		 * The locally initialized workspace must start from that remote main branch,
+		 * otherwise the first push from GOP may be rejected as non-fast-forward.
+		 */
+		workspace.alignWithRemoteMainIfPresent()
+		workspace.createLocalDirectories()
+
+		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
+
+		if (workspace.hasTenantBootstrapRepository()) {
+			workspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
+		}
 	}
 
 	private Path prepareHelmValues() {
