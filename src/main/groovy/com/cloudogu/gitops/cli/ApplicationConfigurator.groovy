@@ -112,6 +112,7 @@ class ApplicationConfigurator {
 			newConfig.scm.scmManager.urlForJenkins = newConfig.scm.scmManager.url
 		} else {
 			log.debug("Setting configs for internal SCM-Manager")
+			newConfig.scm.scmManager.internal = true
 			// We use the K8s service as default name here, because it is the only option:
 			// "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
 			// will not work on Windows and MacOS.

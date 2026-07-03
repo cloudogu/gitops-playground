@@ -36,21 +36,6 @@ class GitHandler {
 	}
 
 	void validate() {
-		if (config.scm.scmManager.url) {
-			config.scm.scmManager.internal = false
-			context.scmManagerDeploymentMode = DeploymentContext.DeploymentMode.EXTERNAL
-			config.scm.scmManager.urlForJenkins = config.scm.scmManager.url
-		} else {
-			log.debug('Setting configs for internal SCM-Manager')
-
-			config.scm.scmManager.internal = true
-			context.scmManagerDeploymentMode = DeploymentContext.DeploymentMode.INTERNAL
-			config.scm.scmManager.urlForJenkins = "http://scmm.${config.application.namePrefix}${config.scm.scmManager.namespace}.svc.cluster.local/scm"
-
-		}
-
-		config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
-
 		if (config.scm.gitlab.url) {
 			config.scm.scmProviderType = ScmProviderType.GITLAB
 			config.scm.scmManager = null
@@ -58,7 +43,11 @@ class GitHandler {
 			if (!config.scm.gitlab.password || !config.scm.gitlab.parentGroupId) {
 				throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
 			}
+			return
 		}
+
+		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
+		config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
 	}
 
 	void prepareProviders() {
