@@ -6,10 +6,14 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi
@@ -19,6 +23,7 @@ import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 import java.nio.file.Path
 import groovy.yaml.YamlSlurper
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import retrofit2.Call
@@ -30,6 +35,14 @@ class ScmManagerSetupTest {
 
 	Deployer deployer = mock(Deployer.class)
 	HelmStrategy helmStrategy = mock(HelmStrategy.class)
+
+	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
+
+	GitProvider tenantProvider = mock(GitProvider)
+	GitProvider centralProvider = mock(GitProvider)
+
+	GitRepo clusterResourcesRepo = mock(GitRepo)
+	GitRepo tenantBootstrapRepo = mock(GitRepo)
 
 	ScmManagerApiClient apiClient = mock(ScmManagerApiClient.class)
 	PluginApi pluginApi = mock(PluginApi.class)
@@ -56,6 +69,28 @@ class ScmManagerSetupTest {
 	                                                           credentials   : [username: 'admin',
 	                                                                            password: 'admin']]]])
 
+	@BeforeEach
+	void setUp() {
+		clusterResourcesRepo.gitProvider = centralProvider
+		tenantBootstrapRepo.gitProvider = tenantProvider
+
+		doReturn('argocd/cluster-resources')
+			.when(clusterResourcesRepo)
+			.getRepoTarget()
+
+		doReturn('argocd/cluster-resources')
+			.when(tenantBootstrapRepo)
+			.getRepoTarget()
+
+		doReturn(createTempDir('cluster-resources'))
+			.when(clusterResourcesRepo)
+			.getAbsoluteLocalRepoTmpDir()
+
+		doReturn(createTempDir('tenant-bootstrap'))
+			.when(tenantBootstrapRepo)
+			.getAbsoluteLocalRepoTmpDir()
+	}
+
 	@Test
 	void 'Helm chart is installed correctly'() {
 		when(scmManager.getConfig()).thenReturn(config)
@@ -63,9 +98,12 @@ class ScmManagerSetupTest {
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
 		config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			repositoryProvisioning)
 
-		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
@@ -92,9 +130,12 @@ class ScmManagerSetupTest {
 		config.features.certManager.active = true
 		config.features.certManager.issuer = 'cluster-selfsigned'
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			repositoryProvisioning)
 
-		//Usually ApplicationConfigurator modify the namePrefix and set it to "namePrefix-"
+		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
@@ -134,16 +175,68 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null))
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager, deployer, new ContextBuilder(config).build())
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			repositoryProvisioning)
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
 
 		verify(pluginApi, times(10)).install(any(String), any(Boolean))
 	}
 
+	@Test
+	void 'bootstrapAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
+
+		when(repositoryProvisioning.provideWorkspace()).thenReturn(workspace)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			repositoryProvisioning)
+
+		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+
+		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
+
+		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
+		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
+	}
+
+	@Test
+	void 'bootstrapAfterScmManagerDeployment initializes and pushes both repositories in dedicated mode'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
+			tenantBootstrapRepo)
+
+		when(repositoryProvisioning.provideWorkspace()).thenReturn(workspace)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			repositoryProvisioning)
+
+		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+
+		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
+
+		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
+		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
+
+		verify(tenantBootstrapRepo).initLocalRepoIfNeeded()
+		verify(tenantBootstrapRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(tenantBootstrapRepo).commitAndPush('Bootstrap tenant repository after SCM-Manager deployment')
+	}
+
 	private static void invokePrivateInstallScmmPlugins(ScmManagerSetup scmManagerSetup) {
 		def method = ScmManagerSetup.getDeclaredMethod('installScmmPlugins')
 		method.accessible = true
 		method.invoke(scmManagerSetup)
+	}
+
+	private static String createTempDir(String prefix) {
+		return File.createTempDir(prefix, '').canonicalPath
 	}
 }
