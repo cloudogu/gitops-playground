@@ -19,7 +19,7 @@ class ContextBuilderTest {
 		assertThat(context.tenantMode).isEqualTo(DeploymentContext.TenantMode.SINGLE_TENANT)
 		assertThat(context.isSingleTenant()).isTrue()
 		assertThat(context.isMultiTenant()).isFalse()
-		assertThat(context.scmManagerDeploymentMode).isEqualTo(DeploymentContext.DeploymentMode.EXTERNAL)
+		assertThat(context.scmManagerDeploymentMode).isEqualTo(DeploymentContext.ScmManagerDeploymentMode.EXTERNAL)
 		assertThat(context.isInternalScmManager()).isFalse()
 		assertThat(context.isExternalScmManager()).isTrue()
 		assertThat(context.airgapped).isFalse()
@@ -40,7 +40,7 @@ class ContextBuilderTest {
 
 		assertThat(context.tenantMode).isEqualTo(DeploymentContext.TenantMode.MULTI_TENANT)
 		assertThat(context.isMultiTenant()).isTrue()
-		assertThat(context.scmManagerDeploymentMode).isEqualTo(DeploymentContext.DeploymentMode.INTERNAL)
+		assertThat(context.scmManagerDeploymentMode).isEqualTo(DeploymentContext.ScmManagerDeploymentMode.INTERNAL)
 		assertThat(context.isInternalScmManager()).isTrue()
 		assertThat(context.isExternalScmManager()).isFalse()
 		assertThat(context.airgapped).isTrue()

@@ -6,13 +6,13 @@ class DeploymentContext {
 
 	final Config config
 	final TenantMode tenantMode
-	DeploymentMode scmManagerDeploymentMode
+	ScmManagerDeploymentMode scmManagerDeploymentMode
 	final Boolean airgapped
 	final ClusterDistribution clusterDistribution
 
 	DeploymentContext(Config config,
 		TenantMode tenantMode,
-		DeploymentMode scmManagerDeploymentMode,
+		ScmManagerDeploymentMode scmManagerDeploymentMode,
 		Boolean airgapped,
 		ClusterDistribution clusterDistribution) {
 		this.config = config
@@ -31,14 +31,14 @@ class DeploymentContext {
 	}
 
 	Boolean isInternalScmManager() {
-		return scmManagerDeploymentMode == DeploymentMode.INTERNAL
+		return scmManagerDeploymentMode == ScmManagerDeploymentMode.INTERNAL
 	}
 
 	Boolean isExternalScmManager() {
-		return scmManagerDeploymentMode == DeploymentMode.EXTERNAL
+		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL
 	}
 
-	void setScmManagerDeploymentMode(DeploymentMode scmManagerDeploymentMode) {
+	void setScmManagerDeploymentMode(ScmManagerDeploymentMode scmManagerDeploymentMode) {
 		this.scmManagerDeploymentMode = scmManagerDeploymentMode
 	}
 
@@ -55,7 +55,7 @@ class DeploymentContext {
 		MULTI_TENANT
 	}
 
-	enum DeploymentMode {
+	enum ScmManagerDeploymentMode {
 		INTERNAL,
 		EXTERNAL
 	}
