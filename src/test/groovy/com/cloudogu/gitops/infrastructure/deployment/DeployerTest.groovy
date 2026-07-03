@@ -45,16 +45,14 @@ class DeployerTest {
 
 		verify(argoCdStrategyProvider).get()
 
-		verify(argoCdStrategy).deployFeature(
-			REPO_URL,
+		verify(argoCdStrategy).deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
 			NAMESPACE,
 			RELEASE_NAME,
 			helmValuesPath,
-			REPO_TYPE
-		)
+			REPO_TYPE)
 
 		verifyNoInteractions(helmStrategy)
 		verifyNoMoreInteractions(argoCdStrategyProvider, argoCdStrategy)
@@ -68,37 +66,31 @@ class DeployerTest {
 
 		InOrder inOrder = inOrder(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
 
-		inOrder.verify(helmStrategy).deployFeature(
-			REPO_URL,
+		inOrder.verify(helmStrategy).deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
 			NAMESPACE,
 			RELEASE_NAME,
 			helmValuesPath,
-			REPO_TYPE
-		)
+			REPO_TYPE)
 
 		inOrder.verify(argoCdStrategyProvider).get()
 
-		inOrder.verify(argoCdStrategy).deployFeature(
-			REPO_URL,
+		inOrder.verify(argoCdStrategy).deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
 			NAMESPACE,
 			RELEASE_NAME,
 			helmValuesPath,
-			REPO_TYPE
-		)
+			REPO_TYPE)
 
 		verifyNoMoreInteractions(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
 	}
 
-
 	private void deployFeature(boolean initByHelm) {
-		deployer.deployFeature(
-			REPO_URL,
+		deployer.deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
@@ -106,7 +98,6 @@ class DeployerTest {
 			RELEASE_NAME,
 			helmValuesPath,
 			REPO_TYPE,
-			initByHelm
-		)
+			initByHelm)
 	}
 }

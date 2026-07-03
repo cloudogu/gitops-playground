@@ -2,14 +2,13 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import java.nio.file.Path
 
-class RepoLayout {
+class ArgoCDRepoLayout {
 	private static final String APPS_MONITORING_DIR = 'apps/monitoring'
 	private static final String APPS_SECRETS_DIR = 'apps/external-secrets'
 	private static final String APPS_VAULT_DIR = 'apps/vault'
 	private static final String APPS_CERTMANAGER_DIR = 'apps/cert-manager'
 	private static final String APPS_JENKINS_DIR = 'apps/jenkins'
 	private static final String APPS_INGRESS_DIR = 'apps/ingress'
-	private static final String APPS_SCMMANAGER_DIR = 'apps/scm-manager'
 	private static final String APPS_ARGOCD_DIR = 'apps/argocd'
 
 	private static final String OPERATOR_DIR = 'operator'
@@ -22,7 +21,7 @@ class RepoLayout {
 
 	private final String repoRootDir
 
-	RepoLayout(String repoRootDir) {
+	ArgoCDRepoLayout(String repoRootDir) {
 		this.repoRootDir = repoRootDir
 	}
 
@@ -109,10 +108,6 @@ class RepoLayout {
 
 	static String ingressSubdirRel() {
 		APPS_INGRESS_DIR
-	}
-
-	static String scmManagerSubdirRel() {
-		APPS_SCMMANAGER_DIR
 	}
 
 	static String argocdSubdirRel() {

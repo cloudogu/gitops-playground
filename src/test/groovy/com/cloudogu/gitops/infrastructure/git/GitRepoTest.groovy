@@ -7,7 +7,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.Scope
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -31,11 +31,11 @@ class GitRepoTest {
 	@Mock
 	GitProvider gitProvider
 
-	ScmManagerMock scmManagerMock
+	ScmManagerProviderMock scmManagerMock
 
 	@BeforeEach
 	void setup() {
-		scmManagerMock = new ScmManagerMock()
+		scmManagerMock = new ScmManagerProviderMock()
 	}
 
 	@Test
@@ -184,7 +184,7 @@ class GitRepoTest {
 	@Test
 	void 'does not set permission when no GitOps username is configured'() {
 		def repoTarget = "foo/bar"
-		def scmManagerMock = new ScmManagerMock()
+		def scmManagerMock = new ScmManagerProviderMock()
 		def repo = getRepo(repoTarget, scmManagerMock)
 
 		scmManagerMock.nextCreateResults = [true] // repo is new
@@ -201,7 +201,7 @@ class GitRepoTest {
 		assertThat(scmManagerMock.permissionCalls).isEmpty()
 	}
 
-	private GitRepo getRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerMock scmManagerMock) {
-		return repoProvider.getRepo(repoTarget, scmManagerMock)
+	private GitRepo getRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerProviderMock scmManagerMock) {
+		return repoProvider.create(repoTarget, scmManagerMock)
 	}
 }

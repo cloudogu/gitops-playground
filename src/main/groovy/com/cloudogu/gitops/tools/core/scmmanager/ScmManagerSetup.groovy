@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
@@ -25,15 +27,18 @@ class ScmManagerSetup {
 	private final ScmManagerProvider scmManager
 	private final Deployer deployer
 	private final DeploymentContext context
+	private final RepositoryProvisioning repositoryProvisioning
 
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
-		DeploymentContext context) {
+		DeploymentContext context,
+		RepositoryProvisioning repositoryProvisioning) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 		this.context = context
+		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	private Config getConfig() {
@@ -51,6 +56,14 @@ class ScmManagerSetup {
 			config.application.namePrefix,
 			context.isMultiTenant())
 
+		/*
+		 * Important:
+		 * SCM-Manager must be installed imperatively first because the Git repository
+		 * used by ArgoCD does not exist before SCM-Manager is available.
+		 *
+		 * Do not call deployer.deployFeature(..., initByHelm = true) here because
+		 * Deployer would also call the ArgoCD strategy afterwards.
+		 */
 		deployer.helmStrategy.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
@@ -72,20 +85,53 @@ class ScmManagerSetup {
 			config.application.namePrefix,
 			context.isMultiTenant())
 
-		deployer.argoCdStrategyProvider.get().deployFeature(helmConfig.repoURL as String,
+		/*
+		 * This writes the SCM-Manager ArgoCD Application through ArgoCdApplicationStrategy.
+		 *
+		 * With the adjusted strategy this does not clone or push anymore.
+		 * It only writes apps/argocd/applications/<releaseName>.yaml into the shared
+		 * RepositoryWorkspace. The push is triggered afterwards by RepositoryProvisioning.
+		 */
+		deployer.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
 			this.scmManager.scmmConfig.namespace,
 			releaseName,
 			valuesPath,
-			DeploymentStrategy.RepoType.HELM)
+			DeploymentStrategy.RepoType.HELM,
+			false)
+	}
+
+	void bootstrapAfterScmManagerDeployment() {
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+
+		repositoryProvisioning.ensureRemoteRepositoriesExist()
+
+		workspace.initLocalRepositoriesIfNeeded()
+
+		/*
+		 * After the internal SCM-Manager has created the remote repositories,
+		 * the remote main branch may already contain an initial commit, for example
+		 * a README.md created by SCM-Manager.
+		 *
+		 * The locally initialized workspace must start from that remote main branch,
+		 * otherwise the first push from GOP may be rejected as non-fast-forward.
+		 */
+		workspace.alignWithRemoteMainIfPresent()
+		workspace.createLocalDirectories()
+
+		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
+
+		if (workspace.hasTenantBootstrapRepository()) {
+			workspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
+		}
 	}
 
 	private Path prepareHelmValues() {
 		String releaseName = scmmReleaseName()
 
-		log.info("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
+		log.debug("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
 			releaseName,
 			this.scmManager.scmmConfig.namespace)
 
@@ -130,7 +176,7 @@ class ScmManagerSetup {
 				def response = call.execute()
 
 				if (response.successful) {
-					log.info('SCM-Manager is available.')
+					log.debug('SCM-Manager is available.')
 					return
 				}
 			} catch (Exception e) {

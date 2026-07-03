@@ -138,7 +138,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		                                                                                       NAME_PREFIX               : config.application.namePrefix,
 		                                                                                       INSECURE                  : config.application.insecure,
 		                                                                                       SKIP_RESTART              : config.jenkins.skipRestart,
-		                                                                                       SKIP_PLUGINS              : config.jenkins.skipPlugins,])
+		                                                                                       SKIP_PLUGINS: config.jenkins.skipPlugins,])
 
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL", this.gitHandler.tenant.repoPrefix())

@@ -27,16 +27,6 @@ class GitHandlerForTests extends GitHandler {
 		if (this.config?.scm?.scmManager != null) {
 			this.config.scm.scmManager.namespace = "${config.application.namePrefix}scm-manager".toString()
 		}
-
-		// === Run ONLY the repo setup logic (NO provider construction here) ===
-		final String namePrefix = (config?.application?.namePrefix ?: "").trim()
-		if (this.central) {
-			setupRepos(this.central, namePrefix)
-			setupRepos(this.tenant, namePrefix)
-		} else {
-			setupRepos(this.tenant, namePrefix)
-		}
-
 	}
 
 	@Override

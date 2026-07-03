@@ -81,8 +81,8 @@ class ExternalSecretsOperatorTest {
 			'foo-secrets',
 			'external-secrets',
 			temporaryYamlFile,
-			RepoType.HELM,
-			false)
+				RepoType.HELM,
+				false)
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -156,7 +156,7 @@ class ExternalSecretsOperatorTest {
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
 		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
 			'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-			'external-secrets', temporaryYamlFile, RepoType.GIT, false)
+				'external-secrets', temporaryYamlFile, RepoType.GIT, false)
 	}
 
 	@Test

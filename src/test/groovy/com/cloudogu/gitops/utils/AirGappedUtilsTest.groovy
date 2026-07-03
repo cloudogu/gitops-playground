@@ -12,7 +12,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.ScmManagerMock
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient
 
@@ -41,7 +41,7 @@ class AirGappedUtilsTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	HelmClient helmClient = mock(HelmClient)
-	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
+	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerProviderMock())
 
 	@BeforeEach
 	void setUp() {

@@ -18,7 +18,7 @@ display-url-api:2.217.va_6b_de84cc74b_
 docker-commons:472.vee120e23d3a_c
 docker-workflow:634.vedc7242b_eda_7
 durable-task:664.v2b_e7a_dfff66c
-echarts-api:6.0.0-1281.vd3d21a_1ca_cb_4
+echarts-api:6.0.0-1287.vfd24c22a_3d00
 eddsa-api:0.3.0.1-29.v67e9a_1c969b_b_
 font-awesome-api:7.2.0-983.v3f63c34eddb_9
 git:5.10.1
@@ -26,9 +26,9 @@ git-client:6.6.0
 gson-api:2.14.0-201.v8eefe5515533
 instance-identity:203.v15e81a_1b_7a_38
 ionicons-api:94.vcc3065403257
-jackson-annotations2-api:2.21-7.v4777a_f3a_a_d47
+jackson-annotations2-api:2.22-19.v10a_a_582ea_26e
 jackson2-api:2.21.2-436.v29efdb_7418ff
-jackson3-api:3.1.2-73.v3e5485d8b_148
+jackson3-api:3.2.0-89.v014d02108ea_7
 jakarta-xml-bind-api:4.0.6-12.vb_1833c1231d3
 jakarta-activation-api:2.1.4-1
 jakarta-mail-api:2.1.5-1
@@ -38,7 +38,7 @@ joda-time-api:2.14.1-187.vdf2def02b_8a_1
 jquery3-api:3.7.1-682.vfa_cdce169929
 json-api:20250517-173.v596efb_962a_31
 json-path-api:3.0.0-218.vcd4dd1355de2
-junit:1403.vd9d1413fd205
+junit:1413.v736fa_5b_61d80
 kubernetes:4423.vb_59f230b_ce53
 kubernetes-client-api:7.3.1-256.v788a_0b_787114
 kubernetes-credentials:207.v492f58828b_ed
@@ -73,7 +73,7 @@ ssh-credentials:372.va_250881b_08cd
 structs:362.va_b_695ef4fdf9
 trilead-api:2.284.v1974ea_324382
 variant:70.va_d9f17f859e0
-woodstox-core-api:7.1.1-1.v4d297985f397
+woodstox-core-api:7.2.1-6.v3718a_a_11f5c4
 workflow-aggregator:608.v67378e9d3db_1
 workflow-api:1413.v2ff1a_5e720fa_
 workflow-basic-steps:1098.v808b_fd7f8cf4

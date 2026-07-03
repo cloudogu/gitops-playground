@@ -21,7 +21,7 @@ class TestGitRepoFactory extends GitRepoFactory {
 	}
 
 	@Override
-	GitRepo getRepo(String repoTarget, GitProvider scm) {
+	GitRepo create(String repoTarget, GitProvider scm) {
 		def effectiveProvider = scm ?: defaultProvider
 
 		if (!effectiveProvider) {
