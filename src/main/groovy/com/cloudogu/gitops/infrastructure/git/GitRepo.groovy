@@ -21,9 +21,9 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.*
+import org.eclipse.jgit.transport.RemoteRefUpdate.Status
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
-import org.eclipse.jgit.transport.RemoteRefUpdate.Status
 
 @Slf4j
 class GitRepo {
@@ -277,8 +277,9 @@ class GitRepo {
 			return
 		}
 
-		throw new IllegalStateException("Cannot bootstrap repository '${repoTarget}' because remote branch 'origin/main' does not exist. " +
-			"The SCM-Manager repository must be created and initialized before GOP can push generated resources.")
+		throw new IllegalStateException('Cannot bootstrap repository \'' + repoTarget +
+			'\' because remote branch \'origin/main\' does not exist. ' +
+			'The SCM-Manager repository must be created and initialized before GOP can push generated resources.')
 	}
 
 	static boolean isCommit(File repoPath, String ref) {
