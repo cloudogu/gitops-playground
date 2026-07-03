@@ -68,7 +68,7 @@ class ContentLoaderTest {
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	Jenkins jenkins = mock(Jenkins.class)
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
+	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 	Deployer deployer = mock(Deployer)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 

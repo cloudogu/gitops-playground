@@ -47,6 +47,8 @@ class RepositoryProvisioningTest {
 
 		doReturn(tenantProvider).when(gitHandler).getTenant()
 		doReturn(tenantProvider).when(gitHandler).getResourcesScm()
+		doAnswer { config.multiTenant.useDedicatedInstance }.when(gitHandler).isMultiTenantDeployment()
+		doAnswer { config.scm.scmManager?.internal ?: false }.when(gitHandler).isInternalScmManagerDeployment()
 
 		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
 		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
@@ -275,8 +277,7 @@ class RepositoryProvisioningTest {
 	}
 
 	private RepositoryProvisioning createProvisioning() {
-		return new RepositoryProvisioning(createDeploymentContext(),
-			gitRepoFactory,
+		return new RepositoryProvisioning(gitRepoFactory,
 			gitHandler)
 	}
 

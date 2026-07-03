@@ -78,7 +78,7 @@ class ApplicationConfiguratorTest {
 		Deployer deployer = Mockito.mock(Deployer)
 		repositoryProvisioning = Mockito.mock(RepositoryProvisioning)
 
-		GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
+		GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 		def context = new ContextBuilder(testConfig).build()
 
 		featureContent = Mockito.spy(new ContentLoader(context,

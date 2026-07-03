@@ -21,9 +21,10 @@ class GitHandler {
 
 	GitProvider tenant
 	GitProvider central
+	protected Boolean multiTenantDeployment
+	protected Boolean internalScmManagerDeployment
 
-	GitHandler(
-		K8sClient k8sClient,
+	GitHandler(K8sClient k8sClient,
 		NetworkingUtils networkingUtils) {
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
@@ -47,6 +48,8 @@ class GitHandler {
 	}
 
 	void prepareProviders(DeploymentContext context) {
+		this.multiTenantDeployment = context.isMultiTenant()
+		this.internalScmManagerDeployment = context.isInternalScmManager()
 		this.tenant = createTenantScmProvider(context)
 
 		if (context.isMultiTenant()) {
@@ -64,6 +67,20 @@ class GitHandler {
 		}
 
 		throw new IllegalStateException('No SCM provider found.')
+	}
+
+	boolean isMultiTenantDeployment() {
+		if (multiTenantDeployment == null) {
+			throw new IllegalStateException('Tenant deployment mode has not been prepared.')
+		}
+		return multiTenantDeployment
+	}
+
+	boolean isInternalScmManagerDeployment() {
+		if (internalScmManagerDeployment == null) {
+			throw new IllegalStateException('SCM provider deployment mode has not been prepared.')
+		}
+		return internalScmManagerDeployment
 	}
 
 	private GitProvider createTenantScmProvider(DeploymentContext context) {
@@ -95,14 +112,14 @@ class GitHandler {
 					config.multiTenant.scmManager,
 					k8sClient,
 					networkingUtils,
-					centralScmManagerServicePrefix())
+					centralScmManagerServicePrefix(config))
 
 			default:
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
 		}
 	}
 
-	private String centralScmManagerServicePrefix() {
+	private String centralScmManagerServicePrefix(Config config) {
 		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
 		def baseNamespace = 'scm-manager'
 

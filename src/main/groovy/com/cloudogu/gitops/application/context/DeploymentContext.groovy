@@ -6,7 +6,7 @@ class DeploymentContext {
 
 	final Config config
 	final TenantMode tenantMode
-	ScmManagerDeploymentMode scmManagerDeploymentMode
+	final ScmManagerDeploymentMode scmManagerDeploymentMode
 	final Boolean airgapped
 	final ClusterDistribution clusterDistribution
 
@@ -36,10 +36,6 @@ class DeploymentContext {
 
 	Boolean isExternalScmManager() {
 		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL
-	}
-
-	void setScmManagerDeploymentMode(ScmManagerDeploymentMode scmManagerDeploymentMode) {
-		this.scmManagerDeploymentMode = scmManagerDeploymentMode
 	}
 
 	Boolean isAirgapped() {

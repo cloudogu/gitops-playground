@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.application.repository
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -38,7 +37,6 @@ class RepositoryProvisioning {
 
 	static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
 
-	private final DeploymentContext context
 	private final GitRepoFactory gitRepoFactory
 	private final GitHandler gitHandler
 
@@ -46,10 +44,8 @@ class RepositoryProvisioning {
 	private boolean remoteRepositoriesEnsured = false
 	private boolean repositoriesCloned = false
 
-	RepositoryProvisioning(DeploymentContext context,
-		GitRepoFactory gitRepoFactory,
+	RepositoryProvisioning(GitRepoFactory gitRepoFactory,
 		GitHandler gitHandler) {
-		this.context = context
 		this.gitRepoFactory = gitRepoFactory
 		this.gitHandler = gitHandler
 	}
@@ -89,7 +85,7 @@ class RepositoryProvisioning {
 			return workspace
 		}
 
-		if (context.isMultiTenant()) {
+		if (gitHandler.isMultiTenantDeployment()) {
 			workspace = createDedicatedInstanceWorkspace()
 		} else {
 			workspace = createSingleInstanceWorkspace()
@@ -216,7 +212,7 @@ class RepositoryProvisioning {
 	}
 
 	private boolean mustWaitForInternalScmManagerDeployment() {
-		return context.isInternalScmManager()
+		return gitHandler.isInternalScmManagerDeployment()
 	}
 
 	private static void ensureRepositoryExists(GitProvider gitProvider,

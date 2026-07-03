@@ -15,8 +15,8 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
-
 import groovy.yaml.YamlSlurper
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -80,8 +80,7 @@ class ArgoCDRepoSetupTest {
 			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 		}
 
-		def gitHandler = new GitHandlerForTests(config,
-			tenantProvider,
+		def gitHandler = new GitHandlerForTests(tenantProvider,
 			centralProvider)
 
 		return new ArgoCDRepoSetupTestContext(setup: ArgoCDRepoSetup.create(new ContextBuilder(config).build(),

@@ -36,10 +36,8 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 @EnableKubernetesMockClient(crud = true)
@@ -1635,8 +1633,7 @@ class ArgoCDTest {
 			RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 			when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
-			GitHandler gitHandler = new GitHandlerForTests(cfg,
-				tenantProvider,
+			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
 				centralProvider)
 
 			return new ArgoCDTestContext(gitHandler: gitHandler,

@@ -37,7 +37,7 @@ class VaultTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Deployer deployer = mock(Deployer)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerProviderMock())
+	GitHandler gitHandler = new GitHandlerForTests(new ScmManagerProviderMock())
 	Path temporaryYamlFile
 
 	K8sClient k8sClient

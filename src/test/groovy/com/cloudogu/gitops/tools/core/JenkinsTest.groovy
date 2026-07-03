@@ -48,7 +48,7 @@ class JenkinsTest {
 
 	@Mock
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
+	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 
 	@BeforeEach
 	void setup() {
