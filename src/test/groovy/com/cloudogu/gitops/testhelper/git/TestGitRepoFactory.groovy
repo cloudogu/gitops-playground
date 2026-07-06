@@ -4,6 +4,7 @@ import static org.mockito.Mockito.doAnswer
 import static org.mockito.Mockito.spy
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -15,13 +16,19 @@ import org.apache.commons.io.FileUtils
 class TestGitRepoFactory extends GitRepoFactory {
 	Map<String, GitRepo> repos = [:]
 	GitProvider defaultProvider
+	private final DeploymentContext context
 
 	TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
-		super(new ContextBuilder(config).build(), fileSystemUtils)
+		super(fileSystemUtils)
+		this.context = new ContextBuilder(config).build()
+	}
+
+	GitRepo create(String repoTarget, GitProvider scm) {
+		return create(context, repoTarget, scm)
 	}
 
 	@Override
-	GitRepo create(String repoTarget, GitProvider scm) {
+	GitRepo create(DeploymentContext context, String repoTarget, GitProvider scm) {
 		def effectiveProvider = scm ?: defaultProvider
 
 		if (!effectiveProvider) {

@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -1631,7 +1632,7 @@ class ArgoCDTest {
 			}
 
 			RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-			when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
+			when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(repositoryWorkspace)
 
 			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
 				centralProvider)

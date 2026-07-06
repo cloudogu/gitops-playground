@@ -21,8 +21,6 @@ class GitHandler {
 
 	GitProvider tenant
 	GitProvider central
-	protected Boolean multiTenantDeployment
-	protected Boolean internalScmManagerDeployment
 
 	GitHandler(K8sClient k8sClient,
 		NetworkingUtils networkingUtils) {
@@ -48,8 +46,6 @@ class GitHandler {
 	}
 
 	void prepareProviders(DeploymentContext context) {
-		this.multiTenantDeployment = context.isMultiTenant()
-		this.internalScmManagerDeployment = context.isInternalScmManager()
 		this.tenant = createTenantScmProvider(context)
 
 		if (context.isMultiTenant()) {
@@ -67,20 +63,6 @@ class GitHandler {
 		}
 
 		throw new IllegalStateException('No SCM provider found.')
-	}
-
-	boolean isMultiTenantDeployment() {
-		if (multiTenantDeployment == null) {
-			throw new IllegalStateException('Tenant deployment mode has not been prepared.')
-		}
-		return multiTenantDeployment
-	}
-
-	boolean isInternalScmManagerDeployment() {
-		if (internalScmManagerDeployment == null) {
-			throw new IllegalStateException('SCM provider deployment mode has not been prepared.')
-		}
-		return internalScmManagerDeployment
 	}
 
 	private GitProvider createTenantScmProvider(DeploymentContext context) {

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -189,7 +190,7 @@ class ScmManagerSetupTest {
 	void 'bootstrapAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
 
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(workspace)
+		when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(workspace)
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
@@ -210,7 +211,7 @@ class ScmManagerSetupTest {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
 			tenantBootstrapRepo)
 
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(workspace)
+		when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(workspace)
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,

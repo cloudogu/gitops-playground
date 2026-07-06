@@ -38,7 +38,6 @@ class RepositoryProvisioning {
 
 	static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
 
-	private final DeploymentContext context
 	private final GitRepoFactory gitRepoFactory
 	private final GitHandler gitHandler
 
@@ -48,21 +47,20 @@ class RepositoryProvisioning {
 
 	RepositoryProvisioning(GitRepoFactory gitRepoFactory,
 		GitHandler gitHandler) {
-		this.context = context
 		this.gitRepoFactory = gitRepoFactory
 		this.gitHandler = gitHandler
 	}
 
-	void prepare() {
+	void prepare(DeploymentContext context) {
 
 		/**
 		 * Returns the shared repository workspace for the current deployment.
 		 *
 		 * <p>The workspace is created lazily and reused afterwards so all tools write to the same
 		 * local repository checkout.</p>		*/
-		provideWorkspace()
+		provideWorkspace(context)
 
-		if (mustWaitForInternalScmManagerDeployment()) {
+		if (mustWaitForInternalScmManagerDeployment(context)) {
 			log.debug('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
 			workspace.createLocalDirectories()
 			return
@@ -83,15 +81,15 @@ class RepositoryProvisioning {
 		cloneRepositories()
 	}
 
-	RepositoryWorkspace provideWorkspace() {
+	RepositoryWorkspace provideWorkspace(DeploymentContext context) {
 		if (workspace != null) {
 			return workspace
 		}
 
-		if (gitHandler.isMultiTenantDeployment()) {
-			workspace = createDedicatedInstanceWorkspace()
+		if (context.isMultiTenant()) {
+			workspace = createDedicatedInstanceWorkspace(context)
 		} else {
-			workspace = createSingleInstanceWorkspace()
+			workspace = createSingleInstanceWorkspace(context)
 		}
 
 		return workspace
@@ -166,16 +164,17 @@ class RepositoryProvisioning {
 		return CLUSTER_RESOURCES_REPO_TARGET
 	}
 
-	private RepositoryWorkspace createSingleInstanceWorkspace() {
+	private RepositoryWorkspace createSingleInstanceWorkspace(DeploymentContext context) {
 		log.debug('Creating single-instance repository workspace.')
 
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(context,
+			clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())
 
 		return new RepositoryWorkspace(clusterResourcesRepository)
 	}
 
-	private RepositoryWorkspace createDedicatedInstanceWorkspace() {
+	private RepositoryWorkspace createDedicatedInstanceWorkspace(DeploymentContext context) {
 		log.debug('Creating dedicated-instance repository workspace.')
 
 		/*
@@ -184,10 +183,12 @@ class RepositoryProvisioning {
 		 * Therefore both repositories are represented explicitly, even though they use the same
 		 * logical repository target.
 		 */
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(context,
+			clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())
 
-		GitRepo tenantBootstrapRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
+		GitRepo tenantBootstrapRepository = gitRepoFactory.create(context,
+			clusterResourcesRepoTarget(),
 			gitHandler.tenant)
 
 		RepositoryWorkspace dedicatedWorkspace = new RepositoryWorkspace(clusterResourcesRepository,
@@ -214,8 +215,8 @@ class RepositoryProvisioning {
 		}
 	}
 
-	private boolean mustWaitForInternalScmManagerDeployment() {
-		return gitHandler.isInternalScmManagerDeployment()
+	private static boolean mustWaitForInternalScmManagerDeployment(DeploymentContext context) {
+		return context.isInternalScmManager()
 	}
 
 	private static void ensureRepositoryExists(GitProvider gitProvider,

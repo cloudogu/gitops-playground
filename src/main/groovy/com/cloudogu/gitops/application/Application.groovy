@@ -27,7 +27,7 @@ class Application {
 	final RepositoryProvisioning repositoryProvisioning
 	final DeploymentOrchestrator deploymentOrchestrator
 
-	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler,RepositoryProvisioning repositoryProvisioning,
+	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler, RepositoryProvisioning repositoryProvisioning,
 		DeploymentOrchestrator deploymentOrchestrator) {
 
 		this.contextBuilder = contextBuilder
@@ -51,8 +51,8 @@ class Application {
 
 		gitHandler.validate(context)
 		gitHandler.prepareProviders(context)
-		repositoryProvisioning.prepare()
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		repositoryProvisioning.prepare(context)
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
 
 		deploymentOrchestrator.deployTools(context,
 			workspace)

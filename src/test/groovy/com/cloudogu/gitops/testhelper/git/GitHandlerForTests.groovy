@@ -16,15 +16,11 @@ class GitHandlerForTests extends GitHandler {
 		this.centralProvider = centralProvider
 		this.tenant = tenantProvider
 		this.central = centralProvider
-		this.multiTenantDeployment = centralProvider != null
-		this.internalScmManagerDeployment = false
 	}
 
 	@Override
 	void prepareProviders(DeploymentContext context) {
 		// Inject the test providers into the base class before running the real logic
-		this.multiTenantDeployment = context.isMultiTenant()
-		this.internalScmManagerDeployment = context.isInternalScmManager()
 		this.tenant = tenantProvider
 		this.central = context.isMultiTenant() ? centralProvider : null
 

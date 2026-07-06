@@ -8,15 +8,13 @@ import jakarta.inject.Singleton
 
 @Singleton
 class GitRepoFactory {
-	protected final DeploymentContext context
 	protected final FileSystemUtils fileSystemUtils
 
-	GitRepoFactory(DeploymentContext context, FileSystemUtils fileSystemUtils) {
+	GitRepoFactory(FileSystemUtils fileSystemUtils) {
 		this.fileSystemUtils = fileSystemUtils
-		this.context = context
 	}
 
-	GitRepo create(String repoTarget, GitProvider gitProvider) {
+	GitRepo create(DeploymentContext context, String repoTarget, GitProvider gitProvider) {
 		return new GitRepo(context, gitProvider, repoTarget, fileSystemUtils)
 	}
 

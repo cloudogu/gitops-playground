@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -655,7 +656,7 @@ matchExpressions:
 
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
+		when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(repositoryWorkspace)
 
 		return new Monitoring(new ContextBuilder(configuration).build(), new FileSystemUtils() {
 			@Override

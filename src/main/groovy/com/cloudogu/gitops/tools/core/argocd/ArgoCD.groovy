@@ -82,7 +82,7 @@ class ArgoCD extends Tool {
 
 	@Override
 	void enable() {
-		this.repositoryWorkspace = repositoryProvisioning.provideWorkspace()
+		this.repositoryWorkspace = repositoryProvisioning.provideWorkspace(context)
 
 		this.repoSetup = ArgoCDRepoSetup.create(context,
 			fileSystemUtils,

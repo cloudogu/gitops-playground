@@ -104,7 +104,7 @@ class ScmManagerSetup {
 	}
 
 	void bootstrapAfterScmManagerDeployment() {
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
 
 		repositoryProvisioning.ensureRemoteRepositoriesExist()
 

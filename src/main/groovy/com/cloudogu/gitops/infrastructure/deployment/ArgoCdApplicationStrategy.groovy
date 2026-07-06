@@ -46,7 +46,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		RepoType repoType) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
 		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
 		def namePrefix = config.application.namePrefix

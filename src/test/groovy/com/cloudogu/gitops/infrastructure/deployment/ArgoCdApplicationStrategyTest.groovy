@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
@@ -281,7 +283,7 @@ param1: value1
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
 		repositoryProvisioning = mock(RepositoryProvisioning)
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
+		when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(repositoryWorkspace)
 
 		return new ArgoCdApplicationStrategy(new ContextBuilder(config).build(),
 			new FileSystemUtils(),

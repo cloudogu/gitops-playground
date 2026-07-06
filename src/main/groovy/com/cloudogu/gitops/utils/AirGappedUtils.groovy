@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
@@ -21,14 +22,16 @@ class AirGappedUtils {
 	private FileSystemUtils fileSystemUtils
 	private HelmClient helmClient
 	private GitHandler gitHandler
+	private DeploymentContext context
 
 	AirGappedUtils(Config config, GitRepoFactory repoProvider,
-		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
+		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler, DeploymentContext context) {
 		this.config = config
 		this.repoProvider = repoProvider
 		this.fileSystemUtils = fileSystemUtils
 		this.helmClient = helmClient
 		this.gitHandler = gitHandler
+		this.context = context
 	}
 
 	/**
@@ -46,7 +49,7 @@ class AirGappedUtils {
 
 		validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-		GitRepo repo = repoProvider.create(repoNamespaceAndName, gitHandler.tenant)
+		GitRepo repo = repoProvider.create(context, repoNamespaceAndName, gitHandler.tenant)
 
 		repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 

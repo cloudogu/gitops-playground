@@ -10,14 +10,16 @@ import org.junit.jupiter.api.Test
 class DestroyerDependencyInjectionTest {
 	@Test
 	void 'can create bean'() {
+		Config config = Config.fromMap([scm        : [scmManager: [url     : 'http://localhost:9091/scm',
+		                                                           username: 'admin',
+		                                                           password: 'admin']],
+		                                jenkins    : [url     : 'http://localhost:9090',
+		                                              username: 'admin',
+		                                              password: 'admin',],
+		                                application: [insecure: true]])
+
 		def destroyer = ApplicationContext.run()
-			.registerSingleton(Config.fromMap([scm        : [scmManager: [url     : 'http://localhost:9091/scm',
-			                                                              username: 'admin',
-			                                                              password: 'admin']],
-			                                   jenkins    : [url     : 'http://localhost:9090',
-			                                                 username: 'admin',
-			                                                 password: 'admin',],
-			                                   application: [insecure: true]]))
+			.registerSingleton(config)
 			.getBean(Destroyer)
 
 		Assertions.assertThat(destroyer.destructionHandlers).hasSize(3)

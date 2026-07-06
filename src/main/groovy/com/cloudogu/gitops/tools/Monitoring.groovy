@@ -75,7 +75,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
 		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
 		if (config.application.namespaceIsolation || config.application.netpols) {
@@ -90,19 +90,15 @@ class Monitoring extends Tool implements ToolWithImage {
 		// Remove dashboards for features that are not enabled
 		cleanupUnusedDashboards(clusterResourcesRepo)
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			'monitoring',
-			'Update Prometheus dashboards, RBAC and network policies.'
-		)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges('monitoring',
+			'Update Prometheus dashboards, RBAC and network policies.')
 
-		deployHelmChart(
-			'monitoring',
+		deployHelmChart('monitoring',
 			'kube-prometheus-stack',
 			namespace,
 			config.features.monitoring.helm,
 			HELM_VALUES_PATH,
-			context
-		)
+			context)
 	}
 
 	private void setupMonitoringSecrets() {
