@@ -2,10 +2,8 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryBootstrapper
+
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
@@ -26,18 +24,18 @@ class ScmManager extends Tool implements ToolWithImage {
 	String namespace
 
 	final K8sClient k8sClient
-	private final RepositoryBootstrapper repositoryBootstrapper
+	private final RepositoryProvisioning repositoryProvisioning
 
 	ScmManager(DeploymentContext context,
 		GitHandler gitHandler,
 		Deployer deployer,
-		RepositoryBootstrapper repositoryBootstrapper,
-		K8sClient k8sClient) {
+		K8sClient k8sClient,
+		RepositoryProvisioning repositoryProvisioning) {
 		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
-		this.repositoryBootstrapper = repositoryBootstrapper
 		this.k8sClient = k8sClient
+		this.repositoryProvisioning = repositoryProvisioning
 
 		if (context.isInternalScmManager()) {
 			this.namespace = prefixedNamespace()
@@ -58,13 +56,13 @@ class ScmManager extends Tool implements ToolWithImage {
 
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer,
-			context)
+			context,
+			repositoryProvisioning)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
 		setup.configure()
-
-		repositoryBootstrapper.bootstrapAfterScmManagerDeployment()
+		setup.bootstrapAfterScmManagerDeployment()
 
 		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.

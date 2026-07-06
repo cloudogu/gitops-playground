@@ -112,19 +112,7 @@ class GitHandler {
 				throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.multiTenant.scmProviderType}")
 		}
 	}
-
-	private String prefixedNamespace(String namespace) {
-		String prefix = config.application.namePrefix ?: ''
-		String baseNamespace = namespace ?: 'scm-manager'
-
-		if (prefix && baseNamespace.startsWith(prefix)) {
-			return baseNamespace
-		}
-
-		return "${prefix}${baseNamespace}".toString()
-	}
-
-
+	
 	private String centralScmManagerServicePrefix() {
 		def namespace = (config.multiTenant.scmManager.namespace ?: '').strip()
 		def baseNamespace = 'scm-manager'

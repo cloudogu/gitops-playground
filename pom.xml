@@ -36,7 +36,7 @@
         <retrofitVersion>3.0.0</retrofitVersion>
         <groovy.version>5.0.5</groovy.version>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
+        <kubernetes.client.java.version>26.0.1</kubernetes.client.java.version>
         <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
     </properties>

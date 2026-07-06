@@ -21,6 +21,7 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.*
+import org.eclipse.jgit.transport.RemoteRefUpdate.Status
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
 
@@ -180,7 +181,7 @@ class GitRepo {
 						update.status,
 						update.message)
 
-					if (update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK && update.status != org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+					if (update.status != Status.OK && update.status != Status.UP_TO_DATE) {
 						throw new RuntimeException("Push failed for repo '${repoTarget}', remoteName='${update.remoteName}', status='${update.status}', message='${update.message}'")
 					}
 				}
@@ -276,7 +277,9 @@ class GitRepo {
 			return
 		}
 
-		log.debug("No local or remote main branch exists yet for repo '{}'. Keeping initialized repository.", repoTarget)
+		throw new IllegalStateException('Cannot bootstrap repository \'' + repoTarget +
+			'\' because remote branch \'origin/main\' does not exist. ' +
+			'The SCM-Manager repository must be created and initialized before GOP can push generated resources.')
 	}
 
 	static boolean isCommit(File repoPath, String ref) {
