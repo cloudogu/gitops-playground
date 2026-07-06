@@ -86,10 +86,6 @@ class ArgoCDRepoLayout {
 		Path.of(repoRootDir, APPS_VAULT_DIR).toString()
 	}
 
-	static String monitoringSubdirRel() {
-		APPS_MONITORING_DIR
-	}
-
 	static String secretsSubdirRel() {
 		APPS_SECRETS_DIR
 	}

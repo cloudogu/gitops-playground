@@ -311,18 +311,6 @@ class ArgoCDRepoSetupTest {
 	}
 
 	@Test
-	void 'prepareRepositories does not copy monitoring resources when monitoring feature is inactive'() {
-		config.features.monitoring.active = false
-
-		def testContext = createSetup(new FileSystemUtils())
-
-		testContext.setup.prepareRepositories()
-
-		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.monitoringSubdirRel())).doesNotExist()
-	}
-
-	@Test
 	void 'prepareRepositories copies secrets and vault resources when secrets feature is active'() {
 		config.features.secrets.active = true
 

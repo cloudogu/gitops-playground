@@ -164,10 +164,6 @@ class ArgoCDRepoSetup {
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
 		}
 
-		if (config.features.monitoring.active) {
-			clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
-		}
-
 		if (config.features.secrets.active) {
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())

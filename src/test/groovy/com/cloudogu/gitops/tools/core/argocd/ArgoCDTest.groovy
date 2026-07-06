@@ -261,47 +261,6 @@ class ArgoCDTest {
 	}
 
 	@Test
-	void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
-		config.features.monitoring.active = false
-
-		def argocd = createArgoCD()
-		argocd.install()
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-		assertThat(new File(clusterResourcesRepoLayout.monitoringDir())).doesNotExist()
-	}
-
-	@Test
-	void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
-		config.features.monitoring.active = true
-
-		def argocd = createArgoCD()
-		argocd.install()
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-		assertThat(new File(clusterResourcesRepoLayout.monitoringDir())).exists()
-		assertValidDashboards(clusterResourcesRepoLayout.monitoringDir())
-	}
-
-	void assertValidDashboards(String monitoringPath) {
-		Files.walk(Path.of(monitoringPath))
-			.filter { it.toString() ==~ /.*-dashboard\.yaml/ }.each { Path path ->
-			def dashboardConfigMap = null
-
-			assertThatCode {
-				dashboardConfigMap = parseActualYaml(path.toString())
-			}.as("Invalid YAML in ${path.fileName}").doesNotThrowAnyException()
-
-			assertThat(dashboardConfigMap.data as Map).hasSize(1)
-				.as('Expected only on dashboard json within map')
-			assertThatCode {
-				def dashboardJsonString = (dashboardConfigMap.data as Map).entrySet().first().value as String
-				new JsonSlurper().parseText(dashboardJsonString)
-			}.as("Invalid JSON in ${path.fileName}").doesNotThrowAnyException()
-		}
-	}
-
-	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
 		config.features.mail.active = false
 

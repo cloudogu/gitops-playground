@@ -31,6 +31,12 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
+	private static final String TOOL_NAME = 'monitoring'
+	private static final String MONITORING_APP_PATH = 'apps/monitoring'
+	private static final String MONITORING_RBAC_PATH = "${MONITORING_APP_PATH}/misc/rbac"
+	private static final String MONITORING_NETPOLS_PATH = "${MONITORING_APP_PATH}/misc/netpols"
+	private static final String MONITORING_DASHBOARD_PATH = "${MONITORING_APP_PATH}/misc/dashboard"
+
 	String namespace
 	final K8sClient k8sClient
 
@@ -65,7 +71,8 @@ class Monitoring extends Tool implements ToolWithImage {
 			uid = findValidOpenShiftUid()
 		}
 
-		addHelmValuesData('monitoring', [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : '']])
+		addHelmValuesData('monitoring',
+			[grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : '']])
 		addHelmValuesData('namespaces', (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
 		addHelmValuesData('scm', scmConfigurationMetrics())
 		addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
@@ -75,34 +82,37 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
+		GitRepo clusterResourcesRepo = clusterResourcesRepository()
 
-		if (config.application.namespaceIsolation || config.application.netpols) {
-			if (config.application.namespaceIsolation) {
-				generateNamespaceIsolationRBAC(clusterResourcesRepo)
-			}
-			if (config.application.netpols) {
-				generateNetpols(clusterResourcesRepo)
-			}
-		}
+		writeMonitoringGitOpsArtifacts(clusterResourcesRepo)
 
-		// Remove dashboards for features that are not enabled
-		cleanupUnusedDashboards(clusterResourcesRepo)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges(TOOL_NAME,
+			'Update Prometheus dashboards, RBAC and network policies.')
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			'monitoring',
-			'Update Prometheus dashboards, RBAC and network policies.'
-		)
-
-		deployHelmChart(
-			'monitoring',
+		deployHelmChart(TOOL_NAME,
 			'kube-prometheus-stack',
 			namespace,
 			config.features.monitoring.helm,
 			HELM_VALUES_PATH,
-			context
-		)
+			context)
+	}
+
+	private GitRepo clusterResourcesRepository() {
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
+		return workspace.clusterResourcesRepository
+	}
+
+	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
+		if (config.application.namespaceIsolation) {
+			generateNamespaceIsolationRBAC(clusterResourcesRepo)
+		}
+
+		if (config.application.netpols) {
+			generateNetpols(clusterResourcesRepo)
+		}
+
+		// Remove dashboards for features that are not enabled
+		cleanupUnusedDashboards(clusterResourcesRepo)
 	}
 
 	private void setupMonitoringSecrets() {
@@ -125,24 +135,25 @@ class Monitoring extends Tool implements ToolWithImage {
 		}
 	}
 
-	private void generateNamespaceIsolationRBAC(GitRepo repo) {
+	private void generateNamespaceIsolationRBAC(GitRepo clusterResourcesRepo) {
 		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 			String rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
 				[namespace : currentNamespace,
 				 namePrefix: config.application.namePrefix,
 				 config    : config,])
-			repo.writeFile("apps/monitoring/misc/rbac/${currentNamespace}.yaml",
+
+			clusterResourcesRepo.writeFile("${MONITORING_RBAC_PATH}/${currentNamespace}.yaml",
 				rbacYaml)
 		}
 	}
 
-	private void generateNetpols(GitRepo repo) {
+	private void generateNetpols(GitRepo clusterResourcesRepo) {
 		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 			String netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
 				[namespace : currentNamespace,
 				 namePrefix: config.application.namePrefix,])
 
-			repo.writeFile("apps/monitoring/misc/netpols/${currentNamespace}.yaml",
+			clusterResourcesRepo.writeFile("${MONITORING_NETPOLS_PATH}/${currentNamespace}.yaml",
 				netpolsYaml)
 		}
 	}
@@ -203,7 +214,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		String dashboardRoot = "${repoRoot}/apps/monitoring/misc/dashboard"
+		String dashboardRoot = "${repoRoot}/${MONITORING_DASHBOARD_PATH}"
 
 		if (!config.features.ingress.active) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")
