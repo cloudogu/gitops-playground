@@ -131,7 +131,7 @@ class ScmManagerSetup {
 	private Path prepareHelmValues() {
 		String releaseName = scmmReleaseName()
 
-		log.info("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
+		log.debug("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
 			releaseName,
 			this.scmManager.scmmConfig.namespace)
 
@@ -176,7 +176,7 @@ class ScmManagerSetup {
 				def response = call.execute()
 
 				if (response.successful) {
-					log.info('SCM-Manager is available.')
+					log.debug('SCM-Manager is available.')
 					return
 				}
 			} catch (Exception e) {

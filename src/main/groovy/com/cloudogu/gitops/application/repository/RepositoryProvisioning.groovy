@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.application.repository
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
@@ -37,6 +38,7 @@ class RepositoryProvisioning {
 
 	static final String CLUSTER_RESOURCES_REPO_TARGET = 'argocd/cluster-resources'
 
+	private final DeploymentContext context
 	private final GitRepoFactory gitRepoFactory
 	private final GitHandler gitHandler
 
@@ -46,6 +48,7 @@ class RepositoryProvisioning {
 
 	RepositoryProvisioning(GitRepoFactory gitRepoFactory,
 		GitHandler gitHandler) {
+		this.context = context
 		this.gitRepoFactory = gitRepoFactory
 		this.gitHandler = gitHandler
 	}
@@ -60,7 +63,7 @@ class RepositoryProvisioning {
 		provideWorkspace()
 
 		if (mustWaitForInternalScmManagerDeployment()) {
-			log.info('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
+			log.debug('Preparing local repository workspace only because internal SCM-Manager is not deployed yet.')
 			workspace.createLocalDirectories()
 			return
 		}

@@ -80,7 +80,6 @@ class GitHandlerTest {
 		def ex = assertThrows(RuntimeException) {
 			gh.validate(context(cfg))
 		}
-
 		assertTrue(ex.message.toLowerCase().contains('gitlab'))
 		assertEquals(ScmProviderType.GITLAB, cfg.scm.scmProviderType)
 		assertNull(cfg.scm.scmManager)
@@ -216,6 +215,9 @@ class GitHandlerTest {
 
 		gitHandler.prepareProviders(context(cfg))
 
+		assertSame(tenant, gitHandler.tenant)
+		assertSame(central, gitHandler.central)
+		assertSame(central, gitHandler.getResourcesScm())
 		assertSame(tenant, gitHandler.tenant)
 		assertSame(central, gitHandler.central)
 		assertSame(central, gitHandler.getResourcesScm())

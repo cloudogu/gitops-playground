@@ -15,8 +15,8 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
-import groovy.yaml.YamlSlurper
 
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
