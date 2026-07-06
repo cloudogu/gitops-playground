@@ -5,6 +5,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
@@ -95,7 +96,7 @@ class ArgoCDRepoSetup {
 		log.debug("Preparing cluster-resources repo ${clusterResourcesRepo.repoTarget} from ${CLUSTER_RESOURCES_SOURCE_DIR} with subdirs: ${subDirsToCopy}")
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
-			createSubdirFilter(CLUSTER_RESOURCES_SOURCE_DIR, subDirsToCopy))
+			ClusterResourcesCopyFilter.forSubDirs(CLUSTER_RESOURCES_SOURCE_DIR, subDirsToCopy))
 
 		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo))
 
@@ -160,10 +161,6 @@ class ArgoCDRepoSetup {
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
 		}
 
-		if (config.jenkins.internal) {
-			clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
-		}
-
 		if (config.features.secrets.active) {
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
@@ -186,51 +183,5 @@ class ArgoCDRepoSetup {
 
 	private static FileFilter allowAllFilter() {
 		return { File f -> true } as FileFilter
-	}
-
-	private static FileFilter createSubdirFilter(String copyFromDirectory, Set<String> subDirsToCopy) {
-		if (!subDirsToCopy || subDirsToCopy.isEmpty()) {
-			return allowAllFilter()
-		}
-
-		File srcRoot = new File(copyFromDirectory).canonicalFile
-
-		Set<String> prefixes = subDirsToCopy.collect { String s ->
-			String norm = s.replace('\\', '/')
-			norm = norm.replaceAll('^/+', '').replaceAll('/+$', '')
-			norm + '/'
-		} as Set<String>
-
-		Set<String> templateIncludePrefixes = ['apps/argocd/argocd/templates/'] as Set<String>
-
-		return { File f ->
-			File canon = f.canonicalFile
-			String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
-			rel = rel.replace('\\', '/')
-
-			if (rel == '' || rel == '.') {
-				return true
-			}
-
-			boolean isDir = f.isDirectory()
-			String relDir = rel.endsWith('/') ? rel : rel + '/'
-
-			if (templateIncludePrefixes.any { String p -> (isDir ? relDir : rel).startsWith(p)
-			}) {
-				return true
-			}
-
-			if (rel.startsWith('apps/') && relDir.contains('/templates/')) {
-				return false
-			}
-
-			if (isDir) {
-				return prefixes.any { String p -> relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
-				}
-			}
-
-			prefixes.any { String p -> rel.startsWith(p)
-			}
-		} as FileFilter
 	}
 }

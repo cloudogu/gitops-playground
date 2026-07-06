@@ -72,8 +72,7 @@ class Jenkins extends Tool implements ToolWithImage {
 
 	@Override
 	boolean isEnabled() {
-		return false
-		//		return config.jenkins.active
+		return config.jenkins.active
 	}
 
 	@Override

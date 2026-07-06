@@ -11,8 +11,11 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+
+import freemarker.template.DefaultObjectWrapperBuilder
 
 import io.micronaut.core.annotation.Order
 
@@ -31,6 +34,7 @@ class Monitoring extends Tool implements ToolWithImage {
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
 	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
 
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'monitoring'
 	private static final String MONITORING_APP_PATH = 'apps/monitoring'
 	private static final String MONITORING_RBAC_PATH = "${MONITORING_APP_PATH}/misc/rbac"
@@ -84,6 +88,7 @@ class Monitoring extends Tool implements ToolWithImage {
 
 		GitRepo clusterResourcesRepo = clusterResourcesRepository()
 
+		prepareMonitoringApp(clusterResourcesRepo)
 		writeMonitoringGitOpsArtifacts(clusterResourcesRepo)
 
 		repositoryProvisioning.publishClusterResourcesRepositoryChanges(TOOL_NAME,
@@ -100,6 +105,25 @@ class Monitoring extends Tool implements ToolWithImage {
 	private GitRepo clusterResourcesRepository() {
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 		return workspace.clusterResourcesRepository
+	}
+
+	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH))
+
+		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo))
+	}
+
+	private Map<String, Object> buildTemplateValues(GitRepo repo) {
+		return [tenantName: config.application.tenantName,
+		        argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
+		        scm       : [baseUrl      : repo.gitProvider.url,
+		                     host         : repo.gitProvider.host,
+		                     protocol     : repo.gitProvider.protocol,
+		                     repoUrl      : repo.gitProvider.repoPrefix(),
+		                     centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
+		        config    : config,
+		        statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
 	}
 
 	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {

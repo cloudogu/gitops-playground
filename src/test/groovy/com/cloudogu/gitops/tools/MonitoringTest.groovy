@@ -474,6 +474,19 @@ policies:
 	}
 
 	@Test
+	void 'copies monitoring app resources into cluster resources repository'() {
+		createStack(scmManagerMock).install()
+
+		File monitoringAppDir = new File(clusterResourcesRepoDir, 'apps/monitoring')
+		File dashboardDir = new File(monitoringAppDir, 'misc/dashboard')
+
+		assertThat(monitoringAppDir).exists()
+		assertThat(new File(dashboardDir, 'prometheus-dashboard.yaml')).exists()
+		assertThat(new File(dashboardDir, 'prometheus-dashboard.ftl.yaml')).doesNotExist()
+		assertThat(new File(monitoringAppDir, 'templates')).doesNotExist()
+	}
+
+	@Test
 	void 'Skips CRDs'() {
 		config.application.skipCrds = true
 
@@ -637,14 +650,6 @@ matchExpressions:
 			GitRepo create(String repoTarget, GitProvider scm) {
 				def repo = super.create(repoTarget, scmManagerMock)
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
-				def dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
-				dashboardDir.mkdirs()
-
-				new File(dashboardDir, 'traefik-dashboard.yaml').text = 'dummy'
-				new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml').text = 'dummy'
-				new File(dashboardDir, 'jenkins-dashboard.yaml').text = 'dummy'
-				new File(dashboardDir, 'scmm-dashboard.yaml').text = 'dummy'
 
 				return repo
 			}
