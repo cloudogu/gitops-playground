@@ -553,16 +553,25 @@ class ArgoCDTest {
 	@Test
 	void 'ArgoCD with active network policies'() {
 		config.application.netpols = true
+		config.application.namePrefix = 'my-prefix-'
+		config.scm.scmManager.namespace = 'my-prefix-scm-manager'
 
 		def argocd = createArgoCD()
 		argocd.install()
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
+		String valuesYaml = new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text
+		String allowNamespacesYaml = new File(clusterResourcesRepoLayout.argocdRoot(),
+			'/argocd/templates/allow-namespaces.yaml').text
+
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text.contains('namespace: monitoring'))
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains('namespace: monitoring'))
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains('namespace: default'))
+
+		assertThat(valuesYaml).contains('namespace: my-prefix-monitoring')
+
+		assertThat(allowNamespacesYaml).contains('namespace: my-prefix-scm-manager')
+		assertThat(allowNamespacesYaml).doesNotContain('namespace: my-prefix-my-prefix-scm-manager')
+		assertThat(allowNamespacesYaml).contains('kubernetes.io/metadata.name: my-prefix-argocd')
 	}
 
 	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, ArgoCDRepoLayout repoLayout) {

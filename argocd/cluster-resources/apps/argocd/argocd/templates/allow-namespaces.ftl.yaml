@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-argocd-access-scmm
-  namespace: ${config.application.namePrefix}${config.scm.scmManager.namespace}
+  namespace: ${config.scm.scmManager.namespace}
 spec:
   podSelector:
     matchLabels:
