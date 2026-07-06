@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 
@@ -13,17 +13,18 @@ import jakarta.inject.Singleton
 class JenkinsDestructionHandler implements DestructionHandler {
 	private JobManager jobManager
 	private GlobalPropertyManager globalPropertyManager
-	private DeploymentContext context
+	private Config config
 
-	JenkinsDestructionHandler(JobManager jobManager, DeploymentContext context, GlobalPropertyManager globalPropertyManager) {
+	JenkinsDestructionHandler(JobManager jobManager,
+		Config config,
+		GlobalPropertyManager globalPropertyManager) {
 		this.jobManager = jobManager
-		this.context = context
+		this.config = config
 		this.globalPropertyManager = globalPropertyManager
 	}
 
 	@Override
 	void destroy() {
-		def config = context.config
 		jobManager.deleteJob("${config.application.namePrefix}example-apps")
 		globalPropertyManager.deleteGlobalProperty("SCMM_URL")
 		globalPropertyManager.deleteGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL")
