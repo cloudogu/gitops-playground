@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -65,9 +67,11 @@ class IngressTest {
 		def actual = parseActualYaml()
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-		verify(deployer).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
-			config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.HELM, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq(config.features.ingress.helm.repoURL), eq('traefik'),
+			eq(config.features.ingress.helm.chart), eq(config.features.ingress.helm.version), eq('foo-' + config.features.ingress.ingressNamespace),
+			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(false))
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -104,7 +108,7 @@ class IngressTest {
 	void 'helm release is installed in air-gapped mode'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
 		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 
 		config.application.mirrorRepos = true
 
@@ -120,14 +124,16 @@ class IngressTest {
 		createIngress().install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('traefik')
 
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('traefik'), eq('.'), eq('1.2.3'), eq('foo-' + config.features.ingress.ingressNamespace),
+			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -186,8 +192,9 @@ class IngressTest {
 	}
 
 	private Ingress createIngress() {
+		def context = new ContextBuilder(config).build()
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new Ingress(new ContextBuilder(config).build(), new FileSystemUtils() {
+		def ingress = new Ingress(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -196,6 +203,8 @@ class IngressTest {
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler)
+		ingress.isEnabled(context)
+		return ingress
 	}
 
 	private Map parseActualYaml() {

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools.core
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -40,8 +41,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
-	Jenkins(DeploymentContext context,
-		CommandExecutor commandExecutor,
+	Jenkins(CommandExecutor commandExecutor,
 		FileSystemUtils fileSystemUtils,
 		GlobalPropertyManager globalPropertyManager,
 		JobManager jobManager,
@@ -52,7 +52,6 @@ class Jenkins extends Tool implements ToolWithImage {
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
-		this.context = context
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -64,15 +63,27 @@ class Jenkins extends Tool implements ToolWithImage {
 		this.networkingUtils = networkingUtils
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-
-		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
-		}
 	}
 
 	@Override
 	boolean isEnabled() {
+		if (config.jenkins.internal) {
+			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+		}
 		return config.jenkins.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+
+		if (config.jenkins.internal) {
+			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+		}
+
+		return installEnabledTool()
 	}
 
 	@Override
@@ -138,7 +149,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		                                                                                       NAME_PREFIX               : config.application.namePrefix,
 		                                                                                       INSECURE                  : config.application.insecure,
 		                                                                                       SKIP_RESTART              : config.jenkins.skipRestart,
-		                                                                                       SKIP_PLUGINS: config.jenkins.skipPlugins,])
+		                                                                                       SKIP_PLUGINS              : config.jenkins.skipPlugins,])
 
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL", this.gitHandler.tenant.repoPrefix())

@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -25,26 +26,36 @@ class Registry extends Tool {
 	String namespace
 	private K8sClient k8sClient
 
-	Registry(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Registry(FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
 		Deployer deployer) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
-
-		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
-		}
 	}
 
 	@Override
 	boolean isEnabled() {
+		if (config.registry.internal) {
+			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
+		}
 		return config.registry.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+
+		if (config.registry.internal) {
+			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
+		}
+
+		return installEnabledTool()
 	}
 
 	@Override

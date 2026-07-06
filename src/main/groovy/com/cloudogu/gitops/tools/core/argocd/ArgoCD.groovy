@@ -26,37 +26,43 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Order(100)
 class ArgoCD extends Tool {
 
-	private final String namespace
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
 	private final FileSystemUtils fileSystemUtils
 	private final GitHandler gitHandler
 	private final RepositoryProvisioning repositoryProvisioning
-	private final String password
+	private String password
 
-	private RepositoryWorkspace repositoryWorkspace
+	private String namespace
 	private ArgoCDRepoSetup repoSetup
 	private ArgoCDRepoLayout clusterResourcesRepo
 
-	ArgoCD(DeploymentContext context,
-		K8sClient k8sClient,
+	ArgoCD(K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
-		this.password = config.application.password
-		this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
 	}
 
 	@Override
 	boolean isEnabled() {
+		this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
 		return config.features.argocd.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.password = config.application.password
+
+		return installEnabledTool()
 	}
 
 	@Override
@@ -82,8 +88,6 @@ class ArgoCD extends Tool {
 
 	@Override
 	void enable() {
-		this.repositoryWorkspace = repositoryProvisioning.provideWorkspace(context)
-
 		this.repoSetup = ArgoCDRepoSetup.create(context,
 			fileSystemUtils,
 			gitHandler,

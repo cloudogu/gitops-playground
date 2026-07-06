@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -1632,7 +1631,6 @@ class ArgoCDTest {
 			}
 
 			RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-			when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(repositoryWorkspace)
 
 			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
 				centralProvider)
@@ -1650,8 +1648,7 @@ class ArgoCDTest {
 			GitProvider tenantProvider,
 			GitProvider centralProvider,
 			ArgoCDTestContext testContext) {
-			super(new ContextBuilder(cfg).build(),
-				k8sClient,
+			super(k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),
 				testContext.gitHandler,
@@ -1667,6 +1664,12 @@ class ArgoCDTest {
 			this.tenantBootstrapRepo = testContext.tenantBootstrapRepo
 
 			mockPrefixActiveNamespaces(cfg)
+			isEnabled(new ContextBuilder(cfg).build())
+		}
+
+		@Override
+		boolean install() {
+			return execute(new ContextBuilder(cfg).build(), repositoryWorkspace)
 		}
 
 		GitRepo getClusterResourcesRepo() {

@@ -6,7 +6,9 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -79,9 +81,11 @@ me:x:1000:''')
 
 		jenkins.install()
 
-		verify(deployer).deployFeature('https://jen-repo', 'jenkins',
-			'jen-chart', '4.8.1', 'jenkins',
-			'jenkins', temporaryYamlFile, RepoType.HELM, true)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://jen-repo'), eq('jenkins'),
+			eq('jen-chart'), eq('4.8.1'), eq('jenkins'),
+			eq('jenkins'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(true))
 		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
 		verify(k8sClient).labelRemove('node', '--all', '', 'node')
 		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
@@ -148,7 +152,9 @@ jenkins:
 		config.registry.createImagePullSecrets = true
 		createJenkins().install()
 
-		verify(deployer, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
+		verify(deployer, never()).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			anyString(), anyString(), anyString(), anyString(),
 			anyString(), anyString(), any(Path), any(), anyBoolean())
 		verify(k8sClient, never()).createNamespace(any())
 		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
@@ -379,9 +385,12 @@ jenkins:
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler, new ContextBuilder(config).build())
+		def context = new ContextBuilder(config).build()
+		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
-		new Jenkins(new ContextBuilder(config).build(), commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		def jenkins = new Jenkins(commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		jenkins.isEnabled(context)
+		return jenkins
 	}
 
 	private Map parseActualYaml() {

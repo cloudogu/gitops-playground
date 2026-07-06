@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
@@ -48,7 +50,9 @@ class RegistryTest {
 		assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(DEFAULT_REGISTRY_PORT)
 		assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
 
-		verify(deployer).deployFeature(anyString(),
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			anyString(),
 			eq('registry'),
 			eq('docker-registry'),
 			anyString(),
@@ -85,9 +89,12 @@ class RegistryTest {
 				return ret
 			}
 		}
-		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null, new ContextBuilder(config).build())
+		def context = new ContextBuilder(config).build()
+		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null)
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new Registry(new ContextBuilder(config).build(), fileUtil, k8sClient, airGappedUtils, deployer)
+		def registry = new Registry(fileUtil, k8sClient, airGappedUtils, deployer)
+		registry.isEnabled(context)
+		return registry
 	}
 
 	private Map parseActualYaml() {

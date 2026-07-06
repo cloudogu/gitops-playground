@@ -36,26 +36,34 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	private final RepositoryProvisioning repositoryProvisioning
 
-	Monitoring(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Monitoring(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
-		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 	}
 
 	@Override
 	boolean isEnabled() {
+		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 		return config.features.monitoring.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
+
+		return installEnabledTool()
 	}
 
 	@Override
@@ -75,8 +83,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
-		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
+		GitRepo clusterResourcesRepo = repositoryWorkspace.clusterResourcesRepository
 
 		if (config.application.namespaceIsolation || config.application.netpols) {
 			if (config.application.namespaceIsolation) {

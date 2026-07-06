@@ -22,16 +22,14 @@ class AirGappedUtils {
 	private FileSystemUtils fileSystemUtils
 	private HelmClient helmClient
 	private GitHandler gitHandler
-	private DeploymentContext context
 
 	AirGappedUtils(Config config, GitRepoFactory repoProvider,
-		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler, DeploymentContext context) {
+		FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
 		this.config = config
 		this.repoProvider = repoProvider
 		this.fileSystemUtils = fileSystemUtils
 		this.helmClient = helmClient
 		this.gitHandler = gitHandler
-		this.context = context
 	}
 
 	/**
@@ -41,7 +39,8 @@ class AirGappedUtils {
 	 *
 	 * @return the repo namespace and name
 	 */
-	String mirrorHelmRepoToGit(HelmConfig helmConfig) {
+	String mirrorHelmRepoToGit(DeploymentContext context,
+		HelmConfig helmConfig) {
 		String repoName = helmConfig.chart
 		String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
 		String repoNamespaceAndName = "${namespace}/${repoName}"

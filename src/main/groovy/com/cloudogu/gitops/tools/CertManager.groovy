@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -24,24 +25,32 @@ class CertManager extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	String namespace
 
-	CertManager(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	CertManager(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.namespace = "${config.application.namePrefix}${config.features.certManager.namespace}"
 	}
 
 	@Override
 	boolean isEnabled() {
+		this.namespace = "${config.application.namePrefix}${config.features.certManager.namespace}"
 		return config.features.certManager.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.namespace = "${config.application.namePrefix}${config.features.certManager.namespace}"
+
+		return installEnabledTool()
 	}
 
 	@Override

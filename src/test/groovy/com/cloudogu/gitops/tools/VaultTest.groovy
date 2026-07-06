@@ -3,11 +3,13 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -171,15 +173,17 @@ class VaultTest {
 			version: '42.23.0')
 		createVault().install()
 
-		verify(deployer).deployFeature('https://vault-reg',
-			'vault',
-			'vault',
-			'42.23.0',
-			'foo-secrets',
-			'vault',
-			temporaryYamlFile,
-			RepoType.HELM,
-			false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://vault-reg'),
+			eq('vault'),
+			eq('vault'),
+			eq('42.23.0'),
+			eq('foo-secrets'),
+			eq('vault'),
+			eq(temporaryYamlFile),
+			eq(RepoType.HELM),
+			eq(false))
 
 		assertThat(parseActualYaml()).doesNotContainKey('global')
 	}
@@ -191,7 +195,7 @@ class VaultTest {
 			repoURL: 'https://vault-reg',
 			version: '42.23.0')
 
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -205,13 +209,15 @@ class VaultTest {
 		createVault().install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('vault')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
 		assertThat(helmConfig.value.version).isEqualTo('42.23.0')
-		verify(deployer).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-			'vault', '.', '1.2.3', 'foo-secrets',
-			'vault', temporaryYamlFile, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('vault'), eq('.'), eq('1.2.3'), eq('foo-secrets'),
+			eq('vault'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -239,7 +245,8 @@ class VaultTest {
 	private Vault createVault() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-		new Vault(new ContextBuilder(config).build(), new FileSystemUtils() {
+		def context = new ContextBuilder(config).build()
+		def vault = new Vault(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
@@ -247,6 +254,8 @@ class VaultTest {
 				return ret
 			}
 		}, k8sClient, deployer, airGappedUtils, gitHandler)
+		vault.isEnabled(context)
+		return vault
 	}
 
 	private Map parseActualYaml() {

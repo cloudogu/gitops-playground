@@ -81,20 +81,20 @@ class ApplicationConfiguratorTest {
 		GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 		def context = new ContextBuilder(testConfig).build()
 
-		featureContent = Mockito.spy(new ContentLoader(context,
-			k8sClient,
+		featureContent = Mockito.spy(new ContentLoader(k8sClient,
 			gitRepoFactory,
 			Mockito.mock(Jenkins),
 			gitHandler,
 			fileSystemUtils,
 			deployer))
+		featureContent.isEnabled(context)
 
-		featureArgoCd = Mockito.spy(new ArgoCD(context,
-			k8sClient,
+		featureArgoCd = Mockito.spy(new ArgoCD(k8sClient,
 			helmClient,
 			fileSystemUtils,
 			gitHandler,
 			repositoryProvisioning))
+		featureArgoCd.isEnabled(context)
 	}
 
 	@Test

@@ -2,8 +2,8 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
@@ -26,26 +26,34 @@ class ScmManager extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	private final RepositoryProvisioning repositoryProvisioning
 
-	ScmManager(DeploymentContext context,
-		GitHandler gitHandler,
+	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
 		K8sClient k8sClient,
 		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.repositoryProvisioning = repositoryProvisioning
-
-		if (context.isInternalScmManager()) {
-			this.namespace = prefixedNamespace()
-			this.config.scm.scmManager.namespace = this.namespace
-		}
 	}
 
 	@Override
 	boolean isEnabled() {
+		if (context.isInternalScmManager()) {
+			this.namespace = prefixedNamespace()
+			this.config.scm.scmManager.namespace = this.namespace
+		}
 		return context.isInternalScmManager()
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.namespace = prefixedNamespace()
+		this.config.scm.scmManager.namespace = this.namespace
+
+		return installEnabledTool()
 	}
 
 	@Override
@@ -57,7 +65,8 @@ class ScmManager extends Tool implements ToolWithImage {
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer,
 			context,
-			repositoryProvisioning)
+			repositoryProvisioning,
+			repositoryWorkspace)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()

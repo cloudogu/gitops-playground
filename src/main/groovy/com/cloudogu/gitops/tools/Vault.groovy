@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -25,24 +26,32 @@ class Vault extends Tool implements ToolWithImage {
 	String namespace
 	final K8sClient k8sClient
 
-	Vault(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Vault(FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
 	}
 
 	@Override
 	boolean isEnabled() {
+		this.namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
 		return config.features.secrets.active
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
+
+		return installEnabledTool()
 	}
 
 	@Override

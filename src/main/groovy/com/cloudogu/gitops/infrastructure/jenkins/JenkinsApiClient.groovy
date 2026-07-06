@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.infrastructure.jenkins
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 
 import jakarta.inject.Named
@@ -13,7 +12,7 @@ import okhttp3.*
 @Slf4j
 @Singleton
 class JenkinsApiClient {
-	private DeploymentContext context
+	private Config config
 
 	private OkHttpClient client
 
@@ -21,9 +20,9 @@ class JenkinsApiClient {
 	private int maxRetries = 180
 	private int waitPeriodInMs = 2000
 
-	JenkinsApiClient(DeploymentContext context,
+	JenkinsApiClient(Config config,
 		@Named("jenkins") OkHttpClient client) {
-		this.context = context
+		this.config = config
 
 		if (config.application.insecure) {
 			this.client = client.newBuilder()
@@ -32,10 +31,6 @@ class JenkinsApiClient {
 		} else {
 			this.client = client
 		}
-	}
-
-	private Config getConfig() {
-		return context.config
 	}
 
 	String runScript(String code) {

@@ -28,17 +28,20 @@ class ScmManagerSetup {
 	private final Deployer deployer
 	private final DeploymentContext context
 	private final RepositoryProvisioning repositoryProvisioning
+	private final RepositoryWorkspace repositoryWorkspace
 
 	private Path tempValuesPath
 
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
 		DeploymentContext context,
-		RepositoryProvisioning repositoryProvisioning) {
+		RepositoryProvisioning repositoryProvisioning,
+		RepositoryWorkspace repositoryWorkspace) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 		this.context = context
 		this.repositoryProvisioning = repositoryProvisioning
+		this.repositoryWorkspace = repositoryWorkspace
 	}
 
 	private Config getConfig() {
@@ -92,7 +95,9 @@ class ScmManagerSetup {
 		 * It only writes apps/argocd/applications/<releaseName>.yaml into the shared
 		 * RepositoryWorkspace. The push is triggered afterwards by RepositoryProvisioning.
 		 */
-		deployer.deployFeature(helmConfig.repoURL as String,
+		deployer.deployFeature(context,
+			repositoryWorkspace,
+			helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
@@ -104,11 +109,9 @@ class ScmManagerSetup {
 	}
 
 	void bootstrapAfterScmManagerDeployment() {
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
-
 		repositoryProvisioning.ensureRemoteRepositoriesExist()
 
-		workspace.initLocalRepositoriesIfNeeded()
+		repositoryWorkspace.initLocalRepositoriesIfNeeded()
 
 		/*
 		 * After the internal SCM-Manager has created the remote repositories,
@@ -118,13 +121,13 @@ class ScmManagerSetup {
 		 * The locally initialized workspace must start from that remote main branch,
 		 * otherwise the first push from GOP may be rejected as non-fast-forward.
 		 */
-		workspace.alignWithRemoteMainIfPresent()
-		workspace.createLocalDirectories()
+		repositoryWorkspace.alignWithRemoteMainIfPresent()
+		repositoryWorkspace.createLocalDirectories()
 
-		workspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
+		repositoryWorkspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
 
-		if (workspace.hasTenantBootstrapRepository()) {
-			workspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
+		if (repositoryWorkspace.hasTenantBootstrapRepository()) {
+			repositoryWorkspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
 		}
 	}
 

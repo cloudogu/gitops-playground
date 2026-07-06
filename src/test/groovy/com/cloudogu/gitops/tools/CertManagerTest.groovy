@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -50,9 +52,11 @@ class CertManagerTest {
 	void 'Helm release is installed'() {
 		createCertManager().install()
 
-		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-			'cert-manager', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.HELM, false)
+		verify(deploymentStrategy).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://charts.jetstack.io'), eq('cert-manager'),
+			eq('cert-manager'), eq(chartVersion), eq('cert-manager'),
+			eq('cert-manager'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(false))
 	}
 
 	@Test
@@ -79,7 +83,7 @@ class CertManagerTest {
 		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b")
 
 		config.application.mirrorRepos = true
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -93,15 +97,17 @@ class CertManagerTest {
 		createCertManager().install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('cert-manager')
 		// check existing value, but its not used in deploy.
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.jetstack.io')
 		assertThat(helmConfig.value.version).isEqualTo(chartVersion)
 		// important check: scmmRepoUrl is overridden with our values.
-		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-			'cert-manager', '.', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.GIT, false)
+		verify(deploymentStrategy).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('cert-manager'), eq('.'), eq(chartVersion), eq('cert-manager'),
+			eq('cert-manager'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -117,7 +123,7 @@ class CertManagerTest {
 		config.features.certManager.helm.cainjectorImage = "this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3"
 		config.features.certManager.helm.acmeSolverImage = "this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4"
 		config.features.certManager.helm.startupAPICheckImage = "this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5"
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
 
@@ -149,8 +155,9 @@ class CertManagerTest {
 	}
 
 	private CertManager createCertManager() {
+		def context = new ContextBuilder(config).build()
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new CertManager(new ContextBuilder(config).build(), new FileSystemUtils() {
+		def certManager = new CertManager(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
@@ -158,6 +165,8 @@ class CertManagerTest {
 				return ret
 			}
 		}, deploymentStrategy, new K8sClientForTest(), airGappedUtils, gitHandler)
+		certManager.isEnabled(context)
+		return certManager
 	}
 
 	private Map parseActualYaml() {

@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -74,15 +76,17 @@ class ExternalSecretsOperatorTest {
 	void 'helm release is installed'() {
 		createExternalSecretsOperator().install()
 
-		verify(deployer).deployFeature('https://charts.external-secrets.io',
-			'external-secrets-operator',
-			'external-secrets',
-			'0.9.16',
-			'foo-secrets',
-			'external-secrets',
-			temporaryYamlFile,
-				RepoType.HELM,
-				false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://charts.external-secrets.io'),
+			eq('external-secrets-operator'),
+			eq('external-secrets'),
+			eq('0.9.16'),
+			eq('foo-secrets'),
+			eq('external-secrets'),
+			eq(temporaryYamlFile),
+			eq(RepoType.HELM),
+			eq(false))
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -134,7 +138,7 @@ class ExternalSecretsOperatorTest {
 	void 'helm release is installed in air-gapped mode'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
 		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 
 		config.application.mirrorRepos = true
 
@@ -150,13 +154,15 @@ class ExternalSecretsOperatorTest {
 		createExternalSecretsOperator().install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-				'external-secrets', temporaryYamlFile, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('external-secrets-operator'), eq('.'), eq('1.2.3'), eq('foo-secrets'),
+			eq('external-secrets'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -176,16 +182,18 @@ class ExternalSecretsOperatorTest {
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
-		new ExternalSecretsOperator(new ContextBuilder(config).build(),
-			new FileSystemUtils() {
-				@Override
-				Path writeTempFile(Map mergeMap) {
-					def ret = super.writeTempFile(mergeMap)
-					temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
-					// Path after template invocation
-					return ret
-				}
-			}, deployer, k8sClient, airGappedUtils, gitHandler)
+		def context = new ContextBuilder(config).build()
+		def operator = new ExternalSecretsOperator(new FileSystemUtils() {
+			@Override
+			Path writeTempFile(Map mergeMap) {
+				def ret = super.writeTempFile(mergeMap)
+				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				// Path after template invocation
+				return ret
+			}
+		}, deployer, k8sClient, airGappedUtils, gitHandler)
+		operator.isEnabled(context)
+		return operator
 	}
 
 	private Map parseActualYaml() {

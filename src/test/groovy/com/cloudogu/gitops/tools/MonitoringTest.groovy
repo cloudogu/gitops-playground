@@ -3,7 +3,7 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
@@ -434,9 +434,11 @@ policies:
 	void 'helm release is installed'() {
 		createStack(scmManagerMock).install()
 
-		verify(deployer).deployFeature('https://prom', 'monitoring',
-			'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://prom'), eq('monitoring'),
+			eq('kube-prometheus-stack'), eq('19.2.2'), eq('foo-monitoring'),
+			eq('kube-prometheus-stack'), eq(temporaryYamlFilePrometheus), eq(RepoType.HELM), eq(false))
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
@@ -562,7 +564,7 @@ policies:
 	@Test
 	void 'helm releases are installed in air-gapped mode'() {
 		config.application.mirrorRepos = true
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
 
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -577,13 +579,15 @@ policies:
 		createStack(scmManagerMock).install()
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
 		assertThat(helmConfig.value.version).isEqualTo('19.2.2')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'monitoring', '.', '1.2.3', 'foo-monitoring',
-			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('monitoring'), eq('.'), eq('1.2.3'), eq('foo-monitoring'),
+			eq('kube-prometheus-stack'), eq(temporaryYamlFilePrometheus), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -656,9 +660,8 @@ matchExpressions:
 
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
-		when(repositoryProvisioning.provideWorkspace(any(DeploymentContext))).thenReturn(repositoryWorkspace)
-
-		return new Monitoring(new ContextBuilder(configuration).build(), new FileSystemUtils() {
+		def context = new ContextBuilder(configuration).build()
+		def monitoring = new Monitoring(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
@@ -666,6 +669,9 @@ matchExpressions:
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler, repositoryProvisioning)
+		monitoring.isEnabled(context)
+		monitoring.repositoryWorkspace = repositoryWorkspace
+		return monitoring
 	}
 
 	private Map parseActualYaml() {

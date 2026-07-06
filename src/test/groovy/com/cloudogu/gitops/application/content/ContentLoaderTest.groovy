@@ -1028,7 +1028,8 @@ class ContentLoaderTest {
 
 		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
 			Deployer deployer) {
-			super(new ContextBuilder(config).build(), k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+			super(k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+			isEnabled(new ContextBuilder(config).build())
 		}
 
 		@Override

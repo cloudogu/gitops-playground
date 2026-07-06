@@ -60,20 +60,24 @@ abstract class Tool {
 
 	boolean install() {
 		if (isEnabled()) {
-			log.info("Installing Tool ${getClass().getSimpleName()}")
-
-			if (this instanceof ToolWithImage) {
-				(this as ToolWithImage).createImagePullSecret()
-			}
-
-			enable()
-			log.info("Tool installed: ${getClass().getSimpleName()}")
-			return true
+			return installEnabledTool()
 		} else {
 			log.debug("Tool ${getClass().getSimpleName()} is disabled")
 			disable()
 			return false
 		}
+	}
+
+	protected boolean installEnabledTool() {
+		log.info("Installing Tool ${getClass().getSimpleName()}")
+
+		if (this instanceof ToolWithImage) {
+			(this as ToolWithImage).createImagePullSecret()
+		}
+
+		enable()
+		log.info("Tool installed: ${getClass().getSimpleName()}")
+		return true
 	}
 
 	boolean execute(DeploymentContext context,
@@ -144,7 +148,7 @@ abstract class Tool {
 		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
-			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
+			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(context, helmConfig)
 			repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
 			chartOrPath = '.'
 			repoType = RepoType.GIT
@@ -155,7 +159,9 @@ abstract class Tool {
 		log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
 		log.debug("helm values used: ${helmValuesData}")
 
-		this.deployer.deployFeature(repoURL,
+		this.deployer.deployFeature(context,
+			repositoryWorkspace,
+			repoURL,
 			featureName,
 			chartOrPath,
 			version,

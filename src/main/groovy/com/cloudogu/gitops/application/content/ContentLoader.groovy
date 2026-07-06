@@ -5,6 +5,7 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
@@ -55,14 +56,12 @@ class ContentLoader extends Tool {
 	@JsonIgnore
 	UsernamePasswordCredentialsProvider credentialsProvider
 
-	ContentLoader(DeploymentContext context,
-		K8sClient k8sClient,
+	ContentLoader(K8sClient k8sClient,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
 		GitHandler gitHandler,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer) {
-		this.context = context
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
 		this.jenkins = jenkins
@@ -74,6 +73,15 @@ class ContentLoader extends Tool {
 	@Override
 	boolean isEnabled() {
 		return true // for now always on. Once we refactor from Argo CD class we add a param to enable
+	}
+
+	@Override
+	boolean execute(DeploymentContext context,
+		RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+
+		return installEnabledTool()
 	}
 
 	@Override
