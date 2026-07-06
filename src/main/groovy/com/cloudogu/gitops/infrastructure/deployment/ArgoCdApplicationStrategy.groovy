@@ -1,9 +1,7 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -17,20 +15,17 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 @Singleton
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
-	private FileSystemUtils fileSystemUtils
-	private DeploymentContext context
+
+	private final FileSystemUtils fileSystemUtils
 	private final RepositoryProvisioning repositoryProvisioning
+	private final ArgoCdApplicationTargetResolver targetResolver
 
-	ArgoCdApplicationStrategy(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
-		RepositoryProvisioning repositoryProvisioning) {
+	ArgoCdApplicationStrategy(FileSystemUtils fileSystemUtils,
+		RepositoryProvisioning repositoryProvisioning,
+		ArgoCdApplicationTargetResolver targetResolver) {
 		this.fileSystemUtils = fileSystemUtils
-		this.context = context
 		this.repositoryProvisioning = repositoryProvisioning
-	}
-
-	private Config getConfig() {
-		return context.config
+		this.targetResolver = targetResolver
 	}
 
 	@Override
@@ -49,19 +44,14 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
-		def namePrefix = config.application.namePrefix
-		def prefix = (namePrefix ?: '').strip()
-		def shallCreateNamespace = config.features['argocd']['operator'] ? 'CreateNamespace=false' : 'CreateNamespace=true'
-
-		String project = 'cluster-resources'
-		String namespaceName = "${namePrefix}" + config.features.argocd.namespace
 		String toolName = repoName
 		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName)
+		ArgoCdApplicationTarget target = targetResolver.resolve(repoName)
 
 		/*
 		 * Important:
 		 * toolName remains unprefixed because it is used for paths like apps/scm-manager.
-		 * repoName becomes the ArgoCD Application metadata.name.
+		 * target.applicationName becomes the ArgoCD Application metadata.name.
 		 *
 		 * This avoids ArgoCD tracking-id collisions:
 		 * central:
@@ -70,27 +60,16 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		 *   metadata.name: tenant1-scm-manager
 		 * Without this, both central and tenant resources can get tracking IDs starting with: scm-manager:/...
 		 */
-		if (prefix) {
-			repoName = "${prefix}${repoName}"
-		}
-
-		// DedicatedInstances
-		if (context.isMultiTenant()) {
-			namespaceName = "${config.multiTenant.centralArgocdNamespace}"
-			project = prefix.replaceFirst(/-$/, '')
-		}
-
 		String toolPath = "apps/${toolName}"
 
-		// --- ensure folders exist before writing files ---
+		// Ensure folders exist before writing files.
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
 		Path.of(repoRoot, toolPath).toFile().mkdirs()
 		Path.of(repoRoot, 'apps/argocd/applications').toFile().mkdirs()
 
-
 		// 1) GOP-managed values
 		String gopValuesPath = "${toolPath}/${toolName}-gop-helm.yaml"
-		def inlineValues = helmValuesPath.toFile().text
+		String inlineValues = helmValuesPath.toFile().text
 
 		// 2) User values
 		String userValuesPath = "${toolPath}/${toolName}-user-values.yaml"
@@ -100,7 +79,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			log.info('Using bootstrap deployment for tool \'{}\': applicationName=\'{}\', releaseName=\'{}\', namespace=\'{}\'. ' +
 				'Helm values will be embedded into the ArgoCD Application and no external values source will be referenced.',
 				toolName,
-				repoName,
+				target.applicationName,
 				releaseName,
 				namespace)
 		} else {
@@ -159,6 +138,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			sources << gitSource
 		}
 
+		String namespaceCreationSyncOption = "CreateNamespace=${target.createDestinationNamespace}".toString()
+
 		// Prepare ArgoCD Application YAML
 		def yamlMapper = YAMLMapper.builder()
 			.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
@@ -166,18 +147,18 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		def yamlResult = yamlMapper.writeValueAsString([apiVersion: 'argoproj.io/v1alpha1',
 		                                                kind      : 'Application',
-		                                                metadata  : [name     : repoName,
-		                                                             namespace: namespaceName],
+		                                                metadata  : [name     : target.applicationName,
+		                                                             namespace: target.namespace],
 		                                                spec      : [destination: [server   : 'https://kubernetes.default.svc',
 		                                                                           namespace: namespace],
-		                                                             project    : project,
+		                                                             project    : target.project,
 		                                                             sources    : sources,
 		                                                             syncPolicy : [automated  : [prune   : true,
 		                                                                                         selfHeal: true],
 		                                                                           syncOptions: [// So that we can apply very large resources, e.g. prometheus CRD.
 		                                                                                         'ServerSideApply=true',
 		                                                                                         // Create namespaces for helm charts while not using the argocd-operator mode.
-		                                                                                         shallCreateNamespace]]]])
+		                                                                                         namespaceCreationSyncOption]]]])
 
 		/*
 		 * Keep the file path release-based.
@@ -195,7 +176,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 
 		repositoryProvisioning.publishClusterResourcesRepositoryChanges(toolName,
-			"Add ${repoName}/${chartOrPath} to ArgoCD")
+			"Add ${target.applicationName}/${chartOrPath} to ArgoCD")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {

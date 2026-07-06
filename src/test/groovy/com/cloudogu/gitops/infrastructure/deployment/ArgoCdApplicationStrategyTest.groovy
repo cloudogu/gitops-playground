@@ -21,11 +21,12 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 class ArgoCdApplicationStrategyTest {
+
 	private File localTempDir
 	private RepositoryProvisioning repositoryProvisioning
 
 	@Test
-	void 'deploys feature using argo CD'() {
+	void 'deploys feature using argoCD'() {
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
@@ -77,7 +78,7 @@ spec:
 	}
 
 	@Test
-	void 'deploys feature using argo CD from git repo'() {
+	void 'deploys feature using argoCD from git repo'() {
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
@@ -283,8 +284,11 @@ param1: value1
 		repositoryProvisioning = mock(RepositoryProvisioning)
 		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
-		return new ArgoCdApplicationStrategy(new ContextBuilder(config).build(),
-			new FileSystemUtils(),
-			repositoryProvisioning)
+		def context = new ContextBuilder(config).build()
+		def targetResolver = new ArgoCdApplicationTargetResolver(context)
+
+		return new ArgoCdApplicationStrategy(new FileSystemUtils(),
+			repositoryProvisioning,
+			targetResolver)
 	}
 }
