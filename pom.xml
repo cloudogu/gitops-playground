@@ -429,7 +429,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.5</version>
+                <version>3.5.6</version>
                 <configuration>
                     <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's
                     withEnvironmentVariable -->
