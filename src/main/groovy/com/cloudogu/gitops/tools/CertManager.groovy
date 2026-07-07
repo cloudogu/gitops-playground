@@ -24,24 +24,31 @@ class CertManager extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	String namespace
 
-	CertManager(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	CertManager(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.namespace = "${config.application.namePrefix}${config.features.certManager.namespace}"
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.certManager.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.certManager.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.certManager.namespace}"
 	}
 
 	@Override

@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -65,24 +67,25 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.secrets.active = false
-		boolean enabled = createExternalSecretsOperator().install()
-		assertFalse(enabled)
+		assertFalse(createExternalSecretsOperator().isEnabled(new ContextBuilder(config).build()))
 
 	}
 
 	@Test
 	void 'helm release is installed'() {
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
-		verify(deployer).deployFeature('https://charts.external-secrets.io',
-			'external-secrets-operator',
-			'external-secrets',
-			'0.9.16',
-			'foo-secrets',
-			'external-secrets',
-			temporaryYamlFile,
-				RepoType.HELM,
-				false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://charts.external-secrets.io'),
+			eq('external-secrets-operator'),
+			eq('external-secrets'),
+			eq('0.9.16'),
+			eq('foo-secrets'),
+			eq('external-secrets'),
+			eq(temporaryYamlFile),
+			eq(RepoType.HELM),
+			eq(false))
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -96,7 +99,7 @@ class ExternalSecretsOperatorTest {
 	void 'Skips CRDs'() {
 		config.application.skipCrds = true
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		assertThat(parseActualYaml()['installCRDs']).isEqualTo(false)
 	}
@@ -106,7 +109,7 @@ class ExternalSecretsOperatorTest {
 		config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([image              : 'localhost:5000/external-secrets/external-secrets:v0.6.1',
 		                                                                                                 certControllerImage: 'localhost:5000/external-secrets/external-secrets-certcontroller:v0.6.1',
 		                                                                                                 webhookImage       : 'localhost:5000/external-secrets/external-secrets-webhook:v0.6.1'])
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		def valuesYaml = parseActualYaml()
 		assertThat(valuesYaml['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets')
@@ -123,7 +126,7 @@ class ExternalSecretsOperatorTest {
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(parseActualYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
@@ -147,16 +150,18 @@ class ExternalSecretsOperatorTest {
 		Map ChartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'external-secrets-operator', '.', '1.2.3', 'foo-secrets',
-				'external-secrets', temporaryYamlFile, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('external-secrets-operator'), eq('.'), eq('1.2.3'), eq('foo-secrets'),
+			eq('external-secrets'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -169,23 +174,26 @@ class ExternalSecretsOperatorTest {
 		config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([certControllerImage: 'some:thing',
 		                                                                                                 webhookImage       : 'some:thing'])
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 		assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['certController']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['webhook']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
-		new ExternalSecretsOperator(new ContextBuilder(config).build(),
-			new FileSystemUtils() {
-				@Override
-				Path writeTempFile(Map mergeMap) {
-					def ret = super.writeTempFile(mergeMap)
-					temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
-					// Path after template invocation
-					return ret
-				}
-			}, deployer, k8sClient, airGappedUtils, gitHandler)
+		return new ExternalSecretsOperator(new FileSystemUtils() {
+			@Override
+			Path writeTempFile(Map mergeMap) {
+				def ret = super.writeTempFile(mergeMap)
+				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				// Path after template invocation
+				return ret
+			}
+		}, deployer, k8sClient, airGappedUtils, gitHandler)
+	}
+
+	private boolean install(ExternalSecretsOperator operator) {
+		return operator.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

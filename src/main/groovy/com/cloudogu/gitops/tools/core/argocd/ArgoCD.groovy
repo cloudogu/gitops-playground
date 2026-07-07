@@ -2,8 +2,6 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -26,37 +24,40 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Order(100)
 class ArgoCD extends Tool {
 
-	private final String namespace
 	private final K8sClient k8sClient
 	private final HelmClient helmClient
 	private final FileSystemUtils fileSystemUtils
 	private final GitHandler gitHandler
-	private final RepositoryProvisioning repositoryProvisioning
-	private final String password
+	private String password
 
-	private RepositoryWorkspace repositoryWorkspace
+	private String namespace
 	private ArgoCDRepoSetup repoSetup
 	private ArgoCDRepoLayout clusterResourcesRepo
 
-	ArgoCD(DeploymentContext context,
-		K8sClient k8sClient,
+	ArgoCD(K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
+		GitHandler gitHandler) {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
-		this.repositoryProvisioning = repositoryProvisioning
-		this.password = config.application.password
-		this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.argocd.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.argocd.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+		this.password = config.application.password
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.argocd.namespace}"
 	}
 
 	@Override
@@ -82,8 +83,6 @@ class ArgoCD extends Tool {
 
 	@Override
 	void enable() {
-		this.repositoryWorkspace = repositoryProvisioning.provideWorkspace()
-
 		this.repoSetup = ArgoCDRepoSetup.create(context,
 			fileSystemUtils,
 			gitHandler,
@@ -94,8 +93,7 @@ class ArgoCD extends Tool {
 		log.debug('Preparing ArgoCD repository content')
 		repoSetup.prepareRepositories()
 
-		repositoryProvisioning.publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
+		repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges('Update ArgoCD repository content')
 
 		log.debug('Installing Argo CD')
 		installArgoCd()

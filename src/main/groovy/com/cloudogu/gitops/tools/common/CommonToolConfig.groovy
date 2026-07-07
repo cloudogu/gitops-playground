@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.common
 
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 
 import groovy.util.logging.Slf4j
@@ -27,7 +28,7 @@ class CommonToolConfig extends Tool {
 	}
 
 	@Override
-	boolean isEnabled() {
+	boolean isEnabled(DeploymentContext context) {
 		return false
 	}
 }

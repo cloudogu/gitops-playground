@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -59,15 +61,17 @@ class IngressTest {
 
 	@Test
 	void 'Helm release is installed'() {
-		createIngress().install()
+		install(createIngress())
 
 		/* Assert one default value */
 		def actual = parseActualYaml()
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-		verify(deployer).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
-			config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.HELM, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq(config.features.ingress.helm.repoURL), eq('traefik'),
+			eq(config.features.ingress.helm.chart), eq(config.features.ingress.helm.version), eq('foo-' + config.features.ingress.ingressNamespace),
+			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(false))
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -77,15 +81,14 @@ class IngressTest {
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
-		createIngress().install()
+		install(createIngress())
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
-		boolean enabled = createIngress().install()
-		assertFalse(enabled)
+		assertFalse(createIngress().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -93,7 +96,7 @@ class IngressTest {
 		config.features.ingress.helm.values = [controller: [replicaCount: 42,
 		                                                    span        : '7,5',]]
 
-		createIngress().install()
+		install(createIngress())
 		def actual = parseActualYaml()
 
 		assertThat(actual['controller']['replicaCount']).isEqualTo(42)
@@ -117,7 +120,7 @@ class IngressTest {
 		Map ChartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createIngress().install()
+		install(createIngress())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -125,9 +128,11 @@ class IngressTest {
 
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.GIT, false)
+		verify(deployer).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('traefik'), eq('.'), eq('1.2.3'), eq('foo-' + config.features.ingress.ingressNamespace),
+			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -135,7 +140,7 @@ class IngressTest {
 		config.features.monitoring.active = true
 		config.application.namePrefix = "heliosphere"
 
-		createIngress().install()
+		install(createIngress())
 
 		def actual = parseActualYaml()
 
@@ -148,7 +153,7 @@ class IngressTest {
 	void 'Activates network policies'() {
 		config.application.netpols = true
 
-		createIngress().install()
+		install(createIngress())
 
 		def actual = parseActualYaml()
 
@@ -162,7 +167,7 @@ class IngressTest {
 		config.registry.proxyUsername = 'proxy-user'
 		config.registry.proxyPassword = 'proxy-pw'
 
-		createIngress().install()
+		install(createIngress())
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
@@ -170,7 +175,7 @@ class IngressTest {
 	void 'Allows overriding the image'() {
 		config.features.ingress.helm.image = 'localhost/abc:v42'
 
-		createIngress().install()
+		install(createIngress())
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['image']['repository']).isEqualTo('localhost/abc')
@@ -180,14 +185,14 @@ class IngressTest {
 
 	@Test
 	void 'get namespace from feature'() {
-		assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
+		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
 		config.features.ingress.active = false
-		assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo(null)
+		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo(null)
 	}
 
 	private Ingress createIngress() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new Ingress(new ContextBuilder(config).build(), new FileSystemUtils() {
+		return new Ingress(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -196,6 +201,10 @@ class IngressTest {
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler)
+	}
+
+	private boolean install(Ingress ingress) {
+		return ingress.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

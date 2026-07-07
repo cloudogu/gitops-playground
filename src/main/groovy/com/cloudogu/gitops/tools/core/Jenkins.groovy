@@ -40,8 +40,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
-	Jenkins(DeploymentContext context,
-		CommandExecutor commandExecutor,
+	Jenkins(CommandExecutor commandExecutor,
 		FileSystemUtils fileSystemUtils,
 		GlobalPropertyManager globalPropertyManager,
 		JobManager jobManager,
@@ -52,7 +51,6 @@ class Jenkins extends Tool implements ToolWithImage {
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
-		this.context = context
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -64,15 +62,23 @@ class Jenkins extends Tool implements ToolWithImage {
 		this.networkingUtils = networkingUtils
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+	}
 
+	@Override
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.jenkins.active
+	}
+
+	@Override
+	protected void prepare() {
 		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+			this.namespace = activeNamespace(context)
 		}
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.jenkins.active
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
 	}
 
 	@Override
@@ -138,7 +144,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		                                                                                       NAME_PREFIX               : config.application.namePrefix,
 		                                                                                       INSECURE                  : config.application.insecure,
 		                                                                                       SKIP_RESTART              : config.jenkins.skipRestart,
-		                                                                                       SKIP_PLUGINS: config.jenkins.skipPlugins,])
+		                                                                                       SKIP_PLUGINS              : config.jenkins.skipPlugins,])
 
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL", this.gitHandler.tenant.repoPrefix())
@@ -290,7 +296,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	String getActiveNamespaceFromFeature() {
-		return isEnabled() && config?.jenkins?.internal ? getNamespace() : null
+	String getActiveNamespaceFromFeature(DeploymentContext context) {
+		return isEnabled(context) ? activeNamespace(context) : null
 	}
 }

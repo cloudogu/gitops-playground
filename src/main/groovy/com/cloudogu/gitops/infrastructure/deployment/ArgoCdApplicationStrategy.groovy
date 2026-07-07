@@ -19,13 +19,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
 	private FileSystemUtils fileSystemUtils
 	private DeploymentContext context
+	private RepositoryWorkspace repositoryWorkspace
 	private final RepositoryProvisioning repositoryProvisioning
 
-	ArgoCdApplicationStrategy(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	ArgoCdApplicationStrategy(FileSystemUtils fileSystemUtils,
 		RepositoryProvisioning repositoryProvisioning) {
 		this.fileSystemUtils = fileSystemUtils
-		this.context = context
 		this.repositoryProvisioning = repositoryProvisioning
 	}
 
@@ -44,9 +43,37 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String releaseName,
 		Path helmValuesPath,
 		RepoType repoType) {
+		if (!context || !repositoryWorkspace) {
+			throw new IllegalStateException('DeploymentContext and RepositoryWorkspace must be provided before deploying via ArgoCD.')
+		}
+
+		deployFeature(context,
+			repositoryWorkspace,
+			repoURL,
+			repoName,
+			chartOrPath,
+			version,
+			namespace,
+			releaseName,
+			helmValuesPath,
+			repoType)
+	}
+
+	void deployFeature(DeploymentContext context,
+		RepositoryWorkspace workspace,
+		String repoURL,
+		String repoName,
+		String chartOrPath,
+		String version,
+		String namespace,
+		String releaseName,
+		Path helmValuesPath,
+		RepoType repoType) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
 		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
 
 		def namePrefix = config.application.namePrefix

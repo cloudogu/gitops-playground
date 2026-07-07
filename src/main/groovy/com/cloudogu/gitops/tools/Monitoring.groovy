@@ -3,7 +3,6 @@ package com.cloudogu.gitops.tools
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -36,26 +35,33 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	private final RepositoryProvisioning repositoryProvisioning
 
-	Monitoring(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Monitoring(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
-		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.monitoring.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.monitoring.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
 	}
 
 	@Override
@@ -75,8 +81,7 @@ class Monitoring extends Tool implements ToolWithImage {
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
+		GitRepo clusterResourcesRepo = repositoryWorkspace.clusterResourcesRepository
 
 		if (config.application.namespaceIsolation || config.application.netpols) {
 			if (config.application.namespaceIsolation) {
@@ -90,19 +95,15 @@ class Monitoring extends Tool implements ToolWithImage {
 		// Remove dashboards for features that are not enabled
 		cleanupUnusedDashboards(clusterResourcesRepo)
 
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(
-			'monitoring',
-			'Update Prometheus dashboards, RBAC and network policies.'
-		)
+		repositoryProvisioning.publishClusterResourcesRepositoryChanges('monitoring',
+			'Update Prometheus dashboards, RBAC and network policies.')
 
-		deployHelmChart(
-			'monitoring',
+		deployHelmChart('monitoring',
 			'kube-prometheus-stack',
 			namespace,
 			config.features.monitoring.helm,
 			HELM_VALUES_PATH,
-			context
-		)
+			context)
 	}
 
 	private void setupMonitoringSecrets() {

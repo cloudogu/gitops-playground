@@ -41,7 +41,7 @@ class AirGappedUtilsTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	HelmClient helmClient = mock(HelmClient)
-	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerProviderMock())
+	GitHandler gitHandler = new GitHandlerForTests(new ScmManagerProviderMock())
 
 	@BeforeEach
 	void setUp() {

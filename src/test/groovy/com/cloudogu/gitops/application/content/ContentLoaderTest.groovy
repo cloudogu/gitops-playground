@@ -68,7 +68,7 @@ class ContentLoaderTest {
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
 	Jenkins jenkins = mock(Jenkins.class)
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
+	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 	Deployer deployer = mock(Deployer)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
@@ -114,7 +114,7 @@ class ContentLoaderTest {
 		config.registry.createImagePullSecrets = true
 		config.content.namespaces = ['example-apps-staging', 'example-apps-production']
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		assertRegistrySecrets('reg-user', 'reg-pw')
 	}
@@ -127,7 +127,7 @@ class ContentLoaderTest {
 		config.registry.readOnlyUsername = 'other-user'
 		config.registry.readOnlyPassword = 'other-pw'
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		assertRegistrySecrets('other-user', 'other-pw')
 	}
@@ -142,7 +142,7 @@ class ContentLoaderTest {
 		config.registry.proxyUsername = 'proxy-user'
 		config.registry.proxyPassword = 'proxy-pw'
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		assertRegistrySecrets('reg-user', 'reg-pw')
 	}
@@ -152,7 +152,7 @@ class ContentLoaderTest {
 
 		config.content.repos = contentRepos
 
-		def repos = createContent(config).cloneContentRepos()
+		def repos = cloneContentRepos(createContent(config), config)
 
 		expectedTargetRepos.each { expected -> assertThat(new File(findRoot(repos), expected.namespace + '/' + expected.repoName + '/file')).exists().isFile()
 		}
@@ -177,7 +177,7 @@ class ContentLoaderTest {
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, templating: true)]
 		config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
-		def repos = createContent(config).cloneContentRepos()
+		def repos = cloneContentRepos(createContent(config), config)
 
 		// Assert Templating
 		assertThat(new File(findRoot(repos), 'common/repo/some.yaml')).exists()
@@ -190,7 +190,7 @@ class ContentLoaderTest {
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', credentials: new Credentials('user', 'pw'))]
 
 		def content = createContent(config)
-		content.cloneContentRepos()
+		cloneContentRepos(content, config)
 
 		ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
 		verify(content.cloneSpy).setCredentialsProvider(captor.capture())
@@ -225,7 +225,7 @@ class ContentLoaderTest {
 			credentials: new Credentials(null, null, 'secret-test-name', 'default'))]
 
 		def content = createContent(config)
-		content.cloneContentRepos()
+		cloneContentRepos(content, config)
 
 		ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
 		verify(content.cloneSpy).setCredentialsProvider(captor.capture())
@@ -240,7 +240,7 @@ class ContentLoaderTest {
 		                        new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', type: ContentRepoType.COPY, target: 'common/ref'),
 		                        new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', type: ContentRepoType.COPY, target: 'common/branch')]
 
-		def repos = createContent(config).cloneContentRepos()
+		def repos = cloneContentRepos(createContent(config), config)
 
 		assertThat(new File(findRoot(repos), 'common/tag/README.md')).exists().isFile()
 		assertThat(new File(findRoot(repos), 'common/tag/README.md').text).contains('someTag')
@@ -256,7 +256,7 @@ class ContentLoaderTest {
 	void 'Checks out default branch when no ref set'() {
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY),]
 
-		def repos = createContent(config).cloneContentRepos()
+		def repos = cloneContentRepos(createContent(config), config)
 
 		assertThat(new File(findRoot(repos), 'common/default/README.md')).exists().isFile()
 		assertThat(new File(findRoot(repos), 'common/default/README.md').text).contains('different')
@@ -268,7 +268,7 @@ class ContentLoaderTest {
 		                        new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'does/not/exist', type: ContentRepoType.FOLDER_BASED, target: 'does not matter'),]
 
 		def exception = shouldFail(RuntimeException) {
-			createContent(config).cloneContentRepos()
+			cloneContentRepos(createContent(config), config)
 		}
 
 		assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
@@ -282,7 +282,7 @@ class ContentLoaderTest {
 		                        new ContentRepositorySchema(url: createContentRepo('copyRepo2'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
 		                        new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),]
 
-		def repos = createContent(config).cloneContentRepos()
+		def repos = cloneContentRepos(createContent(config), config)
 
 		assertThat(new File(findRoot(repos), 'common/repo/file').text).contains('copyRepo1')
 		// Last repo "wins"
@@ -296,7 +296,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
@@ -323,7 +323,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
@@ -351,7 +351,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def expectedRepo = 'common/repo'
 		// clone target repo, to ensure, changes in remote repo.
@@ -382,7 +382,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		// From branch to branch or tag to tag
 		assertTagAndReadme('mirror/tag', 'my-tag', 'someTag')
@@ -410,7 +410,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 		// No exception means success
 	}
 
@@ -425,7 +425,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 		// No exception means success
 	}
 
@@ -436,7 +436,7 @@ class ContentLoaderTest {
 
 		def content = createContent(config)
 
-		def actualTargetRepos = content.cloneContentRepos()
+		def actualTargetRepos = cloneContentRepos(content, config)
 		def repos = actualTargetRepos
 
 		assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
@@ -459,7 +459,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def expectedRepo = 'copy/repo1'
 		// clone target repo, to ensure, changes in remote repo.
@@ -504,7 +504,7 @@ class ContentLoaderTest {
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
 
 		def exception = shouldFail(RuntimeException) {
-			createContent(config).install()
+			install(createContent(config), config)
 		}
 		assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
 		assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
@@ -514,7 +514,7 @@ class ContentLoaderTest {
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d11', target: 'common/mirrorWithShortCommitRef')]
 
 		exception = shouldFail(RuntimeException) {
-			createContent(config).install()
+			install(createContent(config), config)
 		}
 		assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
 		assertThat(exception.message).endsWith('ref: 8bc1d11')
@@ -570,7 +570,7 @@ class ContentLoaderTest {
 		def expectedRepo = 'common/repo'
 		def repo = scmmRepoProvider.create(expectedRepo, scmManagerMock)
 		scmManagerMock.initOnceRepo(repo.repoTarget)
-		createContent(config).install()
+		install(createContent(config), config)
 
 		String url = repo.getGitRepositoryUrl()
 		// clone repo, to ensure, changes in remote repo.
@@ -591,7 +591,7 @@ class ContentLoaderTest {
 		 * Now Reset to an copied repo*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.RESET),]
 
-		createContent(config).install()
+		install(createContent(config), config)
 		scmManagerMock.clearInitOnce()
 
 		def folderAfterReset = File.createTempDir('second-cloned-repo')
@@ -622,7 +622,7 @@ class ContentLoaderTest {
 
 		scmmApiClient.mockRepoApiBehaviour()
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def expectedRepo = 'common/repo'
 		def repo = scmmRepoProvider.create(expectedRepo, new ScmManagerProviderMock())
@@ -646,7 +646,7 @@ class ContentLoaderTest {
 		 * Now Upgrade to type copy*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overwriteMode: OverwriteMode.UPGRADE)]
 
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def folderAfterReset = File.createTempDir('second-cloned-repo')
 		folderAfterReset.deleteOnExit()
@@ -678,7 +678,7 @@ class ContentLoaderTest {
 		def expectedRepo = 'common/repo'
 		def repo = scmmRepoProvider.create(expectedRepo, scmManagerMock)
 		scmManagerMock.initOnceRepo(repo.repoTarget)
-		createContent(config).install()
+		install(createContent(config), config)
 
 		def url = repo.getGitRepositoryUrl()
 		// clone repo, to ensure, changes in remote repo.
@@ -700,7 +700,7 @@ class ContentLoaderTest {
 		 * no changes expected, file still has copyRepo2 and so on*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.INIT),]
 
-		createContent(config).install()
+		install(createContent(config), config)
 		scmManagerMock.clearInitOnce()
 
 		def folderAfterReset = File.createTempDir('second-cloned-repo')
@@ -729,9 +729,9 @@ class ContentLoaderTest {
 		 * file content after that should be: copyRepo1*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: true, target: 'common/repo'),]
 		scmmApiClient.mockRepoApiBehaviour()
-		when(jenkins.isEnabled()).thenReturn(true)
+		when(jenkins.isEnabled(any(DeploymentContext))).thenReturn(true)
 
-		createContent(config).install()
+		install(createContent(config), config)
 		verify(jenkins).createJenkinsjob(any(), any())
 	}
 
@@ -746,8 +746,8 @@ class ContentLoaderTest {
 		 * file content after that should be: copyRepo1*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),]
 		scmmApiClient.mockRepoApiBehaviour()
-		when(jenkins.isEnabled()).thenReturn(false)
-		createContent(config).install()
+		when(jenkins.isEnabled(any(DeploymentContext))).thenReturn(false)
+		install(createContent(config), config)
 		verify(jenkins, never()).createJenkinsjob(any(), any())
 	}
 
@@ -762,16 +762,16 @@ class ContentLoaderTest {
 		 * file content after that should be: copyRepo1*/
 		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),]
 		scmmApiClient.mockRepoApiBehaviour()
-		when(jenkins.isEnabled()).thenReturn(false)
+		when(jenkins.isEnabled(any(DeploymentContext))).thenReturn(false)
 
-		createContent(config).install()
+		install(createContent(config), config)
 		verify(jenkins, never()).createJenkinsjob(any(), any())
 	}
 
 	@Test
 	void 'deployHelmReleasesFromContent skips when helmReleases missing or empty'() {
 		def contentLoader = createContent(config)
-		contentLoader.install()
+		install(contentLoader, config)
 
 		assertThat(contentLoader.deployCalls).isEmpty()
 	}
@@ -794,7 +794,7 @@ class ContentLoaderTest {
 		                                                   valuesPath : valuesFile.toString()]]])
 
 		def contentLoader = createContent(cfg)
-		contentLoader.install()
+		install(contentLoader, cfg)
 
 		assertThat(contentLoader.deployCalls).hasSize(1)
 		def call = contentLoader.deployCalls[0]
@@ -836,7 +836,7 @@ class ContentLoaderTest {
 		                                                   ]]]])
 
 		def contentLoader = createContent(cfg)
-		contentLoader.install()
+		install(contentLoader, cfg)
 
 		assertThat(contentLoader.deployCalls).hasSize(1)
 
@@ -870,7 +870,7 @@ class ContentLoaderTest {
 		                                                  ]]])
 
 		def contentLoader = createContent(cfg)
-		contentLoader.install()
+		install(contentLoader, cfg)
 
 		assertThat(contentLoader.deployCalls).hasSize(1)
 
@@ -894,7 +894,7 @@ class ContentLoaderTest {
 		                                                  ]]])
 
 		def contentLoader = createContent(cfg)
-		contentLoader.install()
+		install(contentLoader, cfg)
 
 		assertThat(contentLoader.deployCalls).hasSize(1)
 
@@ -917,7 +917,7 @@ class ContentLoaderTest {
 		                                                   values     : [foo: 'bar']]]])
 
 		def contentLoader = createContent(cfg)
-		contentLoader.install()
+		install(contentLoader, cfg)
 
 		assertThat(contentLoader.deployCalls).hasSize(1)
 		def call = contentLoader.deployCalls[0]
@@ -969,7 +969,15 @@ class ContentLoaderTest {
 	private void assertRegistrySecrets(String regUser, String regPw) {}
 
 	private ContentLoaderForTest createContent(Config config) {
-		new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+		return new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+	}
+
+	private boolean install(ContentLoaderForTest contentLoader, Config config) {
+		return contentLoader.execute(new ContextBuilder(config).build(), null)
+	}
+
+	private List<RepoCoordinate> cloneContentRepos(ContentLoaderForTest contentLoader, Config config) {
+		return contentLoader.cloneContentRepos(new ContextBuilder(config).build())
 	}
 
 	private static parseActualYaml(File pathToYamlFile) {
@@ -1028,7 +1036,12 @@ class ContentLoaderTest {
 
 		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
 			Deployer deployer) {
-			super(new ContextBuilder(config).build(), k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+			super(k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+		}
+
+		List<RepoCoordinate> cloneContentRepos(DeploymentContext context) {
+			this.context = context
+			return super.cloneContentRepos()
 		}
 
 		@Override

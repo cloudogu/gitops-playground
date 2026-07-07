@@ -25,26 +25,32 @@ class Registry extends Tool {
 	String namespace
 	private K8sClient k8sClient
 
-	Registry(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Registry(FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
 		Deployer deployer) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
+	}
 
+	@Override
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.registry.active
+	}
+
+	@Override
+	protected void prepare() {
 		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
+			this.namespace = activeNamespace(context)
 		}
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.registry.active
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.registry.internal ? "${context.config.application.namePrefix}${context.config.registry.namespace}" : null
 	}
 
 	@Override

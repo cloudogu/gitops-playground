@@ -25,24 +25,31 @@ class Vault extends Tool implements ToolWithImage {
 	String namespace
 	final K8sClient k8sClient
 
-	Vault(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Vault(FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.namespace = "${config.application.namePrefix}${config.features.secrets.namespace}"
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.secrets.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.secrets.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.secrets.namespace}"
 	}
 
 	@Override

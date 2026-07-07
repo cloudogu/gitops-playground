@@ -3,12 +3,14 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -48,18 +50,20 @@ class CertManagerTest {
 
 	@Test
 	void 'Helm release is installed'() {
-		createCertManager().install()
+		install(createCertManager())
 
-		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-			'cert-manager', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.HELM, false)
+		verify(deploymentStrategy).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('https://charts.jetstack.io'), eq('cert-manager'),
+			eq('cert-manager'), eq(chartVersion), eq('cert-manager'),
+			eq('cert-manager'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(false))
 	}
 
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createCertManager().install()
+		install(createCertManager())
 
 		assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(parseActualYaml()['cainjector']['resources'] as Map).containsKeys('limits', 'requests')
@@ -69,8 +73,7 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
-		boolean enabled = createCertManager().install()
-		assertFalse(enabled)
+		assertFalse(createCertManager().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -90,7 +93,7 @@ class CertManagerTest {
 		Map ChartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createCertManager().install()
+		install(createCertManager())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -99,9 +102,11 @@ class CertManagerTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.jetstack.io')
 		assertThat(helmConfig.value.version).isEqualTo(chartVersion)
 		// important check: scmmRepoUrl is overridden with our values.
-		verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
-			'cert-manager', '.', chartVersion, 'cert-manager',
-			'cert-manager', temporaryYamlFile, RepoType.GIT, false)
+		verify(deploymentStrategy).deployFeature(any(DeploymentContext),
+			nullable(RepositoryWorkspace),
+			eq('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('cert-manager'), eq('.'), eq(chartVersion), eq('cert-manager'),
+			eq('cert-manager'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
 	}
 
 	@Test
@@ -126,7 +131,7 @@ class CertManagerTest {
 
 		Map ChartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
-		createCertManager().install()
+		install(createCertManager())
 
 		def templateFile = parseActualYaml()
 
@@ -150,7 +155,7 @@ class CertManagerTest {
 
 	private CertManager createCertManager() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new CertManager(new ContextBuilder(config).build(), new FileSystemUtils() {
+		return new CertManager(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
@@ -158,6 +163,10 @@ class CertManagerTest {
 				return ret
 			}
 		}, deploymentStrategy, new K8sClientForTest(), airGappedUtils, gitHandler)
+	}
+
+	private boolean install(CertManager certManager) {
+		return certManager.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

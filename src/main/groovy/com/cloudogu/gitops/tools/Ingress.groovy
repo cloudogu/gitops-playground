@@ -24,24 +24,31 @@ class Ingress extends Tool implements ToolWithImage {
 	String namespace
 	final K8sClient k8sClient
 
-	Ingress(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Ingress(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.ingress.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.ingress.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.cli.Version
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole
@@ -30,7 +29,7 @@ class GitRepo {
 
 	static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
-	private final DeploymentContext context
+	private final Config config
 	public GitProvider gitProvider
 	private final FileSystemUtils fileSystemUtils
 
@@ -42,14 +41,14 @@ class GitRepo {
 	private Git gitMemoization
 	private final String absoluteLocalRepoTmpDir
 
-	GitRepo(DeploymentContext context,
+	GitRepo(Config config,
 		GitProvider gitProvider,
 		String repoTarget,
 		FileSystemUtils fileSystemUtils) {
 		def tmpDir = File.createTempDir()
 		tmpDir.deleteOnExit()
 		this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
-		this.context = context
+		this.config = config
 		this.gitProvider = gitProvider
 		this.fileSystemUtils = fileSystemUtils
 
@@ -58,10 +57,6 @@ class GitRepo {
 		this.insecure = config.application.insecure
 		this.gitName = config.application.gitName
 		this.gitEmail = config.application.gitEmail
-	}
-
-	private Config getConfig() {
-		return context.config
 	}
 
 	String getRepoTarget() {

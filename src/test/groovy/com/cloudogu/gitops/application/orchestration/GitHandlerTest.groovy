@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.Mockito.mock
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -45,38 +46,40 @@ class GitHandlerTest {
 		return out
 	}
 
-	private static GitHandler handler(Config cfg) {
-		return new GitHandler(new ContextBuilder(cfg).build(),
-			mock(K8sClient),
+	private static GitHandler handler() {
+		return new GitHandler(mock(K8sClient),
 			mock(NetworkingUtils))
+	}
+
+	private static DeploymentContext context(Config cfg) {
+		return new ContextBuilder(cfg).build()
 	}
 
 	// ---------- validate() ------------------------------------------------------------
 
 	@Test
-	void 'validate(): ScmManager external url sets internal=false and urlForJenkins equals url'() {
+	void 'validate(): ScmManager selected and gitops username receives name prefix'() {
 		def cfg = config([application: [namePrefix: 'fv40-'],
 		                  scm        : [scmManager: [url     : 'https://scmm.example.com/scm',
 		                                             internal: true]]])
 
-		def gh = handler(cfg)
+		def gh = handler()
 
-		gh.validate()
+		gh.validate(context(cfg))
 
-		assertFalse(cfg.scm.scmManager.internal)
-		assertEquals('https://scmm.example.com/scm', cfg.scm.scmManager.urlForJenkins)
+		assertEquals(ScmProviderType.SCM_MANAGER, cfg.scm.scmProviderType)
+		assertEquals('fv40-gitops', cfg.scm.scmManager.gitOpsUsername)
 	}
 
 	@Test
 	void 'validate(): GitLab chosen, provider switched, scmm nulled, missing PAT or parentGroupId throws'() {
 		def cfg = config([scm: [gitlab: [url: 'https://gitlab.example.com']]])
 
-		def gh = handler(cfg)
+		def gh = handler()
 
 		def ex = assertThrows(RuntimeException) {
-			gh.validate()
+			gh.validate(context(cfg))
 		}
-
 		assertTrue(ex.message.toLowerCase().contains('gitlab'))
 		assertEquals(ScmProviderType.GITLAB, cfg.scm.scmProviderType)
 		assertNull(cfg.scm.scmManager)
@@ -86,8 +89,7 @@ class GitHandlerTest {
 
 	@Test
 	void 'getResourcesScm(): central wins over tenant'() {
-		def cfg = config()
-		def gitHandler = handler(cfg)
+		def gitHandler = handler()
 
 		gitHandler.tenant = mock(GitProvider, 'tenant')
 		gitHandler.central = mock(GitProvider, 'central')
@@ -97,8 +99,7 @@ class GitHandlerTest {
 
 	@Test
 	void 'getResourcesScm(): tenant returned when central absent, throws when none'() {
-		def cfg = config()
-		def gitHandler = handler(cfg)
+		def gitHandler = handler()
 
 		gitHandler.tenant = mock(GitProvider)
 
@@ -122,9 +123,9 @@ class GitHandlerTest {
 		                                multiTenant: [useDedicatedInstance: false]])
 
 		def tenant = new ScmManagerProviderMock()
-		def gitHandler = new GitHandlerForTests(cfg, tenant)
+		def gitHandler = new GitHandlerForTests(tenant)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
 		assertEquals('scm-manager', cfg.scm.scmManager.namespace)
 
@@ -140,9 +141,9 @@ class GitHandlerTest {
 		                                multiTenant: [useDedicatedInstance: false]])
 
 		def tenant = new ScmManagerProviderMock()
-		def gitHandler = new GitHandlerForTests(cfg, tenant)
+		def gitHandler = new GitHandlerForTests(tenant)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
 		assertTrue(tenant.createdRepos.isEmpty())
 	}
@@ -159,9 +160,9 @@ class GitHandlerTest {
 
 		def tenant = new ScmManagerProviderMock(namePrefix: 'fv40-')
 		def central = new ScmManagerProviderMock(namePrefix: 'fv40-')
-		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+		def gitHandler = new GitHandlerForTests(tenant, central)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
 		assertSame(tenant, gitHandler.tenant)
 		assertSame(central, gitHandler.central)
@@ -180,9 +181,9 @@ class GitHandlerTest {
 
 		def tenant = new ScmManagerProviderMock(namePrefix: 'fv40-')
 		def central = new ScmManagerProviderMock(namePrefix: 'fv40-')
-		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+		def gitHandler = new GitHandlerForTests(tenant, central)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
 		assertTrue(tenant.createdRepos.isEmpty())
 		assertTrue(central.createdRepos.isEmpty())
@@ -210,10 +211,13 @@ class GitHandlerTest {
 		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url),
 			namePrefix: 'fv40-')
 
-		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+		def gitHandler = new GitHandlerForTests(tenant, central)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
+		assertSame(tenant, gitHandler.tenant)
+		assertSame(central, gitHandler.central)
+		assertSame(central, gitHandler.getResourcesScm())
 		assertSame(tenant, gitHandler.tenant)
 		assertSame(central, gitHandler.central)
 		assertSame(central, gitHandler.getResourcesScm())
@@ -239,9 +243,9 @@ class GitHandlerTest {
 		def central = new GitlabMock(base: new URI(cfg.multiTenant.gitlab.url),
 			namePrefix: 'fv40-')
 
-		def gitHandler = new GitHandlerForTests(cfg, tenant, central)
+		def gitHandler = new GitHandlerForTests(tenant, central)
 
-		gitHandler.prepareProviders()
+		gitHandler.prepareProviders(context(cfg))
 
 		assertTrue(tenant.createdRepos.isEmpty())
 		assertTrue(central.createdRepos.isEmpty())

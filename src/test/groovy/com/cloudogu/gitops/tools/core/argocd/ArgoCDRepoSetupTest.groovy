@@ -80,8 +80,7 @@ class ArgoCDRepoSetupTest {
 			repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 		}
 
-		def gitHandler = new GitHandlerForTests(config,
-			tenantProvider,
+		def gitHandler = new GitHandlerForTests(tenantProvider,
 			centralProvider)
 
 		return new ArgoCDRepoSetupTestContext(setup: ArgoCDRepoSetup.create(new ContextBuilder(config).build(),
