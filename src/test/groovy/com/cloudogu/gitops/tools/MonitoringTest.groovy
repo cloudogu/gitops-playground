@@ -564,7 +564,7 @@ policies:
 	@Test
 	void 'helm releases are installed in air-gapped mode'() {
 		config.application.mirrorRepos = true
-		when(airGappedUtils.mirrorHelmRepoToGit(any(DeploymentContext), any(Config.HelmConfig))).thenReturn('a/b')
+		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -579,7 +579,7 @@ policies:
 		install(createStack(scmManagerMock))
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
+		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
 		assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
 		assertThat(helmConfig.value.version).isEqualTo('19.2.2')

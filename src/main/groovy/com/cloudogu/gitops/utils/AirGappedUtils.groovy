@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
@@ -39,8 +38,7 @@ class AirGappedUtils {
 	 *
 	 * @return the repo namespace and name
 	 */
-	String mirrorHelmRepoToGit(DeploymentContext context,
-		HelmConfig helmConfig) {
+	String mirrorHelmRepoToGit(HelmConfig helmConfig) {
 		String repoName = helmConfig.chart
 		String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
 		String repoNamespaceAndName = "${namespace}/${repoName}"
@@ -48,7 +46,7 @@ class AirGappedUtils {
 
 		validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-		GitRepo repo = repoProvider.create(context, repoNamespaceAndName, gitHandler.tenant)
+		GitRepo repo = repoProvider.create(repoNamespaceAndName, gitHandler.tenant)
 
 		repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 

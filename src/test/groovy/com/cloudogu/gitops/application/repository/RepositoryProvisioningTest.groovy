@@ -55,7 +55,7 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'provideWorkspace creates single-instance workspace with cluster-resources repository only'() {
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -65,7 +65,7 @@ class RepositoryProvisioningTest {
 		assertThat(workspace.clusterResourcesRepository).isSameAs(clusterResourcesRepo)
 		assertThat(workspace.hasTenantBootstrapRepository()).isFalse()
 
-		verify(gitRepoFactory).create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider))
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 		verify(gitHandler).getResourcesScm()
 	}
 
@@ -79,9 +79,9 @@ class RepositoryProvisioningTest {
 		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
 		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
 
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(centralProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(tenantBootstrapRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -95,13 +95,13 @@ class RepositoryProvisioningTest {
 		assertThat(new File(workspace.clusterResourcesRootDir()).canonicalPath)
 			.isNotEqualTo(new File(workspace.tenantBootstrapRootDir()).canonicalPath)
 
-		verify(gitRepoFactory).create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(centralProvider))
-		verify(gitRepoFactory).create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider))
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(centralProvider))
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 	}
 
 	@Test
 	void 'provideWorkspace returns same workspace instance when called multiple times'() {
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -111,7 +111,7 @@ class RepositoryProvisioningTest {
 
 		assertThat(secondWorkspace).isSameAs(firstWorkspace)
 
-		verify(gitRepoFactory, times(1)).create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider))
+		verify(gitRepoFactory, times(1)).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class RepositoryProvisioningTest {
 		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
 		config.scm.scmManager.internal = true
 
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -134,7 +134,7 @@ class RepositoryProvisioningTest {
 	void 'prepare ensures and clones repositories when SCM-Manager is external'() {
 		config.scm.scmManager.internal = false
 
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -149,7 +149,7 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'ensureRemoteRepositoriesExist creates cluster-resources repository in single-instance mode'() {
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -172,9 +172,9 @@ class RepositoryProvisioningTest {
 		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
 		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
 
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(centralProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(tenantBootstrapRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -193,7 +193,7 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'ensureRemoteRepositoriesExist is idempotent'() {
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -210,7 +210,7 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'publishClusterResourcesRepositoryChanges uses default message when no message is provided'() {
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -252,9 +252,9 @@ class RepositoryProvisioningTest {
 		doReturn(centralProvider).when(gitHandler).getResourcesScm()
 		doReturn(tenantProvider).when(gitHandler).getTenant()
 
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(centralProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(sharedClusterRepo)
-		when(gitRepoFactory.create(any(DeploymentContext), eq('argocd/cluster-resources'), eq(tenantProvider)))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(sharedTenantRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
@@ -290,7 +290,7 @@ class RepositoryProvisioningTest {
 
 	private GitRepo createGitRepoSpy(String repoTarget,
 		GitProvider gitProvider) {
-		GitRepo gitRepo = spy(new GitRepo(createDeploymentContext(),
+		GitRepo gitRepo = spy(new GitRepo(config,
 			gitProvider,
 			repoTarget,
 			new FileSystemUtils()))

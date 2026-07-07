@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
-import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -56,7 +55,7 @@ class AirGappedUtilsTest {
 	void 'Prepares repos for air-gapped use'() {
 		setupForAirgappedUse()
 
-		def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(new ContextBuilder(config).build(), helmConfig)
+		def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
 		assertThat(actualRepoNamespaceAndName).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
 		assertAirGapped()
@@ -66,7 +65,7 @@ class AirGappedUtilsTest {
 	void 'Fails when unable to resolve version of dependencies'() {
 		setupForAirgappedUse([:])
 		def exception = shouldFail(RuntimeException) {
-			createAirGappedUtils().mirrorHelmRepoToGit(new ContextBuilder(config).build(), helmConfig)
+			createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 		}
 
 		assertThat(exception.message).isEqualTo('Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
@@ -76,7 +75,7 @@ class AirGappedUtilsTest {
 	@Test
 	void 'Also works for charts without dependencies'() {
 		setupForAirgappedUse(null, [])
-		createAirGappedUtils().mirrorHelmRepoToGit(new ContextBuilder(config).build(), helmConfig)
+		createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
 		GitRepo prometheusRepo = gitRepoFactory.repos['3rd-party-dependencies/kube-prometheus-stack']
 		def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
@@ -93,7 +92,7 @@ class AirGappedUtilsTest {
 		doThrow(expectedException).when(helmClient).template(anyString(), anyString())
 
 		def exception = shouldFail(RuntimeException) {
-			createAirGappedUtils().mirrorHelmRepoToGit(new ContextBuilder(config).build(), helmConfig)
+			createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 		}
 
 		assertThat(exception.getMessage()).isEqualTo("Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())

@@ -125,7 +125,7 @@ abstract class Tool {
 		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
-			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(context, helmConfig)
+			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
 			repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
 			chartOrPath = '.'
 			repoType = RepoType.GIT

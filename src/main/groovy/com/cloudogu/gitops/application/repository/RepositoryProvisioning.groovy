@@ -144,8 +144,7 @@ class RepositoryProvisioning {
 	private RepositoryWorkspace createSingleInstanceWorkspace(DeploymentContext context) {
 		log.debug('Creating single-instance repository workspace.')
 
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(context,
-			clusterResourcesRepoTarget(),
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())
 
 		return new RepositoryWorkspace(clusterResourcesRepository)
@@ -160,12 +159,10 @@ class RepositoryProvisioning {
 		 * Therefore both repositories are represented explicitly, even though they use the same
 		 * logical repository target.
 		 */
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(context,
-			clusterResourcesRepoTarget(),
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.getResourcesScm())
 
-		GitRepo tenantBootstrapRepository = gitRepoFactory.create(context,
-			clusterResourcesRepoTarget(),
+		GitRepo tenantBootstrapRepository = gitRepoFactory.create(clusterResourcesRepoTarget(),
 			gitHandler.tenant)
 
 		RepositoryWorkspace dedicatedWorkspace = new RepositoryWorkspace(clusterResourcesRepository,
@@ -181,8 +178,7 @@ class RepositoryProvisioning {
 		String tenantRoot = new File(workspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " +
-				"central cluster-resources and tenant bootstrap repositories. Both resolved to: ${clusterRoot}")
+			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. Both resolved to: ${clusterRoot}")
 		}
 	}
 

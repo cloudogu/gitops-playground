@@ -46,7 +46,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	void destroy() {
 		this.context = contextBuilder.build()
 
-		def repo = repoProvider.create(context, 'argocd/cluster-resources', gitHandler.resourcesScm)
+		def repo = repoProvider.create('argocd/cluster-resources', gitHandler.resourcesScm)
 		repo.cloneRepo()
 
 		for (def app in k8sClient.getCustomResource("app")) {
