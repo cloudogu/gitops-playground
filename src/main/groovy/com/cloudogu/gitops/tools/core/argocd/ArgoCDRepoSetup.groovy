@@ -154,14 +154,6 @@ class ArgoCDRepoSetup {
 		// These tool directories are still copied here to preserve the current behavior.
 		// In the target architecture each tool prepares its own apps/<tool> directory.
 
-		if (config.features.ingress.active) {
-			clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
-		}
-
-		if (config.features.secrets.active) {
-			clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
-		}
-
 		return clusterResourceSubDirs
 	}
 
