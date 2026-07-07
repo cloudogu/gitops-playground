@@ -85,7 +85,7 @@ class ExternalSecretsOperatorTest {
 		createExternalSecretsOperator().install()
 
 		verify(deployer).deployFeature('https://charts.external-secrets.io',
-			'external-secrets-operator',
+			'external-secrets',
 			'external-secrets',
 			'0.9.16',
 			'foo-secrets',
@@ -173,7 +173,7 @@ class ExternalSecretsOperatorTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
 		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'external-secrets-operator',
+			'external-secrets',
 			'.',
 			'1.2.3',
 			'foo-secrets',

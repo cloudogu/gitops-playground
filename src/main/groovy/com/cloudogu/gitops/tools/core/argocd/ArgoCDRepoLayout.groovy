@@ -11,7 +11,8 @@ class ArgoCDRepoLayout {
 	private static final String MULTITENANT_DIR = 'multiTenant'
 	private static final String OPERATOR_DIR = 'operator'
 	private static final String PROJECTS_DIR = 'projects'
-	// argocd/argocd
+
+	// Relative to apps/argocd/argocd
 	private static final String NETPOL_YAML = 'templates/allow-namespaces.yaml'
 
 	private final String repoRootDir
