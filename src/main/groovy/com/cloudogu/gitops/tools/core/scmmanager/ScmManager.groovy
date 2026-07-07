@@ -65,7 +65,6 @@ class ScmManager extends Tool implements ToolWithImage {
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer,
 			context,
-			repositoryProvisioning,
 			repositoryWorkspace)
 
 		setup.setupHelm()
