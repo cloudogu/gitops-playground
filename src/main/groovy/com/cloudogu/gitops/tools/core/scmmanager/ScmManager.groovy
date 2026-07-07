@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
@@ -24,34 +23,25 @@ class ScmManager extends Tool implements ToolWithImage {
 	String namespace
 
 	final K8sClient k8sClient
-	private final RepositoryProvisioning repositoryProvisioning
 
 	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
-		K8sClient k8sClient,
-		RepositoryProvisioning repositoryProvisioning) {
+		K8sClient k8sClient) {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.k8sClient = k8sClient
-		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	@Override
-	boolean isEnabled() {
-		if (context.isInternalScmManager()) {
-			this.namespace = prefixedNamespace()
-			this.config.scm.scmManager.namespace = this.namespace
-		}
+	boolean isEnabled(DeploymentContext context) {
 		return context.isInternalScmManager()
 	}
 
 	@Override
 	boolean execute(DeploymentContext context,
 		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-		this.namespace = prefixedNamespace()
-		this.config.scm.scmManager.namespace = this.namespace
+		prepareExecution(context, workspace)
+		prepareNamespace()
 
 		return installEnabledTool()
 	}
@@ -77,6 +67,11 @@ class ScmManager extends Tool implements ToolWithImage {
 		setup.createArgocdApplication()
 
 		log.info('Internal SCM-Manager setup finished.')
+	}
+
+	private void prepareNamespace() {
+		this.namespace = prefixedNamespace()
+		this.config.scm.scmManager.namespace = this.namespace
 	}
 
 	private String prefixedNamespace() {

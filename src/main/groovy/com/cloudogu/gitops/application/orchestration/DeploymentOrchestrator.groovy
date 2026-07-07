@@ -46,15 +46,17 @@ class DeploymentOrchestrator {
 		this.tools = tools
 	}
 
-	void deployTools(DeploymentContext context,
-		RepositoryWorkspace workspace) {
+	void deployTools(DeploymentContext context, RepositoryWorkspace workspace) {
 		log.debug('Starting tool orchestration.')
 
-		tools.findAll { Tool tool -> tool.isEnabled(context)
-		}.each { Tool tool ->
-			log.debug("Executing tool ${tool.class.simpleName}")
-			tool.execute(context,
-				workspace)
+		tools.each { Tool tool ->
+			if (!tool.isEnabled(context)) {
+				log.debug("Skipping disabled tool ${tool.class.simpleName}")
+				return
+			}
+
+			log.debug("Deploying tool ${tool.class.simpleName}")
+			tool.execute(context, workspace)
 		}
 
 		log.debug('Tool orchestration finished.')
