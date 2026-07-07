@@ -9,10 +9,15 @@ import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -28,16 +33,21 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @EnableKubernetesMockClient(crud = true)
 class IngressTest {
 
 	// setting default config values with ingress active
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
 		features: new Config.FeaturesSchema(ingress: new Config.IngressSchema(active: true)))
+
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
+	File clusterResourcesRepoDir
 
 	@Mock
 	Deployer deployer
@@ -47,6 +57,8 @@ class IngressTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+	@Mock
+	RepositoryProvisioning repositoryProvisioning
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -65,19 +77,35 @@ class IngressTest {
 		def actual = parseActualYaml()
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-		verify(deployer).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
-			config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.HELM, false)
+		verify(deployer).deployFeature(config.features.ingress.helm.repoURL,
+			'traefik',
+			config.features.ingress.helm.chart,
+			config.features.ingress.helm.version,
+			'foo-' + config.features.ingress.ingressNamespace,
+			'traefik',
+			temporaryYamlFile,
+			RepoType.HELM,
+			false)
+
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
+	}
 
+	@Test
+	void 'prepares ingress app content in cluster resources workspace without copying templates'() {
+		createIngress().install()
+
+		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress/templates')).doesNotExist()
 	}
 
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
+
 		createIngress().install()
+
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
@@ -111,11 +139,11 @@ class IngressTest {
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
 
-		Path SourceChart = rootChartsFolder.resolve('traefik')
-		Files.createDirectories(SourceChart)
+		Path sourceChart = rootChartsFolder.resolve('traefik')
+		Files.createDirectories(sourceChart)
 
-		Map ChartYaml = [version: '1.2.3']
-		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+		Map chartYaml = [version: '1.2.3']
+		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
 		createIngress().install()
 
@@ -126,8 +154,14 @@ class IngressTest {
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
 		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
-			'traefik', temporaryYamlFile, RepoType.GIT, false)
+			'traefik',
+			'.',
+			'1.2.3',
+			'foo-' + config.features.ingress.ingressNamespace,
+			'traefik',
+			temporaryYamlFile,
+			RepoType.GIT,
+			false)
 	}
 
 	@Test
@@ -163,6 +197,7 @@ class IngressTest {
 		config.registry.proxyPassword = 'proxy-pw'
 
 		createIngress().install()
+
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
@@ -187,7 +222,7 @@ class IngressTest {
 
 	private Ingress createIngress() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		new Ingress(new ContextBuilder(config).build(), new FileSystemUtils() {
+		FileSystemUtils testFileSystemUtils = new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -195,7 +230,34 @@ class IngressTest {
 				// Path after template invocation
 				return ret
 			}
-		}, deployer, k8sClient, airGappedUtils, gitHandler)
+		}
+
+		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
+
+		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
+			@Override
+			GitRepo create(String repoTarget, GitProvider provider) {
+				def repo = super.create(repoTarget, provider)
+				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+				return repo
+			}
+		}
+
+		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
+			scmManagerMock)
+
+		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+
+		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
+
+		return new Ingress(new ContextBuilder(config).build(),
+			testFileSystemUtils,
+			deployer,
+			k8sClient,
+			airGappedUtils,
+			gitHandler,
+			repositoryProvisioning)
 	}
 
 	private Map parseActualYaml() {
