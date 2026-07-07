@@ -26,7 +26,7 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml'
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
-	private static final String TOOL_NAME = 'external-secrets-operator'
+	private static final String TOOL_NAME = 'external-secrets'
 	private static final String RELEASE_NAME = 'external-secrets'
 	private static final String EXTERNAL_SECRETS_APP_PATH = 'apps/external-secrets'
 
