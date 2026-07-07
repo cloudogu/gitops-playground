@@ -265,6 +265,15 @@ policies:
 	}
 
 	@Test
+	void 'prepares monitoring app content in cluster resources workspace without copying templates'() {
+		createStack(scmManagerMock).install()
+
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/templates')).doesNotExist()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')).exists()
+	}
+
+	@Test
 	void 'cleanupUnusedDashboards removes all dashboards for disabled features'() {
 		config.features.monitoring.active = true
 		config.features.ingress.active = false
@@ -433,9 +442,15 @@ policies:
 	void 'helm release is installed'() {
 		createStack(scmManagerMock).install()
 
-		verify(deployer).deployFeature('https://prom', 'monitoring',
-			'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
-			'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.HELM, false)
+		verify(deployer).deployFeature('https://prom',
+			'monitoring',
+			'kube-prometheus-stack',
+			'19.2.2',
+			'foo-monitoring',
+			'kube-prometheus-stack',
+			temporaryYamlFilePrometheus,
+			RepoType.HELM,
+			false)
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
@@ -462,7 +477,7 @@ policies:
 		assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
 
 		assertThat(yaml['crds']).isNull()
-		assertThat(new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/rbac')).doesNotExist()
 	}
 
 	@Test
@@ -471,19 +486,6 @@ policies:
 
 		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('monitoring',
 			'Update Prometheus dashboards, RBAC and network policies.')
-	}
-
-	@Test
-	void 'copies monitoring app resources into cluster resources repository'() {
-		createStack(scmManagerMock).install()
-
-		File monitoringAppDir = new File(clusterResourcesRepoDir, 'apps/monitoring')
-		File dashboardDir = new File(monitoringAppDir, 'misc/dashboard')
-
-		assertThat(monitoringAppDir).exists()
-		assertThat(new File(dashboardDir, 'prometheus-dashboard.yaml')).exists()
-		assertThat(new File(dashboardDir, 'prometheus-dashboard.ftl.yaml')).doesNotExist()
-		assertThat(new File(monitoringAppDir, 'templates')).doesNotExist()
 	}
 
 	@Test
@@ -650,6 +652,14 @@ matchExpressions:
 			GitRepo create(String repoTarget, GitProvider scm) {
 				def repo = super.create(repoTarget, scmManagerMock)
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+				def dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
+				dashboardDir.mkdirs()
+
+				new File(dashboardDir, 'traefik-dashboard.yaml').text = 'dummy'
+				new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml').text = 'dummy'
+				new File(dashboardDir, 'jenkins-dashboard.yaml').text = 'dummy'
+				new File(dashboardDir, 'scmm-dashboard.yaml').text = 'dummy'
 
 				return repo
 			}

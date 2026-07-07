@@ -15,8 +15,6 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
-import freemarker.template.DefaultObjectWrapperBuilder
-
 import io.micronaut.core.annotation.Order
 
 import java.nio.file.Path
@@ -108,22 +106,10 @@ class Monitoring extends Tool implements ToolWithImage {
 	}
 
 	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
+		log.debug("Preparing Monitoring repository content in ${clusterResourcesRepo.repoTarget}")
+
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH))
-
-		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo))
-	}
-
-	private Map<String, Object> buildTemplateValues(GitRepo repo) {
-		return [tenantName: config.application.tenantName,
-		        argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ''],
-		        scm       : [baseUrl      : repo.gitProvider.url,
-		                     host         : repo.gitProvider.host,
-		                     protocol     : repo.gitProvider.protocol,
-		                     repoUrl      : repo.gitProvider.repoPrefix(),
-		                     centralScmUrl: gitHandler.central?.repoPrefix() ?: ''],
-		        config    : config,
-		        statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()] as Map<String, Object>
 	}
 
 	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
