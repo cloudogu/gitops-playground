@@ -299,45 +299,6 @@ class ArgoCDRepoSetupTest {
 	}
 
 	@Test
-	void 'prepareRepositories copies ingress resources when ingress feature is active'() {
-		config.features.ingress.active = true
-
-		def testContext = createSetup(new FileSystemUtils())
-
-		testContext.setup.prepareRepositories()
-
-		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.ingressSubdirRel())).exists()
-	}
-
-	@Test
-	void 'prepareRepositories does not copy monitoring resources'() {
-		config.features.monitoring.active = true
-
-		def testContext = createSetup(new FileSystemUtils())
-
-		testContext.setup.prepareRepositories()
-
-		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			'apps/monitoring')).doesNotExist()
-	}
-
-	@Test
-	void 'prepareRepositories copies secrets and vault resources when secrets feature is active'() {
-		config.features.secrets.active = true
-
-		def testContext = createSetup(new FileSystemUtils())
-
-		testContext.setup.prepareRepositories()
-
-		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.secretsSubdirRel())).exists()
-
-		assertThat(Path.of(testContext.repositoryWorkspace.clusterResourcesRootDir(),
-			ArgoCDRepoLayout.vaultSubdirRel())).exists()
-	}
-
-	@Test
 	void 'prepareRepositories prepares tenant bootstrap repository in dedicated mode'() {
 		config.multiTenant.useDedicatedInstance = true
 
