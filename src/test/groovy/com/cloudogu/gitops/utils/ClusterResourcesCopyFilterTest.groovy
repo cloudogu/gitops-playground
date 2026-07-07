@@ -28,11 +28,12 @@ class ClusterResourcesCopyFilterTest {
 		File root = createClusterResourcesRoot()
 
 		FileFilter filter = ClusterResourcesCopyFilter.forSubDirs(root.path,
-			['apps/monitoring', 'apps/argocd'])
+			['apps/monitoring', 'apps/argocd', 'apps/jenkins'])
 
 		assertThat(filter.accept(new File(root, 'apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'))).isFalse()
 		assertThat(filter.accept(new File(root, 'apps/argocd/templates/project.ftl.yaml'))).isFalse()
 		assertThat(filter.accept(new File(root, 'apps/argocd/argocd/templates/allow-namespaces.ftl.yaml'))).isTrue()
+		assertThat(filter.accept(new File(root, 'apps/jenkins/templates/values.ftl.yaml'))).isTrue()
 	}
 
 	@Test
@@ -54,6 +55,7 @@ class ClusterResourcesCopyFilterTest {
 			'apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml',
 			'apps/argocd/templates/project.ftl.yaml',
 			'apps/argocd/argocd/templates/allow-namespaces.ftl.yaml',
+			'apps/jenkins/templates/values.ftl.yaml',
 			'apps/ingress/values.yaml',
 		].each { String path ->
 			File file = new File(root, path)
