@@ -159,7 +159,6 @@ class ArgoCDRepoSetup {
 		}
 
 		if (config.features.secrets.active) {
-			clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
 			clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
 		}
 
