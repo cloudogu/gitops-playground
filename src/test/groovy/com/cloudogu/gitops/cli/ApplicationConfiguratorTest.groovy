@@ -92,8 +92,7 @@ class ApplicationConfiguratorTest {
 		featureArgoCd = Mockito.spy(new ArgoCD(k8sClient,
 			helmClient,
 			fileSystemUtils,
-			gitHandler,
-			repositoryProvisioning))
+			gitHandler))
 		featureArgoCd.isEnabled(context)
 	}
 

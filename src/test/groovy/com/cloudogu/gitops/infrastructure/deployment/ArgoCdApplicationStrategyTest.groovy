@@ -18,6 +18,7 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
+import java.nio.file.Path
 import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.Test
@@ -25,13 +26,17 @@ import org.junit.jupiter.api.Test
 class ArgoCdApplicationStrategyTest {
 	private File localTempDir
 	private RepositoryProvisioning repositoryProvisioning
+	private Config config
+	private DeploymentContext context
+	private RepositoryWorkspace repositoryWorkspace
 
 	@Test
 	void 'deploys feature using argo CD'() {
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -83,7 +88,8 @@ spec:
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -109,7 +115,8 @@ spec:
     param2: value2
     '''
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -131,7 +138,8 @@ spec:
     param2: value2
     '''
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -154,7 +162,8 @@ service:
   type: NodePort
 '''
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'scm-manager',
 			'scm-manager',
 			'3.11.6',
@@ -182,7 +191,8 @@ service:
 fullnameOverride: tenant1-scmm
 '''
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'scm-manager',
 			'scm-manager',
 			'3.11.6',
@@ -202,7 +212,8 @@ fullnameOverride: tenant1-scmm
 param1: value1
 '''
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -222,7 +233,8 @@ param1: value1
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -239,7 +251,8 @@ param1: value1
 		def strategy = createStrategy()
 		File valuesYaml = File.createTempFile('values', 'yaml')
 
-		strategy.deployFeature('repoURL',
+		deployFeature(strategy,
+			'repoURL',
 			'repoName',
 			'chartName',
 			'version',
@@ -259,7 +272,7 @@ param1: value1
 	}
 
 	private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
-		Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',
+		config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',
 			gitName: 'Cloudogu',
 			gitEmail: 'hello@cloudogu.com'),
 			scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(username: 'dont-care-username',
@@ -280,15 +293,33 @@ param1: value1
 		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
 			gitProvider)
 
-		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
 		repositoryProvisioning = mock(RepositoryProvisioning)
-		DeploymentContext context = new ContextBuilder(config).build()
+		context = new ContextBuilder(config).build()
 
-		def strategy = new ArgoCdApplicationStrategy(new FileSystemUtils(),
+		return new ArgoCdApplicationStrategy(new FileSystemUtils(),
 			repositoryProvisioning)
-		strategy.useRuntime(context,
-			repositoryWorkspace)
-		return strategy
+	}
+
+	private void deployFeature(ArgoCdApplicationStrategy strategy,
+		String repoURL,
+		String repoName,
+		String chartOrPath,
+		String version,
+		String namespace,
+		String releaseName,
+		Path helmValuesPath,
+		DeploymentStrategy.RepoType repoType = DeploymentStrategy.RepoType.HELM) {
+		strategy.deployFeature(context,
+			repositoryWorkspace,
+			repoURL,
+			repoName,
+			chartOrPath,
+			version,
+			namespace,
+			releaseName,
+			helmValuesPath,
+			repoType)
 	}
 }

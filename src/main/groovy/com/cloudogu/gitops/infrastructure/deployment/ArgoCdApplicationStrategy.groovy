@@ -225,12 +225,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			"Add ${repoName}/${chartOrPath} to ArgoCD")
 	}
 
-	void useRuntime(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-	}
-
 	String chooseKeyChartOrPath(RepoType repoType) {
 		switch (repoType) {
 			case RepoType.HELM:

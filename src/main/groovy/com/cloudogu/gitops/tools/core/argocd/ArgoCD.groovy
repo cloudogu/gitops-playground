@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -29,7 +28,6 @@ class ArgoCD extends Tool {
 	private final HelmClient helmClient
 	private final FileSystemUtils fileSystemUtils
 	private final GitHandler gitHandler
-	private final RepositoryProvisioning repositoryProvisioning
 	private String password
 
 	private String namespace
@@ -39,13 +37,11 @@ class ArgoCD extends Tool {
 	ArgoCD(K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning) {
+		GitHandler gitHandler) {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
-		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	@Override
@@ -97,8 +93,7 @@ class ArgoCD extends Tool {
 		log.debug('Preparing ArgoCD repository content')
 		repoSetup.prepareRepositories()
 
-		repositoryProvisioning.publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
+		repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges('Update ArgoCD repository content')
 
 		log.debug('Installing Argo CD')
 		installArgoCd()

@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -124,7 +123,6 @@ class ArgoCDTest {
 	List<GitRepo> petClinicRepos = []
 	ArgoCD argocd
 	ArgoCDRepoLayout clusterResourcesRepoLayout
-	RepositoryProvisioning repositoryProvisioning
 	RepositoryWorkspace repositoryWorkspace
 
 	@BeforeEach
@@ -219,13 +217,12 @@ class ArgoCDTest {
 	}
 
 	@Test
-	void 'publishes argocd repository content through repository provisioning'() {
+	void 'publishes argocd repository content through repository workspace'() {
 		def argocd = createArgoCD()
 
 		execute(argocd)
 
-		verify(repositoryProvisioning).publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
+		verify(repositoryWorkspace.clusterResourcesRepository).commitAndPush('Update ArgoCD repository content')
 	}
 
 	@Test
@@ -666,7 +663,6 @@ class ArgoCDTest {
 			k8sClient,
 			helmCommands)
 
-		this.repositoryProvisioning = (argoCD as ArgoCDForTest).repositoryProvisioning
 		this.repositoryWorkspace = (argoCD as ArgoCDForTest).repositoryWorkspace
 
 		return argoCD
@@ -1574,7 +1570,6 @@ class ArgoCDTest {
 		final GitProvider tenantProvider
 		final GitProvider centralProvider
 		final GitHandler gitHandler
-		final RepositoryProvisioning repositoryProvisioning
 		final RepositoryWorkspace repositoryWorkspace
 
 		GitRepo clusterResourcesRepo
@@ -1609,6 +1604,7 @@ class ArgoCDTest {
 
 			GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
 				clusterResourcesProvider)
+			doNothing().when(clusterResourcesRepo).commitAndPush(any(String))
 
 			RepositoryWorkspace repositoryWorkspace
 			GitRepo tenantBootstrapRepo = null
@@ -1627,6 +1623,7 @@ class ArgoCDTest {
 				 */
 				tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
 					tenantProvider)
+				doNothing().when(tenantBootstrapRepo).commitAndPush(any(String))
 
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
 					tenantBootstrapRepo)
@@ -1634,13 +1631,10 @@ class ArgoCDTest {
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 			}
 
-			RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-
 			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
 				centralProvider)
 
 			return new ArgoCDTestContext(gitHandler: gitHandler,
-				repositoryProvisioning: repositoryProvisioning,
 				repositoryWorkspace: repositoryWorkspace,
 				clusterResourcesRepo: clusterResourcesRepo,
 				tenantBootstrapRepo: tenantBootstrapRepo)
@@ -1655,14 +1649,12 @@ class ArgoCDTest {
 			super(k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),
-				testContext.gitHandler,
-				testContext.repositoryProvisioning)
+				testContext.gitHandler)
 
 			this.cfg = cfg
 			this.tenantProvider = tenantProvider
 			this.centralProvider = centralProvider
 			this.gitHandler = testContext.gitHandler
-			this.repositoryProvisioning = testContext.repositoryProvisioning
 			this.repositoryWorkspace = testContext.repositoryWorkspace
 			this.clusterResourcesRepo = testContext.clusterResourcesRepo
 			this.tenantBootstrapRepo = testContext.tenantBootstrapRepo
@@ -1688,7 +1680,6 @@ class ArgoCDTest {
 
 		static class ArgoCDTestContext {
 			GitHandler gitHandler
-			RepositoryProvisioning repositoryProvisioning
 			RepositoryWorkspace repositoryWorkspace
 			GitRepo clusterResourcesRepo
 			GitRepo tenantBootstrapRepo
