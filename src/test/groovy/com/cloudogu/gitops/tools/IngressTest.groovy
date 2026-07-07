@@ -61,7 +61,7 @@ class IngressTest {
 
 	@Test
 	void 'Helm release is installed'() {
-		createIngress().install()
+		install(createIngress())
 
 		/* Assert one default value */
 		def actual = parseActualYaml()
@@ -81,15 +81,14 @@ class IngressTest {
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
-		createIngress().install()
+		install(createIngress())
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
-		boolean enabled = createIngress().install()
-		assertFalse(enabled)
+		assertFalse(createIngress().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -97,7 +96,7 @@ class IngressTest {
 		config.features.ingress.helm.values = [controller: [replicaCount: 42,
 		                                                    span        : '7,5',]]
 
-		createIngress().install()
+		install(createIngress())
 		def actual = parseActualYaml()
 
 		assertThat(actual['controller']['replicaCount']).isEqualTo(42)
@@ -121,7 +120,7 @@ class IngressTest {
 		Map ChartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createIngress().install()
+		install(createIngress())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
@@ -141,7 +140,7 @@ class IngressTest {
 		config.features.monitoring.active = true
 		config.application.namePrefix = "heliosphere"
 
-		createIngress().install()
+		install(createIngress())
 
 		def actual = parseActualYaml()
 
@@ -154,7 +153,7 @@ class IngressTest {
 	void 'Activates network policies'() {
 		config.application.netpols = true
 
-		createIngress().install()
+		install(createIngress())
 
 		def actual = parseActualYaml()
 
@@ -168,7 +167,7 @@ class IngressTest {
 		config.registry.proxyUsername = 'proxy-user'
 		config.registry.proxyPassword = 'proxy-pw'
 
-		createIngress().install()
+		install(createIngress())
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
@@ -176,7 +175,7 @@ class IngressTest {
 	void 'Allows overriding the image'() {
 		config.features.ingress.helm.image = 'localhost/abc:v42'
 
-		createIngress().install()
+		install(createIngress())
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['image']['repository']).isEqualTo('localhost/abc')
@@ -186,15 +185,14 @@ class IngressTest {
 
 	@Test
 	void 'get namespace from feature'() {
-		assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
+		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
 		config.features.ingress.active = false
-		assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo(null)
+		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo(null)
 	}
 
 	private Ingress createIngress() {
-		def context = new ContextBuilder(config).build()
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		def ingress = new Ingress(new FileSystemUtils() {
+		return new Ingress(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -203,8 +201,10 @@ class IngressTest {
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler)
-		ingress.isEnabled(context)
-		return ingress
+	}
+
+	private boolean install(Ingress ingress) {
+		return ingress.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

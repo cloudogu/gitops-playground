@@ -3,7 +3,6 @@ package com.cloudogu.gitops.tools
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -51,19 +50,18 @@ class Monitoring extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	boolean isEnabled() {
-		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
-		return config.features.monitoring.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.monitoring.active
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-		this.namespace = "${config.application.namePrefix}${config.features.monitoring.namespace}"
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
 
-		return installEnabledTool()
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
 	}
 
 	@Override

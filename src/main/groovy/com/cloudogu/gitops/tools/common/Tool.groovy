@@ -20,8 +20,7 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 
 /**
- * A single tool to be deployed by GOP.
- */
+ * A single tool to be deployed by GOP.*/
 @Slf4j
 abstract class Tool {
 
@@ -38,45 +37,15 @@ abstract class Tool {
 	}
 
 	/**
-	 * Transitional method for old call sites.
-	 *
-	 * The new DeploymentOrchestrator should not use this method anymore.
-	 * New orchestration uses isEnabled(context) + execute(context, workspace).
-	 */
-	boolean install() {
-		if (isEnabled(context)) {
-			return installEnabledTool()
-		}
-
-		log.debug("Tool ${getClass().getSimpleName()} is disabled")
-		disable()
-		return false
-	}
-
-	/**
-	 * Pure activation check for the current deployment run.
-	 *
-	 * This method must not change state:
-	 * - no namespace preparation
-	 * - no config mutation
-	 * - no workspace access
-	 */
+	 * Activation check for the current deployment run.
+	 * Do not add deployment preparation, config mutation or workspace access here.	*/
 	abstract boolean isEnabled(DeploymentContext context)
 
-	/**
-	 * Unified entry point for tool execution.
-	 *
-	 * Each tool should implement this explicitly for now and delegate to its existing behavior.
-	 * The lifecycle split into validate/preDeploy/deploy/postDeploy is part of a follow-up ticket.
-	 */
-	abstract boolean execute(DeploymentContext context, RepositoryWorkspace workspace)
-
-	protected void prepareExecution(DeploymentContext context, RepositoryWorkspace workspace) {
+	boolean execute(DeploymentContext context, RepositoryWorkspace workspace) {
 		this.context = context
 		this.repositoryWorkspace = workspace
-	}
+		prepare()
 
-	protected boolean installEnabledTool() {
 		log.info("Installing Tool ${getClass().getSimpleName()}")
 
 		createImagePullSecretIfRequired()
@@ -93,12 +62,18 @@ abstract class Tool {
 		}
 	}
 
-	String getActiveNamespaceFromFeature() {
+	protected void prepare() {}
+
+	String getActiveNamespaceFromFeature(DeploymentContext context) {
 		// using reflection to get all subclasses implementing an own namespace
 		if (this.metaClass.hasProperty(this, 'namespace')) {
-			return isEnabled(context) ? this.getProperty('namespace') : null
+			return isEnabled(context) ? activeNamespace(context) : null
 		}
 		return null
+	}
+
+	protected String activeNamespace(DeploymentContext context) {
+		return this.getProperty('namespace')
 	}
 
 	static Map templateToMap(String filePath, Map parameters) {
@@ -150,7 +125,7 @@ abstract class Tool {
 		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature ${featureName}")
 
-			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig)
+			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(context, helmConfig)
 			repoURL = this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)
 			chartOrPath = '.'
 			repoType = RepoType.GIT
@@ -161,7 +136,9 @@ abstract class Tool {
 		log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
 		log.debug("helm values used: ${helmValuesData}")
 
-		this.deployer.deployFeature(repoURL,
+		this.deployer.deployFeature(context,
+			repositoryWorkspace,
+			repoURL,
 			featureName,
 			chartOrPath,
 			version,
@@ -183,6 +160,7 @@ abstract class Tool {
 	/*
 	 * Hooks for enabling or disabling a feature. Both optional, because not always needed.
 	 */
+
 	protected void enable() {}
 
 	protected void disable() {}
@@ -191,17 +169,16 @@ abstract class Tool {
 	 * Hook for special feature validation. Optional.
 	 * Feature should throw RuntimeException to stop immediately.
 	 */
+
 	void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.
-	 * Feature should throw RuntimeException to stop immediately.
-	 */
+	 * Feature should throw RuntimeException to stop immediately.	*/
 	void preConfigInit(Config configToSet) {}
 
 	/**
 	 * Hook for postConfigInit. Optional.
-	 * Feature should throw RuntimeException to stop immediately.
-	 */
+	 * Feature should throw RuntimeException to stop immediately.	*/
 	void postConfigInit(Config configToSet) {}
 }

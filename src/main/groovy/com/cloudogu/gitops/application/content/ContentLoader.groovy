@@ -5,7 +5,6 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.config.Credentials
@@ -71,17 +70,8 @@ class ContentLoader extends Tool {
 	}
 
 	@Override
-	boolean isEnabled() {
+	boolean isEnabled(DeploymentContext context) {
 		return true // for now always on. Once we refactor from Argo CD class we add a param to enable
-	}
-
-	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-
-		return installEnabledTool()
 	}
 
 	@Override
@@ -566,7 +556,7 @@ class ContentLoader extends Tool {
 	}
 
 	private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
-		if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
+		if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled(context)) {
 			if (GitRepo.existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
 				jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
 			}

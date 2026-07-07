@@ -50,7 +50,7 @@ class CertManagerTest {
 
 	@Test
 	void 'Helm release is installed'() {
-		createCertManager().install()
+		install(createCertManager())
 
 		verify(deploymentStrategy).deployFeature(any(DeploymentContext),
 			nullable(RepositoryWorkspace),
@@ -63,7 +63,7 @@ class CertManagerTest {
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createCertManager().install()
+		install(createCertManager())
 
 		assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(parseActualYaml()['cainjector']['resources'] as Map).containsKeys('limits', 'requests')
@@ -73,8 +73,7 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
-		boolean enabled = createCertManager().install()
-		assertFalse(enabled)
+		assertFalse(createCertManager().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -94,7 +93,7 @@ class CertManagerTest {
 		Map ChartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createCertManager().install()
+		install(createCertManager())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
@@ -132,7 +131,7 @@ class CertManagerTest {
 
 		Map ChartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
-		createCertManager().install()
+		install(createCertManager())
 
 		def templateFile = parseActualYaml()
 
@@ -155,9 +154,8 @@ class CertManagerTest {
 	}
 
 	private CertManager createCertManager() {
-		def context = new ContextBuilder(config).build()
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		def certManager = new CertManager(new FileSystemUtils() {
+		return new CertManager(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
@@ -165,8 +163,10 @@ class CertManagerTest {
 				return ret
 			}
 		}, deploymentStrategy, new K8sClientForTest(), airGappedUtils, gitHandler)
-		certManager.isEnabled(context)
-		return certManager
+	}
+
+	private boolean install(CertManager certManager) {
+		return certManager.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

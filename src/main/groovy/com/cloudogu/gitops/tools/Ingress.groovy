@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
@@ -38,19 +37,18 @@ class Ingress extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	boolean isEnabled() {
-		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
-		return config.features.ingress.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.ingress.active
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
 
-		return installEnabledTool()
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
 	}
 
 	@Override

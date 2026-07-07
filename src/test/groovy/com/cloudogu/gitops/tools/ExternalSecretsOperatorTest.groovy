@@ -67,14 +67,13 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.secrets.active = false
-		boolean enabled = createExternalSecretsOperator().install()
-		assertFalse(enabled)
+		assertFalse(createExternalSecretsOperator().isEnabled(new ContextBuilder(config).build()))
 
 	}
 
 	@Test
 	void 'helm release is installed'() {
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		verify(deployer).deployFeature(any(DeploymentContext),
 			nullable(RepositoryWorkspace),
@@ -100,7 +99,7 @@ class ExternalSecretsOperatorTest {
 	void 'Skips CRDs'() {
 		config.application.skipCrds = true
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		assertThat(parseActualYaml()['installCRDs']).isEqualTo(false)
 	}
@@ -110,7 +109,7 @@ class ExternalSecretsOperatorTest {
 		config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([image              : 'localhost:5000/external-secrets/external-secrets:v0.6.1',
 		                                                                                                 certControllerImage: 'localhost:5000/external-secrets/external-secrets-certcontroller:v0.6.1',
 		                                                                                                 webhookImage       : 'localhost:5000/external-secrets/external-secrets-webhook:v0.6.1'])
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		def valuesYaml = parseActualYaml()
 		assertThat(valuesYaml['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets')
@@ -127,7 +126,7 @@ class ExternalSecretsOperatorTest {
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(parseActualYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
@@ -151,7 +150,7 @@ class ExternalSecretsOperatorTest {
 		Map ChartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(any(DeploymentContext), helmConfig.capture())
@@ -175,15 +174,14 @@ class ExternalSecretsOperatorTest {
 		config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([certControllerImage: 'some:thing',
 		                                                                                                 webhookImage       : 'some:thing'])
 
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 		assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['certController']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['webhook']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
-		def context = new ContextBuilder(config).build()
-		def operator = new ExternalSecretsOperator(new FileSystemUtils() {
+		return new ExternalSecretsOperator(new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -192,8 +190,10 @@ class ExternalSecretsOperatorTest {
 				return ret
 			}
 		}, deployer, k8sClient, airGappedUtils, gitHandler)
-		operator.isEnabled(context)
-		return operator
+	}
+
+	private boolean install(ExternalSecretsOperator operator) {
+		return operator.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

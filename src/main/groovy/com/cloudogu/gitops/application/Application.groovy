@@ -95,9 +95,7 @@ class Application {
 
 		//iterates over all FeatureWithImages and gets their namespaces
 		dedicatedNamespaces.addAll(this.tools
-			.collect { Tool tool ->
-				tool.isEnabled(context)
-				tool.activeNamespaceFromFeature
+			.collect { Tool tool -> tool.getActiveNamespaceFromFeature(context)
 			}
 			.findAll { it }
 			.unique()

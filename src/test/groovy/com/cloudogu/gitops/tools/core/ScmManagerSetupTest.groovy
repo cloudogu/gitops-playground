@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -35,8 +34,6 @@ class ScmManagerSetupTest {
 
 	Deployer deployer = mock(Deployer.class)
 	HelmStrategy helmStrategy = mock(HelmStrategy.class)
-
-	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 
 	GitProvider tenantProvider = mock(GitProvider)
 	GitProvider centralProvider = mock(GitProvider)
@@ -101,7 +98,6 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
-			repositoryProvisioning,
 			new RepositoryWorkspace(clusterResourcesRepo))
 
 		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
@@ -134,7 +130,6 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
-			repositoryProvisioning,
 			new RepositoryWorkspace(clusterResourcesRepo))
 
 		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
@@ -180,7 +175,6 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
-			repositoryProvisioning,
 			new RepositoryWorkspace(clusterResourcesRepo))
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup)
@@ -195,12 +189,13 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
-			repositoryProvisioning,
 			workspace)
 
 		scmManagerSetup.bootstrapAfterScmManagerDeployment()
 
-		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
+		verify(centralProvider).createRepository('argocd/cluster-resources',
+			'GitOps repo for basic cluster-resources',
+			true)
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
@@ -215,12 +210,16 @@ class ScmManagerSetupTest {
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
-			repositoryProvisioning,
 			workspace)
 
 		scmManagerSetup.bootstrapAfterScmManagerDeployment()
 
-		verify(repositoryProvisioning).ensureRemoteRepositoriesExist()
+		verify(centralProvider).createRepository('argocd/cluster-resources',
+			'GitOps repo for basic cluster-resources',
+			true)
+		verify(tenantProvider).createRepository('argocd/cluster-resources',
+			'GitOps repo for tenant bootstrap resources',
+			true)
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()

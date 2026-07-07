@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -38,24 +37,20 @@ class Registry extends Tool {
 	}
 
 	@Override
-	boolean isEnabled() {
-		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
-		}
-		return config.registry.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.registry.active
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-
+	protected void prepare() {
 		if (config.registry.internal) {
-			this.namespace = "${config.application.namePrefix}${config.registry.namespace}"
+			this.namespace = activeNamespace(context)
 		}
+	}
 
-		return installEnabledTool()
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.registry.internal ? "${context.config.application.namePrefix}${context.config.registry.namespace}" : null
 	}
 
 	@Override

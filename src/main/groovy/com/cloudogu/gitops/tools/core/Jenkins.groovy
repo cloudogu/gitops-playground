@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -66,24 +65,20 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	boolean isEnabled() {
-		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
-		}
-		return config.jenkins.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.jenkins.active
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-
+	protected void prepare() {
 		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+			this.namespace = activeNamespace(context)
 		}
+	}
 
-		return installEnabledTool()
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
 	}
 
 	@Override
@@ -301,7 +296,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	String getActiveNamespaceFromFeature() {
-		return isEnabled() && config?.jenkins?.internal ? getNamespace() : null
+	String getActiveNamespaceFromFeature(DeploymentContext context) {
+		return isEnabled(context) ? activeNamespace(context) : null
 	}
 }

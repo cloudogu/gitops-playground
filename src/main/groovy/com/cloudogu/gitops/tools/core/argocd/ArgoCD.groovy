@@ -3,7 +3,6 @@ package com.cloudogu.gitops.tools.core.argocd
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -50,19 +49,19 @@ class ArgoCD extends Tool {
 	}
 
 	@Override
-	boolean isEnabled() {
-		this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
-		return config.features.argocd.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.argocd.active
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
 		this.password = config.application.password
+	}
 
-		return installEnabledTool()
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.argocd.namespace}"
 	}
 
 	@Override

@@ -37,15 +37,15 @@ class RegistryTest {
 
 	@Test
 	void 'is disabled when external registry is configured'() {
-		boolean enabled = createRegistry().install()
-		assertFalse(enabled)
+		def registryConfig = new RegistrySchema()
+		assertFalse(createRegistry(registryConfig).isEnabled(createContext(registryConfig)))
 	}
 
 	@Test
 	void 'is installed'() {
 		def registryConfig = new RegistrySchema(active: true, internal: true)
 
-		createRegistry(registryConfig).install()
+		install(createRegistry(registryConfig), registryConfig)
 
 		assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(DEFAULT_REGISTRY_PORT)
 		assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
@@ -70,14 +70,13 @@ class RegistryTest {
 				values: [service    : [type: 'NodePortTest'],
 				         customValue: 'testinjectionValue']))
 
-		createRegistry(registryConfig).install()
+		install(createRegistry(registryConfig), registryConfig)
 		assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
 		assertThat(parseActualYaml()['customValue'] as String).contains('testinjectionValue')
 	}
 
 	private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
-		def config = new Config(application: new ApplicationSchema(namePrefix: 'foo-'),
-			registry: registryConfig)
+		def config = createConfig(registryConfig)
 		k8sClient = new K8sClientForTest()
 
 		FileSystemUtils fileUtil = new FileSystemUtils() {
@@ -89,12 +88,22 @@ class RegistryTest {
 				return ret
 			}
 		}
-		def context = new ContextBuilder(config).build()
 		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null)
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		def registry = new Registry(fileUtil, k8sClient, airGappedUtils, deployer)
-		registry.isEnabled(context)
-		return registry
+		return new Registry(fileUtil, k8sClient, airGappedUtils, deployer)
+	}
+
+	private boolean install(Registry registry, RegistrySchema registryConfig) {
+		return registry.execute(createContext(registryConfig), null)
+	}
+
+	private DeploymentContext createContext(RegistrySchema registryConfig) {
+		return new ContextBuilder(createConfig(registryConfig)).build()
+	}
+
+	private Config createConfig(RegistrySchema registryConfig) {
+		return new Config(application: new ApplicationSchema(namePrefix: 'foo-'),
+			registry: registryConfig)
 	}
 
 	private Map parseActualYaml() {

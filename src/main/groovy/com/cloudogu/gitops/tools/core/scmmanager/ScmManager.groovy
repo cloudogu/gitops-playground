@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
@@ -38,12 +37,8 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	boolean execute(DeploymentContext context,
-		RepositoryWorkspace workspace) {
-		prepareExecution(context, workspace)
+	protected void prepare() {
 		prepareNamespace()
-
-		return installEnabledTool()
 	}
 
 	@Override
@@ -70,13 +65,18 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	private void prepareNamespace() {
-		this.namespace = prefixedNamespace()
+		this.namespace = activeNamespace(context)
 		this.config.scm.scmManager.namespace = this.namespace
 	}
 
-	private String prefixedNamespace() {
-		String prefix = config.application.namePrefix ?: ""
-		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return prefixedNamespace(context)
+	}
+
+	private String prefixedNamespace(DeploymentContext context) {
+		String prefix = context.config.application.namePrefix ?: ""
+		String baseNamespace = context.config.scm.scmManager.namespace ?: "scm-manager"
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace

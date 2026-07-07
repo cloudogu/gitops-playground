@@ -40,15 +40,18 @@ class ToolTest {
 		config.registry.username = 'user'
 		config.registry.password = 'pw'
 
-		createFeatureWithImage().install()
+		install(createFeatureWithImage())
 	}
 
 	protected ToolWithImageForTest createFeatureWithImage() {
 		Tool feature = new ToolWithImageForTest()
-		feature.context = new ContextBuilder(config).build()
 		feature.k8sClient = k8sClient
 		feature.namespace = 'foo-my-ns'
 		feature
+	}
+
+	private boolean install(ToolWithImageForTest tool) {
+		return tool.execute(new ContextBuilder(config).build(), null)
 	}
 
 	@Test
@@ -60,7 +63,7 @@ class ToolTest {
 		config.registry.username = 'user'
 		config.registry.password = 'pw'
 
-		createFeatureWithImage().install()
+		install(createFeatureWithImage())
 	}
 
 	@Test
@@ -70,7 +73,7 @@ class ToolTest {
 		config.registry.username = 'user'
 		config.registry.password = 'pw'
 
-		createFeatureWithImage().install()
+		install(createFeatureWithImage())
 	}
 
 	@Test
@@ -92,7 +95,7 @@ class ToolTest {
 		K8sClient k8sClient
 
 		@Override
-		boolean isEnabled() {
+		boolean isEnabled(DeploymentContext context) {
 			return true
 		}
 	}
