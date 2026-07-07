@@ -4,7 +4,6 @@ import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
-import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
@@ -42,7 +41,6 @@ class RepositoryProvisioning {
 	private final GitHandler gitHandler
 
 	private RepositoryWorkspace workspace
-	private boolean remoteRepositoriesEnsured = false
 	private boolean repositoriesCloned = false
 
 	RepositoryProvisioning(GitRepoFactory gitRepoFactory,
@@ -96,30 +94,9 @@ class RepositoryProvisioning {
 	}
 
 	void ensureRemoteRepositoriesExist() {
-		if (remoteRepositoriesEnsured) {
-			log.debug('Remote repositories already ensured. Skipping.')
-			return
-		}
-
 		assertWorkspacePrepared()
 
-		log.debug("Ensuring cluster resources repository. repoTarget='{}'",
-			workspace.clusterResourcesRepository.repoTarget)
-
-		ensureRepositoryExists(workspace.clusterResourcesRepository.gitProvider,
-			workspace.clusterResourcesRepository.repoTarget,
-			'GitOps repo for basic cluster-resources')
-
-		if (workspace.hasTenantBootstrapRepository()) {
-			log.debug("Ensuring tenant bootstrap repository. repoTarget='{}'",
-				workspace.tenantBootstrapRepositoryOrFail().repoTarget)
-
-			ensureRepositoryExists(workspace.tenantBootstrapRepositoryOrFail().gitProvider,
-				workspace.tenantBootstrapRepositoryOrFail().repoTarget,
-				'GitOps repo for tenant bootstrap resources')
-		}
-
-		remoteRepositoriesEnsured = true
+		workspace.ensureRemoteRepositoriesExist()
 	}
 
 	void cloneRepositories() {
@@ -204,8 +181,8 @@ class RepositoryProvisioning {
 		String tenantRoot = new File(workspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. " +
-				"Both resolved to: ${clusterRoot}")
+			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " +
+				"central cluster-resources and tenant bootstrap repositories. Both resolved to: ${clusterRoot}")
 		}
 	}
 
@@ -217,11 +194,5 @@ class RepositoryProvisioning {
 
 	private static boolean mustWaitForInternalScmManagerDeployment(DeploymentContext context) {
 		return context.isInternalScmManager()
-	}
-
-	private static void ensureRepositoryExists(GitProvider gitProvider,
-		String repoTarget,
-		String description) {
-		gitProvider.createRepository(repoTarget, description, true)
 	}
 }

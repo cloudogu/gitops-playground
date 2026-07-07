@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -27,7 +26,6 @@ class ScmManagerSetup {
 	private final ScmManagerProvider scmManager
 	private final Deployer deployer
 	private final DeploymentContext context
-	private final RepositoryProvisioning repositoryProvisioning
 	private final RepositoryWorkspace repositoryWorkspace
 
 	private Path tempValuesPath
@@ -35,14 +33,13 @@ class ScmManagerSetup {
 	ScmManagerSetup(ScmManagerProvider scmManager,
 		Deployer deployer,
 		DeploymentContext context,
-		RepositoryProvisioning repositoryProvisioning,
 		RepositoryWorkspace repositoryWorkspace) {
 		this.scmManager = scmManager
 		this.deployer = deployer
 		this.context = context
-		this.repositoryProvisioning = repositoryProvisioning
 		this.repositoryWorkspace = repositoryWorkspace
 	}
+
 
 	private Config getConfig() {
 		return context.config
@@ -109,8 +106,7 @@ class ScmManagerSetup {
 	}
 
 	void bootstrapAfterScmManagerDeployment() {
-		repositoryProvisioning.ensureRemoteRepositoriesExist()
-
+		repositoryWorkspace.ensureRemoteRepositoriesExist()
 		repositoryWorkspace.initLocalRepositoriesIfNeeded()
 
 		/*
