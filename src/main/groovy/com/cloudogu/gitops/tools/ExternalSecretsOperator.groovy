@@ -14,8 +14,10 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(400)
@@ -52,20 +54,16 @@ class ExternalSecretsOperator extends Tool {
 		return context.config.features.secrets.active
 	}
 
-	protected void prepare() {
+	@Override
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		prepareExternalSecretsApp(repositoryWorkspace.clusterResourcesRepository)
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return "${context.config.application.namePrefix}${context.config.features.secrets.namespace}"
-	}
-
-	void enable() {
-		imagePullSecretCreator.createIfRequired(config, namespace)
-
-		prepareExternalSecretsApp(repositoryWorkspace.clusterResourcesRepository)
-
+	protected void deploy() {
 		def helmConfig = config.features.secrets.externalSecrets.helm
 
 		deployHelmChart(TOOL_NAME,
@@ -74,8 +72,20 @@ class ExternalSecretsOperator extends Tool {
 			helmConfig,
 			HELM_VALUES_PATH,
 			context)
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.secrets.namespace}"
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
 	}
 
 	private void prepareExternalSecretsApp(GitRepo clusterResourcesRepo) {
