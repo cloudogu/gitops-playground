@@ -105,7 +105,7 @@ class ScmManagerSetup {
 			repositoryWorkspace)
 	}
 
-	void bootstrapAfterScmManagerDeployment() {
+	void prepareBootstrapRepositoriesAfterScmManagerDeployment() {
 		repositoryWorkspace.ensureRemoteRepositoriesExist()
 		repositoryWorkspace.initLocalRepositoriesIfNeeded()
 
@@ -119,11 +119,17 @@ class ScmManagerSetup {
 		 */
 		repositoryWorkspace.alignWithRemoteMainIfPresent()
 		repositoryWorkspace.createLocalDirectories()
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
+	void pushBootstrapRepositoriesAfterScmManagerDeployment() {
+		repositoryWorkspace.commitAndPushClusterResourcesChanges(
+			'Bootstrap cluster-resources repository after SCM-Manager deployment'
+		)
 
 		if (repositoryWorkspace.hasTenantBootstrapRepository()) {
-			repositoryWorkspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
+			repositoryWorkspace.commitAndPushTenantBootstrapChanges(
+				'Bootstrap tenant repository after SCM-Manager deployment'
+			)
 		}
 	}
 

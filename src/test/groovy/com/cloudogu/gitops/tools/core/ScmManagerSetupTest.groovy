@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.tools.core
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
@@ -183,7 +182,7 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
-	void 'bootstrapAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
+	void 'prepareBootstrapRepositoriesAfterScmManagerDeployment initializes cluster resources repository'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
@@ -191,7 +190,7 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace)
 
-		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
 		verify(centralProvider).createRepository('argocd/cluster-resources',
 			'GitOps repo for basic cluster-resources',
@@ -199,11 +198,25 @@ class ScmManagerSetupTest {
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(clusterResourcesRepo, never()).commitAndPush(anyString())
+	}
+
+	@Test
+	void 'pushBootstrapRepositoriesAfterScmManagerDeployment pushes cluster resources repository'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			workspace)
+
+		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
+
 		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 	}
 
 	@Test
-	void 'bootstrapAfterScmManagerDeployment initializes and pushes both repositories in dedicated mode'() {
+	void 'prepareBootstrapRepositoriesAfterScmManagerDeployment initializes both repositories in dedicated mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
 			tenantBootstrapRepo)
 
@@ -212,7 +225,7 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace)
 
-		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
 		verify(centralProvider).createRepository('argocd/cluster-resources',
 			'GitOps repo for basic cluster-resources',
@@ -223,10 +236,26 @@ class ScmManagerSetupTest {
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
-		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
+		verify(clusterResourcesRepo, never()).commitAndPush(anyString())
 
 		verify(tenantBootstrapRepo).initLocalRepoIfNeeded()
 		verify(tenantBootstrapRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(tenantBootstrapRepo, never()).commitAndPush(anyString())
+	}
+
+	@Test
+	void 'pushBootstrapRepositoriesAfterScmManagerDeployment pushes both repositories in dedicated mode'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
+			tenantBootstrapRepo)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			workspace)
+
+		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
+
+		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 		verify(tenantBootstrapRepo).commitAndPush('Bootstrap tenant repository after SCM-Manager deployment')
 	}
 
