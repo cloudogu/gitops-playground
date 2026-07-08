@@ -14,8 +14,10 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(150)
@@ -52,20 +54,16 @@ class Ingress extends Tool {
 		return context.config.features.ingress.active
 	}
 
-	protected void prepare() {
+	@Override
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		prepareIngressApp(repositoryWorkspace.clusterResourcesRepository)
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
-	}
-
-	void enable() {
-		imagePullSecretCreator.createIfRequired(config, namespace)
-
-		prepareIngressApp(repositoryWorkspace.clusterResourcesRepository)
-
+	protected void deploy() {
 		def helmConfig = config.features.ingress.helm
 
 		deployHelmChart(TOOL_NAME,
@@ -74,8 +72,20 @@ class Ingress extends Tool {
 			helmConfig,
 			HELM_VALUES_PATH,
 			context)
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.ingress.ingressNamespace}"
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
 	}
 
 	private void prepareIngressApp(GitRepo clusterResourcesRepo) {
