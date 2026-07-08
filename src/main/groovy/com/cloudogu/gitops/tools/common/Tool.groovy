@@ -4,6 +4,7 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -19,29 +20,7 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 
 /**
- * A single tool to be deployed by GOP.
- *
- * Typically, this is a helm chart (see {@link com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy} and
- * {@code downloadHelmCharts.sh}) with its own section in the config
- * (see {@link com.cloudogu.gitops.config.schema.Schema#features}).<br/><br/>
- *
- * In the config, features typically set their default helm chart coordinates and provide options to
- * <ul>
- *   <li>configure images</li>
- *   <li>overwrite default helm values</li>
- * </ul><br/>
- *
- * In addition to their own config, features react to several generic GOP config options.<br/>
- * Here are some typical examples:
- * <ul>
- *   <li>Mirror the Helm Chart: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#mirrorRepos} see {@link com.cloudogu.gitops.utils.AirGappedUtils#mirrorHelmRepoToGit(java.util.Map)} </li>
- *   <li>Create Image Pull Secrets: {@link com.cloudogu.gitops.config.schema.Schema.RegistrySchema#createImagePullSecrets} see {@link ToolWithImage}</li>
- *   <li>Install with Network Policies: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#netpols}</li>
- *   <li>Install with Resource requests + limits: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#podResources}</li>
- *   <li>Install without CRDs: {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#skipCrds}</li>
- *   <li>For apps with UI: Setting {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#username} and {@link com.cloudogu.gitops.config.schema.Schema.ApplicationSchema#password}</li>
- * </ul>*/
-
+ * A single tool to be deployed by GOP.*/
 @Slf4j
 abstract class Tool {
 
@@ -50,36 +29,51 @@ abstract class Tool {
 	protected AirGappedUtils airGappedUtils
 	protected GitHandler gitHandler
 	protected DeploymentContext context
+	protected RepositoryWorkspace repositoryWorkspace
 	protected Map<String, Object> helmValuesTemplateData = [:]
 
 	protected void addHelmValuesData(String key, Object value) {
 		this.helmValuesTemplateData[key] = value
 	}
 
-	boolean install() {
-		if (isEnabled()) {
-			log.info("Installing Tool ${getClass().getSimpleName()}")
+	/**
+	 * Activation check for the current deployment run.
+	 * Do not add deployment preparation, config mutation or workspace access here.	*/
+	abstract boolean isEnabled(DeploymentContext context)
 
-			if (this instanceof ToolWithImage) {
-				(this as ToolWithImage).createImagePullSecret()
-			}
+	boolean execute(DeploymentContext context, RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		prepare()
 
-			enable()
-			log.info("Tool installed: ${getClass().getSimpleName()}")
-			return true
-		} else {
-			log.debug("Tool ${getClass().getSimpleName()} is disabled")
-			disable()
-			return false
+		log.info("Installing Tool ${getClass().getSimpleName()}")
+
+		createImagePullSecretIfRequired()
+
+		enable()
+
+		log.info("Tool installed: ${getClass().getSimpleName()}")
+		return true
+	}
+
+	protected void createImagePullSecretIfRequired() {
+		if (this instanceof ToolWithImage) {
+			(this as ToolWithImage).createImagePullSecret()
 		}
 	}
 
-	String getActiveNamespaceFromFeature() {
-		//using reflection to get all subclasses implementing a own namespace
+	protected void prepare() {}
+
+	String getActiveNamespaceFromFeature(DeploymentContext context) {
+		// using reflection to get all subclasses implementing an own namespace
 		if (this.metaClass.hasProperty(this, 'namespace')) {
-			return isEnabled() ? this.getProperty('namespace') : null
+			return isEnabled(context) ? activeNamespace(context) : null
 		}
 		return null
+	}
+
+	protected String activeNamespace(DeploymentContext context) {
+		return this.getProperty('namespace')
 	}
 
 	static Map templateToMap(String filePath, Map parameters) {
@@ -108,9 +102,11 @@ abstract class Tool {
 		this.addHelmValuesData("config", config)
 		this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
 
-		/* If we get a helmValuesTemplatePath we render the Template with the given Data.
-		 * Some Features might not use a values template and thus passing no helmValuesTemplatePath, in that
-		 * case we simply treat helmValuesTemplateData directly as helmValuesData */
+		/*
+		 * If we get a helmValuesTemplatePath we render the Template with the given Data.
+		 * Some Features might not use a values template and thus passing no helmValuesTemplatePath,
+		 * in that case we simply treat helmValuesTemplateData directly as helmValuesData.
+		 */
 		Map helmValuesData = this.helmValuesTemplateData
 		if (helmValuesTemplatePath) {
 			def helmValuesPath = helmValuesTemplatePath.toString()
@@ -148,10 +144,10 @@ abstract class Tool {
 			releaseName,
 			tempValuesPath,
 			repoType,
-			initByHelm)
+			initByHelm,
+			context,
+			repositoryWorkspace)
 	}
-
-	abstract boolean isEnabled()
 
 	Config getConfig() {
 		return context.config
@@ -162,7 +158,7 @@ abstract class Tool {
 	}
 
 	/*
-	 *  Hooks for enabling or disabling a feature. Both optional, because not always needed.
+	 * Hooks for enabling or disabling a feature. Both optional, because not always needed.
 	 */
 
 	protected void enable() {}
@@ -178,11 +174,11 @@ abstract class Tool {
 
 	/**
 	 * Hook for preConfigInit. Optional.
-	 * Feature should throw RuntimeException to stop immediately.*/
+	 * Feature should throw RuntimeException to stop immediately.	*/
 	void preConfigInit(Config configToSet) {}
 
 	/**
 	 * Hook for postConfigInit. Optional.
-	 * Feature should throw RuntimeException to stop immediately.*/
+	 * Feature should throw RuntimeException to stop immediately.	*/
 	void postConfigInit(Config configToSet) {}
 }

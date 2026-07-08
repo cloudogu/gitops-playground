@@ -34,7 +34,7 @@
         <versionNameVersion>2.2.0</versionNameVersion>
         <okhttpVersion>5.3.2</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
-        <groovy.version>5.0.5</groovy.version>
+        <groovy.version>5.0.6</groovy.version>
         <jsonschema.version>5.0.0</jsonschema.version>
         <kubernetes.client.java.version>26.0.1</kubernetes.client.java.version>
         <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
@@ -159,7 +159,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.21.2</version>
+            <version>2.22.0</version>
         </dependency>
 
         <dependency>
@@ -380,7 +380,7 @@
         <dependency>
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
-            <version>3.0.2</version>
+            <version>3.0.5</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -419,7 +419,7 @@
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
-            <version>4.0.7</version>
+            <version>4.0.9</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -429,7 +429,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.5</version>
+                <version>3.5.6</version>
                 <configuration>
                     <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's
                     withEnvironmentVariable -->
@@ -450,7 +450,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
                 <executions>
                     <execution>
                         <goals>

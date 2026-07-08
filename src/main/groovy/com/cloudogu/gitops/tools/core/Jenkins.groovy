@@ -2,8 +2,6 @@ package com.cloudogu.gitops.tools.core
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -15,11 +13,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.*
 
 import io.micronaut.core.annotation.Order
 
@@ -48,10 +42,8 @@ class Jenkins extends Tool implements ToolWithImage {
 
 	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
-	private final RepositoryProvisioning repositoryProvisioning
 
-	Jenkins(DeploymentContext context,
-		CommandExecutor commandExecutor,
+	Jenkins(CommandExecutor commandExecutor,
 		FileSystemUtils fileSystemUtils,
 		GlobalPropertyManager globalPropertyManager,
 		JobManager jobManager,
@@ -61,9 +53,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
+		GitHandler gitHandler) {
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -75,16 +65,23 @@ class Jenkins extends Tool implements ToolWithImage {
 		this.networkingUtils = networkingUtils
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.repositoryProvisioning = repositoryProvisioning
+	}
 
+	@Override
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.jenkins.active
+	}
+
+	@Override
+	protected void prepare() {
 		if (config.jenkins.internal) {
-			this.namespace = "${config.application.namePrefix}${config.jenkins.namespace}"
+			this.namespace = activeNamespace(context)
 		}
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.jenkins.active
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
 	}
 
 	@Override
@@ -117,8 +114,7 @@ class Jenkins extends Tool implements ToolWithImage {
 			addHelmValuesData('dockerGid', findDockerGid())
 			addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
 
-			GitRepo clusterResourcesRepo = clusterResourcesRepository()
-			prepareJenkinsApp(clusterResourcesRepo)
+			prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
 
 			deployHelmChart(TOOL_NAME,
 				releaseName,
@@ -127,6 +123,10 @@ class Jenkins extends Tool implements ToolWithImage {
 				HELM_VALUES_PATH,
 				context,
 				true)
+
+			repositoryWorkspace.commitAndPushClusterResourcesChanges(
+				"Update ${TOOL_NAME} GitOps resources"
+			)
 
 			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 			String serviceName = releaseName
@@ -144,11 +144,6 @@ class Jenkins extends Tool implements ToolWithImage {
 		}
 
 		runSetupScript()
-	}
-
-	private GitRepo clusterResourcesRepository() {
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		return workspace.clusterResourcesRepository
 	}
 
 	private void prepareJenkinsApp(GitRepo clusterResourcesRepo) {
@@ -325,7 +320,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	String getActiveNamespaceFromFeature() {
-		return isEnabled() && config?.jenkins?.internal ? getNamespace() : null
+	String getActiveNamespaceFromFeature(DeploymentContext context) {
+		return isEnabled(context) ? activeNamespace(context) : null
 	}
 }

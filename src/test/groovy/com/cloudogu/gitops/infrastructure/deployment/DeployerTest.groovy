@@ -2,6 +2,8 @@ package com.cloudogu.gitops.infrastructure.deployment
 
 import static org.mockito.Mockito.*
 
+import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 import java.nio.file.Path
@@ -18,6 +20,8 @@ class DeployerTest {
 	private HelmStrategy helmStrategy
 	private Path helmValuesPath
 	private Deployer deployer
+	private DeploymentContext context
+	private RepositoryWorkspace workspace
 
 	private static final String REPO_URL = "https://example.com/repo.git"
 	private static final String REPO_NAME = "repo-name"
@@ -33,6 +37,8 @@ class DeployerTest {
 		argoCdStrategy = mock(ArgoCdApplicationStrategy)
 		helmStrategy = mock(HelmStrategy)
 		helmValuesPath = mock(Path)
+		context = mock(DeploymentContext)
+		workspace = mock(RepositoryWorkspace)
 
 		deployer = new Deployer(argoCdStrategyProvider, helmStrategy)
 	}
@@ -45,7 +51,9 @@ class DeployerTest {
 
 		verify(argoCdStrategyProvider).get()
 
-		verify(argoCdStrategy).deployFeature(REPO_URL,
+		verify(argoCdStrategy).deployFeature(context,
+			workspace,
+			REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
@@ -77,7 +85,9 @@ class DeployerTest {
 
 		inOrder.verify(argoCdStrategyProvider).get()
 
-		inOrder.verify(argoCdStrategy).deployFeature(REPO_URL,
+		inOrder.verify(argoCdStrategy).deployFeature(context,
+			workspace,
+			REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
@@ -90,7 +100,9 @@ class DeployerTest {
 	}
 
 	private void deployFeature(boolean initByHelm) {
-		deployer.deployFeature(REPO_URL,
+		deployer.deployFeature(context,
+			workspace,
+			REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,

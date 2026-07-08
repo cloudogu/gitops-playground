@@ -5,8 +5,6 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
-import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 
 import io.micronaut.context.ApplicationContext
@@ -34,10 +32,6 @@ class JenkinsApiClientTest {
 			.dynamicHttpsPort())
 		.build()
 
-	private static DeploymentContext context(Config config) {
-		return new ContextBuilder(config).build()
-	}
-
 	@Test
 	void 'runs script with crumb'() {
 		wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
@@ -51,7 +45,7 @@ class JenkinsApiClientTest {
 				.withBody("ok")))
 
 		def httpClient = getUnsafeOkHttpClient().newBuilder().cookieJar(new JavaNetCookieJar(new CookieManager())).build()
-		def apiClient = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def apiClient = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			httpClient)
 
 		def result = apiClient.runScript("println('ok')")
@@ -75,7 +69,7 @@ class JenkinsApiClientTest {
 		wireMock.stubFor(post(urlPathEqualTo("/jenkins/foobar"))
 			.willReturn(aResponse().withStatus(200)))
 
-		def client = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def client = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			getUnsafeOkHttpClient())
 		client.postRequestWithCrumb("foobar")
 
@@ -94,7 +88,7 @@ class JenkinsApiClientTest {
 		wireMock.stubFor(post(urlPathEqualTo("/jenkins/foobar"))
 			.willReturn(aResponse().withStatus(200)))
 
-		def client = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def client = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			getUnsafeOkHttpClient())
 		client.postRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
 
@@ -169,7 +163,7 @@ class JenkinsApiClientTest {
 				.withBody("ok")))
 
 		def httpClient = getUnsafeOkHttpClient()
-		def apiClient = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def apiClient = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			httpClient)
 		apiClient.setMaxRetries(3)
 		apiClient.setWaitPeriodInMs(0)
@@ -194,7 +188,7 @@ class JenkinsApiClientTest {
 				.withBody('{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}')))
 
 		def httpClient = getUnsafeOkHttpClient()
-		def apiClient = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def apiClient = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			httpClient)
 		apiClient.setMaxRetries(3)
 		apiClient.setWaitPeriodInMs(0)
@@ -230,7 +224,7 @@ class JenkinsApiClientTest {
 				.withBody("ok")))
 
 		def httpClient = getUnsafeOkHttpClient()
-		def apiClient = new JenkinsApiClient(context(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins"))),
+		def apiClient = new JenkinsApiClient(new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
 			httpClient)
 		apiClient.setMaxRetries(3)
 		apiClient.setWaitPeriodInMs(0)

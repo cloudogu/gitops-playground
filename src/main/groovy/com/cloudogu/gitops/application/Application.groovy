@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.application
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -19,42 +21,41 @@ import freemarker.template.DefaultObjectWrapperBuilder
 class Application {
 
 	final List<Tool> tools
-	final DeploymentContext context
+	final ContextBuilder contextBuilder
 	final K8sClient k8sClient
 	final GitHandler gitHandler
 	final RepositoryProvisioning repositoryProvisioning
+	final DeploymentOrchestrator deploymentOrchestrator
 
-	Application(DeploymentContext context,
-		K8sClient k8sClient,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning,
-		List<Tool> tools) {
-		this.context = context
+	Application(ContextBuilder contextBuilder, K8sClient k8sClient, GitHandler gitHandler, RepositoryProvisioning repositoryProvisioning,
+		DeploymentOrchestrator deploymentOrchestrator) {
+
+		this.contextBuilder = contextBuilder
+		// Order is important. Enforced by @Order-Annotation on the Singletons
+		this.gitHandler = gitHandler
 		this.k8sClient = k8sClient
 		this.gitHandler = gitHandler
 		this.repositoryProvisioning = repositoryProvisioning
-		// Order is important. Enforced by @Order-Annotation on the Tool Singletons
-		this.tools = tools
+		this.deploymentOrchestrator = deploymentOrchestrator
+		this.tools = deploymentOrchestrator.tools
 	}
 
 	def start() {
 		log.debug('Starting Application')
 
+		DeploymentContext context = contextBuilder.build()
+
 		setNamespaceListToConfig(context)
 		// if set, stores configuration in a secret.
 		storeGopInformationInSecret(context)
 
-		gitHandler.validate()
-		gitHandler.prepareProviders()
-		repositoryProvisioning.prepare()
+		gitHandler.validate(context)
+		gitHandler.prepareProviders(context)
+		repositoryProvisioning.prepare(context)
+		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)
 
-		tools.forEach(tool -> {
-			tool.validate()
-		})
-
-		tools.forEach(tool -> {
-			tool.install()
-		})
+		deploymentOrchestrator.deployTools(context,
+			workspace)
 
 		log.debug('Application finished')
 	}
@@ -94,7 +95,8 @@ class Application {
 
 		//iterates over all FeatureWithImages and gets their namespaces
 		dedicatedNamespaces.addAll(this.tools
-			.collect { it.activeNamespaceFromFeature }
+			.collect { Tool tool -> tool.getActiveNamespaceFromFeature(context)
+			}
 			.findAll { it }
 			.unique()
 			.collect { "${it}".toString() })
@@ -102,9 +104,5 @@ class Application {
 		context.config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
 		context.config.application.namespaces.tenantNamespaces = tenantNamespaces
 		log.debug("Active namespaces retrieved: {}", context.config.application.namespaces.activeNamespaces)
-	}
-
-	void setNamespaceListToConfig() {
-		setNamespaceListToConfig(context)
 	}
 }

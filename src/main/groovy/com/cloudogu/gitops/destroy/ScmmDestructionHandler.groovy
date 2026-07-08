@@ -1,8 +1,11 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerUrlResolver
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.utils.NetworkingUtils
 
 import io.micronaut.core.annotation.Order
 
@@ -11,12 +14,19 @@ import jakarta.inject.Singleton
 @Singleton
 @Order(200)
 class ScmmDestructionHandler implements DestructionHandler {
-	private ScmManagerApiClient scmmApiClient
-	private DeploymentContext context
+	private Config config
+	private ContextBuilder contextBuilder
+	private K8sClient k8sClient
+	private NetworkingUtils networkingUtils
 
-	ScmmDestructionHandler(DeploymentContext context) {
-		this.context = context
-		this.scmmApiClient = scmmApiClient
+	ScmmDestructionHandler(Config config,
+		ContextBuilder contextBuilder,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
+		this.config = config
+		this.contextBuilder = contextBuilder
+		this.k8sClient = k8sClient
+		this.networkingUtils = networkingUtils
 	}
 
 	@Override
@@ -48,7 +58,16 @@ class ScmmDestructionHandler implements DestructionHandler {
 		}
 	}
 
-	private Config getConfig() {
-		context.config
+	private Config getConfig() { config }
+
+	private ScmManagerApiClient getScmmApiClient() {
+		def urls = new ScmManagerUrlResolver(contextBuilder.build(),
+			config.scm.scmManager,
+			k8sClient,
+			networkingUtils)
+
+		return new ScmManagerApiClient(urls.clientApiBase().toString(),
+			config.scm.scmManager.credentials,
+			config.application.insecure)
 	}
 }

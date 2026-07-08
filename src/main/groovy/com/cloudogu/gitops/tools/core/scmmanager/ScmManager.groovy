@@ -2,8 +2,6 @@ package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
@@ -24,28 +22,23 @@ class ScmManager extends Tool implements ToolWithImage {
 	String namespace
 
 	final K8sClient k8sClient
-	private final RepositoryProvisioning repositoryProvisioning
 
-	ScmManager(DeploymentContext context,
-		GitHandler gitHandler,
+	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
-		K8sClient k8sClient,
-		RepositoryProvisioning repositoryProvisioning) {
-		this.context = context
+		K8sClient k8sClient) {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
 		this.k8sClient = k8sClient
-		this.repositoryProvisioning = repositoryProvisioning
-
-		if (context.isInternalScmManager()) {
-			this.namespace = prefixedNamespace()
-			this.config.scm.scmManager.namespace = this.namespace
-		}
 	}
 
 	@Override
-	boolean isEnabled() {
+	boolean isEnabled(DeploymentContext context) {
 		return context.isInternalScmManager()
+	}
+
+	@Override
+	protected void prepare() {
+		prepareNamespace()
 	}
 
 	@Override
@@ -57,7 +50,7 @@ class ScmManager extends Tool implements ToolWithImage {
 		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
 			deployer,
 			context,
-			repositoryProvisioning)
+			repositoryWorkspace)
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
@@ -68,12 +61,27 @@ class ScmManager extends Tool implements ToolWithImage {
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
 
+		repositoryWorkspace.commitAndPushClusterResourcesChanges(
+			"Update SCM-Manager GitOps resources"
+		)
+
+
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
-	private String prefixedNamespace() {
-		String prefix = config.application.namePrefix ?: ""
-		String baseNamespace = config.scm.scmManager.namespace ?: "scm-manager"
+	private void prepareNamespace() {
+		this.namespace = activeNamespace(context)
+		this.config.scm.scmManager.namespace = this.namespace
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return prefixedNamespace(context)
+	}
+
+	private String prefixedNamespace(DeploymentContext context) {
+		String prefix = context.config.application.namePrefix ?: ""
+		String baseNamespace = context.config.scm.scmManager.namespace ?: "scm-manager"
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace

@@ -3,12 +3,13 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -57,7 +58,7 @@ class CertManagerTest {
 
 	@Test
 	void 'Helm release is installed'() {
-		createCertManager().install()
+		install(createCertManager())
 
 		verify(deploymentStrategy).deployFeature('https://charts.jetstack.io',
 			'cert-manager',
@@ -82,7 +83,7 @@ class CertManagerTest {
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createCertManager().install()
+		install(createCertManager())
 
 		assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(parseActualYaml()['cainjector']['resources'] as Map).containsKeys('limits', 'requests')
@@ -92,8 +93,7 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
-		boolean enabled = createCertManager().install()
-		assertFalse(enabled)
+		assertFalse(createCertManager().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -113,7 +113,7 @@ class CertManagerTest {
 		Map chartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
-		createCertManager().install()
+		install(createCertManager())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -155,7 +155,7 @@ class CertManagerTest {
 
 		Map chartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
-		createCertManager().install()
+		install(createCertManager())
 
 		// Cert-Manager
 		assertThat(parseActualYaml()['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myImage')
@@ -202,8 +202,6 @@ class CertManagerTest {
 
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
-		RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-	    when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
 
 		return new CertManager(new ContextBuilder(config).build(),
 			testFileSystemUtils,
@@ -211,7 +209,11 @@ class CertManagerTest {
 			new K8sClientForTest(),
 			airGappedUtils,
 			gitHandler,
-			repositoryProvisioning)
+			repositoryWorkspace)
+	}
+
+	private boolean install(CertManager certManager) {
+		return certManager.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

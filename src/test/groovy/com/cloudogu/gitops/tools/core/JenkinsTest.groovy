@@ -6,14 +6,12 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
-import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
@@ -57,7 +55,7 @@ class JenkinsTest {
 
 	@Mock
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-	GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
+	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 
 	@BeforeEach
 	void setup() {
@@ -86,7 +84,7 @@ daemon:x:1:
 docker:x:42:me
 me:x:1000:''')
 
-		jenkins.install()
+		install(jenkins)
 
 		verify(deployer).deployFeature('https://jen-repo',
 			'jenkins',
@@ -146,7 +144,7 @@ me:x:1000:''')
 root:x:0:
 daemon:x:1:
 me:x:1000:''')
-		createJenkins().install()
+		install(createJenkins())
 
 		assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo('0')
 		assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo('133')
@@ -161,7 +159,7 @@ jenkins:
       clientId: "jenkins"
 '''
 
-		createJenkins().install()
+		install(createJenkins())
 
 		List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
 		assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly('oic-auth',
@@ -172,7 +170,7 @@ jenkins:
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
 		config.registry.createImagePullSecrets = true
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(deployer, never()).deployFeature(anyString(),
 			anyString(),
@@ -193,7 +191,7 @@ jenkins:
 	void 'Additional helm values are merged with default values'() {
 		config.jenkins.helm.values = [controller: [nodePort: 42]]
 
-		createJenkins().install()
+		install(createJenkins())
 
 		assertThat(parseActualYaml()['controller']['nodePort']).isEqualTo(42)
 	}
@@ -203,7 +201,7 @@ jenkins:
 		config.jenkins.ingress = 'jenkins.localhost'
 		config.application.baseUrl = 'someBaseUrl'
 
-		createJenkins().install()
+		install(createJenkins())
 
 		assertThat(parseActualYaml()['controller']['ingress']['enabled']).isEqualTo(true)
 		assertThat(parseActualYaml()['controller']['ingress']['hostName']).isEqualTo('jenkins.localhost')
@@ -236,7 +234,7 @@ jenkins:
 		config.jenkins.skipPlugins = true
 		config.jenkins.skipRestart = true
 
-		createJenkins().install()
+		install(createJenkins())
 
 		def env = getEnvAsMap()
 		assertThat(commandExecutor.actualCommands[0]).isEqualTo("${System.getProperty('user.dir')}/scripts/jenkins/init-jenkins.sh" as String)
@@ -276,7 +274,7 @@ jenkins:
 		config.features.monitoring.active = true
 		config.jenkins.internal = false
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(prometheusConfigurator, never()).enableAuthentication()
 	}
@@ -286,7 +284,7 @@ jenkins:
 		config.features.monitoring.active = false
 		config.jenkins.internal = true
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(prometheusConfigurator, never()).enableAuthentication()
 	}
@@ -296,7 +294,7 @@ jenkins:
 		config.features.monitoring.active = true
 		config.jenkins.internal = true
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(prometheusConfigurator).enableAuthentication()
 	}
@@ -306,7 +304,7 @@ jenkins:
 		config.jenkins.internal = true
 		config.application.runningInsideK8s = true
 
-		createJenkins().install()
+		install(createJenkins())
 		assertThat(config.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
 	}
 
@@ -318,7 +316,7 @@ jenkins:
 		when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
 		when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
 
-		createJenkins().install()
+		install(createJenkins())
 		assertThat(config.jenkins.url).endsWith('192.168.16.2:42')
 	}
 
@@ -337,7 +335,7 @@ jenkins:
 		config.registry.proxyUsername = 'reg-proxy-usr'
 		config.registry.proxyPassword = 'reg-proxy-pw'
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL', 'reg-proxy-url')
 		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_PATH', 'reg-proxy-path')
@@ -351,7 +349,7 @@ jenkins:
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
 		when(userManager.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(userManager, never()).createUser(anyString(), anyString())
 	}
@@ -360,7 +358,7 @@ jenkins:
 	void 'Global property is set for additional envs'() {
 		config.jenkins.additionalEnvs = [ADDITIONAL_DOCKER_RUN_ARGS: '-u0:0']
 
-		createJenkins().install()
+		install(createJenkins())
 		verify(globalPropertyManager).setGlobalProperty(eq('ADDITIONAL_DOCKER_RUN_ARGS'), eq('-u0:0'))
 	}
 
@@ -368,7 +366,7 @@ jenkins:
 	void 'Does not create create user if CAS security realm is used'() {
 		config.features.argocd.active = false
 
-		createJenkins().install()
+		install(createJenkins())
 		verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString())
 		verify(jobManger, never()).startJob(anyString())
 	}
@@ -376,7 +374,7 @@ jenkins:
 	@Test
 	void 'Properly handles null values'() {
 		config.application.baseUrl = null
-		createJenkins().install()
+		install(createJenkins())
 
 		def env = getEnvAsMap()
 		assertThat(env['BASE_URL']).isNotEqualTo('null')
@@ -388,7 +386,7 @@ jenkins:
 		config.jenkins.mavenCentralMirror = 'http://test'
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
 
-		createJenkins().install()
+		install(createJenkins())
 
 		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))
 	}

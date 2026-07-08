@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -122,7 +121,6 @@ class ArgoCDTest {
 	List<GitRepo> petClinicRepos = []
 	ArgoCD argocd
 	ArgoCDRepoLayout clusterResourcesRepoLayout
-	RepositoryProvisioning repositoryProvisioning
 	RepositoryWorkspace repositoryWorkspace
 
 	@BeforeEach
@@ -144,7 +142,7 @@ class ArgoCDTest {
 		// Simulate argocd Namespace does not exist
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
@@ -217,20 +215,19 @@ class ArgoCDTest {
 	}
 
 	@Test
-	void 'publishes argocd repository content through repository provisioning'() {
+	void 'publishes argocd repository content through repository workspace'() {
 		def argocd = createArgoCD()
 
-		argocd.install()
+		execute(argocd)
 
-		verify(repositoryProvisioning).publishClusterResourcesAndTenantBootstrapRepositoryChanges('argocd',
-			'Update ArgoCD repository content')
+		verify(repositoryWorkspace.clusterResourcesRepository).commitAndPush('Update ArgoCD repository content')
 	}
 
 	@Test
 	void 'uses repository workspace for cluster resources repository content'() {
 		def argocd = createArgoCD()
 
-		argocd.install()
+		execute(argocd)
 
 		def argoCDForTest = argocd as ArgoCDForTest
 
@@ -248,7 +245,7 @@ class ArgoCDTest {
 		config.features.argocd.values = ['argo-cd': [key: 'value']]
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
@@ -261,7 +258,7 @@ class ArgoCDTest {
 		config.features.mail.active = false
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
@@ -275,7 +272,7 @@ class ArgoCDTest {
 		config.features.mail.active = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 		def valuesYaml = parseActualYaml(actualHelmValuesFile)
@@ -292,7 +289,7 @@ class ArgoCDTest {
 		config.features.argocd.emailToAdmin = 'argocd@example.com'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 		def valuesYaml = parseActualYaml(actualHelmValuesFile)
@@ -312,7 +309,7 @@ class ArgoCDTest {
 		config.features.mail.active = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 		def valuesYaml = parseActualYaml(actualHelmValuesFile)
@@ -336,7 +333,7 @@ class ArgoCDTest {
 		config.features.mail.smtpPassword = '1101:ABCabc&/+*~'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
@@ -363,7 +360,7 @@ class ArgoCDTest {
 		config.features.mail.smtpAddress = 'smtp.example.com'
 		config.features.mail.smtpUser = 'argo@example.com'
 
-		createArgoCD().install()
+		execute(createArgoCD())
 
 		Secret mailSecret = client.secrets()
 			.inNamespace('argocd')
@@ -380,7 +377,7 @@ class ArgoCDTest {
 		config.features.mail.smtpAddress = 'smtp.example.com'
 		config.features.mail.smtpPassword = '1101:ABCabc&/+*~'
 
-		createArgoCD().install()
+		execute(createArgoCD())
 
 		Secret mailSecret = client.secrets()
 			.inNamespace('argocd')
@@ -397,7 +394,7 @@ class ArgoCDTest {
 		config.features.mail.smtpAddress = 'smtp.example.com'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
@@ -417,7 +414,7 @@ class ArgoCDTest {
 		config.features.mail.active = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 		def valuesYaml = parseActualYaml(actualHelmValuesFile)
@@ -433,7 +430,7 @@ class ArgoCDTest {
 		config.application.mirrorRepos = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
@@ -446,7 +443,7 @@ class ArgoCDTest {
 	@Test
 	void 'Generates ArgoCD YAML with empty name-prefix'() {
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
@@ -458,7 +455,7 @@ class ArgoCDTest {
 		config.application.namePrefix = 'abc-'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
@@ -468,7 +465,7 @@ class ArgoCDTest {
 	@Test
 	void 'SecurityContext null in Openshift'() {
 		config.application.openshift = true
-		createArgoCD().install()
+		execute(createArgoCD())
 
 		for (def petclinicRepo : petClinicRepos) {
 			if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
@@ -487,7 +484,7 @@ class ArgoCDTest {
 		config.application.skipCrds = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
@@ -501,7 +498,7 @@ class ArgoCDTest {
 		config.scm.scmManager.namespace = 'my-prefix-scm-manager'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
@@ -605,10 +602,13 @@ class ArgoCDTest {
 			k8sClient,
 			helmCommands)
 
-		this.repositoryProvisioning = (argoCD as ArgoCDForTest).repositoryProvisioning
 		this.repositoryWorkspace = (argoCD as ArgoCDForTest).repositoryWorkspace
 
 		return argoCD
+	}
+
+	private boolean execute(ArgoCD argoCD) {
+		return (argoCD as ArgoCDForTest).execute()
 	}
 
 	private void prepareKubernetesObjectsForArgoCd() {
@@ -737,7 +737,7 @@ class ArgoCDTest {
 	void 'Prepares ArgoCD repo with Operator configuration file'() {
 		def argocd = setupOperatorTest()
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -755,7 +755,7 @@ class ArgoCDTest {
 	void 'No files for operator when operator is false'() {
 		def argocd = createArgoCD()
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -769,7 +769,7 @@ class ArgoCDTest {
 	void 'Deploys with operator without OpenShift configuration'() {
 		def argocd = setupOperatorTest(openshift: false)
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
 
@@ -801,7 +801,7 @@ class ArgoCDTest {
 		                                                                               'example-apps-production'])
 
 		def argocd = setupOperatorTest(openshift: false)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		File rbacPath = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()
@@ -843,7 +843,7 @@ class ArgoCDTest {
 	void 'Deploys with operator with OpenShift configuration'() {
 		def argocd = setupOperatorTest(openshift: true)
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -866,7 +866,7 @@ class ArgoCDTest {
 		String expectedExternalSecret = 'external-secrets.io'
 
 		def argocd = setupOperatorTest(openshift: true)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
@@ -886,7 +886,7 @@ class ArgoCDTest {
 		String expectedExternalSecret = 'external-secrets.io'
 
 		def argocd = setupOperatorTest(openshift: true)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
@@ -904,7 +904,7 @@ class ArgoCDTest {
 		// Set the config to a custom resourceInclusionsCluster value
 		config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -933,7 +933,7 @@ class ArgoCDTest {
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '100.125.0.1')
 			.and("KUBERNETES_SERVICE_PORT", "443")
 			.execute {
-				argocd.install()
+				execute(argocd)
 			}
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
@@ -961,7 +961,7 @@ class ArgoCDTest {
 		config.features.argocd.env = [[name: 'ENV_VAR_1', value: 'value1'],
 		                              [name: 'ENV_VAR_2', value: 'value2']] as List<Map>
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -985,7 +985,7 @@ class ArgoCDTest {
 		// Ensure env is an empty list (default)
 		config.features.argocd.env = []
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -1006,7 +1006,7 @@ class ArgoCDTest {
 
 		config.features.argocd.env = [[name: 'ENV_VAR_SINGLE', value: 'singleValue']] as List<Map>
 
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile())
@@ -1025,7 +1025,7 @@ class ArgoCDTest {
 	void 'Creates all necessary namespaces'() {
 		def argoCD = createArgoCD()
 
-		argoCD.install()
+		execute(argoCD)
 
 		config.application.namespaces.getActiveNamespaces().each { namespace -> assertThat(client.namespaces().withName(namespace).get()).isNotNull()
 		}
@@ -1035,7 +1035,7 @@ class ArgoCDTest {
 	void 'Operator config sets server insecure to true when insecure is set'() {
 		config.application.insecure = true
 		def argocd = setupOperatorTest()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
@@ -1046,7 +1046,7 @@ class ArgoCDTest {
 	void 'Operator config sets custom values'() {
 		config.features.argocd.values = [spec: [key: 'value']]
 		def argocd = setupOperatorTest()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
@@ -1056,7 +1056,7 @@ class ArgoCDTest {
 	@Test
 	void 'Operator config sets server_insecure to false when insecure is not set'() {
 		def argocd = setupOperatorTest()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
@@ -1068,7 +1068,7 @@ class ArgoCDTest {
 		config.application.insecure = true
 		config.features.argocd.url = 'http://argocd.localhost'
 		def argocd = setupOperatorTest(openshift: false)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
@@ -1089,7 +1089,7 @@ class ArgoCDTest {
 	void 'Does not generate ingress yaml when insecure is false'() {
 		config.application.insecure = false
 		def argocd = setupOperatorTest(openshift: false)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
@@ -1102,7 +1102,7 @@ class ArgoCDTest {
 	void 'Does not generate ingress yaml when running on OpenShift'() {
 		config.application.insecure = true
 		def argocd = setupOperatorTest(openshift: true)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
@@ -1115,7 +1115,7 @@ class ArgoCDTest {
 	void 'Does not generate ingress yaml when insecure is false and OpenShift is true'() {
 		config.application.insecure = false
 		def argocd = setupOperatorTest(openshift: true)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
@@ -1150,7 +1150,7 @@ class ArgoCDTest {
 
 		def argocd = createArgoCD()
 
-		argocd.install()
+		execute(argocd)
 
 		def argoCDForTest = argocd as ArgoCDForTest
 		def clusterLayout = argoCDForTest.getClusterRepoLayout()
@@ -1174,7 +1174,7 @@ class ArgoCDTest {
 
 		doReturn('Applied').when(k8sClient).applyYaml(any(String))
 
-		createArgoCD().install()
+		execute(createArgoCD())
 
 		Secret centralRepoCredentialsSecret = client.secrets()
 			.inNamespace(config.multiTenant.centralArgocdNamespace)
@@ -1255,7 +1255,7 @@ class ArgoCDTest {
 		config.multiTenant.useDedicatedInstance = false
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), 'multiTenant/')).doesNotExist()
@@ -1315,7 +1315,7 @@ class ArgoCDTest {
 		config.application.namePrefix = 'testprefix-'
 
 		def argocd = setupOperatorTest(openshift: false)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		print config.toMap()
@@ -1337,7 +1337,7 @@ class ArgoCDTest {
 		config.application.namePrefix = 'testprefix-'
 
 		def argocd = setupOperatorTest(openshift: true)
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()
@@ -1357,7 +1357,7 @@ class ArgoCDTest {
 		config.application.mirrorRepos = false
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
@@ -1386,7 +1386,7 @@ class ArgoCDTest {
 		config.application.mirrorRepos = true
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
@@ -1410,7 +1410,7 @@ class ArgoCDTest {
 		config.scm.scmProviderType = 'GITLAB'
 		config.scm.gitlab.url = 'https://testGitLab.com/testgroup'
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
@@ -1430,7 +1430,7 @@ class ArgoCDTest {
 		config.application.namePrefix = 'test1-'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
@@ -1454,7 +1454,7 @@ class ArgoCDTest {
 		config.application.namePrefix = 'test1-'
 
 		def argocd = createArgoCD()
-		argocd.install()
+		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
@@ -1482,7 +1482,7 @@ class ArgoCDTest {
 
 		doReturn('Applied').when(k8sClient).applyYaml(any(String))
 
-		argocd.install()
+		execute(argocd)
 		this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 	}
@@ -1509,7 +1509,6 @@ class ArgoCDTest {
 		final GitProvider tenantProvider
 		final GitProvider centralProvider
 		final GitHandler gitHandler
-		final RepositoryProvisioning repositoryProvisioning
 		final RepositoryWorkspace repositoryWorkspace
 
 		GitRepo clusterResourcesRepo
@@ -1544,6 +1543,7 @@ class ArgoCDTest {
 
 			GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
 				clusterResourcesProvider)
+			doNothing().when(clusterResourcesRepo).commitAndPush(any(String))
 
 			RepositoryWorkspace repositoryWorkspace
 			GitRepo tenantBootstrapRepo = null
@@ -1562,6 +1562,7 @@ class ArgoCDTest {
 				 */
 				tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
 					tenantProvider)
+				doNothing().when(tenantBootstrapRepo).commitAndPush(any(String))
 
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
 					tenantBootstrapRepo)
@@ -1569,15 +1570,10 @@ class ArgoCDTest {
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 			}
 
-			RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-			when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
-
-			GitHandler gitHandler = new GitHandlerForTests(cfg,
-				tenantProvider,
+			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
 				centralProvider)
 
 			return new ArgoCDTestContext(gitHandler: gitHandler,
-				repositoryProvisioning: repositoryProvisioning,
 				repositoryWorkspace: repositoryWorkspace,
 				clusterResourcesRepo: clusterResourcesRepo,
 				tenantBootstrapRepo: tenantBootstrapRepo)
@@ -1589,23 +1585,24 @@ class ArgoCDTest {
 			GitProvider tenantProvider,
 			GitProvider centralProvider,
 			ArgoCDTestContext testContext) {
-			super(new ContextBuilder(cfg).build(),
-				k8sClient,
+			super(k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),
-				testContext.gitHandler,
-				testContext.repositoryProvisioning)
+				testContext.gitHandler)
 
 			this.cfg = cfg
 			this.tenantProvider = tenantProvider
 			this.centralProvider = centralProvider
 			this.gitHandler = testContext.gitHandler
-			this.repositoryProvisioning = testContext.repositoryProvisioning
 			this.repositoryWorkspace = testContext.repositoryWorkspace
 			this.clusterResourcesRepo = testContext.clusterResourcesRepo
 			this.tenantBootstrapRepo = testContext.tenantBootstrapRepo
 
 			mockPrefixActiveNamespaces(cfg)
+		}
+
+		boolean execute() {
+			return super.execute(new ContextBuilder(cfg).build(), repositoryWorkspace)
 		}
 
 		GitRepo getClusterResourcesRepo() {
@@ -1622,7 +1619,6 @@ class ArgoCDTest {
 
 		static class ArgoCDTestContext {
 			GitHandler gitHandler
-			RepositoryProvisioning repositoryProvisioning
 			RepositoryWorkspace repositoryWorkspace
 			GitRepo clusterResourcesRepo
 			GitRepo tenantBootstrapRepo

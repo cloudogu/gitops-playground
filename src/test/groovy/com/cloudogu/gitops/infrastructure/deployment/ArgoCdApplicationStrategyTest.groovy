@@ -281,14 +281,11 @@ param1: value1
 
 		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 
-		repositoryProvisioning = mock(RepositoryProvisioning)
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
-
 		def context = new ContextBuilder(config).build()
 		def targetResolver = new ArgoCdApplicationTargetResolver(context)
 
 		return new ArgoCdApplicationStrategy(new FileSystemUtils(),
-			repositoryProvisioning,
+			repositoryWorkspace,
 			targetResolver)
 	}
 }

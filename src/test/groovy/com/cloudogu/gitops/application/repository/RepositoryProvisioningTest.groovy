@@ -1,5 +1,11 @@
 package com.cloudogu.gitops.application.repository
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatThrownBy
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -8,13 +14,9 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThatThrownBy
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
 
 class RepositoryProvisioningTest {
 
@@ -53,17 +55,17 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'provideWorkspace creates single-instance workspace with cluster-resources repository only'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		RepositoryWorkspace workspace = provisioning.provideWorkspace()
+		RepositoryWorkspace workspace = provisioning.provideWorkspace(createDeploymentContext())
 
 		assertThat(workspace.clusterResourcesRepository).isSameAs(clusterResourcesRepo)
 		assertThat(workspace.hasTenantBootstrapRepository()).isFalse()
 
-		verify(gitRepoFactory).create('argocd/cluster-resources', tenantProvider)
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 		verify(gitHandler).getResourcesScm()
 	}
 
@@ -77,14 +79,14 @@ class RepositoryProvisioningTest {
 		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
 		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
 
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(tenantBootstrapRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		RepositoryWorkspace workspace = provisioning.provideWorkspace()
+		RepositoryWorkspace workspace = provisioning.provideWorkspace(createDeploymentContext())
 
 		assertThat(workspace.clusterResourcesRepository).isSameAs(clusterResourcesRepo)
 		assertThat(workspace.tenantBootstrapRepository).isSameAs(tenantBootstrapRepo)
@@ -93,23 +95,23 @@ class RepositoryProvisioningTest {
 		assertThat(new File(workspace.clusterResourcesRootDir()).canonicalPath)
 			.isNotEqualTo(new File(workspace.tenantBootstrapRootDir()).canonicalPath)
 
-		verify(gitRepoFactory).create('argocd/cluster-resources', centralProvider)
-		verify(gitRepoFactory).create('argocd/cluster-resources', tenantProvider)
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(centralProvider))
+		verify(gitRepoFactory).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 	}
 
 	@Test
 	void 'provideWorkspace returns same workspace instance when called multiple times'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		RepositoryWorkspace firstWorkspace = provisioning.provideWorkspace()
-		RepositoryWorkspace secondWorkspace = provisioning.provideWorkspace()
+		RepositoryWorkspace firstWorkspace = provisioning.provideWorkspace(createDeploymentContext())
+		RepositoryWorkspace secondWorkspace = provisioning.provideWorkspace(createDeploymentContext())
 
 		assertThat(secondWorkspace).isSameAs(firstWorkspace)
 
-		verify(gitRepoFactory, times(1)).create('argocd/cluster-resources', tenantProvider)
+		verify(gitRepoFactory, times(1)).create(eq('argocd/cluster-resources'), eq(tenantProvider))
 	}
 
 	@Test
@@ -117,12 +119,12 @@ class RepositoryProvisioningTest {
 		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
 		config.scm.scmManager.internal = true
 
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.prepare()
+		provisioning.prepare(createDeploymentContext())
 
 		verify(tenantProvider, never()).createRepository(any(String), any(String), any(Boolean))
 		verify(clusterResourcesRepo, never()).cloneRepo()
@@ -132,12 +134,12 @@ class RepositoryProvisioningTest {
 	void 'prepare ensures and clones repositories when SCM-Manager is external'() {
 		config.scm.scmManager.internal = false
 
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.prepare()
+		provisioning.prepare(createDeploymentContext())
 
 		verify(tenantProvider).createRepository('argocd/cluster-resources',
 			'GitOps repo for basic cluster-resources',
@@ -147,12 +149,12 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'ensureRemoteRepositoriesExist creates cluster-resources repository in single-instance mode'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.provideWorkspace()
+		provisioning.provideWorkspace(createDeploymentContext())
 		provisioning.ensureRemoteRepositoriesExist()
 
 		verify(tenantProvider).createRepository('argocd/cluster-resources',
@@ -170,14 +172,14 @@ class RepositoryProvisioningTest {
 		clusterResourcesRepo = createGitRepoSpy('argocd/cluster-resources', centralProvider)
 		tenantBootstrapRepo = createGitRepoSpy('argocd/cluster-resources', tenantProvider)
 
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(clusterResourcesRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(tenantBootstrapRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.provideWorkspace()
+		provisioning.provideWorkspace(createDeploymentContext())
 		provisioning.ensureRemoteRepositoriesExist()
 
 		verify(centralProvider).createRepository('argocd/cluster-resources',
@@ -191,12 +193,12 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'ensureRemoteRepositoriesExist is idempotent'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.provideWorkspace()
+		provisioning.provideWorkspace(createDeploymentContext())
 
 		provisioning.ensureRemoteRepositoriesExist()
 		provisioning.ensureRemoteRepositoriesExist()
@@ -208,12 +210,12 @@ class RepositoryProvisioningTest {
 
 	@Test
 	void 'publishClusterResourcesRepositoryChanges uses default message when no message is provided'() {
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(clusterResourcesRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
-		provisioning.provideWorkspace()
+		provisioning.provideWorkspace(createDeploymentContext())
 
 		provisioning.publishClusterResourcesRepositoryChanges('argocd')
 
@@ -250,15 +252,15 @@ class RepositoryProvisioningTest {
 		doReturn(centralProvider).when(gitHandler).getResourcesScm()
 		doReturn(tenantProvider).when(gitHandler).getTenant()
 
-		when(gitRepoFactory.create('argocd/cluster-resources', centralProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(centralProvider)))
 			.thenReturn(sharedClusterRepo)
-		when(gitRepoFactory.create('argocd/cluster-resources', tenantProvider))
+		when(gitRepoFactory.create(eq('argocd/cluster-resources'), eq(tenantProvider)))
 			.thenReturn(sharedTenantRepo)
 
 		RepositoryProvisioning provisioning = createProvisioning()
 
 		assertThatThrownBy {
-			provisioning.provideWorkspace()
+			provisioning.provideWorkspace(createDeploymentContext())
 		}.isInstanceOf(IllegalStateException)
 			.hasMessageContaining('Dedicated Multi-Tenant mode requires separate local workspaces')
 			.hasMessageContaining(sameRootDir)
@@ -274,22 +276,21 @@ class RepositoryProvisioningTest {
 	}
 
 	private RepositoryProvisioning createProvisioning() {
-		return new RepositoryProvisioning(createDeploymentContext(),
-			gitRepoFactory,
+		return new RepositoryProvisioning(gitRepoFactory,
 			gitHandler)
 	}
 
 	private DeploymentContext createDeploymentContext() {
 		return new DeploymentContext(config,
 			config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT,
-			config.scm.scmManager?.internal ? DeploymentContext.DeploymentMode.INTERNAL : DeploymentContext.DeploymentMode.EXTERNAL,
+			config.scm.scmManager?.internal ? DeploymentContext.ScmManagerDeploymentMode.INTERNAL : DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			config.application.mirrorRepos,
 			config.application.openshift ? DeploymentContext.ClusterDistribution.OPENSHIFT : DeploymentContext.ClusterDistribution.KUBERNETES)
 	}
 
 	private GitRepo createGitRepoSpy(String repoTarget,
 		GitProvider gitProvider) {
-		GitRepo gitRepo = spy(new GitRepo(createDeploymentContext(),
+		GitRepo gitRepo = spy(new GitRepo(config,
 			gitProvider,
 			repoTarget,
 			new FileSystemUtils()))

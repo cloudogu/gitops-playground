@@ -55,14 +55,12 @@ class ContentLoader extends Tool {
 	@JsonIgnore
 	UsernamePasswordCredentialsProvider credentialsProvider
 
-	ContentLoader(DeploymentContext context,
-		K8sClient k8sClient,
+	ContentLoader(K8sClient k8sClient,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
 		GitHandler gitHandler,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer) {
-		this.context = context
 		this.k8sClient = k8sClient
 		this.repoProvider = repoProvider
 		this.jenkins = jenkins
@@ -72,7 +70,7 @@ class ContentLoader extends Tool {
 	}
 
 	@Override
-	boolean isEnabled() {
+	boolean isEnabled(DeploymentContext context) {
 		return true // for now always on. Once we refactor from Argo CD class we add a param to enable
 	}
 
@@ -558,7 +556,7 @@ class ContentLoader extends Tool {
 	}
 
 	private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
-		if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
+		if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled(context)) {
 			if (GitRepo.existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
 				jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
 			}

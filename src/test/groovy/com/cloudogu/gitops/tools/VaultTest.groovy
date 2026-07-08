@@ -45,9 +45,8 @@ class VaultTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Deployer deployer = mock(Deployer)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerProviderMock())
+	GitHandler gitHandler = new GitHandlerForTests(new ScmManagerProviderMock())
 	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
-
 	Path temporaryYamlFile
 	File clusterResourcesRepoDir
 
@@ -63,8 +62,7 @@ class VaultTest {
 	@Test
 	void 'is disabled via active flag'() {
 		config.features.secrets.active = false
-		boolean enabled = createVault().install()
-		assertFalse(enabled)
+		assertFalse(createVault().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -78,7 +76,7 @@ class VaultTest {
 	@Test
 	void 'uses ingress if enabled'() {
 		config.features.secrets.vault.url = 'http://vault.local'
-		createVault().install()
+		install(createVault())
 
 		def ingressYaml = parseActualYaml()['server']['ingress']
 		assertThat(ingressYaml['enabled']).isEqualTo(true)
@@ -89,8 +87,8 @@ class VaultTest {
 	void 'uses ingress if enabled and image set'() {
 		config.features.secrets.vault.url = 'http://vault.local'
 		// Also set image to make sure ingress and image work at the same time under the server block
-		// config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
-		createVault().install()
+		//config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
+		install(createVault())
 
 		def ingressYaml = parseActualYaml()['server']['ingress']
 		assertThat(ingressYaml['enabled']).isEqualTo(true)
@@ -98,7 +96,7 @@ class VaultTest {
 
 	@Test
 	void 'does not use ingress by default'() {
-		createVault().install()
+		install(createVault())
 
 		assertThat(parseActualYaml()).doesNotContainKey('server')
 	}
@@ -112,7 +110,7 @@ class VaultTest {
 
 		def vault = createVault()
 
-		vault.install()
+		install(vault)
 
 		def actualYaml = parseActualYaml()
 		assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
@@ -143,7 +141,7 @@ class VaultTest {
 		config.features.secrets.vault.mode = 'dev'
 		config.application.username = 'abc'
 		config.application.password = '123'
-		createVault().install()
+		install(createVault())
 
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
@@ -160,7 +158,7 @@ class VaultTest {
 			discoveryUrl: 'http://keycloak.local.gd/realms/gop')
 		config.application.password = 'admin'
 
-		createVault().install()
+		install(createVault())
 
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
@@ -171,7 +169,7 @@ class VaultTest {
 	@Test
 	void 'Prod mode can be enabled'() {
 		config.features.secrets.vault.mode = 'prod'
-		createVault().install()
+		install(createVault())
 
 		assertThat(parseActualYaml()).doesNotContainKey('server')
 	}
@@ -179,7 +177,7 @@ class VaultTest {
 	@Test
 	void 'custom image is used'() {
 		config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
-		createVault().install()
+		install(createVault())
 
 		def actualYaml = parseActualYaml()
 		assertThat(actualYaml['server']['image']['repository']).isEqualTo('localhost:5000/hashicorp/vault')
@@ -191,7 +189,7 @@ class VaultTest {
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
 			repoURL: 'https://vault-reg',
 			version: '42.23.0')
-		createVault().install()
+		install(createVault())
 
 		verify(deployer).deployFeature('https://vault-reg',
 			'vault',
@@ -224,7 +222,7 @@ class VaultTest {
 		Map chartYaml = [version: '1.2.3']
 		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
-		createVault().install()
+		install(createVault())
 
 		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -246,7 +244,7 @@ class VaultTest {
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
 
-		createVault().install()
+		install(createVault())
 
 		def actualYaml = parseActualYaml()
 		assertThat(actualYaml['server']['resources'] as Map).containsKeys('limits', 'requests')
@@ -259,7 +257,7 @@ class VaultTest {
 		config.registry.proxyUsername = 'proxy-user'
 		config.registry.proxyPassword = 'proxy-pw'
 
-		createVault().install()
+		install(createVault())
 
 		assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
@@ -301,6 +299,10 @@ class VaultTest {
 			airGappedUtils,
 			gitHandler,
 			repositoryProvisioning)
+	}
+
+	private boolean install(Vault vault) {
+		return vault.execute(new ContextBuilder(config).build(), null)
 	}
 
 	private Map parseActualYaml() {

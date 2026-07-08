@@ -2,8 +2,6 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -33,34 +31,36 @@ class Ingress extends Tool implements ToolWithImage {
 	String namespace
 	final K8sClient k8sClient
 
-	private final RepositoryProvisioning repositoryProvisioning
-
-	Ingress(DeploymentContext context,
-		FileSystemUtils fileSystemUtils,
+	Ingress(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning) {
+		GitHandler gitHandler) {
 		this.deployer = deployer
-		this.context = context
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.repositoryProvisioning = repositoryProvisioning
-		this.namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
 	}
 
 	@Override
-	boolean isEnabled() {
-		return config.features.ingress.active
+	boolean isEnabled(DeploymentContext context) {
+		return context.config.features.ingress.active
+	}
+
+	@Override
+	protected void prepare() {
+		this.namespace = activeNamespace(context)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
 	}
 
 	@Override
 	void enable() {
-		GitRepo clusterResourcesRepo = clusterResourcesRepository()
-		prepareIngressApp(clusterResourcesRepo)
+		prepareIngressApp(repositoryWorkspace.clusterResourcesRepository)
 
 		def helmConfig = config.features.ingress.helm
 
@@ -70,11 +70,10 @@ class Ingress extends Tool implements ToolWithImage {
 			helmConfig,
 			HELM_VALUES_PATH,
 			context)
-	}
 
-	private GitRepo clusterResourcesRepository() {
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		return workspace.clusterResourcesRepository
+		repositoryWorkspace.commitAndPushClusterResourcesChanges(
+			"Update ${TOOL_NAME} GitOps resources"
+		)
 	}
 
 	private void prepareIngressApp(GitRepo clusterResourcesRepo) {

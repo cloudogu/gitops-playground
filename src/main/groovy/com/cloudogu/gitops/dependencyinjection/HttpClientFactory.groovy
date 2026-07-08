@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.dependencyinjection
 
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.dependencyinjection.okhttp.RetryInterceptor
@@ -46,8 +45,7 @@ class HttpClientFactory {
 
 	@Singleton
 	@Named("jenkins")
-	OkHttpClient okHttpClientJenkins(DeploymentContext context) {
-		Config config = context.config
+	OkHttpClient okHttpClientJenkins(Config config) {
 		def builder = new OkHttpClient.Builder()
 			.cookieJar(new JavaNetCookieJar(new CookieManager()))
 			.addInterceptor(createLoggingInterceptor())

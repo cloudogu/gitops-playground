@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.destroy
 
+import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
@@ -22,11 +23,12 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	private K8sClient k8sClient
 	private HelmClient helmClient
 	private GitRepoFactory repoProvider
-	private DeploymentContext context
+	private ContextBuilder contextBuilder
 	private FileSystemUtils fileSystemUtils
 	private GitHandler gitHandler
+	private DeploymentContext context
 
-	ArgoCDDestructionHandler(DeploymentContext context,
+	ArgoCDDestructionHandler(ContextBuilder contextBuilder,
 		K8sClient k8sClient,
 		HelmClient helmClient,
 		GitRepoFactory repoProvider,
@@ -35,13 +37,14 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.repoProvider = repoProvider
-		this.context = context
+		this.contextBuilder = contextBuilder
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
 	}
 
 	@Override
 	void destroy() {
+		this.context = contextBuilder.build()
 
 		def repo = repoProvider.create('argocd/cluster-resources', gitHandler.resourcesScm)
 		repo.cloneRepo()

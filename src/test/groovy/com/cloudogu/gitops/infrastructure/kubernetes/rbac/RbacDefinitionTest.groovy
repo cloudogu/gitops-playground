@@ -3,8 +3,6 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertThrows
 
-import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -24,8 +22,7 @@ class RbacDefinitionTest {
 	                                                            gitName   : 'Test User',
 	                                                            gitEmail  : 'test@example.com']])
 
-	private final DeploymentContext context = new ContextBuilder(config).build()
-	private final GitRepo repo = new GitRepo(context, null, "my-repo", new FileSystemUtils())
+	private final GitRepo repo = new GitRepo(config, null, "my-repo", new FileSystemUtils())
 
 	@Test
 	void 'generates at least one RBAC YAML file'() {
@@ -241,7 +238,7 @@ class RbacDefinitionTest {
 	void 'renders node access rules in argocd-role only when not on OpenShift'() {
 		config.application.openshift = false
 
-		GitRepo tempRepo = new GitRepo(context, null, "rbac-test", new FileSystemUtils())
+		GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
 
 		new RbacDefinition(Role.Variant.ARGOCD)
 			.withName("nodecheck")
@@ -266,7 +263,7 @@ class RbacDefinitionTest {
 	void 'does not render node access rules in argocd-role  when on OpenShift'() {
 		config.application.openshift = true
 
-		GitRepo tempRepo = new GitRepo(context, null, "rbac-test", new FileSystemUtils())
+		GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
 
 		new RbacDefinition(Role.Variant.ARGOCD)
 			.withName("nodecheck")

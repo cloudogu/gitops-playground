@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
 import jakarta.inject.Singleton
@@ -16,21 +15,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
-	private final FileSystemUtils fileSystemUtils
-	private final RepositoryProvisioning repositoryProvisioning
 	private final ArgoCdApplicationTargetResolver targetResolver
 
-	ArgoCdApplicationStrategy(FileSystemUtils fileSystemUtils,
-		RepositoryProvisioning repositoryProvisioning,
-		ArgoCdApplicationTargetResolver targetResolver) {
-		this.fileSystemUtils = fileSystemUtils
-		this.repositoryProvisioning = repositoryProvisioning
+	ArgoCdApplicationStrategy(ArgoCdApplicationTargetResolver targetResolver) {
 		this.targetResolver = targetResolver
 	}
 
 	@Override
 	@SuppressWarnings('GroovyGStringKey')
-	// Using dynamic strings as keys seems an easy to read way to avoid more ifs
 	void deployFeature(String repoURL,
 		String repoName,
 		String chartOrPath,
@@ -38,40 +30,26 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		String namespace,
 		String releaseName,
 		Path helmValuesPath,
-		RepoType repoType) {
+		RepoType repoType,
+		DeploymentContext context,
+		RepositoryWorkspace repositoryWorkspace) {
 		log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
 
-		RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace()
-		GitRepo clusterResourcesRepo = workspace.clusterResourcesRepository
+		GitRepo clusterResourcesRepo = repositoryWorkspace.clusterResourcesRepository
 
 		String toolName = repoName
 		boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName)
-		ArgoCdApplicationTarget target = targetResolver.resolve(repoName)
+		ArgoCdApplicationTarget target = targetResolver.resolve(context, repoName)
 
-		/*
-		 * Important:
-		 * toolName remains unprefixed because it is used for paths like apps/scm-manager.
-		 * target.applicationName becomes the ArgoCD Application metadata.name.
-		 *
-		 * This avoids ArgoCD tracking-id collisions:
-		 * central:
-		 *   metadata.name: scm-manager
-		 * tenant:
-		 *   metadata.name: tenant1-scm-manager
-		 * Without this, both central and tenant resources can get tracking IDs starting with: scm-manager:/...
-		 */
 		String toolPath = "apps/${toolName}"
 
-		// Ensure folders exist before writing files.
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
 		Path.of(repoRoot, toolPath).toFile().mkdirs()
 		Path.of(repoRoot, 'apps/argocd/applications').toFile().mkdirs()
 
-		// 1) GOP-managed values
 		String gopValuesPath = "${toolPath}/${toolName}-gop-helm.yaml"
 		String inlineValues = helmValuesPath.toFile().text
 
-		// 2) User values
 		String userValuesPath = "${toolPath}/${toolName}-user-values.yaml"
 		Path userValuesAbsPath = Path.of(repoRoot, userValuesPath)
 
@@ -83,16 +61,13 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 				releaseName,
 				namespace)
 		} else {
-			// Normal tools keep values in cluster-resources and consume them via $values.
 			clusterResourcesRepo.writeFile(gopValuesPath, inlineValues)
 
-			// User values must NEVER be overwritten by GOP.
 			if (!userValuesAbsPath.toFile().exists()) {
 				clusterResourcesRepo.writeFile(userValuesPath, '')
 			}
 		}
 
-		// 1) Helm source
 		def helmConfig = [releaseName: releaseName]
 
 		if (bootstrapDeploymentRequired) {
@@ -110,23 +85,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                  targetRevision                  : version,
 		                  helm                            : helmConfig]
 
-		// 2) Git source for values and additional manifests.
-		// SCM-Manager must not reference the SCM-Manager repo that it deploys itself.
 		def sources = [helmSource]
 
 		if (!bootstrapDeploymentRequired) {
-			/*
-			 * Important:
-			 * Do not use workspace.clusterResourcesRepositoryUrl() yet.
-			 *
-			 * GitRepo currently applies config.application.namePrefix internally.
-			 * Using clusterResourcesRepository.repoTarget here can therefore lead to
-			 * a double prefix like:
-			 *
-			 *   my-prefix-my-prefix-argocd/cluster-resources
-			 *
-			 * Until prefixing is moved out of GitRepo, keep the repo target unprefixed here.
-			 */
 			def toolRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
 
 			def gitSource = [repoURL       : toolRepoUrl,
@@ -140,7 +101,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		String namespaceCreationSyncOption = "CreateNamespace=${target.createDestinationNamespace}".toString()
 
-		// Prepare ArgoCD Application YAML
 		def yamlMapper = YAMLMapper.builder()
 			.enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
 			.build()
@@ -155,28 +115,15 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                                                             sources    : sources,
 		                                                             syncPolicy : [automated  : [prune   : true,
 		                                                                                         selfHeal: true],
-		                                                                           syncOptions: [// So that we can apply very large resources, e.g. prometheus CRD.
-		                                                                                         'ServerSideApply=true',
-		                                                                                         // Create namespaces for helm charts while not using the argocd-operator mode.
+		                                                                           syncOptions: ['ServerSideApply=true',
 		                                                                                         namespaceCreationSyncOption]]]])
 
-		/*
-		 * Keep the file path release-based.
-		 *
-		 * For tenant SCM this becomes:
-		 *   apps/argocd/applications/tenant1-scmm.yaml
-		 *
-		 * The important value for ArgoCD tracking is metadata.name above:
-		 *   tenant1-scm-manager
-		 */
 		String appManifestPath = "apps/argocd/applications/${releaseName}.yaml"
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
-
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(toolName,
-			"Add ${target.applicationName}/${chartOrPath} to ArgoCD")
+		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
+			"version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {
