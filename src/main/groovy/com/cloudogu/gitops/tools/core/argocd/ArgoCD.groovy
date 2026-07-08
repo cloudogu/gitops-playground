@@ -49,9 +49,54 @@ class ArgoCD extends Tool {
 		return context.config.features.argocd.active
 	}
 
-	protected void prepare() {
+	@Override
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
 		this.password = config.application.password
+
+		this.repoSetup = ArgoCDRepoSetup.create(context,
+			fileSystemUtils,
+			gitHandler,
+			repositoryWorkspace)
+
+		this.clusterResourcesRepo = repoSetup.clusterRepoLayout()
+
+		log.debug('Preparing ArgoCD repository content')
+		repoSetup.prepareRepositories()
+
+		log.debug('Creating namespaces')
+		k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
+
+		createSCMCredentialsSecret()
+		createNotificationSecretIfRequired()
+
+		if (config.features.argocd.operator) {
+			generateRBAC()
+		} else {
+			mergeHelmValuesIfConfigured()
+		}
+	}
+
+	@Override
+	protected void deploy() {
+		log.debug('Installing Argo CD')
+
+		if (config.features.argocd.operator) {
+			deployWithOperator()
+		} else {
+			deployWithHelm()
+		}
+	}
+
+	@Override
+	protected void postDeploy() {
+		applyBootstrapResources()
+		deleteHelmArgoSecrets()
+	}
+
+	@Override
+	protected void publishChanges() {
+		repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges('Update ArgoCD repository content')
 	}
 
 	@Override
@@ -80,29 +125,7 @@ class ArgoCD extends Tool {
 		log.info('Env list validation for features.argocd.env completed successfully.')
 	}
 
-	void enable() {
-		this.repoSetup = ArgoCDRepoSetup.create(context,
-			fileSystemUtils,
-			gitHandler,
-			repositoryWorkspace)
-
-		this.clusterResourcesRepo = repoSetup.clusterRepoLayout()
-
-		log.debug('Preparing ArgoCD repository content')
-		repoSetup.prepareRepositories()
-
-		repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges('Update ArgoCD repository content')
-
-		log.debug('Installing Argo CD')
-		installArgoCd()
-	}
-
-	private void installArgoCd() {
-		log.debug('Creating namespaces')
-		k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
-
-		createSCMCredentialsSecret()
-
+	private void createNotificationSecretIfRequired() {
 		if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
 			k8sClient.createSecret('generic',
 				'argocd-notifications-secret',
@@ -110,27 +133,26 @@ class ArgoCD extends Tool {
 				new Tuple2('email-username', config.features.mail.smtpUser),
 				new Tuple2('email-password', config.features.mail.smtpPassword))
 		}
+	}
 
-		if (config.features.argocd.operator) {
-			generateRBAC()
-			deployWithOperator()
-		} else {
-			if (this.config.features.argocd?.values) {
-				String argocdConfigPath = clusterResourcesRepo.helmValuesFile()
-				log.debug("extend Argocd values.yaml with ${this.config.features.argocd.values}")
-
-				def argocdYaml = fileSystemUtils.readYaml(Path.of(argocdConfigPath))
-				def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
-
-				fileSystemUtils.writeYaml(result, new File(argocdConfigPath))
-				log.debug("Argocd values.yaml contains ${result}")
-			}
-
-			deployWithHelm()
+	private void mergeHelmValuesIfConfigured() {
+		if (!this.config.features.argocd?.values) {
+			return
 		}
 
+		String argocdConfigPath = clusterResourcesRepo.helmValuesFile()
+		log.debug("extend Argocd values.yaml with ${this.config.features.argocd.values}")
+
+		def argocdYaml = fileSystemUtils.readYaml(Path.of(argocdConfigPath))
+		def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
+
+		fileSystemUtils.writeYaml(result, new File(argocdConfigPath))
+		log.debug("Argocd values.yaml contains ${result}")
+	}
+
+	private void applyBootstrapResources() {
 		if (context.isMultiTenant()) {
-			//Bootstrapping dedicated instance
+			// Bootstrapping dedicated instance
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), 'tenant.yaml').toString())
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), 'bootstrap.yaml').toString())
 
@@ -141,12 +163,16 @@ class ArgoCD extends Tool {
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), 'argocd.yaml').toString())
 			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), 'bootstrap.yaml').toString())
 		}
+	}
 
+	private void deleteHelmArgoSecrets() {
 		// Delete helm-argo secrets to decouple from helm.
-		// This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
-		// For development keeping it in helm makes it easier (e.g. for helm uninstall).
-		k8sClient.delete('secret', namespace,
-			new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
+		// This does not delete Argo from the cluster, but you can no longer modify argo directly with helm.
+		// For development keeping it in helm makes it easier, e.g. for helm uninstall.
+		k8sClient.delete('secret',
+			namespace,
+			new Tuple2('owner', 'helm'),
+			new Tuple2('name', 'argocd'))
 	}
 
 	private void deployWithOperator() {

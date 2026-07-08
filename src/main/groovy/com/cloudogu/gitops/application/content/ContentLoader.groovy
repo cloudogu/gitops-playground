@@ -19,8 +19,6 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
-import io.micronaut.core.annotation.Order
-
 import java.nio.file.Path
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
@@ -37,7 +35,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
 @Singleton
-@Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Tool {
 	private K8sClient k8sClient

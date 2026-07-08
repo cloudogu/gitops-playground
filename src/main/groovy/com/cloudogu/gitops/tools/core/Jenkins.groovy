@@ -15,14 +15,11 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.*
 
-import io.micronaut.core.annotation.Order
-
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
 
 @Slf4j
 @Singleton
-@Order(20)
 class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
