@@ -16,8 +16,10 @@ import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.utils.*
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 class Jenkins extends Tool {
@@ -29,6 +31,7 @@ class Jenkins extends Tool {
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'jenkins'
 	private static final String JENKINS_APP_PATH = 'apps/jenkins'
+	private static final String RELEASE_NAME = 'jenkins'
 
 	String namespace
 	private CommandExecutor commandExecutor
@@ -74,10 +77,87 @@ class Jenkins extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		if (!config.jenkins.internal) {
+		if (!isInternalJenkins()) {
 			return
 		}
 
+		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		createJenkinsNamespace()
+		labelJenkinsNode()
+		createJenkinsCredentialsSecret()
+		prepareJenkinsHelmValues()
+		prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
+	}
+
+	@Override
+	protected void deploy() {
+		if (!isInternalJenkins()) {
+			return
+		}
+
+		deployInternalJenkins()
+	}
+
+	@Override
+	protected void postDeploy() {
+		if (isInternalJenkins()) {
+			updateJenkinsUrl()
+		}
+
+		runSetupScript()
+	}
+
+	@Override
+	protected void publishChanges() {
+		if (!isInternalJenkins()) {
+			return
+		}
+
+		publishClusterResourcesChanges(TOOL_NAME)
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
+	}
+
+	private void createJenkinsNamespace() {
+		k8sClient.createNamespace(namespace)
+	}
+
+	private void labelJenkinsNode() {
+		// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
+		// Remove first in case new nodes were added.
+		k8sClient.labelRemove('node', '--all', '', 'node')
+
+		String nodeName = k8sClient.waitForNode().replace('node/', '')
+		k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
+	}
+
+	private void createJenkinsCredentialsSecret() {
+		k8sClient.createSecret('generic',
+			'jenkins-credentials',
+			namespace,
+			new Tuple2('jenkins-admin-user', config.jenkins.username),
+			new Tuple2('jenkins-admin-password', config.jenkins.password))
+	}
+
+	private void prepareJenkinsHelmValues() {
+		addHelmValuesData('dockerGid', findDockerGid())
+		addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
+	}
+
+	private boolean isInternalJenkins() {
+		return config.jenkins.internal
+	}
+
+	private void prepareInternalJenkinsDeployment() {
 		this.namespace = activeNamespace(context)
 
 		imagePullSecretCreator.createIfRequired(config, namespace)
@@ -102,17 +182,11 @@ class Jenkins extends Tool {
 		prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
 	}
 
-	@Override
-	protected void deploy() {
-		if (!config.jenkins.internal) {
-			return
-		}
-
+	private void deployInternalJenkins() {
 		Config.HelmConfigWithValues helmConfig = config.jenkins.helm
-		String releaseName = 'jenkins'
 
 		deployHelmChart(TOOL_NAME,
-			releaseName,
+			RELEASE_NAME,
 			namespace,
 			helmConfig,
 			HELM_VALUES_PATH,
@@ -120,31 +194,9 @@ class Jenkins extends Tool {
 			true)
 	}
 
-	@Override
-	protected void postDeploy() {
-		if (config.jenkins.internal) {
-			updateJenkinsUrl()
-		}
-
-		runSetupScript()
-	}
-
-	@Override
-	protected void publishChanges() {
-		if (!config.jenkins.internal) {
-			return
-		}
-
-		publishClusterResourcesChanges(TOOL_NAME)
-	}
-
-	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
-	}
-
 	private void updateJenkinsUrl() {
-		String serviceName = 'jenkins'
+		// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
+		String serviceName = RELEASE_NAME
 
 		// Update jenkins.url after it is deployed and ports are known.
 		if (config.application.runningInsideK8s) {

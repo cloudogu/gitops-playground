@@ -15,10 +15,12 @@ import io.micronaut.core.annotation.Order
 
 import java.nio.file.Path
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import org.springframework.security.crypto.bcrypt.BCrypt
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(100)

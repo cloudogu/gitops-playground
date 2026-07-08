@@ -6,11 +6,13 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 
 import java.nio.file.Path
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 
+@CompileStatic
 @Singleton
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
@@ -122,8 +124,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-			"version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
+		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {

@@ -14,8 +14,10 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(160)
@@ -51,8 +53,28 @@ class CertManager extends Tool {
 		return context.config.features.certManager.active
 	}
 
-	protected void prepare() {
+	@Override
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
+	}
+
+	@Override
+	protected void deploy() {
+		deployHelmChart(TOOL_NAME,
+			TOOL_NAME,
+			namespace,
+			config.features.certManager.helm,
+			HELM_VALUES_PATH,
+			context)
+	}
+
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME)
 	}
 
 	@Override
@@ -60,20 +82,8 @@ class CertManager extends Tool {
 		return "${context.config.application.namePrefix}${context.config.features.certManager.namespace}"
 	}
 
-	void enable() {
+	private void createImagePullSecret() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
-
-		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
-		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
-
-		deployHelmChart(TOOL_NAME,
-			TOOL_NAME,
-			namespace,
-			config.features.certManager.helm,
-			HELM_VALUES_PATH,
-			context)
-
-		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 	}
 
 	private void prepareCertManagerApp(GitRepo clusterResourcesRepo) {
