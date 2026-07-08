@@ -307,8 +307,8 @@ class VaultTest {
 		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
 		return new Vault(testFileSystemUtils,
-			k8sClient,
 			deployer,
+			k8sClient,
 			airGappedUtils,
 			gitHandler)
 	}

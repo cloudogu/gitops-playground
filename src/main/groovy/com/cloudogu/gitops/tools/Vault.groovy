@@ -6,7 +6,6 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -20,7 +19,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(500)
-class Vault extends Tool implements ToolWithImage {
+class Vault extends Tool {
 
 	static final String VAULT_START_SCRIPT_PATH = 'argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh'
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/vault/templates/values.ftl.yaml'
@@ -34,8 +33,8 @@ class Vault extends Tool implements ToolWithImage {
 	final K8sClient k8sClient
 
 	Vault(FileSystemUtils fileSystemUtils,
-		K8sClient k8sClient,
 		Deployer deployer,
+		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler) {
 		this.deployer = deployer
@@ -62,7 +61,9 @@ class Vault extends Tool implements ToolWithImage {
 
 	@Override
 	void enable() {
+
 		prepareVaultApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceVaultTemplates(repositoryWorkspace.clusterResourcesRepository)
 
 		// Note that some specific configuration steps are implemented in ArgoCD
 		def helmConfig = config.features.secrets.vault.helm
@@ -99,9 +100,7 @@ class Vault extends Tool implements ToolWithImage {
 			HELM_VALUES_PATH,
 			context)
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			"Update ${TOOL_NAME} GitOps resources"
-		)
+		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 	}
 
 	private void prepareVaultApp(GitRepo clusterResourcesRepo) {
@@ -109,5 +108,9 @@ class Vault extends Tool implements ToolWithImage {
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, VAULT_APP_PATH))
+	}
+
+	private void replaceVaultTemplates(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 }
