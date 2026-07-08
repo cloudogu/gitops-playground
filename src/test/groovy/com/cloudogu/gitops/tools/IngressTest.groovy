@@ -100,11 +100,11 @@ class IngressTest {
 	}
 
 	@Test
-	void 'prepares ingress app content in cluster resources workspace without copying templates'() {
+	void 'prepares traefik app content in cluster resources workspace without copying templates'() {
 		install(createIngress())
 
-		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress')).exists()
-		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress/templates')).doesNotExist()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/traefik')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/traefik/templates')).doesNotExist()
 	}
 
 	@Test

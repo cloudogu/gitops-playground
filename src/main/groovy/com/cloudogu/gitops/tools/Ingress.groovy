@@ -21,12 +21,12 @@ import groovy.util.logging.Slf4j
 @Order(150)
 class Ingress extends Tool {
 
-	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/ingress/templates/values.ftl.yaml'
+	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml'
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'traefik'
 	private static final String RELEASE_NAME = 'traefik'
-	private static final String INGRESS_APP_PATH = 'apps/ingress'
+	private static final String INGRESS_APP_PATH = 'apps/traefik'
 
 	private final ImagePullSecretCreator imagePullSecretCreator
 
