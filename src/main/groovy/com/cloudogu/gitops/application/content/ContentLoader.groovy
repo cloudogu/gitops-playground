@@ -75,7 +75,7 @@ class ContentLoader extends Tool {
 	}
 
 	@Override
-	void enable() {
+	protected void deploy() {
 		// ensure cache is cleaned
 		clearCache()
 		// clones repo to check valid configuration and reuse result for further step.
@@ -498,14 +498,14 @@ class ContentLoader extends Tool {
 					' set for repo \'' +
 					repoCoordinate.fullRepoName +
 					'\': ' +
-					"Deleting existing files in repo and replacing them with new content.")
+					'Deleting existing files in repo and replacing them with new content.')
 				targetRepo.clearRepo()
 			} else {
 				log.debug('OverwriteMode ' + String.valueOf(OverwriteMode.UPGRADE) +
 					' set for repo \'' +
 					repoCoordinate.fullRepoName +
 					'\': ' +
-					"Merging new content into existing repo. ")
+					'Merging new content into existing repo. ')
 			}
 		}
 	}
@@ -597,7 +597,7 @@ class ContentLoader extends Tool {
 				' set for repo \'' +
 				repoCoordinate.fullRepoName +
 				'\' ' +
-				"and repo already exists in target:  Not pushing content!" +
+				'and repo already exists in target:  Not pushing content!' +
 				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}

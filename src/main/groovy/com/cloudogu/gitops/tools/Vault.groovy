@@ -69,6 +69,7 @@ class Vault extends Tool {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 
 		prepareVaultApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceVaultTemplates(repositoryWorkspace.clusterResourcesRepository)
 
 		// Note that some specific configuration steps are implemented in ArgoCD
 		def helmConfig = config.features.secrets.vault.helm
@@ -113,5 +114,9 @@ class Vault extends Tool {
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, VAULT_APP_PATH))
+	}
+
+	private void replaceVaultTemplates(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 }
