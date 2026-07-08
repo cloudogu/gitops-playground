@@ -48,18 +48,10 @@ abstract class Tool {
 
 		log.info("Installing Tool ${getClass().getSimpleName()}")
 
-		createImagePullSecretIfRequired()
-
 		enable()
 
 		log.info("Tool installed: ${getClass().getSimpleName()}")
 		return true
-	}
-
-	protected void createImagePullSecretIfRequired() {
-		if (this instanceof ToolWithImage) {
-			(this as ToolWithImage).createImagePullSecret()
-		}
 	}
 
 	protected void prepare() {}
@@ -99,8 +91,8 @@ abstract class Tool {
 		String version = helmConfig.version
 		RepoType repoType = RepoType.HELM
 
-		this.addHelmValuesData("config", config)
-		this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
+		this.addHelmValuesData('config', config)
+		this.addHelmValuesData('statics', new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
 
 		/*
 		 * If we get a helmValuesTemplatePath we render the Template with the given Data.
@@ -110,7 +102,7 @@ abstract class Tool {
 		Map helmValuesData = this.helmValuesTemplateData
 		if (helmValuesTemplatePath) {
 			def helmValuesPath = helmValuesTemplatePath.toString()
-			if (helmValuesPath.contains(".ftl")) {
+			if (helmValuesPath.contains('.ftl')) {
 				log.debug("Rendering helm values template from ${helmValuesTemplatePath}")
 				helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
 			} else {

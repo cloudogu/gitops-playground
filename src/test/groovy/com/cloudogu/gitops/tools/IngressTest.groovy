@@ -18,6 +18,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -36,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @EnableKubernetesMockClient(crud = true)
 class IngressTest {
@@ -61,6 +62,8 @@ class IngressTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+	@Mock
+	ImagePullSecretCreator imagePullSecretCreator
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -135,7 +138,7 @@ class IngressTest {
 	@Test
 	void 'helm release is installed in air-gapped mode'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
-		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
+		when(gitProvider.repoUrl(any())).thenReturn('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b')
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
 		config.application.mirrorRepos = true
@@ -174,7 +177,7 @@ class IngressTest {
 	@Test
 	void 'When Monitoring is enabled, metrics are enabled'() {
 		config.features.monitoring.active = true
-		config.application.namePrefix = "heliosphere"
+		config.application.namePrefix = 'heliosphere'
 
 		install(createIngress())
 
@@ -182,7 +185,7 @@ class IngressTest {
 
 		assertThat(actual['metrics']['enabled']).isEqualTo(true)
 		assertThat(actual['metrics']['prometheus']['serviceMonitor']['enabled']).isEqualTo(true)
-		assertThat(actual['metrics']['prometheus']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+		assertThat(actual['metrics']['prometheus']['serviceMonitor']['namespace']).isEqualTo('heliospheremonitoring')
 	}
 
 	@Test
@@ -235,7 +238,7 @@ class IngressTest {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				// Path after template invocation
 				return ret
 			}
@@ -261,7 +264,8 @@ class IngressTest {
 			deployer,
 			k8sClient,
 			airGappedUtils,
-			gitHandler)
+			gitHandler,
+			imagePullSecretCreator)
 	}
 
 	private boolean install(Ingress ingress) {

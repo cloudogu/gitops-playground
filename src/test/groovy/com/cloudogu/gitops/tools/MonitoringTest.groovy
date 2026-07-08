@@ -18,6 +18,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -81,6 +82,7 @@ class MonitoringTest {
 	RepositoryWorkspace repositoryWorkspace
 	DeploymentContext deploymentContext
 	ScmManagerProviderMock scmManagerMock
+	ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator)
 
 	KubernetesClient client
 	// Client to set mock data, gets injected by annotation
@@ -686,7 +688,7 @@ matchExpressions:
 				temporaryYamlFilePrometheus = Path.of(ret.toString().replace('.ftl', ''))
 				return ret
 			}
-		}, deployer, k8sClient, airGappedUtils, gitHandler)
+		}, deployer, k8sClient, airGappedUtils, gitHandler, imagePullSecretCreator)
 	}
 
 	private boolean install(Monitoring monitoring) {

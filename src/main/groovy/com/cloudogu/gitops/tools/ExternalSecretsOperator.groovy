@@ -5,8 +5,8 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -19,7 +19,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(400)
-class ExternalSecretsOperator extends Tool implements ToolWithImage {
+class ExternalSecretsOperator extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml'
 
@@ -28,6 +28,8 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 	private static final String RELEASE_NAME = 'external-secrets'
 	private static final String EXTERNAL_SECRETS_APP_PATH = 'apps/external-secrets'
 
+	private final ImagePullSecretCreator imagePullSecretCreator
+
 	String namespace
 	final K8sClient k8sClient
 
@@ -35,12 +37,14 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -60,6 +64,8 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 
 	@Override
 	void enable() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
+
 		prepareExternalSecretsApp(repositoryWorkspace.clusterResourcesRepository)
 
 		def helmConfig = config.features.secrets.externalSecrets.helm

@@ -6,8 +6,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -24,7 +24,7 @@ import groovy.util.logging.Slf4j
 @Singleton
 @Order(300)
 @CompileStatic
-class Monitoring extends Tool implements ToolWithImage {
+class Monitoring extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
 	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
@@ -37,6 +37,8 @@ class Monitoring extends Tool implements ToolWithImage {
 	private static final String MONITORING_NETPOLS_PATH = "${MONITORING_APP_PATH}/misc/netpols"
 	private static final String MONITORING_DASHBOARD_PATH = "${MONITORING_APP_PATH}/misc/dashboard"
 
+	private final ImagePullSecretCreator imagePullSecretCreator
+
 	String namespace
 	final K8sClient k8sClient
 
@@ -44,12 +46,14 @@ class Monitoring extends Tool implements ToolWithImage {
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler) {
-		this.fileSystemUtils = fileSystemUtils
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer
+		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -69,6 +73,8 @@ class Monitoring extends Tool implements ToolWithImage {
 
 	@Override
 	void enable() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
+
 		String uid = ''
 		if (context.isOpenshift()) {
 			uid = findValidOpenShiftUid()
@@ -236,16 +242,6 @@ class Monitoring extends Tool implements ToolWithImage {
 		if (!hasScmManagerMetricsEndpoint()) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/scmm-dashboard.yaml")
 		}
-	}
-
-	@Override
-	String getNamespace() {
-		return namespace
-	}
-
-	@Override
-	K8sClient getK8sClient() {
-		return k8sClient
 	}
 
 	private boolean hasScmManagerMetricsEndpoint() {

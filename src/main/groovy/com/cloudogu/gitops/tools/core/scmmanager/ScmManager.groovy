@@ -5,9 +5,8 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 
 import io.micronaut.core.annotation.Order
 
@@ -17,18 +16,18 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(10)
-class ScmManager extends Tool implements ToolWithImage {
+class ScmManager extends Tool {
 
 	String namespace
 
-	final K8sClient k8sClient
+	private final ImagePullSecretCreator imagePullSecretCreator
 
 	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
-		K8sClient k8sClient) {
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
-		this.k8sClient = k8sClient
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -44,6 +43,8 @@ class ScmManager extends Tool implements ToolWithImage {
 	@Override
 	void enable() {
 		log.info('Starting internal SCM-Manager setup.')
+
+		imagePullSecretCreator.createIfRequired(config, namespace)
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
@@ -61,16 +62,13 @@ class ScmManager extends Tool implements ToolWithImage {
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			"Update SCM-Manager GitOps resources"
-		)
-
+		repositoryWorkspace.commitAndPushClusterResourcesChanges('Update SCM-Manager GitOps resources')
 
 		log.info('Internal SCM-Manager setup finished.')
 	}
 
 	private void prepareNamespace() {
-		this.namespace = activeNamespace(context)
+		this.namespace = prefixedNamespace(context)
 		this.config.scm.scmManager.namespace = this.namespace
 	}
 
@@ -80,8 +78,8 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	private String prefixedNamespace(DeploymentContext context) {
-		String prefix = context.config.application.namePrefix ?: ""
-		String baseNamespace = context.config.scm.scmManager.namespace ?: "scm-manager"
+		String prefix = context.config.application.namePrefix ?: ''
+		String baseNamespace = context.config.scm.scmManager.namespace ?: 'scm-manager'
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace

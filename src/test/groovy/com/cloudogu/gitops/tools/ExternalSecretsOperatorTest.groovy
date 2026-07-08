@@ -17,6 +17,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -38,12 +39,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @CompileStatic
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @EnableKubernetesMockClient(crud = true)
 class ExternalSecretsOperatorTest {
 
-	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"),
+	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
 		registry: new Config.RegistrySchema(),
 		features: new Config.FeaturesSchema(secrets: new Config.SecretsSchema(active: true)))
 
@@ -64,6 +65,8 @@ class ExternalSecretsOperatorTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+	@Mock
+	ImagePullSecretCreator imagePullSecretCreator
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -154,7 +157,7 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void 'helm release is installed in air-gapped mode'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
-		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
+		when(gitProvider.repoUrl(any())).thenReturn('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b')
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
 		config.application.mirrorRepos = true
@@ -210,7 +213,7 @@ class ExternalSecretsOperatorTest {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				// Path after template invocation
 				return ret
 			}
@@ -235,7 +238,8 @@ class ExternalSecretsOperatorTest {
 			deployer,
 			k8sClient,
 			airGappedUtils,
-			gitHandler)
+			gitHandler,
+			imagePullSecretCreator)
 	}
 
 	private boolean install(ExternalSecretsOperator operator) {

@@ -22,6 +22,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -49,6 +50,7 @@ class JenkinsTest {
 	Path temporaryYamlFile
 	NetworkingUtils networkingUtils = mock(NetworkingUtils)
 	K8sClient k8sClient = mock(K8sClient)
+	ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator)
 
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
@@ -443,7 +445,8 @@ jenkins:
 			k8sClient,
 			networkingUtils,
 			airGappedUtils,
-			gitHandler)
+			gitHandler,
+			imagePullSecretCreator)
 	}
 
 	private boolean install(Jenkins jenkins) {

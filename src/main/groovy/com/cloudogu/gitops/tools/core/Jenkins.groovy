@@ -11,8 +11,8 @@ import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.*
 
 import io.micronaut.core.annotation.Order
@@ -23,7 +23,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Singleton
 @Order(20)
-class Jenkins extends Tool implements ToolWithImage {
+class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
 
@@ -40,6 +40,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	private UserManager userManager
 	private PrometheusConfigurator prometheusConfigurator
 
+	private final ImagePullSecretCreator imagePullSecretCreator
 	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
@@ -53,7 +54,8 @@ class Jenkins extends Tool implements ToolWithImage {
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -65,6 +67,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		this.networkingUtils = networkingUtils
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -85,15 +88,9 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	void createImagePullSecret() {
-		if (config.jenkins.internal) {
-			ToolWithImage.super.createImagePullSecret()
-		}
-	}
-
-	@Override
 	void enable() {
 		if (config.jenkins.internal) {
+			imagePullSecretCreator.createIfRequired(config, namespace)
 			k8sClient.createNamespace(namespace)
 
 			// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
