@@ -3,9 +3,9 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
@@ -13,8 +13,11 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
@@ -30,16 +33,25 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @EnableKubernetesMockClient(crud = true)
 class IngressTest {
 
 	// setting default config values with ingress active
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'),
 		features: new Config.FeaturesSchema(ingress: new Config.IngressSchema(active: true)))
+
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
+	File clusterResourcesRepoDir
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
+
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	@Mock
 	Deployer deployer
@@ -67,27 +79,44 @@ class IngressTest {
 		def actual = parseActualYaml()
 		assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq(config.features.ingress.helm.repoURL), eq('traefik'),
-			eq(config.features.ingress.helm.chart), eq(config.features.ingress.helm.version), eq('foo-' + config.features.ingress.ingressNamespace),
-			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(false))
+		verify(deployer).deployFeature(config.features.ingress.helm.repoURL,
+			'traefik',
+			config.features.ingress.helm.chart,
+			config.features.ingress.helm.version,
+			'foo-' + config.features.ingress.ingressNamespace,
+			'traefik',
+			temporaryYamlFile,
+			RepoType.HELM,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
+
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
+	}
 
+	@Test
+	void 'prepares traefik app content in cluster resources workspace without copying templates'() {
+		install(createIngress())
+
+		assertThat(new File(clusterResourcesRepoDir, 'apps/traefik')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/traefik/templates')).doesNotExist()
 	}
 
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
+
 		install(createIngress())
+
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
+
 		assertFalse(createIngress().isEnabled(new ContextBuilder(config).build()))
 	}
 
@@ -114,11 +143,11 @@ class IngressTest {
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
 
-		Path SourceChart = rootChartsFolder.resolve('traefik')
-		Files.createDirectories(SourceChart)
+		Path sourceChart = rootChartsFolder.resolve('traefik')
+		Files.createDirectories(sourceChart)
 
-		Map ChartYaml = [version: '1.2.3']
-		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+		Map chartYaml = [version: '1.2.3']
+		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
 		install(createIngress())
 
@@ -128,11 +157,18 @@ class IngressTest {
 
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
-			eq('traefik'), eq('.'), eq('1.2.3'), eq('foo-' + config.features.ingress.ingressNamespace),
-			eq('traefik'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
+
+		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+			'traefik',
+			'.',
+			'1.2.3',
+			'foo-' + config.features.ingress.ingressNamespace,
+			'traefik',
+			temporaryYamlFile,
+			RepoType.GIT,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
@@ -168,6 +204,7 @@ class IngressTest {
 		config.registry.proxyPassword = 'proxy-pw'
 
 		install(createIngress())
+
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
@@ -186,13 +223,15 @@ class IngressTest {
 	@Test
 	void 'get namespace from feature'() {
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
+
 		config.features.ingress.active = false
+
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo(null)
 	}
 
 	private Ingress createIngress() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-		return new Ingress(new FileSystemUtils() {
+		FileSystemUtils testFileSystemUtils = new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -200,11 +239,34 @@ class IngressTest {
 				// Path after template invocation
 				return ret
 			}
-		}, deployer, k8sClient, airGappedUtils, gitHandler)
+		}
+
+		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
+			@Override
+			GitRepo create(String repoTarget, GitProvider provider) {
+				def repo = super.create(repoTarget, provider)
+				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+				return repo
+			}
+		}
+
+		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
+			scmManagerMock)
+
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
+
+		return new Ingress(testFileSystemUtils,
+			deployer,
+			k8sClient,
+			airGappedUtils,
+			gitHandler)
 	}
 
 	private boolean install(Ingress ingress) {
-		return ingress.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return ingress.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

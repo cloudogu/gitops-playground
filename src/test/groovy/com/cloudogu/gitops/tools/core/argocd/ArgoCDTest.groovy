@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools.core.argocd
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
@@ -25,7 +24,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 import groovy.io.FileType
-import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.api.model.NamespaceBuilder
@@ -256,47 +254,6 @@ class ArgoCDTest {
 	}
 
 	@Test
-	void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
-		config.features.monitoring.active = false
-
-		def argocd = createArgoCD()
-		execute(argocd)
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-		assertThat(new File(clusterResourcesRepoLayout.monitoringDir())).doesNotExist()
-	}
-
-	@Test
-	void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
-		config.features.monitoring.active = true
-
-		def argocd = createArgoCD()
-		execute(argocd)
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-		assertThat(new File(clusterResourcesRepoLayout.monitoringDir())).exists()
-		assertValidDashboards(clusterResourcesRepoLayout.monitoringDir())
-	}
-
-	void assertValidDashboards(String monitoringPath) {
-		Files.walk(Path.of(monitoringPath))
-			.filter { it.toString() ==~ /.*-dashboard\.yaml/ }.each { Path path ->
-			def dashboardConfigMap = null
-
-			assertThatCode {
-				dashboardConfigMap = parseActualYaml(path.toString())
-			}.as("Invalid YAML in ${path.fileName}").doesNotThrowAnyException()
-
-			assertThat(dashboardConfigMap.data as Map).hasSize(1)
-				.as('Expected only on dashboard json within map')
-			assertThatCode {
-				def dashboardJsonString = (dashboardConfigMap.data as Map).entrySet().first().value as String
-				new JsonSlurper().parseText(dashboardJsonString)
-			}.as("Invalid JSON in ${path.fileName}").doesNotThrowAnyException()
-		}
-	}
-
-	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
 		config.features.mail.active = false
 
@@ -468,17 +425,6 @@ class ArgoCDTest {
 	}
 
 	@Test
-	void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
-		config.features.secrets.active = false
-
-		def argocd = createArgoCD()
-		execute(argocd)
-		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-		assertThat(new File(clusterResourcesRepoLayout.vaultDir())).doesNotExist()
-	}
-
-	@Test
 	void 'Prepares repos for air-gapped mode'() {
 		config.features.monitoring.active = false
 		config.application.mirrorRepos = true
@@ -548,16 +494,25 @@ class ArgoCDTest {
 	@Test
 	void 'ArgoCD with active network policies'() {
 		config.application.netpols = true
+		config.application.namePrefix = 'my-prefix-'
+		config.scm.scmManager.namespace = 'my-prefix-scm-manager'
 
 		def argocd = createArgoCD()
 		execute(argocd)
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
 
+		String valuesYaml = new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text
+		String allowNamespacesYaml = new File(clusterResourcesRepoLayout.argocdRoot(),
+			'/argocd/templates/allow-namespaces.yaml').text
+
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text.contains('namespace: monitoring'))
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains('namespace: monitoring'))
-		assertThat(new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains('namespace: default'))
+
+		assertThat(valuesYaml).contains('namespace: my-prefix-monitoring')
+
+		assertThat(allowNamespacesYaml).contains('namespace: my-prefix-scm-manager')
+		assertThat(allowNamespacesYaml).doesNotContain('namespace: my-prefix-my-prefix-scm-manager')
+		assertThat(allowNamespacesYaml).contains('kubernetes.io/metadata.name: my-prefix-argocd')
 	}
 
 	private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, ArgoCDRepoLayout repoLayout) {
@@ -607,22 +562,6 @@ class ArgoCDTest {
 			assertThat(yaml['spec']['destination']['namespace'])
 				.as("$file spec.destination.namespace has name prefix")
 				.isEqualTo("${expectedPrefix}argocd".toString())
-		}
-
-		//checks all other folder for prefixed yaml files except "apps/argocd"
-		assertAllYamlFiles(new File(repoLayout.rootDir()), 'apps', 9,
-			['/apps/argocd/']) { Path it ->
-
-			def yaml = parseActualYaml(it.toString())
-			List yamlDocuments = yaml instanceof List ? yaml : [yaml]
-			for (def document in yamlDocuments) {
-				if (document && document['kind'] != 'Namespace') {
-					def metadataNamespace = document['metadata']['namespace'] as String
-					assertThat(metadataNamespace)
-						.as("$it metadata.namespace has name prefix")
-						.startsWith("${expectedPrefix}")
-				}
-			}
 		}
 	}
 

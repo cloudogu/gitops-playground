@@ -2,7 +2,6 @@ package com.cloudogu.gitops.infrastructure.deployment
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
-import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 
 import java.nio.file.Path
 import jakarta.inject.Provider
@@ -11,39 +10,49 @@ import jakarta.inject.Singleton
 @Singleton
 class Deployer {
 
-	Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider
+	final Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider
+	final HelmStrategy helmStrategy
 
-	HelmStrategy helmStrategy
-
-	Deployer(Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider, HelmStrategy helmStrategy) {
+	Deployer(Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider,
+		HelmStrategy helmStrategy) {
 		this.argoCdStrategyProvider = argoCdStrategyProvider
 		this.helmStrategy = helmStrategy
 	}
 
-	void deployFeature(DeploymentContext context,
-		RepositoryWorkspace workspace,
-		String repoURL,
+	void deployFeature(String repoURL,
 		String repoName,
 		String chartOrPath,
 		String version,
 		String namespace,
 		String releaseName,
 		Path helmValuesPath,
-		RepoType repoType,
-		boolean initByHelm = false) {
+		DeploymentStrategy.RepoType repoType,
+		boolean initByHelm = false,
+		DeploymentContext context,
+		RepositoryWorkspace repositoryWorkspace) {
 
 		if (initByHelm) {
-			helmStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
+			helmStrategy.deployFeature(repoURL,
+				repoName,
+				chartOrPath,
+				version,
+				namespace,
+				releaseName,
+				helmValuesPath,
+				repoType,
+				context,
+				repositoryWorkspace)
 		}
-		argoCdStrategyProvider.get().deployFeature(context,
-			workspace,
-			repoURL,
+
+		argoCdStrategyProvider.get().deployFeature(repoURL,
 			repoName,
 			chartOrPath,
 			version,
 			namespace,
 			releaseName,
 			helmValuesPath,
-			repoType)
+			repoType,
+			context,
+			repositoryWorkspace)
 	}
 }

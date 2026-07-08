@@ -3,13 +3,13 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.*
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -78,8 +78,8 @@ class MonitoringTest {
 	File clusterResourcesRepoDir
 
 	GitHandler gitHandler = mock(GitHandler)
-	RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning)
 	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
 	ScmManagerProviderMock scmManagerMock
 
 	KubernetesClient client
@@ -92,7 +92,6 @@ class MonitoringTest {
 		scmManagerMock = new ScmManagerProviderMock()
 		k8sClient = mock(K8sClient)
 		k8sClient.client = client
-		repositoryProvisioning = mock(RepositoryProvisioning)
 	}
 
 	@Test
@@ -266,6 +265,15 @@ policies:
 	}
 
 	@Test
+	void 'prepares monitoring app content in cluster resources workspace without copying templates'() {
+		install(createStack(scmManagerMock))
+
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/templates')).doesNotExist()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')).exists()
+	}
+
+	@Test
 	void 'cleanupUnusedDashboards removes all dashboards for disabled features'() {
 		config.features.monitoring.active = true
 		config.features.ingress.active = false
@@ -434,11 +442,17 @@ policies:
 	void 'helm release is installed'() {
 		install(createStack(scmManagerMock))
 
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('https://prom'), eq('monitoring'),
-			eq('kube-prometheus-stack'), eq('19.2.2'), eq('foo-monitoring'),
-			eq('kube-prometheus-stack'), eq(temporaryYamlFilePrometheus), eq(RepoType.HELM), eq(false))
+		verify(deployer).deployFeature('https://prom',
+			'monitoring',
+			'kube-prometheus-stack',
+			'19.2.2',
+			'foo-monitoring',
+			'kube-prometheus-stack',
+			temporaryYamlFilePrometheus,
+			RepoType.HELM,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 
 		def yaml = parseActualYaml()
 		assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
@@ -465,15 +479,14 @@ policies:
 		assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
 
 		assertThat(yaml['crds']).isNull()
-		assertThat(new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/rbac')).doesNotExist()
 	}
 
 	@Test
-	void 'publishes monitoring resources through repository provisioning'() {
+	void 'publishes monitoring resources through repository workspace'() {
 		install(createStack(scmManagerMock))
 
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges('monitoring',
-			'Update Prometheus dashboards, RBAC and network policies.')
+		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update monitoring GitOps resources')
 	}
 
 	@Test
@@ -494,9 +507,9 @@ policies:
 		def yaml = parseActualYaml()
 		assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
 		assertThat(yaml['prometheusOperator']['prometheusConfigReloader']['resources'] as Map).containsKeys('limits', 'requests')
-		assertThat(yaml['grafana']['resources'] as Map) containsKeys('limits', 'requests')
-		assertThat(yaml['grafana']['sidecar']['resources'] as Map) containsKeys('limits', 'requests')
-		assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map) containsKeys('limits', 'requests')
+		assertThat(yaml['grafana']['resources'] as Map).containsKeys('limits', 'requests')
+		assertThat(yaml['grafana']['sidecar']['resources'] as Map).containsKeys('limits', 'requests')
+		assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
@@ -583,11 +596,18 @@ policies:
 		assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
 		assertThat(helmConfig.value.version).isEqualTo('19.2.2')
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
-			eq('monitoring'), eq('.'), eq('1.2.3'), eq('foo-monitoring'),
-			eq('kube-prometheus-stack'), eq(temporaryYamlFilePrometheus), eq(RepoType.GIT), eq(false))
+
+		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+			'monitoring',
+			'.',
+			'1.2.3',
+			'foo-monitoring',
+			'kube-prometheus-stack',
+			temporaryYamlFilePrometheus,
+			RepoType.GIT,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
@@ -635,8 +655,6 @@ matchExpressions:
 	private Monitoring createStack(ScmManagerProviderMock scmManagerMock) {
 		when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
 
-		def configuration = config
-
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
 			GitRepo create(String repoTarget, GitProvider scm) {
@@ -658,7 +676,8 @@ matchExpressions:
 		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
 			scmManagerMock)
 
-		repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
 		return new Monitoring(new FileSystemUtils() {
 			@Override
@@ -667,11 +686,12 @@ matchExpressions:
 				temporaryYamlFilePrometheus = Path.of(ret.toString().replace('.ftl', ''))
 				return ret
 			}
-		}, deployer, k8sClient, airGappedUtils, gitHandler, repositoryProvisioning)
+		}, deployer, k8sClient, airGappedUtils, gitHandler)
 	}
 
 	private boolean install(Monitoring monitoring) {
-		return monitoring.execute(new ContextBuilder(config).build(), repositoryWorkspace)
+		deploymentContext = new ContextBuilder(config).build()
+		return monitoring.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

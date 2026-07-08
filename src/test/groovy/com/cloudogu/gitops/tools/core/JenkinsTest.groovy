@@ -12,6 +12,8 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
@@ -19,6 +21,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -30,10 +33,9 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-import org.mockito.Mock
 
 class JenkinsTest {
-	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: "testUrlJenkins")),
+	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: 'testUrlJenkins')),
 		jenkins: new Config.JenkinsSchema(active: true))
 
 	String expectedNodeName = 'something'
@@ -45,12 +47,15 @@ class JenkinsTest {
 	PrometheusConfigurator prometheusConfigurator = mock(PrometheusConfigurator)
 	Deployer deployer = mock(Deployer)
 	Path temporaryYamlFile
-	NetworkingUtils networkingUtils = mock(NetworkingUtils.class)
+	NetworkingUtils networkingUtils = mock(NetworkingUtils)
 	K8sClient k8sClient = mock(K8sClient)
 
-	@Mock
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
+
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
+	File localTempDir
 
 	@BeforeEach
 	void setup() {
@@ -81,11 +86,20 @@ me:x:1000:''')
 
 		install(jenkins)
 
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('https://jen-repo'), eq('jenkins'),
-			eq('jen-chart'), eq('4.8.1'), eq('jenkins'),
-			eq('jenkins'), eq(temporaryYamlFile), eq(RepoType.HELM), eq(true))
+		verify(deployer).deployFeature(eq('https://jen-repo'),
+			eq('jenkins'),
+			eq('jen-chart'),
+			eq('4.8.1'),
+			eq('jenkins'),
+			eq('jenkins'),
+			eq(temporaryYamlFile),
+			eq(RepoType.HELM),
+			eq(true),
+			eq(deploymentContext),
+			eq(repositoryWorkspace))
+
+		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update jenkins GitOps resources')
+
 		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
 		verify(k8sClient).labelRemove('node', '--all', '', 'node')
 		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
@@ -110,12 +124,20 @@ me:x:1000:''')
 		assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(1000)
 		assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(42)
 
-		ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String)
+		ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map)
 		verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any(String[].class))
 		assertThat(nameCaptor.value).startsWith('tmp-docker-gid-grepper-')
 		List containers = overridesCaptor.value['spec']['containers'] as List
 		assertThat(containers[0]['image'].toString()).isEqualTo('bash:42')
+	}
+
+	@Test
+	void 'prepares Jenkins app content in cluster resources workspace'() {
+		install(createJenkins())
+
+		assertThat(new File(localTempDir, 'apps/jenkins')).exists()
+		assertThat(new File(localTempDir, 'apps/jenkins/templates')).doesNotExist()
 	}
 
 	@Test
@@ -152,10 +174,20 @@ jenkins:
 		config.registry.createImagePullSecrets = true
 		install(createJenkins())
 
-		verify(deployer, never()).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			anyString(), anyString(), anyString(), anyString(),
-			anyString(), anyString(), any(Path), any(), anyBoolean())
+		verify(deployer, never()).deployFeature(anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			any(Path),
+			any(),
+			anyBoolean(),
+			any(DeploymentContext),
+			any(RepositoryWorkspace))
+
+		verify(repositoryWorkspace, never()).commitAndPushClusterResourcesChanges(anyString())
+
 		verify(k8sClient, never()).createNamespace(any())
 		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
 
@@ -280,7 +312,7 @@ jenkins:
 		config.application.runningInsideK8s = true
 
 		install(createJenkins())
-		assertThat(config.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
+		assertThat(config.jenkins.url).isEqualTo('http://jenkins.jenkins.svc.cluster.local:80')
 	}
 
 	@Test
@@ -317,7 +349,6 @@ jenkins:
 
 		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
 		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
-
 	}
 
 	@Test
@@ -332,7 +363,6 @@ jenkins:
 
 	@Test
 	void 'Global property is set for additional envs'() {
-
 		config.jenkins.additionalEnvs = [ADDITIONAL_DOCKER_RUN_ARGS: '-u0:0']
 
 		install(createJenkins())
@@ -365,11 +395,11 @@ jenkins:
 
 		install(createJenkins())
 
-		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))
+		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq('http://test'))
 	}
 
 	protected Map<String, String> getEnvAsMap() {
-		commandExecutor.environment.collectEntries { it.split('=') }
+		return commandExecutor.environment.collectEntries { it.split('=') }
 	}
 
 	private Jenkins createJenkins() {
@@ -380,18 +410,45 @@ jenkins:
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				// Path after template invocation
 				return ret
 			}
 		}
+
+		TestGitRepoFactory repoFactory = new TestGitRepoFactory(config, new FileSystemUtils()) {
+			@Override
+			GitRepo create(String repoTarget, GitProvider scm) {
+				def repo = super.create(repoTarget, scm)
+				localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+				return repo
+			}
+		}
+
+		GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
+			scmManagerMock)
+
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
+
 		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
 
-		return new Jenkins(commandExecutor, fileSystemUtils, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deployer, k8sClient, networkingUtils, airGappedUtils, gitHandler)
+		return new Jenkins(commandExecutor,
+			fileSystemUtils,
+			globalPropertyManager,
+			jobManger,
+			userManager,
+			prometheusConfigurator,
+			deployer,
+			k8sClient,
+			networkingUtils,
+			airGappedUtils,
+			gitHandler)
 	}
 
 	private boolean install(Jenkins jenkins) {
-		return jenkins.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return jenkins.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

@@ -23,12 +23,12 @@ class DeployerTest {
 	private DeploymentContext context
 	private RepositoryWorkspace workspace
 
-	private static final String REPO_URL = "https://example.com/repo.git"
-	private static final String REPO_NAME = "repo-name"
-	private static final String CHART_OR_PATH = "chart-or-path"
-	private static final String VERSION = "1.2.3"
-	private static final String NAMESPACE = "namespace"
-	private static final String RELEASE_NAME = "release-name"
+	private static final String REPO_URL = 'https://example.com/repo.git'
+	private static final String REPO_NAME = 'repo-name'
+	private static final String CHART_OR_PATH = 'chart-or-path'
+	private static final String VERSION = '1.2.3'
+	private static final String NAMESPACE = 'namespace'
+	private static final String RELEASE_NAME = 'release-name'
 	private static final RepoType REPO_TYPE = RepoType.HELM
 
 	@BeforeEach
@@ -51,16 +51,16 @@ class DeployerTest {
 
 		verify(argoCdStrategyProvider).get()
 
-		verify(argoCdStrategy).deployFeature(context,
-			workspace,
-			REPO_URL,
+		verify(argoCdStrategy).deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
 			NAMESPACE,
 			RELEASE_NAME,
 			helmValuesPath,
-			REPO_TYPE)
+			REPO_TYPE,
+			context,
+			workspace)
 
 		verifyNoInteractions(helmStrategy)
 		verifyNoMoreInteractions(argoCdStrategyProvider, argoCdStrategy)
@@ -81,28 +81,13 @@ class DeployerTest {
 			NAMESPACE,
 			RELEASE_NAME,
 			helmValuesPath,
-			REPO_TYPE)
+			REPO_TYPE,
+			context,
+			workspace)
 
 		inOrder.verify(argoCdStrategyProvider).get()
 
-		inOrder.verify(argoCdStrategy).deployFeature(context,
-			workspace,
-			REPO_URL,
-			REPO_NAME,
-			CHART_OR_PATH,
-			VERSION,
-			NAMESPACE,
-			RELEASE_NAME,
-			helmValuesPath,
-			REPO_TYPE)
-
-		verifyNoMoreInteractions(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
-	}
-
-	private void deployFeature(boolean initByHelm) {
-		deployer.deployFeature(context,
-			workspace,
-			REPO_URL,
+		inOrder.verify(argoCdStrategy).deployFeature(REPO_URL,
 			REPO_NAME,
 			CHART_OR_PATH,
 			VERSION,
@@ -110,6 +95,23 @@ class DeployerTest {
 			RELEASE_NAME,
 			helmValuesPath,
 			REPO_TYPE,
-			initByHelm)
+			context,
+			workspace)
+
+		verifyNoMoreInteractions(helmStrategy, argoCdStrategyProvider, argoCdStrategy)
+	}
+
+	private void deployFeature(boolean initByHelm) {
+		deployer.deployFeature(REPO_URL,
+			REPO_NAME,
+			CHART_OR_PATH,
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			helmValuesPath,
+			REPO_TYPE,
+			initByHelm,
+			context,
+			workspace)
 	}
 }

@@ -3,7 +3,8 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.*
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
@@ -12,9 +13,12 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
+import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
+import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -28,8 +32,11 @@ import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @EnableKubernetesMockClient(crud = true)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class VaultTest {
 
 	Config config = new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-',),
@@ -39,8 +46,14 @@ class VaultTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Deployer deployer = mock(Deployer)
 	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	GitHandler gitHandler = new GitHandlerForTests(new ScmManagerProviderMock())
+
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
+	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
+
 	Path temporaryYamlFile
+	File clusterResourcesRepoDir
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -54,12 +67,22 @@ class VaultTest {
 	@Test
 	void 'is disabled via active flag'() {
 		config.features.secrets.active = false
+
 		assertFalse(createVault().isEnabled(new ContextBuilder(config).build()))
+	}
+
+	@Test
+	void 'prepares vault app content in cluster resources workspace without copying templates'() {
+		install(createVault())
+
+		assertThat(new File(clusterResourcesRepoDir, 'apps/vault')).exists()
+		assertThat(new File(clusterResourcesRepoDir, 'apps/vault/templates')).doesNotExist()
 	}
 
 	@Test
 	void 'uses ingress if enabled'() {
 		config.features.secrets.vault.url = 'http://vault.local'
+
 		install(createVault())
 
 		def ingressYaml = parseActualYaml()['server']['ingress']
@@ -71,7 +94,8 @@ class VaultTest {
 	void 'uses ingress if enabled and image set'() {
 		config.features.secrets.vault.url = 'http://vault.local'
 		// Also set image to make sure ingress and image work at the same time under the server block
-		//config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
+		// config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
+
 		install(createVault())
 
 		def ingressYaml = parseActualYaml()['server']['ingress']
@@ -106,7 +130,8 @@ class VaultTest {
 		assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
 		assertThat(actualPostStart[1]).isEqualTo('-c')
 
-		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+		assertThat(normalizeShellCommand(actualPostStart[2] as String))
+			.isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 
 		List actualVolumes = actualYaml['server']['volumes'] as List
 		List actualVolumeMounts = actualYaml['server']['volumeMounts'] as List
@@ -124,11 +149,13 @@ class VaultTest {
 		config.features.secrets.vault.mode = 'dev'
 		config.application.username = 'abc'
 		config.application.password = '123'
+
 		install(createVault())
 
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
-		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+		assertThat(normalizeShellCommand(actualPostStart[2] as String))
+			.isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 	}
 
 	@Test
@@ -144,12 +171,14 @@ class VaultTest {
 
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
-		assertThat(normalizeShellCommand(actualPostStart[2] as String)).isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+		assertThat(normalizeShellCommand(actualPostStart[2] as String))
+			.isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 	}
 
 	@Test
 	void 'Prod mode can be enabled'() {
 		config.features.secrets.vault.mode = 'prod'
+
 		install(createVault())
 
 		assertThat(parseActualYaml()).doesNotContainKey('server')
@@ -158,6 +187,7 @@ class VaultTest {
 	@Test
 	void 'custom image is used'() {
 		config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
+
 		install(createVault())
 
 		def actualYaml = parseActualYaml()
@@ -170,19 +200,20 @@ class VaultTest {
 		config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(chart: 'vault',
 			repoURL: 'https://vault-reg',
 			version: '42.23.0')
+
 		install(createVault())
 
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('https://vault-reg'),
-			eq('vault'),
-			eq('vault'),
-			eq('42.23.0'),
-			eq('foo-secrets'),
-			eq('vault'),
-			eq(temporaryYamlFile),
-			eq(RepoType.HELM),
-			eq(false))
+		verify(deployer).deployFeature('https://vault-reg',
+			'vault',
+			'vault',
+			'42.23.0',
+			'foo-secrets',
+			'vault',
+			temporaryYamlFile,
+			RepoType.HELM,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 
 		assertThat(parseActualYaml()).doesNotContainKey('global')
 	}
@@ -199,11 +230,11 @@ class VaultTest {
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
 
-		Path SourceChart = rootChartsFolder.resolve('vault')
-		Files.createDirectories(SourceChart)
+		Path sourceChart = rootChartsFolder.resolve('vault')
+		Files.createDirectories(sourceChart)
 
-		Map ChartYaml = [version: '1.2.3']
-		fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+		Map chartYaml = [version: '1.2.3']
+		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
 		install(createVault())
 
@@ -212,11 +243,18 @@ class VaultTest {
 		assertThat(helmConfig.value.chart).isEqualTo('vault')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
 		assertThat(helmConfig.value.version).isEqualTo('42.23.0')
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			eq('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b'),
-			eq('vault'), eq('.'), eq('1.2.3'), eq('foo-secrets'),
-			eq('vault'), eq(temporaryYamlFile), eq(RepoType.GIT), eq(false))
+
+		verify(deployer).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
+			'vault',
+			'.',
+			'1.2.3',
+			'foo-secrets',
+			'vault',
+			temporaryYamlFile,
+			RepoType.GIT,
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
@@ -243,19 +281,41 @@ class VaultTest {
 
 	private Vault createVault() {
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-
-		return new Vault(new FileSystemUtils() {
+		FileSystemUtils testFileSystemUtils = new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
 				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
 				return ret
 			}
-		}, k8sClient, deployer, airGappedUtils, gitHandler)
+		}
+
+		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
+			@Override
+			GitRepo create(String repoTarget, GitProvider provider) {
+				def repo = super.create(repoTarget, provider)
+				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+				return repo
+			}
+		}
+
+		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
+			scmManagerMock)
+
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
+
+		return new Vault(testFileSystemUtils,
+			deployer,
+			k8sClient,
+			airGappedUtils,
+			gitHandler)
 	}
 
 	private boolean install(Vault vault) {
-		return vault.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return vault.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

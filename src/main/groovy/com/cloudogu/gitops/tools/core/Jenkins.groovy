@@ -5,6 +5,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
@@ -12,10 +13,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.*
 
 import io.micronaut.core.annotation.Order
 
@@ -27,8 +25,13 @@ import groovy.util.logging.Slf4j
 @Order(20)
 class Jenkins extends Tool implements ToolWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml"
+	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
+
 	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api']
+
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
+	private static final String TOOL_NAME = 'jenkins'
+	private static final String JENKINS_APP_PATH = 'apps/jenkins'
 
 	String namespace
 	private CommandExecutor commandExecutor
@@ -90,9 +93,7 @@ class Jenkins extends Tool implements ToolWithImage {
 
 	@Override
 	void enable() {
-
 		if (config.jenkins.internal) {
-
 			k8sClient.createNamespace(namespace)
 
 			// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
@@ -101,19 +102,33 @@ class Jenkins extends Tool implements ToolWithImage {
 			String nodeName = k8sClient.waitForNode().replace('node/', '')
 			k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
 
-			k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
+			k8sClient.createSecret('generic',
+				'jenkins-credentials',
+				namespace,
 				new Tuple2('jenkins-admin-user', config.jenkins.username),
 				new Tuple2('jenkins-admin-password', config.jenkins.password))
 
 			Config.HelmConfigWithValues helmConfig = config.jenkins.helm
-			String releaseName = "jenkins"
-			addHelmValuesData("dockerGid", findDockerGid())
-			addHelmValuesData("jenkinsBootPlugins", jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
+			String releaseName = 'jenkins'
 
-			deployHelmChart('jenkins', releaseName, namespace, helmConfig, HELM_VALUES_PATH, context, true)
+			addHelmValuesData('dockerGid', findDockerGid())
+			addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
+
+			prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
+
+			deployHelmChart(TOOL_NAME,
+				releaseName,
+				namespace,
+				helmConfig,
+				HELM_VALUES_PATH,
+				context,
+				true)
+
+			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 
 			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 			String serviceName = releaseName
+
 			// Update jenkins.url after it is deployed (and ports are known)
 			if (config.application.runningInsideK8s) {
 				log.debug('Setting jenkins url to k8s service, since installation is running inside k8s')
@@ -124,9 +139,16 @@ class Jenkins extends Tool implements ToolWithImage {
 				String clusterBindAddress = networkingUtils.findClusterBindAddress()
 				config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
 			}
-
 		}
+
 		runSetupScript()
+	}
+
+	private void prepareJenkinsApp(GitRepo clusterResourcesRepo) {
+		log.debug("Preparing Jenkins repository content in ${clusterResourcesRepo.repoTarget}")
+
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, JENKINS_APP_PATH))
 	}
 
 	private void runSetupScript() {
@@ -175,7 +197,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
 
 		if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
-			log.trace("Using a security realm without local user creation. Must not create user.")
+			log.trace('Using a security realm without local user creation. Must not create user.')
 		} else {
 			userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
 		}
@@ -189,7 +211,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	void createJenkinsjob(String namespace, String repoName) {
-		def credentialId = "scm-user"
+		def credentialId = 'scm-user'
 		String prefixedNamespace = "${config.application.namePrefix}${namespace}"
 		String jobName = "${config.application.namePrefix}${repoName}"
 
@@ -215,14 +237,14 @@ class Jenkins extends Tool implements ToolWithImage {
 		}
 
 		jobManager.createCredential(jobName,
-			"registry-user",
+			'registry-user',
 			"${config.registry.username}",
 			"${config.registry.password}",
 			'credentials for accessing the docker-registry for writing images built on jenkins')
 
 		if (config.registry.twoRegistries) {
 			jobManager.createCredential(jobName,
-				"registry-proxy-user",
+				'registry-proxy-user',
 				"${config.registry.proxyUsername}",
 				"${config.registry.proxyPassword}",
 				'credentials for accessing the docker-registry that contains 3rd party or base images')
@@ -266,7 +288,7 @@ class Jenkins extends Tool implements ToolWithImage {
 
 		def lines = etcGroup?.split('\n')
 		for (String it : lines) {
-			def parts = it.split(":")
+			def parts = it.split(':')
 			if (parts[0] == 'docker') {
 				gid = parts[2]
 				break
@@ -283,16 +305,16 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	Map createGidGrepperOverrides() {
-		['spec': ['containers'  : [['name'        : 'tmp-docker-gid-grepper',
-		                            // We use the same image for several tasks for performance and maintenance reasons
-		                            'image'       : "${config.jenkins.internalBashImage}",
-		                            'args'        : ['cat', '/etc/group'],
-		                            'volumeMounts': [['name'     : 'group',
-		                                              'mountPath': '/etc/group',
-		                                              'readOnly' : true]]]],
-		          'nodeSelector': ['node': 'jenkins'],
-		          'volumes'     : [['name'    : 'group',
-		                            'hostPath': ['path': '/etc/group']]]]]
+		return ['spec': ['containers'  : [['name'        : 'tmp-docker-gid-grepper',
+		                                   // We use the same image for several tasks for performance and maintenance reasons
+		                                   'image'       : "${config.jenkins.internalBashImage}",
+		                                   'args'        : ['cat', '/etc/group'],
+		                                   'volumeMounts': [['name'     : 'group',
+		                                                     'mountPath': '/etc/group',
+		                                                     'readOnly' : true]]]],
+		                 'nodeSelector': ['node': 'jenkins'],
+		                 'volumes'     : [['name'    : 'group',
+		                                   'hostPath': ['path': '/etc/group']]]]]
 	}
 
 	@Override

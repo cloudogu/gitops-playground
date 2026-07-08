@@ -25,12 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension)
 class RegistryTest {
 
 	K8sClientForTest k8sClient
 	Path temporaryYamlFile
 	HelmClient helmClient
+	DeploymentContext deploymentContext
 
 	@Mock
 	Deployer deployer
@@ -38,6 +39,7 @@ class RegistryTest {
 	@Test
 	void 'is disabled when external registry is configured'() {
 		def registryConfig = new RegistrySchema()
+
 		assertFalse(createRegistry(registryConfig).isEnabled(createContext(registryConfig)))
 	}
 
@@ -50,9 +52,7 @@ class RegistryTest {
 		assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(DEFAULT_REGISTRY_PORT)
 		assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
 
-		verify(deployer).deployFeature(any(DeploymentContext),
-			nullable(RepositoryWorkspace),
-			anyString(),
+		verify(deployer).deployFeature(anyString(),
 			eq('registry'),
 			eq('docker-registry'),
 			anyString(),
@@ -60,17 +60,21 @@ class RegistryTest {
 			eq('docker-registry'),
 			any(Path),
 			eq(RepoType.HELM),
-			eq(true))
+			eq(true),
+			eq(deploymentContext),
+			nullable(RepositoryWorkspace))
 	}
 
 	@Test
 	void 'inject custom value into chart'() {
 		def registryConfig = new RegistrySchema(active: true,
+			internal: true,
 			helm: new HelmConfigWithValues(chart: 'test',
 				values: [service    : [type: 'NodePortTest'],
 				         customValue: 'testinjectionValue']))
 
 		install(createRegistry(registryConfig), registryConfig)
+
 		assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
 		assertThat(parseActualYaml()['customValue'] as String).contains('testinjectionValue')
 	}
@@ -83,18 +87,21 @@ class RegistryTest {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				// Path after template invocation
 				return ret
 			}
 		}
+
 		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null)
+
 		// We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 		return new Registry(fileUtil, k8sClient, airGappedUtils, deployer)
 	}
 
 	private boolean install(Registry registry, RegistrySchema registryConfig) {
-		return registry.execute(createContext(registryConfig), null)
+		deploymentContext = createContext(registryConfig)
+		return registry.execute(deploymentContext, null)
 	}
 
 	private DeploymentContext createContext(RegistrySchema registryConfig) {
@@ -110,5 +117,4 @@ class RegistryTest {
 		def ys = new YamlSlurper()
 		return ys.parse(temporaryYamlFile) as Map
 	}
-
 }

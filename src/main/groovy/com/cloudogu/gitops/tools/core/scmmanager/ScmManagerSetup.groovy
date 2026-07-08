@@ -92,9 +92,7 @@ class ScmManagerSetup {
 		 * It only writes apps/argocd/applications/<releaseName>.yaml into the shared
 		 * RepositoryWorkspace. The push is triggered afterwards by RepositoryProvisioning.
 		 */
-		deployer.deployFeature(context,
-			repositoryWorkspace,
-			helmConfig.repoURL as String,
+		deployer.deployFeature(helmConfig.repoURL as String,
 			'scm-manager',
 			helmConfig.chart as String,
 			helmConfig.version as String,
@@ -102,10 +100,12 @@ class ScmManagerSetup {
 			releaseName,
 			valuesPath,
 			DeploymentStrategy.RepoType.HELM,
-			false)
+			false,
+			context,
+			repositoryWorkspace)
 	}
 
-	void bootstrapAfterScmManagerDeployment() {
+	void prepareBootstrapRepositoriesAfterScmManagerDeployment() {
 		repositoryWorkspace.ensureRemoteRepositoriesExist()
 		repositoryWorkspace.initLocalRepositoriesIfNeeded()
 
@@ -119,11 +119,17 @@ class ScmManagerSetup {
 		 */
 		repositoryWorkspace.alignWithRemoteMainIfPresent()
 		repositoryWorkspace.createLocalDirectories()
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
+	void pushBootstrapRepositoriesAfterScmManagerDeployment() {
+		repositoryWorkspace.commitAndPushClusterResourcesChanges(
+			'Bootstrap cluster-resources repository after SCM-Manager deployment'
+		)
 
 		if (repositoryWorkspace.hasTenantBootstrapRepository()) {
-			repositoryWorkspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
+			repositoryWorkspace.commitAndPushTenantBootstrapChanges(
+				'Bootstrap tenant repository after SCM-Manager deployment'
+			)
 		}
 	}
 

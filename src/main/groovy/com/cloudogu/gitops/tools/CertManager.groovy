@@ -3,10 +3,12 @@ package com.cloudogu.gitops.tools
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.Tool
 import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import io.micronaut.core.annotation.Order
@@ -19,7 +21,11 @@ import groovy.util.logging.Slf4j
 @Order(160)
 class CertManager extends Tool implements ToolWithImage {
 
-	static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/values.ftl.yaml"
+	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/cert-manager/templates/values.ftl.yaml'
+
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
+	private static final String TOOL_NAME = 'cert-manager'
+	private static final String CERT_MANAGER_APP_PATH = 'apps/cert-manager'
 
 	final K8sClient k8sClient
 	String namespace
@@ -53,6 +59,29 @@ class CertManager extends Tool implements ToolWithImage {
 
 	@Override
 	void enable() {
-		deployHelmChart('cert-manager', 'cert-manager', namespace, config.features.certManager.helm, HELM_VALUES_PATH, context)
+		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
+
+		deployHelmChart(TOOL_NAME,
+			TOOL_NAME,
+			namespace,
+			config.features.certManager.helm,
+			HELM_VALUES_PATH,
+			context)
+
+		repositoryWorkspace.commitAndPushClusterResourcesChanges(
+			"Update ${TOOL_NAME} GitOps resources"
+		)
+	}
+
+	private void prepareCertManagerApp(GitRepo clusterResourcesRepo) {
+		log.debug("Preparing cert-manager repository content in ${clusterResourcesRepo.repoTarget}")
+
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH))
+	}
+
+	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 }

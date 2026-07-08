@@ -136,9 +136,7 @@ abstract class Tool {
 		log.debug("Starting deployment of feature ${featureName} from ${repoURL}.")
 		log.debug("helm values used: ${helmValuesData}")
 
-		this.deployer.deployFeature(context,
-			repositoryWorkspace,
-			repoURL,
+		this.deployer.deployFeature(repoURL,
 			featureName,
 			chartOrPath,
 			version,
@@ -146,7 +144,9 @@ abstract class Tool {
 			releaseName,
 			tempValuesPath,
 			repoType,
-			initByHelm)
+			initByHelm,
+			context,
+			repositoryWorkspace)
 	}
 
 	Config getConfig() {
