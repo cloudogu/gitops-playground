@@ -18,6 +18,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 
 import java.nio.file.Path
+import groovy.transform.CompileDynamic
 import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.Test
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
+@CompileDynamic
 @ExtendWith(MockitoExtension)
 class RegistryTest {
 
@@ -35,6 +37,9 @@ class RegistryTest {
 
 	@Mock
 	Deployer deployer
+
+	@Mock
+	RepositoryWorkspace repositoryWorkspace
 
 	@Test
 	void 'is disabled when external registry is configured'() {
@@ -62,7 +67,9 @@ class RegistryTest {
 			eq(RepoType.HELM),
 			eq(true),
 			eq(deploymentContext),
-			nullable(RepositoryWorkspace))
+			eq(repositoryWorkspace))
+
+		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update registry GitOps resources')
 	}
 
 	@Test
@@ -77,6 +84,8 @@ class RegistryTest {
 
 		assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
 		assertThat(parseActualYaml()['customValue'] as String).contains('testinjectionValue')
+
+		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update registry GitOps resources')
 	}
 
 	private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
@@ -101,7 +110,7 @@ class RegistryTest {
 
 	private boolean install(Registry registry, RegistrySchema registryConfig) {
 		deploymentContext = createContext(registryConfig)
-		return registry.execute(deploymentContext, null)
+		return registry.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private DeploymentContext createContext(RegistrySchema registryConfig) {

@@ -13,13 +13,13 @@ import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import java.nio.file.Path
-import groovy.transform.CompileStatic
+import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
 
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 
-@CompileStatic
+@CompileDynamic
 @Slf4j
 class ScmManagerSetup {
 
