@@ -49,7 +49,6 @@ class ArgoCD extends Tool {
 		return context.config.features.argocd.active
 	}
 
-	@Override
 	protected void prepare() {
 		this.namespace = activeNamespace(context)
 		this.password = config.application.password
@@ -81,7 +80,6 @@ class ArgoCD extends Tool {
 		log.info('Env list validation for features.argocd.env completed successfully.')
 	}
 
-	@Override
 	void enable() {
 		this.repoSetup = ArgoCDRepoSetup.create(context,
 			fileSystemUtils,
@@ -171,7 +169,7 @@ class ArgoCD extends Tool {
 
 		// ArgoCD is not installed until the ArgoCD-Operator did his job.
 		// This can take some time, so we wait for the status of the custom resource to become "Available"
-		k8sClient.waitForResourcePhase('argocd', 'argocd', namespace, "Available")
+		k8sClient.waitForResourcePhase('argocd', 'argocd', namespace, 'Available')
 
 		log.debug('Setting new argocd admin password')
 		// Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo

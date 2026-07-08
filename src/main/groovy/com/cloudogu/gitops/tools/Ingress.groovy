@@ -52,7 +52,6 @@ class Ingress extends Tool {
 		return context.config.features.ingress.active
 	}
 
-	@Override
 	protected void prepare() {
 		this.namespace = activeNamespace(context)
 	}
@@ -62,7 +61,6 @@ class Ingress extends Tool {
 		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
 	}
 
-	@Override
 	void enable() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 

@@ -75,7 +75,6 @@ class Jenkins extends Tool {
 		return context.config.jenkins.active
 	}
 
-	@Override
 	protected void prepare() {
 		if (config.jenkins.internal) {
 			this.namespace = activeNamespace(context)
@@ -87,7 +86,6 @@ class Jenkins extends Tool {
 		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
 	}
 
-	@Override
 	void enable() {
 		if (config.jenkins.internal) {
 			imagePullSecretCreator.createIfRequired(config, namespace)

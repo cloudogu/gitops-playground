@@ -41,7 +41,6 @@ class Registry extends Tool {
 		return context.config.registry.active
 	}
 
-	@Override
 	protected void prepare() {
 		if (config.registry.internal) {
 			this.namespace = activeNamespace(context)
@@ -53,15 +52,14 @@ class Registry extends Tool {
 		return context.config.registry.internal ? "${context.config.application.namePrefix}${context.config.registry.namespace}" : null
 	}
 
-	@Override
 	void enable() {
 
 		if (config.registry.internal) {
-			addHelmValuesData("service", [nodePort: Config.DEFAULT_REGISTRY_PORT,
+			addHelmValuesData('service', [nodePort: Config.DEFAULT_REGISTRY_PORT,
 			                              type    : 'NodePort'])
 
 			def helmConfig = config.registry.helm
-			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", context, true)
+			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, '', context, true)
 
 			if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
 				/* Add additional node port

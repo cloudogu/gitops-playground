@@ -51,7 +51,6 @@ class CertManager extends Tool {
 		return context.config.features.certManager.active
 	}
 
-	@Override
 	protected void prepare() {
 		this.namespace = activeNamespace(context)
 	}
@@ -61,7 +60,6 @@ class CertManager extends Tool {
 		return "${context.config.application.namePrefix}${context.config.features.certManager.namespace}"
 	}
 
-	@Override
 	void enable() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 

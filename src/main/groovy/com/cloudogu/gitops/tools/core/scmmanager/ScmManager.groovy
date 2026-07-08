@@ -21,6 +21,7 @@ class ScmManager extends Tool {
 	String namespace
 
 	private final ImagePullSecretCreator imagePullSecretCreator
+	private ScmManagerSetup setup
 
 	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
@@ -36,35 +37,48 @@ class ScmManager extends Tool {
 	}
 
 	@Override
-	protected void prepare() {
+	protected void preDeploy() {
+		log.info('Preparing internal SCM-Manager deployment.')
+
 		prepareNamespace()
-	}
-
-	@Override
-	void enable() {
-		log.info('Starting internal SCM-Manager setup.')
-
 		imagePullSecretCreator.createIfRequired(config, namespace)
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
-		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
+		this.setup = new ScmManagerSetup(scmManager,
 			deployer,
 			context,
 			repositoryWorkspace)
+	}
+
+	@Override
+	protected void deploy() {
+		log.info('Deploying internal SCM-Manager.')
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
+	}
+
+	@Override
+	protected void postDeploy() {
+		log.info('Configuring internal SCM-Manager after deployment.')
+
 		setup.configure()
+		
+		// Special bootstrap step:
+		// Creates/initializes the remote repositories and performs the initial push.
 		setup.bootstrapAfterScmManagerDeployment()
 
 		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
 		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		setup.createArgocdApplication()
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges('Update SCM-Manager GitOps resources')
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges('SCM-Manager')
 
-		log.info('Internal SCM-Manager setup finished.')
+		log.info('Internal SCM-Manager deployment finished.')
 	}
 
 	private void prepareNamespace() {

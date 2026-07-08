@@ -54,7 +54,6 @@ class Vault extends Tool {
 		return context.config.features.secrets.active
 	}
 
-	@Override
 	protected void prepare() {
 		this.namespace = activeNamespace(context)
 	}
@@ -64,7 +63,6 @@ class Vault extends Tool {
 		return "${context.config.application.namePrefix}${context.config.features.secrets.namespace}"
 	}
 
-	@Override
 	void enable() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 

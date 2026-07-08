@@ -61,7 +61,6 @@ class Monitoring extends Tool {
 		return context.config.features.monitoring.active
 	}
 
-	@Override
 	protected void prepare() {
 		this.namespace = activeNamespace(context)
 	}
@@ -71,7 +70,6 @@ class Monitoring extends Tool {
 		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
 	}
 
-	@Override
 	void enable() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 
