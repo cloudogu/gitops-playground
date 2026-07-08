@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.tools.core
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
@@ -30,10 +29,10 @@ import retrofit2.Response
 
 class ScmManagerSetupTest {
 
-	ScmManagerProvider scmManager = mock(ScmManagerProvider.class)
+	ScmManagerProvider scmManager = mock(ScmManagerProvider)
 
-	Deployer deployer = mock(Deployer.class)
-	HelmStrategy helmStrategy = mock(HelmStrategy.class)
+	Deployer deployer = mock(Deployer)
+	HelmStrategy helmStrategy = mock(HelmStrategy)
 
 	GitProvider tenantProvider = mock(GitProvider)
 	GitProvider centralProvider = mock(GitProvider)
@@ -41,9 +40,9 @@ class ScmManagerSetupTest {
 	GitRepo clusterResourcesRepo = mock(GitRepo)
 	GitRepo tenantBootstrapRepo = mock(GitRepo)
 
-	ScmManagerApiClient apiClient = mock(ScmManagerApiClient.class)
-	PluginApi pluginApi = mock(PluginApi.class)
-	ScmManagerApi generalApi = mock(ScmManagerApi.class)
+	ScmManagerApiClient apiClient = mock(ScmManagerApiClient)
+	PluginApi pluginApi = mock(PluginApi)
+	ScmManagerApi generalApi = mock(ScmManagerApi)
 
 	Config config = Config.fromMap([application: [namePrefix: 'test',
 	                                              insecure  : true],
@@ -104,7 +103,7 @@ class ScmManagerSetupTest {
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
-		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path)
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
@@ -136,7 +135,7 @@ class ScmManagerSetupTest {
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
-		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path)
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
@@ -162,7 +161,7 @@ class ScmManagerSetupTest {
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(scmManager.getApiClient()).thenReturn(apiClient)
 
-		Call<Void> apiCall = mock(Call.class)
+		Call<Void> apiCall = mock(Call)
 
 		when(pluginApi.install(any(String), any(Boolean))).thenReturn(apiCall)
 		when(generalApi.checkScmmAvailable()).thenReturn(apiCall)
@@ -183,7 +182,7 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
-	void 'bootstrapAfterScmManagerDeployment initializes and pushes cluster resources repository'() {
+	void 'prepareBootstrapRepositoriesAfterScmManagerDeployment initializes cluster resources repository'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
@@ -191,7 +190,7 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace)
 
-		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
 		verify(centralProvider).createRepository('argocd/cluster-resources',
 			'GitOps repo for basic cluster-resources',
@@ -199,11 +198,25 @@ class ScmManagerSetupTest {
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(clusterResourcesRepo, never()).commitAndPush(anyString())
+	}
+
+	@Test
+	void 'pushBootstrapRepositoriesAfterScmManagerDeployment pushes cluster resources repository'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			workspace)
+
+		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
+
 		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 	}
 
 	@Test
-	void 'bootstrapAfterScmManagerDeployment initializes and pushes both repositories in dedicated mode'() {
+	void 'prepareBootstrapRepositoriesAfterScmManagerDeployment initializes both repositories in dedicated mode'() {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
 			tenantBootstrapRepo)
 
@@ -212,7 +225,7 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace)
 
-		scmManagerSetup.bootstrapAfterScmManagerDeployment()
+		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
 		verify(centralProvider).createRepository('argocd/cluster-resources',
 			'GitOps repo for basic cluster-resources',
@@ -223,10 +236,26 @@ class ScmManagerSetupTest {
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded()
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
-		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
+		verify(clusterResourcesRepo, never()).commitAndPush(anyString())
 
 		verify(tenantBootstrapRepo).initLocalRepoIfNeeded()
 		verify(tenantBootstrapRepo).checkoutRemoteMainIfLocalMainMissing()
+		verify(tenantBootstrapRepo, never()).commitAndPush(anyString())
+	}
+
+	@Test
+	void 'pushBootstrapRepositoriesAfterScmManagerDeployment pushes both repositories in dedicated mode'() {
+		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
+			tenantBootstrapRepo)
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			workspace)
+
+		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
+
+		verify(clusterResourcesRepo).commitAndPush('Bootstrap cluster-resources repository after SCM-Manager deployment')
 		verify(tenantBootstrapRepo).commitAndPush('Bootstrap tenant repository after SCM-Manager deployment')
 	}
 

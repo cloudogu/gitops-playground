@@ -64,25 +64,33 @@ class ScmManager extends Tool {
 		log.info('Configuring internal SCM-Manager after deployment.')
 
 		setup.configure()
-		
-		// Special bootstrap step:
-		// Creates/initializes the remote repositories and performs the initial push.
-		setup.bootstrapAfterScmManagerDeployment()
 
-		// The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
-		// The strategy writes into the shared RepositoryWorkspace and does not push itself.
+		/*
+		 * Special bootstrap preparation:
+		 * Creates/initializes the remote repositories and prepares the local workspace
+		 * from the remote main branch before generated GitOps artifacts are written.
+		 */
+		setup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
+
+		/*
+		 * The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.
+		 * The strategy writes into the shared RepositoryWorkspace and does not push itself.
+		 */
 		setup.createArgocdApplication()
 	}
 
 	@Override
 	protected void publishChanges() {
-		publishClusterResourcesChanges('SCM-Manager')
+		/*
+		 * Push the complete bootstrap state, including generated SCM-Manager GitOps artifacts.
+		 */
+		setup.pushBootstrapRepositoriesAfterScmManagerDeployment()
 
-		log.info('Internal SCM-Manager deployment finished.')
+		log.info('Internal SCM-Manager setup finished.')
 	}
 
 	private void prepareNamespace() {
-		this.namespace = prefixedNamespace(context)
+		this.namespace = activeNamespace(context)
 		this.config.scm.scmManager.namespace = this.namespace
 	}
 

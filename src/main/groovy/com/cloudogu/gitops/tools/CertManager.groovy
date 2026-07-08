@@ -64,6 +64,7 @@ class CertManager extends Tool {
 		imagePullSecretCreator.createIfRequired(config, namespace)
 
 		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
 
 		deployHelmChart(TOOL_NAME,
 			TOOL_NAME,
@@ -80,5 +81,9 @@ class CertManager extends Tool {
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH))
+	}
+
+	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 }

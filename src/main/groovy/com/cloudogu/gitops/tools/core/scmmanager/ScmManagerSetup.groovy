@@ -40,7 +40,6 @@ class ScmManagerSetup {
 		this.repositoryWorkspace = repositoryWorkspace
 	}
 
-
 	private Config getConfig() {
 		return context.config
 	}
@@ -105,7 +104,7 @@ class ScmManagerSetup {
 			repositoryWorkspace)
 	}
 
-	void bootstrapAfterScmManagerDeployment() {
+	void prepareBootstrapRepositoriesAfterScmManagerDeployment() {
 		repositoryWorkspace.ensureRemoteRepositoriesExist()
 		repositoryWorkspace.initLocalRepositoriesIfNeeded()
 
@@ -119,7 +118,9 @@ class ScmManagerSetup {
 		 */
 		repositoryWorkspace.alignWithRemoteMainIfPresent()
 		repositoryWorkspace.createLocalDirectories()
+	}
 
+	void pushBootstrapRepositoriesAfterScmManagerDeployment() {
 		repositoryWorkspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
 
 		if (repositoryWorkspace.hasTenantBootstrapRepository()) {
