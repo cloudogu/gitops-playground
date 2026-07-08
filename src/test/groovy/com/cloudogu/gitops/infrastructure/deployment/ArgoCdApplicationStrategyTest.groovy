@@ -1,11 +1,9 @@
 package com.cloudogu.gitops.infrastructure.deployment
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.eq
-import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -23,7 +21,8 @@ import org.junit.jupiter.api.Test
 class ArgoCdApplicationStrategyTest {
 
 	private File localTempDir
-	private RepositoryProvisioning repositoryProvisioning
+	private DeploymentContext context
+	private RepositoryWorkspace repositoryWorkspace
 
 	@Test
 	void 'deploys feature using argoCD'() {
@@ -36,7 +35,10 @@ class ArgoCdApplicationStrategyTest {
 			'version',
 			'foo-namespace',
 			'releaseName',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 
@@ -89,7 +91,9 @@ spec:
 			'namespace',
 			'releaseName',
 			valuesYaml.toPath(),
-			DeploymentStrategy.RepoType.GIT)
+			DeploymentStrategy.RepoType.GIT,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		def result = new YamlSlurper().parse(argoCdApplicationYaml)
@@ -114,7 +118,10 @@ spec:
 			'version',
 			'namespace',
 			'releaseName',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 
@@ -136,7 +143,10 @@ spec:
 			'version',
 			'namespace',
 			'releaseName',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 
@@ -159,7 +169,10 @@ service:
 			'3.11.6',
 			'tenant1-scm-manager',
 			'tenant1-scmm',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/tenant1-scmm.yaml")
 		def result = new YamlSlurper().parse(argoCdApplicationYaml)
@@ -187,7 +200,10 @@ fullnameOverride: tenant1-scmm
 			'3.11.6',
 			'tenant1-scm-manager',
 			'tenant1-scmm',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		assertThat(new File("$localTempDir/apps/scm-manager/scm-manager-gop-helm.yaml")).doesNotExist()
 		assertThat(new File("$localTempDir/apps/scm-manager/scm-manager-user-values.yaml")).doesNotExist()
@@ -207,30 +223,16 @@ param1: value1
 			'version',
 			'namespace',
 			'releaseName',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		assertThat(new File("$localTempDir/apps/repoName/repoName-gop-helm.yaml").text)
 			.contains('param1: value1')
 
 		assertThat(new File("$localTempDir/apps/repoName/repoName-user-values.yaml"))
 			.exists()
-	}
-
-	@Test
-	void 'publishes cluster-resources changes through repository provisioning'() {
-		def strategy = createStrategy()
-		File valuesYaml = File.createTempFile('values', 'yaml')
-
-		strategy.deployFeature('repoURL',
-			'repoName',
-			'chartName',
-			'version',
-			'namespace',
-			'releaseName',
-			valuesYaml.toPath())
-
-		verify(repositoryProvisioning).publishClusterResourcesRepositoryChanges(eq('repoName'),
-			eq('Add foo-repoName/chartName to ArgoCD'))
 	}
 
 	@Test
@@ -244,7 +246,10 @@ param1: value1
 			'version',
 			'namespace',
 			'releaseName',
-			valuesYaml.toPath())
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace)
 
 		def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
 		def result = new YamlSlurper().parse(argoCdApplicationYaml)
@@ -265,11 +270,17 @@ param1: value1
 				password: 'dont-care-password')),
 			features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(operator: argocdOperator)))
 
-		GitProvider gitProvider = new ScmManagerProviderMock()
-		def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
+		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
+
+		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
-			GitRepo create(String repoTarget, GitProvider provider) {
-				def repo = super.create(repoTarget, provider)
+			GitRepo create(String repoTarget, GitProvider scm) {
+				def repo = super.create(repoTarget, scmManagerMock)
+
+				assertThat(repo)
+					.as('TestGitRepoFactory must create cluster-resources GitRepo')
+					.isNotNull()
+
 				localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
 				return repo
@@ -277,15 +288,14 @@ param1: value1
 		}
 
 		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
-			gitProvider)
+			scmManagerMock)
 
-		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		context = new ContextBuilder(config).build()
 
-		def context = new ContextBuilder(config).build()
-		def targetResolver = new ArgoCdApplicationTargetResolver(context)
+		def targetResolver = new ArgoCdApplicationTargetResolver()
 
-		return new ArgoCdApplicationStrategy(new FileSystemUtils(),
-			repositoryWorkspace,
-			targetResolver)
+		return new ArgoCdApplicationStrategy(targetResolver)
 	}
+
 }

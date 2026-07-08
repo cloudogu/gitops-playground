@@ -124,9 +124,7 @@ class Jenkins extends Tool implements ToolWithImage {
 				context,
 				true)
 
-			repositoryWorkspace.commitAndPushClusterResourcesChanges(
-				"Update ${TOOL_NAME} GitOps resources"
-			)
+			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 
 			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 			String serviceName = releaseName
@@ -307,16 +305,16 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	Map createGidGrepperOverrides() {
-		['spec': ['containers'  : [['name'        : 'tmp-docker-gid-grepper',
-		                            // We use the same image for several tasks for performance and maintenance reasons
-		                            'image'       : "${config.jenkins.internalBashImage}",
-		                            'args'        : ['cat', '/etc/group'],
-		                            'volumeMounts': [['name'     : 'group',
-		                                              'mountPath': '/etc/group',
-		                                              'readOnly' : true]]]],
-		          'nodeSelector': ['node': 'jenkins'],
-		          'volumes'     : [['name'    : 'group',
-		                            'hostPath': ['path': '/etc/group']]]]]
+		return ['spec': ['containers'  : [['name'        : 'tmp-docker-gid-grepper',
+		                                   // We use the same image for several tasks for performance and maintenance reasons
+		                                   'image'       : "${config.jenkins.internalBashImage}",
+		                                   'args'        : ['cat', '/etc/group'],
+		                                   'volumeMounts': [['name'     : 'group',
+		                                                     'mountPath': '/etc/group',
+		                                                     'readOnly' : true]]]],
+		                 'nodeSelector': ['node': 'jenkins'],
+		                 'volumes'     : [['name'    : 'group',
+		                                   'hostPath': ['path': '/etc/group']]]]]
 	}
 
 	@Override

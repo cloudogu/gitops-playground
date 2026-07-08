@@ -2,7 +2,6 @@ package com.cloudogu.gitops.tools
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
@@ -41,20 +40,16 @@ class Monitoring extends Tool implements ToolWithImage {
 	String namespace
 	final K8sClient k8sClient
 
-	private final RepositoryProvisioning repositoryProvisioning
-
 	Monitoring(FileSystemUtils fileSystemUtils,
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler,
-		RepositoryProvisioning repositoryProvisioning) {
+		GitHandler gitHandler) {
 		this.fileSystemUtils = fileSystemUtils
 		this.deployer = deployer
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
-		this.repositoryProvisioning = repositoryProvisioning
 	}
 
 	@Override
@@ -91,10 +86,8 @@ class Monitoring extends Tool implements ToolWithImage {
 		createMonitoringCrd()
 
 		prepareMonitoringApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceMonitoringTemplates(repositoryWorkspace.clusterResourcesRepository)
 		writeMonitoringGitOpsArtifacts(repositoryWorkspace.clusterResourcesRepository)
-
-		repositoryProvisioning.publishClusterResourcesRepositoryChanges(TOOL_NAME,
-			'Update Prometheus dashboards, RBAC and network policies.')
 
 		deployHelmChart(TOOL_NAME,
 			'kube-prometheus-stack',
@@ -103,9 +96,7 @@ class Monitoring extends Tool implements ToolWithImage {
 			HELM_VALUES_PATH,
 			context)
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			"Update ${TOOL_NAME} GitOps resources"
-		)
+		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 	}
 
 	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
@@ -113,6 +104,10 @@ class Monitoring extends Tool implements ToolWithImage {
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH))
+	}
+
+	private void replaceMonitoringTemplates(GitRepo clusterResourcesRepo) {
+		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 
 	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
@@ -184,11 +179,11 @@ class Monitoring extends Tool implements ToolWithImage {
 			if (context.isAirgapped()) {
 				serviceMonitorCrdYaml = Path.of("${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml").toString()
 			} else {
-				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
+				serviceMonitorCrdYaml = 'https://raw.githubusercontent.com/prometheus-community/helm-charts/' + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
 					"charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
 			}
 
-			log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" + "Applying from path ${serviceMonitorCrdYaml}")
+			log.debug('Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n' + "Applying from path ${serviceMonitorCrdYaml}")
 			k8sClient.applyYaml(serviceMonitorCrdYaml)
 		}
 	}
@@ -205,12 +200,12 @@ class Monitoring extends Tool implements ToolWithImage {
 		if (config.jenkins.internal) {
 			return new URI("http://jenkins.${config.application.namePrefix}${config.jenkins.namespace}.svc.cluster.local/")
 		}
-		def urlString = config.jenkins?.url?.strip() ?: ""
+		def urlString = config.jenkins?.url?.strip() ?: ''
 		if (!urlString) {
-			throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false")
+			throw new IllegalArgumentException('config.jenkins.url must be set when config.jenkins.internal = false')
 		}
 		def url = URI.create(urlString)
-		return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/")
+		return url.toString().endsWith('/') ? url : URI.create(url.toString() + '/')
 	}
 
 	private String findValidOpenShiftUid() {
@@ -221,7 +216,7 @@ class Monitoring extends Tool implements ToolWithImage {
 			String uid = uidRange.split('/')[0]
 			return uid
 		} else {
-			throw new RuntimeException("Could not find a valid UID! Really running on OpenShift?")
+			throw new RuntimeException('Could not find a valid UID! Really running on OpenShift?')
 		}
 	}
 
@@ -264,6 +259,6 @@ class Monitoring extends Tool implements ToolWithImage {
 	}
 
 	private static boolean hasText(String value) {
-		value != null && value.trim()
+		return value != null && value.trim()
 	}
 }

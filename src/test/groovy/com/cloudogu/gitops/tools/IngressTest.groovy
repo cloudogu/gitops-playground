@@ -3,13 +3,13 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -48,6 +48,10 @@ class IngressTest {
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	File clusterResourcesRepoDir
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
+
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	@Mock
 	Deployer deployer
@@ -57,8 +61,6 @@ class IngressTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
-	@Mock
-	RepositoryProvisioning repositoryProvisioning
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -85,7 +87,9 @@ class IngressTest {
 			'traefik',
 			temporaryYamlFile,
 			RepoType.HELM,
-			false)
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 
 		assertThat(parseActualYaml()['deployment']['metrics']).isNull()
 		assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
@@ -94,7 +98,7 @@ class IngressTest {
 
 	@Test
 	void 'prepares ingress app content in cluster resources workspace without copying templates'() {
-		createIngress().install()
+		install(createIngress())
 
 		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress')).exists()
 		assertThat(new File(clusterResourcesRepoDir, 'apps/ingress/templates')).doesNotExist()
@@ -103,13 +107,16 @@ class IngressTest {
 	@Test
 	void 'Sets pod resource limits and requests'() {
 		config.application.podResources = true
+
 		install(createIngress())
+
 		assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
 	}
 
 	@Test
 	void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
 		config.features.ingress.active = false
+
 		assertFalse(createIngress().isEnabled(new ContextBuilder(config).build()))
 	}
 
@@ -150,6 +157,7 @@ class IngressTest {
 
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
 		assertThat(helmConfig.value.version).isEqualTo('39.0.0')
+
 		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
 			'traefik',
 			'.',
@@ -158,7 +166,9 @@ class IngressTest {
 			'traefik',
 			temporaryYamlFile,
 			RepoType.GIT,
-			false)
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
@@ -194,6 +204,7 @@ class IngressTest {
 		config.registry.proxyPassword = 'proxy-pw'
 
 		install(createIngress())
+
 		assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
@@ -212,7 +223,9 @@ class IngressTest {
 	@Test
 	void 'get namespace from feature'() {
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
+
 		config.features.ingress.active = false
+
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo(null)
 	}
 
@@ -228,8 +241,6 @@ class IngressTest {
 			}
 		}
 
-		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
 			@Override
 			GitRepo create(String repoTarget, GitProvider provider) {
@@ -243,21 +254,19 @@ class IngressTest {
 		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
 			scmManagerMock)
 
-		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
-
-		return new Ingress(new ContextBuilder(config).build(),
-			testFileSystemUtils,
+		return new Ingress(testFileSystemUtils,
 			deployer,
 			k8sClient,
 			airGappedUtils,
-			gitHandler,
-			repositoryProvisioning)
+			gitHandler)
 	}
 
 	private boolean install(Ingress ingress) {
-		return ingress.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return ingress.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

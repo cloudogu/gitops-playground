@@ -4,13 +4,11 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
-import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
@@ -53,6 +51,10 @@ class ExternalSecretsOperatorTest {
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	Path temporaryYamlFile
 	File clusterResourcesRepoDir
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
+
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	@Mock
 	Deployer deployer
@@ -62,8 +64,6 @@ class ExternalSecretsOperatorTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
-	@Mock
-	RepositoryProvisioning repositoryProvisioning
 
 	K8sClient k8sClient
 	KubernetesClient client
@@ -77,8 +77,8 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.secrets.active = false
-		assertFalse(createExternalSecretsOperator().isEnabled(new ContextBuilder(config).build()))
 
+		assertFalse(createExternalSecretsOperator().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
@@ -93,7 +93,9 @@ class ExternalSecretsOperatorTest {
 			'external-secrets',
 			temporaryYamlFile,
 			RepoType.HELM,
-			false)
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 
 		assertThat(parseActualYaml()).doesNotContainKeys('resources')
 		assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
@@ -105,7 +107,7 @@ class ExternalSecretsOperatorTest {
 
 	@Test
 	void 'prepares external-secrets app content in cluster resources workspace without copying templates'() {
-		createExternalSecretsOperator().install()
+		install(createExternalSecretsOperator())
 
 		assertThat(new File(clusterResourcesRepoDir, 'apps/external-secrets')).exists()
 		assertThat(new File(clusterResourcesRepoDir, 'apps/external-secrets/templates')).doesNotExist()
@@ -173,15 +175,18 @@ class ExternalSecretsOperatorTest {
 		assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
 		assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
 		assertThat(helmConfig.value.version).isEqualTo('0.9.16')
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'external-secrets',
-			'.',
-			'1.2.3',
-			'foo-secrets',
-			'external-secrets',
-			temporaryYamlFile,
-			RepoType.GIT,
-			false)
+
+		verify(deployer).deployFeature(eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
+			eq('external-secrets'),
+			eq('.'),
+			eq('1.2.3'),
+			eq('foo-secrets'),
+			eq('external-secrets'),
+			eq(temporaryYamlFile),
+			eq(RepoType.GIT),
+			eq(false),
+			eq(deploymentContext),
+			eq(repositoryWorkspace))
 	}
 
 	@Test
@@ -194,13 +199,14 @@ class ExternalSecretsOperatorTest {
 		                                                                                                 webhookImage       : 'some:thing'])
 
 		install(createExternalSecretsOperator())
+
 		assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['certController']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 		assertThat(parseActualYaml()['webhook']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() {
-		FileSystemUtils testFileSystemUtils = new FileSystemUtils() {
+		FileSystemUtils fileSystemUtils = new FileSystemUtils() {
 			@Override
 			Path writeTempFile(Map mergeMap) {
 				def ret = super.writeTempFile(mergeMap)
@@ -210,36 +216,31 @@ class ExternalSecretsOperatorTest {
 			}
 		}
 
-		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-
-		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
+		TestGitRepoFactory repoFactory = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
-			GitRepo create(String repoTarget, GitProvider provider) {
-				def repo = super.create(repoTarget, provider)
+			GitRepo create(String repoTarget, GitProvider scm) {
+				GitRepo repo = super.create(repoTarget, scm)
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
 				return repo
 			}
 		}
 
-		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
+		GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
 			scmManagerMock)
 
-		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
-		when(repositoryProvisioning.provideWorkspace()).thenReturn(repositoryWorkspace)
-
-		return new ExternalSecretsOperator(new ContextBuilder(config).build(),
-			testFileSystemUtils,
+		return new ExternalSecretsOperator(fileSystemUtils,
 			deployer,
 			k8sClient,
 			airGappedUtils,
-			gitHandler,
-			repositoryProvisioning)
+			gitHandler)
 	}
 
 	private boolean install(ExternalSecretsOperator operator) {
-		return operator.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return operator.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

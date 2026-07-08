@@ -3,9 +3,9 @@ package com.cloudogu.gitops.tools
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
@@ -33,11 +33,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CertManagerTest {
 
-	String chartVersion = "1.19.4"
+	String chartVersion = '1.19.4'
 	Config config = Config.fromMap([features: [certManager: [active: true,
 	                                                         helm  : [chart  : 'cert-manager',
 	                                                                  repoURL: 'https://charts.jetstack.io',
@@ -46,6 +46,10 @@ class CertManagerTest {
 	Path temporaryYamlFile
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 	File clusterResourcesRepoDir
+	RepositoryWorkspace repositoryWorkspace
+	DeploymentContext deploymentContext
+
+	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 	@Mock
 	Deployer deploymentStrategy
@@ -68,12 +72,14 @@ class CertManagerTest {
 			'cert-manager',
 			temporaryYamlFile,
 			RepoType.HELM,
-			false)
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
 	void 'prepares cert-manager app content in cluster resources workspace without copying templates'() {
-		createCertManager().install()
+		install(createCertManager())
 
 		assertThat(new File(clusterResourcesRepoDir, 'apps/cert-manager')).exists()
 		assertThat(new File(clusterResourcesRepoDir, 'apps/cert-manager/templates')).doesNotExist()
@@ -93,13 +99,14 @@ class CertManagerTest {
 	@Test
 	void "is disabled via active flag"() {
 		config.features.certManager.active = false
+
 		assertFalse(createCertManager().isEnabled(new ContextBuilder(config).build()))
 	}
 
 	@Test
 	void 'helm release is installed in air-gapped mode'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
-		when(gitProvider.repoUrl(any())).thenReturn("http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b")
+		when(gitProvider.repoUrl(any())).thenReturn('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b')
 
 		config.application.mirrorRepos = true
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
@@ -130,23 +137,27 @@ class CertManagerTest {
 			'cert-manager',
 			temporaryYamlFile,
 			RepoType.GIT,
-			false)
+			false,
+			deploymentContext,
+			repositoryWorkspace)
 	}
 
 	@Test
 	void 'check images are overriddes'() {
 		when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
-		when(gitProvider.repoUrl(any())).thenReturn("http://test")
+		when(gitProvider.repoUrl(any())).thenReturn('http://test')
 
 		// Prep
 		config.application.mirrorRepos = true
 		// test values
-		config.features.certManager.helm.image = "this.is.my.registry:30000/this.is.my.repository/myImage:1"
-		config.features.certManager.helm.webhookImage = "this.is.my.registry:30000/this.is.my.repository/myWebhook:2"
-		config.features.certManager.helm.cainjectorImage = "this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3"
-		config.features.certManager.helm.acmeSolverImage = "this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4"
-		config.features.certManager.helm.startupAPICheckImage = "this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5"
+		config.features.certManager.helm.image = 'this.is.my.registry:30000/this.is.my.repository/myImage:1'
+		config.features.certManager.helm.webhookImage = 'this.is.my.registry:30000/this.is.my.repository/myWebhook:2'
+		config.features.certManager.helm.cainjectorImage = 'this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3'
+		config.features.certManager.helm.acmeSolverImage = 'this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4'
+		config.features.certManager.helm.startupAPICheckImage = 'this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5'
+
 		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+
 		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
 		config.application.localHelmChartFolder = rootChartsFolder.toString()
 
@@ -155,6 +166,7 @@ class CertManagerTest {
 
 		Map chartYaml = [version: chartVersion]
 		fileSystemUtils.writeYaml(chartYaml, sourceChart.resolve('Chart.yaml').toFile())
+
 		install(createCertManager())
 
 		// Cert-Manager
@@ -180,12 +192,10 @@ class CertManagerTest {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				return ret
 			}
 		}
-
-		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
 			@Override
@@ -200,20 +210,19 @@ class CertManagerTest {
 		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
 			scmManagerMock)
 
-		RepositoryWorkspace repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
+		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
+		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
-
-		return new CertManager(new ContextBuilder(config).build(),
-			testFileSystemUtils,
+		return new CertManager(testFileSystemUtils,
 			deploymentStrategy,
 			new K8sClientForTest(),
 			airGappedUtils,
-			gitHandler,
-			repositoryWorkspace)
+			gitHandler)
 	}
 
 	private boolean install(CertManager certManager) {
-		return certManager.execute(new ContextBuilder(config).build(), null)
+		deploymentContext = new ContextBuilder(config).build()
+		return certManager.execute(deploymentContext, repositoryWorkspace)
 	}
 
 	private Map parseActualYaml() {

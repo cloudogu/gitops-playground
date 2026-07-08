@@ -71,9 +71,7 @@ class ExternalSecretsOperator extends Tool implements ToolWithImage {
 			HELM_VALUES_PATH,
 			context)
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			"Update ${TOOL_NAME} GitOps resources"
-		)
+		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 	}
 
 	private void prepareExternalSecretsApp(GitRepo clusterResourcesRepo) {

@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
 
+import com.cloudogu.gitops.application.context.ContextBuilder
+import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
@@ -20,27 +23,51 @@ class HelmStrategyTest {
 	@Test
 	void 'deploys feature using helm client'() {
 		Path valuesYaml = Files.createTempFile('', '')
+		DeploymentContext context = new ContextBuilder(createConfig()).build()
 
-		createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "foo-namespace", "releaseName", valuesYaml)
+		createStrategy().deployFeature('repoURL',
+			'repoName',
+			'chart',
+			'version',
+			'foo-namespace',
+			'releaseName',
+			valuesYaml,
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			null as RepositoryWorkspace)
 
-		verify(helmClient).addRepo("repoName", "repoURL")
-		verify(helmClient).upgrade("releaseName", "repoName/chart", [namespace: "foo-namespace",
-		                                                             version  : "version",
+		verify(helmClient).addRepo('repoName', 'repoURL')
+		verify(helmClient).upgrade('releaseName', 'repoName/chart', [namespace: 'foo-namespace',
+		                                                             version  : 'version',
 		                                                             values   : valuesYaml.toString()])
 	}
 
 	@Test
 	void 'Fails to deploy from git'() {
-		def exception = shouldFail(RuntimeException) {
-			createStrategy().deployFeature("http://repoURL", "repoName", "chart", "version", "namespace",
-				"releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.GIT)
-		}
-		assertThat(exception.message).isEqualTo("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" +
-			"Repo URL: http://repoURL")
+		DeploymentContext context = new ContextBuilder(createConfig()).build()
 
+		def exception = shouldFail(RuntimeException) {
+			createStrategy().deployFeature('http://repoURL',
+				'repoName',
+				'chart',
+				'version',
+				'namespace',
+				'releaseName',
+				Path.of('values.yaml'),
+				DeploymentStrategy.RepoType.GIT,
+				context,
+				null as RepositoryWorkspace)
+		}
+
+		assertThat(exception.message).isEqualTo('Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n' +
+			'Repo URL: http://repoURL')
 	}
 
 	protected HelmStrategy createStrategy() {
-		new HelmStrategy(new Config(application: new Config.ApplicationSchema(namePrefix: "foo-")), helmClient)
+		return new HelmStrategy(createConfig(), helmClient)
+	}
+
+	private Config createConfig() {
+		return new Config(application: new Config.ApplicationSchema(namePrefix: 'foo-'))
 	}
 }
