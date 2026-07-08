@@ -60,7 +60,7 @@ class CertManager extends Tool implements ToolWithImage {
 	@Override
 	void enable() {
 		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
-		replaceVaultTemplates(repositoryWorkspace.clusterResourcesRepository)
+		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
 
 		deployHelmChart(TOOL_NAME,
 			TOOL_NAME,
@@ -81,7 +81,7 @@ class CertManager extends Tool implements ToolWithImage {
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH))
 	}
 
-	private void replaceVaultTemplates(GitRepo clusterResourcesRepo) {
+	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {
 		clusterResourcesRepo.replaceTemplates([config: config])
 	}
 }
