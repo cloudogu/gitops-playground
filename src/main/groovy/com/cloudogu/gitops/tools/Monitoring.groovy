@@ -20,7 +20,6 @@ import jakarta.inject.Singleton
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
-@CompileStatic
 @Slf4j
 @Singleton
 @Order(300)

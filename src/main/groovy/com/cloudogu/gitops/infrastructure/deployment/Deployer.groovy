@@ -6,7 +6,9 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import java.nio.file.Path
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 
+@CompileStatic
 @Singleton
 class Deployer {
 
@@ -27,11 +29,11 @@ class Deployer {
 		String releaseName,
 		Path helmValuesPath,
 		DeploymentStrategy.RepoType repoType,
-		boolean initByHelm = false,
+		boolean bootstrapWithHelm = false,
 		DeploymentContext context,
 		RepositoryWorkspace repositoryWorkspace) {
 
-		if (initByHelm) {
+		if (bootstrapWithHelm) {
 			helmStrategy.deployFeature(repoURL,
 				repoName,
 				chartOrPath,
