@@ -20,6 +20,7 @@ import jakarta.inject.Singleton
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(300)
@@ -32,6 +33,7 @@ class Monitoring extends Tool {
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'monitoring'
+	private static final String RELEASE_NAME = 'kube-prometheus-stack'
 	private static final String MONITORING_APP_PATH = 'apps/monitoring'
 	private static final String MONITORING_RBAC_PATH = "${MONITORING_APP_PATH}/misc/rbac"
 	private static final String MONITORING_NETPOLS_PATH = "${MONITORING_APP_PATH}/misc/netpols"
@@ -61,8 +63,36 @@ class Monitoring extends Tool {
 		return context.config.features.monitoring.active
 	}
 
-	protected void prepare() {
+	@Override
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		prepareMonitoringHelmValues()
+
+		// Create secrets imperatively here instead of values.yaml,
+		// because we don't want credentials to be visible in the Git repo.
+		setupMonitoringSecrets()
+		createMonitoringCrd()
+
+		prepareMonitoringApp(repositoryWorkspace.clusterResourcesRepository)
+		replaceMonitoringTemplates(repositoryWorkspace.clusterResourcesRepository)
+		writeMonitoringGitOpsArtifacts(repositoryWorkspace.clusterResourcesRepository)
+	}
+
+	@Override
+	protected void deploy() {
+		deployHelmChart(TOOL_NAME,
+			RELEASE_NAME,
+			namespace,
+			config.features.monitoring.helm,
+			HELM_VALUES_PATH,
+			context)
+	}
+
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME)
 	}
 
 	@Override
@@ -70,9 +100,11 @@ class Monitoring extends Tool {
 		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
 	}
 
-	void enable() {
+	private void createImagePullSecret() {
 		imagePullSecretCreator.createIfRequired(config, namespace)
+	}
 
+	private void prepareMonitoringHelmValues() {
 		String uid = ''
 		if (context.isOpenshift()) {
 			uid = findValidOpenShiftUid()
@@ -84,23 +116,6 @@ class Monitoring extends Tool {
 		addHelmValuesData('scm', scmConfigurationMetrics())
 		addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
 		addHelmValuesData('uid', uid)
-
-		// Create secrets imperatively here instead of values.yaml, because we don't want credentials to be visible in the Git repo
-		setupMonitoringSecrets()
-		createMonitoringCrd()
-
-		prepareMonitoringApp(repositoryWorkspace.clusterResourcesRepository)
-		replaceMonitoringTemplates(repositoryWorkspace.clusterResourcesRepository)
-		writeMonitoringGitOpsArtifacts(repositoryWorkspace.clusterResourcesRepository)
-
-		deployHelmChart(TOOL_NAME,
-			'kube-prometheus-stack',
-			namespace,
-			config.features.monitoring.helm,
-			HELM_VALUES_PATH,
-			context)
-
-		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
 	}
 
 	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
