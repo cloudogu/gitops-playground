@@ -157,31 +157,6 @@ class Jenkins extends Tool {
 		return config.jenkins.internal
 	}
 
-	private void prepareInternalJenkinsDeployment() {
-		this.namespace = activeNamespace(context)
-
-		imagePullSecretCreator.createIfRequired(config, namespace)
-
-		k8sClient.createNamespace(namespace)
-
-		// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
-		// Remove first (in case new nodes were added)
-		k8sClient.labelRemove('node', '--all', '', 'node')
-		String nodeName = k8sClient.waitForNode().replace('node/', '')
-		k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
-
-		k8sClient.createSecret('generic',
-			'jenkins-credentials',
-			namespace,
-			new Tuple2('jenkins-admin-user', config.jenkins.username),
-			new Tuple2('jenkins-admin-password', config.jenkins.password))
-
-		addHelmValuesData('dockerGid', findDockerGid())
-		addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
-
-		prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
-	}
-
 	private void deployInternalJenkins() {
 		Config.HelmConfigWithValues helmConfig = config.jenkins.helm
 
