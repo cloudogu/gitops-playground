@@ -163,15 +163,16 @@ class ContentLoader extends Tool {
 			Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
 			String mergedValuesFilePath = mergedValuesFile.toString()
 
+			String releaseName = (helmRelease.releaseName ?: helmRelease.name) as String
 			deployHelmChart(helmRelease.name as String,
-				(helmRelease.releaseName ?: helmRelease.name) as String,
+				releaseName,
 				helmRelease.namespace as String,
 				helmConfig as Config.HelmConfigWithValues,
 				mergedValuesFilePath as String,
 				context,
 				false)
 
-			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${helmRelease.releaseName} GitOps resources")
+			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${releaseName} GitOps resources")
 		}
 	}
 
