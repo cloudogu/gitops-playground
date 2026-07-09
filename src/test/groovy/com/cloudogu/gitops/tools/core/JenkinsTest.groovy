@@ -29,12 +29,14 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
+@CompileStatic
 class JenkinsTest {
 	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: 'testUrlJenkins')),
 		jenkins: new Config.JenkinsSchema(active: true))

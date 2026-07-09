@@ -24,6 +24,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -37,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@CompileStatic
 @ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @EnableKubernetesMockClient(crud = true)

@@ -24,6 +24,7 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.Test
@@ -34,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@CompileStatic
 @ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CertManagerTest {
