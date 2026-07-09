@@ -5,9 +5,9 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition
-import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role
 import com.cloudogu.gitops.tools.common.Tool
+import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentMode
+import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 
@@ -30,20 +30,24 @@ class ArgoCD extends Tool {
 	private final HelmClient helmClient
 	private final FileSystemUtils fileSystemUtils
 	private final GitHandler gitHandler
-	private String password
+	private final DeploymentModeFactory deploymentModeFactory
 
+	private String password
 	private String namespace
 	private ArgoCDRepoSetup repoSetup
 	private ArgoCDRepoLayout clusterResourcesRepo
+	private DeploymentMode deploymentMode
 
 	ArgoCD(K8sClient k8sClient,
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		DeploymentModeFactory deploymentModeFactory) {
 		this.k8sClient = k8sClient
 		this.helmClient = helmClient
 		this.fileSystemUtils = fileSystemUtils
 		this.gitHandler = gitHandler
+		this.deploymentModeFactory = deploymentModeFactory
 	}
 
 	@Override
@@ -63,17 +67,26 @@ class ArgoCD extends Tool {
 
 		this.clusterResourcesRepo = repoSetup.clusterRepoLayout()
 
+		this.deploymentMode = deploymentModeFactory.create(context,
+			config,
+			k8sClient,
+			gitHandler,
+			repositoryWorkspace,
+			repoSetup,
+			clusterResourcesRepo,
+			namespace)
+
 		log.debug('Preparing ArgoCD repository content')
 		repoSetup.prepareRepositories()
 
 		log.debug('Creating namespaces')
 		k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
 
-		createSCMCredentialsSecret()
+		deploymentMode.createSCMCredentialsSecret()
 		createNotificationSecretIfRequired()
 
 		if (config.features.argocd.operator) {
-			generateRBAC()
+			deploymentMode.generateRBAC()
 		} else {
 			mergeHelmValuesIfConfigured()
 		}
@@ -92,7 +105,7 @@ class ArgoCD extends Tool {
 
 	@Override
 	protected void postDeploy() {
-		applyBootstrapResources()
+		deploymentMode.applyBootstrapResources()
 		deleteHelmArgoSecrets()
 	}
 
@@ -152,21 +165,6 @@ class ArgoCD extends Tool {
 		log.debug("Argocd values.yaml contains ${result}")
 	}
 
-	private void applyBootstrapResources() {
-		if (context.isMultiTenant()) {
-			// Bootstrapping dedicated instance
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), 'tenant.yaml').toString())
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), 'bootstrap.yaml').toString())
-
-			ArgoCDRepoLayout tenantRepoLayout = repoSetup.tenantRepoLayout()
-			k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), 'argocd.yaml').toString())
-			k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), 'bootstrap.yaml').toString())
-		} else {
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.projectsDir(), 'argocd.yaml').toString())
-			k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), 'bootstrap.yaml').toString())
-		}
-	}
-
 	private void deleteHelmArgoSecrets() {
 		// Delete helm-argo secrets to decouple from helm.
 		// This does not delete Argo from the cluster, but you can no longer modify argo directly with helm.
@@ -178,7 +176,6 @@ class ArgoCD extends Tool {
 	}
 
 	private void deployWithOperator() {
-		// Apply argocd yaml from operator folder
 		String argocdConfigPath = clusterResourcesRepo.operatorConfigFile()
 
 		if (this.config.features.argocd?.values) {
@@ -199,32 +196,31 @@ class ArgoCD extends Tool {
 		// This can take some time, so we wait for the status of the custom resource to become "Available"
 		k8sClient.waitForResourcePhase('argocd', 'argocd', namespace, 'Available')
 
-		log.debug('Setting new argocd admin password')
-		// Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo
-		// The Operator uses an extra secret to store the admin Password, which is not bcrypted
-		k8sClient.patch('secret', 'argocd-cluster', namespace,
-			[stringData: ['admin.password': password]])
+		updateAdminPasswordForOperator()
 
-		// In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
-		// but we want to set our own admin password so we set the password in both Secrets for consistency
-		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-
-		k8sClient.patch('secret',
-			'argocd-secret',
-			namespace,
-			[stringData: ['admin.password': bcryptArgoCDPassword]])
-
-		updatingArgoCDManagedNamespaces()
+		deploymentMode.updateManagedNamespaces()
 
 		log.debug('Apply RBAC permissions for ArgoCD in all managed namespaces imperatively')
 		k8sClient.applyYaml(clusterResourcesRepo.operatorRbacDir())
 	}
 
+	private void updateAdminPasswordForOperator() {
+		log.debug('Setting new argocd admin password')
+
+		// Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo.
+		// The Operator uses an extra secret to store the admin Password, which is not bcrypted.
+		k8sClient.patch('secret', 'argocd-cluster', namespace,
+			[stringData: ['admin.password': password]])
+
+		// In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password,
+		// but we want to set our own admin password so we set the password in both Secrets for consistency.
+		updateBcryptAdminPassword()
+	}
+
 	private void deployWithHelm() {
-		// Install umbrella chart from argocd/argocd
 		String umbrellaChartPath = clusterResourcesRepo.helmDir()
 
-		// Even if the Chart.lock already contains the repo, we need to add it before resolving it
+		// Even if the Chart.lock already contains the repo, we need to add it before resolving it.
 		// See https://github.com/helm/helm/issues/8036#issuecomment-872502901
 		List helmDependencies = fileSystemUtils
 			.readYaml(Path.of(clusterResourcesRepo.chartYaml()))['dependencies']
@@ -234,6 +230,10 @@ class ArgoCD extends Tool {
 		helmClient.dependencyBuild(umbrellaChartPath)
 		helmClient.upgrade('argocd', umbrellaChartPath, [namespace: namespace])
 
+		updateBcryptAdminPassword()
+	}
+
+	private void updateBcryptAdminPassword() {
 		log.debug('Setting new argocd admin password')
 
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
@@ -242,144 +242,6 @@ class ArgoCD extends Tool {
 			'argocd-secret',
 			namespace,
 			[stringData: ['admin.password': bcryptArgoCDPassword]])
-	}
-
-	// The ArgoCD instance installed via an operator only manages its deployment namespace.
-	// To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-	void updatingArgoCDManagedNamespaces() {
-		log.debug('Updating managed namespaces in ArgoCD configuration secret.')
-
-		def namespaceList = context.isSingleTenant() ? config.application.namespaces.activeNamespaces : config.application.namespaces.tenantNamespaces
-
-		k8sClient.patch('secret',
-			'argocd-default-cluster-config',
-			namespace,
-			[stringData: ['namespaces': namespaceList.join(',')]])
-
-		if (context.isMultiTenant()) {
-			// Append new namespaces to existing ones from the secret.
-			// `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
-			// This ensures all centrally managed namespaces are preserved.
-			String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace)
-			byte[] decodedBytes = Base64.decoder.decode(base64Namespaces)
-			String decoded = new String(decodedBytes, 'UTF-8')
-
-			def decodedList = decoded?.split(',') as List ?: []
-			def activeList = config.application.namespaces.activeNamespaces?.flatten() as List ?: []
-			def merged = (decodedList + activeList).unique().join(',')
-
-			log.debug("Updating Central Argocd 'argocd-default-cluster-config' secret")
-
-			k8sClient.patch('secret',
-				'argocd-default-cluster-config',
-				config.multiTenant.centralArgocdNamespace,
-				[stringData: ['namespaces': merged]])
-		}
-	}
-
-	private void generateRBAC() {
-		log.debug('Generate RBAC permissions for ArgoCD in all managed namespaces')
-
-		if (context.isMultiTenant()) {
-			//Generating Tenant Namespace RBACs for Tenant Argocd
-			for (String ns : config.application.namespaces.tenantNamespaces) {
-				new RbacDefinition(Role.Variant.ARGOCD)
-					.withName('argocd')
-					.withNamespace(ns)
-					.withServiceAccountsFrom(namespace,
-						['argocd-argocd-server',
-						 'argocd-argocd-application-controller',
-						 'argocd-applicationset-controller'])
-					.withConfig(config)
-					.withRepo(repositoryWorkspace.clusterResourcesRepository)
-					.withSubfolder(clusterResourcesRepo.operatorRbacTenantSubfolder())
-					.generate()
-			}
-
-			//Generating Central ArgoCD RBACs for managed namespaces
-			for (String ns : config.application.namespaces.activeNamespaces) {
-				log.debug('Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs')
-
-				new RbacDefinition(Role.Variant.ARGOCD)
-					.withName('argocd-central')
-					.withNamespace(ns)
-					.withServiceAccountsFrom(config.multiTenant.centralArgocdNamespace,
-						['argocd-argocd-server',
-						 'argocd-argocd-application-controller',
-						 'argocd-applicationset-controller'])
-					.withConfig(config)
-					.withRepo(repositoryWorkspace.clusterResourcesRepository)
-					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
-					.generate()
-			}
-		} else {
-			for (String ns : config.application.namespaces.activeNamespaces) {
-				new RbacDefinition(Role.Variant.ARGOCD)
-					.withName('argocd')
-					.withNamespace(ns)
-					.withServiceAccountsFrom(namespace,
-						['argocd-argocd-server',
-						 'argocd-argocd-application-controller',
-						 'argocd-applicationset-controller'])
-					.withConfig(config)
-					.withRepo(repositoryWorkspace.clusterResourcesRepository)
-					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
-					.generate()
-			}
-
-			if (config.application.clusterAdmin) {
-				new RbacDefinition(Role.Variant.CLUSTER_ADMIN)
-					.withName('argocd-cluster-admin')
-					.withNamespace(namespace)
-					.withServiceAccountsFrom(namespace,
-						['argocd-argocd-server',
-						 'argocd-argocd-application-controller',
-						 'argocd-applicationset-controller'])
-					.withConfig(config)
-					.withRepo(repositoryWorkspace.clusterResourcesRepository)
-					.withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
-					.generate()
-			}
-		}
-	}
-
-	protected void createSCMCredentialsSecret() {
-		log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
-
-		// Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-		createRepoCredentialsSecret('argocd-repo-creds-scm',
-			namespace,
-			gitHandler.tenant.url,
-			gitHandler.tenant.credentials.username,
-			gitHandler.tenant.credentials.password)
-
-		if (context.isMultiTenant()) {
-			log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
-
-			createRepoCredentialsSecret('argocd-repo-creds-central-scm',
-				config.multiTenant.centralArgocdNamespace,
-				gitHandler.central.url,
-				gitHandler.central.credentials.username,
-				gitHandler.central.credentials.password)
-		}
-	}
-
-	private void createRepoCredentialsSecret(String secretName,
-		String ns,
-		String url,
-		String username,
-		String password) {
-		k8sClient.createSecret('generic',
-			secretName,
-			ns,
-			new Tuple2('url', url),
-			new Tuple2('username', username),
-			new Tuple2('password', password))
-
-		k8sClient.label('secret',
-			secretName,
-			ns,
-			new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 	}
 
 	protected ArgoCDRepoSetup getRepoSetup() {
