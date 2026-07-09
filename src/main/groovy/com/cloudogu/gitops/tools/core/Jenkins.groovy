@@ -27,7 +27,7 @@ class Jenkins extends Tool implements ToolWithImage {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
 
-	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api']
+	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api', 'matrix-auth']
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'jenkins'
@@ -254,7 +254,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	private boolean jenkinsOidcConfigured() {
-		return config.jenkins.oidc?.trim()
+		return config.jenkins.oidc?.enabled
 	}
 
 	private List<String> getJenkinsOidcBootPlugins() {

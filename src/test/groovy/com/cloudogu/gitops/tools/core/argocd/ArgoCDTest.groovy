@@ -254,6 +254,26 @@ class ArgoCDTest {
 	}
 
 	@Test
+	void 'configures Argo CD OIDC from structured config'() {
+		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'argocd',
+			clientSecret: 'argocd-secret',
+			adminGroupName: 'gop-admins')
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		def oidcConfig = new YamlSlurper().parseText(valuesYaml['cm']['oidc.config'] as String)
+		assertThat(oidcConfig['issuer']).isEqualTo('http://keycloak.local.gd/realms/gop')
+		assertThat(oidcConfig['clientID']).isEqualTo('argocd')
+		assertThat(valuesYaml['rbac']['policy.csv'] as String).contains('g, gop-admins, role:admin')
+		assertThat(valuesYaml['rbac']['scopes']).isEqualTo('[groups]')
+	}
+
+	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
 		config.features.mail.active = false
 

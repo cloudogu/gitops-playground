@@ -72,10 +72,21 @@ argo-cd:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
       application.resourceTrackingMethod: annotation
-      <#if config.features.argocd.oidc?has_content>
-      oidc.config: |                                                                                                                                                    
-                   ${config.features.argocd.oidc?trim?replace("\n", "\n                   ")}
+      <#assign argocdOidc = config.features.argocd.oidc>
+      <#if argocdOidc.enabled>
+      oidc.config: |
+        name: ${argocdOidc.providerName}
+        issuer: ${argocdOidc.issuerUrl}
+        clientID: ${argocdOidc.clientId}
+        clientSecret: ${argocdOidc.clientSecret}
+        requestedScopes: [<#list argocdOidc.scopes as scope>"${scope}"<#sep>, </#list>]
       </#if>
+    <#if argocdOidc.enabled && argocdOidc.adminGroupName?has_content>
+    rbac:
+      policy.csv: |
+        g, ${argocdOidc.adminGroupName}, role:admin
+      scopes: '[groups]'
+    </#if>
 
   notifications:
     # secrets are created dynamically in groovy, so they are not stored in git

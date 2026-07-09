@@ -162,9 +162,10 @@ class VaultTest {
 	void 'Dev mode enables OIDC only when configured'() {
 		config.features.secrets.vault.mode = 'dev'
 		config.features.secrets.vault.url = 'http://vault.localhost'
-		config.features.secrets.vault.oidc = new Config.SecretsSchema.VaultSchema.VaultOidcSchema(clientId: 'vault-client',
+		config.features.secrets.vault.oidc = new Config.OidcSchema(clientId: 'vault-client',
 			clientSecret: 'vault-secret',
-			discoveryUrl: 'http://keycloak.local.gd/realms/gop')
+			issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			adminGroupName: 'gop-admins')
 		config.application.password = 'admin'
 
 		install(createVault())
@@ -172,7 +173,7 @@ class VaultTest {
 		def actualYaml = parseActualYaml()
 		List actualPostStart = (List) actualYaml['server']['postStart']
 		assertThat(normalizeShellCommand(actualPostStart[2] as String))
-			.isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+			.isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 	}
 
 	@Test

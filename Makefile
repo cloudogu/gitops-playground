@@ -17,6 +17,10 @@ cluster: ## creates a k3d cluster suitable for GOP
 	./scripts/init-cluster.sh $(RUN_ARGS)
 
 .PHONY:
+keycloak: ## installs local Keycloak test instance for OIDC
+	bash ./scripts/keycloak/install-keycloak.sh
+
+.PHONY:
 prepare-two-registries: ## for testing with multiple registries
 	./scripts/dev/prepare_two_registries.sh
 

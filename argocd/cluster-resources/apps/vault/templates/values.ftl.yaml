@@ -62,7 +62,8 @@ server:
           OIDC_ENABLED=true \
           OIDC_CLIENT_ID=${vaultOidc.clientId} \
           OIDC_CLIENT_SECRET=${vaultOidc.clientSecret} \
-          OIDC_DISCOVERY_URL=${vaultOidc.discoveryUrl} \
+          OIDC_DISCOVERY_URL=${vaultOidc.issuerUrl} \
+          OIDC_ADMIN_GROUP=${vaultOidc.adminGroupName} \
           VAULT_EXTERNAL_URL=http://${host} \
 <#else>
           OIDC_ENABLED=false \

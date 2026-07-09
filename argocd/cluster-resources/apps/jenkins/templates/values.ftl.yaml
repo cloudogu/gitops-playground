@@ -1,4 +1,10 @@
 dockerClientVersion: ${config.jenkins.internalDockerClientVersion}
+<#assign jenkinsOidc = config.jenkins.oidc>
+<#if config.jenkins.ingress?has_content>
+<#assign jenkinsOidcExternalUrl = "http://" + config.jenkins.ingress>
+<#else>
+<#assign jenkinsOidcExternalUrl = config.jenkins.url>
+</#if>
 
 controller:
 <#if config.jenkins.jenkinsImage?has_content>
@@ -107,7 +113,41 @@ controller:
     defaultConfig: true
     configScripts:
       oidc-auth: |
-        ${config.jenkins.oidc?trim?replace("\n", "\n                   ")}
+        jenkins:
+          securityRealm:
+            oic:
+              clientId: "${jenkinsOidc.clientId}"
+              clientSecret: "${jenkinsOidc.clientSecret}"
+              serverConfiguration:
+                wellKnown:
+                  wellKnownOpenIDConfigurationUrl: "${jenkinsOidc.issuerUrl}/.well-known/openid-configuration"
+                  scopesOverride: "<#list jenkinsOidc.scopes as scope>${scope}<#sep> </#list>"
+              userNameField: "preferred_username"
+              fullNameFieldName: "name"
+              emailFieldName: "email"
+              groupsFieldName: "groups"
+              logoutFromOpenidProvider: true
+              postLogoutRedirectUrl: "${jenkinsOidcExternalUrl}"
+              properties:
+                - escapeHatch:
+                    username: "${config.jenkins.username}"
+                    <#if jenkinsOidc.adminGroupName?has_content>
+                    group: "${jenkinsOidc.adminGroupName}"
+                    </#if>
+                    secret: "${config.jenkins.password}"
+          authorizationStrategy:
+            globalMatrix:
+              entries:
+                - user:
+                    name: "${config.jenkins.username}"
+                    permissions:
+                      - "Overall/Administer"
+                <#if jenkinsOidc.adminGroupName?has_content>
+                - group:
+                    name: "${jenkinsOidc.adminGroupName}"
+                    permissions:
+                      - "Overall/Administer"
+                </#if>
   </#if>
 
 persistence:
