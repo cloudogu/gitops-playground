@@ -80,6 +80,7 @@ class ContentLoader extends Tool {
 		createImagePullSecrets()
 		createContentRepos()
 		deployHelmReleasesFromContent()
+
 	}
 
 	@Override
@@ -169,6 +170,8 @@ class ContentLoader extends Tool {
 				mergedValuesFilePath as String,
 				context,
 				false)
+
+			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${helmRelease.releaseName} GitOps resources")
 		}
 	}
 
