@@ -120,6 +120,15 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                                                                           syncOptions: ['ServerSideApply=true',
 		                                                                                         namespaceCreationSyncOption]]]])
 
+		/*
+		 * Keep the file path release-based.
+		 *
+		 * For tenant SCM this becomes:
+		 *   apps/argocd/applications/tenant1-scmm.yaml
+		 *
+		 * The important value for ArgoCD tracking is metadata.name above:
+		 *   tenant1-scm-manager
+		 */
 		String appManifestPath = "apps/argocd/applications/${releaseName}.yaml"
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
