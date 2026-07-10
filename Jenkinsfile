@@ -71,17 +71,13 @@ pipeline {
                     }
                 }
 
-                stage("Codenarc Report") {
-                    agent { docker {
-                        image 'codenarc/codenarc:latest'
-                        args '--entrypoint="java -jar /lib/codenarc-all.jar"'
-                        reuseNode true
-                    }}
-                    steps {
-                        sh '-rulesetfiles=file:codenarc-ruleset.xml -includes="src/**/*.groovy" -report="xml:target/codenarc.xml"'
-                    }
-                }
 
+            }
+        }
+
+        stage("Codenarc Report") {
+            steps {
+                sh 'docker run --rm -v $WORKSPACE:/ws codenarc/codenarc -rulesetfiles=file:codenarc-ruleset.xml -includes="src/**/*.groovy" -report="xml:target/codenarc.xml"'
             }
         }
 
