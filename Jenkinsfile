@@ -89,7 +89,7 @@ pipeline {
             }}
             steps {
                 withSonarQubeEnv('ces-sonar') {
-                    sh "mvn verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
+                    sh "mvn verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.maven.scanAll=true"
                 }
             }
         }
