@@ -29,10 +29,10 @@ import retrofit2.Response
 
 class ScmManagerSetupTest {
 
-	ScmManagerProvider scmManager = mock(ScmManagerProvider.class)
+	ScmManagerProvider scmManager = mock(ScmManagerProvider)
 
-	Deployer deployer = mock(Deployer.class)
-	HelmStrategy helmStrategy = mock(HelmStrategy.class)
+	Deployer deployer = mock(Deployer)
+	HelmStrategy helmStrategy = mock(HelmStrategy)
 
 	GitProvider tenantProvider = mock(GitProvider)
 	GitProvider centralProvider = mock(GitProvider)
@@ -40,9 +40,9 @@ class ScmManagerSetupTest {
 	GitRepo clusterResourcesRepo = mock(GitRepo)
 	GitRepo tenantBootstrapRepo = mock(GitRepo)
 
-	ScmManagerApiClient apiClient = mock(ScmManagerApiClient.class)
-	PluginApi pluginApi = mock(PluginApi.class)
-	ScmManagerApi generalApi = mock(ScmManagerApi.class)
+	ScmManagerApiClient apiClient = mock(ScmManagerApiClient)
+	PluginApi pluginApi = mock(PluginApi)
+	ScmManagerApi generalApi = mock(ScmManagerApi)
 
 	Config config = Config.fromMap([application: [namePrefix: 'test',
 	                                              insecure  : true],
@@ -103,7 +103,7 @@ class ScmManagerSetupTest {
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
-		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path)
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
@@ -135,7 +135,7 @@ class ScmManagerSetupTest {
 		config.application.namePrefix = "${config.application.namePrefix}-"
 		scmManagerSetup.setupHelm()
 
-		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class)
+		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path)
 		verify(helmStrategy).deployFeature(eq('https://packages.scm-manager.org/repository/helm-v2-releases/'),
 			eq('scm-manager'),
 			eq('scm-manager'),
@@ -161,7 +161,7 @@ class ScmManagerSetupTest {
 		when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
 		when(scmManager.getApiClient()).thenReturn(apiClient)
 
-		Call<Void> apiCall = mock(Call.class)
+		Call<Void> apiCall = mock(Call)
 
 		when(pluginApi.install(any(String), any(Boolean))).thenReturn(apiCall)
 		when(generalApi.checkScmmAvailable()).thenReturn(apiCall)

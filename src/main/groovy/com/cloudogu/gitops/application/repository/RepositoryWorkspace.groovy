@@ -21,8 +21,7 @@ import groovy.util.logging.Slf4j
  *
  * <p>This class does not decide which repositories are needed. That decision belongs to
  * {@link RepositoryProvisioning}. This class only exposes the prepared repositories and
- * the directory structure that tools can write to.</p>
- */
+ * the directory structure that tools can write to.</p>*/
 @Slf4j
 class RepositoryWorkspace {
 
@@ -43,8 +42,7 @@ class RepositoryWorkspace {
 
 	/**
 	 * Returns the tenant bootstrap repository or fails if this workspace was created for
-	 * a single-instance setup.
-	 */
+	 * a single-instance setup.	*/
 	GitRepo tenantBootstrapRepositoryOrFail() {
 		if (tenantBootstrapRepository == null) {
 			throw new IllegalStateException('Tenant bootstrap repository is not available in single-instance mode.')
@@ -58,8 +56,7 @@ class RepositoryWorkspace {
 	 *
 	 * <p>The decision which repositories are part of this workspace still belongs to
 	 * {@link RepositoryProvisioning}. This method only ensures the already prepared
-	 * repository handles.</p>
-	 */
+	 * repository handles.</p>	*/
 	void ensureRemoteRepositoriesExist() {
 		if (remoteRepositoriesEnsured) {
 			log.debug('Remote repositories already ensured. Skipping.')
@@ -114,8 +111,7 @@ class RepositoryWorkspace {
 	 *
 	 * <p>This is needed when GOP deploys an internal SCM-Manager first. In that case,
 	 * the remote repositories are not available at the beginning of the deployment,
-	 * but tools still need local directories to write their generated resources.</p>
-	 */
+	 * but tools still need local directories to write their generated resources.</p>	*/
 	void initLocalRepositoriesIfNeeded() {
 		clusterResourcesRepository.initLocalRepoIfNeeded()
 
@@ -177,12 +173,12 @@ class RepositoryWorkspace {
 	}
 
 	void commitAndPushClusterResourcesChanges(String message) {
+		log.debug(message)
 		clusterResourcesRepository.commitAndPush(message)
 	}
 
 	/**
-	 * Aligns locally initialized repositories with the remote main branch if it already exists.
-	 */
+	 * Aligns locally initialized repositories with the remote main branch if it already exists.	*/
 	void alignWithRemoteMainIfPresent() {
 		clusterResourcesRepository.checkoutRemoteMainIfLocalMainMissing()
 

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.*
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
@@ -66,10 +67,11 @@ class ContentLoaderTest {
 	K8sClient k8sClient = new K8sClient()
 	TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 	TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-	Jenkins jenkins = mock(Jenkins.class)
+	Jenkins jenkins = mock(Jenkins)
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
 	Deployer deployer = mock(Deployer)
+	RepositoryWorkspace repositoryWorkspace = mock(RepositoryWorkspace)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
 	@TempDir
@@ -157,7 +159,7 @@ class ContentLoaderTest {
 		expectedTargetRepos.each { expected -> assertThat(new File(findRoot(repos), expected.namespace + '/' + expected.repoName + '/file')).exists().isFile()
 		}
 
-		assertThat(new File(findRoot(repos), 'common/repo/file').text).contains("folderBasedRepo2") // Last repo "wins"
+		assertThat(new File(findRoot(repos), 'common/repo/file').text).contains('folderBasedRepo2') // Last repo "wins"
 
 		assertThat(new File(findRoot(repos), 'common/repo/folderBasedRepo1')).exists().isFile()
 		assertThat(new File(findRoot(repos), 'common/repo/folderBasedRepo2')).exists().isFile()
@@ -211,7 +213,7 @@ class ContentLoaderTest {
 			.endMetadata()
 			.withType('Opaque')
 			.withData(Map.of('username', 'YWRtaW4=',
-				"password", "czNjcjN0"))
+				'password', 'czNjcjN0'))
 			.build()
 
 		this.k8sClient.client.secrets()
@@ -973,7 +975,7 @@ class ContentLoaderTest {
 	}
 
 	private boolean install(ContentLoaderForTest contentLoader, Config config) {
-		return contentLoader.execute(new ContextBuilder(config).build(), null)
+		return contentLoader.execute(new ContextBuilder(config).build(), repositoryWorkspace)
 	}
 
 	private List<RepoCoordinate> cloneContentRepos(ContentLoaderForTest contentLoader, Config config) {

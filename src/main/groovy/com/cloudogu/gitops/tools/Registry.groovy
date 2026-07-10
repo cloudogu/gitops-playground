@@ -11,16 +11,21 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(30)
 class Registry extends Tool {
 
 	/**
-	 * Local container port of the registry within the pod*/
+	 * Local container port of the registry within the pod	*/
 	public static final String CONTAINER_PORT = '5000'
+
+	private static final String TOOL_NAME = 'registry'
+	private static final String RELEASE_NAME = 'docker-registry'
 
 	String namespace
 	private K8sClient k8sClient
@@ -28,7 +33,7 @@ class Registry extends Tool {
 	Registry(FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		// For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
+		// Bootstrap with Helm first, then create an ArgoCD Application for GitOps management.
 		Deployer deployer) {
 		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
@@ -42,10 +47,33 @@ class Registry extends Tool {
 	}
 
 	@Override
-	protected void prepare() {
-		if (config.registry.internal) {
-			this.namespace = activeNamespace(context)
+	protected void preDeploy() {
+		if (!isInternalRegistry()) {
+			return
 		}
+
+		this.namespace = activeNamespace(context)
+
+		prepareRegistryHelmValues()
+	}
+
+	@Override
+	protected void deploy() {
+		if (!isInternalRegistry()) {
+			return
+		}
+
+		deployInternalRegistry()
+		createInternalRegistryNodePortIfRequired()
+	}
+
+	@Override
+	protected void publishChanges() {
+		if (!isInternalRegistry()) {
+			return
+		}
+
+		publishClusterResourcesChanges(TOOL_NAME)
 	}
 
 	@Override
@@ -53,32 +81,43 @@ class Registry extends Tool {
 		return context.config.registry.internal ? "${context.config.application.namePrefix}${context.config.registry.namespace}" : null
 	}
 
-	@Override
-	void enable() {
+	private boolean isInternalRegistry() {
+		return config.registry.internal
+	}
 
-		if (config.registry.internal) {
-			addHelmValuesData("service", [nodePort: Config.DEFAULT_REGISTRY_PORT,
-			                              type    : 'NodePort'])
+	private void prepareRegistryHelmValues() {
+		addHelmValuesData('service',
+			[nodePort: Config.DEFAULT_REGISTRY_PORT,
+			 type    : 'NodePort'])
+	}
 
-			def helmConfig = config.registry.helm
-			deployHelmChart('registry', 'docker-registry', namespace, helmConfig, "", context, true)
+	private void deployInternalRegistry() {
+		deployHelmChart(TOOL_NAME,
+			RELEASE_NAME,
+			namespace,
+			config.registry.helm,
+			'',
+			context,
+			true)
+	}
 
-			if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
-				/* Add additional node port
-			   30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
-			   See "-p 30000" in init-cluster.sh
-			   e.g 32769 is needed so the kubelet can access the image inside the server-0 container
-			 */
-
-				/* k8sClient.createServiceNodePort('docker-registry-internal-port',
-						 CONTAINER_PORT, config.registry.internalPort.toString(),
-						 namespace) */
-
-				k8sClient.createServiceNodePort('docker-registry-internal-port',
-					"${CONTAINER_PORT}:${CONTAINER_PORT}",
-					config.registry.internalPort.toString(),
-					namespace)
-			}
+	private void createInternalRegistryNodePortIfRequired() {
+		if (config.registry.internalPort == Config.DEFAULT_REGISTRY_PORT) {
+			return
 		}
+
+		/*
+		 * Add additional node port.
+		 *
+		 * 30000 is needed as a static port by Docker via k3d port mapping,
+		 * e.g. 32769 -> 30000 on the server-0 container.
+		 *
+		 * See "-p 30000" in init-cluster.sh.
+		 * e.g. 32769 is needed so the kubelet can access the image inside the server-0 container.
+		 */
+		k8sClient.createServiceNodePort('docker-registry-internal-port',
+			"${CONTAINER_PORT}:${CONTAINER_PORT}",
+			config.registry.internalPort.toString(),
+			namespace)
 	}
 }

@@ -5,30 +5,32 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(10)
-class ScmManager extends Tool implements ToolWithImage {
+class ScmManager extends Tool {
 
 	String namespace
 
-	final K8sClient k8sClient
+	private final ImagePullSecretCreator imagePullSecretCreator
+	private ScmManagerSetup setup
 
 	ScmManager(GitHandler gitHandler,
 		Deployer deployer,
-		K8sClient k8sClient) {
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.gitHandler = gitHandler
 		this.deployer = deployer
-		this.k8sClient = k8sClient
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -37,24 +39,34 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	protected void prepare() {
-		prepareNamespace()
-	}
+	protected void preDeploy() {
+		log.info('Preparing internal SCM-Manager deployment.')
 
-	@Override
-	void enable() {
-		log.info('Starting internal SCM-Manager setup.')
+		prepareNamespace()
+		imagePullSecretCreator.createIfRequired(config, namespace)
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
-		ScmManagerSetup setup = new ScmManagerSetup(scmManager,
+		this.setup = new ScmManagerSetup(scmManager,
 			deployer,
 			context,
 			repositoryWorkspace)
+	}
+
+	@Override
+	protected void deploy() {
+		log.info('Deploying internal SCM-Manager.')
 
 		setup.setupHelm()
 		setup.waitForScmmAvailable()
+	}
+
+	@Override
+	protected void postDeploy() {
+		log.info('Configuring internal SCM-Manager after deployment.')
+
 		setup.configure()
+
 		/*
 		 * Special bootstrap preparation:
 		 * Creates/initializes the remote repositories and prepares the local workspace
@@ -67,7 +79,10 @@ class ScmManager extends Tool implements ToolWithImage {
 		 * The strategy writes into the shared RepositoryWorkspace and does not push itself.
 		 */
 		setup.createArgocdApplication()
+	}
 
+	@Override
+	protected void publishChanges() {
 		/*
 		 * Push the complete bootstrap state, including generated SCM-Manager GitOps artifacts.
 		 */
@@ -87,8 +102,8 @@ class ScmManager extends Tool implements ToolWithImage {
 	}
 
 	private String prefixedNamespace(DeploymentContext context) {
-		String prefix = context.config.application.namePrefix ?: ""
-		String baseNamespace = context.config.scm.scmManager.namespace ?: "scm-manager"
+		String prefix = context.config.application.namePrefix ?: ''
+		String baseNamespace = context.config.scm.scmManager.namespace ?: 'scm-manager'
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace

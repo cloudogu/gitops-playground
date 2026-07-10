@@ -20,6 +20,7 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
+import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +52,7 @@ class ApplicationConfiguratorTest {
 	                                    registry   : [url          : EXPECTED_REGISTRY_URL,
 	                                                  proxyUrl     : 'proxy-' + EXPECTED_REGISTRY_URL,
 	                                                  proxyUsername: 'proxy-user',
-	                                                  proxyPassword: "proxy-pw",
+	                                                  proxyPassword: 'proxy-pw',
 	                                                  internalPort : EXPECTED_REGISTRY_INTERNAL_PORT,],
 	                                    jenkins    : [url: EXPECTED_JENKINS_URL],
 	                                    scm        : [scmManager: [url: EXPECTED_SCMM_URL],],
@@ -92,7 +93,8 @@ class ApplicationConfiguratorTest {
 		featureArgoCd = Mockito.spy(new ArgoCD(k8sClient,
 			helmClient,
 			fileSystemUtils,
-			gitHandler))
+			gitHandler,
+			new DeploymentModeFactory()))
 		featureArgoCd.isEnabled(context)
 	}
 
@@ -506,7 +508,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.resourceInclusionsCluster = null
 
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '127.0.0.1')
-			.and("KUBERNETES_SERVICE_PORT", "6443")
+			.and('KUBERNETES_SERVICE_PORT', '6443')
 			.execute {
 				Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
@@ -555,7 +557,7 @@ class ApplicationConfiguratorTest {
 		testConfig.features.argocd.resourceInclusionsCluster = null
 
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', 'invalid_host')
-			.and("KUBERNETES_SERVICE_PORT", "not_a_port")
+			.and('KUBERNETES_SERVICE_PORT', 'not_a_port')
 			.execute {
 				def exception = shouldFail(RuntimeException) {
 					applicationConfigurator.initConfig(testConfig)

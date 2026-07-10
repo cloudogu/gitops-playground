@@ -16,6 +16,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.TestGitProvider
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
@@ -931,7 +932,7 @@ class ArgoCDTest {
 		config.application.internalKubernetesApiUrl = 'https://192.168.0.1:6443'
 
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '100.125.0.1')
-			.and("KUBERNETES_SERVICE_PORT", "443")
+			.and('KUBERNETES_SERVICE_PORT', '443')
 			.execute {
 				execute(argocd)
 			}
@@ -1293,7 +1294,7 @@ class ArgoCDTest {
 			}
 			if (file.name.startsWith('rolebinding-') && file.name.contains('dedi')) {
 				def rbacFile = new YamlSlurper().parse(Path.of(file.path))
-				assertThat(rbacFile['subjects']['namespace']).isEqualTo(['argocd', "argocd", "argocd"])
+				assertThat(rbacFile['subjects']['namespace']).isEqualTo(['argocd', 'argocd', 'argocd'])
 			}
 		}
 
@@ -1305,7 +1306,7 @@ class ArgoCDTest {
 
 			if (file.name.startsWith('rolebinding-')) {
 				def rbacFile = new YamlSlurper().parse(Path.of(file.path))
-				assertThat(rbacFile['subjects']['namespace']).isEqualTo(['testPrefix-argocd', "testPrefix-argocd", "testPrefix-argocd"])
+				assertThat(rbacFile['subjects']['namespace']).isEqualTo(['testPrefix-argocd', 'testPrefix-argocd', 'testPrefix-argocd'])
 			}
 		}
 	}
@@ -1588,7 +1589,8 @@ class ArgoCDTest {
 			super(k8sClient,
 				new HelmClient(helmCommands),
 				new FileSystemUtils(),
-				testContext.gitHandler)
+				testContext.gitHandler,
+				new DeploymentModeFactory())
 
 			this.cfg = cfg
 			this.tenantProvider = tenantProvider

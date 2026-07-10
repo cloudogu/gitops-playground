@@ -19,12 +19,14 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -35,6 +37,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@CompileStatic
 @EnableKubernetesMockClient(crud = true)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class VaultTest {
@@ -49,6 +52,7 @@ class VaultTest {
 
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
+	ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator)
 
 	Path temporaryYamlFile
 	File clusterResourcesRepoDir
@@ -139,7 +143,7 @@ class VaultTest {
 		assertThat(actualVolumes[0]['configMap']['defaultMode']).isEqualTo(Integer.valueOf(0774))
 
 		assertThat(actualVolumeMounts[0]['readOnly']).is(true)
-		assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
+		assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + '/dev-post-start.sh')
 
 		assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
 	}
@@ -285,7 +289,7 @@ class VaultTest {
 			@Override
 			Path writeTempFile(Map mapValues) {
 				def ret = super.writeTempFile(mapValues)
-				temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
 				return ret
 			}
 		}
@@ -310,7 +314,8 @@ class VaultTest {
 			deployer,
 			k8sClient,
 			airGappedUtils,
-			gitHandler)
+			gitHandler,
+			imagePullSecretCreator)
 	}
 
 	private boolean install(Vault vault) {
@@ -324,7 +329,7 @@ class VaultTest {
 	}
 
 	private static String normalizeShellCommand(String command) {
-		command
+		return command
 			.replaceAll(/\\\s*\r?\n\s*/, ' ')
 			.replaceAll(/\s+/, ' ')
 			.trim()

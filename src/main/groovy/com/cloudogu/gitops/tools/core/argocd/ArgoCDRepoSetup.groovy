@@ -9,10 +9,12 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import freemarker.template.DefaultObjectWrapperBuilder
 
+@CompileStatic
 @Slf4j
 class ArgoCDRepoSetup {
 

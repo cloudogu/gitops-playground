@@ -19,8 +19,6 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
-import io.micronaut.core.annotation.Order
-
 import java.nio.file.Path
 import jakarta.inject.Singleton
 import groovy.util.logging.Slf4j
@@ -37,7 +35,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
 @Singleton
-@Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Tool {
 	private K8sClient k8sClient
@@ -75,7 +72,7 @@ class ContentLoader extends Tool {
 	}
 
 	@Override
-	void enable() {
+	protected void deploy() {
 		// ensure cache is cleaned
 		clearCache()
 		// clones repo to check valid configuration and reuse result for further step.
@@ -83,6 +80,7 @@ class ContentLoader extends Tool {
 		createImagePullSecrets()
 		createContentRepos()
 		deployHelmReleasesFromContent()
+
 	}
 
 	@Override
@@ -165,13 +163,16 @@ class ContentLoader extends Tool {
 			Path mergedValuesFile = fileSystemUtils.writeTempFile(mergedValues)
 			String mergedValuesFilePath = mergedValuesFile.toString()
 
+			String releaseName = (helmRelease.releaseName ?: helmRelease.name) as String
 			deployHelmChart(helmRelease.name as String,
-				(helmRelease.releaseName ?: helmRelease.name) as String,
+				releaseName,
 				helmRelease.namespace as String,
 				helmConfig as Config.HelmConfigWithValues,
 				mergedValuesFilePath as String,
 				context,
 				false)
+
+			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${releaseName} GitOps resources")
 		}
 	}
 
@@ -498,14 +499,14 @@ class ContentLoader extends Tool {
 					' set for repo \'' +
 					repoCoordinate.fullRepoName +
 					'\': ' +
-					"Deleting existing files in repo and replacing them with new content.")
+					'Deleting existing files in repo and replacing them with new content.')
 				targetRepo.clearRepo()
 			} else {
 				log.debug('OverwriteMode ' + String.valueOf(OverwriteMode.UPGRADE) +
 					' set for repo \'' +
 					repoCoordinate.fullRepoName +
 					'\': ' +
-					"Merging new content into existing repo. ")
+					'Merging new content into existing repo. ')
 			}
 		}
 	}
@@ -597,7 +598,7 @@ class ContentLoader extends Tool {
 				' set for repo \'' +
 				repoCoordinate.fullRepoName +
 				'\' ' +
-				"and repo already exists in target:  Not pushing content!" +
+				'and repo already exists in target:  Not pushing content!' +
 				"If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
 			return false
 		}
