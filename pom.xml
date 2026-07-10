@@ -22,9 +22,6 @@
         <maven.compiler.target>17</maven.compiler.target>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
-        <sonar.sources>pom.xml,src/main/groovy</sonar.sources>
-        <sonar.tests>src/test/groovy</sonar.tests>
-
         <!--suppress
         UnresolvedMavenProperty -->
         <!-- git is provided by git-commit-id-maven-plugin -->
@@ -106,7 +103,8 @@
                 <version>2.22.0</version>
                 <scope>compile</scope>
             </dependency>
-            <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+            <!-- Source:
+            https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
             <!-- used for io-fabric8, gitlab4j, groovy-yaml and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
