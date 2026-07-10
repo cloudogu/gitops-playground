@@ -5,8 +5,8 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -14,12 +14,14 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import io.micronaut.core.annotation.Order
 
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
 @Order(150)
-class Ingress extends Tool implements ToolWithImage {
+class Ingress extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml'
 
@@ -28,6 +30,8 @@ class Ingress extends Tool implements ToolWithImage {
 	private static final String RELEASE_NAME = 'traefik'
 	private static final String INGRESS_APP_PATH = 'apps/traefik'
 
+	private final ImagePullSecretCreator imagePullSecretCreator
+
 	String namespace
 	final K8sClient k8sClient
 
@@ -35,12 +39,14 @@ class Ingress extends Tool implements ToolWithImage {
 		Deployer deployer,
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -49,19 +55,15 @@ class Ingress extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	protected void prepare() {
+	protected void preDeploy() {
 		this.namespace = activeNamespace(context)
-	}
 
-	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return "${context.config.application.namePrefix}" + context.config.features.ingress.ingressNamespace
-	}
-
-	@Override
-	void enable() {
+		createImagePullSecret()
 		prepareIngressApp(repositoryWorkspace.clusterResourcesRepository)
+	}
 
+	@Override
+	protected void deploy() {
 		def helmConfig = config.features.ingress.helm
 
 		deployHelmChart(TOOL_NAME,
@@ -70,10 +72,20 @@ class Ingress extends Tool implements ToolWithImage {
 			helmConfig,
 			HELM_VALUES_PATH,
 			context)
+	}
 
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			"Update ${TOOL_NAME} GitOps resources"
-		)
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME)
+	}
+
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}${context.config.features.ingress.ingressNamespace}"
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
 	}
 
 	private void prepareIngressApp(GitRepo clusterResourcesRepo) {

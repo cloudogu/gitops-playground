@@ -11,19 +11,18 @@ import com.cloudogu.gitops.infrastructure.jenkins.JobManager
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.tools.common.ToolWithImage
 import com.cloudogu.gitops.utils.*
 
-import io.micronaut.core.annotation.Order
-
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+@CompileStatic
 @Slf4j
 @Singleton
-@Order(20)
-class Jenkins extends Tool implements ToolWithImage {
+class Jenkins extends Tool {
 
 	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
 
@@ -32,6 +31,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'jenkins'
 	private static final String JENKINS_APP_PATH = 'apps/jenkins'
+	private static final String RELEASE_NAME = 'jenkins'
 
 	String namespace
 	private CommandExecutor commandExecutor
@@ -40,6 +40,7 @@ class Jenkins extends Tool implements ToolWithImage {
 	private UserManager userManager
 	private PrometheusConfigurator prometheusConfigurator
 
+	private final ImagePullSecretCreator imagePullSecretCreator
 	final K8sClient k8sClient
 	private NetworkingUtils networkingUtils
 
@@ -53,7 +54,8 @@ class Jenkins extends Tool implements ToolWithImage {
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
-		GitHandler gitHandler) {
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.commandExecutor = commandExecutor
 		this.fileSystemUtils = fileSystemUtils
 		this.globalPropertyManager = globalPropertyManager
@@ -65,6 +67,7 @@ class Jenkins extends Tool implements ToolWithImage {
 		this.networkingUtils = networkingUtils
 		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
+		this.imagePullSecretCreator = imagePullSecretCreator
 	}
 
 	@Override
@@ -73,10 +76,76 @@ class Jenkins extends Tool implements ToolWithImage {
 	}
 
 	@Override
-	protected void prepare() {
-		if (config.jenkins.internal) {
-			this.namespace = activeNamespace(context)
+	protected void preDeploy() {
+		if (!isInternalJenkins()) {
+			return
 		}
+
+		this.namespace = activeNamespace(context)
+
+		createImagePullSecret()
+		createJenkinsNamespace()
+		labelJenkinsNode()
+		createJenkinsCredentialsSecret()
+		prepareJenkinsHelmValues()
+		prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
+	}
+
+	@Override
+	protected void deploy() {
+		if (!isInternalJenkins()) {
+			return
+		}
+
+		deployInternalJenkins()
+	}
+
+	@Override
+	protected void postDeploy() {
+		if (isInternalJenkins()) {
+			updateJenkinsUrl()
+		}
+
+		runSetupScript()
+	}
+
+	@Override
+	protected void publishChanges() {
+		if (!isInternalJenkins()) {
+			return
+		}
+
+		publishClusterResourcesChanges(TOOL_NAME)
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
+	}
+
+	private void createJenkinsNamespace() {
+		k8sClient.createNamespace(namespace)
+	}
+
+	private void labelJenkinsNode() {
+		// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
+		// Remove first in case new nodes were added.
+		k8sClient.labelRemove('node', '--all', '', 'node')
+
+		String nodeName = k8sClient.waitForNode().replace('node/', '')
+		k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
+	}
+
+	private void createJenkinsCredentialsSecret() {
+		k8sClient.createSecret('generic',
+			'jenkins-credentials',
+			namespace,
+			new Tuple2('jenkins-admin-user', config.jenkins.username),
+			new Tuple2('jenkins-admin-password', config.jenkins.password))
+	}
+
+	private void prepareJenkinsHelmValues() {
+		addHelmValuesData('dockerGid', findDockerGid())
+		addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
 	}
 
 	@Override
@@ -84,64 +153,36 @@ class Jenkins extends Tool implements ToolWithImage {
 		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
 	}
 
-	@Override
-	void createImagePullSecret() {
-		if (config.jenkins.internal) {
-			ToolWithImage.super.createImagePullSecret()
-		}
+	private boolean isInternalJenkins() {
+		return config.jenkins.internal
 	}
 
-	@Override
-	void enable() {
-		if (config.jenkins.internal) {
-			k8sClient.createNamespace(namespace)
+	private void deployInternalJenkins() {
+		Config.HelmConfigWithValues helmConfig = config.jenkins.helm
 
-			// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
-			// Remove first (in case new nodes were added)
-			k8sClient.labelRemove('node', '--all', '', 'node')
-			String nodeName = k8sClient.waitForNode().replace('node/', '')
-			k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
+		deployHelmChart(TOOL_NAME,
+			RELEASE_NAME,
+			namespace,
+			helmConfig,
+			HELM_VALUES_PATH,
+			context,
+			true)
+	}
 
-			k8sClient.createSecret('generic',
-				'jenkins-credentials',
-				namespace,
-				new Tuple2('jenkins-admin-user', config.jenkins.username),
-				new Tuple2('jenkins-admin-password', config.jenkins.password))
+	private void updateJenkinsUrl() {
+		// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
+		String serviceName = RELEASE_NAME
 
-			Config.HelmConfigWithValues helmConfig = config.jenkins.helm
-			String releaseName = 'jenkins'
-
-			addHelmValuesData('dockerGid', findDockerGid())
-			addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
-
-			prepareJenkinsApp(repositoryWorkspace.clusterResourcesRepository)
-
-			deployHelmChart(TOOL_NAME,
-				releaseName,
-				namespace,
-				helmConfig,
-				HELM_VALUES_PATH,
-				context,
-				true)
-
-			repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${TOOL_NAME} GitOps resources")
-
-			// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
-			String serviceName = releaseName
-
-			// Update jenkins.url after it is deployed (and ports are known)
-			if (config.application.runningInsideK8s) {
-				log.debug('Setting jenkins url to k8s service, since installation is running inside k8s')
-				config.jenkins.url = networkingUtils.createUrl(serviceName + '.' + namespace + '.svc.cluster.local', '80')
-			} else {
-				log.debug('Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...')
-				String port = k8sClient.waitForNodePort(serviceName, namespace)
-				String clusterBindAddress = networkingUtils.findClusterBindAddress()
-				config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
-			}
+		// Update jenkins.url after it is deployed and ports are known.
+		if (config.application.runningInsideK8s) {
+			log.debug('Setting jenkins url to k8s service, since installation is running inside k8s')
+			config.jenkins.url = networkingUtils.createUrl(serviceName + '.' + namespace + '.svc.cluster.local', '80')
+		} else {
+			log.debug('Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...')
+			String port = k8sClient.waitForNodePort(serviceName, namespace)
+			String clusterBindAddress = networkingUtils.findClusterBindAddress()
+			config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
 		}
-
-		runSetupScript()
 	}
 
 	private void prepareJenkinsApp(GitRepo clusterResourcesRepo) {

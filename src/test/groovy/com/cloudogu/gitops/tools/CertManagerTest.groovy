@@ -17,12 +17,14 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 
 import java.nio.file.Files
 import java.nio.file.Path
+import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.Test
@@ -33,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+@CompileStatic
 @ExtendWith(MockitoExtension)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CertManagerTest {
@@ -59,6 +62,8 @@ class CertManagerTest {
 	GitHandler gitHandler
 	@Mock
 	GitProvider gitProvider
+	@Mock
+	ImagePullSecretCreator imagePullSecretCreator
 
 	@Test
 	void 'Helm release is installed'() {
@@ -217,7 +222,8 @@ class CertManagerTest {
 			deploymentStrategy,
 			new K8sClientForTest(),
 			airGappedUtils,
-			gitHandler)
+			gitHandler,
+			imagePullSecretCreator)
 	}
 
 	private boolean install(CertManager certManager) {

@@ -13,11 +13,13 @@ import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 
 import java.nio.file.Path
+import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
 
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 
+@CompileDynamic
 @Slf4j
 class ScmManagerSetup {
 
@@ -39,7 +41,6 @@ class ScmManagerSetup {
 		this.context = context
 		this.repositoryWorkspace = repositoryWorkspace
 	}
-
 
 	private Config getConfig() {
 		return context.config
@@ -122,14 +123,10 @@ class ScmManagerSetup {
 	}
 
 	void pushBootstrapRepositoriesAfterScmManagerDeployment() {
-		repositoryWorkspace.commitAndPushClusterResourcesChanges(
-			'Bootstrap cluster-resources repository after SCM-Manager deployment'
-		)
+		repositoryWorkspace.commitAndPushClusterResourcesChanges('Bootstrap cluster-resources repository after SCM-Manager deployment')
 
 		if (repositoryWorkspace.hasTenantBootstrapRepository()) {
-			repositoryWorkspace.commitAndPushTenantBootstrapChanges(
-				'Bootstrap tenant repository after SCM-Manager deployment'
-			)
+			repositoryWorkspace.commitAndPushTenantBootstrapChanges('Bootstrap tenant repository after SCM-Manager deployment')
 		}
 	}
 

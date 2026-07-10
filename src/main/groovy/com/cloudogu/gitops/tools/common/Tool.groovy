@@ -20,7 +20,10 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 
 /**
- * A single tool to be deployed by GOP.*/
+ * A single tool to be deployed by GOP.
+ *
+ * The DeploymentOrchestrator controls the order of tools.
+ * Each tool controls its own internal lifecycle.*/
 @Slf4j
 abstract class Tool {
 
@@ -32,37 +35,92 @@ abstract class Tool {
 	protected RepositoryWorkspace repositoryWorkspace
 	protected Map<String, Object> helmValuesTemplateData = [:]
 
-	protected void addHelmValuesData(String key, Object value) {
-		this.helmValuesTemplateData[key] = value
-	}
-
 	/**
 	 * Activation check for the current deployment run.
+	 *
+	 * This method must be side-effect free.
 	 * Do not add deployment preparation, config mutation or workspace access here.	*/
 	abstract boolean isEnabled(DeploymentContext context)
 
+	/**
+	 * Executes this tool along its internal lifecycle.	*/
 	boolean execute(DeploymentContext context, RepositoryWorkspace workspace) {
-		this.context = context
-		this.repositoryWorkspace = workspace
-		prepare()
+		prepareExecution(context, workspace)
 
 		log.info("Installing Tool ${getClass().getSimpleName()}")
 
-		createImagePullSecretIfRequired()
-
-		enable()
+		validate()
+		preDeploy()
+		deploy()
+		postDeploy()
+		publishChanges()
 
 		log.info("Tool installed: ${getClass().getSimpleName()}")
 		return true
 	}
 
-	protected void createImagePullSecretIfRequired() {
-		if (this instanceof ToolWithImage) {
-			(this as ToolWithImage).createImagePullSecret()
-		}
+	/**
+	 * Technical initialization of runtime state.
+	 *
+	 * This is not a lifecycle phase. Tool-specific preparation belongs into preDeploy().	*/
+	protected void prepareExecution(DeploymentContext context, RepositoryWorkspace workspace) {
+		this.context = context
+		this.repositoryWorkspace = workspace
+		this.helmValuesTemplateData = [:]
 	}
 
-	protected void prepare() {}
+	/**
+	 * Lifecycle phase: validate tool-specific configuration and prerequisites.
+	 *
+	 * Throw a RuntimeException to stop the deployment immediately.	*/
+	void validate() {}
+
+	/**
+	 * Lifecycle phase: prepare deployment inputs and prerequisites.
+	 *
+	 * Typical responsibilities:
+	 * - determine or mutate tool namespace
+	 * - create namespaces
+	 * - create secrets
+	 * - prepare RBAC
+	 * - prepare repository resources
+	 * - add Helm values template data	*/
+	protected void preDeploy() {}
+
+	/**
+	 * Lifecycle phase: deploy the tool.
+	 *
+	 * Typical responsibilities:
+	 * - deploy Helm chart
+	 * - create ArgoCD Application
+	 * - run deployment strategy
+	 * - wait for availability if this is part of the deployment step	*/
+	protected void deploy() {}
+
+	/**
+	 * Lifecycle phase: run follow-up steps after deployment.
+	 *
+	 * Typical responsibilities:
+	 * - bootstrap tool
+	 * - install plugins
+	 * - configure runtime state
+	 * - update managed namespaces	*/
+	protected void postDeploy() {}
+
+	/**
+	 * Lifecycle phase: publish GitOps repository changes.
+	 *
+	 * Tools that write GitOps resources should publish their changes explicitly here.
+	 * Tools that do not modify the shared cluster-resources repository can keep the default no-op.	*/
+	protected void publishChanges() {}
+
+	protected void publishClusterResourcesChanges(String toolName) {
+		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update ${toolName} GitOps resources")
+	}
+
+	protected void addHelmValuesData(String key, Object value) {
+		this.helmValuesTemplateData[key] = value
+	}
 
 	String getActiveNamespaceFromFeature(DeploymentContext context) {
 		// using reflection to get all subclasses implementing an own namespace
@@ -99,8 +157,8 @@ abstract class Tool {
 		String version = helmConfig.version
 		RepoType repoType = RepoType.HELM
 
-		this.addHelmValuesData("config", config)
-		this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
+		this.addHelmValuesData('config', config)
+		this.addHelmValuesData('statics', new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels())
 
 		/*
 		 * If we get a helmValuesTemplatePath we render the Template with the given Data.
@@ -110,7 +168,7 @@ abstract class Tool {
 		Map helmValuesData = this.helmValuesTemplateData
 		if (helmValuesTemplatePath) {
 			def helmValuesPath = helmValuesTemplatePath.toString()
-			if (helmValuesPath.contains(".ftl")) {
+			if (helmValuesPath.contains('.ftl')) {
 				log.debug("Rendering helm values template from ${helmValuesTemplatePath}")
 				helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData)
 			} else {
@@ -156,21 +214,6 @@ abstract class Tool {
 	DeploymentContext getContext() {
 		return context
 	}
-
-	/*
-	 * Hooks for enabling or disabling a feature. Both optional, because not always needed.
-	 */
-
-	protected void enable() {}
-
-	protected void disable() {}
-
-	/*
-	 * Hook for special feature validation. Optional.
-	 * Feature should throw RuntimeException to stop immediately.
-	 */
-
-	void validate() {}
 
 	/**
 	 * Hook for preConfigInit. Optional.

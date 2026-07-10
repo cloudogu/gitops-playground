@@ -6,11 +6,13 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 
 import java.nio.file.Path
 import jakarta.inject.Singleton
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 
+@CompileStatic
 @Singleton
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
@@ -118,12 +120,20 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		                                                                           syncOptions: ['ServerSideApply=true',
 		                                                                                         namespaceCreationSyncOption]]]])
 
+		/*
+		 * Keep the file path release-based.
+		 *
+		 * For tenant SCM this becomes:
+		 *   apps/argocd/applications/tenant1-scmm.yaml
+		 *
+		 * The important value for ArgoCD tracking is metadata.name above:
+		 *   tenant1-scm-manager
+		 */
 		String appManifestPath = "apps/argocd/applications/${releaseName}.yaml"
 
 		clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
-		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-			"version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
+		log.debug("Prepared ArgoCD application for helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " + "version ${version}, into namespace ${namespace}. Application was written to shared repository workspace:\n${yamlResult}")
 	}
 
 	String chooseKeyChartOrPath(RepoType repoType) {
