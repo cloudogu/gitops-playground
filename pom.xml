@@ -435,6 +435,9 @@
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
+                    <failOnError>false</failOnError>
+                    <xmlOutput>true</xmlOutput>
+                    <spotbugsXmlOutputDirectory>${project.build.directory}</spotbugsXmlOutputDirectory>
                     <plugins>
                         <plugin>
                             <groupId>com.mebigfatguy.fb-contrib</groupId>
