@@ -77,7 +77,7 @@ pipeline {
 
         stage("Codenarc Report") {
             steps {
-                sh 'docker run --rm -v $WORKSPACE:/ws codenarc/codenarc -rulesetfiles=file:codenarc-ruleset.xml -includes="src/**/*.groovy" -report="xml:target/codenarc.xml"'
+                sh 'docker run --rm -u $BUILD_USER:$BUILD_GROUP -v $WORKSPACE:/ws codenarc/codenarc -rulesetfiles=file:codenarc-ruleset.xml -includes="src/**/*.groovy" -report="xml:target/codenarc.xml"'
             }
         }
 
