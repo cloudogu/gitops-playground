@@ -70,6 +70,17 @@ pipeline {
                         }
                     }
                 }
+
+                stage("Codenarc Report") {
+                    agent { docker {
+                        image "codenarc/codenarc:latest"
+                        reuseNode true
+                    }}
+                    steps {
+                        sh 'java -jar /lib/codenarc-all.jar -rulesetfiles=file:codenarc-ruleset.xml -includes="src/**/*.groovy" -report="xml:target/codenarc.xml"'
+                    }
+                }
+
             }
         }
 
