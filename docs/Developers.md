@@ -50,7 +50,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 - Java 17
 - Groovy
-- Maven
+- Gradle (provided via wrapper)
 - Docker
 - [k3d](https://k3d.io/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
@@ -61,7 +61,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 To check if you have all necessary tools installed, run the following command. If you don't see any error messages, you are good to go:
 ```bash
-java -version && mvn -version && docker version && k3d version && kubectl version && helm version
+java -version && ./gradlew -v && docker version && k3d version && kubectl version && helm version
 ```
 
 
@@ -74,23 +74,23 @@ java -version && mvn -version && docker version && k3d version && kubectl versio
 ### Unit-Tests
 
 ```bash
-mvn clean test
+./gradlew test
 ```
 
 ### Integration-Tests
 
 ```bash
 # build the gop tests
-./mvnw clean test-compile
+./gradlew testClasses
 
 # first create a fresh new cluster to test on:
 ./scripts/init-cluster
 
 # then deploy the gop with a predefined profile:
-./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
+./gradlew run --args="--profile=<PROFILE>"
 
 # finally run the test
-./mvnw integration-test -Dmicronaut.environments=<PROFILE>
+./gradlew integrationTest -Dmicronaut.environments=<PROFILE>
 ```
 
 where <PROFILES> can be one of:
@@ -481,11 +481,11 @@ The `base-domain` parameters lead to URLs in the following schema:
 
 Run `GenerateJsonSchema.groovy` from your IDE.
 
-Or run build and run via maven and java:
+Or run build and run via gradle and java:
 
 ````shell
-mvn package -DskipTests
-java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
+./gradlew shadowJar
+java -classpath build/libs/gitops-playground-cli-0.1-all.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
   --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy
 ````
 

@@ -1,45 +1,45 @@
 # ============================================================================
 # BUILD ARGUMENTS
 # ============================================================================
-# Keep in sync with the versions in pom.xml
+# Keep in sync with the versions in build.gradle
 ARG JDK_VERSION='17'
 
 # ============================================================================
-# STAGE 1: Maven Dependency Cache
+# STAGE 1: Gradle Dependency Cache
 # ============================================================================
-# Purpose: Download and cache Maven dependencies separately to optimize rebuilds
-# This stage only re-runs when pom.xml changes
-FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine AS maven-cache
-ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
+# Purpose: Download and cache Gradle dependencies separately to optimize rebuilds
+# This stage only re-runs when build.gradle or settings.gradle changes
+FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine AS gradle-cache
+ENV GRADLE_USER_HOME=/app/.gradle_home
 WORKDIR /app
 
 # Copy only dependency-related files first (for better layer caching)
-COPY .mvn/ /app/.mvn/
-COPY mvnw /app/
-COPY pom.xml /app/
+COPY gradle/ /app/gradle/
+COPY gradlew /app/
+COPY build.gradle /app/
+COPY settings.gradle /app/
+COPY compiler.groovy /app/
 
-# Download all dependencies and plugins
-RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B
+# Fetch and cache dependencies
+RUN ./gradlew dependencies --no-daemon
 
 # ============================================================================
-# STAGE 2: Maven Build
+# STAGE 2: Gradle Build
 # ============================================================================
 # Purpose: Compile and package the application into a JAR file
-FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine AS maven-build
-ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
+FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine AS gradle-build
+ENV GRADLE_USER_HOME=/app/.gradle_home
 
-# Copy cached dependencies from previous stage
-COPY --from=maven-cache /mvn/ /mvn/
-COPY --from=maven-cache /app/ /app
+# Copy cached dependencies and build setup from previous stage
+COPY --from=gradle-cache /app /app
 
 COPY src/main /app/src/main
-COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app
 
-RUN ./mvnw -B package -DskipTests
-RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
+RUN ./gradlew shadowJar --no-daemon
+RUN mv build/libs/*-all.jar /app/gitops-playground.jar
 
 # ============================================================================
 # STAGE 3: Downloader
@@ -151,8 +151,8 @@ COPY templates /dist/app/templates
 # Remove development scripts not needed in runtime
 RUN cd /dist/app/scripts && rm -f downloadHelmCharts.sh
 
-# Copy compiled JAR from maven-build stage
-COPY --from=maven-build /app/gitops-playground.jar /dist/app/gitops-playground.jar
+# Copy compiled JAR from gradle-build stage
+COPY --from=gradle-build /app/gitops-playground.jar /dist/app/gitops-playground.jar
 
 # -----------------------------------------------------------------------------
 # 3.9: Configure JGit for Arbitrary User IDs

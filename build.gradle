@@ -1,0 +1,215 @@
+plugins {
+    id "groovy"
+    id "io.micronaut.application" version "4.4.4"
+    id "jacoco"
+    id "com.gorylenko.gradle-git-properties" version "2.4.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+}
+
+version = "0.1"
+group = "com.cloudogu"
+
+repositories {
+    mavenCentral()
+}
+
+// Dynamic Git information for VersionName annotation processor
+def getGitTags() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags', '--always'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (Exception e) {
+        return "unknown"
+    }
+}
+
+def getGitCommitIdAbbrev() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--short', 'HEAD'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (Exception e) {
+        return "unknown"
+    }
+}
+
+def buildTimestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())
+def gitTags = getGitTags()
+def gitCommitIdAbbrev = getGitCommitIdAbbrev()
+
+def licenseComments = "Copyright 2020 - present Cloudogu GmbH"
+def licenseName = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
+def licenseUrl = "https://github.com/cloudogu/gitops-playground/blob/main/LICENSE"
+
+def versionName = "${gitTags} (${gitCommitIdAbbrev}, ${buildTimestamp})\\n${licenseComments}\\n${licenseName}\\n${licenseUrl}"
+
+micronaut {
+    version = "4.10.16"
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("com.cloudogu.*")
+    }
+}
+
+dependencies {
+    // Annotation processors / compileOnly
+    compileOnly "com.cloudogu.versionName:processor:2.2.0"
+    annotationProcessor "com.cloudogu.versionName:processor:2.2.0"
+    
+    // Import Maven BOMs
+    implementation platform("org.eclipse.jetty:jetty-bom:12.1.10")
+    implementation platform("org.eclipse.jetty.ee10:jetty-ee10-bom:12.1.10")
+    
+    // Jackson Core and Databind versions for compatibility
+    implementation "com.fasterxml.jackson.core:jackson-core:2.22.0"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.22.0"
+    implementation "tools.jackson.core:jackson-core:3.2.0"
+    implementation "tools.jackson.core:jackson-databind:3.2.0"
+
+    // Micronaut Dependencies (BOM managed)
+    implementation "io.micronaut:micronaut-inject-groovy"
+    implementation "io.micronaut.groovy:micronaut-runtime-groovy"
+    implementation "io.micronaut:micronaut-inject"
+    implementation "io.micronaut.validation:micronaut-validation"
+    
+    runtimeOnly "io.micronaut.reactor:micronaut-reactor:3.9.1"
+    
+    // Groovy dependencies
+    implementation "org.apache.groovy:groovy-all:5.0.7"
+    implementation "org.apache.groovy:groovy-yaml:5.0.7"
+    
+    // Avoid CVE-2022-1471 in transitive dependency of groovy-yaml
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.0"
+    
+    // Picocli
+    implementation "info.picocli:picocli"
+    implementation "io.micronaut.picocli:micronaut-picocli"
+    implementation "info.picocli:picocli-codegen"
+    
+    // Logging and Utils
+    implementation "ch.qos.logback:logback-classic"
+    implementation "commons-io:commons-io:2.22.0"
+    
+    // Spring Security Crypto
+    implementation "org.springframework.security:spring-security-crypto:7.0.5"
+    
+    // JGit
+    implementation "org.eclipse.jgit:org.eclipse.jgit:7.6.0.202603022253-r"
+    
+    // OkHttp & Retrofit
+    implementation "com.squareup.okhttp3:okhttp:5.3.2"
+    implementation "com.squareup.okhttp3:okhttp-urlconnection:5.3.2"
+    implementation "com.squareup.okhttp3:logging-interceptor:5.3.2"
+    
+    implementation "com.squareup.retrofit2:retrofit:3.0.0"
+    implementation "com.squareup.retrofit2:converter-jackson:3.0.0"
+    
+    // Freemarker
+    implementation "org.freemarker:freemarker:2.3.34"
+    
+    // Kubernetes & Fabric8 Client
+    implementation "io.fabric8:openshift-client:7.7.0"
+    implementation "org.gitlab4j:gitlab4j-api:6.2.0"
+    
+    // JSON Schema
+    implementation "com.github.victools:jsonschema-generator:5.0.0"
+    implementation "com.github.victools:jsonschema-module-jackson:5.0.0"
+    implementation("com.networknt:json-schema-validator:3.0.5") {
+        exclude group: "org.apache.commons", module: "commons-lang3"
+    }
+    
+    // ClassGraph
+    implementation "io.github.classgraph:classgraph:4.8.184"
+    
+    // JAXB for Java 17 Compatibility
+    implementation "jakarta.xml.bind:jakarta.xml.bind-api:4.0.5"
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:4.0.9"
+    
+    // Test Dependencies
+    testImplementation "org.wiremock:wiremock-jetty12:3.13.2"
+    testImplementation "com.squareup.okhttp3:okhttp-tls:5.3.2"
+    testImplementation "org.springframework:spring-jcl:6.2.19"
+    testImplementation "io.fabric8:kubernetes-server-mock:7.7.0"
+    testImplementation "io.kubernetes:client-java:26.0.1"
+    testImplementation "io.micronaut:micronaut-http-client"
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "io.micronaut.test:micronaut-test-junit5"
+    testImplementation "org.mockito:mockito-core"
+    testImplementation "org.mockito:mockito-junit-jupiter"
+    testImplementation "org.assertj:assertj-core:4.0.0-M1"
+    testImplementation "org.apache.groovy:groovy-test"
+    testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation "javax.xml.bind:jaxb-api:2.3.1"
+    testImplementation "org.awaitility:awaitility:4.3.0"
+}
+
+application {
+    mainClass = "com.cloudogu.gitops.cli.GitopsPlaygroundCliMain"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << "-AversionName=${versionName}"
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    groovyOptions.configurationScript = file("compiler.groovy")
+    groovyOptions.parameters = true
+    options.compilerArgs << "-AversionName=${versionName}"
+}
+
+// JaCoCo test coverage check configuration (>80% covered ratio)
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'PACKAGE'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = BigDecimal.valueOf(0.80)
+            }
+        }
+    }
+}
+
+// Configure test tasks
+tasks.named('test') {
+    useJUnitPlatform()
+    exclude '**/*IT*'
+    
+    minHeapSize = "512m"
+    maxHeapSize = "2g"
+    
+    jvmArgs('--add-opens', 'java.base/java.util=ALL-UNNAMED')
+    
+    systemProperty 'ROOT_LOG_LEVEL', 'OFF'
+    systemProperty 'APP_LOG_LEVEL', 'OFF'
+}
+
+// Integration Test suite (Failsafe-equivalent)
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+    useJUnitPlatform()
+    include '**/*IT*'
+    
+    minHeapSize = "512m"
+    maxHeapSize = "2g"
+    
+    jvmArgs('--add-opens', 'java.base/java.util=ALL-UNNAMED')
+    
+    // Support passing system properties (like micronaut.environments)
+    systemProperties(System.getProperties())
+}
