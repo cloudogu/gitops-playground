@@ -20,9 +20,10 @@
 
 # groovy cli
 !src
-!pom.xml
-!mvnw
-!.mvn
+!build.gradle
+!settings.gradle
+!gradlew
+!gradle/
 !compiler.groovy
 
 # Including .git is risky, but required so maven can read the build number. At least keep it to a minium.
