@@ -18,6 +18,7 @@ class RetryInterceptor : Interceptor {
 
     companion object {
         private val log = LoggerFactory.getLogger(RetryInterceptor::class.java)
+        private val STATUS_CODES_TO_RETRY = setOf(408, 429, 500, 502, 503, 504)
     }
 
     // Standard no-arg constructor
@@ -46,7 +47,7 @@ class RetryInterceptor : Interceptor {
             try {
                 response = chain.proceed(chain.request())
 
-                if (response.code !in getStatusCodesToRetry()) {
+                if (response.code !in STATUS_CODES_TO_RETRY) {
                     return response
                 }
 
@@ -77,16 +78,5 @@ class RetryInterceptor : Interceptor {
         } else {
             throw IOException("Request failed after $retries retries")
         }
-    }
-
-    private fun getStatusCodesToRetry(): List<Int> {
-        return listOf(
-            408, // Request Timeout
-            429, // Too Many Requests
-            500, // Internal Server Error
-            502, // Bad Gateway
-            503, // Service Unavailable
-            504  // Gateway Timeout
-        )
     }
 }

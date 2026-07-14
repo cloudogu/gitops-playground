@@ -31,7 +31,7 @@ class DockerImageParser {
             val imageWithoutTag = tuple.first
             val tag = tuple.second
 
-            val parts = imageWithoutTag.split("/").toMutableList()
+            val parts = imageWithoutTag.split("/")
             val repository = parts.takeLast(2).joinToString("/")
             
             // Drop last 2 elements to get the registry part
@@ -45,9 +45,9 @@ class DockerImageParser {
         }
 
         private fun splitTag(image: String): Pair<String, String> {
-            val imageParts = image.split(":")
-            val tag = imageParts.last()
-            val imageWithoutTag = imageParts.dropLast(1).joinToString(":")
+            val lastColonIndex = image.lastIndexOf(':')
+            val imageWithoutTag = image.substring(0, lastColonIndex)
+            val tag = image.substring(lastColonIndex + 1)
             return Pair(imageWithoutTag, tag)
         }
     }
