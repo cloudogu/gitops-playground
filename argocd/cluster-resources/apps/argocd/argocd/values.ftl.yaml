@@ -72,6 +72,12 @@ argo-cd:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
       application.resourceTrackingMethod: annotation
+      <#if config.features.argocd.url?has_content && argocd.host?has_content>
+      url: ${config.features.argocd.url}
+      additionalUrls: |
+        - http://${argocd.host}
+        - https://${argocd.host}
+      </#if>
       <#assign argocdOidc = (config.features.argocd.oidc)!{}>
       <#if argocdOidc?has_content && argocdOidc.enabled>
       oidc.config: |

@@ -255,6 +255,20 @@ class ArgoCDTest {
 	}
 
 	@Test
+	void 'Configures Argo CD URL and additional redirect URLs'() {
+		config.features.argocd.url = 'https://argocd.localhost'
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def cm = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['cm']
+		assertThat(cm['url']).isEqualTo('https://argocd.localhost')
+		assertThat(cm['additionalUrls'] as String).contains('http://argocd.localhost', 'https://argocd.localhost')
+	}
+
+	@Test
 	void 'configures Argo CD OIDC from structured config'() {
 		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
 			clientId: 'argocd',
@@ -1103,6 +1117,19 @@ class ArgoCDTest {
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
 		assertThat(yaml['spec']['key']).isEqualTo('value')
+	}
+
+	@Test
+	void 'Operator config sets Argo CD URL and additional redirect URLs'() {
+		config.features.argocd.url = 'https://argocd.localhost'
+		def argocd = setupOperatorTest()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
+		def extraConfig = yaml['spec']['extraConfig']
+		assertThat(extraConfig['url']).isEqualTo('https://argocd.localhost')
+		assertThat(extraConfig['additionalUrls'] as String).contains('http://argocd.localhost', 'https://argocd.localhost')
 	}
 
 	@Test
