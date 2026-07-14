@@ -61,7 +61,7 @@ class Application {
 	}
 
 	private void storeGopInformationInSecret(DeploymentContext context) {
-		String namespace = "gop-job"
+		String namespace = 'gop-job'
 		// Fallback, if run from IDE
 		if (!context.config.application.gopNamespace.isEmpty()) {
 			// if set, take namespace from configuration
@@ -95,7 +95,7 @@ class Application {
 
 		//iterates over all FeatureWithImages and gets their namespaces
 		dedicatedNamespaces.addAll(this.tools
-			.collect { Tool tool -> tool.getActiveNamespaceFromFeature(context)
+			.collect { Tool tool -> tool.getActiveNamespace(context)
 			}
 			.findAll { it }
 			.unique()
@@ -103,6 +103,6 @@ class Application {
 
 		context.config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
 		context.config.application.namespaces.tenantNamespaces = tenantNamespaces
-		log.debug("Active namespaces retrieved: {}", context.config.application.namespaces.activeNamespaces)
+		log.debug('Active namespaces retrieved: {}', context.config.application.namespaces.activeNamespaces)
 	}
 }

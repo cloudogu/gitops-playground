@@ -57,7 +57,7 @@ class ArgoCD extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context)
+		this.namespace = resolveNamespace(context)
 		this.password = config.application.password
 
 		this.repoSetup = ArgoCDRepoSetup.create(context,
@@ -115,7 +115,7 @@ class ArgoCD extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
+	protected String resolveNamespace(DeploymentContext context) {
 		return "${context.config.application.namePrefix}${context.config.features.argocd.namespace}"
 	}
 

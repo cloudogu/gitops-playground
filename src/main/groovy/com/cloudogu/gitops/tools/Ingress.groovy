@@ -56,7 +56,7 @@ class Ingress extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context)
+		this.namespace = resolveNamespace(context)
 
 		createImagePullSecret()
 		prepareIngressApp(repositoryWorkspace.clusterResourcesRepository)
@@ -80,8 +80,8 @@ class Ingress extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return "${context.config.application.namePrefix}${context.config.features.ingress.ingressNamespace}"
+	protected String resolveNamespace(DeploymentContext context) {
+		return "${context.config.application.namePrefix}" + "${context.config.features.ingress.ingressNamespace}"
 	}
 
 	private void createImagePullSecret() {

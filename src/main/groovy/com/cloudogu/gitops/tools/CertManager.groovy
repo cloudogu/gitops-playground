@@ -55,8 +55,7 @@ class CertManager extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context)
-
+		this.namespace = resolveNamespace(context)
 		createImagePullSecret()
 		prepareCertManagerApp(repositoryWorkspace.clusterResourcesRepository)
 		replaceCertManagerTemplates(repositoryWorkspace.clusterResourcesRepository)
@@ -78,7 +77,7 @@ class CertManager extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
+	protected String resolveNamespace(DeploymentContext context) {
 		return "${context.config.application.namePrefix}${context.config.features.certManager.namespace}"
 	}
 

@@ -43,7 +43,7 @@ class ScmManager extends Tool {
 		log.info('Preparing internal SCM-Manager deployment.')
 
 		prepareNamespace()
-		imagePullSecretCreator.createIfRequired(config, namespace)
+		createImagePullSecret()
 
 		ScmManagerProvider scmManager = getTenantScmManager()
 
@@ -92,18 +92,23 @@ class ScmManager extends Tool {
 	}
 
 	private void prepareNamespace() {
-		this.namespace = activeNamespace(context)
+		this.namespace = resolveNamespace(context)
 		this.config.scm.scmManager.namespace = this.namespace
 	}
 
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(config, namespace)
+	}
+
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
+	protected String resolveNamespace(DeploymentContext context) {
 		return prefixedNamespace(context)
 	}
 
 	private String prefixedNamespace(DeploymentContext context) {
 		String prefix = context.config.application.namePrefix ?: ''
-		String baseNamespace = context.config.scm.scmManager.namespace ?: 'scm-manager'
+		String baseNamespace =
+			context.config.scm.scmManager.namespace ?: 'scm-manager'
 
 		if (prefix && baseNamespace.startsWith(prefix)) {
 			return baseNamespace

@@ -51,9 +51,7 @@ class Registry extends Tool {
 		if (!isInternalRegistry()) {
 			return
 		}
-
-		this.namespace = activeNamespace(context)
-
+		this.namespace = resolveNamespace(context)
 		prepareRegistryHelmValues()
 	}
 
@@ -62,7 +60,6 @@ class Registry extends Tool {
 		if (!isInternalRegistry()) {
 			return
 		}
-
 		deployInternalRegistry()
 		createInternalRegistryNodePortIfRequired()
 	}
@@ -77,8 +74,12 @@ class Registry extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.config.registry.internal ? "${context.config.application.namePrefix}${context.config.registry.namespace}" : null
+	protected String resolveNamespace(DeploymentContext context) {
+		if (!context.config.registry.internal) {
+			return null
+		}
+
+		return "${context.config.application.namePrefix}${context.config.registry.namespace}"
 	}
 
 	private boolean isInternalRegistry() {

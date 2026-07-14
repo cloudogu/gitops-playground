@@ -56,8 +56,7 @@ class ExternalSecretsOperator extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context)
-
+		this.namespace = resolveNamespace(context)
 		createImagePullSecret()
 		prepareExternalSecretsApp(repositoryWorkspace.clusterResourcesRepository)
 	}
@@ -80,7 +79,7 @@ class ExternalSecretsOperator extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
+	protected String resolveNamespace(DeploymentContext context) {
 		return "${context.config.application.namePrefix}${context.config.features.secrets.namespace}"
 	}
 

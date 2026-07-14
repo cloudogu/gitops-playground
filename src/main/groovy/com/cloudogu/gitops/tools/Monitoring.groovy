@@ -64,8 +64,7 @@ class Monitoring extends Tool {
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context)
-
+		this.namespace = resolveNamespace(context)
 		createImagePullSecret()
 		prepareMonitoringHelmValues()
 
@@ -95,7 +94,7 @@ class Monitoring extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
+	protected String resolveNamespace(DeploymentContext context) {
 		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
 	}
 

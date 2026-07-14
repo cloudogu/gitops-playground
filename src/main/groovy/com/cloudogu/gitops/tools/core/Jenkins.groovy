@@ -81,8 +81,7 @@ class Jenkins extends Tool {
 			return
 		}
 
-		this.namespace = activeNamespace(context)
-
+		this.namespace = resolveNamespace(context)
 		createImagePullSecret()
 		createJenkinsNamespace()
 		labelJenkinsNode()
@@ -149,8 +148,12 @@ class Jenkins extends Tool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.config.jenkins.internal ? "${context.config.application.namePrefix}${context.config.jenkins.namespace}" : null
+	protected String resolveNamespace(DeploymentContext context) {
+		if (!context.config.jenkins.internal) {
+			return null
+		}
+
+		return "${context.config.application.namePrefix}${context.config.jenkins.namespace}"
 	}
 
 	private boolean isInternalJenkins() {
@@ -356,10 +359,5 @@ class Jenkins extends Tool {
 		                 'nodeSelector': ['node': 'jenkins'],
 		                 'volumes'     : [['name'    : 'group',
 		                                   'hostPath': ['path': '/etc/group']]]]]
-	}
-
-	@Override
-	String getActiveNamespaceFromFeature(DeploymentContext context) {
-		return isEnabled(context) ? activeNamespace(context) : null
 	}
 }
