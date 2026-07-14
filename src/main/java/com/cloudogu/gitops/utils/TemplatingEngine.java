@@ -12,6 +12,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -38,18 +39,14 @@ public class TemplatingEngine {
     /**
      * Executes template with parameters and replaces the .ftl in the file name.
      */
-    public File replaceTemplate(File templateFile, Map parameters) {
+    public File replaceTemplate(File templateFile, Map parameters) throws IOException, freemarker.template.TemplateException {
         File targetFile = new File(templateFile.toString().replace(".ftl", ""));
         String rendered = template(templateFile, parameters);
 
         // Only write file if template has non-empty output.
         // This avoids creating empty files when the entire template is skipped via <#if>.
         if (rendered != null && !rendered.trim().isEmpty()) {
-            try {
-                Files.writeString(targetFile.toPath(), rendered);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to write to file: " + targetFile, e);
-            }
+            Files.writeString(targetFile.toPath(), rendered);
         } else {
             targetFile.delete();
         }
@@ -63,21 +60,26 @@ public class TemplatingEngine {
      * <p>
      * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.
      */
-    public void replaceTemplates(File path, Map parameters) {
+    public void replaceTemplates(File path, Map parameters) throws IOException, freemarker.template.TemplateException {
         replaceTemplates(path, parameters, Pattern.compile("\\.ftl"));
     }
 
-    public void replaceTemplates(File path, Map parameters, Pattern filepathMatches) {
+    public void replaceTemplates(File path, Map parameters, Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
         try (var stream = Files.walk(path.toPath())) {
-            stream.filter(p -> filepathMatches.matcher(p.toString()).find())
-                  .forEach(p -> replaceTemplate(p.toFile(), parameters));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to walk path: " + path, e);
+            List<Path> files = stream.filter(p -> filepathMatches.matcher(p.toString()).find()).toList();
+            for (Path file : files) {
+                replaceTemplate(file.toFile(), parameters);
+            }
         }
     }
 
     public static Map templateToMap(String filePath, Map parameters) {
-        String hydratedString = new TemplatingEngine().template(new File(filePath), parameters);
+        String hydratedString;
+        try {
+            hydratedString = new TemplatingEngine().template(new File(filePath), parameters);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hydrate template to map: " + filePath, e);
+        }
 
         if (hydratedString == null || hydratedString.trim().isEmpty()) {
             // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
@@ -89,50 +91,34 @@ public class TemplatingEngine {
     /**
      * Executes template and writes to targetFile, keeping the template file.
      */
-    public File template(File templateFile, File targetFile, Map parameters) {
-        try {
-            Template template = prepareTemplate(templateFile);
-            try (var writer = Files.newBufferedWriter(targetFile.toPath())) {
-                template.process(parameters, writer);
-            }
-            return targetFile;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process template " + templateFile + " to " + targetFile, e);
-        }
-    }
-
-    public String template(File templateFile, Map parameters) {
-        try {
-            Template template = prepareTemplate(templateFile);
-            StringWriter writer = new StringWriter();
+    public File template(File templateFile, File targetFile, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+        Template template = prepareTemplate(templateFile);
+        try (var writer = Files.newBufferedWriter(targetFile.toPath())) {
             template.process(parameters, writer);
-            return writer.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process template " + templateFile, e);
         }
+        return targetFile;
     }
 
-    public String template(String template, Map parameters) {
-        try {
-            StringWriter writer = new StringWriter();
-            Template templateObj = new Template("template", new StringReader(template), engine);
-            templateObj.process(parameters, writer);
-            return writer.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process template string", e);
-        }
+    public String template(File templateFile, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+        Template template = prepareTemplate(templateFile);
+        StringWriter writer = new StringWriter();
+        template.process(parameters, writer);
+        return writer.toString();
     }
 
-    protected Template prepareTemplate(File templateFile) {
+    public String template(String template, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+        StringWriter writer = new StringWriter();
+        Template templateObj = new Template("template", new StringReader(template), engine);
+        templateObj.process(parameters, writer);
+        return writer.toString();
+    }
+
+    protected Template prepareTemplate(File templateFile) throws java.io.IOException {
         if (!templateFile.getName().contains(".ftl")) {
             throw new RuntimeException("File must contain .ftl to be a template");
         }
 
-        try {
-            engine.setDirectoryForTemplateLoading(templateFile.getParentFile());
-            return engine.getTemplate(templateFile.getName());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to prepare template " + templateFile, e);
-        }
+        engine.setDirectoryForTemplateLoading(templateFile.getParentFile());
+        return engine.getTemplate(templateFile.getName());
     }
 }

@@ -17,7 +17,7 @@ class CommandExecutorForTest extends CommandExecutor {
 	}
 
 	// This is actually only set when an env is passed to CommandExecutor
-	List<GString> environment = []
+	List<String> environment = []
 
 	@Override
 	protected Output getOutput(Process proc, String command, boolean failOnError) {
