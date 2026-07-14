@@ -227,11 +227,11 @@ class IngressTest {
 
 	@Test
 	void 'get namespace from feature'() {
-		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
+		assertThat(createIngress().getActiveNamespace(new ContextBuilder(config).build())).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
 
 		config.features.ingress.active = false
 
-		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build())).isEqualTo(null)
+		assertThat(createIngress().getActiveNamespace(new ContextBuilder(config).build())).isEqualTo(null)
 	}
 
 	private Ingress createIngress() {
