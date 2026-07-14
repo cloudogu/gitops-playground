@@ -58,7 +58,7 @@ server:
           USERNAME=${config.application.username} \
           PASSWORD=${config.application.password} \
           ARGOCD=${config.features.argocd.active?c} \
-<#if vaultOidc.clientSecret?has_content>
+<#if vaultOidc?has_content && vaultOidc.enabled>
           OIDC_ENABLED=true \
           OIDC_CLIENT_ID=${vaultOidc.clientId} \
           OIDC_CLIENT_SECRET=${vaultOidc.clientSecret} \

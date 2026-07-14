@@ -183,6 +183,19 @@ me:x:1000:''')
 	}
 
 	@Test
+	void 'Uses default Jenkins OIDC scopes when scopes are null'() {
+		config.jenkins.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'jenkins',
+			clientSecret: 'jenkins-secret',
+			scopes: null)
+
+		install(createJenkins())
+
+		String casc = parseActualYaml()['controller']['JCasC']['configScripts']['oidc-auth'] as String
+		assertThat(casc).contains('scopesOverride: "openid profile email"')
+	}
+
+	@Test
 	void 'Installs only if internal'() {
 		config.jenkins.internal = false
 		config.registry.createImagePullSecrets = true

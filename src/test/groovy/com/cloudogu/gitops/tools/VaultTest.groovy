@@ -181,6 +181,21 @@ class VaultTest {
 	}
 
 	@Test
+	void 'Dev mode does not enable OIDC when OIDC config is incomplete'() {
+		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.oidc = new Config.OidcSchema(clientSecret: 'vault-secret')
+		config.application.username = 'admin'
+		config.application.password = 'admin'
+
+		install(createVault())
+
+		def actualYaml = parseActualYaml()
+		List actualPostStart = (List) actualYaml['server']['postStart']
+		assertThat(normalizeShellCommand(actualPostStart[2] as String))
+			.isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+	}
+
+	@Test
 	void 'Prod mode can be enabled'() {
 		config.features.secrets.vault.mode = 'prod'
 

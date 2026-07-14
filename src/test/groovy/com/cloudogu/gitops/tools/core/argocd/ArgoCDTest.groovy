@@ -275,6 +275,37 @@ class ArgoCDTest {
 	}
 
 	@Test
+	void 'When Argo CD OIDC config is null: Does not include OIDC configuration'() {
+		config.features.argocd.oidc = null
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		assertThat(valuesYaml['cm']['oidc.config']).isNull()
+		assertThat(valuesYaml['rbac']).isNull()
+	}
+
+	@Test
+	void 'When Argo CD OIDC scopes are null: Uses default scopes'() {
+		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'argocd',
+			clientSecret: 'argocd-secret',
+			scopes: null)
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		def oidcConfig = new YamlSlurper().parseText(valuesYaml['cm']['oidc.config'] as String)
+		assertThat(oidcConfig['requestedScopes'] as List).containsExactly('openid', 'profile', 'email')
+	}
+
+	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
 		config.features.mail.active = false
 

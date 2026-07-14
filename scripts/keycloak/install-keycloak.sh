@@ -45,6 +45,9 @@ tmp_override="$(mktemp)"
 cat > "${tmp_override}" <<EOF
 rewrite name ${KEYCLOAK_HOST} keycloak.${KEYCLOAK_NAMESPACE}.svc.cluster.local
 EOF
+if kubectl -n kube-system get configmap coredns-custom >/dev/null 2>&1; then
+  echo "WARNING: kube-system/coredns-custom already exists; this script will overwrite it." >&2
+fi
 kubectl -n kube-system create configmap coredns-custom \
   --from-file=keycloak.override="${tmp_override}" \
   --dry-run=client -o yaml | kubectl apply -f -

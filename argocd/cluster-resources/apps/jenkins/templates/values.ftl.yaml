@@ -121,7 +121,7 @@ controller:
               serverConfiguration:
                 wellKnown:
                   wellKnownOpenIDConfigurationUrl: "${jenkinsOidc.issuerUrl}/.well-known/openid-configuration"
-                  scopesOverride: "<#list jenkinsOidc.scopes as scope>${scope}<#sep> </#list>"
+                  scopesOverride: "<#list (jenkinsOidc.scopes!["openid", "profile", "email"]) as scope>${scope}<#sep> </#list>"
               userNameField: "preferred_username"
               fullNameFieldName: "name"
               emailFieldName: "email"
