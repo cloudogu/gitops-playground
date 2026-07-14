@@ -47,6 +47,60 @@
         "type": "string"
       }
     },
+    "OidcSchema-nullable": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "adminGroupName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC group that receives full admin permissions in all OIDC-enabled tools"
+        },
+        "clientId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC client ID"
+        },
+        "clientSecret": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC client secret"
+        },
+        "issuerUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "OIDC issuer URL, for example http://keycloak.local.gd/realms/gop"
+        },
+        "providerName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Name of the OIDC provider displayed in tool login screens"
+        },
+        "scopes": {
+          "description": "OIDC scopes requested by the tool",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "ScmProviderType-nullable": {
       "anyOf": [
         {
@@ -521,10 +575,7 @@
               "description": "Defines the kubernetes namespace for ArgoCD"
             },
             "oidc": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "$ref": "#/$defs/OidcSchema-nullable",
               "description": "OIDC Config for this tool. See docs for more infos"
             },
             "operator": {
@@ -873,10 +924,7 @@
               "description": "Optional defines the kubernetes namespace for monitoring."
             },
             "oidc": {
-              "type": [
-                "string",
-                "null"
-              ],
+              "$ref": "#/$defs/OidcSchema-nullable",
               "description": "OIDC Config for this tool. See docs for more infos"
             }
           },
@@ -1026,34 +1074,7 @@
                   "description": "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
                 },
                 "oidc": {
-                  "type": [
-                    "object",
-                    "null"
-                  ],
-                  "properties": {
-                    "clientId": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "OIDC client ID"
-                    },
-                    "clientSecret": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "OIDC client secret"
-                    },
-                    "discoveryUrl": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "description": "OIDC discovery URL"
-                    }
-                  },
-                  "additionalProperties": false,
+                  "$ref": "#/$defs/OidcSchema-nullable",
                   "description": "OIDC Config for this tool. See docs for more infos"
                 },
                 "url": {
@@ -1139,10 +1160,7 @@
           "description": "Optional defines the kubernetes namespace for Jenkins."
         },
         "oidc": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "$ref": "#/$defs/OidcSchema-nullable",
           "description": "OIDC Config for this tool. See docs for more infos"
         },
         "password": {

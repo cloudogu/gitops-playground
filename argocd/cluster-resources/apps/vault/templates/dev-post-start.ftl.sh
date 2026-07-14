@@ -13,6 +13,7 @@ set -x
 # OIDC_DISCOVERY_URL -> OIDC discovery URL (e.g. http://keycloak.localhost/realms/gop)
 # OIDC_CLIENT_ID -> OIDC client ID
 # OIDC_CLIENT_SECRET -> OIDC client secret
+# OIDC_ADMIN_GROUP -> OIDC group that receives admin policy
 # VAULT_EXTERNAL_URL -> External URL of vault (for OIDC redirect URIs)
 
 main() {
@@ -46,7 +47,7 @@ path "secret/*" {
   capabilities = ["create", "read", "update", "patch", "delete", "list"]
 }
 EOF
-  vault auth enable userpass
+  vault auth enable userpass 2>/dev/null || true
   # Create and authorize user via policy
   vault write auth/userpass/users/$USERNAME password="$PASSWORD" policies=secret-editor
 }
@@ -55,7 +56,7 @@ enableKubernetesAuth() {
   # Enable access for kubernetes service accounts
 
   # https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-external-vault
-  vault auth enable kubernetes
+  vault auth enable kubernetes 2>/dev/null || true
 
   # https://developer.hashicorp.com/vault/docs/auth/kubernetes#use-local-service-account-token-as-the-reviewer-jwt
   # Makes vault access the k8s API to find a service account matching an access token
@@ -98,6 +99,8 @@ enableOidc() {
   echo "redirect_uri (cli) = $VAULT_EXTERNAL_URL/oidc/callback"
   echo "=========================="
 
+  timeout 60s sh -c "until wget -O/dev/null -q $OIDC_DISCOVERY_URL/.well-known/openid-configuration; do sleep 2; done"
+
   vault auth enable oidc 2>/dev/null || true
 
   vault write auth/oidc/config \
@@ -116,6 +119,28 @@ enableOidc() {
     policies="default" \
     ttl="1h"
 
+  if [ -n "${OIDC_ADMIN_GROUP:-}" ]; then
+    vault policy write admin - <<EOF
+path "*" {
+  capabilities = ["create", "read", "update", "patch", "delete", "list", "sudo"]
+}
+EOF
+
+    OIDC_ACCESSOR="$(vault auth list -format=json | tr -d '\n ' | sed -n 's/.*"oidc\/":{[^}]*"accessor":"\([^"]*\)".*/\1/p')"
+
+    GROUP_ID="$(vault read -field=id identity/group/name/$OIDC_ADMIN_GROUP 2>/dev/null || true)"
+    if [ -z "$GROUP_ID" ]; then
+      GROUP_ID="$(vault write -field=id identity/group \
+        name="$OIDC_ADMIN_GROUP" \
+        type="external" \
+        policies="admin")"
+    fi
+
+    vault write identity/group-alias \
+      name="$OIDC_ADMIN_GROUP" \
+      mount_accessor="$OIDC_ACCESSOR" \
+      canonical_id="$GROUP_ID" 2>/dev/null || true
+  fi
 
   echo "OIDC configured"
 }

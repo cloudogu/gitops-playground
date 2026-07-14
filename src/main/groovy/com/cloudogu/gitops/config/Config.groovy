@@ -349,7 +349,7 @@ class Config {
 		String mavenCentralMirror = ''
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		String oidc = ''
+		OidcSchema oidc = new OidcSchema(clientId: 'jenkins')
 
 		@Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
 		@JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
@@ -559,7 +559,7 @@ class Config {
 		Map<String, Object> values = [:]
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		String oidc = ''
+		OidcSchema oidc = new OidcSchema(clientId: 'argocd')
 
 	}
 
@@ -602,7 +602,7 @@ class Config {
 		String grafanaEmailTo = 'infra@example.org'
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		String oidc = ''
+		OidcSchema oidc = new OidcSchema(clientId: 'grafana')
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -689,7 +689,7 @@ class Config {
 			String url = ''
 
 			@JsonPropertyDescription(OIDC_DESCPRIPTION)
-			VaultOidcSchema oidc
+			OidcSchema oidc = new OidcSchema(clientId: 'vault')
 
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -702,14 +702,31 @@ class Config {
 				String image = ''
 			}
 
-			static class VaultOidcSchema {
-				@JsonPropertyDescription("OIDC client ID")
-				String clientId = 'vault'
-				@JsonPropertyDescription("OIDC client secret")
-				String clientSecret = ''
-				@JsonPropertyDescription("OIDC discovery URL")
-				String discoveryUrl = ''
-			}
+		}
+	}
+
+	static class OidcSchema {
+		@JsonPropertyDescription("Name of the OIDC provider displayed in tool login screens")
+		String providerName = 'Keycloak'
+
+		@JsonPropertyDescription("OIDC issuer URL, for example http://keycloak.local.gd/realms/gop")
+		String issuerUrl = ''
+
+		@JsonPropertyDescription("OIDC client ID")
+		String clientId = ''
+
+		@JsonPropertyDescription("OIDC client secret")
+		String clientSecret = ''
+
+		@JsonPropertyDescription("OIDC scopes requested by the tool")
+		List<String> scopes = ['openid', 'profile', 'email']
+
+		@JsonPropertyDescription("OIDC group that receives full admin permissions in all OIDC-enabled tools")
+		String adminGroupName = ''
+
+		@JsonIgnore
+		boolean isEnabled() {
+			return clientSecret?.trim() && issuerUrl?.trim() && clientId?.trim()
 		}
 	}
 

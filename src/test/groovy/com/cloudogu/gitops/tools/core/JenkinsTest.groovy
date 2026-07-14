@@ -158,18 +158,41 @@ me:x:1000:''')
 
 	@Test
 	void 'Installs OIDC plugin before Jenkins startup when OIDC is configured'() {
-		config.jenkins.oidc = '''
-jenkins:
-  securityRealm:
-    oic:
-      clientId: "jenkins"
-'''
+		config.jenkins.username = 'admin'
+		config.jenkins.password = 'admin'
+		config.jenkins.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'jenkins',
+			clientSecret: 'jenkins-secret',
+			adminGroupName: 'gop-admins')
 
 		install(createJenkins())
 
 		List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
 		assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly('oic-auth',
-			'json-path-api')
+			'json-path-api',
+			'matrix-auth')
+
+		String casc = parseActualYaml()['controller']['JCasC']['configScripts']['oidc-auth'] as String
+		assertThat(casc).contains('clientId: "jenkins"')
+		assertThat(casc).contains('wellKnownOpenIDConfigurationUrl: "http://keycloak.local.gd/realms/gop/.well-known/openid-configuration"')
+		assertThat(casc).contains('escapeHatch:')
+		assertThat(casc).contains('username: "admin"')
+		assertThat(casc).contains('group: "gop-admins"')
+		assertThat(casc).contains('globalMatrix:')
+		assertThat(casc).contains('name: "gop-admins"')
+	}
+
+	@Test
+	void 'Uses default Jenkins OIDC scopes when scopes are null'() {
+		config.jenkins.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'jenkins',
+			clientSecret: 'jenkins-secret',
+			scopes: null)
+
+		install(createJenkins())
+
+		String casc = parseActualYaml()['controller']['JCasC']['configScripts']['oidc-auth'] as String
+		assertThat(casc).contains('scopesOverride: "openid profile email"')
 	}
 
 	@Test
