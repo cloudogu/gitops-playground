@@ -4,8 +4,8 @@ plugins {
     id "jacoco"
     id "com.gorylenko.gradle-git-properties" version "2.4.2"
     id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "org.jetbrains.kotlin.jvm" version "1.9.24"
-    id "org.jetbrains.kotlin.kapt" version "1.9.24"
+    id "org.jetbrains.kotlin.jvm" version "2.1.0"
+    id "org.jetbrains.kotlin.kapt" version "2.1.0"
 }
 
 version = "0.1"
@@ -91,8 +91,8 @@ dependencies {
     runtimeOnly "io.micronaut.reactor:micronaut-reactor:3.9.1"
     
     // Kotlin dependencies
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
-    implementation "org.jetbrains.kotlin:kotlin-reflect:1.9.24"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:2.1.0"
     
     // Groovy dependencies
     implementation "org.apache.groovy:groovy-all:5.0.7"
@@ -186,6 +186,16 @@ kapt {
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-AversionName=${versionName}"
+}
+
+tasks.named('compileGroovy') {
+    dependsOn tasks.named('compileKotlin')
+    classpath += files(tasks.named('compileKotlin').flatMap { it.destinationDirectory })
+}
+
+tasks.named('compileTestGroovy') {
+    dependsOn tasks.named('compileTestKotlin')
+    classpath += files(tasks.named('compileTestKotlin').flatMap { it.destinationDirectory })
 }
 
 tasks.withType(GroovyCompile).configureEach {
