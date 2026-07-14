@@ -56,21 +56,25 @@ public class AirGappedUtils {
 
         GitRepo repo = repoProvider.create(repoNamespaceAndName, gitHandler.getTenant());
 
-        repo.createRepositoryAndSetPermission("Mirror of Helm chart " + repoName + " from " + helmConfig.getRepoURL(), false);
+        try {
+            repo.createRepositoryAndSetPermission("Mirror of Helm chart " + repoName + " from " + helmConfig.getRepoURL(), false);
 
-        repo.cloneRepo();
+            repo.cloneRepo();
 
-        repo.copyDirectoryContents(localHelmChartFolder);
+            repo.copyDirectoryContents(localHelmChartFolder);
 
-        Map chartYaml = localizeChartYaml(repo);
+            Map chartYaml = localizeChartYaml(repo);
 
-        // Chart.lock contains pinned dependencies and digest.
-        // We either have to update or remove them. Take the easier approach.
-        new File(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock").delete();
+            // Chart.lock contains pinned dependencies and digest.
+            // We either have to update or remove them. Take the easier approach.
+            new File(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock").delete();
 
-        repo.commitAndPush("Chart " + chartYaml.get("name") + ", version: " + chartYaml.get("version") + "\n\n" +
-                "Source: " + helmConfig.getRepoURL() + "\n" +
-                "Dependencies localized to run in air-gapped environments", String.valueOf(chartYaml.get("version")));
+            repo.commitAndPush("Chart " + chartYaml.get("name") + ", version: " + chartYaml.get("version") + "\n\n" +
+                    "Source: " + helmConfig.getRepoURL() + "\n" +
+                    "Dependencies localized to run in air-gapped environments", String.valueOf(chartYaml.get("version")));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to mirror helm repo to Git for " + repoName, e);
+        }
         return repoNamespaceAndName;
     }
 
