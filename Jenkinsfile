@@ -24,7 +24,7 @@ pipeline {
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
         DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
-        MAVEN_IMAGE = 'maven:3-eclipse-temurin-17'
+        GRADLE_IMAGE = 'eclipse-temurin:17-jdk-alpine'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
         GOLANG_IMAGE = 'golang:1.25-alpine'
@@ -34,7 +34,7 @@ pipeline {
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
         TAG_NAME = sh(returnStdout: true, script: "git fetch --tags && git --no-pager tag --points-at HEAD").trim()
         // Shared docker args for integration tests
-        INTEGRATION_TEST_DOCKER_ARGS = "-e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml -v maven-cache:/root/.m2 -v /var/run/docker.sock:/var/run/docker.sock -u :${env.BUILD_GROUP} --network=host --entrypoint ''"
+        INTEGRATION_TEST_DOCKER_ARGS = "-e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml -v gradle-cache:/root/.gradle -v /var/run/docker.sock:/var/run/docker.sock -u :${env.BUILD_GROUP} --network=host --entrypoint ''"
     }
 
     stages {
@@ -45,17 +45,17 @@ pipeline {
 
                 stage("Unit Test") {
                     agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
+                        image "${env.GRADLE_IMAGE}"
+                        args "-v gradle-cache:/root/.gradle"
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test'
+                        sh './gradlew test jacocoTestReport --no-daemon'
                     }
                     post {
                         always {
-                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                            archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                            junit testResults: '**/build/test-results/test/TEST-*.xml'
+                            archiveArtifacts artifacts: "**/build/reports/jacoco/test/**"
                         }
                     }
                 }
@@ -75,13 +75,13 @@ pipeline {
 
         stage("SonarScanner") {
             agent { docker {
-                image "${env.MAVEN_IMAGE}"
-                args "-v maven-cache:/root/.m2"
+                image "${env.GRADLE_IMAGE}"
+                args "-v gradle-cache:/root/.gradle"
                 reuseNode true
             }}
             steps {
                 withSonarQubeEnv('ces-sonar') {
-                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
+                    sh "./gradlew sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME} --no-daemon"
                 }
             }
         }
@@ -185,11 +185,11 @@ pipeline {
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
-                                    docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                    docker.image("${env.GRADLE_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         try {
-                                            sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                            sh "./gradlew integrationTest --no-daemon -Dmicronaut.environments=${profile}"
                                         } finally {
-                                            sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                            sh '[ ! -e build ] || chown -R $BUILD_USER:$BUILD_GROUP build'
                                         }
                                     }
                                 }
@@ -199,7 +199,7 @@ pipeline {
                     }
                     post {
                         always {
-                            junit testResults: "**/target/failsafe-reports/TEST-*.xml",
+                            junit testResults: "**/build/test-results/**/*.xml",
                                     allowEmptyResults: true
                         }
                     }
