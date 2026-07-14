@@ -27,7 +27,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter
 @Slf4j
 class GitRepo {
 
-	static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
+	public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
 	private final Config config
 	public GitProvider gitProvider
