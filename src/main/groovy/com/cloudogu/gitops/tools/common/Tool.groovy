@@ -6,6 +6,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Config.HelmConfigWithValues
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -147,7 +148,7 @@ abstract class Tool {
 	protected void deployHelmChart(String featureName,
 		String releaseName,
 		String namespace,
-		Config.HelmConfigWithValues helmConfig,
+		HelmConfigWithValues helmConfig,
 		String helmValuesTemplatePath,
 		DeploymentContext context,
 		boolean initByHelm = false) {
