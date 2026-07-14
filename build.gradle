@@ -4,6 +4,8 @@ plugins {
     id "jacoco"
     id "com.gorylenko.gradle-git-properties" version "2.4.2"
     id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "org.jetbrains.kotlin.jvm" version "1.9.24"
+    id "org.jetbrains.kotlin.kapt" version "1.9.24"
 }
 
 version = "0.1"
@@ -60,6 +62,11 @@ micronaut {
 }
 
 dependencies {
+    // Kotlin Annotation Processing
+    kapt "com.cloudogu.versionName:processor:2.2.0"
+    kapt "io.micronaut:micronaut-inject-java"
+    kapt "io.micronaut.validation:micronaut-validation"
+
     // Annotation processors / compileOnly
     compileOnly "com.cloudogu.versionName:processor:2.2.0"
     annotationProcessor "com.cloudogu.versionName:processor:2.2.0"
@@ -71,6 +78,7 @@ dependencies {
     // Jackson Core and Databind versions for compatibility
     implementation "com.fasterxml.jackson.core:jackson-core:2.22.0"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.22.0"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.0"
     implementation "tools.jackson.core:jackson-core:3.2.0"
     implementation "tools.jackson.core:jackson-databind:3.2.0"
 
@@ -81,6 +89,10 @@ dependencies {
     implementation "io.micronaut.validation:micronaut-validation"
     
     runtimeOnly "io.micronaut.reactor:micronaut-reactor:3.9.1"
+    
+    // Kotlin dependencies
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:1.9.24"
     
     // Groovy dependencies
     implementation "org.apache.groovy:groovy-all:5.0.7"
@@ -158,6 +170,18 @@ application {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+kapt {
+    arguments {
+        arg("versionName", versionName)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
