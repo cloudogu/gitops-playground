@@ -1,0 +1,18 @@
+package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api;
+
+import java.util.Map;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.Headers;
+import retrofit2.http.PUT;
+
+public interface ScmManagerApi {
+
+    @GET("v2")
+    Call<Void> checkScmmAvailable();
+
+    @PUT("v2/config")
+    @Headers("Content-Type: application/vnd.scmm-config+json;v=2")
+    Call<Void> setConfig(@Body Map<String, Object> config);
+}

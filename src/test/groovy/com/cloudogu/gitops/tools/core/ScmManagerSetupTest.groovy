@@ -70,6 +70,9 @@ class ScmManagerSetupTest {
 		clusterResourcesRepo.gitProvider = centralProvider
 		tenantBootstrapRepo.gitProvider = tenantProvider
 
+		doReturn(centralProvider).when(clusterResourcesRepo).getGitProvider()
+		doReturn(tenantProvider).when(tenantBootstrapRepo).getGitProvider()
+
 		doReturn('argocd/cluster-resources')
 			.when(clusterResourcesRepo)
 			.getRepoTarget()
