@@ -35,17 +35,13 @@ class HelmToolDeployerTest {
 
 	private static final String RELEASE_NAME = 'cert-manager'
 
-	private static final String NAMESPACE =
-		'my-prefix-cert-manager'
+	private static final String NAMESPACE = 'my-prefix-cert-manager'
 
-	private static final String REPOSITORY_URL =
-		'https://charts.jetstack.io'
+	private static final String REPOSITORY_URL = 'https://charts.jetstack.io'
 
-	private static final String CHART =
-		'cert-manager'
+	private static final String CHART = 'cert-manager'
 
-	private static final String VERSION =
-		'1.19.4'
+	private static final String VERSION = '1.19.4'
 
 	@Mock
 	Deployer deployer
@@ -90,21 +86,17 @@ class HelmToolDeployerTest {
 
 	@Test
 	void 'deploys chart from configured Helm repository'() {
-		HelmToolDeploymentRequest request =
-			createRequest(false)
+		HelmToolDeploymentRequest request = createRequest(false)
 
-		Map<String, Object> renderedValues =
-			[replicaCount: 2] as Map<String, Object>
+		Map<String, Object> renderedValues = [replicaCount: 2] as Map<String, Object>
 
-		Path valuesFile =
-			Path.of('/tmp/values.yaml')
+		Path valuesFile = Path.of('/tmp/values.yaml')
 
 		when(helmValuesRenderer.render(eq(request.helmConfig),
 			eq(request.helmValuesPath),
 			any(Map))).thenReturn(renderedValues)
 
-		when(fileSystemUtils.writeTempFile(renderedValues))
-			.thenReturn(valuesFile)
+		when(fileSystemUtils.writeTempFile(renderedValues)).thenReturn(valuesFile)
 
 		helmToolDeployer.deploy(request,
 			context,
