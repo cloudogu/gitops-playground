@@ -1,0 +1,69 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  insecure: true
+  namePrefix: my-prefix
+features:
+  argocd:
+    active: true
+  ingress:
+    active: true
+
+content:
+  helmReleases:
+    - name: cilium
+      repoURL: https://helm.cilium.io/
+      chart: cilium
+      version: "1.15.6"
+      namespace: my-prefix-cilium
+      releaseName: cilium
+      values:
+        # yaml-language-server: $schema=https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/install/kubernetes/cilium/values.schema.json
+        ipam:
+          mode: kubernetes
+        kubeProxyReplacement: true
+        securityContext:
+          capabilities:
+            ciliumAgent:
+              - CHOWN
+              - KILL
+              - NET_ADMIN
+              - NET_RAW
+              - IPC_LOCK
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - DAC_OVERRIDE
+              - FOWNER
+              - SETGID
+              - SETUID
+            cleanCiliumState:
+              - NET_ADMIN
+              - SYS_ADMIN
+              - SYS_RESOURCE
+        cgroup:
+          autoMount:
+            enabled: false
+          hostRoot: /sys/fs/cgroup
+        k8sServiceHost: localhost
+        k8sServicePort: 7445
+        certgen:
+          # -- When set to true the certificate authority secret is created.
+          generateCA: false
+        hubble:
+          relay:
+            enabled: true
+          ui:
+            enabled: true
+
+        ingressController:
+          enabled: true
+          loadbalancerMode: shared
+          default: true # use internal ingress controller by default
+          defaultSecretNamespace: kube-system
+          defaultSecretName: default-cert
+
+        envoyConfig:
+          enabled: true
+registry:
+  active: true

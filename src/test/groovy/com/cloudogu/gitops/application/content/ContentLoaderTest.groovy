@@ -17,7 +17,8 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeploymentRequest
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
@@ -70,7 +71,7 @@ class ContentLoaderTest {
 	Jenkins jenkins = mock(Jenkins)
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
 	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
-	Deployer deployer = mock(Deployer)
+	HelmToolDeployer helmToolDeployer = mock(HelmToolDeployer)
 	RepositoryWorkspace repositoryWorkspace = mock(RepositoryWorkspace)
 	FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
@@ -455,75 +456,118 @@ class ContentLoaderTest {
 
 	@Test
 	void 'Creates and pushes content repos, whole flow '() {
-		config.content.repos = contentRepos + [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/mirror'),
-		                                       new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: 'main', target: 'common/mirrorWithBranchRef'),
-		                                       new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/mirrorWithTagRef'),]
+		config.content.repos = contentRepos + [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'),
+			type: ContentRepoType.MIRROR,
+			target: 'common/mirror'),
+		                                       new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'),
+			                                       type: ContentRepoType.MIRROR,
+			                                       ref: 'main',
+			                                       target: 'common/mirrorWithBranchRef'),
+		                                       new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'),
+			                                       type: ContentRepoType.MIRROR,
+			                                       ref: 'someTag',
+			                                       target: 'common/mirrorWithTagRef')]
 
 		scmmApiClient.mockRepoApiBehaviour()
 
 		install(createContent(config), config)
 
-		def expectedRepo = 'copy/repo1'
-		// clone target repo, to ensure, changes in remote repo.
-		try (def git = cloneRepo(expectedRepo, tmpDir)) {
+		String expectedRepo = 'copy/repo1'
 
-			def commitMsg = git.log().call().iterator().next().getFullMessage()
-			assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
+		// Clone target repo to verify changes in the remote repository.
+		try (Git git = cloneRepo(expectedRepo, tmpDir)) {
+			String commitMessage =
+				git.log()
+					.call()
+					.iterator()
+					.next()
+					.fullMessage
 
-			assertThat(new File(tmpDir, 'file').text).contains('copyRepo1')
-			assertThat(new File(tmpDir, 'copyRepo1')).exists().isFile()
+			assertThat(commitMessage)
+				.isEqualTo("Initialize content repo ${expectedRepo}".toString())
+
+			assertThat(new File(tmpDir, 'file').text)
+				.contains('copyRepo1')
+
+			assertThat(new File(tmpDir, 'copyRepo1'))
+				.exists()
+				.isFile()
 		}
 
 		expectedRepo = 'common/mirror'
-		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
-			// Assert mirrors branches and tags of non-folderBased repos
-			// Verify tag exists and points to correct content
-			git.fetch().setRefSpecs('refs/*:refs/*').call() // Fetch all tags and branches
+
+		try (Git git = cloneRepo(expectedRepo,
+			createRandomSubDir())) {
+			// Fetch all tags and branches.
+			git.fetch()
+				.setRefSpecs('refs/*:refs/*')
+				.call()
 
 			assertTag(git, 'someTag')
 			assertBranch(git, 'someBranch')
 		}
 
 		expectedRepo = 'common/mirrorWithBranchRef'
-		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
-			git.fetch().setRefSpecs('refs/*:refs/*').call()
+		try (Git git = cloneRepo(expectedRepo,
+			createRandomSubDir())) {
+			git.fetch()
+				.setRefSpecs('refs/*:refs/*')
+				.call()
 
 			assertNoTags(git)
 			assertOnlyBranch(git, 'main')
 		}
 
 		expectedRepo = 'common/mirrorWithTagRef'
-		try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
-			git.fetch().setRefSpecs('refs/*:refs/*').call()
+		try (Git git = cloneRepo(expectedRepo,
+			createRandomSubDir())) {
+			git.fetch()
+				.setRefSpecs('refs/*:refs/*')
+				.call()
 
 			assertTag(git, 'someTag')
 			assertOnlyBranch(git, 'main')
 		}
 
-		// Mirroring commit references is not supported
-		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
+		// Mirroring full commit references is not supported.
+		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('',
+			'git-repository-with-branches-tags'),
+			type: ContentRepoType.MIRROR,
+			ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8',
+			target: 'common/mirrorWithCommitRef')]
 
-		def exception = shouldFail(RuntimeException) {
-			install(createContent(config), config)
-		}
-		assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
-		assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
+		Throwable exception =
+			shouldFail(RuntimeException) {
+				install(createContent(config), config)
+			}
 
+		assertThat(exception.message)
+			.startsWith('Mirroring commit references is not supported for content repos at the moment. Content repository')
 
-		// Mirroring short commit references is not supported as well
-		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d11', target: 'common/mirrorWithShortCommitRef')]
+		assertThat(exception.message)
+			.endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
+
+		// Mirroring short commit references is not supported either.
+		config.content.repos = [new ContentRepositorySchema(url: createContentRepo('',
+			'git-repository-with-branches-tags'),
+			type: ContentRepoType.MIRROR,
+			ref: '8bc1d11',
+			target: 'common/mirrorWithShortCommitRef')]
 
 		exception = shouldFail(RuntimeException) {
 			install(createContent(config), config)
 		}
-		assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
-		assertThat(exception.message).endsWith('ref: 8bc1d11')
 
-		// Don't bother validating all other repos here.
-		// If it works for the most complex one, the other ones will work as well.
-		// The other tests are already asserting correct combining (including order) and parsing of the repos.
+		assertThat(exception.message)
+			.startsWith('Mirroring commit references is not supported for content repos at the moment. Content repository')
+
+		assertThat(exception.message)
+			.endsWith('ref: 8bc1d11')
+
+		// The other tests already verify combining, ordering and parsing
+		// of the less complex repository configurations.
 	}
 
 	static void assertOnlyBranch(Git git, String branch) {
@@ -775,12 +819,11 @@ class ContentLoaderTest {
 		def contentLoader = createContent(config)
 		install(contentLoader, config)
 
-		assertThat(contentLoader.deployCalls).isEmpty()
+		verifyNoInteractions(helmToolDeployer)
 	}
 
 	@Test
-	void 'deployHelmReleasesFromContent calls deployHelmChart with valuesPath and helm config'() {
-		// Arrange: create a real values file on disk
+	void 'deployHelmReleasesFromContent passes release configuration to HelmToolDeployer'() {
 		Path valuesFile = Files.createTempFile('harbor-values-', '.yaml')
 		Files.writeString(valuesFile, '''
         expose:
@@ -798,27 +841,23 @@ class ContentLoaderTest {
 		def contentLoader = createContent(cfg)
 		install(contentLoader, cfg)
 
-		assertThat(contentLoader.deployCalls).hasSize(1)
-		def call = contentLoader.deployCalls[0]
+		ArgumentCaptor<HelmToolDeploymentRequest> requestCaptor = ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+		verify(helmToolDeployer).deploy(requestCaptor.capture(), any(DeploymentContext), eq(repositoryWorkspace))
 
-		assertThat(call.featureName).isEqualTo('harbor')
-		assertThat(call.releaseName).isEqualTo('harbor')
-		assertThat(call.namespace).isEqualTo('my-prefix-harbor')
-
-		// IMPORTANT: With the new implementation you likely pass a merged temp file,
-		// not the original valuesPath. So assert it's a file that exists.
-		assertThat(call.valuesPath).isNotBlank()
-		assertThat(Path.of(call.valuesPath).toFile()).exists()
-
-		assertThat(call.helmConfig.repoURL).isEqualTo('https://helm.goharbor.io')
-		assertThat(call.helmConfig.chart).isEqualTo('harbor')
-		assertThat(call.helmConfig.version).isEqualTo('1.18.2')
-		assertThat(call.config).isSameAs(cfg)
+		HelmToolDeploymentRequest request = requestCaptor.value
+		assertThat(request.toolName).isEqualTo('harbor')
+		assertThat(request.releaseName).isEqualTo('harbor')
+		assertThat(request.namespace).isEqualTo('my-prefix-harbor')
+		assertThat(request.helmConfig.repoURL).isEqualTo('https://helm.goharbor.io')
+		assertThat(request.helmConfig.chart).isEqualTo('harbor')
+		assertThat(request.helmConfig.version).isEqualTo('1.18.2')
+		assertThat(request.helmConfig.values).isEqualTo([expose: [type: 'ingress']])
+		assertThat(request.helmValuesPath).isEmpty()
+		assertThat(request.bootstrapWithHelm).isFalse()
 	}
 
 	@Test
 	void 'deployHelmReleasesFromContent reads values file and inline values override file values'(@TempDir Path tempDir) {
-		// values file: replicas=1
 		Path valuesFile = tempDir.resolve('harbor-values.yaml')
 		Files.writeString(valuesFile, '''
         replicas: 1
@@ -833,26 +872,18 @@ class ContentLoaderTest {
 		                                                   namespace  : 'my-prefix-harbor',
 		                                                   releaseName: 'harbor',
 		                                                   valuesPath : valuesFile.toString(),
-		                                                   values     : [replicas: 2, // override file
-		                                                                 service : [type: 'NodePort'] // override nested
-		                                                   ]]]])
+		                                                   values     : [replicas: 2,
+		                                                                 service : [type: 'NodePort']]]]])
 
 		def contentLoader = createContent(cfg)
 		install(contentLoader, cfg)
 
-		assertThat(contentLoader.deployCalls).hasSize(1)
+		ArgumentCaptor<HelmToolDeploymentRequest> requestCaptor = ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+		verify(helmToolDeployer).deploy(requestCaptor.capture(), any(DeploymentContext), eq(repositoryWorkspace))
 
-		def call = contentLoader.deployCalls[0]
-
-		// IMPORTANT: valuesPath is a temp file created by writeTempFile(...)
-		Path mergedTemp = Path.of(call.valuesPath)
-		assertThat(mergedTemp).exists()
-
-		def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
-
-		// inline overrides file
-		assertThat(mergedYaml['replicas']).isEqualTo(2)
-		assertThat(((Map) mergedYaml['service'])['type']).isEqualTo('NodePort')
+		Map values = requestCaptor.value.helmConfig.values as Map
+		assertThat(values['replicas']).isEqualTo(2)
+		assertThat(((Map) values['service'])['type']).isEqualTo('NodePort')
 	}
 
 	@Test
@@ -867,21 +898,16 @@ class ContentLoaderTest {
 		                                                   chart     : 'elasticsearch',
 		                                                   version   : '8.5.1',
 		                                                   namespace : 'my-prefix-elasticsearch',
-		                                                   valuesPath: valuesFile.toString()
-		                                                   // no values
-		                                                  ]]])
+		                                                   valuesPath: valuesFile.toString()]]])
 
 		def contentLoader = createContent(cfg)
 		install(contentLoader, cfg)
 
-		assertThat(contentLoader.deployCalls).hasSize(1)
+		ArgumentCaptor<HelmToolDeploymentRequest> requestCaptor = ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+		verify(helmToolDeployer).deploy(requestCaptor.capture(), any(DeploymentContext), eq(repositoryWorkspace))
 
-		def call = contentLoader.deployCalls[0]
-		Path mergedTemp = Path.of(call.valuesPath)
-		assertThat(mergedTemp).exists()
-
-		def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
-		assertThat(mergedYaml['replicas']).isEqualTo(1)
+		Map values = requestCaptor.value.helmConfig.values as Map
+		assertThat(values['replicas']).isEqualTo(1)
 	}
 
 	@Test
@@ -891,21 +917,17 @@ class ContentLoaderTest {
 		                                                   chart    : 'elasticsearch',
 		                                                   version  : '8.5.1',
 		                                                   namespace: 'my-prefix-elasticsearch',
-		                                                   values   : [replicas: 2]
-		                                                   // helmValuesPath empty / missing
-		                                                  ]]])
+		                                                   values   : [replicas: 2]]]])
 
 		def contentLoader = createContent(cfg)
 		install(contentLoader, cfg)
 
-		assertThat(contentLoader.deployCalls).hasSize(1)
+		ArgumentCaptor<HelmToolDeploymentRequest> requestCaptor = ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+		verify(helmToolDeployer).deploy(requestCaptor.capture(), any(DeploymentContext), eq(repositoryWorkspace))
 
-		def call = contentLoader.deployCalls[0]
-		Path mergedTemp = Path.of(call.valuesPath)
-		assertThat(mergedTemp).exists()
-
-		def mergedYaml = new YamlSlurper().parse(mergedTemp.toFile()) as Map
-		assertThat(mergedYaml['replicas']).isEqualTo(2)
+		Map values = requestCaptor.value.helmConfig.values as Map
+		assertThat(values['replicas']).isEqualTo(2)
+		assertThat(requestCaptor.value.helmValuesPath).isEmpty()
 	}
 
 	@Test
@@ -913,7 +935,7 @@ class ContentLoaderTest {
 		def cfg = Config.fromMap(content: [helmReleases: [[name       : 'harbor',
 		                                                   repoURL    : 'https://helm.goharbor.io',
 		                                                   chart      : 'harbor',
-		                                                   version    : '   ', // blank
+		                                                   version    : '   ',
 		                                                   namespace  : 'my-prefix-harbor',
 		                                                   releaseName: 'harbor',
 		                                                   values     : [foo: 'bar']]]])
@@ -921,10 +943,10 @@ class ContentLoaderTest {
 		def contentLoader = createContent(cfg)
 		install(contentLoader, cfg)
 
-		assertThat(contentLoader.deployCalls).hasSize(1)
-		def call = contentLoader.deployCalls[0]
+		ArgumentCaptor<HelmToolDeploymentRequest> requestCaptor = ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+		verify(helmToolDeployer).deploy(requestCaptor.capture(), any(DeploymentContext), eq(repositoryWorkspace))
 
-		assertThat(call.helmConfig.version).isEqualTo('*')
+		assertThat(requestCaptor.value.helmConfig.version).isEqualTo('*')
 	}
 
 	static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
@@ -971,7 +993,7 @@ class ContentLoaderTest {
 	private void assertRegistrySecrets(String regUser, String regPw) {}
 
 	private ContentLoaderForTest createContent(Config config) {
-		return new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+		return new ContentLoaderForTest(k8sClient, scmmRepoProvider, jenkins, gitHandler, fileSystemUtils, helmToolDeployer)
 	}
 
 	private boolean install(ContentLoaderForTest contentLoader, Config config) {
@@ -1033,12 +1055,15 @@ class ContentLoaderTest {
 	}
 
 	class ContentLoaderForTest extends ContentLoader {
-		List<DeployCall> deployCalls = []
 		CloneCommand cloneSpy
 
-		ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
-			Deployer deployer) {
-			super(k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+		ContentLoaderForTest(K8sClient k8sClient,
+			GitRepoFactory repoProvider,
+			Jenkins jenkins,
+			GitHandler gitHandler,
+			FileSystemUtils fileSystemUtils,
+			HelmToolDeployer helmToolDeployer) {
+			super(k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, helmToolDeployer)
 		}
 
 		List<RepoCoordinate> cloneContentRepos(DeploymentContext context) {
@@ -1047,35 +1072,8 @@ class ContentLoaderTest {
 		}
 
 		@Override
-		protected void deployHelmChart(String featureName,
-			String releaseName,
-			String namespace,
-			Config.HelmConfigWithValues helmConfig,
-			String helmValuesTemplatePath,
-			DeploymentContext context,
-			boolean initByHelm) {
-			deployCalls << new DeployCall(featureName: featureName,
-				releaseName: releaseName,
-				namespace: namespace,
-				helmConfig: helmConfig,
-				valuesPath: helmValuesTemplatePath,
-				config: context.config,
-				initByHelm: initByHelm)
-		}
-
-		@Override
 		protected CloneCommand gitClone() {
 			return cloneSpy = spy(super.gitClone().setNoCheckout(true))
 		}
-	}
-
-	static class DeployCall {
-		String featureName
-		String releaseName
-		String namespace
-		Config.HelmConfigWithValues helmConfig
-		String valuesPath
-		Config config
-		boolean initByHelm
 	}
 }

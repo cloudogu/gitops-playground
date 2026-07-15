@@ -4,7 +4,8 @@ import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.util.ScmProviderType
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeploymentRequest
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager
@@ -13,7 +14,10 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 
 import jakarta.inject.Singleton
 import groovy.transform.CompileStatic
@@ -24,25 +28,33 @@ import groovy.util.logging.Slf4j
 @Singleton
 class Jenkins extends Tool {
 
-	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
+	static final String HELM_VALUES_PATH =
+		'argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml'
 
-	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = ['oic-auth', 'json-path-api']
+	private static final List<String> OIDC_BOOT_PLUGIN_NAMES =
+		['oic-auth', 'json-path-api']
 
-	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR =
+		'argocd/cluster-resources'
 	private static final String TOOL_NAME = 'jenkins'
 	private static final String JENKINS_APP_PATH = 'apps/jenkins'
 	private static final String RELEASE_NAME = 'jenkins'
 
-	String namespace
-	private CommandExecutor commandExecutor
-	private GlobalPropertyManager globalPropertyManager
-	private JobManager jobManager
-	private UserManager userManager
-	private PrometheusConfigurator prometheusConfigurator
-
+	private final CommandExecutor commandExecutor
+	private final FileSystemUtils fileSystemUtils
+	private final GlobalPropertyManager globalPropertyManager
+	private final JobManager jobManager
+	private final UserManager userManager
+	private final PrometheusConfigurator prometheusConfigurator
+	private final HelmToolDeployer helmToolDeployer
+	private final K8sClient k8sClient
+	private final NetworkingUtils networkingUtils
+	private final GitHandler gitHandler
 	private final ImagePullSecretCreator imagePullSecretCreator
-	final K8sClient k8sClient
-	private NetworkingUtils networkingUtils
+
+	private Map<String, Object> helmTemplateData = [:]
+
+	String namespace
 
 	Jenkins(CommandExecutor commandExecutor,
 		FileSystemUtils fileSystemUtils,
@@ -50,10 +62,9 @@ class Jenkins extends Tool {
 		JobManager jobManager,
 		UserManager userManager,
 		PrometheusConfigurator prometheusConfigurator,
-		Deployer deployer,
+		HelmToolDeployer helmToolDeployer,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
-		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator) {
 		this.commandExecutor = commandExecutor
@@ -62,10 +73,9 @@ class Jenkins extends Tool {
 		this.jobManager = jobManager
 		this.userManager = userManager
 		this.prometheusConfigurator = prometheusConfigurator
-		this.deployer = deployer
+		this.helmToolDeployer = helmToolDeployer
 		this.k8sClient = k8sClient
 		this.networkingUtils = networkingUtils
-		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 		this.imagePullSecretCreator = imagePullSecretCreator
 	}
@@ -82,6 +92,8 @@ class Jenkins extends Tool {
 		}
 
 		this.namespace = resolveNamespace(context)
+		this.helmTemplateData = [:]
+
 		createImagePullSecret()
 		createJenkinsNamespace()
 		labelJenkinsNode()
@@ -117,8 +129,22 @@ class Jenkins extends Tool {
 		publishClusterResourcesChanges(TOOL_NAME)
 	}
 
+	@Override
+	protected String resolveNamespace(DeploymentContext context) {
+		if (!context.config.jenkins.internal) {
+			return null
+		}
+
+		return "${context.config.application.namePrefix}" + "${context.config.jenkins.namespace}"
+	}
+
+	private boolean isInternalJenkins() {
+		return config.jenkins.internal
+	}
+
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(config, namespace)
+		imagePullSecretCreator.createIfRequired(config,
+			namespace)
 	}
 
 	private void createJenkinsNamespace() {
@@ -126,141 +152,170 @@ class Jenkins extends Tool {
 	}
 
 	private void labelJenkinsNode() {
-		// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
-		// Remove first in case new nodes were added.
-		k8sClient.labelRemove('node', '--all', '', 'node')
+		/*
+		 * Mark the first node for Jenkins and agents.
+		 * See jenkins/values.ftl.yaml "agent.workingDir".
+		 */
+		k8sClient.labelRemove('node',
+			'--all',
+			'',
+			'node')
 
-		String nodeName = k8sClient.waitForNode().replace('node/', '')
-		k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
+		String nodeName =
+			k8sClient.waitForNode()
+				.replace('node/', '')
+
+		k8sClient.label('node',
+			nodeName,
+			new Tuple2('node', 'jenkins'))
 	}
 
 	private void createJenkinsCredentialsSecret() {
 		k8sClient.createSecret('generic',
 			'jenkins-credentials',
 			namespace,
-			new Tuple2('jenkins-admin-user', config.jenkins.username),
-			new Tuple2('jenkins-admin-password', config.jenkins.password))
+			new Tuple2('jenkins-admin-user',
+				config.jenkins.username),
+			new Tuple2('jenkins-admin-password',
+				config.jenkins.password))
 	}
 
 	private void prepareJenkinsHelmValues() {
-		addHelmValuesData('dockerGid', findDockerGid())
-		addHelmValuesData('jenkinsBootPlugins', jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : [])
-	}
+		helmTemplateData['dockerGid'] = findDockerGid()
 
-	@Override
-	protected String resolveNamespace(DeploymentContext context) {
-		if (!context.config.jenkins.internal) {
-			return null
-		}
-
-		return "${context.config.application.namePrefix}${context.config.jenkins.namespace}"
-	}
-
-	private boolean isInternalJenkins() {
-		return config.jenkins.internal
+		helmTemplateData['jenkinsBootPlugins'] = jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : []
 	}
 
 	private void deployInternalJenkins() {
-		Config.HelmConfigWithValues helmConfig = config.jenkins.helm
+		HelmToolDeploymentRequest request =
+			new HelmToolDeploymentRequest(TOOL_NAME,
+				RELEASE_NAME,
+				namespace,
+				config.jenkins.helm,
+				HELM_VALUES_PATH,
+				helmTemplateData,
+				true)
 
-		deployHelmChart(TOOL_NAME,
-			RELEASE_NAME,
-			namespace,
-			helmConfig,
-			HELM_VALUES_PATH,
+		helmToolDeployer.deploy(request,
 			context,
-			true)
+			repositoryWorkspace)
 	}
 
 	private void updateJenkinsUrl() {
-		// Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
 		String serviceName = RELEASE_NAME
 
-		// Update jenkins.url after it is deployed and ports are known.
 		if (config.application.runningInsideK8s) {
-			log.debug('Setting jenkins url to k8s service, since installation is running inside k8s')
-			config.jenkins.url = networkingUtils.createUrl(serviceName + '.' + namespace + '.svc.cluster.local', '80')
+			log.debug('Setting Jenkins URL to Kubernetes service, ' + 'since the installation is running inside Kubernetes')
+
+			config.jenkins.url = networkingUtils.createUrl(serviceName + '.' + namespace + '.svc.cluster.local',
+				'80')
 		} else {
-			log.debug('Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...')
-			String port = k8sClient.waitForNodePort(serviceName, namespace)
-			String clusterBindAddress = networkingUtils.findClusterBindAddress()
-			config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+			log.debug('Setting Jenkins configuration for a local single-node ' + 'cluster with internal Jenkins. Waiting for NodePort...')
+
+			String port =
+				k8sClient.waitForNodePort(serviceName,
+					namespace)
+
+			String clusterBindAddress =
+				networkingUtils.findClusterBindAddress()
+
+			config.jenkins.url = networkingUtils.createUrl(clusterBindAddress,
+				port)
 		}
 	}
 
 	private void prepareJenkinsApp(GitRepo clusterResourcesRepo) {
-		log.debug("Preparing Jenkins repository content in ${clusterResourcesRepo.repoTarget}")
+		log.debug('Preparing Jenkins repository content in ' + "${clusterResourcesRepo.repoTarget}")
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
-			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, JENKINS_APP_PATH))
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR,
+				JENKINS_APP_PATH))
 	}
 
 	private void runSetupScript() {
-		commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [TRACE                     : config.application.trace,
-		                                                                                       INTERNAL_JENKINS          : config.jenkins.internal,
-		                                                                                       JENKINS_HELM_CHART_VERSION: config.jenkins.helm.version,
-		                                                                                       JENKINS_URL               : config.jenkins.url,
-		                                                                                       JENKINS_USERNAME          : config.jenkins.username,
-		                                                                                       JENKINS_PASSWORD          : config.jenkins.password,
-		                                                                                       SCM_URL                   : this.gitHandler.tenant.url,
-		                                                                                       PREFIXED_SCM_URL          : this.gitHandler.tenant.repoPrefix(),
-		                                                                                       SCM_PASSWORD              : this.gitHandler.tenant.credentials.password,
-		                                                                                       SCM_PROVIDER              : config.scm.scmProviderType,
-		                                                                                       INSTALL_ARGOCD            : config.features.argocd.active,
-		                                                                                       NAME_PREFIX               : config.application.namePrefix,
-		                                                                                       INSECURE                  : config.application.insecure,
-		                                                                                       SKIP_RESTART              : config.jenkins.skipRestart,
-		                                                                                       SKIP_PLUGINS              : config.jenkins.skipPlugins,])
+		commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh",
+			[TRACE                     : config.application.trace,
+			 INTERNAL_JENKINS          : config.jenkins.internal,
+			 JENKINS_HELM_CHART_VERSION: config.jenkins.helm.version,
+			 JENKINS_URL               : config.jenkins.url,
+			 JENKINS_USERNAME          : config.jenkins.username,
+			 JENKINS_PASSWORD          : config.jenkins.password,
+			 SCM_URL                   : gitHandler.tenant.url,
+			 PREFIXED_SCM_URL          : gitHandler.tenant.repoPrefix(),
+			 SCM_PASSWORD              : gitHandler.tenant.credentials.password,
+			 SCM_PROVIDER              : config.scm.scmProviderType,
+			 INSTALL_ARGOCD            : config.features.argocd.active,
+			 NAME_PREFIX               : config.application.namePrefix,
+			 INSECURE                  : config.application.insecure,
+			 SKIP_RESTART              : config.jenkins.skipRestart,
+			 SKIP_PLUGINS              : config.jenkins.skipPlugins])
 
-		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
-		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL", this.gitHandler.tenant.repoPrefix())
+		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL",
+			gitHandler.tenant.url)
+
+		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL",
+			gitHandler.tenant.repoPrefix())
 
 		if (config.jenkins.additionalEnvs) {
-			for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
-				globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
+			for (entry in
+				(config.jenkins.additionalEnvs as Map).entrySet()) {
+				globalPropertyManager.setGlobalProperty(entry.key.toString(),
+					entry.value.toString())
 			}
 		}
 
 		if (config.registry.url) {
-			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL", config.registry.url)
+			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL",
+				config.registry.url)
 		}
 
 		if (config.registry.path) {
-			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH", config.registry.path)
+			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH",
+				config.registry.path)
 		}
 
 		if (config.registry.twoRegistries) {
-			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL", config.registry.proxyUrl)
-			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_PATH", config.registry.proxyPath)
+			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL",
+				config.registry.proxyUrl)
+
+			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_PATH",
+				config.registry.proxyPath)
 		}
 
 		if (config.jenkins.mavenCentralMirror) {
-			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR", config.jenkins.mavenCentralMirror)
+			globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR",
+				config.jenkins.mavenCentralMirror)
 		}
 
-		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
+		globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION",
+			Config.K8S_VERSION)
 
-		if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
-			log.trace('Using a security realm without local user creation. Must not create user.')
+		if (userManager
+			.isUsingSecurityRealmWithoutLocalUserCreation()) {
+			log.trace('Using a security realm without local user creation. ' + 'Must not create user.')
 		} else {
-			userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
+			userManager.createUser(config.jenkins.metricsUsername,
+				config.jenkins.metricsPassword)
 		}
 
-		userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
+		userManager.grantPermission(config.jenkins.metricsUsername,
+			UserManager.Permissions.METRICS_VIEW)
 
 		if (config.features.monitoring.active && config.jenkins.internal) {
-			// And external Jenkins can likely not be monitored
 			prometheusConfigurator.enableAuthentication()
 		}
 	}
 
-	void createJenkinsjob(String namespace, String repoName) {
-		def credentialId = 'scm-user'
-		String prefixedNamespace = "${config.application.namePrefix}${namespace}"
-		String jobName = "${config.application.namePrefix}${repoName}"
+	void createJenkinsjob(String namespace,
+		String repoName) {
+		String credentialId = 'scm-user'
+		String prefixedNamespace =
+			"${config.application.namePrefix}${namespace}"
+		String jobName =
+			"${config.application.namePrefix}${repoName}"
 
 		jobManager.createJob(jobName,
-			this.gitHandler.tenant.url,
+			gitHandler.tenant.url,
 			prefixedNamespace,
 			credentialId)
 
@@ -284,14 +339,14 @@ class Jenkins extends Tool {
 			'registry-user',
 			"${config.registry.username}",
 			"${config.registry.password}",
-			'credentials for accessing the docker-registry for writing images built on jenkins')
+			'credentials for accessing the docker-registry ' + 'for writing images built on Jenkins')
 
 		if (config.registry.twoRegistries) {
 			jobManager.createCredential(jobName,
 				'registry-proxy-user',
 				"${config.registry.proxyUsername}",
 				"${config.registry.proxyPassword}",
-				'credentials for accessing the docker-registry that contains 3rd party or base images')
+				'credentials for accessing the docker-registry ' + 'that contains third-party or base images')
 		}
 
 		jobManager.startJob(jobName)
@@ -302,37 +357,54 @@ class Jenkins extends Tool {
 	}
 
 	private List<String> getJenkinsOidcBootPlugins() {
-		File pluginsFile = new File("${fileSystemUtils.rootDir}/scripts/jenkins/plugins/plugins.txt")
+		File pluginsFile = new File("${fileSystemUtils.rootDir}/" + 'scripts/jenkins/plugins/plugins.txt')
+
 		Map<String, String> pinnedPlugins = [:]
 
-		pluginsFile.eachLine { line ->
+		pluginsFile.eachLine { String line ->
 			String pluginDefinition = line.trim()
+
 			if (pluginDefinition && !pluginDefinition.startsWith('#')) {
-				String pluginName = pluginDefinition.split(':', 2)[0]
+				String pluginName =
+					pluginDefinition.split(':', 2)[0]
+
 				if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
 					pinnedPlugins[pluginName] = pluginDefinition
 				}
 			}
 		}
 
-		List<String> missingPlugins = OIDC_BOOT_PLUGIN_NAMES.findAll { !pinnedPlugins.containsKey(it) }
+		List<String> missingPlugins =
+			OIDC_BOOT_PLUGIN_NAMES.findAll {
+				!pinnedPlugins.containsKey(it)
+			}
+
 		if (missingPlugins) {
-			throw new IllegalStateException("Required Jenkins OIDC boot plugins missing from ${pluginsFile}: ${missingPlugins.join(', ')}")
+			throw new IllegalStateException('Required Jenkins OIDC boot plugins missing from ' + "${pluginsFile}: ${missingPlugins.join(', ')}")
 		}
 
-		return OIDC_BOOT_PLUGIN_NAMES.collect { pinnedPlugins[it] }
+		return OIDC_BOOT_PLUGIN_NAMES.collect {
+			pinnedPlugins[it]
+		}
 	}
 
 	protected String findDockerGid() {
 		String gid = ''
-		def etcGroup = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
-			'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(),
-			'--restart=Never', '-ti', '--rm', '--quiet')
-		// --quiet is necessary to avoid 'pod deleted' output
+
+		def etcGroup = k8sClient.run('tmp-docker-gid-grepper-' + "${new Random().nextInt(10000)}",
+			'irrelevant',
+			namespace,
+			createGidGrepperOverrides(),
+			'--restart=Never',
+			'-ti',
+			'--rm',
+			'--quiet')
 
 		def lines = etcGroup?.split('\n')
-		for (String it : lines) {
-			def parts = it.split(':')
+
+		for (String line : lines) {
+			def parts = line.split(':')
+
 			if (parts[0] == 'docker') {
 				gid = parts[2]
 				break
@@ -340,24 +412,25 @@ class Jenkins extends Tool {
 		}
 
 		if (!gid) {
-			log.warn('Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!\n' + "Group docker not found in /etc/group:\n${etcGroup}")
+			log.warn('Unable to determine Docker Group ID (GID). ' + 'Jenkins Agent pods will run as root user (UID 0)!\n' + "Group docker not found in /etc/group:\n${etcGroup}")
+
 			return ''
-		} else {
-			log.debug("Using Docker Group ID (GID) ${gid} for Jenkins Agent pods")
-			return gid
 		}
+
+		log.debug("Using Docker Group ID (GID) ${gid} " + 'for Jenkins Agent pods')
+
+		return gid
 	}
 
 	Map createGidGrepperOverrides() {
-		return ['spec': ['containers'  : [['name'        : 'tmp-docker-gid-grepper',
-		                                   // We use the same image for several tasks for performance and maintenance reasons
-		                                   'image'       : "${config.jenkins.internalBashImage}",
-		                                   'args'        : ['cat', '/etc/group'],
-		                                   'volumeMounts': [['name'     : 'group',
-		                                                     'mountPath': '/etc/group',
-		                                                     'readOnly' : true]]]],
-		                 'nodeSelector': ['node': 'jenkins'],
-		                 'volumes'     : [['name'    : 'group',
-		                                   'hostPath': ['path': '/etc/group']]]]]
+		return [spec: [containers  : [[name        : 'tmp-docker-gid-grepper',
+		                               image       : config.jenkins.internalBashImage,
+		                               args        : ['cat', '/etc/group'],
+		                               volumeMounts: [[name     : 'group',
+		                                               mountPath: '/etc/group',
+		                                               readOnly : true]]]],
+		               nodeSelector: [node: 'jenkins'],
+		               volumes     : [[name    : 'group',
+		                               hostPath: [path: '/etc/group']]]]] as Map
 	}
 }

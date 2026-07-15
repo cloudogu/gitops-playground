@@ -10,7 +10,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -76,7 +76,7 @@ class ApplicationConfiguratorTest {
 		K8sClient k8sClient = Mockito.mock(K8sClient)
 		HelmClient helmClient = Mockito.mock(HelmClient)
 		GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
-		Deployer deployer = Mockito.mock(Deployer)
+		HelmToolDeployer helmToolDeployer = Mockito.mock(HelmToolDeployer)
 		repositoryProvisioning = Mockito.mock(RepositoryProvisioning)
 
 		GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
@@ -87,7 +87,7 @@ class ApplicationConfiguratorTest {
 			Mockito.mock(Jenkins),
 			gitHandler,
 			fileSystemUtils,
-			deployer))
+			helmToolDeployer))
 		featureContent.isEnabled(context)
 
 		featureArgoCd = Mockito.spy(new ArgoCD(k8sClient,

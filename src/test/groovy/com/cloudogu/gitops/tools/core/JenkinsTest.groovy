@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools.core
 
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
@@ -11,7 +10,8 @@ import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeploymentRequest
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager
@@ -23,14 +23,11 @@ import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 
-import java.nio.file.Path
 import groovy.transform.CompileStatic
-import groovy.yaml.YamlSlurper
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,24 +35,47 @@ import org.mockito.ArgumentCaptor
 
 @CompileStatic
 class JenkinsTest {
+
 	Config config = new Config(scm: new ScmTenantSchema(scmManager: new ScmTenantSchema.ScmManagerTenantConfig(urlForJenkins: 'testUrlJenkins')),
 		jenkins: new Config.JenkinsSchema(active: true))
 
 	String expectedNodeName = 'something'
 
-	CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-	GlobalPropertyManager globalPropertyManager = mock(GlobalPropertyManager)
-	JobManager jobManger = mock(JobManager)
-	UserManager userManager = mock(UserManager)
-	PrometheusConfigurator prometheusConfigurator = mock(PrometheusConfigurator)
-	Deployer deployer = mock(Deployer)
-	Path temporaryYamlFile
-	NetworkingUtils networkingUtils = mock(NetworkingUtils)
-	K8sClient k8sClient = mock(K8sClient)
-	ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator)
+	CommandExecutorForTest commandExecutor =
+		new CommandExecutorForTest()
 
-	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock()
-	GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
+	FileSystemUtils fileSystemUtils =
+		new FileSystemUtils()
+
+	GlobalPropertyManager globalPropertyManager =
+		mock(GlobalPropertyManager)
+
+	JobManager jobManager =
+		mock(JobManager)
+
+	UserManager userManager =
+		mock(UserManager)
+
+	PrometheusConfigurator prometheusConfigurator =
+		mock(PrometheusConfigurator)
+
+	HelmToolDeployer helmToolDeployer =
+		mock(HelmToolDeployer)
+
+	NetworkingUtils networkingUtils =
+		mock(NetworkingUtils)
+
+	K8sClient k8sClient =
+		mock(K8sClient)
+
+	ImagePullSecretCreator imagePullSecretCreator =
+		mock(ImagePullSecretCreator)
+
+	ScmManagerProviderMock scmManagerMock =
+		new ScmManagerProviderMock()
+
+	GitHandler gitHandler =
+		new GitHandlerForTests(scmManagerMock)
 
 	RepositoryWorkspace repositoryWorkspace
 	DeploymentContext deploymentContext
@@ -63,77 +83,100 @@ class JenkinsTest {
 
 	@BeforeEach
 	void setup() {
-		// waitForInternalNodeIp -> waitForNode()
-		when(k8sClient.waitForNode()).thenReturn("node/${expectedNodeName}".toString())
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('')
+		when(k8sClient.waitForNode())
+			.thenReturn("node/${expectedNodeName}".toString())
+
+		when(k8sClient.run(anyString(),
+			anyString(),
+			anyString(),
+			anyMap(),
+			any(String[].class))).thenReturn('')
+
+		when(networkingUtils.createUrl(anyString(),
+			anyString(),
+			anyString())).thenCallRealMethod()
+
+		when(networkingUtils.createUrl(anyString(),
+			anyString())).thenCallRealMethod()
 	}
 
 	@Test
-	void 'Installs Jenkins'() {
-		def jenkins = createJenkins()
-
-		config.jenkins.url = 'http://jenkins'
+	void 'creates expected Helm deployment request for internal Jenkins'() {
 		config.jenkins.helm.chart = 'jen-chart'
 		config.jenkins.helm.repoURL = 'https://jen-repo'
 		config.jenkins.helm.version = '4.8.1'
-		config.jenkins.username = 'jenusr'
-		config.jenkins.password = 'jenpw'
-		config.jenkins.jenkinsImage = 'localhost:5000/proxy/jenkins-helm:custom'
-		config.jenkins.internalBashImage = 'bash:42'
-		config.jenkins.internalDockerClientVersion = '23'
 
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn('''
+		when(k8sClient.run(anyString(),
+			anyString(),
+			anyString(),
+			anyMap(),
+			any(String[].class))).thenReturn('''
 root:x:0:
 daemon:x:1:
 docker:x:42:me
-me:x:1000:''')
+me:x:1000:
+''')
 
-		install(jenkins)
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
 
-		verify(deployer).deployFeature(eq('https://jen-repo'),
-			eq('jenkins'),
-			eq('jen-chart'),
-			eq('4.8.1'),
-			eq('jenkins'),
-			eq('jenkins'),
-			eq(temporaryYamlFile),
-			eq(RepoType.HELM),
-			eq(true),
-			eq(deploymentContext),
-			eq(repositoryWorkspace))
+		assertThat(request.toolName)
+			.isEqualTo('jenkins')
 
-		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update jenkins GitOps resources')
+		assertThat(request.releaseName)
+			.isEqualTo('jenkins')
 
-		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
-		verify(k8sClient).labelRemove('node', '--all', '', 'node')
-		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
-			new Tuple2('jenkins-admin-user', 'jenusr'),
-			new Tuple2('jenkins-admin-password', 'jenpw'))
+		assertThat(request.namespace)
+			.isEqualTo('jenkins')
 
-		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
+		assertThat(request.helmConfig.repoURL)
+			.isEqualTo('https://jen-repo')
 
-		assertThat(parseActualYaml()['controller']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(parseActualYaml()['controller']['image']['repository']).isEqualTo('proxy/jenkins-helm')
-		assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('custom')
-		assertThat(parseActualYaml()['controller']['installPlugins']).isEqualTo(false)
+		assertThat(request.helmConfig.chart)
+			.isEqualTo('jen-chart')
 
-		assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
-		assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
+		assertThat(request.helmConfig.version)
+			.isEqualTo('4.8.1')
 
-		assertThat(parseActualYaml()['controller']['ingress']).isNull()
+		assertThat(request.helmValuesPath)
+			.isEqualTo(Jenkins.HELM_VALUES_PATH)
 
-		List customInitContainers = parseActualYaml()['controller']['customInitContainers'] as List
-		assertThat(customInitContainers[0]['image']).isEqualTo('bash:42')
+		assertThat(request.bootstrapWithHelm)
+			.isTrue()
 
-		assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(1000)
-		assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(42)
+		assertThat(request.templateData['dockerGid'])
+			.isEqualTo('42')
 
-		ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String)
-		ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map)
-		verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any(String[].class))
-		assertThat(nameCaptor.value).startsWith('tmp-docker-gid-grepper-')
-		List containers = overridesCaptor.value['spec']['containers'] as List
-		assertThat(containers[0]['image'].toString()).isEqualTo('bash:42')
+		assertThat(request.templateData['jenkinsBootPlugins'])
+			.isEqualTo([])
+	}
+
+	@Test
+	void 'uses configured namespace prefix'() {
+		config.application.namePrefix = 'tenant-'
+
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
+
+		assertThat(request.namespace)
+			.isEqualTo('tenant-jenkins')
+	}
+
+	@Test
+	void 'returns active namespace only for internal Jenkins'() {
+		DeploymentContext context =
+			new ContextBuilder(config).build()
+
+		assertThat(createJenkins()
+			.getActiveNamespace(context)).isEqualTo('jenkins')
+
+		config.jenkins.internal = false
+
+		DeploymentContext externalContext =
+			new ContextBuilder(config).build()
+
+		assertThat(createJenkins()
+			.getActiveNamespace(externalContext)).isNull()
 	}
 
 	@Test
@@ -141,23 +184,111 @@ me:x:1000:''')
 		install(createJenkins())
 
 		assertThat(new File(localTempDir, 'apps/jenkins')).exists()
-		assertThat(new File(localTempDir, 'apps/jenkins/templates')).doesNotExist()
+
+		assertThat(new File(localTempDir,
+			'apps/jenkins/templates')).doesNotExist()
 	}
 
 	@Test
-	void 'Installs Jenkins without dockerGid'() {
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
-root:x:0:
-daemon:x:1:
-me:x:1000:''')
+	void 'prepares Kubernetes resources for internal Jenkins'() {
+		config.jenkins.username = 'jenusr'
+		config.jenkins.password = 'jenpw'
+
 		install(createJenkins())
 
-		assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo('0')
-		assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo('133')
+		verify(imagePullSecretCreator)
+			.createIfRequired(config,
+				'jenkins')
+
+		verify(k8sClient)
+			.createNamespace('jenkins')
+
+		verify(k8sClient)
+			.labelRemove('node',
+				'--all',
+				'',
+				'node')
+
+		verify(k8sClient)
+			.label('node',
+				expectedNodeName,
+				new Tuple2('node',
+					'jenkins'))
+
+		verify(k8sClient)
+			.createSecret('generic',
+				'jenkins-credentials',
+				'jenkins',
+				new Tuple2('jenkins-admin-user',
+					'jenusr'),
+				new Tuple2('jenkins-admin-password',
+					'jenpw'))
 	}
 
 	@Test
-	void 'Installs OIDC plugin before Jenkins startup when OIDC is configured'() {
+	void 'uses Docker group ID in Helm template data'() {
+		when(k8sClient.run(anyString(),
+			anyString(),
+			anyString(),
+			anyMap(),
+			any(String[].class))).thenReturn('''
+root:x:0:
+daemon:x:1:
+docker:x:42:me
+me:x:1000:
+''')
+
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
+
+		assertThat(request.templateData['dockerGid'])
+			.isEqualTo('42')
+
+		ArgumentCaptor<String> nameCaptor =
+			ArgumentCaptor.forClass(String)
+
+		ArgumentCaptor<Map> overridesCaptor =
+			ArgumentCaptor.forClass(Map)
+
+		verify(k8sClient).run(nameCaptor.capture(),
+			anyString(),
+			eq('jenkins'),
+			overridesCaptor.capture(),
+			any(String[].class))
+
+		assertThat(nameCaptor.value)
+			.startsWith('tmp-docker-gid-grepper-')
+
+		List containers =
+			overridesCaptor
+				.value['spec']['containers']
+				as List
+
+		assertThat(containers[0]['image'])
+			.isEqualTo(config.jenkins.internalBashImage)
+	}
+
+	@Test
+	void 'uses empty Docker group ID when Docker group is missing'() {
+		when(k8sClient.run(anyString(),
+			anyString(),
+			anyString(),
+			anyMap(),
+			any(String[].class))).thenReturn('''
+root:x:0:
+daemon:x:1:
+me:x:1000:
+''')
+
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
+
+		assertThat(request.templateData['dockerGid'])
+			.isEqualTo('')
+	}
+
+	@Test
+	void 'adds required OIDC boot plugins when OIDC is configured'() {
 		config.jenkins.oidc = '''
 jenkins:
   securityRealm:
@@ -165,299 +296,435 @@ jenkins:
       clientId: "jenkins"
 '''
 
-		install(createJenkins())
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
 
-		List installedPlugins = parseActualYaml()['controller']['installPlugins'] as List
-		assertThat(installedPlugins.collect { it.toString().split(':')[0] }).containsExactly('oic-auth',
+		List<String> bootPlugins =
+			request.templateData['jenkinsBootPlugins']
+				as List<String>
+
+		assertThat(bootPlugins.collect {
+			it.split(':')[0]
+		}).containsExactly('oic-auth',
 			'json-path-api')
 	}
 
 	@Test
-	void 'Installs only if internal'() {
+	void 'does not deploy or publish external Jenkins'() {
 		config.jenkins.internal = false
 		config.registry.createImagePullSecrets = true
+
 		install(createJenkins())
 
-		verify(deployer, never()).deployFeature(anyString(),
-			anyString(),
-			anyString(),
-			anyString(),
-			anyString(),
-			anyString(),
-			any(Path),
-			any(),
-			anyBoolean(),
-			any(DeploymentContext),
-			any(RepositoryWorkspace))
+		verifyNoInteractions(helmToolDeployer,
+			imagePullSecretCreator)
 
-		verify(repositoryWorkspace, never()).commitAndPushClusterResourcesChanges(anyString())
+		verify(repositoryWorkspace, never())
+			.commitAndPushClusterResourcesChanges(anyString())
 
-		verify(k8sClient, never()).createNamespace(any())
-		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString())
+		verify(k8sClient, never())
+			.createNamespace(anyString())
 
-		assertThat(temporaryYamlFile).isNull()
+		verify(k8sClient, never())
+			.createSecret(anyString(),
+				anyString(),
+				anyString(),
+				any())
 	}
 
 	@Test
-	void 'Additional helm values are merged with default values'() {
+	void 'still runs setup script for external Jenkins'() {
+		config.jenkins.internal = false
+		config.jenkins.url = 'https://external-jenkins.example.org'
+
+		install(createJenkins())
+
+		assertThat(commandExecutor.actualCommands)
+			.hasSize(1)
+
+		assertThat(commandExecutor.actualCommands[0])
+			.endsWith('/scripts/jenkins/init-jenkins.sh')
+
+		Map<String, String> environment =
+			getEnvAsMap()
+
+		assertThat(environment['INTERNAL_JENKINS']).isEqualTo('false')
+
+		assertThat(environment['JENKINS_URL'])
+			.isEqualTo('https://external-jenkins.example.org')
+	}
+
+	@Test
+	void 'passes configured Helm values unchanged'() {
 		config.jenkins.helm.values = [controller: [nodePort: 42]]
 
-		install(createJenkins())
+		HelmToolDeploymentRequest request =
+			executeAndCaptureRequest()
 
-		assertThat(parseActualYaml()['controller']['nodePort']).isEqualTo(42)
+		assertThat(request.helmConfig.values)
+			.isEqualTo([controller: [nodePort: 42]])
 	}
 
 	@Test
-	void 'Enables ingress when baseUrl is set'() {
-		config.jenkins.ingress = 'jenkins.localhost'
-		config.application.baseUrl = 'someBaseUrl'
-
+	void 'publishes Jenkins GitOps resources'() {
 		install(createJenkins())
 
-		assertThat(parseActualYaml()['controller']['ingress']['enabled']).isEqualTo(true)
-		assertThat(parseActualYaml()['controller']['ingress']['hostName']).isEqualTo('jenkins.localhost')
+		verify(repositoryWorkspace)
+			.commitAndPushClusterResourcesChanges('Update jenkins GitOps resources')
 	}
 
 	@Test
-	void 'Maps config properly'() {
+	void 'maps configuration to Jenkins setup script environment'() {
 		config.application.trace = true
 		config.features.argocd.active = true
 		config.scm.scmManager.url = 'http://scmm.scm-manager.svc.cluster.local/scm'
+
 		config.scm.scmManager.username = 'scmm-usr'
+
 		config.scm.scmManager.password = 'scmm-pw'
+
 		config.application.namePrefix = 'my-prefix-'
+
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
+
 		config.registry.url = 'reg-url'
 		config.registry.path = 'reg-path'
 		config.registry.username = 'reg-usr'
 		config.registry.password = 'reg-pw'
+
 		config.registry.proxyUrl = 'reg-proxy-url'
+
 		config.registry.proxyPath = 'reg-proxy-path'
+
 		config.registry.proxyUsername = 'reg-proxy-usr'
+
 		config.registry.proxyPassword = 'reg-proxy-pw'
+
 		config.jenkins.internal = false
 		config.jenkins.helm.version = '4.8.1'
 		config.jenkins.username = 'jenusr'
 		config.jenkins.password = 'jenpw'
 		config.jenkins.url = 'http://jenkins'
+
 		config.jenkins.metricsUsername = 'metrics-usr'
+
 		config.jenkins.metricsPassword = 'metrics-pw'
+
 		config.jenkins.skipPlugins = true
 		config.jenkins.skipRestart = true
 
 		install(createJenkins())
 
-		def env = getEnvAsMap()
-		assertThat(commandExecutor.actualCommands[0]).isEqualTo("${System.getProperty('user.dir')}/scripts/jenkins/init-jenkins.sh" as String)
+		Map<String, String> environment =
+			getEnvAsMap()
 
-		assertThat(env['TRACE']).isEqualTo('true')
-		assertThat(env['INTERNAL_JENKINS']).isEqualTo('false')
-		assertThat(env['JENKINS_HELM_CHART_VERSION']).isEqualTo('4.8.1')
-		assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
-		assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
-		assertThat(env['JENKINS_PASSWORD']).isEqualTo('jenpw')
-		assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
-		assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
-		assertThat(env['INSECURE']).isEqualTo('false')
+		assertThat(commandExecutor.actualCommands[0])
+			.isEqualTo("${System.getProperty('user.dir')}/" + 'scripts/jenkins/init-jenkins.sh')
 
-		assertThat(env['SCM_URL']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
-		assertThat(env['SCM_PASSWORD']).isEqualTo(scmManagerMock.credentials.password)
-		assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
+		assertThat(environment['TRACE'])
+			.isEqualTo('true')
 
-		assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
-		assertThat(env['SKIP_RESTART']).isEqualTo('true')
+		assertThat(environment['INTERNAL_JENKINS'])
+			.isEqualTo('false')
 
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCM_URL', 'http://scmm.scm-manager.svc.cluster.local/scm')
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)
+		assertThat(environment['JENKINS_HELM_CHART_VERSION']).isEqualTo('4.8.1')
 
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
-		verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_URL'), anyString())
-		verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_PATH'), anyString())
-		verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
+		assertThat(environment['JENKINS_URL'])
+			.isEqualTo('http://jenkins')
 
-		verify(userManager).createUser('metrics-usr', 'metrics-pw')
-		verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
+		assertThat(environment['JENKINS_USERNAME'])
+			.isEqualTo('jenusr')
+
+		assertThat(environment['JENKINS_PASSWORD'])
+			.isEqualTo('jenpw')
+
+		assertThat(environment['NAME_PREFIX'])
+			.isEqualTo('my-prefix-')
+
+		assertThat(environment['INSECURE'])
+			.isEqualTo('false')
+
+		assertThat(environment['SCM_URL'])
+			.isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
+
+		assertThat(environment['SCM_PASSWORD'])
+			.isEqualTo(scmManagerMock.credentials.password)
+
+		assertThat(environment['INSTALL_ARGOCD'])
+			.isEqualTo('true')
+
+		assertThat(environment['SKIP_PLUGINS'])
+			.isEqualTo('true')
+
+		assertThat(environment['SKIP_RESTART'])
+			.isEqualTo('true')
+
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_SCM_URL',
+				'http://scmm.scm-manager.svc.cluster.local/scm')
+
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_K8S_VERSION',
+				Config.K8S_VERSION)
+
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_REGISTRY_URL',
+				'reg-url')
+
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_REGISTRY_PATH',
+				'reg-path')
+
+		verify(globalPropertyManager, never())
+			.setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_URL'),
+				anyString())
+
+		verify(globalPropertyManager, never())
+			.setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_PATH'),
+				anyString())
+
+		verify(userManager)
+			.createUser('metrics-usr',
+				'metrics-pw')
+
+		verify(userManager)
+			.grantPermission('metrics-usr',
+				UserManager.Permissions.METRICS_VIEW)
 	}
 
 	@Test
-	void 'Does not configure prometheus when external Jenkins'() {
+	void 'does not configure Prometheus for external Jenkins'() {
 		config.features.monitoring.active = true
 		config.jenkins.internal = false
 
 		install(createJenkins())
 
-		verify(prometheusConfigurator, never()).enableAuthentication()
+		verify(prometheusConfigurator, never())
+			.enableAuthentication()
 	}
 
 	@Test
-	void 'Does not configure prometheus when monitoring off'() {
+	void 'does not configure Prometheus when monitoring is disabled'() {
 		config.features.monitoring.active = false
 		config.jenkins.internal = true
 
 		install(createJenkins())
 
-		verify(prometheusConfigurator, never()).enableAuthentication()
+		verify(prometheusConfigurator, never())
+			.enableAuthentication()
 	}
 
 	@Test
-	void 'Configures prometheus'() {
+	void 'configures Prometheus for internal Jenkins when monitoring is enabled'() {
 		config.features.monitoring.active = true
 		config.jenkins.internal = true
 
 		install(createJenkins())
 
-		verify(prometheusConfigurator).enableAuthentication()
+		verify(prometheusConfigurator)
+			.enableAuthentication()
 	}
 
 	@Test
-	void "URL: Use k8s service name if running as k8s pod"() {
+	void 'uses Kubernetes service URL when running inside Kubernetes'() {
 		config.jenkins.internal = true
 		config.application.runningInsideK8s = true
 
 		install(createJenkins())
-		assertThat(config.jenkins.url).isEqualTo('http://jenkins.jenkins.svc.cluster.local:80')
+
+		assertThat(config.jenkins.url)
+			.isEqualTo('http://jenkins.jenkins.svc.cluster.local:80')
 	}
 
 	@Test
-	void "URL: Use local ip and nodePort when outside of k8s"() {
+	void 'uses local cluster address and NodePort outside Kubernetes'() {
 		config.jenkins.internal = true
 		config.application.runningInsideK8s = false
 
-		when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
-		when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
+		when(networkingUtils
+			.findClusterBindAddress()).thenReturn('192.168.16.2')
+
+		when(k8sClient.waitForNodePort(anyString(),
+			anyString())).thenReturn('42')
 
 		install(createJenkins())
-		assertThat(config.jenkins.url).endsWith('192.168.16.2:42')
+
+		assertThat(config.jenkins.url)
+			.endsWith('192.168.16.2:42')
 	}
 
 	@Test
-	void 'Handles two registries'() {
+	void 'sets proxy registry global properties for two registries'() {
 		config.registry.twoRegistries = true
 		config.application.namePrefix = 'my-prefix-'
+
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
 
 		config.registry.url = 'reg-url'
 		config.registry.path = 'reg-path'
-		config.registry.username = 'reg-usr'
-		config.registry.password = 'reg-pw'
 		config.registry.proxyUrl = 'reg-proxy-url'
+
 		config.registry.proxyPath = 'reg-proxy-path'
-		config.registry.proxyUsername = 'reg-proxy-usr'
-		config.registry.proxyPassword = 'reg-proxy-pw'
 
 		install(createJenkins())
 
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL', 'reg-proxy-url')
-		verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_PATH', 'reg-proxy-path')
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL',
+				'reg-proxy-url')
 
-		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
-		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_PATH',
+				'reg-proxy-path')
 	}
 
 	@Test
-	void 'Does not create metrics user if security realm does not support local user creation'() {
-		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-		when(userManager.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
+	void 'does not create metrics user for security realm without local users'() {
+		when(userManager
+			.isUsingSecurityRealmWithoutLocalUserCreation()).thenReturn(true)
 
 		install(createJenkins())
 
-		verify(userManager, never()).createUser(anyString(), anyString())
+		verify(userManager, never())
+			.createUser(anyString(),
+				anyString())
+
+		verify(userManager)
+			.grantPermission(config.jenkins.metricsUsername,
+				UserManager.Permissions.METRICS_VIEW)
 	}
 
 	@Test
-	void 'Global property is set for additional envs'() {
+	void 'sets global properties for additional environments'() {
 		config.jenkins.additionalEnvs = [ADDITIONAL_DOCKER_RUN_ARGS: '-u0:0']
 
 		install(createJenkins())
-		verify(globalPropertyManager).setGlobalProperty(eq('ADDITIONAL_DOCKER_RUN_ARGS'), eq('-u0:0'))
+
+		verify(globalPropertyManager)
+			.setGlobalProperty('ADDITIONAL_DOCKER_RUN_ARGS',
+				'-u0:0')
 	}
 
 	@Test
-	void 'Does not create create user if CAS security realm is used'() {
+	void 'does not create jobs during regular Jenkins setup'() {
 		config.features.argocd.active = false
 
 		install(createJenkins())
-		verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString())
-		verify(jobManger, never()).startJob(anyString())
+
+		verify(jobManager, never())
+			.createCredential(anyString(),
+				anyString(),
+				anyString(),
+				anyString(),
+				anyString())
+
+		verify(jobManager, never())
+			.startJob(anyString())
 	}
 
 	@Test
-	void 'Properly handles null values'() {
-		config.application.baseUrl = null
-		install(createJenkins())
-
-		def env = getEnvAsMap()
-		assertThat(env['BASE_URL']).isNotEqualTo('null')
-	}
-
-	@Test
-	void 'Sets maven mirror '() {
-		config.registry.url = 'some value'
+	void 'sets Maven Central mirror global property'() {
 		config.jenkins.mavenCentralMirror = 'http://test'
+
 		config.application.namePrefixForEnvVars = 'MY_PREFIX_'
 
 		install(createJenkins())
 
-		verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq('http://test'))
+		verify(globalPropertyManager)
+			.setGlobalProperty('MY_PREFIX_MAVEN_CENTRAL_MIRROR',
+				'http://test')
+	}
+
+	@Test
+	void 'creates Jenkins job with SCM Manager credentials'() {
+		Jenkins jenkins = createJenkins()
+
+		install(jenkins)
+
+		jenkins.createJenkinsjob('example-apps',
+			'my-app')
+
+		verify(jobManager)
+			.createJob('my-app',
+				scmManagerMock.url,
+				'example-apps',
+				'scm-user')
+
+		verify(jobManager)
+			.createCredential('my-app',
+				'scm-user',
+				'gitops',
+				config.scm.scmManager.password,
+				'credentials for accessing scm-manager')
+
+		verify(jobManager)
+			.startJob('my-app')
 	}
 
 	protected Map<String, String> getEnvAsMap() {
-		return commandExecutor.environment.collectEntries { it.split('=') }
+		return commandExecutor.environment
+			.collectEntries {
+				it.split('=')
+			} as Map<String, String>
+	}
+
+	private HelmToolDeploymentRequest executeAndCaptureRequest() {
+		install(createJenkins())
+
+		ArgumentCaptor<HelmToolDeploymentRequest> captor =
+			ArgumentCaptor.forClass(HelmToolDeploymentRequest)
+
+		verify(helmToolDeployer)
+			.deploy(captor.capture(),
+				eq(deploymentContext),
+				eq(repositoryWorkspace))
+
+		return captor.value
 	}
 
 	private Jenkins createJenkins() {
-		when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
-		when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
+		TestGitRepoFactory repoFactory =
+			new TestGitRepoFactory(config,
+				fileSystemUtils) {
+				@Override
+				GitRepo create(String repoTarget,
+					GitProvider scm) {
+					GitRepo repo =
+						super.create(repoTarget,
+							scm)
 
-		FileSystemUtils fileSystemUtils = new FileSystemUtils() {
-			@Override
-			Path writeTempFile(Map mergeMap) {
-				def ret = super.writeTempFile(mergeMap)
-				temporaryYamlFile = Path.of(ret.toString().replace('.ftl', ''))
-				// Path after template invocation
-				return ret
+					localTempDir = new File(repo.absoluteLocalRepoTmpDir)
+
+					return repo
+				}
 			}
-		}
 
-		TestGitRepoFactory repoFactory = new TestGitRepoFactory(config, new FileSystemUtils()) {
-			@Override
-			GitRepo create(String repoTarget, GitProvider scm) {
-				def repo = super.create(repoTarget, scm)
-				localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-				return repo
-			}
-		}
-
-		GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
-			scmManagerMock)
+		GitRepo clusterResourcesRepo =
+			repoFactory.create('argocd/cluster-resources',
+				scmManagerMock)
 
 		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
-		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
-		AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
+		doNothing()
+			.when(repositoryWorkspace)
+			.commitAndPushClusterResourcesChanges(anyString())
 
 		return new Jenkins(commandExecutor,
 			fileSystemUtils,
 			globalPropertyManager,
-			jobManger,
+			jobManager,
 			userManager,
 			prometheusConfigurator,
-			deployer,
+			helmToolDeployer,
 			k8sClient,
 			networkingUtils,
-			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator)
 	}
 
 	private boolean install(Jenkins jenkins) {
 		deploymentContext = new ContextBuilder(config).build()
-		return jenkins.execute(deploymentContext, repositoryWorkspace)
-	}
 
-	private Map parseActualYaml() {
-		def ys = new YamlSlurper()
-		return ys.parse(temporaryYamlFile) as Map
+		return jenkins.execute(deploymentContext,
+			repositoryWorkspace)
 	}
 }

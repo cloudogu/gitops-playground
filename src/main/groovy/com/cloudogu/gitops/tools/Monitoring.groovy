@@ -3,12 +3,12 @@ package com.cloudogu.gitops.tools
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeploymentRequest
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.tools.common.Tool
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -26,33 +26,46 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class Monitoring extends Tool {
 
-	static final String HELM_VALUES_PATH = 'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
-	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
-	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
+	static final String HELM_VALUES_PATH =
+		'argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml'
 
-	private static final String CLUSTER_RESOURCES_SOURCE_DIR = 'argocd/cluster-resources'
+	static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE =
+		'argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml'
+
+	static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE =
+		'argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml'
+
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR =
+		'argocd/cluster-resources'
+
 	private static final String TOOL_NAME = 'monitoring'
 	private static final String RELEASE_NAME = 'kube-prometheus-stack'
 	private static final String MONITORING_APP_PATH = 'apps/monitoring'
-	private static final String MONITORING_RBAC_PATH = "${MONITORING_APP_PATH}/misc/rbac"
-	private static final String MONITORING_NETPOLS_PATH = "${MONITORING_APP_PATH}/misc/netpols"
-	private static final String MONITORING_DASHBOARD_PATH = "${MONITORING_APP_PATH}/misc/dashboard"
+	private static final String MONITORING_RBAC_PATH =
+		"${MONITORING_APP_PATH}/misc/rbac"
+	private static final String MONITORING_NETPOLS_PATH =
+		"${MONITORING_APP_PATH}/misc/netpols"
+	private static final String MONITORING_DASHBOARD_PATH =
+		"${MONITORING_APP_PATH}/misc/dashboard"
 
+	private final HelmToolDeployer helmToolDeployer
+	private final FileSystemUtils fileSystemUtils
+	private final K8sClient k8sClient
+	private final GitHandler gitHandler
 	private final ImagePullSecretCreator imagePullSecretCreator
 
-	String namespace
-	final K8sClient k8sClient
+	private Map<String, Object> helmTemplateData = [:]
 
-	Monitoring(FileSystemUtils fileSystemUtils,
-		Deployer deployer,
+	String namespace
+
+	Monitoring(HelmToolDeployer helmToolDeployer,
+		FileSystemUtils fileSystemUtils,
 		K8sClient k8sClient,
-		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator) {
-		this.deployer = deployer
+		this.helmToolDeployer = helmToolDeployer
 		this.fileSystemUtils = fileSystemUtils
 		this.k8sClient = k8sClient
-		this.airGappedUtils = airGappedUtils
 		this.gitHandler = gitHandler
 		this.imagePullSecretCreator = imagePullSecretCreator
 	}
@@ -65,11 +78,15 @@ class Monitoring extends Tool {
 	@Override
 	protected void preDeploy() {
 		this.namespace = resolveNamespace(context)
+		this.helmTemplateData = [:]
+
 		createImagePullSecret()
 		prepareMonitoringHelmValues()
 
-		// Create secrets imperatively here instead of values.yaml,
-		// because we don't want credentials to be visible in the Git repo.
+		/*
+		 * Create secrets imperatively instead of writing credentials
+		 * into the GitOps repository.
+		 */
 		setupMonitoringSecrets()
 		createMonitoringCrd()
 
@@ -80,12 +97,17 @@ class Monitoring extends Tool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(TOOL_NAME,
-			RELEASE_NAME,
-			namespace,
-			config.features.monitoring.helm,
-			HELM_VALUES_PATH,
-			context)
+		HelmToolDeploymentRequest request =
+			new HelmToolDeploymentRequest(TOOL_NAME,
+				RELEASE_NAME,
+				namespace,
+				config.features.monitoring.helm,
+				HELM_VALUES_PATH,
+				helmTemplateData)
+
+		helmToolDeployer.deploy(request,
+			context,
+			repositoryWorkspace)
 	}
 
 	@Override
@@ -95,32 +117,38 @@ class Monitoring extends Tool {
 
 	@Override
 	protected String resolveNamespace(DeploymentContext context) {
-		return "${context.config.application.namePrefix}${context.config.features.monitoring.namespace}"
+		return "${context.config.application.namePrefix}" + "${context.config.features.monitoring.namespace}"
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(config, namespace)
+		imagePullSecretCreator.createIfRequired(config,
+			namespace)
 	}
 
 	private void prepareMonitoringHelmValues() {
-		String uid = ''
-		if (context.isOpenshift()) {
-			uid = findValidOpenShiftUid()
-		}
+		String uid = context.isOpenshift() ? findValidOpenShiftUid() : ''
 
-		addHelmValuesData('monitoring',
-			[grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : '']])
-		addHelmValuesData('namespaces', (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>)
-		addHelmValuesData('scm', scmConfigurationMetrics())
-		addHelmValuesData('jenkins', jenkinsConfigurationMetrics())
-		addHelmValuesData('uid', uid)
+		String grafanaHost =
+			config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ''
+
+		helmTemplateData['monitoring'] = [grafana: [host: grafanaHost]]
+
+		helmTemplateData['namespaces'] = (config.application.namespaces.activeNamespaces ?: [])
+			as LinkedHashSet<String>
+
+		helmTemplateData['scm'] = scmConfigurationMetrics()
+
+		helmTemplateData['jenkins'] = jenkinsConfigurationMetrics()
+
+		helmTemplateData['uid'] = uid
 	}
 
 	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
-		log.debug("Preparing Monitoring repository content in ${clusterResourcesRepo.repoTarget}")
+		log.debug('Preparing Monitoring repository content in ' + "${clusterResourcesRepo.repoTarget}")
 
 		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR,
-			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH))
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR,
+				MONITORING_APP_PATH))
 	}
 
 	private void replaceMonitoringTemplates(GitRepo clusterResourcesRepo) {
@@ -136,7 +164,6 @@ class Monitoring extends Tool {
 			generateNetpols(clusterResourcesRepo)
 		}
 
-		// Remove dashboards for features that are not enabled
 		cleanupUnusedDashboards(clusterResourcesRepo)
 	}
 
@@ -144,106 +171,137 @@ class Monitoring extends Tool {
 		k8sClient.createSecret('generic',
 			'prometheus-metrics-creds-scmm',
 			namespace,
-			new Tuple2('password', config.application.password))
+			new Tuple2('password',
+				config.application.password))
 
 		k8sClient.createSecret('generic',
 			'prometheus-metrics-creds-jenkins',
 			namespace,
-			new Tuple2('password', config.jenkins.metricsPassword),)
+			new Tuple2('password',
+				config.jenkins.metricsPassword))
 
 		if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
 			k8sClient.createSecret('generic',
 				'grafana-email-secret',
 				namespace,
-				new Tuple2('user', config.features.mail.smtpUser),
-				new Tuple2('password', config.features.mail.smtpPassword))
+				new Tuple2('user',
+					config.features.mail.smtpUser),
+				new Tuple2('password',
+					config.features.mail.smtpPassword))
 		}
 	}
 
 	private void generateNamespaceIsolationRBAC(GitRepo clusterResourcesRepo) {
-		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
-			String rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-				[namespace : currentNamespace,
-				 namePrefix: config.application.namePrefix,
-				 config    : config,])
+		for (String currentNamespace :
+			config.application.namespaces.activeNamespaces) {
+			String rbacYaml =
+				new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
+					[namespace : currentNamespace,
+					 namePrefix: config.application.namePrefix,
+					 config    : config])
 
-			clusterResourcesRepo.writeFile("${MONITORING_RBAC_PATH}/${currentNamespace}.yaml",
+			clusterResourcesRepo.writeFile("${MONITORING_RBAC_PATH}/" + "${currentNamespace}.yaml",
 				rbacYaml)
 		}
 	}
 
 	private void generateNetpols(GitRepo clusterResourcesRepo) {
-		for (String currentNamespace : config.application.namespaces.activeNamespaces) {
-			String netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
-				[namespace : currentNamespace,
-				 namePrefix: config.application.namePrefix,])
+		for (String currentNamespace :
+			config.application.namespaces.activeNamespaces) {
+			String netpolsYaml =
+				new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
+					[namespace : currentNamespace,
+					 namePrefix: config.application.namePrefix])
 
-			clusterResourcesRepo.writeFile("${MONITORING_NETPOLS_PATH}/${currentNamespace}.yaml",
+			clusterResourcesRepo.writeFile("${MONITORING_NETPOLS_PATH}/" + "${currentNamespace}.yaml",
 				netpolsYaml)
 		}
 	}
 
 	private Map scmConfigurationMetrics() {
-		URI uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
+		URI uri =
+			gitHandler.resourcesScm.prometheusMetricsEndpoint()
+
 		return [protocol: uri?.scheme ?: '',
 		        host    : uri?.authority ?: '',
-		        path    : uri?.path ?: '',]
+		        path    : uri?.path ?: '']
 	}
 
 	protected void createMonitoringCrd() {
-		if (!config.application.skipCrds) {
-			def serviceMonitorCrdYaml
-			if (context.isAirgapped()) {
-				serviceMonitorCrdYaml = Path.of("${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml").toString()
-			} else {
-				serviceMonitorCrdYaml = 'https://raw.githubusercontent.com/prometheus-community/helm-charts/' + "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
-					"charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
-			}
-
-			log.debug('Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n' + "Applying from path ${serviceMonitorCrdYaml}")
-			k8sClient.applyYaml(serviceMonitorCrdYaml)
+		if (config.application.skipCrds) {
+			return
 		}
+
+		String serviceMonitorCrdYaml
+
+		if (context.isAirgapped()) {
+			serviceMonitorCrdYaml = Path.of("${config.application.localHelmChartFolder}/" + "${config.features.monitoring.helm.chart}/" +
+				'charts/crds/crds/crd-servicemonitors.yaml').toString()
+		} else {
+			serviceMonitorCrdYaml = 'https://raw.githubusercontent.com/' + 'prometheus-community/helm-charts/' +
+				'kube-prometheus-stack-' +
+				"${config.features.monitoring.helm.version}/" +
+				'charts/kube-prometheus-stack/charts/' +
+				'crds/crds/crd-servicemonitors.yaml'
+		}
+
+		log.debug('Applying ServiceMonitor CRD; Argo CD fails if it ' + 'is not there. Chicken-egg problem.\n' + "Applying from path ${serviceMonitorCrdYaml}")
+
+		k8sClient.applyYaml(serviceMonitorCrdYaml)
 	}
 
 	private Map jenkinsConfigurationMetrics() {
-		URI uri = baseUriJenkins(config).resolve('prometheus')
+		URI uri = baseUriJenkins(config)
+			.resolve('prometheus')
+
 		return [metricsUsername: config.jenkins.metricsUsername ?: '',
 		        protocol       : uri.scheme ?: '',
 		        host           : uri.authority ?: '',
-		        path           : uri.path ?: '',]
+		        path           : uri.path ?: '']
 	}
 
 	private static URI baseUriJenkins(Config config) {
 		if (config.jenkins.internal) {
-			return new URI("http://jenkins.${config.application.namePrefix}${config.jenkins.namespace}.svc.cluster.local/")
+			return new URI('http://jenkins.' + "${config.application.namePrefix}" + "${config.jenkins.namespace}" + '.svc.cluster.local/')
 		}
-		def urlString = config.jenkins?.url?.strip() ?: ''
+
+		String urlString =
+			config.jenkins?.url?.strip() ?: ''
+
 		if (!urlString) {
-			throw new IllegalArgumentException('config.jenkins.url must be set when config.jenkins.internal = false')
+			throw new IllegalArgumentException('config.jenkins.url must be set when ' + 'config.jenkins.internal = false')
 		}
-		def url = URI.create(urlString)
+
+		URI url = URI.create(urlString)
+
 		return url.toString().endsWith('/') ? url : URI.create(url.toString() + '/')
 	}
 
 	private String findValidOpenShiftUid() {
-		String uidRange = k8sClient.getAnnotation('namespace', namespace, 'openshift.io/sa.scc.uid-range')
+		String uidRange = k8sClient.getAnnotation('namespace',
+			namespace,
+			'openshift.io/sa.scc.uid-range')
 
-		if (uidRange) {
-			log.debug("found UID=${uidRange}")
-			String uid = uidRange.split('/')[0]
-			return uid
-		} else {
-			throw new RuntimeException('Could not find a valid UID! Really running on OpenShift?')
+		if (!uidRange) {
+			throw new RuntimeException('Could not find a valid UID! ' + 'Really running on OpenShift?')
 		}
+
+		log.debug("Found UID range ${uidRange}")
+
+		return uidRange.split('/')[0]
 	}
 
 	protected void cleanupUnusedDashboards(GitRepo clusterResourcesRepo) {
-		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()
-		String dashboardRoot = "${repoRoot}/${MONITORING_DASHBOARD_PATH}"
+		String repoRoot =
+			clusterResourcesRepo
+				.getAbsoluteLocalRepoTmpDir()
+
+		String dashboardRoot =
+			"${repoRoot}/${MONITORING_DASHBOARD_PATH}"
 
 		if (!config.features.ingress.active) {
 			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard.yaml")
-			fileSystemUtils.deleteFile("${dashboardRoot}/traefik-dashboard-requests-handling.yaml")
+			fileSystemUtils.deleteFile("${dashboardRoot}/" + 'traefik-dashboard-requests-handling.yaml')
 		}
 
 		if (!config.jenkins.active) {
@@ -256,7 +314,8 @@ class Monitoring extends Tool {
 	}
 
 	private boolean hasScmManagerMetricsEndpoint() {
-		URI uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
+		URI uri =
+			gitHandler.resourcesScm.prometheusMetricsEndpoint()
 
 		if (uri == null) {
 			return false

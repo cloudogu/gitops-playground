@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.tools
 
-import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 import com.cloudogu.gitops.application.context.ContextBuilder
@@ -12,694 +12,815 @@ import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.infrastructure.deployment.Deployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeployer
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmToolDeploymentRequest
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
-import groovy.transform.CompileStatic
-import groovy.yaml.YamlSlurper
 
-import io.fabric8.kubernetes.client.KubernetesClient
-import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
+import groovy.transform.CompileStatic
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
 @CompileStatic
-@EnableKubernetesMockClient(crud = true)
 class MonitoringTest {
 
-	Config config = Config.fromMap(registry: [internal              : true,
-	                                          createImagePullSecrets: false],
-		scm: [scmManager: [internal: true]],
-		jenkins: [internal       : true,
-		          active         : true,
-		          metricsUsername: 'metrics',
-		          metricsPassword: 'metrics',],
-		application: [username          : 'abc',
-		              password          : '123',
-		              openshift         : false,
-		              namePrefix        : 'foo-',
-		              mirrorRepos       : false,
-		              podResources      : false,
-		              skipCrds          : false,
-		              namespaceIsolation: false,
-		              gitName           : 'Cloudogu',
-		              gitEmail          : 'hello@cloudogu.com',
-		              netpols           : false,
-		              namespaces        : [dedicatedNamespaces: ['test1-default',
-		                                                         'test1-argocd',
-		                                                         'test1-monitoring',
-		                                                         'test1-secrets'] as LinkedHashSet,
-		                                   tenantNamespaces   : ['test1-example-apps-staging',
-		                                                         'test1-example-apps-production'] as LinkedHashSet]],
-		features: [argocd    : [active: true],
-		           monitoring: [active          : true,
-		                        grafanaUrl      : '',
-		                        grafanaEmailFrom: 'grafana@example.org',
-		                        grafanaEmailTo  : 'infra@example.org',
-		                        helm            : [chart  : 'kube-prometheus-stack',
-		                                           repoURL: 'https://prom',
-		                                           version: '19.2.2']],
-		           secrets   : [active: true],
-		           ingress   : [active: true]])
+	private Config config
 
-	K8sClient k8sClient
-	Deployer deployer = mock(Deployer)
-	AirGappedUtils airGappedUtils = mock(AirGappedUtils)
-	Path temporaryYamlFilePrometheus = null
-	FileSystemUtils fileSystemUtils = new FileSystemUtils()
-	File clusterResourcesRepoDir
+	private final HelmToolDeployer helmToolDeployer =
+		mock(HelmToolDeployer)
 
-	GitHandler gitHandler = mock(GitHandler)
-	RepositoryWorkspace repositoryWorkspace
-	DeploymentContext deploymentContext
-	ScmManagerProviderMock scmManagerMock
-	ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator)
+	private final FileSystemUtils fileSystemUtils =
+		new FileSystemUtils()
 
-	KubernetesClient client
-	// Client to set mock data, gets injected by annotation
-	KubernetesMockServer server
-	// Use server for non CRUD
+	private final K8sClient k8sClient =
+		mock(K8sClient)
+
+	private final GitHandler gitHandler =
+		mock(GitHandler)
+
+	private final ImagePullSecretCreator imagePullSecretCreator =
+		mock(ImagePullSecretCreator)
+
+	private DeploymentContext deploymentContext
+	private RepositoryWorkspace repositoryWorkspace
+	private ScmManagerProviderMock scmManagerMock
+	private File clusterResourcesRepoDir
 
 	@BeforeEach
 	void setup() {
-		scmManagerMock = new ScmManagerProviderMock()
-		k8sClient = mock(K8sClient)
-		k8sClient.client = client
+		reset(
+			helmToolDeployer,
+			k8sClient,
+			gitHandler,
+			imagePullSecretCreator
+		)
+
+		config = createConfig()
+
+		scmManagerMock =
+			new ScmManagerProviderMock()
+
+		when(
+			gitHandler.getResourcesScm()
+		).thenReturn(
+			scmManagerMock
+		)
 	}
 
 	@Test
-	void "is disabled via active flag"() {
+	void 'is disabled via active flag'() {
 		config.features.monitoring.active = false
-		assertFalse(createStack(scmManagerMock).isEnabled(new ContextBuilder(config).build()))
+
+		DeploymentContext context =
+			new ContextBuilder(config).build()
+
+		assertFalse(
+			createMonitoring().isEnabled(context)
+		)
 	}
 
 	@Test
-	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
-		config.features.mail.active = null
-		install(createStack(scmManagerMock))
+	void 'is enabled via active flag'() {
+		DeploymentContext context =
+			new ContextBuilder(config).build()
 
-		def yaml = parseActualYaml()
-		assertThat(yaml['grafana']['notifiers']).isNull()
+		assertThat(
+			createMonitoring().isEnabled(context)
+		).isTrue()
 	}
 
 	@Test
-	void 'When mailServer enabled: Includes mail configurations into cluster resources'() {
-		config.features.mail.active = true
-		install(createStack(scmManagerMock))
-		assertThat(parseActualYaml()['grafana']['notifiers']).isNotNull()
+	void 'creates expected Helm deployment request'() {
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
+
+		assertThat(request.toolName)
+			.isEqualTo('monitoring')
+
+		assertThat(request.releaseName)
+			.isEqualTo('kube-prometheus-stack')
+
+		assertThat(request.namespace)
+			.isEqualTo('foo-monitoring')
+
+		assertThat(request.helmConfig)
+			.isSameAs(
+				config.features.monitoring.helm
+			)
+
+		assertThat(request.helmValuesPath)
+			.isEqualTo(
+				Monitoring.HELM_VALUES_PATH
+			)
+
+		assertThat(request.bootstrapWithHelm)
+			.isFalse()
 	}
 
 	@Test
-	void "When Email Addresses is set"() {
-		config.features.mail.active = true
-		config.features.monitoring.grafanaEmailFrom = 'grafana@example.com'
-		config.features.monitoring.grafanaEmailTo = 'infra@example.com'
-		install(createStack(scmManagerMock))
+	void 'uses configured namespace prefix'() {
+		config.application.namePrefix = 'tenant-'
 
-		def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
-		assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.com')
-		assertThat(parseActualYaml()['grafana']['env']['GF_SMTP_FROM_ADDRESS']).isEqualTo('grafana@example.com')
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
+
+		assertThat(request.namespace)
+			.isEqualTo('tenant-monitoring')
 	}
 
 	@Test
-	void "When Email Addresses is NOT set"() {
-		config.features.mail.active = true
-		install(createStack(scmManagerMock))
+	void 'passes additional Helm values through request'() {
+		config.features.monitoring.helm.values = [
+			key: [
+				some: 'thing',
+				one : 1
+			],
+			prometheus: [
+				prometheusSpec: [
+					scrapeConfigSelectorNilUsesHelmValues:
+						null
+				]
+			]
+		]
 
-		def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
-		assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.org')
-		assertThat(parseActualYaml()['grafana']['env']['GF_SMTP_FROM_ADDRESS']).isEqualTo('grafana@example.org')
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
+
+		assertThat(request.helmConfig.values)
+			.isEqualTo(
+				config.features.monitoring.helm.values
+			)
 	}
 
 	@Test
-	void 'When external Mailserver is set'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
-		config.features.mail.smtpPort = 1010110
-		config.features.monitoring.grafanaEmailTo = 'grafana@example.com'
+	void 'adds monitoring namespace and Grafana host to template data'() {
+		config.features.monitoring.grafanaUrl =
+			'http://grafana.local'
 
-		install(createStack(scmManagerMock))
-		def contactPointsYaml = parseActualYaml()
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
 
-		assertThat(contactPointsYaml['grafana']['alerting']['contactpoints.yaml']).isEqualTo(new YamlSlurper().parseText("""
-apiVersion: 1
-contactPoints:
-- orgId: 1
-  name: email
-  is_default: true
-  receivers:
-  - uid: email1
-    type: email
-    settings:
-      addresses: ${config.features.monitoring.grafanaEmailTo}
-"""))
-		assertThat(contactPointsYaml['grafana']['alerting']['notification-policies.yaml']).isEqualTo(new YamlSlurper().parseText('''
-apiVersion: 1
-policies:
-- orgId: 1
-  is_default: true
-  receiver: email
-  routes:
-  - receiver: email
-  group_by: ["grafana_folder", "alertname"]
-'''))
+		assertThat(
+			request.templateData['monitoring']
+		).isEqualTo([
+			grafana: [
+				host: 'grafana.local'
+			]
+		])
 
-		assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com:1010110')
+		assertThat(
+			request.templateData['namespaces']
+		).isEqualTo(
+			config.application.namespaces.activeNamespaces
+				as LinkedHashSet<String>
+		)
 	}
 
 	@Test
-	void 'When external Mailserver is set with user'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
-		config.features.mail.smtpUser = 'mailserver@example.com'
+	void 'adds internal SCM Manager metrics endpoint to template data'() {
+		scmManagerMock.prometheus =
+			new URI(
+				'http://localhost:8080/' +
+					'scm/api/v2/metrics/prometheus'
+			)
 
-		install(createStack(scmManagerMock))
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
 
-		assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+		assertThat(
+			request.templateData['scm']
+		).isEqualTo([
+			protocol: 'http',
+			host    : 'localhost:8080',
+			path    :
+				'/scm/api/v2/metrics/prometheus'
+		])
 	}
 
 	@Test
-	void 'When external Mailserver is set with password'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
-		config.features.mail.smtpPassword = '1101ABCabc&/+*~'
+	void 'adds internal Jenkins metrics endpoint to template data'() {
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
 
-		install(createStack(scmManagerMock))
-		assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+		assertThat(
+			request.templateData['jenkins']
+		).isEqualTo([
+			metricsUsername: 'metrics',
+			protocol       : 'http',
+			host           :
+				'jenkins.foo-jenkins.svc.cluster.local',
+			path           : '/prometheus'
+		])
 	}
 
 	@Test
-	void 'When external Mailserver is set without user and password'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
+	void 'adds external Jenkins metrics endpoint to template data'() {
+		config.jenkins.internal = false
+		config.jenkins.url =
+			'https://localhost:9090/jenkins'
 
-		install(createStack(scmManagerMock))
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
 
-		assertThat(parseActualYaml()['grafana']['valuesFrom']).isNull()
-		assertThat(parseActualYaml()['grafana']['smtp']).isNull()
+		assertThat(
+			request.templateData['jenkins']
+		).isEqualTo([
+			metricsUsername: 'metrics',
+			protocol       : 'https',
+			host           : 'localhost:9090',
+			path           : '/jenkins/prometheus'
+		])
 	}
 
 	@Test
-	void 'Check if kubernetes secret will be created when external emailservers credential is set'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
-		config.features.mail.smtpUser = 'grafana@example.com'
-		config.features.mail.smtpPassword = '1101ABCabc&/+*~'
+	void 'adds custom Jenkins metrics username to template data'() {
+		config.jenkins.metricsUsername =
+			'external-metrics-username'
 
-		install(createStack(scmManagerMock))
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
+
+		assertThat(
+			(request.templateData['jenkins'] as Map)
+			['metricsUsername']
+		).isEqualTo(
+			'external-metrics-username'
+		)
 	}
 
 	@Test
-	void 'When external Mailserver is set without port'() {
-		config.features.mail.active = true
-		config.features.mail.smtpAddress = 'smtp.example.com'
+	void 'adds empty UID for Kubernetes deployment'() {
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
 
-		install(createStack(scmManagerMock))
-		def contactPointsYaml = parseActualYaml()
-
-		assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
+		assertThat(
+			request.templateData['uid']
+		).isEqualTo('')
 	}
 
 	@Test
-	void 'When external Mailserver is NOT set'() {
-		config.features.mail.active = null
-		install(createStack(scmManagerMock))
-		def contactPointsYaml = parseActualYaml()
+	void 'adds OpenShift UID to template data'() {
+		config.application.openshift = true
 
-		assertThat(contactPointsYaml['grafana']['alerting']).isNull()
+		when(
+			k8sClient.getAnnotation(
+				'namespace',
+				'foo-monitoring',
+				'openshift.io/sa.scc.uid-range'
+			)
+		).thenReturn(
+			'1000920000/10000'
+		)
+
+		HelmToolDeploymentRequest request =
+			installAndCaptureRequest()
+
+		assertThat(
+			request.templateData['uid']
+		).isEqualTo('1000920000')
 	}
 
 	@Test
-	void "configures admin user if requested"() {
-		config.application.username = 'my-user'
-		config.application.password = 'hunter2'
-		install(createStack(scmManagerMock))
+	void 'creates image pull secret in monitoring namespace'() {
+		install()
 
-		assertThat(parseActualYaml()['grafana']['adminUser']).isEqualTo('my-user')
-		assertThat(parseActualYaml()['grafana']['adminPassword']).isEqualTo('hunter2')
+		verify(imagePullSecretCreator)
+			.createIfRequired(
+				config,
+				'foo-monitoring'
+			)
 	}
 
 	@Test
-	void 'uses ingress if enabled'() {
-		config.features.monitoring.grafanaUrl = 'http://grafana.local'
+	void 'creates SCM Manager and Jenkins metric secrets'() {
+		install()
 
-		install(createStack(scmManagerMock))
+		verify(k8sClient).createSecret(
+			'generic',
+			'prometheus-metrics-creds-scmm',
+			'foo-monitoring',
+			new Tuple2(
+				'password',
+				config.application.password
+			)
+		)
 
-		def serviceYaml = parseActualYaml()['grafana']['ingress']
-		assertThat(serviceYaml['enabled']).isEqualTo(true)
-		assertThat((serviceYaml['hosts'] as List)[0]).isEqualTo('grafana.local')
+		verify(k8sClient).createSecret(
+			'generic',
+			'prometheus-metrics-creds-jenkins',
+			'foo-monitoring',
+			new Tuple2(
+				'password',
+				config.jenkins.metricsPassword
+			)
+		)
 	}
 
 	@Test
-	void 'does not use ingress by default'() {
-		install(createStack(scmManagerMock))
+	void 'creates Grafana mail secret when SMTP credentials are configured'() {
+		config.features.mail.smtpUser =
+			'grafana@example.com'
 
-		assertThat(parseActualYaml()['grafana'] as Map).doesNotContainKey('ingress')
+		config.features.mail.smtpPassword =
+			'secret'
+
+		install()
+
+		verify(k8sClient).createSecret(
+			'generic',
+			'grafana-email-secret',
+			'foo-monitoring',
+			new Tuple2(
+				'user',
+				'grafana@example.com'
+			),
+			new Tuple2(
+				'password',
+				'secret'
+			)
+		)
 	}
 
 	@Test
-	void 'prepares monitoring app content in cluster resources workspace without copying templates'() {
-		install(createStack(scmManagerMock))
+	void 'does not create Grafana mail secret without SMTP credentials'() {
+		config.features.mail.smtpUser = null
+		config.features.mail.smtpPassword = null
 
-		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring')).exists()
-		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/templates')).doesNotExist()
-		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')).exists()
+		install()
+
+		verify(k8sClient, never())
+			.createSecret(
+				eq('generic'),
+				eq('grafana-email-secret'),
+				anyString(),
+				any(Tuple2),
+				any(Tuple2)
+			)
 	}
 
 	@Test
-	void 'cleanupUnusedDashboards removes all dashboards for disabled features'() {
-		config.features.monitoring.active = true
+	void 'applies Prometheus ServiceMonitor CRD from GitHub'() {
+		config.application.mirrorRepos = false
+		config.application.skipCrds = false
+
+		install()
+
+		verify(k8sClient).applyYaml(
+			'https://raw.githubusercontent.com/' +
+				'prometheus-community/helm-charts/' +
+				'kube-prometheus-stack-19.2.2/' +
+				'charts/kube-prometheus-stack/charts/' +
+				'crds/crds/crd-servicemonitors.yaml'
+		)
+	}
+
+	@Test
+	void 'applies Prometheus ServiceMonitor CRD from local chart in air-gapped mode'() {
+		config.application.mirrorRepos = true
+		config.application.skipCrds = false
+
+		Path rootChartsFolder =
+			Files.createTempDirectory(
+				this.class.simpleName
+			)
+
+		config.application.localHelmChartFolder =
+			rootChartsFolder.toString()
+
+		String expectedPath =
+			rootChartsFolder.resolve(
+				'kube-prometheus-stack/' +
+					'charts/crds/crds/' +
+					'crd-servicemonitors.yaml'
+			).toString()
+
+		install()
+
+		verify(k8sClient).applyYaml(
+			expectedPath
+		)
+	}
+
+	@Test
+	void 'does not apply ServiceMonitor CRD when CRDs are skipped'() {
+		config.application.skipCrds = true
+
+		install()
+
+		verify(k8sClient, never())
+			.applyYaml(anyString())
+	}
+
+	@Test
+	void 'prepares monitoring app content without copying templates'() {
+		install()
+
+		assertThat(
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring'
+			)
+		).exists()
+
+		assertThat(
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring/templates'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring/misc/dashboard'
+			)
+		).exists()
+	}
+
+	@Test
+	void 'removes dashboards for disabled features'() {
 		config.features.ingress.active = false
 		config.jenkins.active = false
 		scmManagerMock.prometheus = null
 
-		install(createStack(scmManagerMock))
+		install()
 
-		File dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
+		File dashboardDirectory =
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring/misc/dashboard'
+			)
 
-		assertThat(new File(dashboardDir, 'traefik-dashboard.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'jenkins-dashboard.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'scmm-dashboard.yaml')).doesNotExist()
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'traefik-dashboard.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'traefik-dashboard-requests-handling.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'jenkins-dashboard.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'scmm-dashboard.yaml'
+			)
+		).doesNotExist()
 	}
 
 	@Test
-	void 'cleanupUnusedDashboards keeps scmm dashboard when internal scm metrics endpoint exists'() {
-		config.features.monitoring.active = true
+	void 'keeps SCM Manager dashboard when metrics endpoint exists'() {
 		config.features.ingress.active = false
 		config.jenkins.active = false
 		config.scm.scmManager.url = null
-		scmManagerMock.prometheus = new URI('http://localhost:8080/scm/api/v2/metrics/prometheus')
 
-		install(createStack(scmManagerMock))
+		scmManagerMock.prometheus =
+			new URI(
+				'http://localhost:8080/' +
+					'scm/api/v2/metrics/prometheus'
+			)
 
-		File dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
+		install()
 
-		assertThat(new File(dashboardDir, 'traefik-dashboard.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'jenkins-dashboard.yaml')).doesNotExist()
-		assertThat(new File(dashboardDir, 'scmm-dashboard.yaml')).exists()
+		File dashboardDirectory =
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring/misc/dashboard'
+			)
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'traefik-dashboard.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'traefik-dashboard-requests-handling.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'jenkins-dashboard.yaml'
+			)
+		).doesNotExist()
+
+		assertThat(
+			new File(
+				dashboardDirectory,
+				'scmm-dashboard.yaml'
+			)
+		).exists()
 	}
 
 	@Test
-	void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
-		config.features.monitoring.active = true
-		config.application.mirrorRepos = true
-		config.application.skipCrds = false
+	void 'creates namespace isolation RBAC resources'() {
+		config.application.namespaceIsolation = true
 
-		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-		config.application.localHelmChartFolder = rootChartsFolder.toString()
+		install()
 
-		Path crdFile = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml")
-		Files.createDirectories(crdFile.parent)
-		Files.writeString(crdFile, 'dummy')
+		for (
+			String namespace :
+				config.application.namespaces.activeNamespaces
+		) {
+			File rbacFile =
+				new File(
+					clusterResourcesRepoDir,
+					'apps/monitoring/misc/rbac/' +
+						"${namespace}.yaml"
+				)
 
-		Path chartYaml = rootChartsFolder.resolve("${config.features.monitoring.helm.chart}/Chart.yaml")
-		Files.createDirectories(chartYaml.parent)
-		Files.writeString(chartYaml, 'apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n')
+			assertThat(rbacFile)
+				.exists()
 
-		install(createStack(scmManagerMock))
+			assertThat(rbacFile.text)
+				.contains(
+					"namespace: ${namespace}"
+				)
+				.contains(
+					'namespace: foo-monitoring'
+				)
+		}
 	}
 
 	@Test
-	void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
-		config.features.monitoring.active = true
-		config.application.mirrorRepos = false
-		config.application.skipCrds = false
+	void 'does not create namespace isolation RBAC resources by default'() {
+		install()
 
-		install(createStack(scmManagerMock))
+		assertThat(
+			new File(
+				clusterResourcesRepoDir,
+				'apps/monitoring/misc/rbac'
+			)
+		).doesNotExist()
 	}
 
 	@Test
-	void 'does not apply ServiceMonitor CRD when monitoring is disabled'() {
-		config.features.monitoring.active = false
-		config.application.skipCrds = false
-		config.application.mirrorRepos = false
+	void 'creates network policies for Prometheus'() {
+		config.application.netpols = true
 
-		install(createStack(scmManagerMock))
+		install()
+
+		for (
+			String namespace :
+				config.application.namespaces.activeNamespaces
+		) {
+			File networkPolicyFile =
+				new File(
+					clusterResourcesRepoDir,
+					'apps/monitoring/misc/netpols/' +
+						"${namespace}.yaml"
+				)
+
+			assertThat(networkPolicyFile)
+				.exists()
+
+			assertThat(networkPolicyFile.text)
+				.contains(
+					"namespace: ${namespace}"
+				)
+		}
 	}
 
 	@Test
-	void 'uses remote scmm url if requested'() {
-		install(createStack(scmManagerMock))
+	void 'delegates deployment to HelmToolDeployer'() {
+		install()
 
-		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-		assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
-		assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
-		assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
-
-		assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.foo-jenkins.svc.cluster.local')
-		assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('http')
-		assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/prometheus')
-	}
-
-	@Test
-	void 'uses remote jenkins url if requested'() {
-		config.jenkins['internal'] = false
-		config.jenkins['url'] = 'https://localhost:9090/jenkins'
-		install(createStack(scmManagerMock))
-		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-
-		assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
-		assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
-		assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
-
-		assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9090')
-		assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/jenkins/prometheus')
-		assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
-	}
-
-	@Test
-	void 'configures custom metrics user for jenkins'() {
-		config.jenkins['metricsUsername'] = 'external-metrics-username'
-		config.jenkins['metricsPassword'] = 'hunter2'
-		install(createStack(scmManagerMock))
-
-		def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-		assertThat(additionalScrapeConfigs[1]['basic_auth']['username']).isEqualTo('external-metrics-username')
-	}
-
-	@Test
-	void "configures custom image for grafana"() {
-		config.features.monitoring.helm.grafanaImage = 'localhost:5000/grafana/grafana:the-tag'
-		install(createStack(scmManagerMock))
-
-		assertThat(parseActualYaml()['grafana']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(parseActualYaml()['grafana']['image']['repository']).isEqualTo('grafana/grafana')
-		assertThat(parseActualYaml()['grafana']['image']['tag']).isEqualTo('the-tag')
-	}
-
-	@Test
-	void "configures custom image for grafana-sidecar"() {
-		config.features.monitoring.helm.grafanaSidecarImage = 'localhost:5000/grafana/sidecar:the-tag'
-		install(createStack(scmManagerMock))
-
-		assertThat(parseActualYaml()['grafana']['sidecar']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(parseActualYaml()['grafana']['sidecar']['image']['repository']).isEqualTo('grafana/sidecar')
-		assertThat(parseActualYaml()['grafana']['sidecar']['image']['tag']).isEqualTo('the-tag')
-	}
-
-	@Test
-	void "configures custom image for prometheus and operator"() {
-		config.features.monitoring.helm.prometheusImage = 'localhost:5000/prometheus/prometheus:v1'
-		config.features.monitoring.helm.prometheusOperatorImage = 'localhost:5000/prometheus-operator/prometheus-operator:v2'
-		config.features.monitoring.helm.prometheusConfigReloaderImage = 'localhost:5000/prometheus-operator/prometheus-config-reloader:v3'
-
-		install(createStack(scmManagerMock))
-
-		def actualYaml = parseActualYaml()
-		assertThat(actualYaml['prometheus']['prometheusSpec']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(actualYaml['prometheus']['prometheusSpec']['image']['repository']).isEqualTo('prometheus/prometheus')
-		assertThat(actualYaml['prometheus']['prometheusSpec']['image']['tag']).isEqualTo('v1')
-		assertThat(actualYaml['prometheusOperator']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(actualYaml['prometheusOperator']['image']['repository']).isEqualTo('prometheus-operator/prometheus-operator')
-		assertThat(actualYaml['prometheusOperator']['image']['tag']).isEqualTo('v2')
-		assertThat(actualYaml['prometheusOperator']['prometheusConfigReloader']['image']['registry']).isEqualTo('localhost:5000')
-		assertThat(actualYaml['prometheusOperator']['prometheusConfigReloader']['image']['repository']).isEqualTo('prometheus-operator/prometheus-config-reloader')
-		assertThat(actualYaml['prometheusOperator']['prometheusConfigReloader']['image']['tag']).isEqualTo('v3')
-	}
-
-	@Test
-	void 'deploys image pull secrets for proxy registry'() {
-		config.registry.createImagePullSecrets = true
-		config.registry.proxyUrl = 'proxy-url'
-		config.registry.proxyUsername = 'proxy-user'
-		config.registry.proxyPassword = 'proxy-pw'
-
-		install(createStack(scmManagerMock))
-
-		assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
-	}
-
-	@Test
-	void 'helm release is installed'() {
-		install(createStack(scmManagerMock))
-
-		verify(deployer).deployFeature('https://prom',
-			'monitoring',
-			'kube-prometheus-stack',
-			'19.2.2',
-			'foo-monitoring',
-			'kube-prometheus-stack',
-			temporaryYamlFilePrometheus,
-			RepoType.HELM,
-			false,
-			deploymentContext,
-			repositoryWorkspace)
-
-		def yaml = parseActualYaml()
-		assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
-		assertThat(yaml['grafana']['adminPassword']).isEqualTo(123)
-
-		assertThat(yaml['prometheusOperator'] as Map).doesNotContainKey('resources')
-		assertThat(yaml['grafana'] as Map).doesNotContainKey('resources')
-		assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
-		assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
-
-		assertThat(yaml['prometheusOperator']['securityContext']).isNull()
-		assertThat(yaml['grafana']['securityContext']).isNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNull()
-
-		assertThat(yaml['kubeApiServer']).isNull()
-
-		assertThat(yaml['prometheusOperator']['admissionWebhooks']['enabled']).isEqualTo(false)
-		assertThat(yaml['prometheusOperator']['tls']['enabled']).isEqualTo(false)
-		assertThat(yaml['prometheusOperator']['kubeletService']).isNull()
-		assertThat(yaml['prometheusOperator']['namespaces']).isNull()
-		assertThat(yaml).doesNotContainKey('global')
-
-		assertThat(yaml['grafana']['rbac']).isNull()
-		assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
-
-		assertThat(yaml['crds']).isNull()
-		assertThat(new File(clusterResourcesRepoDir, 'apps/monitoring/misc/rbac')).doesNotExist()
+		verify(helmToolDeployer).deploy(
+			any(HelmToolDeploymentRequest),
+			eq(deploymentContext),
+			eq(repositoryWorkspace)
+		)
 	}
 
 	@Test
 	void 'publishes monitoring resources through repository workspace'() {
-		install(createStack(scmManagerMock))
+		install()
 
-		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update monitoring GitOps resources')
+		verify(repositoryWorkspace)
+			.commitAndPushClusterResourcesChanges(
+				'Update monitoring GitOps resources'
+			)
 	}
 
-	@Test
-	void 'Skips CRDs'() {
-		config.application.skipCrds = true
+	private HelmToolDeploymentRequest installAndCaptureRequest() {
+		install()
 
-		install(createStack(scmManagerMock))
+		ArgumentCaptor<HelmToolDeploymentRequest> captor =
+			ArgumentCaptor.forClass(
+				HelmToolDeploymentRequest
+			)
 
-		assertThat(parseActualYaml()['crds']['enabled']).isEqualTo(false)
+		verify(helmToolDeployer).deploy(
+			captor.capture(),
+			eq(deploymentContext),
+			eq(repositoryWorkspace)
+		)
+
+		return captor.value
 	}
 
-	@Test
-	void 'Sets pod resource limits and requests'() {
-		config.application.podResources = true
+	private boolean install() {
+		createWorkspace()
 
-		install(createStack(scmManagerMock))
+		deploymentContext =
+			new ContextBuilder(config).build()
 
-		def yaml = parseActualYaml()
-		assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
-		assertThat(yaml['prometheusOperator']['prometheusConfigReloader']['resources'] as Map).containsKeys('limits', 'requests')
-		assertThat(yaml['grafana']['resources'] as Map).containsKeys('limits', 'requests')
-		assertThat(yaml['grafana']['sidecar']['resources'] as Map).containsKeys('limits', 'requests')
-		assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map).containsKeys('limits', 'requests')
-	}
-
-	@Test
-	void 'works with openshift'() {
-		config.application.openshift = true
-		when(k8sClient.getAnnotation('namespace', 'foo-monitoring', 'openshift.io/sa.scc.uid-range'))
-			.thenReturn('1000920000/10000')
-		install(createStack(scmManagerMock))
-
-		def yaml = parseActualYaml()
-		assertThat(yaml['prometheusOperator']['securityContext']).isNotNull()
-		assertThat(yaml['prometheusOperator']['securityContext']['fsGroup']).isNull()
-		assertThat(yaml['prometheusOperator']['securityContext']['runAsGroup']).isNull()
-		assertThat(yaml['prometheusOperator']['securityContext']['runAsUser']).isNull()
-
-		assertThat(yaml['grafana']['securityContext']).isNotNull()
-		assertThat(yaml['grafana']['securityContext']['fsGroup']).isEqualTo(1000920000)
-		assertThat(yaml['grafana']['securityContext']['runAsGroup']).isEqualTo(1000920000)
-		assertThat(yaml['grafana']['securityContext']['runAsUser']).isEqualTo(1000920000)
-
-		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNotNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['fsGroup']).isNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['runAsGroup']).isNull()
-		assertThat(yaml['prometheus']['prometheusSpec']['runAsUser']).isNull()
-	}
-
-	@Test
-	void 'works with namespaceIsolation'() {
-		config.application.namespaceIsolation = true
-
-		def prometheusStack = createStack(scmManagerMock)
-		install(prometheusStack)
-
-		def yaml = parseActualYaml()
-		assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
-
-		for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-			def rbacYaml = new File("$clusterResourcesRepoDir/apps/monitoring/misc/rbac/${namespace}.yaml")
-			assertThat(rbacYaml.text).contains("namespace: ${namespace}")
-			assertThat(rbacYaml.text).contains('    namespace: foo-monitoring')
-		}
-
-		assertThat(yaml['kubeApiServer']['enabled']).isEqualTo(false)
-
-		assertThat(yaml['prometheusOperator']['kubeletService']['enabled']).isEqualTo(false)
-		assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
-		assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(config.application.namespaces.getActiveNamespaces())
-
-		assertThat(yaml['grafana']['rbac']['create']).isEqualTo(false)
-		assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(config.application.namespaces.getActiveNamespaces().join(','))
-	}
-
-	@Test
-	void 'network policies are created for prometheus'() {
-		config.application.netpols = true
-		def prometheusStack = createStack(scmManagerMock)
-		install(prometheusStack)
-
-		for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-			def netPolsYaml = new File("$clusterResourcesRepoDir/apps/monitoring/misc/netpols/${namespace}.yaml")
-			assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
-		}
-	}
-
-	@Test
-	void 'helm releases are installed in air-gapped mode'() {
-		config.application.mirrorRepos = true
-		when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
-
-		Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-		config.application.localHelmChartFolder = rootChartsFolder.toString()
-
-		Path prometheusSourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
-		Files.createDirectories(prometheusSourceChart)
-
-		Map prometheusChartYaml = [version: '1.2.3']
-		fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
-
-		scmManagerMock.inClusterBase = new URI('http://scmm.foo-scm-manager.svc.cluster.local/scm')
-		install(createStack(scmManagerMock))
-
-		def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
-		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-		assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
-		assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
-		assertThat(helmConfig.value.version).isEqualTo('19.2.2')
-
-		verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-			'monitoring',
-			'.',
-			'1.2.3',
-			'foo-monitoring',
-			'kube-prometheus-stack',
-			temporaryYamlFilePrometheus,
-			RepoType.GIT,
-			false,
+		return createMonitoring().execute(
 			deploymentContext,
-			repositoryWorkspace)
+			repositoryWorkspace
+		)
 	}
 
-	@Test
-	void 'Merges additional helm values merged with default values'() {
-		config.features.monitoring.helm.values = [key       : [some: 'thing',
-		                                                       one : 1],
-		                                          prometheus: [prometheusSpec: [scrapeConfigSelectorNilUsesHelmValues: null]]]
-
-		install(createStack(scmManagerMock))
-		def actual = parseActualYaml()
-
-		assertThat(actual['key']['some']).isEqualTo('thing')
-		assertThat(actual['key']['one']).isEqualTo(1)
-		assertThat(actual['prometheus']['prometheusSpec']['scrapeConfigSelectorNilUsesHelmValues']).isEqualTo(null)
+	private Monitoring createMonitoring() {
+		return new Monitoring(
+			helmToolDeployer,
+			fileSystemUtils,
+			k8sClient,
+			gitHandler,
+			imagePullSecretCreator
+		)
 	}
 
-	@Test
-	void 'ServiceMonitor selectors'() {
-		config.application.namePrefix = 'test1-'
-		config.features.argocd.active = true
-		config.features.secrets.active = true
-		config.features.ingress.active = false
-		LinkedHashSet<String> namespaceList = ['test1-argocd',
-		                                       'test1-monitoring',
-		                                       'test1-example-apps-staging',
-		                                       'test1-example-apps-production',
-		                                       'test1-secrets']
-		config.application.namespaces.dedicatedNamespaces = namespaceList
-		install(createStack(scmManagerMock))
-		def actual = parseActualYaml()
+	private void createWorkspace() {
+		TestGitRepoFactory repositoryFactory =
+			new TestGitRepoFactory(
+				config,
+				fileSystemUtils
+			) {
+				@Override
+				GitRepo create(
+					String repositoryTarget,
+					GitProvider provider
+				) {
+					GitRepo repository =
+						super.create(
+							repositoryTarget,
+							scmManagerMock
+						)
 
-		assertThat(actual['prometheus']['prometheusSpec']['serviceMonitorNamespaceSelector']).isEqualTo(new YamlSlurper().parseText('''
-matchExpressions:
-  - key: kubernetes.io/metadata.name
-    operator: In
-    values:
-      - test1-argocd
-      - test1-monitoring
-      - test1-example-apps-staging
-      - test1-example-apps-production
-      - test1-secrets
-'''))
-	}
+					clusterResourcesRepoDir =
+						new File(
+							repository
+								.absoluteLocalRepoTmpDir
+						)
 
-	private Monitoring createStack(ScmManagerProviderMock scmManagerMock) {
-		when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
+					createDashboardFiles(
+						clusterResourcesRepoDir
+					)
 
-		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
-			@Override
-			GitRepo create(String repoTarget, GitProvider scm) {
-				def repo = super.create(repoTarget, scmManagerMock)
-				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
-				def dashboardDir = new File(clusterResourcesRepoDir, 'apps/monitoring/misc/dashboard')
-				dashboardDir.mkdirs()
-
-				new File(dashboardDir, 'traefik-dashboard.yaml').text = 'dummy'
-				new File(dashboardDir, 'traefik-dashboard-requests-handling.yaml').text = 'dummy'
-				new File(dashboardDir, 'jenkins-dashboard.yaml').text = 'dummy'
-				new File(dashboardDir, 'scmm-dashboard.yaml').text = 'dummy'
-
-				return repo
+					return repository
+				}
 			}
-		}
 
-		GitRepo clusterResourcesRepo = repoProvider.create('argocd/cluster-resources',
-			scmManagerMock)
+		GitRepo clusterResourcesRepository =
+			repositoryFactory.create(
+				'argocd/cluster-resources',
+				scmManagerMock
+			)
 
-		repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
-		doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
+		repositoryWorkspace =
+			spy(
+				new RepositoryWorkspace(
+					clusterResourcesRepository
+				)
+			)
 
-		return new Monitoring(new FileSystemUtils() {
-			@Override
-			Path writeTempFile(Map mapValues) {
-				def ret = super.writeTempFile(mapValues)
-				temporaryYamlFilePrometheus = Path.of(ret.toString().replace('.ftl', ''))
-				return ret
-			}
-		}, deployer, k8sClient, airGappedUtils, gitHandler, imagePullSecretCreator)
+		doNothing()
+			.when(repositoryWorkspace)
+			.commitAndPushClusterResourcesChanges(
+				anyString()
+			)
 	}
 
-	private boolean install(Monitoring monitoring) {
-		deploymentContext = new ContextBuilder(config).build()
-		return monitoring.execute(deploymentContext, repositoryWorkspace)
+	private static void createDashboardFiles(
+		File repositoryDirectory
+	) {
+		File dashboardDirectory =
+			new File(
+				repositoryDirectory,
+				'apps/monitoring/misc/dashboard'
+			)
+
+		dashboardDirectory.mkdirs()
+
+		new File(
+			dashboardDirectory,
+			'traefik-dashboard.yaml'
+		).text = 'dummy'
+
+		new File(
+			dashboardDirectory,
+			'traefik-dashboard-requests-handling.yaml'
+		).text = 'dummy'
+
+		new File(
+			dashboardDirectory,
+			'jenkins-dashboard.yaml'
+		).text = 'dummy'
+
+		new File(
+			dashboardDirectory,
+			'scmm-dashboard.yaml'
+		).text = 'dummy'
 	}
 
-	private Map parseActualYaml() {
-		def ys = new YamlSlurper()
-		return ys.parse(temporaryYamlFilePrometheus) as Map
+	private static Config createConfig() {
+		return Config.fromMap(
+			registry: [
+				internal              : true,
+				createImagePullSecrets: false
+			],
+			scm: [
+				scmManager: [
+					internal: true
+				]
+			],
+			jenkins: [
+				internal       : true,
+				active         : true,
+				metricsUsername: 'metrics',
+				metricsPassword: 'metrics'
+			],
+			application: [
+				username          : 'abc',
+				password          : '123',
+				openshift         : false,
+				namePrefix        : 'foo-',
+				mirrorRepos       : false,
+				podResources      : false,
+				skipCrds          : false,
+				namespaceIsolation: false,
+				gitName           : 'Cloudogu',
+				gitEmail          :
+					'hello@cloudogu.com',
+				netpols           : false,
+				namespaces        : [
+					dedicatedNamespaces: [
+						'test1-default',
+						'test1-argocd',
+						'test1-monitoring',
+						'test1-secrets'
+					] as LinkedHashSet,
+					tenantNamespaces   : [
+						'test1-example-apps-staging',
+						'test1-example-apps-production'
+					] as LinkedHashSet
+				]
+			],
+			features: [
+				argocd: [
+					active: true
+				],
+				monitoring: [
+					active          : true,
+					grafanaUrl      : '',
+					grafanaEmailFrom:
+						'grafana@example.org',
+					grafanaEmailTo  :
+						'infra@example.org',
+					helm            : [
+						chart  :
+							'kube-prometheus-stack',
+						repoURL:
+							'https://prom',
+						version:
+							'19.2.2'
+					]
+				],
+				secrets: [
+					active: true
+				],
+				ingress: [
+					active: true
+				]
+			]
+		)
 	}
 }

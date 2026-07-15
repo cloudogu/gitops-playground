@@ -37,34 +37,41 @@ class HelmStrategyTest {
 			null as RepositoryWorkspace)
 
 		verify(helmClient).addRepo('repoName', 'repoURL')
-		verify(helmClient).upgrade('releaseName', 'repoName/chart', [namespace: 'foo-namespace',
-		                                                             version  : 'version',
-		                                                             values   : valuesYaml.toString()])
+		verify(helmClient).upgrade('releaseName',
+			'repoName/chart',
+			[namespace: 'foo-namespace',
+			 version  : 'version',
+			 values   : valuesYaml.toString()])
 	}
 
 	@Test
-	void 'Fails to deploy from git'() {
-		DeploymentContext context = new ContextBuilder(createConfig()).build()
+	void 'fails to deploy from git'() {
+		DeploymentContext context =
+			new ContextBuilder(createConfig()).build()
 
-		def exception = shouldFail(RuntimeException) {
-			createStrategy().deployFeature('http://repoURL',
-				'repoName',
-				'chart',
-				'version',
-				'namespace',
-				'releaseName',
-				Path.of('values.yaml'),
-				DeploymentStrategy.RepoType.GIT,
-				context,
-				null as RepositoryWorkspace)
-		}
+		Throwable exception =
+			shouldFail(RuntimeException) {
+				createStrategy().deployFeature('http://repoURL',
+					'repoName',
+					'chart',
+					'version',
+					'namespace',
+					'releaseName',
+					Path.of('values.yaml'),
+					DeploymentStrategy.RepoType.GIT,
+					context,
+					null as RepositoryWorkspace)
+			}
 
-		assertThat(exception.message).isEqualTo('Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n' +
-			'Repo URL: http://repoURL')
+		assertThat(exception.message)
+			.startsWith('Unable to deploy Helm chart via Helm CLI from Git URL, ' + 'because Helm does not support this out of the box.')
+
+		assertThat(exception.message)
+			.endsWith('Repo URL: http://repoURL')
 	}
 
 	protected HelmStrategy createStrategy() {
-		return new HelmStrategy(createConfig(), helmClient)
+		return new HelmStrategy(helmClient)
 	}
 
 	private Config createConfig() {
