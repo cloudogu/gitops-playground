@@ -7,9 +7,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope
 import com.cloudogu.gitops.infrastructure.git.providers.Scope
 
 class GitlabMock implements GitProvider {
-	URI base = new URI("https://example.com/group")
+	URI base = new URI('https://example.com/group')
 	// from config.scm.gitlab.url
-	String namePrefix = ""
+	String namePrefix = ''
 	// prefix if you use tenant mode
 
 	final List<String> createdRepos = []
@@ -51,7 +51,7 @@ class GitlabMock implements GitProvider {
 
 	@Override
 	Credentials getCredentials() {
-		return new Credentials("gitops", "gitops")
+		return new Credentials('gitops', "gitops")
 	}
 
 	@Override
@@ -71,7 +71,7 @@ class GitlabMock implements GitProvider {
 
 	@Override
 	String getGitOpsUsername() {
-		return "gitops"
+		return 'gitops'
 	}
 
 }

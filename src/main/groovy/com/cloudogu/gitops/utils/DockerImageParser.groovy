@@ -13,7 +13,7 @@ class DockerImageParser {
 		}
 
 		String getRegistryAndRepositoryAsString() {
-			if (registry == "") {
+			if (registry == '') {
 				return repository
 			}
 
@@ -39,7 +39,7 @@ class DockerImageParser {
 	}
 
 	static Image parse(String image) {
-		if (!image.contains(":")) {
+		if (!image.contains(':')) {
 			// Most helm charts expect an explicit image tag, otherwise they use the version set by the app.
 			// This will likely be unexpected so force using a tag
 			throw new RuntimeException("Cannot set image '$image' due to missing tag. Must be the format '\$repository:\$tag'")
@@ -52,18 +52,18 @@ class DockerImageParser {
 		def imageWithoutTag = tuple.v1
 		def tag = tuple.v2
 
-		def parts = imageWithoutTag.split("/")
-		def repository = parts.takeRight(2).join("/")
+		def parts = imageWithoutTag.split('/')
+		def repository = parts.takeRight(2).join('/')
 		parts = parts.dropRight(2)
-		def registry = parts.join("/")
+		def registry = parts.join('/')
 
 		return new Image(registry, repository, tag)
 	}
 
 	private static Tuple2<String, String> splitTag(String image) {
-		String[] imageParts = image.split(":")
+		String[] imageParts = image.split(':')
 		String tag = imageParts.last()
-		def imageWithoutTag = imageParts.dropRight(1).join(":")
+		def imageWithoutTag = imageParts.dropRight(1).join(':')
 
 		return new Tuple2(imageWithoutTag, tag)
 	}

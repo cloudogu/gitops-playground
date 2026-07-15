@@ -44,7 +44,7 @@ class HttpClientFactory {
 	}
 
 	@Singleton
-	@Named("jenkins")
+	@Named('jenkins')
 	OkHttpClient okHttpClientJenkins(Config config) {
 		def builder = new OkHttpClient.Builder()
 			.cookieJar(new JavaNetCookieJar(new CookieManager()))
@@ -60,7 +60,7 @@ class HttpClientFactory {
 	}
 
 	static HttpLoggingInterceptor createLoggingInterceptor() {
-		def logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")
+		def logger = LoggerFactory.getLogger('com.cloudogu.gitops.HttpClient')
 
 		def ret = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
 			@Override
@@ -70,7 +70,7 @@ class HttpClientFactory {
 		})
 
 		ret.setLevel(HttpLoggingInterceptor.Level.HEADERS)
-		ret.redactHeader("Authorization")
+		ret.redactHeader('Authorization')
 
 		return ret
 	}

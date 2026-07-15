@@ -287,14 +287,14 @@ class RbacDefinitionTest {
 	void 'fails if config is not set'() {
 		def ex = assertThrows(IllegalArgumentException) {
 			new RbacDefinition(Role.Variant.ARGOCD)
-				.withName("failtest")
-				.withNamespace("ns")
+				.withName('failtest')
+				.withNamespace('ns')
 				.withServiceAccountsFrom("ns", ["sa"])
 				.withRepo(repo)
 				.generate()
 		}
 
-		assertThat(ex.message).contains("Config must not be null")
+		assertThat(ex.message).contains('Config must not be null')
 	}
 
 }

@@ -19,7 +19,7 @@ class CommandExecutor {
 
 	Output execute(String[] command, boolean failOnError = true) {
 		Process proc = doExecute(command)
-		return getOutput(proc, command.join(" "), failOnError)
+		return getOutput(proc, command.join(' '), failOnError)
 	}
 
 	/**
@@ -76,12 +76,12 @@ class CommandExecutor {
 
 	protected Process doExecute(String command, List envp = null) {
 		log.trace("Executing command: '${command}'")
-		command.execute(envp, null)
+		return command.execute(envp, null)
 	}
 
 	protected Process doExecute(String[] command) {
 		log.trace("Executing command: '${command}'")
-		command.execute()
+		return command.execute()
 	}
 
 	protected Output getOutput(Process proc, String command, boolean failOnError = true) {

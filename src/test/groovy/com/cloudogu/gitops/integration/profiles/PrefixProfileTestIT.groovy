@@ -16,7 +16,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  * This tests can only be successfull, if one of theses profiles used.
  * * To run locally: add -Dmicronaut.environments=full-prefix to your execute configuration*/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-prefix")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'full-prefix')
 class PrefixProfileTestIT extends ProfileTestSetup {
 	// is used for pre-condition
 	static String exampleStagingNs = 'my-prefix-example-apps-staging'
@@ -33,10 +33,10 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 
 	@BeforeAll
 	static void labelTest() {
-		log.info "###### Integration test for Prefix ######"
+		log.info '###### Integration test for Prefix ######'
 
 		try {
-			TestK8sHelper.waitForAllPodsRunningInNamespace(certManagerNs, "", 40, TimeUnit.MINUTES)
+			TestK8sHelper.waitForAllPodsRunningInNamespace(certManagerNs, '', 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)

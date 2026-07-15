@@ -17,7 +17,7 @@ class UserManager {
 	void createUser(String username, String password) {
 		log.debug("Add user $username to jenkins")
 
-		@Language("Groovy")
+		@Language('Groovy')
 		def script = """
             def realm = Jenkins.getInstance().getSecurityRealm()
             def user = realm.createAccount('${escapeString(username)}', '${escapeString(password)}')
@@ -34,13 +34,13 @@ class UserManager {
 
 	void grantPermission(String username, Permissions permission) {
 		if (!isUsingMatrixBasedPermissions()) {
-			log.debug("Is not using matrix based permission. Does not need to add permission.")
+			log.debug('Is not using matrix based permission. Does not need to add permission.')
 			return
 		}
 
 		log.debug("Grant user $username permission $permission")
 
-		@Language("Groovy")
+		@Language('Groovy')
 		def script = """
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType
@@ -53,45 +53,45 @@ class UserManager {
         """
 		def result = apiClient.runScript(script)
 
-		if (result !in ["true", "false"]) {
+		if (result !in ['true', 'false']) {
 			// Both are valid return values for Set.add(). true == was already in set, false == was not already in set
 			throw new RuntimeException("Failed to add permission $permission to $username: $result")
 		}
 	}
 
 	boolean isUsingMatrixBasedPermissions() {
-		def result = apiClient.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")
+		def result = apiClient.runScript('print(Jenkins.getInstance().getAuthorizationStrategy().class)')
 
-		if (!result.startsWith("class ")) {
+		if (!result.startsWith('class ')) {
 			throw new RuntimeException("Error when trying to determine authorization strategy: $result")
 		}
 
-		return result == "class hudson.security.GlobalMatrixAuthorizationStrategy" || result == "class hudson.security.ProjectMatrixAuthorizationStrategy"
+		return result == 'class hudson.security.GlobalMatrixAuthorizationStrategy' || result == 'class hudson.security.ProjectMatrixAuthorizationStrategy'
 	}
 
 	boolean isUsingSecurityRealmWithoutLocalUserCreation() {
-		def result = apiClient.runScript("print(Jenkins.getInstance().getSecurityRealm().class)")
+		def result = apiClient.runScript('print(Jenkins.getInstance().getSecurityRealm().class)')
 
-		if (!result.startsWith("class ")) {
+		if (!result.startsWith('class ')) {
 			throw new RuntimeException("Error when trying to determine security realm: $result")
 		}
 
-		return result in ["class org.jenkinsci.plugins.cas.CasSecurityRealm",
-		                  "class org.jenkinsci.plugins.oic.OicSecurityRealm",]
+		return result in ['class org.jenkinsci.plugins.cas.CasSecurityRealm',
+		                  'class org.jenkinsci.plugins.oic.OicSecurityRealm',]
 	}
 
 	private String escapeString(String str) {
-		if (str.contains("\\")) {
+		if (str.contains('\\')) {
 			// We don't want get in trouble with escaping,
 			// e.g. `foo\'foo` => `foo\\'foo`. Now we would have a backslash followed by an unescaped quote.
-			throw new IllegalArgumentException("Backslashes within the escaped variables are forbidden.")
+			throw new IllegalArgumentException('Backslashes within the escaped variables are forbidden.')
 		}
 
 		return str.replace("'", "\\'")
 	}
 
 	enum Permissions {
-		METRICS_VIEW("jenkins.metrics.api.Metrics.VIEW")
+		METRICS_VIEW('jenkins.metrics.api.Metrics.VIEW')
 
 		private final String value
 

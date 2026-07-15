@@ -30,8 +30,8 @@ class GitlabProvider implements GitProvider {
 		this.context = context
 		this.gitlabConfig = gitlabConfig
 
-		String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url").trim()
-		String pat = Objects.requireNonNull(gitlabConfig.getCredentials()?.password, "Missing gitlab token").trim()
+		String url = Objects.requireNonNull(gitlabConfig.getUrl(), 'Missing gitlab url in config.scm.gitlab.url').trim()
+		String pat = Objects.requireNonNull(gitlabConfig.getCredentials()?.password, 'Missing gitlab token').trim()
 		this.api = new GitLabApi(url, pat)
 		this.api.enableRequestResponseLogging(Level.ALL)
 	}
@@ -62,7 +62,7 @@ class GitlabProvider implements GitProvider {
 		def project = new Project()
 			.withName(repoName)
 			.withPath(projectPath)
-			.withDescription(description ?: "")
+			.withDescription(description ?: '')
 			.withIssuesEnabled(false)
 			.withMergeRequestsEnabled(false)
 			.withWikiEnabled(false)
@@ -103,7 +103,7 @@ class GitlabProvider implements GitProvider {
 	@Override
 	String repoPrefix() {
 		String base = gitlabConfig.url.strip()
-		def prefix = (config.application.namePrefix ?: "").strip()
+		def prefix = (config.application.namePrefix ?: '').strip()
 		return "${base}/${parentFullPath()}/${prefix}"
 
 	}
@@ -142,7 +142,7 @@ class GitlabProvider implements GitProvider {
 
 	private Group parentGroup() {
 		String raw = gitlabConfig?.parentGroupId?.trim()
-		if (!raw) throw new IllegalArgumentException("--gitlab-group-id is required")
+		if (!raw) throw new IllegalArgumentException('--gitlab-group-id is required')
 
 		boolean isNumeric = raw ==~ /\d+/
 
@@ -155,7 +155,7 @@ class GitlabProvider implements GitProvider {
 	}
 
 	private String parentFullPath() {
-		parentGroup().fullPath
+		return parentGroup().fullPath
 	}
 
 	/** Ensure a single-level subgroup exists under 'parent'; return its namespace (group) ID. */
@@ -168,7 +168,11 @@ class GitlabProvider implements GitProvider {
 		// 2) Guard against project/subgroup name collision in the same parent
 		Project collision = findDirectProjectByPath(parent.id as Long, segPath)
 		if (collision != null) {
-			throw new IllegalStateException("Cannot create subgroup '${segPath}' under '${parent.fullPath}': " + "a project with that path already exists at '${parent.fullPath}/${segPath}'. " +
+			throw new IllegalStateException('Cannot create subgroup \'' + segPath +
+				'\' under \'' +
+				parent.fullPath +
+				'\': ' +
+				"a project with that path already exists at '${parent.fullPath}/${segPath}'. " +
 				"Rename/transfer the project first or choose a different subgroup name.")
 		}
 
@@ -180,7 +184,7 @@ class GitlabProvider implements GitProvider {
 
 		try {
 			Group created = api.groupApi.addGroup(toCreate)
-			log.info("Created group {}", created.fullPath)
+			log.info('Created group {}', created.fullPath)
 			return created.id as Long
 		} catch (GitLabApiException e) {
 			// If someone created it in parallel, treat 400/409 as "exists" and re-fetch
@@ -189,7 +193,7 @@ class GitlabProvider implements GitProvider {
 				if (retry != null) return retry.id as Long
 			}
 			def ve = e.hasValidationErrors() ? e.getValidationErrors() : null
-			log.error("addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})",
+			log.error('addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})',
 				parent.fullPath, segPath, e.httpStatus, e.getMessage(), ve)
 			throw e
 		}
@@ -226,15 +230,15 @@ class GitlabProvider implements GitProvider {
 
 	private String resolveFullPath(String repoTarget) {
 		if (!gitlabConfig.parentGroupId) {
-			throw new IllegalStateException("gitlab.parentGroup is not set")
+			throw new IllegalStateException('gitlab.parentGroup is not set')
 		}
 		return "${gitlabConfig.parentGroupId}/${repoTarget}"
 	}
 
 	private static Visibility toVisibility(String s) {
-		switch ((s ?: "private").toLowerCase()) {
-			case "public": return Visibility.PUBLIC
-			case "internal": return Visibility.INTERNAL
+		switch ((s ?: 'private').toLowerCase()) {
+			case 'public': return Visibility.PUBLIC
+			case 'internal': return Visibility.INTERNAL
 			default: return Visibility.PRIVATE
 		}
 	}

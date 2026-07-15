@@ -31,14 +31,14 @@ class ScmmDestructionHandler implements DestructionHandler {
 
 	@Override
 	void destroy() {
-		deleteUser("gitops")
-		deleteRepository("argocd", "argocd")
-		deleteRepository("argocd", "cluster-resources")
-		deleteRepository("argocd", "example-apps")
-		deleteRepository("3rd-party-dependencies", "ces-build-lib", false)
-		deleteRepository("3rd-party-dependencies", "gitops-build-lib", false)
-		deleteRepository("3rd-party-dependencies", "spring-boot-helm-chart", false)
-		deleteRepository("3rd-party-dependencies", "spring-boot-helm-chart-with-dependency", false)
+		deleteUser('gitops')
+		deleteRepository('argocd', "argocd")
+		deleteRepository('argocd', 'cluster-resources')
+		deleteRepository('argocd', 'example-apps')
+		deleteRepository('3rd-party-dependencies', 'ces-build-lib', false)
+		deleteRepository('3rd-party-dependencies', 'gitops-build-lib', false)
+		deleteRepository('3rd-party-dependencies', 'spring-boot-helm-chart', false)
+		deleteRepository('3rd-party-dependencies', 'spring-boot-helm-chart-with-dependency', false)
 	}
 
 	private void deleteRepository(String namespace, String repository, boolean prefixNamespace = true) {
@@ -58,7 +58,7 @@ class ScmmDestructionHandler implements DestructionHandler {
 		}
 	}
 
-	private Config getConfig() { config }
+	private Config getConfig() { return config }
 
 	private ScmManagerApiClient getScmmApiClient() {
 		def urls = new ScmManagerUrlResolver(contextBuilder.build(),

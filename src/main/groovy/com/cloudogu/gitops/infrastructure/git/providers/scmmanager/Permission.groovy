@@ -15,7 +15,7 @@ class Permission {
 
 	@Override
 	String toString() {
-		"Permission{name='$name', role=$role, verbs=$verbs, groupPermission=$groupPermission}"
+		return "Permission{name='$name', role=$role, verbs=$verbs, groupPermission=$groupPermission}"
 	}
 
 	enum Role {

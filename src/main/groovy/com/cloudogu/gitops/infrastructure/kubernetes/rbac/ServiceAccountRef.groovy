@@ -6,10 +6,10 @@ class ServiceAccountRef {
 
 	ServiceAccountRef(String name, String namespace) {
 		if (!name?.trim()) {
-			throw new IllegalArgumentException("ServiceAccount name must not be blank")
+			throw new IllegalArgumentException('ServiceAccount name must not be blank')
 		}
 		if (!namespace?.trim()) {
-			throw new IllegalArgumentException("ServiceAccount namespace must not be blank")
+			throw new IllegalArgumentException('ServiceAccount namespace must not be blank')
 		}
 		this.name = name
 		this.namespace = namespace
@@ -17,7 +17,7 @@ class ServiceAccountRef {
 
 	static List<ServiceAccountRef> fromNames(String namespace, List<String> names) {
 		if (!namespace?.trim()) {
-			throw new IllegalArgumentException("Namespace must not be blank for service accounts")
+			throw new IllegalArgumentException('Namespace must not be blank for service accounts')
 		}
 
 		return names

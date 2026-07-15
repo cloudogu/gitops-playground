@@ -13,7 +13,7 @@ class GitopsPlaygroundCliMainTest {
 	void 'application returns exit code 0 on success'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
 		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
+			gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand)
 		})
 
 		assertThat(status).isZero()
@@ -23,7 +23,7 @@ class GitopsPlaygroundCliMainTest {
 	void 'application returns exit code 1 on exception'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
 		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
+			gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand)
 		})
 
 		assertThat(status).isNotZero()
@@ -43,7 +43,7 @@ class GitopsPlaygroundCliMainTest {
 	static class ThrowingCommand extends MockedCommand {
 		@Override
 		ReturnCode run(String[] args) {
-			throw new RuntimeException("mock")
+			throw new RuntimeException('mock')
 		}
 	}
 

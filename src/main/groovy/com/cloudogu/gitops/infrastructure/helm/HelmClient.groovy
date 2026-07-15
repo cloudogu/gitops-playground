@@ -16,24 +16,24 @@ class HelmClient {
 	}
 
 	String addRepo(String repoName, String url) {
-		helm(['repo', 'add', repoName, url])
+		return helm(['repo', 'add', repoName, url])
 	}
 
 	String dependencyBuild(String path) {
-		helm(['dependency', 'build', path])
+		return helm(['dependency', 'build', path])
 	}
 
 	String upgrade(String release, String chartOrPath, Map args = [:]) {
-		helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
+		return helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
 	}
 
 	String template(String release, String chartOrPath, Map args = [:]) {
-		helm(['template', release, chartOrPath], args)
+		return helm(['template', release, chartOrPath], args)
 	}
 
 	String uninstall(String release, String namespace) {
-		String[] command = ["helm", "uninstall", release, '--namespace', namespace]
-		commandExecutor.execute(command).stdOut
+		String[] command = ['helm', 'uninstall', release, '--namespace', namespace]
+		return commandExecutor.execute(command).stdOut
 	}
 
 	private String helm(List<String> verbAndParams, Map args = [:]) {
@@ -47,6 +47,6 @@ class HelmClient {
 		}
 
 		log.trace("Executing helm command: ${command.join(' ')}")
-		commandExecutor.execute(command as String[]).stdOut
+		return commandExecutor.execute(command as String[]).stdOut
 	}
 }

@@ -14,12 +14,12 @@ class Destroyer {
 	}
 
 	void destroy() {
-		log.info("Start destroying")
+		log.info('Start destroying')
 		for (def handler in destructionHandlers) {
 			log.info("Running handler $handler.class.simpleName")
 			handler.destroy()
 		}
-		log.info("Finished destroying")
+		log.info('Finished destroying')
 	}
 
 	List<DestructionHandler> getDestructionHandlers() {

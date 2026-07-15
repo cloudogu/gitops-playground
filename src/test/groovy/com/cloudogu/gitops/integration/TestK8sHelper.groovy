@@ -50,20 +50,20 @@ class TestK8sHelper {
 			}
 
 			// group by namespace
-			def podsByNs = pods.groupBy { it.metadata?.namespace ?: "<no-namespace>" }
+			def podsByNs = pods.groupBy { it.metadata?.namespace ?: '<no-namespace>' }
 
 			podsByNs.each { ns, nsPods ->
 				sb.append("\n=== Namespace: ${ns} (${nsPods.size()}) ===\n")
 				nsPods.each { pod ->
 					def name = pod.metadata?.name
 					def phase = pod.status?.phase
-					def node = pod.spec?.nodeName ?: "-"
-					def startTime = pod.status?.startTime ?: "-"
+					def node = pod.spec?.nodeName ?: '-'
+					def startTime = pod.status?.startTime ?: '-'
 					def restarts = (pod.status?.containerStatuses ?: []).sum { it?.restartCount ?: 0 } ?: 0
 
-					sb.append(String.format("  %-60s  phase=%-10s restarts=%-3s node=%-25s start=%s",
+					sb.append(String.format('  %-60s  phase=%-10s restarts=%-3s node=%-25s start=%s',
 						name, phase, restarts, node, startTime))
-					sb.append("\n")
+					sb.append('\n')
 				}
 			}
 		}
@@ -114,11 +114,11 @@ class TestK8sHelper {
 				.until(() -> finished.getCount() == 0)
 
 		} catch (Exception e) {
-			throw new RuntimeException("Exec failed/timeout for pod " + ns + "/" + pod, e)
+			throw new RuntimeException('Exec failed/timeout for pod ' + ns + '/' + pod, e)
 		}
 
 		if (failure.get() != null) {
-			throw new RuntimeException("Exec failure", failure.get())
+			throw new RuntimeException('Exec failure', failure.get())
 		}
 
 		String stderr = err.toString(StandardCharsets.UTF_8)
@@ -327,12 +327,12 @@ class TestK8sHelper {
 	private static String describePods(Collection<Pod> pods) {
 		return pods.collect { Pod pod ->
 			String podName = pod.getMetadata().getName()
-			String phase = pod.getStatus()?.getPhase() ?: "<unknown>"
+			String phase = pod.getStatus()?.getPhase() ?: '<unknown>'
 			List<ContainerStatus> containerStatuses = pod.getStatus()?.getContainerStatuses()
 			String readyContainers = containerStatuses == null ? '0/0' :
 			                         "${containerStatuses.count { ContainerStatus status -> Boolean.TRUE == status.getReady() }}/${containerStatuses.size()}"
 			String details = podProblemDetails(pod)
-			"${podName}:${phase}:ready=${readyContainers}${details ? ":${details}" : ""}"
+			(podName + ':' + phase + ':ready=' + readyContainers + details ? ":${details}" : "")
 		}.join(', ')
 	}
 

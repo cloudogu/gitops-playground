@@ -6,7 +6,7 @@ import groovy.util.logging.Slf4j
 class GitopsPlaygroundCliMain {
 
 	static void main(String[] args) throws Exception {
-		new GitopsPlaygroundCliMain().exec(args, GitopsPlaygroundCli.class)
+		new GitopsPlaygroundCliMain().exec(args, GitopsPlaygroundCli)
 	}
 
 	@SuppressWarnings('GrMethodMayBeStatic')

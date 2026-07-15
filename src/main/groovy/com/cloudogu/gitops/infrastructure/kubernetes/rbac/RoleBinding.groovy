@@ -9,21 +9,21 @@ class RoleBinding {
 	List<ServiceAccountRef> serviceAccounts
 
 	RoleBinding(String name, String namespace, String roleName, List<ServiceAccountRef> serviceAccounts) {
-		if (!name?.trim()) throw new IllegalArgumentException("RoleBinding name must not be blank")
-		if (!namespace?.trim()) throw new IllegalArgumentException("RoleBinding namespace must not be blank")
-		if (!roleName?.trim()) throw new IllegalArgumentException("Role name must not be blank")
-		if (!serviceAccounts || serviceAccounts.isEmpty()) throw new IllegalArgumentException("At least one service account is required")
+		if (!name?.trim()) throw new IllegalArgumentException('RoleBinding name must not be blank')
+		if (!namespace?.trim()) throw new IllegalArgumentException('RoleBinding namespace must not be blank')
+		if (!roleName?.trim()) throw new IllegalArgumentException('Role name must not be blank')
+		if (!serviceAccounts || serviceAccounts.isEmpty()) throw new IllegalArgumentException('At least one service account is required')
 
 		this.name = name
-		this.kind = "RoleBinding"
+		this.kind = 'RoleBinding'
 		this.namespace = namespace
 		this.roleName = roleName
-		this.roleKind = "Role"
+		this.roleKind = 'Role'
 		this.serviceAccounts = serviceAccounts
 
-		if (roleName == "cluster-admin") {
-			this.kind = "ClusterRoleBinding"
-			this.roleKind = "ClusterRole"
+		if (roleName == 'cluster-admin') {
+			this.kind = 'ClusterRoleBinding'
+			this.roleKind = 'ClusterRole'
 		}
 	}
 
@@ -37,7 +37,7 @@ class RoleBinding {
 	}
 
 	String getTemplatePath() {
-		return "templates/kubernetes/rbac/rolebinding.ftl.yaml"
+		return 'templates/kubernetes/rbac/rolebinding.ftl.yaml'
 	}
 
 	File getTemplateFile() {

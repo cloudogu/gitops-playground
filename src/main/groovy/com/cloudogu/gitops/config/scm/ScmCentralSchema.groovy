@@ -12,9 +12,9 @@ class ScmCentralSchema {
 
 	static class GitlabCentralConfig implements GitlabConfig {
 
-		public static final String CENTRAL_GITLAB_URL_DESCRIPTION = "URL for external Gitlab"
+		public static final String CENTRAL_GITLAB_URL_DESCRIPTION = 'URL for external Gitlab'
 		public static final String CENTRAL_GITLAB_USERNAME_DESCRIPTION = "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
-		public static final String CENTRAL_GITLAB_PASSWORD_DESCRIPTION = "Password for SCM Manager authentication"
+		public static final String CENTRAL_GITLAB_PASSWORD_DESCRIPTION = 'Password for SCM Manager authentication'
 		public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos"
 
 		// Only supports external Gitlab for now

@@ -86,8 +86,7 @@ class ArgoCDRepoSetup {
 		String tenantRoot = new File(repositoryWorkspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException('Dedicated Multi-Tenant mode requires separate local workspaces for ' +
-				'central cluster-resources and tenant bootstrap repositories. ' +
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires separate local workspaces for ' + 'central cluster-resources and tenant bootstrap repositories. ' +
 				"Both resolved to: ${clusterRoot}")
 		}
 	}
@@ -126,8 +125,7 @@ class ArgoCDRepoSetup {
 		}
 
 		if (context.isMultiTenant()) {
-			log.debug('Deleting unnecessary non dedicated instances folders from argocd repo: ' +
-				"applications=${layout.applicationsDir()}, " +
+			log.debug('Deleting unnecessary non dedicated instances folders from argocd repo: ' + "applications=${layout.applicationsDir()}, " +
 				"projects=${layout.projectsDir()}, " +
 				"tenant=${layout.multiTenantDir()}/tenant")
 

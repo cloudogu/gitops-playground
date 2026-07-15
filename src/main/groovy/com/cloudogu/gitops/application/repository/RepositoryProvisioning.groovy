@@ -178,7 +178,7 @@ class RepositoryProvisioning {
 		String tenantRoot = new File(workspace.tenantBootstrapRootDir()).canonicalPath
 
 		if (clusterRoot == tenantRoot) {
-			throw new IllegalStateException("Dedicated Multi-Tenant mode requires separate local workspaces for " + "central cluster-resources and tenant bootstrap repositories. Both resolved to: ${clusterRoot}")
+			throw new IllegalStateException('Dedicated Multi-Tenant mode requires separate local workspaces for ' + "central cluster-resources and tenant bootstrap repositories. Both resolved to: ${clusterRoot}")
 		}
 	}
 

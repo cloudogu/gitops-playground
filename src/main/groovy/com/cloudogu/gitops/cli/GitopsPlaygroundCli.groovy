@@ -47,7 +47,7 @@ class GitopsPlaygroundCli {
 	ReturnCode run(String[] args) {
 		setLogging(args)
 
-		log.debug("Reading initial CLI params")
+		log.debug('Reading initial CLI params')
 		def cliParams = new Config()
 		new CommandLine(cliParams).parseArgs(args)
 
@@ -138,20 +138,20 @@ class GitopsPlaygroundCli {
 
 	/** Can be used as a hook by tests */
 	protected ApplicationContext createApplicationContext() {
-		ApplicationContext.run()
+		return ApplicationContext.run()
 	}
 
 	private void setLogging(String[] args) {
-		Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
+		Logger logger = (Logger) LoggerFactory.getLogger('com.cloudogu.gitops')
 		if (args.contains('--trace') || args.contains('-x')) {
-			log.info("Setting loglevel to trace")
+			log.info('Setting loglevel to trace')
 			logger.setLevel(Level.TRACE)
 			// log levels can be set via picocli.trace sys env - defaults to 'WARN'
-			System.setProperty("picocli.trace", "DEBUG")
+			System.setProperty('picocli.trace', 'DEBUG')
 		} else if (args.contains('--debug') || args.contains('-d')) {
-			System.setProperty("picocli.trace", "INFO")
+			System.setProperty('picocli.trace', 'INFO')
 			logger.setLevel(Level.DEBUG)
-			log.info("Setting loglevel to debug")
+			log.info('Setting loglevel to debug')
 		} else {
 			setSimpleLogPattern()
 		}
@@ -170,8 +170,8 @@ class GitopsPlaygroundCli {
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder()
 		// Remove less relevant details from log pattern
 		encoder.setPattern(defaultPattern
-			.replaceAll(" \\S*%thread\\S* ", " ")
-			.replaceAll(" \\S*%logger\\S* ", " "))
+			.replaceAll(' \\S*%thread\\S* ', ' ')
+			.replaceAll(' \\S*%logger\\S* ', ' '))
 		encoder.setContext(loggerContext)
 		encoder.start()
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
@@ -212,7 +212,7 @@ class GitopsPlaygroundCli {
 		// DeepMerge with default Config values to keep the default values defined in Config.groovy
 		mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap())
 
-		log.debug("Writing CLI params into config")
+		log.debug('Writing CLI params into config')
 		Config mergedConfig = Config.fromMap(mergedConfigs)
 		new CommandLine(mergedConfig).parseArgs(args)
 
@@ -271,7 +271,7 @@ class GitopsPlaygroundCli {
 			String resourceName = "application-${profile}.yaml"
 			log.debug("Loading profile '${resourceName}' from classpath")
 
-			def inputStream = GitopsPlaygroundCli.class.getResourceAsStream("/${resourceName}")
+			def inputStream = GitopsPlaygroundCli.getResourceAsStream("/${resourceName}")
 			if (inputStream == null) {
 				throw new RuntimeException("Profile '${profile}' does not exist (resource '${resourceName}' not found).")
 			}

@@ -1,14 +1,16 @@
 package com.cloudogu.gitops.application.repository
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThatThrownBy
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
+
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThatThrownBy
-import static org.mockito.Mockito.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 class RepositoryWorkspaceTest {
 

@@ -11,16 +11,16 @@ class PrometheusConfigurator {
 	}
 
 	void enableAuthentication() {
-		def result = apiClient.runScript("""
+		def result = apiClient.runScript('''
             import org.jenkinsci.plugins.prometheus.config.*
             
             def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)
             config.setUseAuthenticatedEndpoint(true)
             
             print(config.useAuthenticatedEndpoint)
-        """)
+        ''')
 
-		if (result != "true") {
+		if (result != 'true') {
 			throw new RuntimeException("Cannot enable authentication for prometheus: $result")
 		}
 	}

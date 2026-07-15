@@ -22,12 +22,12 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  * * To run locally: add -Dmicronaut.environments=full to your execute configuration
  **/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-mandants')
 class MandantProfileTestIT extends ProfileTestSetup {
 
 	/**
 	 * Gets path to kubeconfig */
-	static final String RUNNING = "Running"
+	static final String RUNNING = 'Running'
 	static final String TENANT_POD_FOR_CONDITION = 'argocd-application-controller'
 	static final String TENANT_NAMESPACE_ARGOCD = 'tenant1-argocd'
 	static final String TENANT_NAMESPACE_REGISTRY = 'tenant1-registry'
@@ -42,11 +42,11 @@ class MandantProfileTestIT extends ProfileTestSetup {
 	private static void waitUntilTenantIsReady() {
 		// tenant is created very late after running GOP twice!
 		Awaitility.await().atMost(40, TimeUnit.MINUTES).pollInterval(5, TimeUnit.SECONDS).untilAsserted {
-			assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, "docker-registry") && TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
+			assert TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_REGISTRY, 'docker-registry') && TestK8sHelper.checkAllPodsRunningInNamespace(TENANT_NAMESPACE_SCM, 'scmm-')
 		}
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-mandants')
 	// just local
 	@Test
 	void ensureJenkinsPodIsStartedOnTenant() {
@@ -58,7 +58,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace('tenant1-registry', 'docker-registry')
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-mandants')
 	// just local
 	@Test
 	void ensureArgocdPodsAreStartedOnTenant() {
@@ -70,7 +70,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, 'argocd-server')
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-mandants')
 	// just local
 	@Test
 	void ensureArgocdPodsAreStartedOnCentral() {
@@ -88,23 +88,23 @@ class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace('scm-manager')
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-mandants')
 	// just local
 	@Test
 	void ensureNamespacesExists() {
-		List<String> expectedNamespaces = ["argocd",
-		                                   "argocd-operator-system",
-		                                   "scm-manager",
-		                                   "default",
-		                                   "tenant1-argocd",
-		                                   "tenant1-jenkins",
-		                                   "tenant1-registry",
-		                                   "tenant1-example-apps-staging",
-		                                   "tenant1-example-apps-staging",
-		                                   "tenant1-scm-manager",
-		                                   "kube-node-lease",
-		                                   "kube-public",
-		                                   "kube-system"] as List<String>
+		List<String> expectedNamespaces = ['argocd',
+		                                   'argocd-operator-system',
+		                                   'scm-manager',
+		                                   'default',
+		                                   'tenant1-argocd',
+		                                   'tenant1-jenkins',
+		                                   'tenant1-registry',
+		                                   'tenant1-example-apps-staging',
+		                                   'tenant1-example-apps-staging',
+		                                   'tenant1-scm-manager',
+		                                   'kube-node-lease',
+		                                   'kube-public',
+		                                   'kube-system'] as List<String>
 
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
@@ -116,7 +116,7 @@ class MandantProfileTestIT extends ProfileTestSetup {
 			assert missingNamespace.isEmpty(): "Missing these Namespace: ${missingNamespace}"
 
 		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+			fail('Unexpected Kubernetes exception', ex)
 		}
 	}
 }

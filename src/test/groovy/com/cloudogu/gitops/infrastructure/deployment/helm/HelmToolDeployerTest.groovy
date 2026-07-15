@@ -15,13 +15,14 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 
+import java.nio.file.Files
 import java.nio.file.Path
 import groovy.transform.CompileStatic
 
-import freemarker.template.TemplateModel
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -30,11 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 @ExtendWith(MockitoExtension)
 class HelmToolDeployerTest {
 
-	private static final String TOOL_NAME =
-		'cert-manager'
+	private static final String TOOL_NAME = 'cert-manager'
 
-	private static final String RELEASE_NAME =
-		'cert-manager'
+	private static final String RELEASE_NAME = 'cert-manager'
 
 	private static final String NAMESPACE =
 		'my-prefix-cert-manager'
@@ -69,6 +68,9 @@ class HelmToolDeployerTest {
 	@Mock
 	RepositoryWorkspace repositoryWorkspace
 
+	@TempDir
+	Path temporaryDirectory
+
 	private Config config
 	private DeploymentContext context
 	private HelmToolDeployer helmToolDeployer
@@ -91,15 +93,18 @@ class HelmToolDeployerTest {
 		HelmToolDeploymentRequest request =
 			createRequest(false)
 
-		Map<String, Object> renderedValues = [replicaCount: 2] as Map<String, Object>
+		Map<String, Object> renderedValues =
+			[replicaCount: 2] as Map<String, Object>
 
-		Path valuesFile = Path.of('/tmp/values.yaml')
+		Path valuesFile =
+			Path.of('/tmp/values.yaml')
 
 		when(helmValuesRenderer.render(eq(request.helmConfig),
 			eq(request.helmValuesPath),
 			any(Map))).thenReturn(renderedValues)
 
-		when(fileSystemUtils.writeTempFile(renderedValues)).thenReturn(valuesFile)
+		when(fileSystemUtils.writeTempFile(renderedValues))
+			.thenReturn(valuesFile)
 
 		helmToolDeployer.deploy(request,
 			context,
@@ -121,21 +126,25 @@ class HelmToolDeployerTest {
 	}
 
 	@Test
-	void 'adds config and statics to template data'() {
+	void 'provides shared context when rendering Helm values'() {
+		Map<String, Object> requestTemplateData =
+			[customValue: 'value'] as Map<String, Object>
+
 		HelmToolDeploymentRequest request =
 			new HelmToolDeploymentRequest(TOOL_NAME,
 				RELEASE_NAME,
 				NAMESPACE,
 				createHelmConfig(),
 				'templates/values.ftl.yaml',
-				[customValue: 'value'] as Map<String, Object>,
+				requestTemplateData,
 				false)
 
 		when(helmValuesRenderer.render(any(),
-			any(),
-			any())).thenReturn([:] as Map<String, Object>)
+			anyString(),
+			any(Map))).thenReturn([:] as Map<String, Object>)
 
-		when(fileSystemUtils.writeTempFile(any(Map))).thenReturn(Path.of('/tmp/values.yaml'))
+		when(fileSystemUtils.writeTempFile(any(Map)))
+			.thenReturn(Path.of('/tmp/values.yaml'))
 
 		helmToolDeployer.deploy(request,
 			context,
@@ -155,25 +164,25 @@ class HelmToolDeployerTest {
 			.containsEntry('customValue', 'value')
 			.containsEntry('config', config)
 			.containsKey('statics')
-
-		assertThat(templateData['statics'])
-			.isInstanceOf(TemplateModel)
 	}
 
 	@Test
-	void 'writes rendered values to temporary file before deployment'() {
+	void 'passes rendered Helm values file to deployer'() {
 		HelmToolDeploymentRequest request =
 			createRequest(false)
 
-		Map<String, Object> renderedValues = [service: [type: 'NodePort']] as Map<String, Object>
+		Map<String, Object> renderedValues =
+			[service: [type: 'NodePort']] as Map<String, Object>
 
-		Path valuesFile = Path.of('/tmp/rendered.yaml')
+		Path valuesFile =
+			Path.of('/tmp/rendered.yaml')
 
 		when(helmValuesRenderer.render(any(),
-			any(),
-			any())).thenReturn(renderedValues)
+			anyString(),
+			any(Map))).thenReturn(renderedValues)
 
-		when(fileSystemUtils.writeTempFile(renderedValues)).thenReturn(valuesFile)
+		when(fileSystemUtils.writeTempFile(renderedValues))
+			.thenReturn(valuesFile)
 
 		helmToolDeployer.deploy(request,
 			context,
@@ -182,12 +191,12 @@ class HelmToolDeployerTest {
 		verify(fileSystemUtils)
 			.writeTempFile(renderedValues)
 
-		verify(deployer).deployFeature(any(),
-			any(),
-			any(),
-			any(),
-			any(),
-			any(),
+		verify(deployer).deployFeature(anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
 			eq(valuesFile),
 			any(),
 			anyBoolean(),
@@ -196,17 +205,19 @@ class HelmToolDeployerTest {
 	}
 
 	@Test
-	void 'passes bootstrap flag to Deployer'() {
+	void 'passes bootstrap flag to deployer'() {
 		HelmToolDeploymentRequest request =
 			createRequest(true)
 
-		Path valuesFile = Path.of('/tmp/values.yaml')
+		Path valuesFile =
+			Path.of('/tmp/values.yaml')
 
 		when(helmValuesRenderer.render(any(),
-			any(),
-			any())).thenReturn([:] as Map<String, Object>)
+			anyString(),
+			any(Map))).thenReturn([:] as Map<String, Object>)
 
-		when(fileSystemUtils.writeTempFile(any(Map))).thenReturn(valuesFile)
+		when(fileSystemUtils.writeTempFile(any(Map)))
+			.thenReturn(valuesFile)
 
 		helmToolDeployer.deploy(request,
 			context,
@@ -240,10 +251,11 @@ class HelmToolDeployerTest {
 				false)
 
 		when(helmValuesRenderer.render(any(),
-			any(),
-			any())).thenReturn([:] as Map<String, Object>)
+			anyString(),
+			any(Map))).thenReturn([:] as Map<String, Object>)
 
-		when(fileSystemUtils.writeTempFile(any(Map))).thenReturn(Path.of('/tmp/values.yaml'))
+		when(fileSystemUtils.writeTempFile(any(Map)))
+			.thenReturn(Path.of('/tmp/values.yaml'))
 
 		helmToolDeployer.deploy(request,
 			context,
@@ -251,6 +263,74 @@ class HelmToolDeployerTest {
 
 		assertThat(originalTemplateData)
 			.isEqualTo([customValue: 'original'])
+
+		assertThat(request.templateData)
+			.isEqualTo([customValue: 'original'])
+	}
+
+	@Test
+	void 'uses mirrored Git repository in air-gapped mode'() {
+		when(gitHandler.getResourcesScm()).thenReturn(resourcesScm)
+
+		Path localChartDirectory =
+			Files.createDirectories(temporaryDirectory.resolve(CHART))
+
+		Files.writeString(localChartDirectory.resolve('Chart.yaml'),
+			'''
+apiVersion: v2
+name: cert-manager
+version: 1.19.4
+'''.stripIndent())
+
+		Config airGappedConfig =
+			Config.fromMap([application: [namePrefix          : 'my-prefix-',
+			                              mirrorRepos         : true,
+			                              localHelmChartFolder: temporaryDirectory.toString()]])
+
+		DeploymentContext airGappedContext =
+			new ContextBuilder(airGappedConfig).build()
+
+		HelmToolDeploymentRequest request =
+			createRequest(false)
+
+		Map<String, Object> renderedValues =
+			[:] as Map<String, Object>
+
+		Path valuesFile =
+			Path.of('/tmp/values.yaml')
+
+		when(helmValuesRenderer.render(any(),
+			anyString(),
+			any(Map))).thenReturn(renderedValues)
+
+		when(fileSystemUtils.writeTempFile(renderedValues))
+			.thenReturn(valuesFile)
+
+		when(airGappedUtils.mirrorHelmRepoToGit(request.helmConfig)).thenReturn('mirrors/cert-manager')
+
+		when(resourcesScm.repoUrl('mirrors/cert-manager')).thenReturn('https://scm.example.org/repo/cert-manager')
+
+		helmToolDeployer.deploy(request,
+			airGappedContext,
+			repositoryWorkspace)
+
+		verify(airGappedUtils)
+			.mirrorHelmRepoToGit(request.helmConfig)
+
+		verify(resourcesScm)
+			.repoUrl('mirrors/cert-manager')
+
+		verify(deployer).deployFeature('https://scm.example.org/repo/cert-manager',
+			TOOL_NAME,
+			'.',
+			VERSION,
+			NAMESPACE,
+			RELEASE_NAME,
+			valuesFile,
+			RepoType.GIT,
+			false,
+			airGappedContext,
+			repositoryWorkspace)
 	}
 
 	private HelmToolDeploymentRequest createRequest(boolean bootstrapWithHelm) {
@@ -259,11 +339,11 @@ class HelmToolDeployerTest {
 			NAMESPACE,
 			createHelmConfig(),
 			'templates/values.ftl.yaml',
-			[:],
+			[:] as Map<String, Object>,
 			bootstrapWithHelm)
 	}
 
-	private Config.HelmConfigWithValues createHelmConfig() {
+	private static Config.HelmConfigWithValues createHelmConfig() {
 		return new Config.HelmConfigWithValues(repoURL: REPOSITORY_URL,
 			chart: CHART,
 			version: VERSION,

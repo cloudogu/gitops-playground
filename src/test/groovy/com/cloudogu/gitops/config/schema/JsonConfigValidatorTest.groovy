@@ -12,13 +12,13 @@ class JsonConfigValidatorTest {
 	static Stream<Arguments> validSchemas() {
 		Stream.Builder<Arguments> ret = Stream.builder()
 
-		ret.add(Arguments.of("multiple values", [features: [argocd: [url: "http://localhost/argocd"]]]))
+		ret.add(Arguments.of('multiple values', [features: [argocd: [url: 'http://localhost/argocd']]]))
 
 		return ret.build()
 	}
 
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("validSchemas")
+	@ParameterizedTest(name = '{0}')
+	@MethodSource('validSchemas')
 	void 'test valid schemas'(String description, Map schema) {
 
 		JsonSchemaValidator.validate(schema)
@@ -27,22 +27,22 @@ class JsonConfigValidatorTest {
 	static Stream<Arguments> invalidSchemas() {
 		Stream.Builder<Arguments> ret = Stream.builder()
 
-		ret.add(Arguments.of("wrong type for registry.internalPort", [registry: [internalPort: "this should be a number"]]))
+		ret.add(Arguments.of('wrong type for registry.internalPort', [registry: [internalPort: 'this should be a number']]))
 
-		ret.add(Arguments.of("invalid additional key within registry", [registry: [url          : "",
-		                                                                           unexpectedKey: "this should error"]]))
+		ret.add(Arguments.of('invalid additional key within registry', [registry: [url          : '',
+		                                                                           unexpectedKey: 'this should error']]))
 
-		ret.add(Arguments.of("invalid additional key on root level", [registry     : [url: "",],
-		                                                              unexpectedKey: "this should not exist"]))
+		ret.add(Arguments.of('invalid additional key on root level', [registry     : [url: '',],
+		                                                              unexpectedKey: 'this should not exist']))
 
-		ret.add(Arguments.of("specifying dynamic value", [application: [namePrefix          : "prefix",
-		                                                                namePrefixForEnvVars: "prefix"],]))
+		ret.add(Arguments.of('specifying dynamic value', [application: [namePrefix          : 'prefix',
+		                                                                namePrefixForEnvVars: 'prefix'],]))
 
 		return ret.build()
 	}
 
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("invalidSchemas")
+	@ParameterizedTest(name = '{0}')
+	@MethodSource('invalidSchemas')
 	void 'test invalid schemas'(String description, Map schema) {
 		shouldFail(RuntimeException) {
 			JsonSchemaValidator.validate(schema)

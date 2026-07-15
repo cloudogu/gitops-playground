@@ -65,7 +65,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
 	static Call<Void> mockSuccessfulResponse(int expectedReturnCode) {
 		def expectedCall = mock(Call<Void>)
 		when(expectedCall.execute()).thenReturn(Response.success(expectedReturnCode, null))
-		expectedCall
+		return expectedCall
 	}
 
 	static Call<Void> mockErrorResponse(int expectedReturnCode) {
@@ -73,6 +73,6 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
 		// Response is a final class that cannot be mocked 😠
 		Response<Void> errorResponse = Response.error(expectedReturnCode, new RealResponseBody('dontcare', 0, mock(BufferedSource)))
 		when(expectedCall.execute()).thenReturn(errorResponse)
-		expectedCall
+		return expectedCall
 	}
 }

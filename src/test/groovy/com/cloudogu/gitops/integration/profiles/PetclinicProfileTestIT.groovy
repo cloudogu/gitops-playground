@@ -22,18 +22,18 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  *
  * * To run locally: add -Dmicronaut.environments=content-examples to your execute configuration*/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'full|operator-full|content-examples')
 class PetclinicProfileTestIT extends ProfileTestSetup {
 
 	static String exampleStagingNs = 'example-apps-staging'
 
 	@BeforeAll
 	static void labelTest() {
-		println "###### Testing Petclinic ######"
+		println '###### Testing Petclinic ######'
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
 			waitForContentExamplePrerequisites()
-			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES)
+			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, '', 40, TimeUnit.MINUTES)
 		} catch (ConditionTimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods()
 			fail('Cluster not ready, sth false.', timeoutEx)
@@ -51,11 +51,11 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs)
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'full|operator-full|content-examples')
 	@Test
 	void ensurePetclinicIngressIsOnline() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			def nameOfServiceAndIngress = "spring-petclinic-plain"
+			def nameOfServiceAndIngress = 'spring-petclinic-plain'
 			// check Ingress
 			def ingress = client.network()
 				.v1()
@@ -64,7 +64,7 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 				.withName(nameOfServiceAndIngress)
 				.get()
 
-			assert ingress != null: "Ingress '${nameOfServiceAndIngress}' not found in '${exampleStagingNs}'"
+			assert ingress != null: 'Ingress \'' + nameOfServiceAndIngress + '\' not found in \'' + exampleStagingNs + '\''
 
 			def hosts = (ingress.spec?.rules ?: [])
 				.collect { it?.host }
@@ -72,17 +72,17 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 
 			assert hosts.get(0).contains("petclinic") // in this case, petclinic do not care about prefix
 		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+			fail('Unexpected Kubernetes exception', ex)
 		}
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
+	@DisabledIfSystemProperty(named = 'micronaut.environments', matches = 'full|operator-full|content-examples')
 	@Test
 	void ensurePetclinicServidsdsdceIsOnline() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
 			// Check Service
-			def nameOfServiceAndIngress = "spring-petclinic-plain"
+			def nameOfServiceAndIngress = 'spring-petclinic-plain'
 			def service = client.services()
 				.inNamespace(exampleStagingNs)
 				.withName(nameOfServiceAndIngress)
@@ -91,7 +91,7 @@ class PetclinicProfileTestIT extends ProfileTestSetup {
 			assertThat(service).isNotNull()
 
 		} catch (KubernetesClientException ex) {
-			fail("Unexpected Kubernetes exception", ex)
+			fail('Unexpected Kubernetes exception', ex)
 		}
 	}
 

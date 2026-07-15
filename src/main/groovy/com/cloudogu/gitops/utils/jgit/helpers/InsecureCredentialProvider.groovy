@@ -36,9 +36,9 @@ class InsecureCredentialProvider extends CredentialsProvider {
 	@Override
 	boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
 		items.findAll { it instanceof CredentialItem.YesNoType }.each {
-			if (it.promptText == "Skip SSL verification for this single git operation" || it.promptText =~ /^Skip SSL verification for git operations for repository/) {
+			if (it.promptText == 'Skip SSL verification for this single git operation' || it.promptText =~ /^Skip SSL verification for git operations for repository/) {
 				(it as CredentialItem.YesNoType).setValue(true)
-			} else if (it.promptText == "Always skip SSL verification for this server from now on") {
+			} else if (it.promptText == 'Always skip SSL verification for this server from now on') {
 				// otherwise we would persistently overwrite our $HOME/.gitconfig
 				(it as CredentialItem.YesNoType).setValue(false)
 			}

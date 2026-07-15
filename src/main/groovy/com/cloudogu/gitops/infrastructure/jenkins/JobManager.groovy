@@ -23,12 +23,12 @@ class JobManager {
 	void createCredential(String jobName, String id, String username, String password, String description) {
 		def response = apiClient.postRequestWithCrumb("job/$jobName/credentials/store/folder/domain/_/createCredentials",
 			new FormBody.Builder()
-				.add("json", JsonOutput.toJson([credentials: [scope      : "GLOBAL",
+				.add('json', JsonOutput.toJson([credentials: [scope      : 'GLOBAL',
 				                                              id         : id,
 				                                              username   : username,
 				                                              password   : password,
 				                                              description: description,
-				                                              $class     : "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",]]))
+				                                              $class     : 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl',]]))
 				.build())
 
 		if (response.code() != 200) {
@@ -50,7 +50,7 @@ class JobManager {
 				 SCMM_NAMESPACE_JOB_NAMESPACE     : jobNamespace,
 				 SCMM_NAMESPACE_JOB_CREDENTIALS_ID: credentialsId])
 
-			RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"))
+			RequestBody body = RequestBody.create(payloadXml, MediaType.get('text/xml'))
 
 			def response = apiClient.postRequestWithCrumb("createItem?name=$name", body)
 
@@ -72,7 +72,7 @@ class JobManager {
 			throw new RuntimeException('Job name cannot contain quotes.')
 		}
 
-		@Language("groovy")
+		@Language('groovy')
 		String script = "print(Jenkins.instance.getItem('$name')?.delete())"
 		def result = apiClient.runScript(script)
 

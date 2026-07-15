@@ -21,6 +21,6 @@ class Repository {
 
 	@Override
 	String toString() {
-		"Repository{name='$name', namespace='$namespace', type='$type', contact='$contact', description='$description'}"
+		return "Repository{name='$name', namespace='$namespace', type='$type', contact='$contact', description='$description'}"
 	}
 }

@@ -108,7 +108,7 @@ class RetryInterceptorTest {
 			.willSetStateTo("After Timeout"))
 
 		wireMock.stubFor(get(urlEqualTo(path))
-			.inScenario("Timeout Scenario")
+			.inScenario('Timeout Scenario')
 			.whenScenarioStateIs("After Timeout")
 			.willReturn(aResponse()
 				.withStatus(200)
@@ -117,13 +117,13 @@ class RetryInterceptorTest {
 		def client = createClient(100)
 		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
 
-		assertThat(response.body().string()).isEqualTo("Successful Result")
+		assertThat(response.body().string()).isEqualTo('Successful Result')
 		wireMock.verify(2, getRequestedFor(urlEqualTo(path)))
 	}
 
 	@Test
 	void 'fails after third retry'() {
-		def path = "/always-fail"
+		def path = '/always-fail'
 
 		wireMock.stubFor(get(urlEqualTo(path))
 			.willReturn(aResponse().withStatus(500)))
@@ -147,10 +147,10 @@ class RetryInterceptorTest {
 			}
 		}] as TrustManager[]
 
-		def sslContext = SSLContext.getInstance("TLS")
+		def sslContext = SSLContext.getInstance('TLS')
 		sslContext.init(null, trustAllCerts, new SecureRandom())
 
-		new OkHttpClient.Builder()
+		return new OkHttpClient.Builder()
 			.addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
 			.connectTimeout(timeout, TimeUnit.MILLISECONDS)
 			.readTimeout(timeout, TimeUnit.MILLISECONDS)

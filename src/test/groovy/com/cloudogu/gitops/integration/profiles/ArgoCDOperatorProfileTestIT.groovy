@@ -21,7 +21,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  *
  * To run locally: add -Dmicronaut.environments=operator-full to your execute configuration*/
 
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-full|operator-minimal")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'operator-full|operator-minimal')
 class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
 	static String namespaceOperator = 'argocd-operator-system'
@@ -29,7 +29,7 @@ class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
 	@BeforeAll
 	static void labelTest() {
-		println "###### Integration ArgoCD Operator test ######"
+		println '###### Integration ArgoCD Operator test ######'
 		try {
 			Awaitility.await()
 				.atMost(40, TimeUnit.MINUTES)
@@ -55,7 +55,7 @@ class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
 		} catch (KubernetesClientException ex) {
 			// Handle exception
-			assert fail("not expected exception was thrown. ", ex)
+			assert fail('not expected exception was thrown. ', ex)
 		}
 
 	}
@@ -71,7 +71,7 @@ class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
 		} catch (KubernetesClientException ex) {
 			// Handle exception
-			assert fail("not expected exception was thrown. ", ex)
+			assert fail('not expected exception was thrown. ', ex)
 		}
 
 	}

@@ -25,9 +25,9 @@ abstract class KubenetesApiTestSetup {
 	 * Gets path to kubeconfig*/
 	@BeforeAll
 	static void setupKubeconfig() {
-		kubeConfigPath = System.getenv("HOME") + "/.kube/config"
+		kubeConfigPath = System.getenv('HOME') + '/.kube/config'
 		if (!new File(kubeConfigPath).exists()) {
-			kubeConfigPath = System.getenv("KUBECONFIG")
+			kubeConfigPath = System.getenv('KUBECONFIG')
 		}
 		assertThat(kubeConfigPath) isNotBlank()
 	}
@@ -58,7 +58,7 @@ abstract class KubenetesApiTestSetup {
 				Thread.sleep(pollInterval.toMillis())
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt()
-				throw new RuntimeException("break polling", e)
+				throw new RuntimeException('break polling', e)
 			}
 		}
 		fail('Wait condition not fulfilled in time')

@@ -24,7 +24,7 @@ class ScmTenantSchema {
 
 	@Option(names = ['--scm-provider'],
 		description = SCM_PROVIDER_TYPE_DESCRIPTION,
-		defaultValue = "SCM_MANAGER")
+		defaultValue = 'SCM_MANAGER')
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
 	ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
@@ -43,7 +43,7 @@ class ScmTenantSchema {
 	static class GitlabTenantConfig implements GitlabConfig {
 
 		static final String GITLAB_INTERNAL_DESCRIPTION = 'True if Gitlab is running in the same K8s cluster. For now we only support access by external URL'
-		static final String GITLAB_URL_DESCRIPTION = "Base URL for the Gitlab instance"
+		static final String GITLAB_URL_DESCRIPTION = 'Base URL for the Gitlab instance'
 		static final String GITLAB_USERNAME_DESCRIPTION = 'Defaults to: oauth2.0 when PAT token is given.'
 		static final String GITLAB_TOKEN_DESCRIPTION = 'PAT Token for the account. Needs read/write repo permissions. See docs for mor information'
 		static final String GITLAB_PARENT_GROUP_ID = 'Number for the Gitlab Group where the repos and subgroups should be created'

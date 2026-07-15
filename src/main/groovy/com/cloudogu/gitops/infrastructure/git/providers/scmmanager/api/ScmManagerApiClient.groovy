@@ -41,7 +41,7 @@ class ScmManagerApiClient {
 		return retrofit().create(PluginApi)
 	}
 
-	static handleApiResponse(Call<Void> apiCall, String additionalMessage = "") {
+	static handleApiResponse(Call<Void> apiCall, String additionalMessage = '') {
 		try {
 			Response<Void> response = apiCall.execute()
 

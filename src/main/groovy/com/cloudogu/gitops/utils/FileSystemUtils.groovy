@@ -22,7 +22,7 @@ class FileSystemUtils {
 	 * {@link #readYaml(java.nio.file.Path)} and
 	 * {@link #writeYaml(java.util.Map, java.io.File)} */
 	File replaceFileContent(String folder, String fileToChange, String from, String to) {
-		File file = new File(folder + "/" + fileToChange)
+		File file = new File(folder + '/' + fileToChange)
 		String newConfig = file.text.replace(from, to)
 		file.setText(newConfig)
 		return file
@@ -37,7 +37,7 @@ class FileSystemUtils {
 
 	String getSubstringOfFile(String fileLocation, CharSequence pattern, int from, int to) {
 		File file = new File(fileLocation)
-		String found = ""
+		String found = ''
 		file.readLines().forEach(line -> {
 			if (line.contains(pattern)) {
 				found = line.substring(from, to)
@@ -48,7 +48,7 @@ class FileSystemUtils {
 
 	String getSubstringOfFile(String fileLocation, CharSequence pattern, int from) {
 		File file = new File(fileLocation)
-		String found = ""
+		String found = ''
 		file.readLines().forEach(line -> {
 			if (line.contains(pattern)) {
 				found = line.substring(from)
@@ -59,9 +59,9 @@ class FileSystemUtils {
 
 	String getLineFromFile(String fileLocation, CharSequence pattern) {
 		File file = new File(fileLocation)
-		String found = ""
+		String found = ''
 		String fileText = file.getText()
-		String[] lines = fileText.split("\n")
+		String[] lines = fileText.split('\n')
 		for (int i = 0; i < lines.size(); i++) {
 			if (lines[i].contains(pattern)) {
 				found = lines[i]
@@ -100,7 +100,7 @@ class FileSystemUtils {
 	}
 
 	String getRootDir() {
-		return System.getProperty("user.dir")
+		return System.getProperty('user.dir')
 	}
 
 	List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
@@ -141,14 +141,14 @@ class FileSystemUtils {
 
 	void copyDirectory(String source, String destination, FileFilter fileFilter) {
 
-		log.debug("Copying directory " + source + " to " + destination)
+		log.debug('Copying directory ' + source + ' to ' + destination)
 		File sourceDir = new File(source)
 		File destinationDir = new File(destination)
 
 		try {
 			FileUtils.copyDirectory(sourceDir, destinationDir, fileFilter)
 		} catch (IOException e) {
-			log.error("An error occured while copying directories: ", e)
+			log.error('An error occured while copying directories: ', e)
 		}
 	}
 
@@ -166,20 +166,20 @@ class FileSystemUtils {
 			}
 
 			FileUtils.copyFile(sourceFile, destinationFile)
-			log.debug("File copy completed successfully.")
+			log.debug('File copy completed successfully.')
 		} catch (IOException e) {
-			log.error("An error occurred while copying the file: ", e)
+			log.error('An error occurred while copying the file: ', e)
 		}
 	}
 
 	void createDirectory(String directory) {
-		log.trace("Creating folder: " + directory)
+		log.trace('Creating folder: ' + directory)
 		new File(directory).mkdirs()
 	}
 
 	Path copyToTempDir(String filePath) {
 		def sourcePath = Path.of(filePath)
-		def destDir = File.createTempDir("gitops-playground-").toPath()
+		def destDir = File.createTempDir('gitops-playground-').toPath()
 		def destPath = destDir.resolve(sourcePath.fileName)
 		return Files.copy(sourcePath, destPath)
 	}
@@ -192,11 +192,11 @@ class FileSystemUtils {
 	}
 
 	Path createTempDir() {
-		File.createTempDir("gitops-playground-").toPath()
+		return File.createTempDir('gitops-playground-').toPath()
 	}
 
 	Path createTempFile() {
-		def file = File.createTempFile("gitops-playground-", '')
+		def file = File.createTempFile('gitops-playground-', '')
 		file.deleteOnExit()
 
 		return file.toPath()
@@ -211,15 +211,15 @@ class FileSystemUtils {
 		// Fallback to classpath
 		String resourceName = path.toString()
 		// Ensure it starts with / for getResourceAsStream from root
-		if (!resourceName.startsWith("/")) {
-			resourceName = "/" + resourceName
+		if (!resourceName.startsWith('/')) {
+			resourceName = '/' + resourceName
 		}
 
 		// Remove src/main/resources if present, as it's not part of the classpath in the JAR
-		resourceName = resourceName.replace("/src/main/resources", "")
+		resourceName = resourceName.replace('/src/main/resources', '')
 
 		log.debug("Path ${path} not found on filesystem, trying classpath: ${resourceName}")
-		def inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)
+		def inputStream = FileSystemUtils.getResourceAsStream(resourceName)
 		if (inputStream != null) {
 			return (ys.parseText(inputStream.text)) as Map
 		}
@@ -310,7 +310,7 @@ class FileSystemUtils {
 	static class IgnoreDotGitFolderFilter implements FileFilter {
 		@Override
 		boolean accept(File file) {
-			return !file.absolutePath.contains(File.separator + ".git")
+			return !file.absolutePath.contains(File.separator + '.git')
 		}
 	}
 }

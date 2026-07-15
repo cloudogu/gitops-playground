@@ -18,7 +18,7 @@ class MultiTenantSchema {
 
 	@Option(names = ['--central-scm-provider'],
 		description = SCM_PROVIDER_TYPE_DESCRIPTION,
-		defaultValue = "SCM_MANAGER")
+		defaultValue = 'SCM_MANAGER')
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
 	ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 

@@ -15,10 +15,10 @@ class ConfigTest {
 	void 'converts to yaml including internals'() {
 		String config = testConfig.toYaml(true)
 
-		assertThat(config).startsWith("""---
+		assertThat(config).startsWith('''---
 registry:
   internal: true
-""")
+''')
 	}
 
 	@Test
@@ -26,10 +26,10 @@ registry:
 
 		String config = testConfig.toYaml(false)
 
-		assertThat(config).startsWith("""---
+		assertThat(config).startsWith('''---
 registry:
   active: false
-""")
+''')
 	}
 
 	@Test
@@ -39,7 +39,7 @@ registry:
 			// Overwrites a default Boolean
 			yes: true,
 			// Sets an otherwise empty string
-			namePrefix: "aPrefix"),
+			namePrefix: 'aPrefix'),
 			// Overwrites a default Integer
 			registry: new RegistrySchema(internalPort: 42))
 
@@ -54,6 +54,6 @@ registry:
 	@Test
 	void 'getting Tenantname from Config'() {
 		testConfig.application.namePrefix = 'testprefix-'
-		assertThat(testConfig.application.getTenantName()).isEqualTo("testprefix")
+		assertThat(testConfig.application.getTenantName()).isEqualTo('testprefix')
 	}
 }

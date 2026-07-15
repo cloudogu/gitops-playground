@@ -35,10 +35,10 @@ class K8sClient {
 	// Constants
 	// ========================================
 
-	private static final String DEFAULT_NAMESPACE = "default"
-	private static final String INTERNAL_IP_TYPE = "InternalIP"
-	private static final String DOCKER_CONFIG_JSON_TYPE = "kubernetes.io/dockerconfigjson"
-	private static final String DOCKER_CONFIG_JSON_KEY = ".dockerconfigjson"
+	private static final String DEFAULT_NAMESPACE = 'default'
+	private static final String INTERNAL_IP_TYPE = 'InternalIP'
+	private static final String DOCKER_CONFIG_JSON_TYPE = 'kubernetes.io/dockerconfigjson'
+	private static final String DOCKER_CONFIG_JSON_KEY = '.dockerconfigjson'
 
 	private static final int DEFAULT_TIMEOUT_SECONDS = 60
 	private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1
@@ -79,9 +79,9 @@ class K8sClient {
 	 * @throws RuntimeException if no node becomes available within the retry limit
 	 */
 	String waitForNode() {
-		log.debug("Waiting for first node of the cluster to become ready")
+		log.debug('Waiting for first node of the cluster to become ready')
 
-		String nodeName = waitForResourceWithRetry("node") { ->
+		String nodeName = waitForResourceWithRetry('node') { ->
 			NodeList nodes = client.nodes().list()
 			if (nodes?.items && !nodes.items.isEmpty()) {
 				return nodes.items[0].metadata.name
@@ -166,7 +166,7 @@ class K8sClient {
 			.withNamespace(resolveNamespace(namespace))
 			.endMetadata()
 			.withNewSpec()
-			.withType("NodePort")
+			.withType('NodePort')
 			.addNewPort()
 			.withPort(port)
 			.withTargetPort(new IntOrString(targetPort))
@@ -219,7 +219,7 @@ class K8sClient {
 		}
 
 		// Create JSON patch
-		def patch = [[op   : "replace",
+		def patch = [[op   : 'replace',
 		              path : "/spec/ports/${portIndex}/nodePort",
 		              value: newNodePort]]
 
@@ -256,7 +256,7 @@ class K8sClient {
 			log.debug("Namespace ${name} does not exist, proceeding to create.")
 
 			if (runInOpenshift()) {
-				OpenShiftClient osClient = client.adapt(OpenShiftClient.class)
+				OpenShiftClient osClient = client.adapt(OpenShiftClient)
 
 				Project project = new ProjectBuilder()
 					.withNewMetadata()
@@ -292,7 +292,7 @@ class K8sClient {
 	 */
 	void createNamespaces(List<String> names) {
 		if (names == null) {
-			throw new IllegalArgumentException("Namespaces must be provided and cannot be null.")
+			throw new IllegalArgumentException('Namespaces must be provided and cannot be null.')
 		}
 		names.each { name -> createNamespace(name) }
 	}
@@ -424,7 +424,7 @@ class K8sClient {
 	 * @throws RuntimeException if the secret cannot be parsed
 	 */
 	Credentials getCredentialsFromSecret(String secretname, String namespace, String usernameKey = 'username', String passwordKey = 'password') {
-		executeWithErrorHandling("get credentials from secret ${secretname}") {
+		return executeWithErrorHandling("get credentials from secret ${secretname}") {
 			Secret secret = client.secrets()
 				.inNamespace(namespace)
 				.withName(secretname)
@@ -445,7 +445,7 @@ class K8sClient {
 	 * @throws RuntimeException if the secret cannot be parsed
 	 */
 	Credentials getCredentialsFromSecret(Credentials credentials) {
-		executeWithErrorHandling("get credentials from secret ${credentials.secretName}") {
+		return executeWithErrorHandling("get credentials from secret ${credentials.secretName}") {
 			Secret secret = client.secrets()
 				.inNamespace(credentials.secretNamespace)
 				.withName(credentials.secretName)
@@ -547,7 +547,7 @@ class K8sClient {
 	String applyYaml(String yamlLocation) {
 		log.debug("Applying YAML from $yamlLocation")
 
-		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
+		if (yamlLocation.startsWith('http://') || yamlLocation.startsWith('https://')) {
 			int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation)
 			return "Applied ${appliedResources} resource(s) from $yamlLocation"
 		}
@@ -561,7 +561,7 @@ class K8sClient {
 		if (location.isDirectory()) {
 			List<File> yamlFiles = []
 			location.traverse(type: FileType.FILES) { File file ->
-				if (file.name.endsWith(".yaml") || file.name.endsWith(".yml")) {
+				if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
 					yamlFiles.add(file)
 				}
 			}
@@ -616,7 +616,7 @@ class K8sClient {
 	@CompileStatic(TypeCheckingMode.SKIP)
 	void label(String resource, String name, String namespace = '', Tuple2... keyValues) {
 		if (!keyValues) {
-			throw new RuntimeException("Missing key-value-pairs")
+			throw new RuntimeException('Missing key-value-pairs')
 		}
 
 		if (name == '--all') {
@@ -657,7 +657,7 @@ class K8sClient {
 			resourceClient.replace(existingResource)
 		}
 
-		log.debug("Labels updated successfully")
+		log.debug('Labels updated successfully')
 	}
 
 	/**
@@ -669,7 +669,7 @@ class K8sClient {
 	 * @param keys The label keys to remove
 	 */
 	void labelRemove(String resource, String name, String namespace = '', String... keys) {
-		Tuple2[] tuples = keys.collect { new Tuple2("${it}-", "") }.toArray(new Tuple2[0])
+		Tuple2[] tuples = keys.collect { new Tuple2(it + '-', "") }.toArray(new Tuple2[0])
 		label(resource, name, namespace, tuples)
 	}
 
@@ -708,7 +708,7 @@ class K8sClient {
 	@CompileStatic(TypeCheckingMode.SKIP)
 	void delete(String resource, String namespace = '', Tuple2... selectors) {
 		if (!selectors) {
-			throw new RuntimeException("Missing selectors")
+			throw new RuntimeException('Missing selectors')
 		}
 
 		log.debug("Deleting $resource in namespace $namespace with selectors")
@@ -719,7 +719,7 @@ class K8sClient {
 
 		try {
 			deleteResourcesByType(resource, resolveNamespace(namespace), labels)
-			log.debug("Resources deleted successfully")
+			log.debug('Resources deleted successfully')
 		} catch (Exception e) {
 			log.warn("Failed to delete resources (may not exist): ${e.message}")
 		}
@@ -1327,7 +1327,7 @@ class K8sClient {
 	 */
 	private void validateNamespaceName(String name) {
 		if (name == null || name.trim().isEmpty()) {
-			throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.")
+			throw new IllegalArgumentException('Namespace name must be provided and cannot be null or empty.')
 		}
 	}
 
@@ -1338,7 +1338,7 @@ class K8sClient {
 	 */
 	private void validateServiceNodePortPatch(String serviceName, String namespace, String portName, int newNodePort) {
 		if (!serviceName || !namespace || !portName || newNodePort <= 0) {
-			throw new IllegalArgumentException("Service name, namespace, port name, and valid nodePort must be provided")
+			throw new IllegalArgumentException('Service name, namespace, port name, and valid nodePort must be provided')
 		}
 	}
 
@@ -1350,10 +1350,10 @@ class K8sClient {
 	private void validateWaitForResourcePhaseParams(String resourceType, String resourceName, String namespace,
 		String desiredPhase, int timeoutSeconds, int checkIntervalSeconds) {
 		if (!resourceType || !resourceName || !namespace || !desiredPhase) {
-			throw new IllegalArgumentException("Resource type, name, namespace, and desired phase must be provided")
+			throw new IllegalArgumentException('Resource type, name, namespace, and desired phase must be provided')
 		}
 		if (timeoutSeconds <= 0 || checkIntervalSeconds <= 0) {
-			throw new IllegalArgumentException("Timeout and check interval must be greater than zero")
+			throw new IllegalArgumentException('Timeout and check interval must be greater than zero')
 		}
 	}
 

@@ -11,8 +11,8 @@ interface UsersApi {
 	@POST("v2/users")
 	Call<Void> addUser(@Body ScmManagerUser user)
 
-	@Headers(["Content-Type: application/vnd.scmm-permissionCollection+json;v=2"])
-	@PUT("v2/users/{username}/permissions")
+	@Headers(['Content-Type: application/vnd.scmm-permissionCollection+json;v=2'])
+	@PUT('v2/users/{username}/permissions')
 	Call<Void> setPermissionForUser(@Path("username") String username,
 		@Body Map<String, List<String>> permissions)
 }

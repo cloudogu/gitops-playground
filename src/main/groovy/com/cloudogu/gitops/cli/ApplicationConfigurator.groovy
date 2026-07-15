@@ -47,7 +47,7 @@ class ApplicationConfigurator {
 		if (newConfig.features.mail.smtpAddress) newConfig.features.mail.active = true
 
 		if (newConfig.features.ingress.active && !newConfig.application.baseUrl) {
-			log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
+			log.warn('Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ')
 		}
 	}
 
@@ -67,7 +67,7 @@ class ApplicationConfigurator {
 			String username = newConfig.registry.readOnlyUsername ?: newConfig.registry.username
 			String password = newConfig.registry.readOnlyPassword ?: newConfig.registry.password
 			if (!username || !password) {
-				throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
+				throw new RuntimeException('createImagePullSecrets needs to be used with either registry username and password or the readOnly variants')
 			}
 		}
 
@@ -91,27 +91,27 @@ class ApplicationConfigurator {
 		if (newConfig.registry.proxyUrl) {
 			newConfig.registry.twoRegistries = true
 			if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword) {
-				throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
+				throw new RuntimeException('Proxy URL needs to be used with proxy-username and proxy-password')
 			}
 		}
 	}
 
 	private void addAdditionalApplicationConfig(Config newConfig) {
-		if (System.getenv("KUBERNETES_SERVICE_HOST")) {
-			log.debug("installation is running in kubernetes.")
+		if (System.getenv('KUBERNETES_SERVICE_HOST')) {
+			log.debug('installation is running in kubernetes.')
 			newConfig.application.runningInsideK8s = true
 		}
 	}
 
 	private void addScmConfig(Config newConfig) {
-		log.debug("Adding additional config for SCM")
+		log.debug('Adding additional config for SCM')
 
 		if (newConfig.scm.scmManager.url) {
-			log.debug("Setting external scmm config")
+			log.debug('Setting external scmm config')
 			newConfig.scm.scmManager.internal = false
 			newConfig.scm.scmManager.urlForJenkins = newConfig.scm.scmManager.url
 		} else {
-			log.debug("Setting configs for internal SCM-Manager")
+			log.debug('Setting configs for internal SCM-Manager')
 			newConfig.scm.scmManager.internal = true
 			// We use the K8s service as default name here, because it is the only option:
 			// "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
@@ -123,7 +123,7 @@ class ApplicationConfigurator {
 
 		// We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
 		if (newConfig.application.baseUrl) {
-			newConfig.scm.scmManager.ingress = new URL(injectSubdomain("scmm",
+			newConfig.scm.scmManager.ingress = new URL(injectSubdomain('scmm',
 				newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
 		}
 		// When specific user/pw are not set, set them to global values
@@ -137,14 +137,14 @@ class ApplicationConfigurator {
 	}
 
 	private void addJenkinsConfig(Config newConfig) {
-		log.debug("Adding additional config for Jenkins")
+		log.debug('Adding additional config for Jenkins')
 		if (newConfig.jenkins.url) {
-			log.debug("Setting external jenkins config")
+			log.debug('Setting external jenkins config')
 			newConfig.jenkins.active = true
 			newConfig.jenkins.internal = false
 			newConfig.jenkins.urlForScm = newConfig.jenkins.url
 		} else if (newConfig.jenkins.active) {
-			log.debug("Setting configs for internal jenkins")
+			log.debug('Setting configs for internal jenkins')
 			// We use the K8s service as default name here, because it is the only option:
 			// "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
 			// will not work on Windows and MacOS.
@@ -158,7 +158,7 @@ class ApplicationConfigurator {
 		}
 
 		if (newConfig.application.baseUrl) {
-			newConfig.jenkins.ingress = new URL(injectSubdomain("jenkins",
+			newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
 				newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
 		}
 		// When specific user/pw are not set, set them to global values
@@ -175,7 +175,7 @@ class ApplicationConfigurator {
 		if (!baseUrl) {
 			return
 		}
-		log.debug("Base URL set, adapting to individual tools")
+		log.debug('Base URL set, adapting to individual tools')
 		def argocd = newConfig.features.argocd
 		def mail = newConfig.features.mail
 		def monitoring = newConfig.features.monitoring
@@ -183,7 +183,7 @@ class ApplicationConfigurator {
 		boolean urlSeparatorHyphen = newConfig.application.urlSeparatorHyphen
 
 		if (argocd.active && !argocd.url) {
-			argocd.url = injectSubdomain("argocd", baseUrl, urlSeparatorHyphen)
+			argocd.url = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
 			log.debug("Setting ArgoCD URL ${argocd.url}")
 		}
 		if (monitoring.active && !monitoring.grafanaUrl) {
@@ -210,7 +210,7 @@ class ApplicationConfigurator {
 			// Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
 			if (newConfig.multiTenant.scmManager.url) {
 				String urlString = newConfig.multiTenant.scmManager.url.toString()
-				if (urlString.endsWith("/")) {
+				if (urlString.endsWith('/')) {
 					urlString = urlString[0..-2]
 				}
 				newConfig.multiTenant.scmManager.url = urlString
@@ -236,12 +236,12 @@ class ApplicationConfigurator {
 		String newUrl
 
 		if (urlSeparatorHyphen) {
-			newUrl = url.getProtocol() + "://" + subdomain + "-" + url.getHost()
+			newUrl = url.getProtocol() + '://' + subdomain + '-' + url.getHost()
 		} else {
-			newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
+			newUrl = url.getProtocol() + '://' + subdomain + '.' + url.getHost()
 		}
 		if (url.getPort() != -1) {
-			newUrl += ":" + url.getPort()
+			newUrl += ':' + url.getPort()
 		}
 		newUrl += url.getPath()
 		return newUrl
@@ -250,10 +250,10 @@ class ApplicationConfigurator {
 	private void setResourceInclusionsCluster(Config configToSet) {
 		// Return early if NOT deploying via operator
 		if (!configToSet.features.argocd.operator) {
-			log.debug("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.")
+			log.debug('ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.')
 			return
 		}
-		log.info("Starting setup of features.argocd.resourceInclusionsCluster for ArgoCD Operator")
+		log.info('Starting setup of features.argocd.resourceInclusionsCluster for ArgoCD Operator')
 
 		if (!isUrlSetAndValid(configToSet)) {
 			// If features.argocd.resourceInclusionsClus<ter is not set, attempt to determine it via Kubernetes ENVs
@@ -269,9 +269,9 @@ class ApplicationConfigurator {
 		if (url) {
 			try {
 				// Attempt to create a URL object to validate it
-				log.debug("Validating user-provided features.argocd.resourceInclusionsCluster URL: {}", url)
+				log.debug('Validating user-provided features.argocd.resourceInclusionsCluster URL: {}', url)
 				new URL(url)
-				log.info("Found valid URL in features.argocd.resourceInclusionsCluster: {}", url)
+				log.info('Found valid URL in features.argocd.resourceInclusionsCluster: {}', url)
 				return true
 			} catch (MalformedURLException e) {
 				throw new IllegalArgumentException("Invalid URL for 'features.argocd.resourceInclusionsCluster': $url. ", e)
@@ -282,10 +282,10 @@ class ApplicationConfigurator {
 	/**
 	 * Build*/
 	void buildAndValidateURLFromEnvironment(Config config) {
-		log.debug("Attempting to set features.argocd.resourceInclusionsCluster via Kubernetes ENV variables.")
+		log.debug('Attempting to set features.argocd.resourceInclusionsCluster via Kubernetes ENV variables.')
 
-		String host = System.getenv("KUBERNETES_SERVICE_HOST")
-		String port = System.getenv("KUBERNETES_SERVICE_PORT")
+		String host = System.getenv('KUBERNETES_SERVICE_HOST')
+		String port = System.getenv('KUBERNETES_SERVICE_PORT')
 
 		String errorMessage = "Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " +
 			"Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " +
@@ -296,13 +296,13 @@ class ApplicationConfigurator {
 		}
 
 		String internalClusterUrl = "https://${host}:${port}"
-		log.debug("Constructed internal Kubernetes API Server URL: {}", internalClusterUrl)
+		log.debug('Constructed internal Kubernetes API Server URL: {}', internalClusterUrl)
 
 		// Validate the constructed URL
 		try {
 			new URL(internalClusterUrl)
 			config.features.argocd.resourceInclusionsCluster = internalClusterUrl
-			log.info("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}", internalClusterUrl)
+			log.info('Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}', internalClusterUrl)
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(errorMessage, e)
 		}

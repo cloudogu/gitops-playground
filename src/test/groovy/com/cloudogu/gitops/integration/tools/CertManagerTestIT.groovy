@@ -12,7 +12,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  * This class checks if cert-manager is started well.
  * Cert-Manager contains own namespace ('cert-manager') which owns and 3 Pods:*/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'full')
 //TODO: why not in ArgoCD Operator? Clearify
 class CertManagerTestIT extends KubenetesApiTestSetup {
 
@@ -29,7 +29,7 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
 
 	@BeforeAll
 	static void labelTest() {
-		println "###### CERT-MANAGER ######"
+		println '###### CERT-MANAGER ######'
 	}
 
 	@Test
@@ -48,10 +48,10 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
 	}
 
 	private static Map<String, Closure<Boolean>> expectedCertManagerPods() {
-		['cert-manager'           : {
+		return ['cert-manager'           : {
 			String podName -> podName.startsWith('cert-manager-') && !podName.startsWith('cert-manager-cainjector') && !podName.startsWith('cert-manager-webhook')
 		},
-		 'cert-manager-cainjector': { String podName -> podName.startsWith('cert-manager-cainjector') },
-		 'cert-manager-webhook'   : { String podName -> podName.startsWith('cert-manager-webhook') },]
+		        'cert-manager-cainjector': { String podName -> podName.startsWith('cert-manager-cainjector') },
+		        'cert-manager-webhook'   : { String podName -> podName.startsWith('cert-manager-webhook') },]
 	}
 }

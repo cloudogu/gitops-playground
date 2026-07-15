@@ -17,7 +17,7 @@ class AuthorizationInterceptor implements Interceptor {
 	@Override
 	Response intercept(@NotNull Chain chain) throws IOException {
 		def newRequest = chain.request().newBuilder()
-			.header("Authorization", Credentials.basic(username, password))
+			.header('Authorization', Credentials.basic(username, password))
 			.build()
 
 		return chain.proceed(newRequest)

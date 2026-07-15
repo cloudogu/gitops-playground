@@ -18,12 +18,12 @@ class JsonSchemaValidator {
 		def schemaNode = JsonSchemaGenerator.createSchema()
 		Schema schema = schemaRegistry.getSchema(schemaNode)
 
-		log.debug("yaml configuration converted to json for validate {}", json)
+		log.debug('yaml configuration converted to json for validate {}', json)
 
 		def validationMessages = schema.validate(json)
 
 		if (!validationMessages.isEmpty()) {
-			throw new RuntimeException("Config file invalid: " + validationMessages.join("\n"))
+			throw new RuntimeException('Config file invalid: ' + validationMessages.join('\n'))
 		}
 	}
 }

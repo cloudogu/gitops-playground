@@ -49,36 +49,36 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 		def repo = repoProvider.create('argocd/cluster-resources', gitHandler.resourcesScm)
 		repo.cloneRepo()
 
-		for (def app in k8sClient.getCustomResource("app")) {
+		for (def app in k8sClient.getCustomResource('app')) {
 			if (app.name == 'bootstrap' || app.name == 'argocd' || app.name == 'projects') {
 				// we don't want bootstrap to kill everything
 				// argocd and projects are needed for argocd to function and run finalizers
 				continue
 			}
 
-			k8sClient.patch("app",
+			k8sClient.patch('app',
 				app.name,
 				app.namespace,
 				'merge',
-				[metadata: [finalizers: ["resources-finalizer.argocd.argoproj.io"]]])
+				[metadata: [finalizers: ['resources-finalizer.argocd.argoproj.io']]])
 		}
 
-		List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>("argocd", "bootstrap"), // first to prevent recreation
-		                                                new Tuple2<String, String>("argocd", "cluster-resources"),
-		                                                new Tuple2<String, String>("argocd", "example-apps"),]
+		List<Tuple2<String, String>> appsToBeDeleted = [new Tuple2<String, String>('argocd', 'bootstrap'), // first to prevent recreation
+		                                                new Tuple2<String, String>('argocd', 'cluster-resources'),
+		                                                new Tuple2<String, String>('argocd', 'example-apps'),]
 
 		for (def app in appsToBeDeleted) {
-			k8sClient.delete("app", app.v1, app.v2)
+			k8sClient.delete('app', app.v1, app.v2)
 		}
 
 		installArgoCDViaHelm(repo)
 		helmClient.uninstall('argocd', 'argocd')
 		for (def project in k8sClient.getCustomResource('appprojects')) {
-			k8sClient.delete("appproject", project.namespace, project.name)
+			k8sClient.delete('appproject', project.namespace, project.name)
 		}
 
-		k8sClient.delete("app", 'argocd', "projects")
-		k8sClient.delete("app", 'argocd', "argocd")
+		k8sClient.delete('app', 'argocd', 'projects')
+		k8sClient.delete('app', 'argocd', 'argocd')
 
 		k8sClient.delete('secret', 'default', 'jenkins-credentials')
 		k8sClient.delete('secret', 'default', 'argocd-repo-creds-scm')
@@ -99,6 +99,6 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 	}
 
 	private Config getConfig() {
-		context.config
+		return context.config
 	}
 }

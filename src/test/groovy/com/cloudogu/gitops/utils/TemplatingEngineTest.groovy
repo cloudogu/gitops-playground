@@ -17,7 +17,7 @@ class TemplatingEngineTest {
 
 	@Test
 	void 'replaces two templates in different folders'() {
-		def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
+		def fooTemplate = new File(tmpDir.absolutePath, 'foo.ftl.txt')
 		fooTemplate.text = """
             this is the template
             I can embed \${string}
@@ -30,38 +30,38 @@ class TemplatingEngineTest {
 
 		def tmpDir2 = File.createTempDir('gitops-playground-tests-templatingengine')
 		tmpDir2.deleteOnExit()
-		def barTemplate = new File(tmpDir2.absolutePath, "bar.ftl.txt")
+		def barTemplate = new File(tmpDir2.absolutePath, 'bar.ftl.txt')
 		barTemplate.text = "Hello \${name}"
 
 		def engine = new TemplatingEngine()
-		engine.replaceTemplate(barTemplate, [name: "Playground",])
+		engine.replaceTemplate(barTemplate, [name: 'Playground',])
 
-		assertThat(new File(tmpDir2.absolutePath, "bar.txt").text).isEqualTo("Hello Playground")
+		assertThat(new File(tmpDir2.absolutePath, 'bar.txt').text).isEqualTo('Hello Playground')
 		assertThat(barTemplate).doesNotExist()
 	}
 
 	@Test
 	void 'keeps template file'() {
-		def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
-		def barTarget = new File(tmpDir.absolutePath, "bar.txt")
+		def barTemplate = new File(tmpDir.absolutePath, 'bar.ftl.txt')
+		def barTarget = new File(tmpDir.absolutePath, 'bar.txt')
 		barTemplate.text = "Hello \${name}"
 
 		def engine = new TemplatingEngine()
-		engine.template(barTemplate, barTarget, [name: "Playground",])
+		engine.template(barTemplate, barTarget, [name: 'Playground',])
 
-		assertThat(barTarget.text).isEqualTo("Hello Playground")
+		assertThat(barTarget.text).isEqualTo('Hello Playground')
 		assertThat(barTemplate).exists()
 	}
 
 	@Test
 	void 'Templates from file to string'() {
-		def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
+		def fooTemplate = new File(tmpDir.absolutePath, 'foo.ftl.txt')
 		fooTemplate.text = "Hello \${name}"
 
 		def engine = new TemplatingEngine()
-		String result = engine.template(fooTemplate, [name: "Playground",])
+		String result = engine.template(fooTemplate, [name: 'Playground',])
 
-		assertThat(result).isEqualTo("Hello Playground")
+		assertThat(result).isEqualTo('Hello Playground')
 	}
 
 	@Test
@@ -69,33 +69,33 @@ class TemplatingEngineTest {
 		def fooTemplate = "Hello \${name}"
 
 		def engine = new TemplatingEngine()
-		String result = engine.template(fooTemplate, [name: "Playground",])
+		String result = engine.template(fooTemplate, [name: 'Playground',])
 
-		assertThat(result).isEqualTo("Hello Playground")
+		assertThat(result).isEqualTo('Hello Playground')
 	}
 
 	@Test
 	void 'Ignores templates without variables'() {
-		def fooTemplate = "Hello name"
+		def fooTemplate = 'Hello name'
 
 		def engine = new TemplatingEngine()
 		String result = engine.template(fooTemplate, [:])
 
-		assertThat(result).isEqualTo("Hello name")
+		assertThat(result).isEqualTo('Hello name')
 	}
 
 	@Test
 	void "replaces yaml templates"() {
-		def barTemplate = new File(tmpDir.absolutePath + File.separator + "subdirectory", "result.ftl.yaml")
+		def barTemplate = new File(tmpDir.absolutePath + File.separator + 'subdirectory', 'result.ftl.yaml')
 		barTemplate.getParentFile().mkdirs()
 		barTemplate.text = 'foo: ${prefix}suffix'
-		def barTarget = new File(tmpDir.absolutePath, "subdirectory/keep-this-way.yaml")
+		def barTarget = new File(tmpDir.absolutePath, 'subdirectory/keep-this-way.yaml')
 		barTarget.text = 'thiswont: ${prefix}-be-replaced'
 
 		def engine = new TemplatingEngine()
-		engine.replaceTemplates(tmpDir, [prefix: "myteam-"])
+		engine.replaceTemplates(tmpDir, [prefix: 'myteam-'])
 
-		assertThat(new File("$tmpDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
+		assertThat(new File(String.valueOf(tmpDir) + '/subdirectory/result.yaml').text).isEqualTo("foo: myteam-suffix")
 		assertThat(new File("$tmpDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')
 		assertThat(new File("$tmpDir/subdirectory/result.ftl.yaml").exists()).isFalse()
 	}

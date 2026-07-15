@@ -32,7 +32,7 @@ class ScmManagerProviderMock implements GitProvider {
 	URI inClusterBase = new URI('http://scmm.scm-manager.svc.cluster.local/scm')
 	URI clientBase = new URI('http://localhost:8080/scm')
 	String namePrefix = ''
-	Credentials credentials = new Credentials('gitops', "gitops")
+	Credentials credentials = new Credentials('gitops', 'gitops')
 	String gitOpsUsername = 'gitops'
 	URI prometheus = new URI('http://localhost:8080/scm/api/v2/metrics/prometheus')
 

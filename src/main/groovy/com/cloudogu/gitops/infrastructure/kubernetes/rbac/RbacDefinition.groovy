@@ -14,7 +14,7 @@ class RbacDefinition {
 	private String name
 	private String namespace
 	private List<ServiceAccountRef> serviceAccounts = []
-	private String subfolder = "rbac"
+	private String subfolder = 'rbac'
 	private GitRepo repo
 	private Config config
 
@@ -60,7 +60,7 @@ class RbacDefinition {
 
 	void generate() {
 		if (!repo) {
-			throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
+			throw new IllegalStateException('SCMM repo must be set using withRepo() before calling generate()')
 		}
 
 		log.trace("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
@@ -75,7 +75,7 @@ class RbacDefinition {
 
 	private void generateRole(File outputDir) {
 		if (variant == Role.Variant.CLUSTER_ADMIN) {
-			log.trace("Skipping creation of ClusterRole cluster-admin")
+			log.trace('Skipping creation of ClusterRole cluster-admin')
 			return
 		}
 
@@ -89,7 +89,7 @@ class RbacDefinition {
 	private void generateRoleBinding(File outputDir) {
 		String roleName = name
 		if (variant == Role.Variant.CLUSTER_ADMIN) {
-			roleName = "cluster-admin"
+			roleName = 'cluster-admin'
 		}
 		def binding = new RoleBinding(name, namespace, roleName, serviceAccounts)
 

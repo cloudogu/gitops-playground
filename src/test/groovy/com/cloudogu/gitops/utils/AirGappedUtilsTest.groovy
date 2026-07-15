@@ -125,7 +125,7 @@ class AirGappedUtilsTest {
 
 		if (chartLock == null) {
 			chartLock = [dependencies: [[name      : 'crds',
-			                             repository: "",
+			                             repository: '',
 			                             version   : '0.0.0'],
 			                            [name      : 'grafana',
 			                             repository: 'https://grafana.github.io/helm-charts',
@@ -157,7 +157,7 @@ class AirGappedUtilsTest {
 		assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
 			'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-		verify(prometheusRepo).createRepositoryAndSetPermission(eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
+		verify(prometheusRepo).createRepositoryAndSetPermission(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'),
 			eq(false))
 	}
 
@@ -172,6 +172,6 @@ class AirGappedUtilsTest {
 	}
 
 	AirGappedUtils createAirGappedUtils() {
-		new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
+		return new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
 	}
 }

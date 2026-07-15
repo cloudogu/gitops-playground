@@ -37,15 +37,13 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 
-		List<String> namespaceList = new ArrayList<>(Arrays.asList(
-			"test1-argocd",
-			"test1-example-apps-staging",
-			"test1-example-apps-production",
-			"test1-" + config.features.ingress.ingressNamespace,
-			"test1-monitoring",
-			"test1-registry",
-			"test1-jenkins"
-		))
+		List<String> namespaceList = new ArrayList<>(Arrays.asList('test1-argocd',
+			'test1-example-apps-staging',
+			'test1-example-apps-production',
+			'test1-' + config.features.ingress.ingressNamespace,
+			'test1-monitoring',
+			'test1-registry',
+			'test1-jenkins'))
 
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
@@ -68,15 +66,13 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 
-		List<String> namespaceList = new ArrayList<>(Arrays.asList(
-			"test1-argocd",
-			"test1-example-apps-staging",
-			"test1-example-apps-production",
-			"test1-" + config.features.ingress.ingressNamespace,
-			"test1-monitoring",
-			"test1-registry",
-			"test1-jenkins"
-		))
+		List<String> namespaceList = new ArrayList<>(Arrays.asList('test1-argocd',
+			'test1-example-apps-staging',
+			'test1-example-apps-production',
+			'test1-' + config.features.ingress.ingressNamespace,
+			'test1-monitoring',
+			'test1-registry',
+			'test1-jenkins'))
 
 		def application = ApplicationContext.run()
 			.registerSingleton(config)
@@ -98,10 +94,8 @@ class ApplicationTest {
 
 		application.setNamespaceListToConfig(buildContext())
 
-		assertThat(config.application.namespaces.getActiveNamespaces()).containsAll([
-			"example-apps-staging",
-			"example-apps-production"
-		])
+		assertThat(config.application.namespaces.getActiveNamespaces()).containsAll(['example-apps-staging',
+		                                                                             'example-apps-production'])
 	}
 
 	@Test
@@ -130,14 +124,12 @@ class ApplicationTest {
 		config.content.namespaces = ['${config.application.namePrefix}example-apps-staging',
 		                             '${config.application.namePrefix}example-apps-production']
 
-		List<String> namespaceList = new ArrayList<>(Arrays.asList(
-			"test1-argocd",
-			"test1-example-apps-staging",
-			"test1-example-apps-production",
-			"test1-" + config.features.ingress.ingressNamespace,
-			"test1-monitoring",
-			"test1-registry"
-		))
+		List<String> namespaceList = new ArrayList<>(Arrays.asList('test1-argocd',
+			'test1-example-apps-staging',
+			'test1-example-apps-production',
+			'test1-' + config.features.ingress.ingressNamespace,
+			'test1-monitoring',
+			'test1-registry'))
 
 		def application = ApplicationContext.run()
 			.registerSingleton(config)

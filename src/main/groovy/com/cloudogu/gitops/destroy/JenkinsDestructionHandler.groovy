@@ -26,7 +26,7 @@ class JenkinsDestructionHandler implements DestructionHandler {
 	@Override
 	void destroy() {
 		jobManager.deleteJob("${config.application.namePrefix}example-apps")
-		globalPropertyManager.deleteGlobalProperty("SCMM_URL")
+		globalPropertyManager.deleteGlobalProperty('SCMM_URL')
 		globalPropertyManager.deleteGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL")
 		globalPropertyManager.deleteGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH")
 		globalPropertyManager.deleteGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL")

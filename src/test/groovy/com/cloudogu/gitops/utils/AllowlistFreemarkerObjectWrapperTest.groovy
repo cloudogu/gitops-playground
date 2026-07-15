@@ -9,22 +9,22 @@ class AllowlistFreemarkerObjectWrapperTest {
 
 	@Test
 	void 'should allow access to whitelisted static models'() {
-		def wrapper = new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ["com.cloudogu.gitops.utils.DockerImageParser"] as Set)
+		def wrapper = new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['com.cloudogu.gitops.utils.DockerImageParser'] as Set)
 		def staticModels = wrapper.getStaticModels()
 
-		assertNotNull(staticModels.get("com.cloudogu.gitops.utils.DockerImageParser"))
-		assertNull(staticModels.get("java.lang.Integer"))
-		assertNull(staticModels.get("java.lang.String"))
+		assertNotNull(staticModels.get('com.cloudogu.gitops.utils.DockerImageParser'))
+		assertNull(staticModels.get('java.lang.Integer'))
+		assertNull(staticModels.get('java.lang.String'))
 	}
 
 	@Test
 	void 'should deny access to non-whitelisted static models'() {
-		def wrapper = new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ["java.lang.String"] as Set)
+		def wrapper = new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['java.lang.String'] as Set)
 		def staticModels = wrapper.getStaticModels()
 
-		assertNull(staticModels.get("java.lang.Integer"))
-		assertNotNull(staticModels.get("java.lang.String"))
-		assertNull(staticModels.get("com.cloudogu.gitops.utils.DockerImageParser"))
+		assertNull(staticModels.get('java.lang.Integer'))
+		assertNotNull(staticModels.get('java.lang.String'))
+		assertNull(staticModels.get('com.cloudogu.gitops.utils.DockerImageParser'))
 	}
 
 	@Test
@@ -46,14 +46,14 @@ class AllowlistFreemarkerObjectWrapperTest {
 
 		def model = [statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()] as Map<String, Object>
 		// create a temporary file to simulate an actual file input
-		def tempInputFile = File.createTempFile("test", ".ftl.yaml")
+		def tempInputFile = File.createTempFile('test', '.ftl.yaml')
 		tempInputFile.text = templateText
 
 		def exception = assertThrows(freemarker.core.InvalidReferenceException) {
 			new TemplatingEngine().replaceTemplates(tempInputFile, model)
 		}
 
-		assert exception.message.contains("System"): "Exception message should mention 'System'"
+		assert exception.message.contains('System'): "Exception message should mention 'System'"
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class AllowlistFreemarkerObjectWrapperTest {
 
 		def model = [statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['java.lang.Math', 'com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()] as Map<String, Object>
 		// create a temporary file to simulate an actual file input
-		def tempInputFile = File.createTempFile("test", ".ftl.yaml")
+		def tempInputFile = File.createTempFile('test', '.ftl.yaml')
 		tempInputFile.text = templateText
 
 		new TemplatingEngine().replaceTemplates(tempInputFile, model)

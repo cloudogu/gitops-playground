@@ -1450,9 +1450,9 @@ metadata:
 
 		server.expect()
 			.get()
-			.withPath("/apis/argoproj.io/v1beta1")
-			.andReturn(200, [resources: [[name        : "argocds",
-			                              singularName: "argocd",
+			.withPath('/apis/argoproj.io/v1beta1')
+			.andReturn(200, [resources: [[name        : 'argocds',
+			                              singularName: 'argocd',
 			                              namespaced  : true,
 			                              kind        : "ArgoCD",
 			                              shortNames  : []]]])
@@ -1460,7 +1460,7 @@ metadata:
 
 		// When/Then
 		def exception = shouldFail(K8sClient.KubernetesApiResourceNotFoundException) {
-			k8sApiClient.getAnnotation("does-not-exist", "some-resource", "some-annotation", "argocd")
+			k8sApiClient.getAnnotation('does-not-exist', 'some-resource', 'some-annotation', 'argocd')
 		}
 
 		assertThat(exception.message)

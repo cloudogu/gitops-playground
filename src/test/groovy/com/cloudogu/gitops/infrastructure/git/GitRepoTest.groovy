@@ -19,12 +19,12 @@ import org.mockito.Mock
 
 class GitRepoTest {
 
-	public static final String expectedNamespace = "namespace"
-	public static final String expectedRepo = "repo"
-	Config config = Config.fromMap([application: [gitName : "Cloudogu",
-	                                              gitEmail: "hello@cloudogu.com"],
-	                                scm        : [scmManager: [username: "dont-care-username",
-	                                                           password: "dont-care-password"]]])
+	public static final String expectedNamespace = 'namespace'
+	public static final String expectedRepo = 'repo'
+	Config config = Config.fromMap([application: [gitName : 'Cloudogu',
+	                                              gitEmail: 'hello@cloudogu.com'],
+	                                scm        : [scmManager: [username: 'dont-care-username',
+	                                                           password: 'dont-care-password']]])
 
 	TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
 
@@ -40,8 +40,8 @@ class GitRepoTest {
 
 	@Test
 	void "writes file"() {
-		def repo = getRepo("", scmManagerMock)
-		repo.writeFile("test.txt", "the file's content")
+		def repo = getRepo('', scmManagerMock)
+		repo.writeFile('test.txt', "the file's content")
 
 		def expectedFile = new File("$repo.absoluteLocalRepoTmpDir/test.txt")
 		assertThat(expectedFile.getText()).is("the file's content")
@@ -49,24 +49,24 @@ class GitRepoTest {
 
 	@Test
 	void "overwrites file"() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 		def tempDir = repo.absoluteLocalRepoTmpDir
 
 		def existingFile = new File("$tempDir/already-exists.txt")
 		existingFile.createNewFile()
-		existingFile.text = "already existing content"
+		existingFile.text = 'already existing content'
 
-		repo.writeFile("already-exists.txt", "overwritten content")
+		repo.writeFile('already-exists.txt', 'overwritten content')
 
 		def expectedFile = new File("$tempDir/already-exists.txt")
-		assertThat(expectedFile.getText()).is("overwritten content")
+		assertThat(expectedFile.getText()).is('overwritten content')
 	}
 
 	@Test
 	void "writes file and creates subdirectory"() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 		def tempDir = repo.absoluteLocalRepoTmpDir
-		repo.writeFile("subdirectory/test.txt", "the file's content")
+		repo.writeFile('subdirectory/test.txt', "the file's content")
 
 		def expectedFile = new File("$tempDir/subdirectory/test.txt")
 		assertThat(expectedFile.getText()).is("the file's content")
@@ -74,12 +74,12 @@ class GitRepoTest {
 
 	@Test
 	void "throws error when directory conflicts with existing file"() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 		def tempDir = repo.absoluteLocalRepoTmpDir
 		new File("$tempDir/test.txt").mkdir()
 
 		shouldFail(FileNotFoundException) {
-			repo.writeFile("test.txt", "the file's content")
+			repo.writeFile('test.txt', "the file's content")
 		}
 	}
 
@@ -105,30 +105,30 @@ class GitRepoTest {
 
 	@Test
 	void 'Clones and checks out main'() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 
 		repo.cloneRepo()
 		def HEAD = new File(repo.absoluteLocalRepoTmpDir, '.git/HEAD')
-		assertThat(HEAD.text).isEqualTo("ref: refs/heads/main\n")
+		assertThat(HEAD.text).isEqualTo('ref: refs/heads/main\n')
 		assertThat(new File(repo.absoluteLocalRepoTmpDir, 'README.md')).exists()
 	}
 
 	@Test
 	void 'pushes changes to remote directory'() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 
 		repo.cloneRepo()
 		def readme = new File(repo.absoluteLocalRepoTmpDir, 'README.md')
 		readme.text = 'This text should be in the readme afterwards'
-		repo.commitAndPush("The commit message")
+		repo.commitAndPush('The commit message')
 
 		def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
 		assertThat(commits.size()).isEqualTo(1)
-		assertThat(commits[0].fullMessage).isEqualTo("The commit message")
+		assertThat(commits[0].fullMessage).isEqualTo('The commit message')
 		assertThat(commits[0].authorIdent.emailAddress).isEqualTo('hello@cloudogu.com')
 		assertThat(commits[0].authorIdent.name).isEqualTo('Cloudogu')
 		assertThat(commits[0].committerIdent.emailAddress).isEqualTo('hello@cloudogu.com')
-		assertThat(commits[0].committerIdent.name).contains("Cloudogu - GOP v")
+		assertThat(commits[0].committerIdent.name).contains('Cloudogu - GOP v')
 
 		List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
 		assertThat(tags.size()).isEqualTo(0)
@@ -136,7 +136,7 @@ class GitRepoTest {
 
 	@Test
 	void 'pushes changes to remote directory with tag'() {
-		def repo = getRepo("", scmManagerMock)
+		def repo = getRepo('', scmManagerMock)
 		def expectedTag = '1.0'
 
 		repo.cloneRepo()
@@ -145,7 +145,7 @@ class GitRepoTest {
 		// Create existing tag to test for idempotence
 		Git.open(new File(repo.absoluteLocalRepoTmpDir)).tag().setName(expectedTag).call()
 
-		repo.commitAndPush("The commit message", expectedTag)
+		repo.commitAndPush('The commit message', expectedTag)
 
 		List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
 		assertThat(tags.size()).isEqualTo(1)
@@ -160,7 +160,7 @@ class GitRepoTest {
 	@Test
 	void 'creates repository and sets permission when new and username present'() {
 
-		def repoTarget = "foo/bar"
+		def repoTarget = 'foo/bar'
 		def repo = getRepo(repoTarget, scmManagerMock)
 		scmManagerMock.nextCreateResults = [true] // simulate "new repo"
 		scmManagerMock.gitOpsUsername = 'foo-gitops' // username available
@@ -183,7 +183,7 @@ class GitRepoTest {
 
 	@Test
 	void 'does not set permission when no GitOps username is configured'() {
-		def repoTarget = "foo/bar"
+		def repoTarget = 'foo/bar'
 		def scmManagerMock = new ScmManagerProviderMock()
 		def repo = getRepo(repoTarget, scmManagerMock)
 

@@ -15,10 +15,10 @@ class JsonSchemaGeneratorTest {
 		def output = new JsonOutput()
 
 		def expect = output.toJson(slurper.parseText(new JsonSchemaGenerator().createSchema().toString()))
-		def actual = output.toJson(slurper.parse(new File(System.getProperty("user.dir"), "docs/configuration.schema.json")))
+		def actual = output.toJson(slurper.parse(new File(System.getProperty('user.dir'), 'docs/configuration.schema.json')))
 
 		assertThat(actual)
-			.as("Config in docs/configuration.schema.json must be updated. Run GenerateJsonSchema class.")
+			.as('Config in docs/configuration.schema.json must be updated. Run GenerateJsonSchema class.')
 			.isEqualTo(expect)
 	}
 }

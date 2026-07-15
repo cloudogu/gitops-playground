@@ -11,9 +11,9 @@ class UserManagerTest {
 	@Test
 	void 'creates user successfully'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("the-user")
+		when(client.runScript(anyString())).thenReturn('the-user')
 
-		new UserManager(client).createUser("the-user", "hunter2")
+		new UserManager(client).createUser('the-user', 'hunter2')
 		verify(client).runScript(anyString())
 	}
 
@@ -35,29 +35,29 @@ class UserManagerTest {
 	void 'throws when backslashes are passed'() {
 		def client = mock(JenkinsApiClient)
 		shouldFail(IllegalArgumentException) {
-			new UserManager(client).createUser("the-\\'user", "hunter2")
+			new UserManager(client).createUser('the-\\\'user', "hunter2")
 		}
 	}
 
 	@Test
 	void 'throws when there was an error'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+		when(client.runScript(anyString())).thenReturn('groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]')
 
 		shouldFail(RuntimeException) {
-			new UserManager(client).createUser("the-user", "hunter2")
+			new UserManager(client).createUser('the-user', 'hunter2')
 		}
 	}
 
 	@Test
 	void 'grants permission for user'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("true")
-		when(client.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
+		when(client.runScript(anyString())).thenReturn('true')
+		when(client.runScript('print(Jenkins.getInstance().getAuthorizationStrategy().class)')).thenReturn('class hudson.security.GlobalMatrixAuthorizationStrategy')
 
 		new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
 
-		verify(client).runScript("""print(Jenkins.getInstance().getAuthorizationStrategy().class)""")
+		verify(client).runScript('print(Jenkins.getInstance().getAuthorizationStrategy().class)')
 		verify(client).runScript("""
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType
@@ -73,7 +73,7 @@ class UserManagerTest {
 	@Test
 	void 'throws when granting permission failed'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+		when(client.runScript(anyString())).thenReturn('groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]')
 
 		shouldFail(RuntimeException) {
 			new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
@@ -83,7 +83,7 @@ class UserManagerTest {
 	@Test
 	void 'checks whether matrix based authorization is enabled'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
+		when(client.runScript(anyString())).thenReturn('class hudson.security.GlobalMatrixAuthorizationStrategy')
 
 		assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isTrue()
 	}
@@ -91,7 +91,7 @@ class UserManagerTest {
 	@Test
 	void 'checks whether matrix based authorization is disabled'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("class hudson.security.FullControlOnceLoggedInAuthorizationStrategy")
+		when(client.runScript(anyString())).thenReturn('class hudson.security.FullControlOnceLoggedInAuthorizationStrategy')
 
 		assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isFalse()
 	}
@@ -99,7 +99,7 @@ class UserManagerTest {
 	@Test
 	void 'checks whether security realm without local user creation is used for cas'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.cas.CasSecurityRealm")
+		when(client.runScript(anyString())).thenReturn('class org.jenkinsci.plugins.cas.CasSecurityRealm')
 
 		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isTrue()
 	}
@@ -107,7 +107,7 @@ class UserManagerTest {
 	@Test
 	void 'checks whether security realm without local user creation is used for oic'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.oic.OicSecurityRealm")
+		when(client.runScript(anyString())).thenReturn('class org.jenkinsci.plugins.oic.OicSecurityRealm')
 
 		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isTrue()
 	}
@@ -115,7 +115,7 @@ class UserManagerTest {
 	@Test
 	void 'checks whether local user creation is supported'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("class hudson.security.HudsonPrivateSecurityRealm")
+		when(client.runScript(anyString())).thenReturn('class hudson.security.HudsonPrivateSecurityRealm')
 
 		assertThat(new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()).isFalse()
 	}
@@ -123,7 +123,7 @@ class UserManagerTest {
 	@Test
 	void 'throws when determining security realm errors'() {
 		def client = mock(JenkinsApiClient)
-		when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+		when(client.runScript(anyString())).thenReturn('groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]')
 
 		shouldFail(RuntimeException) {
 			new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()

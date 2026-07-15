@@ -17,8 +17,8 @@ class NetworkingUtilsTest {
 
 	@Test
 	void 'clusterBindAddress: returns bind address for external cluster'() {
-		def internalNodeIp = "1.2.3.4"
-		def localIp = "5.6.7.8"
+		def internalNodeIp = '1.2.3.4'
+		def localIp = '5.6.7.8'
 		when(k8sClient.waitForInternalNodeIp()).thenReturn(internalNodeIp)
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
 			"1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
@@ -44,7 +44,7 @@ class NetworkingUtilsTest {
 	void 'clusterBindAddress: fails when no potential bind address'() {
 		when(k8sClient.waitForInternalNodeIp()).thenReturn('')
 		commandExecutor.enqueueOutput(new CommandExecutor.Output('',
-			"1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
+			'1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000', 0))
 
 		def exception = shouldFail(RuntimeException) {
 			networkingUtils.findClusterBindAddress()
@@ -54,23 +54,23 @@ class NetworkingUtilsTest {
 
 	@Test
 	void 'get hosts'() {
-		assertThat(NetworkingUtils.getHost("https://example.com")).isEqualTo("example.com")
-		assertThat(NetworkingUtils.getHost("http://example.com")).isEqualTo("example.com")
-		assertThat(NetworkingUtils.getHost("")).isEqualTo("")
-		assertThat(NetworkingUtils.getHost("example.com")).isEqualTo("example.com")
+		assertThat(NetworkingUtils.getHost('https://example.com')).isEqualTo('example.com')
+		assertThat(NetworkingUtils.getHost('http://example.com')).isEqualTo('example.com')
+		assertThat(NetworkingUtils.getHost('')).isEqualTo("")
+		assertThat(NetworkingUtils.getHost('example.com')).isEqualTo("example.com")
 
-		assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com/bla")
-		assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com:9090/bla")
-		assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com/bla")
-		assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com:9090/bla")
+		assertThat(NetworkingUtils.getHost('http://example.com/bla')).isEqualTo('example.com/bla')
+		assertThat(NetworkingUtils.getHost('http://example.com:9090/bla')).isEqualTo('example.com:9090/bla')
+		assertThat(NetworkingUtils.getHost('example.com/bla')).isEqualTo("example.com/bla")
+		assertThat(NetworkingUtils.getHost('example.com:9090/bla')).isEqualTo("example.com:9090/bla")
 	}
 
 	@Test
 	void 'get protocols'() {
-		assertThat(NetworkingUtils.getProtocol("https://example.com")).isEqualTo("https");
-		assertThat(NetworkingUtils.getProtocol("http://example.com")).isEqualTo("http");
-		assertThat(NetworkingUtils.getProtocol("ftp://example.com")).isEqualTo("");
-		assertThat(NetworkingUtils.getProtocol("example.com")).isEqualTo("");
-		assertThat(NetworkingUtils.getProtocol("")).isEqualTo("")
+		assertThat(NetworkingUtils.getProtocol('https://example.com')).isEqualTo('https')
+		assertThat(NetworkingUtils.getProtocol('http://example.com')).isEqualTo('http')
+		assertThat(NetworkingUtils.getProtocol('ftp://example.com')).isEqualTo('')
+		assertThat(NetworkingUtils.getProtocol('example.com')).isEqualTo('')
+		assertThat(NetworkingUtils.getProtocol('')).isEqualTo("")
 	}
 }

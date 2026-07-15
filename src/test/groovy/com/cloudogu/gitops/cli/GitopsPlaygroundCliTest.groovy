@@ -56,9 +56,9 @@ class GitopsPlaygroundCliTest {
 
 	@Test
 	void 'Starts with config file'() {
-		String pathToConfigFile = "./src/test/resources/testMainConfig.yaml"
+		String pathToConfigFile = './src/test/resources/testMainConfig.yaml'
 
-		assertThat(new File(pathToConfigFile).isFile()).withFailMessage("config file for test do not exists anymore.").isTrue()
+		assertThat(new File(pathToConfigFile).isFile()).withFailMessage('config file for test do not exists anymore.').isTrue()
 
 		def status = cli.run('--config-file=' + pathToConfigFile)
 		assertThat(status).isEqualTo(ReturnCode.SUCCESS)
@@ -74,7 +74,7 @@ class GitopsPlaygroundCliTest {
 	void 'Starts with config map'() {
 		when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn('{"application": {"yes": true}}')
 
-		def status = cli.run("--config-map=my-config")
+		def status = cli.run('--config-map=my-config')
 
 		assertThat(status).isEqualTo(ReturnCode.SUCCESS)
 		// ensure init is called with Config
@@ -187,7 +187,7 @@ class GitopsPlaygroundCliTest {
 	@Test
 	void 'fails on invalid config file'() {
 
-		def configFile = File.createTempFile("gop", '.yaml')
+		def configFile = File.createTempFile('gop', '.yaml')
 		configFile.deleteOnExit()
 		configFile.text = 'something: not-matching-our-schema'
 
@@ -213,7 +213,7 @@ class GitopsPlaygroundCliTest {
 		def cmConfig = [application: [username: 'cmUser', password: 'cmPw', namePrefix: 'cmPref']]
 		def fileConfig = [application: [username: 'fileUser', password: 'filePw']]
 
-		def configFile = File.createTempFile("gop", '.yaml')
+		def configFile = File.createTempFile('gop', '.yaml')
 		configFile.deleteOnExit()
 
 		configFile.text = toYaml(fileConfig)
@@ -229,14 +229,14 @@ class GitopsPlaygroundCliTest {
 	@Test
 	void 'Helm null values overwrite'() {
 
-		def fileConfig = [features: [monitoring: [helm: [repoURL: "https://prometheus-community.github.io/helm-chartsTEST"]]]]
+		def fileConfig = [features: [monitoring: [helm: [repoURL: 'https://prometheus-community.github.io/helm-chartsTEST']]]]
 
-		def configFile = File.createTempFile("gop", '.yaml')
+		def configFile = File.createTempFile('gop', '.yaml')
 		configFile.deleteOnExit()
 
 		configFile.text = toYaml(fileConfig)
 
-		cli.run("--config-file=${configFile}", "--yes")
+		cli.run('--config-file=' + String.valueOf(configFile), "--yes")
 
 		assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
 		assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-chartsTEST')
@@ -255,13 +255,13 @@ class GitopsPlaygroundCliTest {
 		                                           vault          : [helm: [repoURL: 'localhost:3000/proxy/vault:latest']],],
 		                             certManager: [helm: [image: 'localhost:30000/proxy/cert-manager-controller:latest']]]]
 
-		def configFile = File.createTempFile("gop", ".yaml")
+		def configFile = File.createTempFile('gop', '.yaml')
 		configFile.deleteOnExit()
 
 		configFile.text = toYaml(fileConfig)
 
-		cli.run("--config-file=${configFile}", "--yes")
-		def myconfig = cli.lastSchema;
+		cli.run('--config-file=' + String.valueOf(configFile), "--yes")
+		def myconfig = cli.lastSchema
 		assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
 		assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
 		assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden
@@ -299,14 +299,14 @@ class GitopsPlaygroundCliTest {
 	}
 
 	static String getLoggingPattern() {
-		loggingEncoder.pattern
+		return loggingEncoder.pattern
 	}
 
 	static PatternLayoutEncoder getLoggingEncoder() {
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
 		def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
 		def consoleAppender = rootLogger.getAppender('STDOUT') as ConsoleAppender
-		consoleAppender.getEncoder() as PatternLayoutEncoder
+		return consoleAppender.getEncoder() as PatternLayoutEncoder
 	}
 
 	void writeViaSystemIn(String value) {
@@ -315,7 +315,7 @@ class GitopsPlaygroundCliTest {
 	}
 
 	static String toYaml(Map map) {
-		yamlMapper.writeValueAsString(map)
+		return yamlMapper.writeValueAsString(map)
 	}
 
 	class GitopsPlaygroundCliForTest extends GitopsPlaygroundCli {

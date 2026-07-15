@@ -27,7 +27,7 @@ class ProfileTestSetup implements TestWatcher {
 	static void afterAllOnlyOnFailure() {
 		// if one test fails, logging is necessary
 		if (anyTestFailed) {
-			log.info "##############  K8s dump ##############"
+			log.info '##############  K8s dump ##############'
 			TestK8sHelper.dumpNamespacesAndPods()
 		}
 	}

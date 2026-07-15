@@ -60,13 +60,17 @@ class AirGappedUtils {
 		// We either have to update or remove them. Take the easier approach.
 		new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
-		repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" + "Source: ${helmConfig.repoURL}\n" +
+		repo.commitAndPush('Chart ' + String.valueOf(chartYaml.name) +
+			', version: ' +
+			String.valueOf(chartYaml.version) +
+			'\n\n' +
+			"Source: ${helmConfig.repoURL}\n" +
 			"Dependencies localized to run in air-gapped environments", chartYaml.version as String)
 		return repoNamespaceAndName
 	}
 
 	private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
-		log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" + "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
+		log.debug('Validating helm chart before pushing it to SCM, by running helm template.\n' + "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
 		try {
 			helmClient.template(repoName, localHelmChartFolder)
 		} catch (RuntimeException e) {
@@ -98,7 +102,7 @@ class AirGappedUtils {
 		if (!chartLock.toFile().exists()) {
 			return [:]
 		}
-		new YamlSlurper().parse(chartLock) as Map
+		return new YamlSlurper().parse(chartLock) as Map
 	}
 
 	/**
@@ -108,7 +112,7 @@ class AirGappedUtils {
 		if (chartLockDep) {
 			chartYamlDep.version = chartLockDep.version
 		} else if ((chartYamlDep.version as String).contains('*')) {
-			throw new RuntimeException("Unable to determine proper version for dependency " + "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
+			throw new RuntimeException('Unable to determine proper version for dependency ' + "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
 		}
 	}
 
@@ -116,7 +120,7 @@ class AirGappedUtils {
 		if (!list) return [:]
 		// Note that list.find{} does not work in GraalVM native image:
 		// UnsupportedFeatureError: Runtime reflection is not supported
-		list.stream()
+		return list.stream()
 			.filter(map -> map.name == name)
 			.findFirst().orElse([:])
 	}

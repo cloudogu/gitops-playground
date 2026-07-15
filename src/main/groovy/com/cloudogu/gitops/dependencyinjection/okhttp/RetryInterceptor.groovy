@@ -36,12 +36,12 @@ class RetryInterceptor implements Interceptor {
 					return response
 				}
 
-				log.trace("Retry HTTP Request to {} due to status code {}", chain.request().url().toString(), response.code())
+				log.trace('Retry HTTP Request to {} due to status code {}', chain.request().url().toString(), response.code())
 				response.close()
 
 			} catch (SocketTimeoutException e) {
 				lastException = e
-				log.trace("Retry HTTP Request to {} due to SocketTimeoutException: {}", chain.request().url().toString(), e.message)
+				log.trace('Retry HTTP Request to {} due to SocketTimeoutException: {}', chain.request().url().toString(), e.message)
 			}
 
 			// Wait before next retry (but not after the last attempt)

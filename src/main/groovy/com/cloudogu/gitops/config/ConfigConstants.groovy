@@ -31,26 +31,26 @@ interface ConfigConstants {
 
 	// ContentLoader
 	String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
-	String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
-	String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
-	String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
-	String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
-	String CONTENT_REPO_TARGET_REF_DESCRIPTION = "Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref."
-	String CONTENT_REPO_CREDENTIALS_DESCRIPTION = "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-	String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
-	String CONTENT_REPO_TYPE_DESCRIPTION = "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
-	String CONTENT_REPO_TARGET_DESCRIPTION = "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
-	String CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
+	String CONTENT_REPO_DESCRIPTION = 'ContentLoader repos to push into target environment'
+	String CONTENT_REPO_URL_DESCRIPTION = 'URL of the content repo. Mandatory for each type.'
+	String CONTENT_REPO_PATH_DESCRIPTION = 'Path within the content repo to process'
+	String CONTENT_REPO_REF_DESCRIPTION = 'Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!'
+	String CONTENT_REPO_TARGET_REF_DESCRIPTION = 'Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref.'
+	String CONTENT_REPO_CREDENTIALS_DESCRIPTION = 'Credentials Object to authenticate against content repo. Allows using a K8s Secret'
+	String CONTENT_REPO_TEMPLATING_DESCRIPTION = 'When true, template all files ending in .ftl within the repo'
+	String CONTENT_REPO_TYPE_DESCRIPTION = 'ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)'
+	String CONTENT_REPO_TARGET_DESCRIPTION = 'Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name.'
+	String CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION = 'This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo.'
 	String CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION = "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
-	String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
+	String CONTENT_VARIABLES_DESCRIPTION = 'Additional variables to use in custom templates.'
 	String CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION = 'Enables the whitelist for statics in content templating'
 	String CONTENT_STATICSWHITELIST_DESCRIPTION = 'Whitelist for Statics freemarker is allowing in user templates'
 	String CONTENT_HELM_RELEASE_NAME_DESCRIPTION = "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set."
 
-	String CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION = "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...)."
-	String CONTENT_HELM_RELEASE_CHART_DESCRIPTION = "Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name."
+	String CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION = 'Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...).'
+	String CONTENT_HELM_RELEASE_CHART_DESCRIPTION = 'Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name.'
 	String CONTENT_HELM_RELEASE_VERSION_DESCRIPTION = "Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag."
-	String CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION = "Kubernetes namespace to deploy the release into."
+	String CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION = 'Kubernetes namespace to deploy the release into.'
 	String CONTENT_HELM_RELEASE_RELEASE_NAME_DESCRIPTION = "Helm release name. If empty, the value of 'name' is used."
 	String CONTENT_HELM_RELEASE_VALUES_FILE_DESCRIPTION = "Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file)."
 	String CONTENT_HELM_RELEASE_VALUES_DESCRIPTION = "Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file."
@@ -115,7 +115,7 @@ interface ConfigConstants {
 	String SECRETS_DESCRIPTION = 'Config parameters for the secrets management'
 	String ESO_DESCRIPTION = 'Config parameters for the external secrets operator'
 	String VAULT_DESCRIPTION = 'Config parameters for the secrets-vault'
-	String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
+	String VAULT_ENABLE_DESCRIPTION = 'Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod.'
 	String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
 	String SECRETS_NAMESPACE = 'Optional defines the kubernetes namespace for secrets.'
 

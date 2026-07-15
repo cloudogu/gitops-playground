@@ -13,15 +13,15 @@ class TemplatingEngine {
 	private Configuration engine
 
 	TemplatingEngine(Configuration engine = null) {
-		def configuration = new Configuration(new Version("2.3.32"))
+		def configuration = new Configuration(new Version('2.3.32'))
 		this.engine = engine ?: configuration
-		this.engine.setSharedVariable("nullToEmpty", '');
+		this.engine.setSharedVariable('nullToEmpty', '')
 	}
 
 	/**
 	 * Executes template with parameters and replaces the .ftl in the file name.*/
 	File replaceTemplate(File templateFile, Map parameters) {
-		def targetFile = new File(templateFile.toString().replace(".ftl", ""))
+		def targetFile = new File(templateFile.toString().replace('.ftl', ''))
 		def rendered = template(templateFile, parameters)
 
 		// Only write file if template has non-empty output.
@@ -76,20 +76,20 @@ class TemplatingEngine {
 
 	String template(String template, Map parameters) {
 		StringWriter writer = new StringWriter()
-		Template templateObj = new Template("template", new StringReader(template), engine)
+		Template templateObj = new Template('template', new StringReader(template), engine)
 		templateObj.process(parameters, writer)
 		return writer.toString()
 	}
 
 	protected Template prepareTemplate(File templateFile) {
-		if (!templateFile.name.contains(".ftl")) {
-			throw new RuntimeException("File must contain .ftl to be a template")
+		if (!templateFile.name.contains('.ftl')) {
+			throw new RuntimeException('File must contain .ftl to be a template')
 		}
 
 		engine.setDirectoryForTemplateLoading(templateFile.parentFile)
 
 		def template = engine.getTemplate(templateFile.name)
-		template
+		return template
 	}
 
 }

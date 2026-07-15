@@ -15,8 +15,8 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 
 import java.nio.file.Path
-
 import groovy.yaml.YamlSlurper
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -29,8 +29,8 @@ class ArgoCDRepoSetupTest {
 		config = Config.fromMap(application: [namePrefix: '',
 		                                      tenantName: '',
 		                                      netpols   : true,
-		                                      namespaces: [dedicatedNamespaces: ["argocd", "monitoring", "secrets"],
-		                                                   tenantNamespaces   : ["example-apps-staging", "example-apps-production"]]],
+		                                      namespaces: [dedicatedNamespaces: ['argocd', 'monitoring', 'secrets'],
+		                                                   tenantNamespaces   : ['example-apps-staging', 'example-apps-production']]],
 			scm: [scmProviderType: ScmProviderType.SCM_MANAGER,
 			      scmManager     : [internal: true],
 			      gitlab         : [url: '']],

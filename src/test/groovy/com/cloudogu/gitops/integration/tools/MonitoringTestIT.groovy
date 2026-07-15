@@ -15,7 +15,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  *  - Grafana
  *  - Operator
  *  - prometheus-stack*/
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'full')
 class MonitoringTestIT extends KubenetesApiTestSetup {
 
 	String namespace = 'monitoring'
@@ -34,7 +34,7 @@ class MonitoringTestIT extends KubenetesApiTestSetup {
 
 	@BeforeAll
 	static void labelTest() {
-		println "###### PROMETHEUS ######"
+		println '###### PROMETHEUS ######'
 	}
 
 	@Test
@@ -52,7 +52,7 @@ class MonitoringTestIT extends KubenetesApiTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, operatorPod)
 	}
 
-	@Disabled("not start on jenkins")
+	@Disabled('not start on jenkins')
 	@Test
 	void ensureMonitoringIsStarted() {
 
@@ -62,10 +62,10 @@ class MonitoringTestIT extends KubenetesApiTestSetup {
 
 		def prometheus = pods.items.find { it.getMetadata().name.contains(prometheusPod) }
 		assertThat(prometheus).isNotNull()
-		assertThat(prometheus.status.phase).isEqualTo("Running")
+		assertThat(prometheus.status.phase).isEqualTo('Running')
 	}
 
-	@Disabled("jenkins got only 2")
+	@Disabled('jenkins got only 2')
 	@Test
 	void ensureNamespaceGot3Pods() {
 		def pods = api.listNamespacedPod(namespace).execute()

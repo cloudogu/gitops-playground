@@ -15,7 +15,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  * * To run locally: add -Dmicronaut.environments=full to your execute configuration
  **/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+@EnabledIfSystemProperty(named = 'micronaut.environments', matches = 'full')
 class FullProfileTestIT extends ProfileTestSetup {
 
 	/**
@@ -29,7 +29,7 @@ class FullProfileTestIT extends ProfileTestSetup {
 
 	@Test
 	void ensureExampleAppsAreRunning() {
-		TestK8sHelper.waitForAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, "", 40, TimeUnit.MINUTES)
+		TestK8sHelper.waitForAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, '', 40, TimeUnit.MINUTES)
 	}
 
 	@Test
@@ -39,12 +39,12 @@ class FullProfileTestIT extends ProfileTestSetup {
 
 	@Test
 	void ensureArgoCDIsOnlineAndPodsAreRunning() {
-		String expectedPod1 = "argocd-application-controller"
-		String expectedPod2 = "argocd-applicationset-controller"
+		String expectedPod1 = 'argocd-application-controller'
+		String expectedPod2 = 'argocd-applicationset-controller'
 		//        String expectedPod3 = "argocd-notifications-controller" // not stable
-		String expectedPod4 = "argocd-redis"
-		String expectedPod5 = "argocd-repo-server"
-		String expectedPod6 = "argocd-server"
+		String expectedPod4 = 'argocd-redis'
+		String expectedPod5 = 'argocd-repo-server'
+		String expectedPod6 = 'argocd-server'
 
 		List<String> expectedPods = [expectedPod1, expectedPod2, /* expectedPod3,*/ expectedPod4, expectedPod5, expectedPod6,]
 
@@ -59,20 +59,20 @@ class FullProfileTestIT extends ProfileTestSetup {
 
 	@Test
 	void ensureNamespacesExists() {
-		List<String> expectedNamespaces = ["argocd",
-		                                   "cert-manager",
-		                                   "jenkins",
-		                                   "registry",
-		                                   "scm-manager",
-		                                   "default",
-		                                   "example-apps-production",
-		                                   "example-apps-staging",
-		                                   "ingress",
-		                                   "kube-node-lease",
-		                                   "kube-public",
-		                                   "kube-system",
-		                                   "monitoring",
-		                                   "secrets"] as List<String>
+		List<String> expectedNamespaces = ['argocd',
+		                                   'cert-manager',
+		                                   'jenkins',
+		                                   'registry',
+		                                   'scm-manager',
+		                                   'default',
+		                                   'example-apps-production',
+		                                   'example-apps-staging',
+		                                   'ingress',
+		                                   'kube-node-lease',
+		                                   'kube-public',
+		                                   'kube-system',
+		                                   'monitoring',
+		                                   'secrets'] as List<String>
 
 		TestK8sHelper.waitForNamespaces(expectedNamespaces)
 	}

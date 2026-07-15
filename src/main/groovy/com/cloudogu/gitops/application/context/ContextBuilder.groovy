@@ -14,30 +14,22 @@ class ContextBuilder {
 	}
 
 	DeploymentContext build() {
-		return new DeploymentContext(
-			config,
+		return new DeploymentContext(config,
 			tenantMode(),
 			scmManagerDeploymentMode(),
 			config.application.mirrorRepos == true,
-			clusterDistribution()
-		)
+			clusterDistribution())
 	}
 
 	private DeploymentContext.TenantMode tenantMode() {
-		return config.multiTenant.useDedicatedInstance ?
-		       DeploymentContext.TenantMode.MULTI_TENANT :
-		       DeploymentContext.TenantMode.SINGLE_TENANT
+		return config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT
 	}
 
 	private DeploymentContext.ScmManagerDeploymentMode scmManagerDeploymentMode() {
-		return config.scm.scmManager?.internal ?
-		       DeploymentContext.ScmManagerDeploymentMode.INTERNAL :
-		       DeploymentContext.ScmManagerDeploymentMode.EXTERNAL
+		return config.scm.scmManager?.internal ? DeploymentContext.ScmManagerDeploymentMode.INTERNAL : DeploymentContext.ScmManagerDeploymentMode.EXTERNAL
 	}
 
 	private DeploymentContext.ClusterDistribution clusterDistribution() {
-		return config.application.openshift ?
-		       DeploymentContext.ClusterDistribution.OPENSHIFT :
-		       DeploymentContext.ClusterDistribution.KUBERNETES
+		return config.application.openshift ? DeploymentContext.ClusterDistribution.OPENSHIFT : DeploymentContext.ClusterDistribution.KUBERNETES
 	}
 }

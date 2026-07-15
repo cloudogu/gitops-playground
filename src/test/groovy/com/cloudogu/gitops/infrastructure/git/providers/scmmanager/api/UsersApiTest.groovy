@@ -22,11 +22,11 @@ class UsersApiTest {
 			.dynamicHttpsPort())
 		.build()
 
-	private Credentials credentials = new Credentials("user", "pass")
+	private Credentials credentials = new Credentials('user', 'pass')
 
 	@Test
 	void 'allows self-signed certificates when using insecure option'() {
-		wireMock.stubFor(delete(urlPathEqualTo("/scm/api/v2/users/test-user"))
+		wireMock.stubFor(delete(urlPathEqualTo('/scm/api/v2/users/test-user'))
 			.willReturn(aResponse().withStatus(204)))
 
 		def api = usersApi(true, true)
@@ -34,12 +34,12 @@ class UsersApiTest {
 		def resp = api.delete('test-user').execute()
 
 		assertThat(resp.isSuccessful()).isTrue()
-		wireMock.verify(1, deleteRequestedFor(urlPathEqualTo("/scm/api/v2/users/test-user")))
+		wireMock.verify(1, deleteRequestedFor(urlPathEqualTo('/scm/api/v2/users/test-user')))
 	}
 
 	@Test
 	void 'does not allow self-signed certificates by default'() {
-		wireMock.stubFor(delete(urlPathEqualTo("/scm/api/v2/users/test-user"))
+		wireMock.stubFor(delete(urlPathEqualTo('/scm/api/v2/users/test-user'))
 			.willReturn(aResponse().withStatus(204)))
 
 		def api = usersApi(false, true)
@@ -49,7 +49,7 @@ class UsersApiTest {
 			api.delete('test-user').execute()
 		}
 
-		wireMock.verify(0, deleteRequestedFor(urlPathEqualTo("/scm/api/v2/users/test-user")))
+		wireMock.verify(0, deleteRequestedFor(urlPathEqualTo('/scm/api/v2/users/test-user')))
 	}
 
 	private UsersApi usersApi(boolean insecure, boolean useHttps = false) {

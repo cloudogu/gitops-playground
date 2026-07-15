@@ -21,7 +21,7 @@ class JenkinsApiClient {
 	private int waitPeriodInMs = 2000
 
 	JenkinsApiClient(Config config,
-		@Named("jenkins") OkHttpClient client) {
+		@Named('jenkins') OkHttpClient client) {
 		this.config = config
 
 		if (config.application.insecure) {
@@ -34,8 +34,8 @@ class JenkinsApiClient {
 	}
 
 	String runScript(String code) {
-		log.trace("Running groovy script in Jenkins: {}", code)
-		def response = postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
+		log.trace('Running groovy script in Jenkins: {}', code)
+		def response = postRequestWithCrumb('scriptText', new FormBody.Builder().add('script', code).build())
 		if (response.code() != 200) {
 			throw new RuntimeException("Could not run script. Status code ${response.code()}")
 		}
@@ -46,14 +46,14 @@ class JenkinsApiClient {
 	Response postRequestWithCrumb(String url, RequestBody postData = null) {
 		return sendRequestWithRetries {
 			Request.Builder request = buildRequest(url)
-				.header("Jenkins-Crumb", getCrumb())
+				.header('Jenkins-Crumb', getCrumb())
 
 			if (postData != null) {
-				request.method("POST", postData)
+				request.method('POST', postData)
 			} else {
 				// Explicitly set empty body. Otherwise okhttp sends GET
-				RequestBody emptyBody = RequestBody.create("", null)
-				request.method("POST", emptyBody)
+				RequestBody emptyBody = RequestBody.create('', null)
+				request.method('POST', emptyBody)
 			}
 
 			request.build()
@@ -61,8 +61,8 @@ class JenkinsApiClient {
 	}
 
 	private String getCrumb() {
-		log.trace("Getting Crumb for Jenkins")
-		def response = sendRequestWithRetries { buildRequest("crumbIssuer/api/json").build() }
+		log.trace('Getting Crumb for Jenkins')
+		def response = sendRequestWithRetries { buildRequest('crumbIssuer/api/json').build() }
 
 		if (response.code() != 200) {
 			throw new RuntimeException("Could not create crumb. Status code ${response.code()}")
@@ -71,7 +71,7 @@ class JenkinsApiClient {
 		def json = new JsonSlurper().parse(response.body().byteStream())
 
 		if (!json instanceof Map || !(json as Map).containsKey('crumb')) {
-			throw new RuntimeException("Could not create crumb. Invalid json.")
+			throw new RuntimeException('Could not create crumb. Invalid json.')
 		}
 
 		return json['crumb']
@@ -79,7 +79,7 @@ class JenkinsApiClient {
 
 	private Request.Builder buildRequest(String url) {
 		return new Request.Builder()
-			.url("${config.jenkins.url}/$url")
+			.url(config.jenkins.url + '/' + url)
 			.header("Authorization", Credentials.basic(config.jenkins.username, config.jenkins.password))
 	}
 

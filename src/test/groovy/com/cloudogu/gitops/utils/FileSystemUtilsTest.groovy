@@ -33,20 +33,20 @@ class FileSystemUtilsTest {
 		Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
 
 		// Create some regular files
-		File regularFile = new File(parentDir.toFile(), "regularFile.txt")
+		File regularFile = new File(parentDir.toFile(), 'regularFile.txt')
 		regularFile.createNewFile()
 
 		// Create nested directory
-		File nestedDir = new File(parentDir.toFile(), "nestedDir")
+		File nestedDir = new File(parentDir.toFile(), 'nestedDir')
 		nestedDir.mkdir()
 
 		// Create read-only file in nested directory
-		File readOnlyFile = new File(nestedDir, "readOnlyFile.txt")
+		File readOnlyFile = new File(nestedDir, 'readOnlyFile.txt')
 		readOnlyFile.createNewFile()
 		readOnlyFile.setWritable(false)
 
 		// Create another read-only file in parent directory
-		File anotherReadOnlyFile = new File(parentDir.toFile(), "anotherReadOnlyFile.txt")
+		File anotherReadOnlyFile = new File(parentDir.toFile(), 'anotherReadOnlyFile.txt')
 		anotherReadOnlyFile.createNewFile()
 		anotherReadOnlyFile.setWritable(false)
 

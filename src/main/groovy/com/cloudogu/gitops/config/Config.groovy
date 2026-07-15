@@ -53,9 +53,9 @@ import picocli.CommandLine.Option
 class Config {
 
 	// When updating please also update in Dockerfile
-	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.2.1-1"
+	public static final String HELM_IMAGE = 'ghcr.io/cloudogu/helm:4.2.1-1'
 	// When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-	public static final String K8S_VERSION = "1.36.2"
+	public static final String K8S_VERSION = '1.36.2'
 	public static final String DEFAULT_ADMIN_USER = 'admin'
 	public static final String DEFAULT_ADMIN_PW = generatePassword()
 	public static final int DEFAULT_REGISTRY_PORT = 30000
@@ -334,11 +334,11 @@ class Config {
 
 		@Option(names = ['--jenkins-metrics-username'], description = JENKINS_METRICS_USERNAME_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
-		String metricsUsername = "metrics"
+		String metricsUsername = 'metrics'
 
 		@Option(names = ['--jenkins-metrics-password'], description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
-		String metricsPassword = "metrics"
+		String metricsPassword = 'metrics'
 
 		@Option(names = ['--jenkins-image'], description = JENKINS_IMAGE_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
@@ -351,7 +351,7 @@ class Config {
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
 		String oidc = ''
 
-		@Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
+		@Option(names = ['--jenkins-additional-envs'], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ',', required = false)
 		@JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
 		Map<String, String> additionalEnvs = [:]
 
@@ -361,7 +361,7 @@ class Config {
 			version: '5.9.18')
 		@Option(names = ['--jenkins-namespace'], description = JENKINS_NAMESPACE)
 		@JsonPropertyDescription(JENKINS_NAMESPACE)
-		String namespace = "jenkins"
+		String namespace = 'jenkins'
 	}
 
 	static class ApplicationSchema {
@@ -387,12 +387,12 @@ class Config {
 		@Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION, help = true)
 		Boolean outputConfigFile = false
 
-		@Option(names = ["-v", "--version"], help = true, description = "Display version and license info")
+		@Option(names = ['-v', '--version'], help = true, description = 'Display version and license info')
 		Boolean versionInfoRequested = false
 
 		// We define or own --version, so we need to define our own help param.
 		// The param itself is not used, "usageHelp = true" leads to hel being printed
-		@Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
+		@Option(names = ['-h', '--help'], usageHelp = true, description = 'Display this help message')
 		Boolean usageHelpRequested = false
 
 		@Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
@@ -463,15 +463,15 @@ class Config {
 		@JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
 		Boolean clusterAdmin = false
 
-		@Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
+		@Option(names = ['-p', '--profile'], description = APPLICATION_PROFIL)
 		@JsonPropertyDescription(APPLICATION_PROFIL)
 		String profile
 
-		@Option(names = ["--gop-namespace"], description = APPLICATION_GOP_NAMESPACE)
+		@Option(names = ['--gop-namespace'], description = APPLICATION_GOP_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_GOP_NAMESPACE)
 		String gopNamespace = ''
 
-		@Option(names = ["-n", "--namespace"], description = APPLICATION_NAMESPACE)
+		@Option(names = ['-n', '--namespace'], description = APPLICATION_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_NAMESPACE)
 		String namespace = ''
 
@@ -486,7 +486,7 @@ class Config {
 
 		@JsonIgnore
 		String getTenantName() {
-			return namePrefix.replaceAll(/-$/, "")
+			return namePrefix.replaceAll(/-$/, '')
 		}
 	}
 
@@ -703,11 +703,11 @@ class Config {
 			}
 
 			static class VaultOidcSchema {
-				@JsonPropertyDescription("OIDC client ID")
+				@JsonPropertyDescription('OIDC client ID')
 				String clientId = 'vault'
-				@JsonPropertyDescription("OIDC client secret")
+				@JsonPropertyDescription('OIDC client secret')
 				String clientSecret = ''
-				@JsonPropertyDescription("OIDC discovery URL")
+				@JsonPropertyDescription('OIDC discovery URL')
 				String discoveryUrl = ''
 			}
 		}
@@ -803,15 +803,15 @@ class Config {
 		}))
 
 	static Config fromMap(Map map) {
-		objectMapper.convertValue(map, Config)
+		return objectMapper.convertValue(map, Config)
 	}
 
 	Map toMap() {
-		objectMapper.convertValue(this, Map)
+		return objectMapper.convertValue(this, Map)
 	}
 
 	String toYaml(boolean includeInternals) {
-		createYamlMapper(includeInternals)
+		return createYamlMapper(includeInternals)
 			.writeValueAsString(this)
 	}
 
@@ -821,7 +821,7 @@ class Config {
 				.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
 					@Override
 					List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
-						beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
+						return beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
 					}
 				})) as YAMLMapper
 		} else {
