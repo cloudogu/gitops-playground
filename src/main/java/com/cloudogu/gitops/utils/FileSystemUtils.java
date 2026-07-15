@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils;
 
+import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
 import jakarta.inject.Singleton;
 import org.apache.commons.io.FileUtils;
@@ -9,9 +10,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -19,396 +21,831 @@ import java.util.regex.Pattern;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class FileSystemUtils {
 
-    private static final Logger log = LoggerFactory.getLogger(FileSystemUtils.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(FileSystemUtils.class);
 
     /**
      * Replaces text in files. If you want to change a YAML field, better use
-     * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)}
+     * {@link #readYaml(Path)} and {@link #writeYaml(Map, File)}.
      */
-    public File replaceFileContent(String folder, String fileToChange, String from, String to) {
-        File file = new File(folder + "/" + fileToChange);
+    public File replaceFileContent(
+            String folder,
+            String fileToChange,
+            String from,
+            String to
+    ) {
+        File file = new File(folder, fileToChange);
+
         try {
-            String newConfig = Files.readString(file.toPath()).replace(from, to);
+            String newConfig = Files.readString(file.toPath())
+                    .replace(from, to);
+
             Files.writeString(file.toPath(), newConfig);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to replace file content: " + file, e);
+
+            return file;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to replace file content: " + file,
+                    exception
+            );
         }
-        return file;
     }
 
-    public String replaceFileContent(String fileToChange, String from, String to) {
-        File file = new File(fileToChange);
+    public String replaceFileContent(
+            String fileToChange,
+            String from,
+            String to
+    ) {
+        Path file = Path.of(fileToChange);
+
         try {
-            String newConfig = Files.readString(file.toPath()).replaceAll(from, to);
-            Files.writeString(file.toPath(), newConfig);
+            String newConfig = Files.readString(file)
+                    .replaceAll(from, to);
+
+            Files.writeString(file, newConfig);
+
             return newConfig;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to replace file content: " + file, e);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to replace file content: " + file,
+                    exception
+            );
         }
     }
 
-    public String getSubstringOfFile(String fileLocation, CharSequence pattern, int from, int to) {
-        File file = new File(fileLocation);
-        final String[] found = {""};
-        try {
-            Files.readAllLines(file.toPath()).forEach(line -> {
-                if (line.contains(pattern)) {
-                    found[0] = line.substring(from, to);
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + fileLocation, e);
-        }
-        return found[0];
-    }
-
-    public String getSubstringOfFile(String fileLocation, CharSequence pattern, int from) {
-        File file = new File(fileLocation);
-        final String[] found = {""};
-        try {
-            Files.readAllLines(file.toPath()).forEach(line -> {
-                if (line.contains(pattern)) {
-                    found[0] = line.substring(from);
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + fileLocation, e);
-        }
-        return found[0];
-    }
-
-    public String getLineFromFile(String fileLocation, CharSequence pattern) {
-        File file = new File(fileLocation);
+    public String getSubstringOfFile(
+            String fileLocation,
+            CharSequence pattern,
+            int from,
+            int to
+    ) {
+        Path file = Path.of(fileLocation);
         String found = "";
+
         try {
-            String fileText = Files.readString(file.toPath());
-            String[] lines = fileText.split("\n");
-            for (String line : lines) {
+            for (String line : Files.readAllLines(file)) {
+                if (line.contains(pattern)) {
+                    found = line.substring(from, to);
+                }
+            }
+
+            return found;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to read file: " + fileLocation,
+                    exception
+            );
+        }
+    }
+
+    public String getSubstringOfFile(
+            String fileLocation,
+            CharSequence pattern,
+            int from
+    ) {
+        Path file = Path.of(fileLocation);
+        String found = "";
+
+        try {
+            for (String line : Files.readAllLines(file)) {
+                if (line.contains(pattern)) {
+                    found = line.substring(from);
+                }
+            }
+
+            return found;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to read file: " + fileLocation,
+                    exception
+            );
+        }
+    }
+
+    public String getLineFromFile(
+            String fileLocation,
+            CharSequence pattern
+    ) {
+        Path file = Path.of(fileLocation);
+        String found = "";
+
+        try {
+            for (String line : Files.readAllLines(file)) {
                 if (line.contains(pattern)) {
                     found = line;
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + fileLocation, e);
+
+            return found;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to read file: " + fileLocation,
+                    exception
+            );
         }
-        return found;
     }
 
-    public List<String> getAllLinesFromFile(String fileLocation, CharSequence pattern) {
-        File file = new File(fileLocation);
+    public List<String> getAllLinesFromFile(
+            String fileLocation,
+            CharSequence pattern
+    ) {
+        Path file = Path.of(fileLocation);
         List<String> foundLines = new ArrayList<>();
+
         try {
-            Files.readAllLines(file.toPath()).forEach(line -> {
+            for (String line : Files.readAllLines(file)) {
                 if (line.contains(pattern)) {
                     foundLines.add(line);
                 }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + fileLocation, e);
+            }
+
+            return foundLines;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to read file: " + fileLocation,
+                    exception
+            );
         }
-        return foundLines;
     }
 
     public static void deleteFile(String path) {
-        boolean successfullyDeleted = new File(path).delete();
-        if (!successfullyDeleted) {
-            log.warn("Failed to delete file {}", path);
+        try {
+            Files.deleteIfExists(Path.of(path));
+        } catch (IOException exception) {
+            log.warn("Failed to delete file {}", path, exception);
         }
     }
 
     public static void deleteDir(String path) {
         try {
             FileUtils.deleteDirectory(new File(path));
-        } catch (IOException e) {
-            log.warn("Failed to delete dir {}", path, e);
+        } catch (IOException exception) {
+            log.warn("Failed to delete directory {}", path, exception);
         }
     }
 
-    public String goBackToDir(String filePath, String directory) {
-        return filePath.substring(0, filePath.indexOf(directory) + directory.length());
+    public String goBackToDir(
+            String filePath,
+            String directory
+    ) {
+        int directoryIndex = filePath.indexOf(directory);
+
+        if (directoryIndex < 0) {
+            throw new IllegalArgumentException(
+                    "Directory '%s' is not part of path '%s'"
+                            .formatted(directory, filePath)
+            );
+        }
+
+        return filePath.substring(
+                0,
+                directoryIndex + directory.length()
+        );
     }
 
     public String getRootDir() {
         return System.getProperty("user.dir");
     }
 
-    public List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
-        List<File> foundFiles = new ArrayList<>();
-        File dir = new File(directory);
-        if (dir.exists()) {
-            try (var stream = Files.walk(dir.toPath())) {
-                stream.filter(Files::isRegularFile)
-                      .map(Path::toFile)
-                      .filter(f -> f.getName().endsWith(ending))
-                      .forEach(foundFiles::add);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to walk directory: " + directory, e);
-            }
+    public List<File> getAllFilesFromDirectoryWithEnding(
+            String directory,
+            String ending
+    ) {
+        Path root = Path.of(directory);
+
+        if (Files.notExists(root)) {
+            return Collections.emptyList();
         }
-        return foundFiles;
+
+        List<File> foundFiles = new ArrayList<>();
+
+        try {
+            Files.walkFileTree(
+                    root,
+                    new SimpleFileVisitor<>() {
+
+                        @Override
+                        public FileVisitResult visitFile(
+                                Path file,
+                                BasicFileAttributes attributes
+                        ) {
+                            if (file.getFileName()
+                                    .toString()
+                                    .endsWith(ending)) {
+                                foundFiles.add(file.toFile());
+                            }
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult visitFileFailed(
+                                Path file,
+                                IOException exception
+                        ) throws IOException {
+                            if (exception instanceof NoSuchFileException) {
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            throw exception;
+                        }
+                    }
+            );
+
+            return foundFiles;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to walk directory: " + directory,
+                    exception
+            );
+        }
     }
 
     public void listDirectories(String parentDir) {
-        List<File> list = new ArrayList<>();
-        File dir = new File(parentDir);
-        if (dir.exists()) {
-            try (var stream = Files.walk(dir.toPath())) {
-                stream.filter(Files::isRegularFile)
-                      .map(Path::toFile)
-                      .forEach(list::add);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to walk directory: " + parentDir, e);
-            }
+        List<File> files =
+                getAllFilesFromDirectoryWithEnding(parentDir, "");
+
+        for (File file : files) {
+            System.out.println(file.getPath());
         }
-        list.forEach(file -> System.out.println(file.getPath()));
     }
 
+    /**
+     * Compatibility overload for callers that still use {@link File}.
+     *
+     * @param directory root directory; {@code null} is ignored
+     */
     public static void makeWritable(File directory) {
-        if (!directory.exists()) {
+        if (directory != null) {
+            makeWritable(directory.toPath());
+        }
+    }
+
+    /**
+     * Makes the given root path and all contained files and directories
+     * writable.
+     *
+     * <p>Git and JGit may create and remove temporary lock files while a
+     * repository is being traversed. Paths that disappear during traversal
+     * are therefore skipped. Other I/O failures abort the operation.</p>
+     *
+     * @param root root path; {@code null} or missing paths are ignored
+     * @throws UncheckedIOException if the directory tree cannot be processed
+     */
+    public static void makeWritable(Path root) {
+        if (root == null || Files.notExists(root)) {
             return;
         }
-        try (var stream = Files.walk(directory.toPath())) {
-            stream.map(Path::toFile).forEach(file -> {
-                if (!file.canWrite()) {
-                    file.setWritable(true);
-                }
-            });
-        } catch (IOException e) {
-            log.warn("Failed to walk directory for making it writable: {}", directory, e);
+
+        try {
+            Files.walkFileTree(
+                    root,
+                    new WritableFileVisitor()
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to make directory tree writable: " + root,
+                    exception
+            );
         }
     }
 
-    public void copyDirectory(String source, String destination) {
+    private static final class WritableFileVisitor
+            extends SimpleFileVisitor<Path> {
+
+        @Override
+        public FileVisitResult preVisitDirectory(
+                Path directory,
+                BasicFileAttributes attributes
+        ) throws IOException {
+            makePathWritable(directory);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(
+                Path file,
+                BasicFileAttributes attributes
+        ) throws IOException {
+            makePathWritable(file);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(
+                Path file,
+                IOException exception
+        ) throws IOException {
+            if (exception instanceof NoSuchFileException) {
+                log.debug(
+                        "Skipping path that disappeared during traversal: {}",
+                        file
+                );
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            throw exception;
+        }
+    }
+
+    private static void makePathWritable(Path path) throws IOException {
+        try {
+            if (path.toFile().setWritable(true)) {
+                return;
+            }
+
+            /*
+             * The path may have disappeared between discovery and the
+             * permission change. Temporary Git lock files commonly exhibit
+             * this behavior.
+             */
+            if (Files.notExists(path)) {
+                return;
+            }
+
+            throw new IOException(
+                    "Failed to make path writable: " + path
+            );
+        } catch (SecurityException exception) {
+            throw new IOException(
+                    "Insufficient permissions to make path writable: " + path,
+                    exception
+            );
+        }
+    }
+
+    public void copyDirectory(
+            String source,
+            String destination
+    ) {
         copyDirectory(source, destination, null);
     }
 
-    public void copyDirectory(String source, String destination, FileFilter fileFilter) {
-        log.debug("Copying directory {} to {}", source, destination);
-        File sourceDir = new File(source);
-        File destinationDir = new File(destination);
+    public void copyDirectory(
+            String source,
+            String destination,
+            FileFilter fileFilter
+    ) {
+        log.debug(
+                "Copying directory {} to {}",
+                source,
+                destination
+        );
 
         try {
-            FileUtils.copyDirectory(sourceDir, destinationDir, fileFilter);
-        } catch (IOException e) {
-            log.error("An error occurred while copying directories: ", e);
+            FileUtils.copyDirectory(
+                    new File(source),
+                    new File(destination),
+                    fileFilter
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to copy directory from "
+                            + source
+                            + " to "
+                            + destination,
+                    exception
+            );
         }
     }
 
-    public void copyFile(String sourcePath, String destinationPath) {
+    public void copyFile(
+            String sourcePath,
+            String destinationPath
+    ) {
         File sourceFile = new File(sourcePath);
         File destinationFile = new File(destinationPath);
 
-        log.debug("Copying file from {} to {}", sourcePath, destinationPath);
+        log.debug(
+                "Copying file from {} to {}",
+                sourcePath,
+                destinationPath
+        );
 
         try {
-            File parentDir = destinationFile.getParentFile();
-            if (!parentDir.exists()) {
-                log.debug("Creating missing destination directories: {}", parentDir);
-                parentDir.mkdirs();
+            File parentDirectory =
+                    destinationFile.getParentFile();
+
+            if (parentDirectory != null) {
+                Files.createDirectories(
+                        parentDirectory.toPath()
+                );
             }
 
-            FileUtils.copyFile(sourceFile, destinationFile);
-            log.debug("File copy completed successfully.");
-        } catch (IOException e) {
-            log.error("An error occurred while copying the file: ", e);
+            FileUtils.copyFile(
+                    sourceFile,
+                    destinationFile
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to copy file from "
+                            + sourcePath
+                            + " to "
+                            + destinationPath,
+                    exception
+            );
         }
     }
 
     public void createDirectory(String directory) {
-        log.trace("Creating folder: {}", directory);
-        new File(directory).mkdirs();
-    }
+        log.trace("Creating directory: {}", directory);
 
-    public Path copyToTempDir(String filePath) {
         try {
-            Path sourcePath = Path.of(filePath);
-            Path destDir = Files.createTempDirectory("gitops-playground-");
-            Path destPath = destDir.resolve(sourcePath.getFileName());
-            return Files.copy(sourcePath, destPath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to copy " + filePath + " to temp dir", e);
+            Files.createDirectories(Path.of(directory));
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to create directory: " + directory,
+                    exception
+            );
         }
     }
 
-    public void deleteEmptyFiles(Path path, Pattern pathPattern) {
-        try (var stream = Files.walk(path)) {
-            stream.filter(p -> {
-                try {
-                    return Files.isRegularFile(p) && Files.size(p) == 0 && pathPattern.matcher(p.toString()).find();
-                } catch (IOException e) {
-                    return false;
-                }
-            }).forEach(p -> {
-                log.trace("Deleting empty file {}", p);
-                try {
-                    Files.delete(p);
-                } catch (IOException e) {
-                    log.warn("Failed to delete empty file {}", p, e);
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to walk path for deleting empty files: " + path, e);
+    public Path copyToTempDir(String filePath) {
+        Path sourcePath = Path.of(filePath);
+
+        try {
+            Path destinationDirectory =
+                    Files.createTempDirectory(
+                            "gitops-playground-"
+                    );
+
+            Path destinationPath =
+                    destinationDirectory.resolve(
+                            sourcePath.getFileName()
+                    );
+
+            return Files.copy(
+                    sourcePath,
+                    destinationPath,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to copy "
+                            + filePath
+                            + " to temporary directory",
+                    exception
+            );
+        }
+    }
+
+    public void deleteEmptyFiles(
+            Path path,
+            Pattern pathPattern
+    ) {
+        if (Files.notExists(path)) {
+            return;
+        }
+
+        try {
+            Files.walkFileTree(
+                    path,
+                    new SimpleFileVisitor<>() {
+
+                        @Override
+                        public FileVisitResult visitFile(
+                                Path file,
+                                BasicFileAttributes attributes
+                        ) throws IOException {
+                            if (attributes.size() == 0
+                                    && pathPattern.matcher(
+                                    file.toString()
+                            ).find()) {
+                                log.trace(
+                                        "Deleting empty file {}",
+                                        file
+                                );
+
+                                Files.deleteIfExists(file);
+                            }
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult visitFileFailed(
+                                Path file,
+                                IOException exception
+                        ) throws IOException {
+                            if (exception instanceof NoSuchFileException) {
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            throw exception;
+                        }
+                    }
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to walk path for deleting empty files: "
+                            + path,
+                    exception
+            );
         }
     }
 
     public Path createTempDir() {
         try {
-            return Files.createTempDirectory("gitops-playground-");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create temp directory", e);
+            return Files.createTempDirectory(
+                    "gitops-playground-"
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to create temporary directory",
+                    exception
+            );
         }
     }
 
     public Path createTempFile() {
         try {
-            File file = File.createTempFile("gitops-playground-", "");
-            file.deleteOnExit();
-            return file.toPath();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create temp file", e);
+            Path file = Files.createTempFile(
+                    "gitops-playground-",
+                    ""
+            );
+
+            file.toFile().deleteOnExit();
+
+            return file;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to create temporary file",
+                    exception
+            );
         }
     }
 
     public Map readYaml(Path path) {
-        YamlSlurper ys = new YamlSlurper();
+        YamlSlurper yamlSlurper =
+                new YamlSlurper();
+
         if (Files.exists(path)) {
             try {
-                return (Map) ys.parse(path.toFile());
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to parse YAML file: " + path, e);
+                return (Map) yamlSlurper.parse(
+                        path.toFile()
+                );
+            } catch (IOException exception) {
+                throw new UncheckedIOException(
+                        "Failed to parse YAML file: " + path,
+                        exception
+                );
             }
         }
 
-        // Fallback to classpath
-        String resourceName = path.toString();
-        // Ensure it starts with / for getResourceAsStream from root
+        String resourceName =
+                normalizeClasspathResource(path);
+
+        log.debug(
+                "Path {} not found on filesystem, trying classpath: {}",
+                path,
+                resourceName
+        );
+
+        try (var inputStream =
+                     FileSystemUtils.class
+                             .getResourceAsStream(resourceName)) {
+
+            if (inputStream == null) {
+                log.warn(
+                        "Could not find YAML at {} or on classpath {}",
+                        path,
+                        resourceName
+                );
+
+                return Collections.emptyMap();
+            }
+
+            String text = new String(
+                    inputStream.readAllBytes(),
+                    StandardCharsets.UTF_8
+            );
+
+            return (Map) yamlSlurper.parseText(text);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to read YAML resource from classpath: "
+                            + resourceName,
+                    exception
+            );
+        }
+    }
+
+    private static String normalizeClasspathResource(Path path) {
+        String resourceName = path.toString()
+                .replace('\\', '/')
+                .replace("/src/main/resources", "")
+                .replace("src/main/resources", "");
+
         if (!resourceName.startsWith("/")) {
             resourceName = "/" + resourceName;
         }
 
-        // Remove src/main/resources if present, as it's not part of the classpath in the JAR
-        resourceName = resourceName.replace("/src/main/resources", "");
-
-        log.debug("Path {} not found on filesystem, trying classpath: {}", path, resourceName);
-        try (var inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)) {
-            if (inputStream != null) {
-                String text = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                return (Map) ys.parseText(text);
-            }
-        } catch (IOException e) {
-            log.debug("Failed to read resource from classpath: {}", resourceName, e);
-        }
-
-        log.warn("Could not find YAML at {} or on classpath {}", path, resourceName);
-        return Collections.emptyMap();
+        return resourceName;
     }
 
     public Path writeTempFile(Map mapValues) {
-        Path tmpHelmValues = createTempFile();
-        writeYaml(mapValues, tmpHelmValues.toFile());
-        return tmpHelmValues;
+        Path temporaryHelmValues =
+                createTempFile();
+
+        writeYaml(
+                mapValues,
+                temporaryHelmValues.toFile()
+        );
+
+        return temporaryHelmValues;
     }
 
-    // Note that YAML builder seems to use double quotes to escape strings. So for example:
-    // This:     log-format-upstream: '..."$request"...'
-    // Becomes:  log-format-upstream: "...\"$request\"..."
-    // Harder to read but same payload. Not sure if we can do something about it.
-    public void writeYaml(Map yaml, File file) {
-        groovy.yaml.YamlBuilder builder = new groovy.yaml.YamlBuilder();
+    public void writeYaml(
+            Map yaml,
+            File file
+    ) {
+        YamlBuilder builder =
+                new YamlBuilder();
+
         builder.call(yaml);
+
         try {
-            Files.writeString(file.toPath(), builder.toString());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write YAML to file: " + file, e);
+            Files.writeString(
+                    file.toPath(),
+                    builder.toString()
+            );
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to write YAML to file: " + file,
+                    exception
+            );
         }
     }
 
-    public void deleteFilesExcept(File parentPath, String... fileOrFolderNamesToKeep) {
+    public void deleteFilesExcept(
+            File parentPath,
+            String... fileOrFolderNamesToKeep
+    ) {
         File[] files = parentPath.listFiles();
+
         if (files == null) {
             return;
         }
-        Set<String> keepSet = Set.of(fileOrFolderNamesToKeep);
+
+        Set<String> namesToKeep =
+                Set.of(fileOrFolderNamesToKeep);
+
         for (File file : files) {
-            if (keepSet.contains(file.getName())) {
+            if (namesToKeep.contains(file.getName())) {
                 continue;
             }
-            if (!file.isDirectory()) {
-                file.delete();
-            } else {
-                try {
+
+            try {
+                if (file.isDirectory()) {
                     FileUtils.deleteDirectory(file);
-                } catch (IOException e) {
-                    log.warn("Failed to delete directory: {}", file, e);
+                } else {
+                    Files.deleteIfExists(file.toPath());
                 }
+            } catch (IOException exception) {
+                throw new UncheckedIOException(
+                        "Failed to delete path: " + file,
+                        exception
+                );
             }
         }
     }
 
     /**
-     * Moves all direct children of sourceDir into an existing targetDir.
-     * Conflicts are overwritten.
-     * Directories are merged recursively.
+     * Moves all direct children of {@code sourceDir} into
+     * {@code targetDir}.
+     *
+     * <p>Existing files are overwritten. Directories are merged
+     * recursively.</p>
      */
-    public void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
+    public void moveDirectoryMergeOverwrite(
+            Path sourceDir,
+            Path targetDir
+    ) {
         try {
-            if (!Files.exists(targetDir)) {
-                Files.createDirectories(targetDir.getParent());
-                // fast path: try moving the whole directory
+            if (Files.notExists(targetDir)) {
+                Path parent = targetDir.getParent();
+
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+
                 try {
                     Files.move(sourceDir, targetDir);
                     return;
-                } catch (IOException ignored) {
-                    // fallback to merge logic
+                } catch (IOException moveException) {
+                    log.debug(
+                            "Could not move directory directly from {} to {}; "
+                                    + "falling back to recursive merge",
+                            sourceDir,
+                            targetDir,
+                            moveException
+                    );
+
                     Files.createDirectories(targetDir);
                 }
             } else if (!Files.isDirectory(targetDir)) {
-                // target exists as file -> overwrite it with directory
                 Files.delete(targetDir);
                 Files.createDirectories(targetDir);
             }
 
-            try (var stream = Files.list(sourceDir)) {
-                stream.forEach(child -> {
-                    Path dest = targetDir.resolve(child.getFileName().toString());
+            try (var children = Files.list(sourceDir)) {
+                for (Path child : children.toList()) {
+                    Path destination =
+                            targetDir.resolve(
+                                    child.getFileName()
+                            );
+
                     if (Files.isDirectory(child)) {
-                        moveDirectoryMergeOverwrite(child, dest);
+                        moveDirectoryMergeOverwrite(
+                                child,
+                                destination
+                        );
                     } else {
-                        moveFileOverwrite(child, dest);
+                        moveFileOverwrite(
+                                child,
+                                destination
+                        );
                     }
-                });
+                }
             }
 
-            // remove empty source dir
             Files.deleteIfExists(sourceDir);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to move directory merge overwrite", e);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to move directory "
+                            + sourceDir
+                            + " to "
+                            + targetDir,
+                    exception
+            );
         }
     }
 
-    private void moveFileOverwrite(Path sourceFile, Path targetFile) {
+    private void moveFileOverwrite(
+            Path sourceFile,
+            Path targetFile
+    ) {
         try {
-            Files.createDirectories(targetFile.getParent());
+            Path parent = targetFile.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
             try {
-                Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException moveFailed) {
-                // cross-device fallback
-                Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(
+                        sourceFile,
+                        targetFile,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+            } catch (IOException moveException) {
+                log.debug(
+                        "Could not move file directly from {} to {}; "
+                                + "falling back to copy and delete",
+                        sourceFile,
+                        targetFile,
+                        moveException
+                );
+
+                Files.copy(
+                        sourceFile,
+                        targetFile,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+
                 Files.delete(sourceFile);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to move file overwrite", e);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Failed to move file "
+                            + sourceFile
+                            + " to "
+                            + targetFile,
+                    exception
+            );
         }
     }
 
     /**
-     * This filter can be used to copy whole directories without .git folder.
+     * Filter for copying directory content without Git metadata.
      */
-    public static class IgnoreDotGitFolderFilter implements FileFilter {
+    public static class IgnoreDotGitFolderFilter
+            implements FileFilter {
+
         @Override
         public boolean accept(File file) {
-            return !file.getAbsolutePath().contains(File.separator + ".git");
+            return !containsGitDirectory(file.toPath());
+        }
+
+        private static boolean containsGitDirectory(Path path) {
+            for (Path part : path) {
+                if (".git".equals(part.toString())) {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
