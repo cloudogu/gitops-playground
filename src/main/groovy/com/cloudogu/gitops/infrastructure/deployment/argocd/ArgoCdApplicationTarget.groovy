@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.infrastructure.deployment
+package com.cloudogu.gitops.infrastructure.deployment.argocd
 
 /**
  * Describes where and how an ArgoCD Application manifest should be created.

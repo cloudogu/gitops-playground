@@ -9,6 +9,7 @@ import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmStrategy
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Files

@@ -1,7 +1,8 @@
-package com.cloudogu.gitops.infrastructure.deployment
+package com.cloudogu.gitops.infrastructure.deployment.helm
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
+import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy
 import com.cloudogu.gitops.infrastructure.helm.HelmClient
 
 import java.nio.file.Path

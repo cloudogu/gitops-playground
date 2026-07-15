@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.infrastructure.deployment
+package com.cloudogu.gitops.infrastructure.deployment.argocd
 
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.config.Config

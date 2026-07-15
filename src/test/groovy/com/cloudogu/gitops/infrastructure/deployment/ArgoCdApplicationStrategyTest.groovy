@@ -8,6 +8,8 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
 import com.cloudogu.gitops.config.scm.ScmTenantSchema.ScmManagerTenantConfig
+import com.cloudogu.gitops.infrastructure.deployment.argocd.ArgoCdApplicationStrategy
+import com.cloudogu.gitops.infrastructure.deployment.argocd.ArgoCdApplicationTargetResolver
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock

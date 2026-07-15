@@ -5,6 +5,8 @@ import static org.mockito.Mockito.*
 import com.cloudogu.gitops.application.context.DeploymentContext
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType
+import com.cloudogu.gitops.infrastructure.deployment.argocd.ArgoCdApplicationStrategy
+import com.cloudogu.gitops.infrastructure.deployment.helm.HelmStrategy
 
 import java.nio.file.Path
 import jakarta.inject.Provider
