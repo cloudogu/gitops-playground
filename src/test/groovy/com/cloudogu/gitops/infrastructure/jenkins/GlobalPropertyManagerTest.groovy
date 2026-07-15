@@ -63,13 +63,13 @@ class GlobalPropertyManagerTest {
             def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
             
             if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {
-                print("Nothing to do")
+                print('Nothing to do')
                 return
             }
             
             envVars = envVarsNodePropertyList.get(0).getEnvVars()            
             envVars.remove("the-key")
-            print("Done")
+            print('Done')
         ''')
 	}
 
