@@ -28,9 +28,14 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import lombok.Getter;
+import lombok.Setter;
+
 @Singleton
 @Command(name = BINARY_NAME, description = APP_DESCRIPTION)
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Getter
+@Setter
 public class Config {
 
     // When updating please also update in Dockerfile
@@ -79,62 +84,8 @@ public class Config {
         return sb.toString();
     }
 
-    public RegistrySchema getRegistry() {
-        return registry;
-    }
-
-    public void setRegistry(RegistrySchema registry) {
-        this.registry = registry;
-    }
-
-    public JenkinsSchema getJenkins() {
-        return jenkins;
-    }
-
-    public void setJenkins(JenkinsSchema jenkins) {
-        this.jenkins = jenkins;
-    }
-
-    public MultiTenantSchema getMultiTenant() {
-        return multiTenant;
-    }
-
-    public void setMultiTenant(MultiTenantSchema multiTenant) {
-        this.multiTenant = multiTenant;
-    }
-
-    public ScmTenantSchema getScm() {
-        return scm;
-    }
-
-    public void setScm(ScmTenantSchema scm) {
-        this.scm = scm;
-    }
-
-    public ApplicationSchema getApplication() {
-        return application;
-    }
-
-    public void setApplication(ApplicationSchema application) {
-        this.application = application;
-    }
-
-    public FeaturesSchema getFeatures() {
-        return features;
-    }
-
-    public void setFeatures(FeaturesSchema features) {
-        this.features = features;
-    }
-
-    public ContentSchema getContent() {
-        return content;
-    }
-
-    public void setContent(ContentSchema content) {
-        this.content = content;
-    }
-
+    @Getter
+    @Setter
     public static class ContentSchema {
         @JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
         private List<String> namespaces = new ArrayList<>();
@@ -164,54 +115,8 @@ public class Config {
                 "com.cloudogu.gitops.utils.DockerImageParser"
         ));
 
-        public List<String> getNamespaces() {
-            return namespaces;
-        }
-
-        public void setNamespaces(List<String> namespaces) {
-            this.namespaces = namespaces;
-        }
-
-        public List<ContentRepositorySchema> getRepos() {
-            return repos;
-        }
-
-        public void setRepos(List<ContentRepositorySchema> repos) {
-            this.repos = repos;
-        }
-
-        public Map<String, Object> getVariables() {
-            return variables;
-        }
-
-        public void setVariables(Map<String, Object> variables) {
-            this.variables = variables;
-        }
-
-        public List<HelmReleaseSchema> getHelmReleases() {
-            return helmReleases;
-        }
-
-        public void setHelmReleases(List<HelmReleaseSchema> helmReleases) {
-            this.helmReleases = helmReleases;
-        }
-
-        public Boolean getUseWhitelist() {
-            return useWhitelist;
-        }
-
-        public void setUseWhitelist(Boolean useWhitelist) {
-            this.useWhitelist = useWhitelist;
-        }
-
-        public Set<String> getAllowedStaticsWhitelist() {
-            return allowedStaticsWhitelist;
-        }
-
-        public void setAllowedStaticsWhitelist(Set<String> allowedStaticsWhitelist) {
-            this.allowedStaticsWhitelist = allowedStaticsWhitelist;
-        }
-
+        @Getter
+        @Setter
         public static class ContentRepositorySchema {
             public static final String DEFAULT_PATH = ".";
             public static final ContentRepoType DEFAULT_TYPE = ContentRepoType.MIRROR;
@@ -245,88 +150,10 @@ public class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             private Boolean createJenkinsJob = false;
-
-            public String getUrl() {
-                return url;
-            }
-
-            public void setUrl(String url) {
-                this.url = url;
-            }
-
-            public String getPath() {
-                return path;
-            }
-
-            public void setPath(String path) {
-                this.path = path;
-            }
-
-            public String getRef() {
-                return ref;
-            }
-
-            public void setRef(String ref) {
-                this.ref = ref;
-            }
-
-            public String getTargetRef() {
-                return targetRef;
-            }
-
-            public void setTargetRef(String targetRef) {
-                this.targetRef = targetRef;
-            }
-
-            public Credentials getCredentials() {
-                return credentials;
-            }
-
-            public void setCredentials(Credentials credentials) {
-                this.credentials = credentials;
-            }
-
-            public Boolean getTemplating() {
-                return templating;
-            }
-
-            public void setTemplating(Boolean templating) {
-                this.templating = templating;
-            }
-
-            public ContentRepoType getType() {
-                return type;
-            }
-
-            public void setType(ContentRepoType type) {
-                this.type = type;
-            }
-
-            public String getTarget() {
-                return target;
-            }
-
-            public void setTarget(String target) {
-                this.target = target;
-            }
-
-            public OverwriteMode getOverwriteMode() {
-                return overwriteMode;
-            }
-
-            public void setOverwriteMode(OverwriteMode overwriteMode) {
-                this.overwriteMode = overwriteMode;
-            }
-
-            public Boolean getCreateJenkinsJob() {
-                return createJenkinsJob;
-            }
-
-            public void setCreateJenkinsJob(Boolean createJenkinsJob) {
-                this.createJenkinsJob = createJenkinsJob;
-            }
         }
 
+        @Getter
+        @Setter
         public static class HelmReleaseSchema {
             @JsonPropertyDescription(CONTENT_HELM_RELEASE_NAME_DESCRIPTION)
             private String name = "";
@@ -351,73 +178,11 @@ public class Config {
 
             @JsonPropertyDescription(CONTENT_HELM_RELEASE_VALUES_DESCRIPTION)
             private Map<String, Object> values = new HashMap<>();
-
-            public String getName() {
-                return name;
-            }
-
-            public void setName(String name) {
-                this.name = name;
-            }
-
-            public String getRepoURL() {
-                return repoURL;
-            }
-
-            public void setRepoURL(String repoURL) {
-                this.repoURL = repoURL;
-            }
-
-            public String getChart() {
-                return chart;
-            }
-
-            public void setChart(String chart) {
-                this.chart = chart;
-            }
-
-            public String getVersion() {
-                return version;
-            }
-
-            public void setVersion(String version) {
-                this.version = version;
-            }
-
-            public String getNamespace() {
-                return namespace;
-            }
-
-            public void setNamespace(String namespace) {
-                this.namespace = namespace;
-            }
-
-            public String getReleaseName() {
-                return releaseName;
-            }
-
-            public void setReleaseName(String releaseName) {
-                this.releaseName = releaseName;
-            }
-
-            public String getValuesPath() {
-                return valuesPath;
-            }
-
-            public void setValuesPath(String valuesPath) {
-                this.valuesPath = valuesPath;
-            }
-
-            public Map<String, Object> getValues() {
-                return values;
-            }
-
-            public void setValues(Map<String, Object> values) {
-                this.values = values;
-            }
         }
     }
 
+    @Getter
+    @Setter
     public static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         private String chart = null;
@@ -425,45 +190,17 @@ public class Config {
         private String repoURL = null;
         @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
         private String version = null;
-
-        public String getChart() {
-            return chart;
-        }
-
-        public void setChart(String chart) {
-            this.chart = chart;
-        }
-
-        public String getRepoURL() {
-            return repoURL;
-        }
-
-        public void setRepoURL(String repoURL) {
-            this.repoURL = repoURL;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-
-        public void setVersion(String version) {
-            this.version = version;
-        }
     }
 
+    @Getter
+    @Setter
     public static class HelmConfigWithValues extends HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
         private Map<String, Object> values = new HashMap<>();
-
-        public Map<String, Object> getValues() {
-            return values;
-        }
-
-        public void setValues(Map<String, Object> values) {
-            this.values = values;
-        }
     }
 
+    @Getter
+    @Setter
     public static class RegistrySchema {
         private Boolean internal = true;
         private Boolean twoRegistries = false;
@@ -533,144 +270,10 @@ public class Config {
             helm.setRepoURL("https://twuni.github.io/docker-registry.helm");
             helm.setVersion("3.0.0");
         }
-
-        public Boolean getInternal() {
-            return internal;
-        }
-
-        public void setInternal(Boolean internal) {
-            this.internal = internal;
-        }
-
-        public Boolean getTwoRegistries() {
-            return twoRegistries;
-        }
-
-        public void setTwoRegistries(Boolean twoRegistries) {
-            this.twoRegistries = twoRegistries;
-        }
-
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public Integer getInternalPort() {
-            return internalPort;
-        }
-
-        public void setInternalPort(Integer internalPort) {
-            this.internalPort = internalPort;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public String getProxyUrl() {
-            return proxyUrl;
-        }
-
-        public void setProxyUrl(String proxyUrl) {
-            this.proxyUrl = proxyUrl;
-        }
-
-        public String getProxyPath() {
-            return proxyPath;
-        }
-
-        public void setProxyPath(String proxyPath) {
-            this.proxyPath = proxyPath;
-        }
-
-        public String getProxyUsername() {
-            return proxyUsername;
-        }
-
-        public void setProxyUsername(String proxyUsername) {
-            this.proxyUsername = proxyUsername;
-        }
-
-        public String getProxyPassword() {
-            return proxyPassword;
-        }
-
-        public void setProxyPassword(String proxyPassword) {
-            this.proxyPassword = proxyPassword;
-        }
-
-        public String getReadOnlyUsername() {
-            return readOnlyUsername;
-        }
-
-        public void setReadOnlyUsername(String readOnlyUsername) {
-            this.readOnlyUsername = readOnlyUsername;
-        }
-
-        public String getReadOnlyPassword() {
-            return readOnlyPassword;
-        }
-
-        public void setReadOnlyPassword(String readOnlyPassword) {
-            this.readOnlyPassword = readOnlyPassword;
-        }
-
-        public Boolean getCreateImagePullSecrets() {
-            return createImagePullSecrets;
-        }
-
-        public void setCreateImagePullSecrets(Boolean createImagePullSecrets) {
-            this.createImagePullSecrets = createImagePullSecrets;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        public HelmConfigWithValues getHelm() {
-            return helm;
-        }
-
-        public void setHelm(HelmConfigWithValues helm) {
-            this.helm = helm;
-        }
     }
 
+    @Getter
+    @Setter
     public static class JenkinsSchema {
         private Boolean internal = true;
         private String urlForScm = "";
@@ -738,160 +341,10 @@ public class Config {
             helm.setRepoURL("https://charts.jenkins.io");
             helm.setVersion("5.9.18");
         }
-
-        public Boolean getInternal() {
-            return internal;
-        }
-
-        public void setInternal(Boolean internal) {
-            this.internal = internal;
-        }
-
-        public String getUrlForScm() {
-            return urlForScm;
-        }
-
-        public void setUrlForScm(String urlForScm) {
-            this.urlForScm = urlForScm;
-        }
-
-        public String getIngress() {
-            return ingress;
-        }
-
-        public void setIngress(String ingress) {
-            this.ingress = ingress;
-        }
-
-        public String getInternalBashImage() {
-            return internalBashImage;
-        }
-
-        public void setInternalBashImage(String internalBashImage) {
-            this.internalBashImage = internalBashImage;
-        }
-
-        public String getInternalDockerClientVersion() {
-            return internalDockerClientVersion;
-        }
-
-        public void setInternalDockerClientVersion(String internalDockerClientVersion) {
-            this.internalDockerClientVersion = internalDockerClientVersion;
-        }
-
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public Boolean getSkipRestart() {
-            return skipRestart;
-        }
-
-        public void setSkipRestart(Boolean skipRestart) {
-            this.skipRestart = skipRestart;
-        }
-
-        public Boolean getSkipPlugins() {
-            return skipPlugins;
-        }
-
-        public void setSkipPlugins(Boolean skipPlugins) {
-            this.skipPlugins = skipPlugins;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public String getMetricsUsername() {
-            return metricsUsername;
-        }
-
-        public void setMetricsUsername(String metricsUsername) {
-            this.metricsUsername = metricsUsername;
-        }
-
-        public String getMetricsPassword() {
-            return metricsPassword;
-        }
-
-        public void setMetricsPassword(String metricsPassword) {
-            this.metricsPassword = metricsPassword;
-        }
-
-        public String getJenkinsImage() {
-            return jenkinsImage;
-        }
-
-        public void setJenkinsImage(String jenkinsImage) {
-            this.jenkinsImage = jenkinsImage;
-        }
-
-        public String getMavenCentralMirror() {
-            return mavenCentralMirror;
-        }
-
-        public void setMavenCentralMirror(String mavenCentralMirror) {
-            this.mavenCentralMirror = mavenCentralMirror;
-        }
-
-        public String getOidc() {
-            return oidc;
-        }
-
-        public void setOidc(String oidc) {
-            this.oidc = oidc;
-        }
-
-        public Map<String, String> getAdditionalEnvs() {
-            return additionalEnvs;
-        }
-
-        public void setAdditionalEnvs(Map<String, String> additionalEnvs) {
-            this.additionalEnvs = additionalEnvs;
-        }
-
-        public HelmConfigWithValues getHelm() {
-            return helm;
-        }
-
-        public void setHelm(HelmConfigWithValues helm) {
-            this.helm = helm;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ApplicationSchema {
         private Boolean runningInsideK8s = false;
         private String namePrefixForEnvVars = "";
@@ -1001,281 +454,11 @@ public class Config {
         @JsonPropertyDescription(APPLICATION_NAMESPACE)
         private String namespace = "";
 
-        public Boolean getRunningInsideK8s() {
-            return runningInsideK8s;
-        }
-
-        public void setRunningInsideK8s(Boolean runningInsideK8s) {
-            this.runningInsideK8s = runningInsideK8s;
-        }
-
-        public String getNamePrefixForEnvVars() {
-            return namePrefixForEnvVars;
-        }
-
-        public void setNamePrefixForEnvVars(String namePrefixForEnvVars) {
-            this.namePrefixForEnvVars = namePrefixForEnvVars;
-        }
-
-        public String getInternalKubernetesApiUrl() {
-            return internalKubernetesApiUrl;
-        }
-
-        public void setInternalKubernetesApiUrl(String internalKubernetesApiUrl) {
-            this.internalKubernetesApiUrl = internalKubernetesApiUrl;
-        }
-
-        public String getLocalHelmChartFolder() {
-            return localHelmChartFolder;
-        }
-
-        public void setLocalHelmChartFolder(String localHelmChartFolder) {
-            this.localHelmChartFolder = localHelmChartFolder;
-        }
-
-        public NamespaceSchema getNamespaces() {
-            return namespaces;
-        }
-
-        public void setNamespaces(NamespaceSchema namespaces) {
-            this.namespaces = namespaces;
-        }
-
-        public List<String> getConfigFiles() {
-            return configFiles;
-        }
-
-        public void setConfigFiles(List<String> configFiles) {
-            this.configFiles = configFiles;
-        }
-
-        public List<String> getConfigMaps() {
-            return configMaps;
-        }
-
-        public void setConfigMaps(List<String> configMaps) {
-            this.configMaps = configMaps;
-        }
-
-        public Boolean getDebug() {
-            return debug;
-        }
-
-        public void setDebug(Boolean debug) {
-            this.debug = debug;
-        }
-
-        public Boolean getTrace() {
-            return trace;
-        }
-
-        public void setTrace(Boolean trace) {
-            this.trace = trace;
-        }
-
-        public Boolean getOutputConfigFile() {
-            return outputConfigFile;
-        }
-
-        public void setOutputConfigFile(Boolean outputConfigFile) {
-            this.outputConfigFile = outputConfigFile;
-        }
-
-        public Boolean getVersionInfoRequested() {
-            return versionInfoRequested;
-        }
-
-        public void setVersionInfoRequested(Boolean versionInfoRequested) {
-            this.versionInfoRequested = versionInfoRequested;
-        }
-
-        public Boolean getUsageHelpRequested() {
-            return usageHelpRequested;
-        }
-
-        public void setUsageHelpRequested(Boolean usageHelpRequested) {
-            this.usageHelpRequested = usageHelpRequested;
-        }
-
-        public Boolean getInsecure() {
-            return insecure;
-        }
-
-        public void setInsecure(Boolean insecure) {
-            this.insecure = insecure;
-        }
-
-        public Boolean getOpenshift() {
-            return openshift;
-        }
-
-        public void setOpenshift(Boolean openshift) {
-            this.openshift = openshift;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public Boolean getYes() {
-            return yes;
-        }
-
-        public void setYes(Boolean yes) {
-            this.yes = yes;
-        }
-
-        public String getNamePrefix() {
-            return namePrefix;
-        }
-
-        public void setNamePrefix(String namePrefix) {
-            this.namePrefix = namePrefix;
-        }
-
-        public Boolean getDestroy() {
-            return destroy;
-        }
-
-        public void setDestroy(Boolean destroy) {
-            this.destroy = destroy;
-        }
-
-        public Boolean getPodResources() {
-            return podResources;
-        }
-
-        public void setPodResources(Boolean podResources) {
-            this.podResources = podResources;
-        }
-
-        public String getGitName() {
-            return gitName;
-        }
-
-        public void setGitName(String gitName) {
-            this.gitName = gitName;
-        }
-
-        public String getGitEmail() {
-            return gitEmail;
-        }
-
-        public void setGitEmail(String gitEmail) {
-            this.gitEmail = gitEmail;
-        }
-
-        public String getBaseUrl() {
-            return baseUrl;
-        }
-
-        public void setBaseUrl(String baseUrl) {
-            this.baseUrl = baseUrl;
-        }
-
-        public Boolean getUrlSeparatorHyphen() {
-            return urlSeparatorHyphen;
-        }
-
-        public void setUrlSeparatorHyphen(Boolean urlSeparatorHyphen) {
-            this.urlSeparatorHyphen = urlSeparatorHyphen;
-        }
-
-        public Boolean getMirrorRepos() {
-            return mirrorRepos;
-        }
-
-        public void setMirrorRepos(Boolean mirrorRepos) {
-            this.mirrorRepos = mirrorRepos;
-        }
-
-        public Boolean getSkipCrds() {
-            return skipCrds;
-        }
-
-        public void setSkipCrds(Boolean skipCrds) {
-            this.skipCrds = skipCrds;
-        }
-
-        public Boolean getNamespaceIsolation() {
-            return namespaceIsolation;
-        }
-
-        public void setNamespaceIsolation(Boolean namespaceIsolation) {
-            this.namespaceIsolation = namespaceIsolation;
-        }
-
-        public Boolean getNetpols() {
-            return netpols;
-        }
-
-        public void setNetpols(Boolean netpols) {
-            this.netpols = netpols;
-        }
-
-        public Boolean getClusterAdmin() {
-            return clusterAdmin;
-        }
-
-        public void setClusterAdmin(Boolean clusterAdmin) {
-            this.clusterAdmin = clusterAdmin;
-        }
-
-        public String getProfile() {
-            return profile;
-        }
-
-        public void setProfile(String profile) {
-            this.profile = profile;
-        }
-
-        public String getGopNamespace() {
-            return gopNamespace;
-        }
-
-        public void setGopNamespace(String gopNamespace) {
-            this.gopNamespace = gopNamespace;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
+        @Getter
+        @Setter
         public static class NamespaceSchema {
             private LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
             private LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>();
-
-            public LinkedHashSet<String> getDedicatedNamespaces() {
-                return dedicatedNamespaces;
-            }
-
-            public void setDedicatedNamespaces(LinkedHashSet<String> dedicatedNamespaces) {
-                this.dedicatedNamespaces = dedicatedNamespaces;
-            }
-
-            public LinkedHashSet<String> getTenantNamespaces() {
-                return tenantNamespaces;
-            }
-
-            public void setTenantNamespaces(LinkedHashSet<String> tenantNamespaces) {
-                this.tenantNamespaces = tenantNamespaces;
-            }
 
             public LinkedHashSet<String> getActiveNamespaces() {
                 LinkedHashSet<String> active = new LinkedHashSet<>(dedicatedNamespaces);
@@ -1290,6 +473,8 @@ public class Config {
         }
     }
 
+    @Getter
+    @Setter
     public static class FeaturesSchema {
         @Mixin
         @JsonPropertyDescription(ARGOCD_DESCRIPTION)
@@ -1314,56 +499,10 @@ public class Config {
         @Mixin
         @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
         private CertManagerSchema certManager = new CertManagerSchema();
-
-        public ArgoCDSchema getArgocd() {
-            return argocd;
-        }
-
-        public void setArgocd(ArgoCDSchema argocd) {
-            this.argocd = argocd;
-        }
-
-        public MailSchema getMail() {
-            return mail;
-        }
-
-        public void setMail(MailSchema mail) {
-            this.mail = mail;
-        }
-
-        public MonitoringSchema getMonitoring() {
-            return monitoring;
-        }
-
-        public void setMonitoring(MonitoringSchema monitoring) {
-            this.monitoring = monitoring;
-        }
-
-        public SecretsSchema getSecrets() {
-            return secrets;
-        }
-
-        public void setSecrets(SecretsSchema secrets) {
-            this.secrets = secrets;
-        }
-
-        public IngressSchema getIngress() {
-            return ingress;
-        }
-
-        public void setIngress(IngressSchema ingress) {
-            this.ingress = ingress;
-        }
-
-        public CertManagerSchema getCertManager() {
-            return certManager;
-        }
-
-        public void setCertManager(CertManagerSchema certManager) {
-            this.certManager = certManager;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ArgoCDSchema {
         private Boolean configOnly = false;
 
@@ -1407,104 +546,10 @@ public class Config {
 
         @JsonPropertyDescription(OIDC_DESCPRIPTION)
         private String oidc = "";
-
-        public Boolean getConfigOnly() {
-            return configOnly;
-        }
-
-        public void setConfigOnly(Boolean configOnly) {
-            this.configOnly = configOnly;
-        }
-
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public Boolean getOperator() {
-            return operator;
-        }
-
-        public void setOperator(Boolean operator) {
-            this.operator = operator;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public List<Map<String, String>> getEnv() {
-            return env;
-        }
-
-        public void setEnv(List<Map<String, String>> env) {
-            this.env = env;
-        }
-
-        public String getEmailFrom() {
-            return emailFrom;
-        }
-
-        public void setEmailFrom(String emailFrom) {
-            this.emailFrom = emailFrom;
-        }
-
-        public String getEmailToUser() {
-            return emailToUser;
-        }
-
-        public void setEmailToUser(String emailToUser) {
-            this.emailToUser = emailToUser;
-        }
-
-        public String getEmailToAdmin() {
-            return emailToAdmin;
-        }
-
-        public void setEmailToAdmin(String emailToAdmin) {
-            this.emailToAdmin = emailToAdmin;
-        }
-
-        public String getResourceInclusionsCluster() {
-            return resourceInclusionsCluster;
-        }
-
-        public void setResourceInclusionsCluster(String resourceInclusionsCluster) {
-            this.resourceInclusionsCluster = resourceInclusionsCluster;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        public Map<String, Object> getValues() {
-            return values;
-        }
-
-        public void setValues(Map<String, Object> values) {
-            this.values = values;
-        }
-
-        public String getOidc() {
-            return oidc;
-        }
-
-        public void setOidc(String oidc) {
-            this.oidc = oidc;
-        }
     }
 
+    @Getter
+    @Setter
     public static class MailSchema {
         private Boolean active = false;
 
@@ -1523,48 +568,10 @@ public class Config {
         @Option(names = {"--smtp-password"}, description = SMTP_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
         private String smtpPassword = "";
-
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public String getSmtpAddress() {
-            return smtpAddress;
-        }
-
-        public void setSmtpAddress(String smtpAddress) {
-            this.smtpAddress = smtpAddress;
-        }
-
-        public Integer getSmtpPort() {
-            return smtpPort;
-        }
-
-        public void setSmtpPort(Integer smtpPort) {
-            this.smtpPort = smtpPort;
-        }
-
-        public String getSmtpUser() {
-            return smtpUser;
-        }
-
-        public void setSmtpUser(String smtpUser) {
-            this.smtpUser = smtpUser;
-        }
-
-        public String getSmtpPassword() {
-            return smtpPassword;
-        }
-
-        public void setSmtpPassword(String smtpPassword) {
-            this.smtpPassword = smtpPassword;
-        }
     }
 
+    @Getter
+    @Setter
     public static class MonitoringSchema {
         @Option(names = {"--metrics", "--monitoring"}, description = MONITORING_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(MONITORING_ENABLE_DESCRIPTION)
@@ -1601,62 +608,8 @@ public class Config {
             helm.setValues(new HashMap<>());
         }
 
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public String getGrafanaUrl() {
-            return grafanaUrl;
-        }
-
-        public void setGrafanaUrl(String grafanaUrl) {
-            this.grafanaUrl = grafanaUrl;
-        }
-
-        public String getGrafanaEmailFrom() {
-            return grafanaEmailFrom;
-        }
-
-        public void setGrafanaEmailFrom(String grafanaEmailFrom) {
-            this.grafanaEmailFrom = grafanaEmailFrom;
-        }
-
-        public String getGrafanaEmailTo() {
-            return grafanaEmailTo;
-        }
-
-        public void setGrafanaEmailTo(String grafanaEmailTo) {
-            this.grafanaEmailTo = grafanaEmailTo;
-        }
-
-        public String getOidc() {
-            return oidc;
-        }
-
-        public void setOidc(String oidc) {
-            this.oidc = oidc;
-        }
-
-        public MonitoringHelmSchema getHelm() {
-            return helm;
-        }
-
-        public void setHelm(MonitoringHelmSchema helm) {
-            this.helm = helm;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
+        @Getter
+        @Setter
         public static class MonitoringHelmSchema extends HelmConfigWithValues {
             @Option(names = {"--grafana-image"}, description = GRAFANA_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
@@ -1677,49 +630,11 @@ public class Config {
             @Option(names = {"--prometheus-config-reloader-image"}, description = PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
             private String prometheusConfigReloaderImage = "";
-
-            public String getGrafanaImage() {
-                return grafanaImage;
-            }
-
-            public void setGrafanaImage(String grafanaImage) {
-                this.grafanaImage = grafanaImage;
-            }
-
-            public String getGrafanaSidecarImage() {
-                return grafanaSidecarImage;
-            }
-
-            public void setGrafanaSidecarImage(String grafanaSidecarImage) {
-                this.grafanaSidecarImage = grafanaSidecarImage;
-            }
-
-            public String getPrometheusImage() {
-                return prometheusImage;
-            }
-
-            public void setPrometheusImage(String prometheusImage) {
-                this.prometheusImage = prometheusImage;
-            }
-
-            public String getPrometheusOperatorImage() {
-                return prometheusOperatorImage;
-            }
-
-            public void setPrometheusOperatorImage(String prometheusOperatorImage) {
-                this.prometheusOperatorImage = prometheusOperatorImage;
-            }
-
-            public String getPrometheusConfigReloaderImage() {
-                return prometheusConfigReloaderImage;
-            }
-
-            public void setPrometheusConfigReloaderImage(String prometheusConfigReloaderImage) {
-                this.prometheusConfigReloaderImage = prometheusConfigReloaderImage;
-            }
         }
     }
 
+    @Getter
+    @Setter
     public static class SecretsSchema {
         private Boolean active = false;
 
@@ -1735,38 +650,8 @@ public class Config {
         @JsonPropertyDescription(SECRETS_NAMESPACE)
         private String namespace = "secrets";
 
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public ESOSchema getExternalSecrets() {
-            return externalSecrets;
-        }
-
-        public void setExternalSecrets(ESOSchema externalSecrets) {
-            this.externalSecrets = externalSecrets;
-        }
-
-        public VaultSchema getVault() {
-            return vault;
-        }
-
-        public void setVault(VaultSchema vault) {
-            this.vault = vault;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
+        @Getter
+        @Setter
         public static class ESOSchema {
             @Mixin
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -1779,14 +664,8 @@ public class Config {
                 helm.setVersion("0.9.16");
             }
 
-            public ESOHelmSchema getHelm() {
-                return helm;
-            }
-
-            public void setHelm(ESOHelmSchema helm) {
-                this.helm = helm;
-            }
-
+            @Getter
+            @Setter
             public static class ESOHelmSchema extends HelmConfigWithValues {
                 @Option(names = {"--external-secrets-image"}, description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -1799,33 +678,11 @@ public class Config {
                 @Option(names = {"--external-secrets-webhook-image"}, description = EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
                 private String webhookImage = "";
-
-                public String getImage() {
-                    return image;
-                }
-
-                public void setImage(String image) {
-                    this.image = image;
-                }
-
-                public String getCertControllerImage() {
-                    return certControllerImage;
-                }
-
-                public void setCertControllerImage(String certControllerImage) {
-                    this.certControllerImage = certControllerImage;
-                }
-
-                public String getWebhookImage() {
-                    return webhookImage;
-                }
-
-                public void setWebhookImage(String webhookImage) {
-                    this.webhookImage = webhookImage;
-                }
             }
         }
 
+        @Getter
+        @Setter
         public static class VaultSchema {
             @Option(names = {"--vault"}, description = VAULT_ENABLE_DESCRIPTION)
             @JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
@@ -1849,52 +706,16 @@ public class Config {
                 helm.setVersion("0.25.0");
             }
 
-            public VaultMode getMode() {
-                return mode;
-            }
-
-            public void setMode(VaultMode mode) {
-                this.mode = mode;
-            }
-
-            public String getUrl() {
-                return url;
-            }
-
-            public void setUrl(String url) {
-                this.url = url;
-            }
-
-            public VaultOidcSchema getOidc() {
-                return oidc;
-            }
-
-            public void setOidc(VaultOidcSchema oidc) {
-                this.oidc = oidc;
-            }
-
-            public VaultHelmSchema getHelm() {
-                return helm;
-            }
-
-            public void setHelm(VaultHelmSchema helm) {
-                this.helm = helm;
-            }
-
+            @Getter
+            @Setter
             public static class VaultHelmSchema extends HelmConfigWithValues {
                 @Option(names = {"--vault-image"}, description = VAULT_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
                 private String image = "";
-
-                public String getImage() {
-                    return image;
-                }
-
-                public void setImage(String image) {
-                    this.image = image;
-                }
             }
 
+            @Getter
+            @Setter
             public static class VaultOidcSchema {
                 @JsonPropertyDescription("OIDC client ID")
                 private String clientId = "vault";
@@ -1902,34 +723,12 @@ public class Config {
                 private String clientSecret = "";
                 @JsonPropertyDescription("OIDC discovery URL")
                 private String discoveryUrl = "";
-
-                public String getClientId() {
-                    return clientId;
-                }
-
-                public void setClientId(String clientId) {
-                    this.clientId = clientId;
-                }
-
-                public String getClientSecret() {
-                    return clientSecret;
-                }
-
-                public void setClientSecret(String clientSecret) {
-                    this.clientSecret = clientSecret;
-                }
-
-                public String getDiscoveryUrl() {
-                    return discoveryUrl;
-                }
-
-                public void setDiscoveryUrl(String discoveryUrl) {
-                    this.discoveryUrl = discoveryUrl;
-                }
             }
         }
     }
 
+    @Getter
+    @Setter
     public static class IngressSchema {
         @Option(names = {"--ingress"}, description = INGRESS_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(INGRESS_ENABLE_DESCRIPTION)
@@ -1950,45 +749,17 @@ public class Config {
             helm.setVersion("39.0.0");
         }
 
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public IngressHelmSchema getHelm() {
-            return helm;
-        }
-
-        public void setHelm(IngressHelmSchema helm) {
-            this.helm = helm;
-        }
-
-        public String getIngressNamespace() {
-            return ingressNamespace;
-        }
-
-        public void setIngressNamespace(String ingressNamespace) {
-            this.ingressNamespace = ingressNamespace;
-        }
-
+        @Getter
+        @Setter
         public static class IngressHelmSchema extends HelmConfigWithValues {
             @Option(names = {"--ingress-image"}, description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             private String image = "";
-
-            public String getImage() {
-                return image;
-            }
-
-            public void setImage(String image) {
-                this.image = image;
-            }
         }
     }
 
+    @Getter
+    @Setter
     public static class CertManagerSchema {
         @Option(names = {"--cert-manager"}, description = CERTMANAGER_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
@@ -2013,38 +784,8 @@ public class Config {
             helm.setVersion("1.19.4");
         }
 
-        public Boolean getActive() {
-            return active;
-        }
-
-        public void setActive(Boolean active) {
-            this.active = active;
-        }
-
-        public String getIssuer() {
-            return issuer;
-        }
-
-        public void setIssuer(String issuer) {
-            this.issuer = issuer;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        public CertManagerHelmSchema getHelm() {
-            return helm;
-        }
-
-        public void setHelm(CertManagerHelmSchema helm) {
-            this.helm = helm;
-        }
-
+        @Getter
+        @Setter
         public static class CertManagerHelmSchema extends HelmConfigWithValues {
             @Option(names = {"--cert-manager-image"}, description = CERTMANAGER_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
@@ -2065,46 +806,6 @@ public class Config {
             @Option(names = {"--cert-manager-startup-api-check-image"}, description = CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
             private String startupAPICheckImage = "";
-
-            public String getImage() {
-                return image;
-            }
-
-            public void setImage(String image) {
-                this.image = image;
-            }
-
-            public String getWebhookImage() {
-                return webhookImage;
-            }
-
-            public void setWebhookImage(String webhookImage) {
-                this.webhookImage = webhookImage;
-            }
-
-            public String getCainjectorImage() {
-                return cainjectorImage;
-            }
-
-            public void setCainjectorImage(String cainjectorImage) {
-                this.cainjectorImage = cainjectorImage;
-            }
-
-            public String getAcmeSolverImage() {
-                return acmeSolverImage;
-            }
-
-            public void setAcmeSolverImage(String acmeSolverImage) {
-                this.acmeSolverImage = acmeSolverImage;
-            }
-
-            public String getStartupAPICheckImage() {
-                return startupAPICheckImage;
-            }
-
-            public void setStartupAPICheckImage(String startupAPICheckImage) {
-                this.startupAPICheckImage = startupAPICheckImage;
-            }
         }
     }
 
