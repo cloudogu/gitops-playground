@@ -72,6 +72,8 @@ public class AirGappedUtils {
             repo.commitAndPush("Chart " + chartYaml.get("name") + ", version: " + chartYaml.get("version") + "\n\n" +
                     "Source: " + helmConfig.getRepoURL() + "\n" +
                     "Dependencies localized to run in air-gapped environments", String.valueOf(chartYaml.get("version")));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to mirror helm repo to Git for " + repoName, e);
         }

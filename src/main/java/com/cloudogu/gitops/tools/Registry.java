@@ -89,9 +89,10 @@ public class Registry extends Tool {
     }
 
     private void prepareRegistryHelmValues() {
-        addHelmValuesData("service",
-                Map.of("nodePort", Config.DEFAULT_REGISTRY_PORT,
-                       "type", "NodePort"));
+        Map<String, Object> service = new java.util.HashMap<>();
+        service.put("nodePort", Config.DEFAULT_REGISTRY_PORT);
+        service.put("type", "NodePort");
+        addHelmValuesData("service", service);
     }
 
     private void deployInternalRegistry() {

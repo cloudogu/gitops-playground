@@ -111,7 +111,11 @@ public class ArgoCD extends Tool {
 
     @Override
     protected void publishChanges() {
-        repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges("Update ArgoCD repository content");
+        try {
+            repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges("Update ArgoCD repository content");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to publish ArgoCD changes", e);
+        }
     }
 
     @Override
@@ -127,17 +131,36 @@ public class ArgoCD extends Tool {
             return;
         }
 
-        List<Map<String, String>> env = configToSet.getFeatures().getArgocd().getEnv();
+        List env = configToSet.getFeatures().getArgocd().getEnv();
 
         log.info("Validating env list in features.argocd.env with {} entries.", env.size());
 
-        for (Map<String, String> map : env) {
-            if (map == null || !map.containsKey("name") || !map.containsKey("value")) {
-                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + map);
+        for (Object entry : env) {
+            if (!(entry instanceof Map)) {
+                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + entry);
+            }
+            Map<String, String> map = (Map<String, String>) entry;
+            if (!map.containsKey("name") || !map.containsKey("value")) {
+                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + formatMapLikeGroovy(map));
             }
         }
 
         log.info("Env list validation for features.argocd.env completed successfully.");
+    }
+
+    private static String formatMapLikeGroovy(Map<String, String> map) {
+        if (map == null) return "null";
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append(entry.getKey()).append(":").append(entry.getValue());
+            first = false;
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     private void createNotificationSecretIfRequired() {

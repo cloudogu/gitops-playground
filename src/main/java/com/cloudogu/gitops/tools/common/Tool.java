@@ -102,7 +102,11 @@ public abstract class Tool {
     protected void publishChanges() {}
 
     protected void publishClusterResourcesChanges(String toolName) {
-        repositoryWorkspace.commitAndPushClusterResourcesChanges("Update " + toolName + " GitOps resources");
+        try {
+            repositoryWorkspace.commitAndPushClusterResourcesChanges("Update " + toolName + " GitOps resources");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to publish cluster resources changes for " + toolName, e);
+        }
     }
 
     protected void addHelmValuesData(String key, Object value) {
