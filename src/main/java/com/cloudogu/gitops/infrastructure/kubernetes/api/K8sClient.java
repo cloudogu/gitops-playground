@@ -908,8 +908,8 @@ public class K8sClient {
     }
 
     private String extractPhase(HasMetadata resource) {
-        if (resource instanceof Pod) {
-            return ((Pod) resource).getStatus() != null ? ((Pod) resource).getStatus().getPhase() : null;
+        if (resource instanceof Pod pod) {
+            return pod.getStatus() != null ? pod.getStatus().getPhase() : null;
         }
 
         // Generic / Custom Resources

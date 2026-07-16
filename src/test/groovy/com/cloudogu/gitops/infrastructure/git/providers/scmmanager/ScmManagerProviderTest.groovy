@@ -138,7 +138,7 @@ class ScmManagerProviderTest {
 
 		verify(repoApi, atLeastOnce()).createPermission(eq('namespace'),
 			eq('repo1'),
-			argThat { Permission p -> p.groupPermission && p.role == Permission.Role.WRITE
+			argThat { Permission p -> p.groupPermission() && p.role() == Permission.Role.WRITE
 			})
 	}
 

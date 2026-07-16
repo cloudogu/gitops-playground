@@ -5,10 +5,14 @@ import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import lombok.Getter;
+import lombok.Setter;
 import picocli.CommandLine.Option;
 
 public class ScmCentralSchema {
 
+    @Getter
+    @Setter
     public static class GitlabCentralConfig implements GitlabConfig {
 
         public static final String CENTRAL_GITLAB_URL_DESCRIPTION = "URL for external Gitlab";
@@ -36,63 +40,13 @@ public class ScmCentralSchema {
         private String defaultVisibility = "";
 
         @Override
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        @Override
-        public String getParentGroupId() {
-            return parentGroupId;
-        }
-
-        public void setParentGroupId(String parentGroupId) {
-            this.parentGroupId = parentGroupId;
-        }
-
-        @Override
         public Credentials getCredentials() {
             return new Credentials(username, password);
         }
-
-        @Override
-        public String getGitOpsUsername() {
-            return gitOpsUsername;
-        }
-
-        public void setGitOpsUsername(String gitOpsUsername) {
-            this.gitOpsUsername = gitOpsUsername;
-        }
-
-        @Override
-        public String getDefaultVisibility() {
-            return defaultVisibility;
-        }
-
-        public void setDefaultVisibility(String defaultVisibility) {
-            this.defaultVisibility = defaultVisibility;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ScmManagerCentralConfig implements ScmManagerConfig {
 
         public static final String CENTRAL_SCMM_INTERNAL_DESCRIPTION = "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access";
@@ -125,51 +79,6 @@ public class ScmCentralSchema {
         private String gitOpsUsername = "";
 
         @Override
-        public Boolean getInternal() {
-            return internal;
-        }
-
-        public void setInternal(Boolean internal) {
-            this.internal = internal;
-        }
-
-        @Override
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        @Override
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        @Override
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        @Override
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        @Override
         public String getIngress() {
             return null; //Needed for setup
         }
@@ -182,15 +91,6 @@ public class ScmCentralSchema {
         @Override
         public Credentials getCredentials() {
             return new Credentials(username, password);
-        }
-
-        @Override
-        public String getGitOpsUsername() {
-            return gitOpsUsername;
-        }
-
-        public void setGitOpsUsername(String gitOpsUsername) {
-            this.gitOpsUsername = gitOpsUsername;
         }
     }
 }

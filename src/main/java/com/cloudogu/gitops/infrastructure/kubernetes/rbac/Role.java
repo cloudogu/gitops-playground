@@ -4,13 +4,9 @@ import com.cloudogu.gitops.config.Config;
 import java.io.File;
 import java.util.Map;
 
-public class Role {
-    private final String name;
-    private final String namespace;
-    private final Variant variant;
-    private final Config config;
+public record Role(String name, String namespace, Variant variant, Config config) {
 
-    public Role(String name, String namespace, Variant variant, Config config) {
+    public Role {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Role name must not be blank");
         }
@@ -23,11 +19,6 @@ public class Role {
         if (config == null) {
             throw new IllegalArgumentException("Config must not be null");
         }
-
-        this.name = name;
-        this.namespace = namespace;
-        this.variant = variant;
-        this.config = config;
     }
 
     public enum Variant {
@@ -43,22 +34,6 @@ public class Role {
         public String getTemplatePath() {
             return templatePath;
         }
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public Variant getVariant() {
-        return variant;
-    }
-
-    public Config getConfig() {
-        return config;
     }
 
     public Map<String, Object> toTemplateParams() {

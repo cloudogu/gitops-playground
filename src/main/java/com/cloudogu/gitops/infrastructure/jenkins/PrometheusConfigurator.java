@@ -11,14 +11,14 @@ public class PrometheusConfigurator {
     }
 
     public void enableAuthentication() {
-        String result = apiClient.runScript(
-                "import org.jenkinsci.plugins.prometheus.config.*\n" +
-                "\n" +
-                "def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)\n" +
-                "config.setUseAuthenticatedEndpoint(true)\n" +
-                "\n" +
-                "print(config.useAuthenticatedEndpoint)\n"
-        );
+        String result = apiClient.runScript("""
+            import org.jenkinsci.plugins.prometheus.config.*
+
+            def config = Jenkins.instance.getDescriptor(PrometheusConfiguration)
+            config.setUseAuthenticatedEndpoint(true)
+
+            print(config.useAuthenticatedEndpoint)
+            """);
 
         if (!"true".equals(result)) {
             throw new RuntimeException("Cannot enable authentication for prometheus: " + result);

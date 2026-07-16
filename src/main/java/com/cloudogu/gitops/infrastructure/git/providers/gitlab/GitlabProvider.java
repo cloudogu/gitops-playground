@@ -280,28 +280,21 @@ public class GitlabProvider implements GitProvider {
         if (s == null) {
             s = "private";
         }
-        switch (s.toLowerCase()) {
-            case "public": return Visibility.PUBLIC;
-            case "internal": return Visibility.INTERNAL;
-            default: return Visibility.PRIVATE;
-        }
+        return switch (s.toLowerCase()) {
+            case "public" -> Visibility.PUBLIC;
+            case "internal" -> Visibility.INTERNAL;
+            default -> Visibility.PRIVATE;
+        };
     }
 
     // provider-agnostic AccessRole → GitLab AccessLevel
     private static AccessLevel toAccessLevel(AccessRole role, Scope scope) {
-        switch (role) {
-            case READ:
-                return AccessLevel.REPORTER;
-            case WRITE:
-                return AccessLevel.DEVELOPER;
-            case MAINTAIN:
-                return AccessLevel.MAINTAINER;
-            case ADMIN:
-                return AccessLevel.MAINTAINER;
-            case OWNER:
-                return (scope == Scope.GROUP) ? AccessLevel.OWNER : AccessLevel.MAINTAINER;
-            default:
-                throw new IllegalArgumentException("Unknown role: " + role);
-        }
+        return switch (role) {
+            case READ -> AccessLevel.REPORTER;
+            case WRITE -> AccessLevel.DEVELOPER;
+            case MAINTAIN, ADMIN -> AccessLevel.MAINTAINER;
+            case OWNER -> (scope == Scope.GROUP) ? AccessLevel.OWNER : AccessLevel.MAINTAINER;
+            default -> throw new IllegalArgumentException("Unknown role: " + role);
+        };
     }
 }

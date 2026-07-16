@@ -24,9 +24,7 @@ public class ScmTenantSchema {
     public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
     public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
 
-    @Option(names = {"--scm-provider"},
-            description = SCM_PROVIDER_TYPE_DESCRIPTION,
-            defaultValue = "SCM_MANAGER")
+    @Option(names = { "--scm-provider" }, description = SCM_PROVIDER_TYPE_DESCRIPTION, defaultValue = "SCM_MANAGER")
     @JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
     private ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER;
 
@@ -79,19 +77,19 @@ public class ScmTenantSchema {
         @JsonPropertyDescription(GITLAB_INTERNAL_DESCRIPTION)
         private Boolean internal = false;
 
-        @Option(names = {"--gitlab-url"}, description = GITLAB_URL_DESCRIPTION)
+        @Option(names = { "--gitlab-url" }, description = GITLAB_URL_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_URL_DESCRIPTION)
         private String url;
 
-        @Option(names = {"--gitlab-username"}, description = GITLAB_USERNAME_DESCRIPTION)
+        @Option(names = { "--gitlab-username" }, description = GITLAB_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_USERNAME_DESCRIPTION)
         private String username = "oauth2.0";
 
-        @Option(names = {"--gitlab-token"}, description = GITLAB_TOKEN_DESCRIPTION)
+        @Option(names = { "--gitlab-token" }, description = GITLAB_TOKEN_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
         private String password;
 
-        @Option(names = {"--gitlab-group-id"}, description = GITLAB_PARENT_GROUP_ID)
+        @Option(names = { "--gitlab-group-id" }, description = GITLAB_PARENT_GROUP_ID)
         @JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
         private String parentGroupId = "";
 
@@ -179,19 +177,19 @@ public class ScmTenantSchema {
 
         private Boolean internal = true;
 
-        @Option(names = {"--scmm-url"}, description = SCMM_URL_DESCRIPTION)
+        @Option(names = { "--scmm-url" }, description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
         private String url = "";
 
-        @Option(names = {"--scmm-namespace"}, description = SCMM_NAMESPACE_DESCRIPTION)
+        @Option(names = { "--scmm-namespace" }, description = SCMM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(SCMM_NAMESPACE_DESCRIPTION)
         private String namespace = "scm-manager";
 
-        @Option(names = {"--scmm-username"}, description = SCMM_USERNAME_DESCRIPTION)
+        @Option(names = { "--scmm-username" }, description = SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
         private String username = Config.DEFAULT_ADMIN_USER;
 
-        @Option(names = {"--scmm-password"}, description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = { "--scmm-password" }, description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         private String password = Config.DEFAULT_ADMIN_PW;
 
@@ -199,18 +197,18 @@ public class ScmTenantSchema {
         @JsonMerge
         private Config.HelmConfigWithValues helm;
 
-        @Option(names = {"--scmm-image"}, description = SCMM_IMAGE)
+        @Option(names = { "--scmm-image" }, description = SCMM_IMAGE)
         @JsonPropertyDescription(SCMM_IMAGE)
         private String scmmImage = "";
 
         private String urlForJenkins = "";
         private String ingress = "";
 
-        @Option(names = {"--scmm-skip-restart"}, description = SCMM_SKIP_RESTART_DESCRIPTION)
+        @Option(names = { "--scmm-skip-restart" }, description = SCMM_SKIP_RESTART_DESCRIPTION)
         @JsonPropertyDescription(SCMM_SKIP_RESTART_DESCRIPTION)
         private Boolean skipRestart = false;
 
-        @Option(names = {"--scmm-skip-plugins"}, description = SCMM_SKIP_PLUGINS_DESCRIPTION)
+        @Option(names = { "--scmm-skip-plugins" }, description = SCMM_SKIP_PLUGINS_DESCRIPTION)
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         private Boolean skipPlugins = false;
 
@@ -221,7 +219,7 @@ public class ScmTenantSchema {
             helm = new Config.HelmConfigWithValues();
             helm.setChart("scm-manager");
             helm.setRepoURL("https://packages.scm-manager.org/repository/helm-v2-releases/");
-            helm.setVersion("3.11.6");
+            helm.setVersion("3.11.10");
             helm.setValues(new HashMap<>());
         }
 

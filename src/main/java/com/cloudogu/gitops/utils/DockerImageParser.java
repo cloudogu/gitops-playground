@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils;
 
 public class DockerImageParser {
+    @lombok.Getter
     public static class Image {
         private final String registry;
         private final String repository;
@@ -17,18 +18,6 @@ public class DockerImageParser {
                 return repository;
             }
             return registry + "/" + repository;
-        }
-
-        public String getRegistry() {
-            return registry;
-        }
-
-        public String getRepository() {
-            return repository;
-        }
-
-        public String getTag() {
-            return tag;
         }
 
         @Override
