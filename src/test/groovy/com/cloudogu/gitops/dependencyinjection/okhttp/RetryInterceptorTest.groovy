@@ -151,7 +151,7 @@ class RetryInterceptorTest {
 		sslContext.init(null, trustAllCerts, new SecureRandom())
 
 		new OkHttpClient.Builder()
-			.addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
+			.addInterceptor(new RetryInterceptor(3, 0))
 			.connectTimeout(timeout, TimeUnit.MILLISECONDS)
 			.readTimeout(timeout, TimeUnit.MILLISECONDS)
 			.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
