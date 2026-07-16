@@ -1,0 +1,114 @@
+package com.cloudogu.gitops.application;
+
+import com.cloudogu.gitops.application.context.ContextBuilder;
+import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
+import com.cloudogu.gitops.application.orchestration.GitHandler;
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.utils.TemplatingEngine;
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapperBuilder;
+import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.*;
+
+@Singleton
+@SuppressWarnings({"rawtypes", "unchecked"})
+public class Application {
+
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
+
+    private final List<Tool> tools;
+    private final ContextBuilder contextBuilder;
+    private final K8sClient k8sClient;
+    private final GitHandler gitHandler;
+    private final RepositoryProvisioning repositoryProvisioning;
+    private final DeploymentOrchestrator deploymentOrchestrator;
+
+    public Application(ContextBuilder contextBuilder,
+                       K8sClient k8sClient,
+                       GitHandler gitHandler,
+                       RepositoryProvisioning repositoryProvisioning,
+                       DeploymentOrchestrator deploymentOrchestrator) {
+        this.contextBuilder = contextBuilder;
+        this.k8sClient = k8sClient;
+        this.gitHandler = gitHandler;
+        this.repositoryProvisioning = repositoryProvisioning;
+        this.deploymentOrchestrator = deploymentOrchestrator;
+        this.tools = deploymentOrchestrator.getTools();
+    }
+
+    public void start() {
+        log.debug("Starting Application");
+
+        DeploymentContext context = contextBuilder.build();
+
+        setNamespaceListToConfig(context);
+        storeGopInformationInSecret(context);
+
+        gitHandler.validate(context);
+        gitHandler.prepareProviders(context);
+        repositoryProvisioning.prepare(context);
+        RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context);
+
+        deploymentOrchestrator.deployTools(context, workspace);
+
+        log.debug("Application finished");
+    }
+
+    private void storeGopInformationInSecret(DeploymentContext context) {
+        String namespace = "gop-job";
+        if (context.getConfig().getApplication().getGopNamespace() != null && !context.getConfig().getApplication().getGopNamespace().isEmpty()) {
+            namespace = context.getConfig().getApplication().getNamePrefix() + context.getConfig().getApplication().getGopNamespace();
+        } else if (this.k8sClient.getCurrentNamespace() != null) {
+            namespace = this.k8sClient.getCurrentNamespace();
+        }
+        log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '{}'", namespace);
+        k8sClient.createNamespace(namespace);
+        k8sClient.createSecret("generic", "gop-configuration", namespace,
+                new groovy.lang.Tuple2<>("gop-initial-password", context.getConfig().getApplication().getPassword()),
+                new groovy.lang.Tuple2<>("gop-config", context.getConfig().toYaml(true))
+        );
+    }
+
+    public List<Tool> getTools() {
+        return tools;
+    }
+
+    public void setNamespaceListToConfig(DeploymentContext context) {
+        LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
+        LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>();
+        TemplatingEngine engine = new TemplatingEngine();
+
+        if (context.getConfig().getContent() != null && context.getConfig().getContent().getNamespaces() != null) {
+            for (String ns : context.getConfig().getContent().getNamespaces()) {
+                try {
+                    tenantNamespaces.add(engine.template(ns, Map.of(
+                            "config", context.getConfig(),
+                            "statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                    )));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to render namespace template: " + ns, e);
+                }
+            }
+            context.getConfig().getContent().setNamespaces(new ArrayList<>(tenantNamespaces));
+        }
+
+        for (Tool tool : this.tools) {
+            String activeNs = tool.getActiveNamespaceFromFeature(context);
+            if (activeNs != null && !activeNs.isEmpty()) {
+                dedicatedNamespaces.add(activeNs);
+            }
+        }
+
+        context.getConfig().getApplication().getNamespaces().setDedicatedNamespaces(dedicatedNamespaces);
+        context.getConfig().getApplication().getNamespaces().setTenantNamespaces(tenantNamespaces);
+        log.debug("Active namespaces retrieved: {}", context.getConfig().getApplication().getNamespaces().getActiveNamespaces());
+    }
+}
