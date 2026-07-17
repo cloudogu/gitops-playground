@@ -31,9 +31,8 @@ public class HttpClientFactory {
         if (Boolean.TRUE.equals(isInsecure)) {
             InsecureSslContext context = insecureSslContext();
             builder.sslSocketFactory(context.getSocketFactory(), context.getTrustManager());
+            builder.hostnameVerifier((hostname, session) -> true);
         }
-
-        builder.hostnameVerifier((hostname, session) -> true);
 
         return builder.build();
     }
@@ -49,6 +48,7 @@ public class HttpClientFactory {
         if (Boolean.TRUE.equals(config.getApplication().getInsecure())) {
             InsecureSslContext sslContext = insecureSslContext();
             builder.sslSocketFactory(sslContext.getSocketFactory(), sslContext.getTrustManager());
+            builder.hostnameVerifier((hostname, session) -> true);
         }
 
         return builder.build();
@@ -79,7 +79,7 @@ public class HttpClientFactory {
                     return new X509Certificate[0];
                 }
             };
-            SSLContext sslCtxt = SSLContext.getInstance("SSL");
+            SSLContext sslCtxt = SSLContext.getInstance("TLS");
             sslCtxt.init(null, new TrustManager[]{noCheckTrustManager}, new SecureRandom());
 
             return new InsecureSslContext(sslCtxt.getSocketFactory(), noCheckTrustManager);

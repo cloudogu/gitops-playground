@@ -41,6 +41,7 @@ public class InsecureCredentialProvider extends CredentialsProvider {
     }
 
     @Override
+    @SuppressWarnings("java:S3516")
     public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
         if (items == null) {
             return true;

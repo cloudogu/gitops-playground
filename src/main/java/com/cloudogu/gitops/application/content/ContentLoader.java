@@ -49,7 +49,6 @@ public class ContentLoader extends Tool {
     private final K8sClient k8sClient;
     private final GitRepoFactory repoProvider;
     private final Jenkins jenkins;
-    private final GitHandler gitHandler;
 
     private TemplatingEngine templatingEngine;
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>();
