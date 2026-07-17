@@ -25,6 +25,7 @@ import java.util.Map;
 
 @Singleton
 @Order(100)
+@SuppressWarnings("java:S1192")
 public class ArgoCD extends Tool {
 
     private static final Logger log = LoggerFactory.getLogger(ArgoCD.class);

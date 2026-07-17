@@ -125,6 +125,7 @@ public class Registry extends Tool {
                 namespace);
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

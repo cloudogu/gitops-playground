@@ -398,6 +398,7 @@ public class Jenkins extends Tool {
         return isEnabled(context) ? activeNamespace(context) : null;
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

@@ -132,6 +132,7 @@ public class ScmManager extends Tool {
         return (ScmManagerProvider) tenantScm;
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

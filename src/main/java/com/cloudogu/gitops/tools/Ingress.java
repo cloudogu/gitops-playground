@@ -92,6 +92,7 @@ public class Ingress extends Tool {
                 ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH));
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

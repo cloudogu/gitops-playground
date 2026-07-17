@@ -151,6 +151,7 @@ public class Vault extends Tool {
         clusterResourcesRepo.replaceTemplates(Map.of("config", getConfig()));
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

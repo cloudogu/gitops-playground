@@ -361,9 +361,7 @@ public class ContentLoader extends Tool {
         if (Boolean.TRUE.equals(repoConfig.getTemplating())) {
             var engine = getTemplatingEngine();
 
-            GitRepo repo = this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant());
-
-            try {
+            try (GitRepo repo = this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant())) {
                 engine.replaceTemplates(srcPath, Map.of(
                         "config", getConfig(),
                         "scm", Map.of(
@@ -455,45 +453,45 @@ public class ContentLoader extends Tool {
                     repoCoordinate.refIsTag,
                     repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null);
 
-            GitRepo targetRepo = repoProvider.create(repoCoordinate.getFullRepoName(), this.gitHandler.getTenant());
-
-            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false);
-            log.trace("ContentLoader target repo '{}'. isNewRepo='{}', localTargetRepo='{}'",
-                    repoCoordinate.getFullRepoName(),
-                    isNewRepo,
-                    targetRepo.getAbsoluteLocalRepoTmpDir());
-
-            if (isValidForPush(isNewRepo, repoCoordinate)) {
-                targetRepo.cloneRepo();
-
-                switch (repoCoordinate.repoConfig.getType()) {
-                    case MIRROR:
-                        handleRepoMirroring(repoCoordinate, targetRepo);
-                        break;
-                    case FOLDER_BASED:
-                    case COPY:
-                        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo);
-                        break;
-                }
-
-                createJenkinsJobIfApplicable(repoCoordinate, targetRepo);
-
-                log.trace("Cleaning ContentLoader temp folders for repo '{}'. source='{}', target='{}'",
-                        repoCoordinate.getFullRepoName(),
-                        repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null,
-                        targetRepo.getAbsoluteLocalRepoTmpDir());
-
-                try {
-                    if (repoCoordinate.clonedContentRepo != null) {
-                        FileUtils.deleteDirectory(repoCoordinate.clonedContentRepo);
-                    }
-                    FileUtils.deleteDirectory(new File(targetRepo.getAbsoluteLocalRepoTmpDir()));
-                } catch (IOException ignored) {}
-            } else {
-                log.debug("Skipping ContentLoader push for repo '{}'. isNewRepo='{}', overwriteMode='{}'",
+            try (GitRepo targetRepo = repoProvider.create(repoCoordinate.getFullRepoName(), this.gitHandler.getTenant())) {
+                boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false);
+                log.trace("ContentLoader target repo '{}'. isNewRepo='{}', localTargetRepo='{}'",
                         repoCoordinate.getFullRepoName(),
                         isNewRepo,
-                        repoCoordinate.repoConfig.getOverwriteMode());
+                        targetRepo.getAbsoluteLocalRepoTmpDir());
+
+                if (isValidForPush(isNewRepo, repoCoordinate)) {
+                    targetRepo.cloneRepo();
+
+                    switch (repoCoordinate.repoConfig.getType()) {
+                        case MIRROR:
+                            handleRepoMirroring(repoCoordinate, targetRepo);
+                            break;
+                        case FOLDER_BASED:
+                        case COPY:
+                            handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo);
+                            break;
+                    }
+
+                    createJenkinsJobIfApplicable(repoCoordinate, targetRepo);
+
+                    log.trace("Cleaning ContentLoader temp folders for repo '{}'. source='{}', target='{}'",
+                            repoCoordinate.getFullRepoName(),
+                            repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null,
+                            targetRepo.getAbsoluteLocalRepoTmpDir());
+
+                    try {
+                        if (repoCoordinate.clonedContentRepo != null) {
+                            FileUtils.deleteDirectory(repoCoordinate.clonedContentRepo);
+                        }
+                        FileUtils.deleteDirectory(new File(targetRepo.getAbsoluteLocalRepoTmpDir()));
+                    } catch (IOException ignored) {}
+                } else {
+                    log.debug("Skipping ContentLoader push for repo '{}'. isNewRepo='{}', overwriteMode='{}'",
+                            repoCoordinate.getFullRepoName(),
+                            isNewRepo,
+                            repoCoordinate.repoConfig.getOverwriteMode());
+                }
             }
         }
     }

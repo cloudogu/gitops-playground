@@ -132,6 +132,7 @@ public class RepositoryProvisioning {
         return CLUSTER_RESOURCES_REPO_TARGET;
     }
 
+    @SuppressWarnings("java:S2095")
     private RepositoryWorkspace createSingleInstanceWorkspace(DeploymentContext context) {
         log.debug("Creating single-instance repository workspace.");
 
@@ -141,6 +142,7 @@ public class RepositoryProvisioning {
         return new RepositoryWorkspace(clusterResourcesRepository);
     }
 
+    @SuppressWarnings("java:S2095")
     private RepositoryWorkspace createDedicatedInstanceWorkspace(DeploymentContext context) {
         log.debug("Creating dedicated-instance repository workspace.");
 

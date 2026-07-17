@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * Kubernetes client using Fabric8 Kubernetes Client.
  */
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"rawtypes", "unchecked", "deprecation", "java:S3776"})
 public class K8sClient {
 
     private static final Logger log = LoggerFactory.getLogger(K8sClient.class);

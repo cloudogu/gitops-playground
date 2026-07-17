@@ -43,6 +43,7 @@ public class Config {
     // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
     public static final String K8S_VERSION = "1.36.2";
     public static final String DEFAULT_ADMIN_USER = "admin";
+    @SuppressWarnings({"java:S1444", "java:S1104", "java:S3008"})
     public static String DEFAULT_ADMIN_PW = generatePassword();
     public static final int DEFAULT_REGISTRY_PORT = 30000;
 

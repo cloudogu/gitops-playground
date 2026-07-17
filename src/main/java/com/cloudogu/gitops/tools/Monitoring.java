@@ -38,6 +38,7 @@ public class Monitoring extends Tool {
     private static final String TOOL_NAME = "monitoring";
     private static final String RELEASE_NAME = "kube-prometheus-stack";
     private static final String MONITORING_APP_PATH = "apps/monitoring";
+    private static final String PASSWORD_KEY = "password";
     private static final String MONITORING_RBAC_PATH = MONITORING_APP_PATH + "/misc/rbac";
     private static final String MONITORING_NETPOLS_PATH = MONITORING_APP_PATH + "/misc/netpols";
     private static final String MONITORING_DASHBOARD_PATH = MONITORING_APP_PATH + "/misc/dashboard";
@@ -167,12 +168,12 @@ public class Monitoring extends Tool {
         k8sClient.createSecret("generic",
                 "prometheus-metrics-creds-scmm",
                 namespace,
-                new Tuple<>("password", getConfig().getApplication().getPassword()));
+                new Tuple<>(PASSWORD_KEY, getConfig().getApplication().getPassword()));
 
         k8sClient.createSecret("generic",
                 "prometheus-metrics-creds-jenkins",
                 namespace,
-                new Tuple<>("password", getConfig().getJenkins().getMetricsPassword()));
+                new Tuple<>(PASSWORD_KEY, getConfig().getJenkins().getMetricsPassword()));
 
         if ((getConfig().getFeatures().getMail().getSmtpUser() != null && !getConfig().getFeatures().getMail().getSmtpUser().isEmpty()) ||
                 (getConfig().getFeatures().getMail().getSmtpPassword() != null && !getConfig().getFeatures().getMail().getSmtpPassword().isEmpty())) {
@@ -180,7 +181,7 @@ public class Monitoring extends Tool {
                     "grafana-email-secret",
                     namespace,
                     new Tuple<>("user", getConfig().getFeatures().getMail().getSmtpUser()),
-                    new Tuple<>("password", getConfig().getFeatures().getMail().getSmtpPassword()));
+                    new Tuple<>(PASSWORD_KEY, getConfig().getFeatures().getMail().getSmtpPassword()));
         }
     }
 
@@ -312,6 +313,7 @@ public class Monitoring extends Tool {
         return isEnabled(context) ? activeNamespace(context) : null;
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }

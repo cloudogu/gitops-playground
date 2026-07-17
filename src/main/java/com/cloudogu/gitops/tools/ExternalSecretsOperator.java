@@ -92,6 +92,7 @@ public class ExternalSecretsOperator extends Tool {
                 ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, EXTERNAL_SECRETS_APP_PATH));
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }
