@@ -31,12 +31,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public class GitRepo {
+public class GitRepo implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(GitRepo.class);
 
@@ -262,14 +263,14 @@ public class GitRepo {
         }
 
         log.debug("Initializing repo {} from {}", repoTarget, srcDir);
-        String absoluteSrcDirLocation = new File(srcDir).isAbsolute() 
-                ? srcDir 
-                : fileSystemUtils.getRootDir() + "/" + srcDir;
+        String absoluteSrcDirLocation = new File(srcDir).isAbsolute()
+                ? srcDir
+                : Path.of(fileSystemUtils.getRootDir(), srcDir).toString();
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter);
-    }
+        }
 
-    public void writeFile(String path, String content) throws IOException {
-        File file = new File(absoluteLocalRepoTmpDir + "/" + path);
+        public void writeFile(String path, String content) throws IOException {
+        File file = new File(absoluteLocalRepoTmpDir, path);
         fileSystemUtils.createDirectory(file.getParent());
         if (file.isDirectory()) {
             throw new java.io.FileNotFoundException(file.getAbsolutePath() + " (Is a directory)");
@@ -371,7 +372,7 @@ public class GitRepo {
      * @return true if the file exists in some branch, false otherwise
      */
     public static boolean existFileInSomeBranch(String repo, String filename) {
-        File repoPath = new File(repo + "/.git");
+        File repoPath = new File(repo);
 
         try (Git git = Git.open(repoPath)) {
             List<Ref> branches = git.branchList()
@@ -449,5 +450,13 @@ public class GitRepo {
         return insecure 
                 ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) 
                 : passwordAuthentication;
+    }
+
+    @Override
+    public void close() {
+        if (gitMemoization != null) {
+            gitMemoization.close();
+            gitMemoization = null;
+        }
     }
 }

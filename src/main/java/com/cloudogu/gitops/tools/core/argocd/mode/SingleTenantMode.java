@@ -7,7 +7,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition;
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoLayout;
-import groovy.lang.Tuple2;
+import com.cloudogu.gitops.utils.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,13 +107,13 @@ public class SingleTenantMode implements DeploymentMode {
         k8sClient.createSecret("generic",
                 secretName,
                 ns,
-                new Tuple2<>("url", url),
-                new Tuple2<>("username", username),
-                new Tuple2<>("password", password));
+                new Tuple<>("url", url),
+                new Tuple<>("username", username),
+                new Tuple<>("password", password));
 
         k8sClient.label("secret",
                 secretName,
                 ns,
-                new Tuple2<>("argocd.argoproj.io/secret-type", "repo-creds"));
+                new Tuple<>("argocd.argoproj.io/secret-type", "repo-creds"));
     }
 }

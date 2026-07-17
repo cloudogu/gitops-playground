@@ -43,7 +43,7 @@ public class Config {
     // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
     public static final String K8S_VERSION = "1.36.2";
     public static final String DEFAULT_ADMIN_USER = "admin";
-    public static final String DEFAULT_ADMIN_PW = generatePassword();
+    public static String DEFAULT_ADMIN_PW = generatePassword();
     public static final int DEFAULT_REGISTRY_PORT = 30000;
 
     @JsonPropertyDescription(REGISTRY_DESCRIPTION)
@@ -79,7 +79,7 @@ public class Config {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&";
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 12; i++) {
-            sb.append(chars.charAt(sr.nextInt(62)));
+            sb.append(chars.charAt(sr.nextInt(chars.length())));
         }
         return sb.toString();
     }
@@ -829,11 +829,11 @@ public class Config {
                 }
             }));
 
-    public static Config fromMap(Map map) {
+    public static Config fromMap(Map<String, Object> map) {
         return objectMapper.convertValue(map, Config.class);
     }
 
-    public Map toMap() {
+    public Map<String, Object> toMap() {
         return objectMapper.convertValue(this, Map.class);
     }
 

@@ -81,6 +81,11 @@ public class CertManager extends Tool {
         return context.getConfig().getApplication().getNamePrefix() + context.getConfig().getFeatures().getCertManager().getNamespace();
     }
 
+    @Override
+    public String getNamespace() {
+        return namespace;
+    }
+
     private void createImagePullSecret() {
         imagePullSecretCreator.createIfRequired(getConfig(), namespace);
     }

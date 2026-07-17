@@ -9,6 +9,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 
@@ -66,10 +67,10 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
                     Map.of("metadata", Map.of("finalizers", List.of("resources-finalizer.argocd.argoproj.io"))));
         }
 
-        List<groovy.lang.Tuple2<String, String>> appsToBeDeleted = List.of(
-                new groovy.lang.Tuple2<>("argocd", "bootstrap"),
-                new groovy.lang.Tuple2<>("argocd", "cluster-resources"),
-                new groovy.lang.Tuple2<>("argocd", "example-apps")
+        List<Tuple<String, String>> appsToBeDeleted = List.of(
+                new Tuple<>("argocd", "bootstrap"),
+                new Tuple<>("argocd", "cluster-resources"),
+                new Tuple<>("argocd", "example-apps")
         );
 
         for (var app : appsToBeDeleted) {

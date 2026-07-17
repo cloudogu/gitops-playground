@@ -14,7 +14,7 @@ import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
-import groovy.yaml.YamlSlurper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +28,8 @@ import java.util.regex.Pattern;
 public abstract class Tool {
 
     private static final Logger log = LoggerFactory.getLogger(Tool.class);
+
+    private static final ObjectMapper yamlMapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
 
     protected FileSystemUtils fileSystemUtils;
     protected Deployer deployer;
@@ -113,41 +115,16 @@ public abstract class Tool {
         this.helmValuesTemplateData.put(key, value);
     }
 
-    public String getActiveNamespaceFromFeature(DeploymentContext context) {
-        // using reflection to get all subclasses implementing an own namespace
-        try {
-            java.lang.reflect.Field field = this.getClass().getDeclaredField("namespace");
-            field.setAccessible(true);
-            return isEnabled(context) ? activeNamespace(context) : null;
-        } catch (NoSuchFieldException e) {
-            // Check if there is a getter getNamespace() instead
-            try {
-                java.lang.reflect.Method method = this.getClass().getDeclaredMethod("getNamespace");
-                method.setAccessible(true);
-                return isEnabled(context) ? activeNamespace(context) : null;
-            } catch (NoSuchMethodException ignored) {}
-        } catch (Exception e) {
-            log.trace("Reflection failed checking namespace property", e);
-        }
+    public String getNamespace() {
         return null;
     }
 
     protected String activeNamespace(DeploymentContext context) {
-        try {
-            java.lang.reflect.Field field = this.getClass().getDeclaredField("namespace");
-            field.setAccessible(true);
-            return (String) field.get(this);
-        } catch (NoSuchFieldException e) {
-            try {
-                java.lang.reflect.Method method = this.getClass().getDeclaredMethod("getNamespace");
-                method.setAccessible(true);
-                return (String) method.invoke(this);
-            } catch (Exception ex) {
-                throw new RuntimeException("Failed to access 'namespace' property via reflection", ex);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to access 'namespace' property via reflection", e);
-        }
+        return null;
+    }
+
+    public String getActiveNamespaceFromFeature(DeploymentContext context) {
+        return isEnabled(context) ? activeNamespace(context) : null;
     }
 
     public static Map templateToMap(String filePath, Map parameters) {
@@ -155,11 +132,11 @@ public abstract class Tool {
             String hydratedString = new TemplatingEngine().template(new File(filePath), parameters);
 
             if (hydratedString == null || hydratedString.trim().isEmpty()) {
-                // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
+                // Otherwise empty array or exception, whereas we expect a Map
                 return Collections.emptyMap();
             }
-            return (Map) new YamlSlurper().parseText(hydratedString);
-        } catch (IOException | freemarker.template.TemplateException e) {
+            return yamlMapper.readValue(hydratedString, Map.class);
+        } catch (Exception e) {
             throw new RuntimeException("Failed to template file to map: " + filePath, e);
         }
     }
@@ -221,7 +198,7 @@ public abstract class Tool {
             chartOrPath = ".";
             repoType = RepoType.GIT;
             try {
-                Map chartYaml = (Map) new YamlSlurper().parse(Path.of(config.getApplication().getLocalHelmChartFolder() + "/" + helmConfig.getChart(), "Chart.yaml").toFile());
+                Map chartYaml = yamlMapper.readValue(Path.of(config.getApplication().getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml").toFile(), Map.class);
                 version = String.valueOf(chartYaml.get("version"));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to parse Chart.yaml for airgapped version mapping", e);

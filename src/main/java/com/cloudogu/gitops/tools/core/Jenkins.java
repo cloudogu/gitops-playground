@@ -141,15 +141,15 @@ public class Jenkins extends Tool {
         k8sClient.labelRemove("node", "--all", "", "node");
 
         String nodeName = k8sClient.waitForNode().replace("node/", "");
-        k8sClient.label("node", nodeName, new groovy.lang.Tuple2<>("node", "jenkins"));
+        k8sClient.label("node", nodeName, new Tuple<>("node", "jenkins"));
     }
 
     private void createJenkinsCredentialsSecret() {
         k8sClient.createSecret("generic",
                 "jenkins-credentials",
                 namespace,
-                new groovy.lang.Tuple2<>("jenkins-admin-user", getConfig().getJenkins().getUsername()),
-                new groovy.lang.Tuple2<>("jenkins-admin-password", getConfig().getJenkins().getPassword()));
+                new Tuple<>("jenkins-admin-user", getConfig().getJenkins().getUsername()),
+                new Tuple<>("jenkins-admin-password", getConfig().getJenkins().getPassword()));
     }
 
     private void prepareJenkinsHelmValues() {

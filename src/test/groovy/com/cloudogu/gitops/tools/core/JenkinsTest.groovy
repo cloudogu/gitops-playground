@@ -31,6 +31,7 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 import java.nio.file.Path
 import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
+import com.cloudogu.gitops.utils.Tuple
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -104,11 +105,11 @@ me:x:1000:''')
 
 		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges('Update jenkins GitOps resources')
 
-		verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
+		verify(k8sClient).label('node', expectedNodeName, new Tuple('node', 'jenkins'))
 		verify(k8sClient).labelRemove('node', '--all', '', 'node')
 		verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
-			new Tuple2('jenkins-admin-user', 'jenusr'),
-			new Tuple2('jenkins-admin-password', 'jenpw'))
+			new Tuple('jenkins-admin-user', 'jenusr'),
+			new Tuple('jenkins-admin-password', 'jenpw'))
 
 		assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
 

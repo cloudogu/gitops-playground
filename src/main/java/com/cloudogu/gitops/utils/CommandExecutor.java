@@ -127,14 +127,14 @@ public class CommandExecutor {
         }
     }
 
-    protected Process doExecute(String command, List envp) throws IOException {
+    protected Process doExecute(String command, List<String> envp) throws IOException {
         log.trace("Executing command: '{}'", command);
-        String[] envpArray = envp != null ? (String[]) envp.stream().map(Object::toString).toArray(String[]::new) : null;
+        String[] envpArray = envp != null ? envp.toArray(new String[0]) : null;
         return Runtime.getRuntime().exec(command, envpArray);
     }
 
     protected Process doExecute(String command) throws IOException {
-        return doExecute(command, (List) null);
+        return doExecute(command, (List<String>) null);
     }
 
     protected Process doExecute(String[] command) throws IOException {

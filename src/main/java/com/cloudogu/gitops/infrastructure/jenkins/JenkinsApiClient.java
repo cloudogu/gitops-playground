@@ -106,6 +106,10 @@ public class JenkinsApiClient {
         int retry = 0;
         Response response = null;
         do {
+            if (response != null) {
+                response.close();
+                response = null;
+            }
             try {
                 Request request = requestSupplier.get();
                 response = client.newCall(request).execute();
@@ -118,6 +122,9 @@ public class JenkinsApiClient {
             try {
                 Thread.sleep(waitPeriodInMs);
             } catch (InterruptedException e) {
+                if (response != null) {
+                    response.close();
+                }
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for retry", e);
             }

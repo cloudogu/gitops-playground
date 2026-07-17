@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.utils;
 
-import groovy.yaml.YamlBuilder;
-import groovy.yaml.YamlSlurper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import jakarta.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -23,6 +24,10 @@ public class FileSystemUtils {
 
     private static final Logger log =
             LoggerFactory.getLogger(FileSystemUtils.class);
+
+    private static final ObjectMapper yamlMapper = new ObjectMapper(
+            new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+    );
 
     /**
      * Replaces text in files. If you want to change a YAML field, better use
@@ -577,14 +582,9 @@ public class FileSystemUtils {
     }
 
     public Map readYaml(Path path) {
-        YamlSlurper yamlSlurper =
-                new YamlSlurper();
-
         if (Files.exists(path)) {
             try {
-                return (Map) yamlSlurper.parse(
-                        path.toFile()
-                );
+                return yamlMapper.readValue(path.toFile(), Map.class);
             } catch (IOException exception) {
                 throw new UncheckedIOException(
                         "Failed to parse YAML file: " + path,
@@ -616,12 +616,7 @@ public class FileSystemUtils {
                 return Collections.emptyMap();
             }
 
-            String text = new String(
-                    inputStream.readAllBytes(),
-                    StandardCharsets.UTF_8
-            );
-
-            return (Map) yamlSlurper.parseText(text);
+            return yamlMapper.readValue(inputStream, Map.class);
         } catch (IOException exception) {
             throw new UncheckedIOException(
                     "Failed to read YAML resource from classpath: "
@@ -660,16 +655,8 @@ public class FileSystemUtils {
             Map yaml,
             File file
     ) {
-        YamlBuilder builder =
-                new YamlBuilder();
-
-        builder.call(yaml);
-
         try {
-            Files.writeString(
-                    file.toPath(),
-                    builder.toString()
-            );
+            yamlMapper.writeValue(file, yaml);
         } catch (IOException exception) {
             throw new UncheckedIOException(
                     "Failed to write YAML to file: " + file,

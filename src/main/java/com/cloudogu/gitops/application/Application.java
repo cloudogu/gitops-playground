@@ -9,6 +9,7 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import com.cloudogu.gitops.utils.Tuple;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import jakarta.inject.Singleton;
@@ -55,9 +56,9 @@ public class Application {
         gitHandler.validate(context);
         gitHandler.prepareProviders(context);
         repositoryProvisioning.prepare(context);
-        RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context);
-
-        deploymentOrchestrator.deployTools(context, workspace);
+        try (RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)) {
+            deploymentOrchestrator.deployTools(context, workspace);
+        }
 
         log.debug("Application finished");
     }
@@ -72,8 +73,8 @@ public class Application {
         log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '{}'", namespace);
         k8sClient.createNamespace(namespace);
         k8sClient.createSecret("generic", "gop-configuration", namespace,
-                new groovy.lang.Tuple2<>("gop-initial-password", context.getConfig().getApplication().getPassword()),
-                new groovy.lang.Tuple2<>("gop-config", context.getConfig().toYaml(true))
+                new Tuple<>("gop-initial-password", context.getConfig().getApplication().getPassword()),
+                new Tuple<>("gop-config", context.getConfig().toYaml(true))
         );
     }
 

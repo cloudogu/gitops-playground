@@ -26,7 +26,7 @@ import java.nio.file.Path;
  * {@link RepositoryProvisioning}. This class only exposes the prepared repositories and
  * the directory structure that tools can write to.</p>
  */
-public class RepositoryWorkspace {
+public class RepositoryWorkspace implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(RepositoryWorkspace.class);
 
@@ -212,5 +212,23 @@ public class RepositoryWorkspace {
                                                String repoTarget,
                                                String description) {
         gitProvider.createRepository(repoTarget, description, true);
+    }
+
+    @Override
+    public void close() {
+        try {
+            if (clusterResourcesRepository != null) {
+                clusterResourcesRepository.close();
+            }
+        } catch (Exception e) {
+            log.warn("Error closing cluster resources repository", e);
+        }
+        try {
+            if (tenantBootstrapRepository != null) {
+                tenantBootstrapRepository.close();
+            }
+        } catch (Exception e) {
+            log.warn("Error closing tenant bootstrap repository", e);
+        }
     }
 }

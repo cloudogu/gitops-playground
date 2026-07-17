@@ -10,6 +10,7 @@ import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentMode;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
+import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -124,6 +125,11 @@ public class ArgoCD extends Tool {
     }
 
     @Override
+    public String getNamespace() {
+        return namespace;
+    }
+
+    @Override
     public void postConfigInit(Config configToSet) {
         // Exit early if not in operator mode or if env list is empty
         if (!configToSet.getFeatures().getArgocd().getOperator() || configToSet.getFeatures().getArgocd().getEnv() == null) {
@@ -170,8 +176,8 @@ public class ArgoCD extends Tool {
             k8sClient.createSecret("generic",
                     "argocd-notifications-secret",
                     namespace,
-                    new groovy.lang.Tuple2<>("email-username", smtpUser),
-                    new groovy.lang.Tuple2<>("email-password", smtpPassword));
+                    new Tuple<>("email-username", smtpUser),
+                    new Tuple<>("email-password", smtpPassword));
         }
     }
 
@@ -197,8 +203,8 @@ public class ArgoCD extends Tool {
         // For development keeping it in helm makes it easier, e.g. for helm uninstall.
         k8sClient.delete("secret",
                 namespace,
-                new groovy.lang.Tuple2<>("owner", "helm"),
-                new groovy.lang.Tuple2<>("name", "argocd"));
+                new Tuple<>("owner", "helm"),
+                new Tuple<>("name", "argocd"));
     }
 
     private void deployWithOperator() {

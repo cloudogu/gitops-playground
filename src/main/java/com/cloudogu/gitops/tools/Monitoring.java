@@ -12,6 +12,7 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -166,20 +167,20 @@ public class Monitoring extends Tool {
         k8sClient.createSecret("generic",
                 "prometheus-metrics-creds-scmm",
                 namespace,
-                new groovy.lang.Tuple2<>("password", getConfig().getApplication().getPassword()));
+                new Tuple<>("password", getConfig().getApplication().getPassword()));
 
         k8sClient.createSecret("generic",
                 "prometheus-metrics-creds-jenkins",
                 namespace,
-                new groovy.lang.Tuple2<>("password", getConfig().getJenkins().getMetricsPassword()));
+                new Tuple<>("password", getConfig().getJenkins().getMetricsPassword()));
 
         if ((getConfig().getFeatures().getMail().getSmtpUser() != null && !getConfig().getFeatures().getMail().getSmtpUser().isEmpty()) ||
                 (getConfig().getFeatures().getMail().getSmtpPassword() != null && !getConfig().getFeatures().getMail().getSmtpPassword().isEmpty())) {
             k8sClient.createSecret("generic",
                     "grafana-email-secret",
                     namespace,
-                    new groovy.lang.Tuple2<>("user", getConfig().getFeatures().getMail().getSmtpUser()),
-                    new groovy.lang.Tuple2<>("password", getConfig().getFeatures().getMail().getSmtpPassword()));
+                    new Tuple<>("user", getConfig().getFeatures().getMail().getSmtpUser()),
+                    new Tuple<>("password", getConfig().getFeatures().getMail().getSmtpPassword()));
         }
     }
 

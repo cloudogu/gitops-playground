@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
 import com.cloudogu.gitops.config.Credentials;
+import com.cloudogu.gitops.utils.Tuple;
 import jakarta.inject.Singleton;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.ConfigBuilder;
@@ -310,22 +311,22 @@ public class K8sClient {
     }
 
     public void createSecret(String type, String name) {
-        createSecret(type, name, "", new groovy.lang.Tuple2[0]);
+        createSecret(type, name, "", new Tuple[0]);
     }
 
     public void createSecret(String type, String name, String namespace) {
-        createSecret(type, name, namespace, new groovy.lang.Tuple2[0]);
+        createSecret(type, name, namespace, new Tuple[0]);
     }
 
     /**
      * Creates or updates a generic secret (idempotent).
      */
-    public void createSecret(String type, String name, String namespace, groovy.lang.Tuple2... literals) {
+    public void createSecret(String type, String name, String namespace, Tuple... literals) {
         log.debug("Creating secret {} of type {} in namespace {}", name, type, namespace);
 
         Map<String, String> data = new HashMap<>();
         if (literals != null) {
-            for (groovy.lang.Tuple2 tuple : literals) {
+            for (Tuple tuple : literals) {
                 data.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
             }
         }
@@ -350,6 +351,14 @@ public class K8sClient {
         });
 
         log.debug("Secret {} created/updated successfully", name);
+    }
+
+    public void createSecret(String type, String name, String namespace, groovy.lang.Tuple2... literals) {
+        Tuple[] tuples = new Tuple[literals.length];
+        for (int i = 0; i < literals.length; i++) {
+            tuples[i] = new Tuple(literals[i].getFirst(), literals[i].getSecond());
+        }
+        createSecret(type, name, namespace, tuples);
     }
 
     public void createImagePullSecret(String name, String host, String user, String password) {
@@ -595,11 +604,19 @@ public class K8sClient {
         return resources.size();
     }
 
-    public void label(String resource, String name, groovy.lang.Tuple2... keyValues) {
+    public void label(String resource, String name, Tuple... keyValues) {
         label(resource, name, "", keyValues);
     }
 
-    public void label(String resource, String name, String namespace, groovy.lang.Tuple2... keyValues) {
+    public void label(String resource, String name, groovy.lang.Tuple2... keyValues) {
+        Tuple[] tuples = new Tuple[keyValues.length];
+        for (int i = 0; i < keyValues.length; i++) {
+            tuples[i] = new Tuple(keyValues[i].getFirst(), keyValues[i].getSecond());
+        }
+        label(resource, name, tuples);
+    }
+
+    public void label(String resource, String name, String namespace, Tuple... keyValues) {
         if (keyValues == null || keyValues.length == 0) {
             throw new RuntimeException("Missing key-value-pairs");
         }
@@ -619,7 +636,7 @@ public class K8sClient {
         Map<String, String> labelsToAdd = new HashMap<>();
         List<String> labelsToRemove = new ArrayList<>();
 
-        for (groovy.lang.Tuple2 tuple : keyValues) {
+        for (Tuple tuple : keyValues) {
             String key = String.valueOf(tuple.getFirst());
             String value = String.valueOf(tuple.getSecond());
 
@@ -658,6 +675,14 @@ public class K8sClient {
         log.debug("Labels updated successfully");
     }
 
+    public void label(String resource, String name, String namespace, groovy.lang.Tuple2... keyValues) {
+        Tuple[] tuples = new Tuple[keyValues.length];
+        for (int i = 0; i < keyValues.length; i++) {
+            tuples[i] = new Tuple(keyValues[i].getFirst(), keyValues[i].getSecond());
+        }
+        label(resource, name, namespace, tuples);
+    }
+
     public void labelRemove(String resource, String name) {
         labelRemove(resource, name, "", new String[0]);
     }
@@ -667,9 +692,9 @@ public class K8sClient {
     }
 
     public void labelRemove(String resource, String name, String namespace, String... keys) {
-        groovy.lang.Tuple2[] tuples = new groovy.lang.Tuple2[keys.length];
+        Tuple[] tuples = new Tuple[keys.length];
         for (int i = 0; i < keys.length; i++) {
-            tuples[i] = new groovy.lang.Tuple2(keys[i] + "-", "");
+            tuples[i] = new Tuple(keys[i] + "-", "");
         }
         label(resource, name, namespace, tuples);
     }
@@ -699,14 +724,14 @@ public class K8sClient {
     }
 
     public void delete(String resource) {
-        delete(resource, "", new groovy.lang.Tuple2[0]);
+        delete(resource, "", new Tuple[0]);
     }
 
     public void delete(String resource, String namespace) {
-        delete(resource, namespace, new groovy.lang.Tuple2[0]);
+        delete(resource, namespace, new Tuple[0]);
     }
 
-    public void delete(String resource, String namespace, groovy.lang.Tuple2... selectors) {
+    public void delete(String resource, String namespace, Tuple... selectors) {
         if (selectors == null || selectors.length == 0) {
             throw new RuntimeException("Missing selectors");
         }
@@ -714,7 +739,7 @@ public class K8sClient {
         log.debug("Deleting {} in namespace {} with selectors", resource, namespace);
 
         Map<String, String> labels = new HashMap<>();
-        for (groovy.lang.Tuple2 tuple : selectors) {
+        for (Tuple tuple : selectors) {
             labels.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
         }
 
@@ -724,6 +749,14 @@ public class K8sClient {
         } catch (Exception e) {
             log.warn("Failed to delete resources (may not exist): {}", e.getMessage());
         }
+    }
+
+    public void delete(String resource, String namespace, groovy.lang.Tuple2... selectors) {
+        Tuple[] tuples = new Tuple[selectors.length];
+        for (int i = 0; i < selectors.length; i++) {
+            tuples[i] = new Tuple(selectors[i].getFirst(), selectors[i].getSecond());
+        }
+        delete(resource, namespace, tuples);
     }
 
     public void delete(String resource, String namespace, String name) {
