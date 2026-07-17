@@ -1,5 +1,15 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "customManagers": [
+        {
+            "customType": "regex",
+            "fileMatch": ["^src/main/java/com/cloudogu/gitops/config/Config\\.java$"],
+            "matchStrings": [
+                "// renovate: depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\s+.*setVersion\\(\"(?<currentValue>[^\"]+)\"\\);"
+            ],
+            "datasourceTemplate": "helm"
+        }
+    ],
     "baseBranchPatterns": [
         "develop"
     ],
