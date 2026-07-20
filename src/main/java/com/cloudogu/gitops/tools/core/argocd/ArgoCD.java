@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Singleton
 @Order(100)
@@ -136,7 +137,7 @@ public class ArgoCD extends Tool {
             return;
         }
 
-        List env = configToSet.getFeatures().getArgocd().getEnv();
+        List<?> env = configToSet.getFeatures().getArgocd().getEnv();
 
         log.info("Validating env list in features.argocd.env with {} entries.", env.size());
 
@@ -154,18 +155,12 @@ public class ArgoCD extends Tool {
     }
 
     private static String formatMapLikeGroovy(Map<String, String> map) {
-        if (map == null) return "null";
-        StringBuilder sb = new StringBuilder("[");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            if (!first) {
-                sb.append(", ");
-            }
-            sb.append(entry.getKey()).append(":").append(entry.getValue());
-            first = false;
+        if (map == null) {
+            return "null";
         }
-        sb.append("]");
-        return sb.toString();
+        return map.entrySet().stream()
+                .map(entry -> entry.getKey() + ":" + entry.getValue())
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 
     private void createNotificationSecretIfRequired() {
@@ -186,14 +181,17 @@ public class ArgoCD extends Tool {
             return;
         }
 
-        String argocdConfigPath = clusterResourcesRepo.helmValuesFile();
-        log.debug("extend Argocd values.yaml with {}", values);
+        mergeAndWriteYamlValues(clusterResourcesRepo.helmValuesFile(), values, "values.yaml");
+    }
 
-        Map<String, Object> argocdYaml = fileSystemUtils.readYaml(Path.of(argocdConfigPath));
+    private void mergeAndWriteYamlValues(String configPath, Map<String, Object> values, String logLabel) {
+        log.debug("extend Argocd {} with {}", logLabel, values);
+
+        Map<String, Object> argocdYaml = fileSystemUtils.readYaml(Path.of(configPath));
         Map<String, Object> result = MapUtils.deepMerge(values, argocdYaml);
 
-        fileSystemUtils.writeYaml(result, new File(argocdConfigPath));
-        log.debug("Argocd values.yaml contains {}", result);
+        fileSystemUtils.writeYaml(result, new File(configPath));
+        log.debug("Argocd {} contains {}", logLabel, result);
     }
 
     private void deleteHelmArgoSecrets() {
@@ -211,15 +209,7 @@ public class ArgoCD extends Tool {
         Map<String, Object> values = getConfig().getFeatures().getArgocd().getValues();
 
         if (values != null && !values.isEmpty()) {
-            log.debug("extend Argocd.yaml with {}", values);
-
-            Map<String, Object> argocdYaml = fileSystemUtils.readYaml(Path.of(clusterResourcesRepo.operatorConfigFile()));
-            Map<String, Object> result = MapUtils.deepMerge(values, argocdYaml);
-
-            fileSystemUtils.writeYaml(result, new File(argocdConfigPath));
-            log.debug("Argocd.yaml for operator contains {}", result);
-
-            argocdConfigPath = clusterResourcesRepo.operatorConfigFile();
+            mergeAndWriteYamlValues(argocdConfigPath, values, "argocd.yaml for operator");
         }
 
         k8sClient.applyYaml(argocdConfigPath);

@@ -15,6 +15,8 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.*;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
@@ -39,6 +41,8 @@ public class Jenkins extends Tool {
     private static final String JENKINS_APP_PATH = "apps/jenkins";
     private static final String RELEASE_NAME = "jenkins";
 
+    @Getter
+    @Setter
     private String namespace;
     private final CommandExecutor commandExecutor;
     private final GlobalPropertyManager globalPropertyManager;
@@ -393,14 +397,5 @@ public class Jenkins extends Tool {
     @Override
     public String getActiveNamespaceFromFeature(DeploymentContext context) {
         return isEnabled(context) ? activeNamespace(context) : null;
-    }
-
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
     }
 }

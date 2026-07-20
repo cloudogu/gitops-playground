@@ -9,6 +9,8 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
@@ -18,6 +20,8 @@ import jakarta.inject.Singleton;
 @Slf4j
 public class ScmManager extends Tool {
 
+    @Getter
+    @Setter
     private String namespace;
     private final ImagePullSecretCreator imagePullSecretCreator;
     private ScmManagerSetup setup;
@@ -130,12 +134,4 @@ public class ScmManager extends Tool {
         return (ScmManagerProvider) tenantScm;
     }
 
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
 }

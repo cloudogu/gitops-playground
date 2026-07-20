@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -68,7 +69,7 @@ public class GitopsPlaygroundCli {
         Application app = context.getBean(Application.class);
 
         Config config = readConfigs(args);
-        runHook(app, "preConfigInit", config);
+        runHook(app, "preConfigInit", Tool::preConfigInit, config);
 
         if (Boolean.TRUE.equals(config.getApplication().getOutputConfigFile())) {
             System.out.println(config.toYaml(false));
@@ -77,7 +78,7 @@ public class GitopsPlaygroundCli {
 
         config = applicationConfigurator.initConfig(config);
         log.debug("Actual config: {}", config.toYaml(true));
-        runHook(app, "postConfigInit", config);
+        runHook(app, "postConfigInit", Tool::postConfigInit, config);
 
         context = createApplicationContext();
         register(config, context);
@@ -245,41 +246,39 @@ public class GitopsPlaygroundCli {
     }
 
     public void printWelcomeScreen(String password) {
-        log.info("\n" +
-                "  |----------------------------------------------------------------------------------------------|\n" +
-                "  |                       Welcome to the GitOps playground by Cloudogu!\n" +
-                "  |----------------------------------------------------------------------------------------------|\n" +
-                "  |\n" +
-                "  | Please find the URLs of the individual applications in our README:\n" +
-                "  | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents\n" +
-                "  |\n" +
-                "  | A good starting point might also be the services or ingresses inside your cluster:  \n" +
-                "  | kubectl get svc -A\n" +
-                "  | Or (depending on your config)\n" +
-                "  | kubectl get ing -A\n" +
-                "  |\n" +
-                "  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.\n" +
-                "  | \n" +
-                "  | Your initial password for all apps (if not set manually): " + password + "\n" +
-                "  | \n" +
-                "  |----------------------------------------------------------------------------------------------|\n");
+        log.info("""
+
+                  |----------------------------------------------------------------------------------------------|
+                  |                       Welcome to the GitOps playground by Cloudogu!
+                  |----------------------------------------------------------------------------------------------|
+                  |
+                  | Please find the URLs of the individual applications in our README:
+                  | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
+                  |
+                  | A good starting point might also be the services or ingresses inside your cluster: \s
+                  | kubectl get svc -A
+                  | Or (depending on your config)
+                  | kubectl get ing -A
+                  |
+                  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+                  |\s
+                  | Your initial password for all apps (if not set manually): %s
+                  |\s
+                  |----------------------------------------------------------------------------------------------|
+                """.formatted(password));
     }
 
-    public static void runHook(Application app, String methodName, Config config) {
+    public static void runHook(Application app, String hookName, BiConsumer<Tool, Config> hook, Config config) {
         List<Tool> allFeatures = new ArrayList<>();
         allFeatures.add(new CommonToolConfig());
         allFeatures.addAll(app.getTools());
 
         for (Tool feature : allFeatures) {
             try {
-                java.lang.reflect.Method method = feature.getClass().getMethod(methodName, Config.class);
-                if (method.getDeclaringClass() != Tool.class) {
-                    log.debug("Executing {} hook on feature {}", methodName, feature.getClass().getName());
-                    method.invoke(feature, config);
-                }
-            } catch (NoSuchMethodException ignored) {
+                log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
+                hook.accept(feature, config);
             } catch (Exception e) {
-                throw new RuntimeException("Failed to execute hook " + methodName + " on " + feature.getClass().getName(), e);
+                throw new RuntimeException("Failed to execute hook " + hookName + " on " + feature.getClass().getName(), e);
             }
         }
     }

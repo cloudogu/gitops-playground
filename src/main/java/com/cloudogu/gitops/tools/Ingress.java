@@ -10,6 +10,8 @@ import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
@@ -28,6 +30,8 @@ public class Ingress extends Tool {
 
     private final ImagePullSecretCreator imagePullSecretCreator;
     private final K8sClient k8sClient;
+    @Getter
+    @Setter
     private String namespace;
 
     public Ingress(FileSystemUtils fileSystemUtils,
@@ -90,12 +94,4 @@ public class Ingress extends Tool {
                 ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH));
     }
 
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
 }

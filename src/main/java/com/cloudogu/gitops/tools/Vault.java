@@ -12,6 +12,8 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
@@ -37,6 +39,8 @@ public class Vault extends Tool {
 
     private final ImagePullSecretCreator imagePullSecretCreator;
     private final K8sClient k8sClient;
+    @Getter
+    @Setter
     private String namespace;
 
     public Vault(FileSystemUtils fileSystemUtils,
@@ -148,12 +152,4 @@ public class Vault extends Tool {
         clusterResourcesRepo.replaceTemplates(Map.of("config", getConfig()));
     }
 
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
 }

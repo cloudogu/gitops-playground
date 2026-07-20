@@ -92,7 +92,7 @@ public class GenerateJsonSchema {
         return md.toString();
     }
 
-    public static String buildTable(Object instance, Class clazz, String prefix) {
+    public static String buildTable(Object instance, Class<?> clazz, String prefix) {
         List<Map<String, String>> rows = collectRows(instance, clazz, prefix);
         if (rows.isEmpty()) {
             return "";
@@ -113,7 +113,7 @@ public class GenerateJsonSchema {
         return sb.toString();
     }
 
-    public static List<Map<String, String>> collectRows(Object instance, Class clazz, String prefix) {
+    public static List<Map<String, String>> collectRows(Object instance, Class<?> clazz, String prefix) {
         List<Map<String, String>> rows = new ArrayList<>();
         for (Field field : allFields(clazz)) {
             if (isInternalField(field)) {
@@ -148,15 +148,15 @@ public class GenerateJsonSchema {
         return rows;
     }
 
-    public static List<Field> allFields(Class clazz) {
+    public static List<Field> allFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
-        for (Class c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
+        for (Class<?> c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
             fields.addAll(Arrays.asList(c.getDeclaredFields()));
         }
         return fields;
     }
 
-    public static List<Field> schemaFields(Class clazz) {
+    public static List<Field> schemaFields(Class<?> clazz) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> !isInternalField(field) && isSchemaType(field.getType()))
                 .collect(Collectors.toList());
@@ -175,7 +175,7 @@ public class GenerateJsonSchema {
         return Set.of("metaClass", "$staticClassInfo", "__$stMC").contains(field.getName());
     }
 
-    public static boolean isSchemaType(Class type) {
+    public static boolean isSchemaType(Class<?> type) {
         return type.getName().startsWith("com.cloudogu.gitops");
     }
 
@@ -192,17 +192,17 @@ public class GenerateJsonSchema {
         if (value == null) {
             return "-";
         }
-        if (value instanceof Map) {
-            return ((Map) value).isEmpty() ? "[:]" : value.toString();
+        if (value instanceof Map<?, ?> map) {
+            return map.isEmpty() ? "[:]" : value.toString();
         }
-        if (value instanceof Collection) {
-            return ((Collection) value).isEmpty() ? "[]" : value.toString();
+        if (value instanceof Collection<?> collection) {
+            return collection.isEmpty() ? "[]" : value.toString();
         }
         return value.toString();
     }
 
     public static String typeName(Field field) {
-        Class t = field.getType();
+        Class<?> t = field.getType();
         if (t == Boolean.class || t == boolean.class) {
             return "Boolean";
         }
@@ -218,12 +218,11 @@ public class GenerateJsonSchema {
         if (t.isEnum()) {
             return t.getSimpleName();
         }
-        if (field.getGenericType() instanceof ParameterizedType) {
-            ParameterizedType pt = (ParameterizedType) field.getGenericType();
+        if (field.getGenericType() instanceof ParameterizedType pt) {
             String args = Arrays.stream(pt.getActualTypeArguments())
-                    .map(it -> it instanceof Class ? ((Class) it).getSimpleName() : it.toString())
+                    .map(it -> it instanceof Class ? ((Class<?>) it).getSimpleName() : it.toString())
                     .collect(Collectors.joining(", "));
-            return ((Class) pt.getRawType()).getSimpleName() + "&lt;" + args + "&gt;";
+            return ((Class<?>) pt.getRawType()).getSimpleName() + "&lt;" + args + "&gt;";
         }
         return t.getSimpleName();
     }

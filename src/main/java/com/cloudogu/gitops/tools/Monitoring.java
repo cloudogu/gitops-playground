@@ -13,11 +13,14 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
@@ -42,6 +45,8 @@ public class Monitoring extends Tool {
 
     private final ImagePullSecretCreator imagePullSecretCreator;
     private final K8sClient k8sClient;
+    @Getter
+    @Setter
     private String namespace;
 
     public Monitoring(FileSystemUtils fileSystemUtils,
@@ -92,15 +97,8 @@ public class Monitoring extends Tool {
 
     @Override
     protected void publishChanges() {
-        if (!isInternalMonitoring()) {
-            return;
-        }
-
+        // We always assume internal monitoring for deploying artifacts
         publishClusterResourcesChanges(TOOL_NAME);
-    }
-
-    private boolean isInternalMonitoring() {
-        return true; // We always assume internal monitoring for deploying artifacts
     }
 
     @Override
@@ -212,7 +210,11 @@ public class Monitoring extends Tool {
     }
 
     private Map<String, String> scmConfigurationMetrics() {
-        java.net.URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
+        URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
+        return uriComponents(uri);
+    }
+
+    private static Map<String, String> uriComponents(URI uri) {
         return Map.of(
                 "protocol", (uri != null && uri.getScheme() != null) ? uri.getScheme() : "",
                 "host", (uri != null && uri.getAuthority() != null) ? uri.getAuthority() : "",
@@ -237,26 +239,23 @@ public class Monitoring extends Tool {
     }
 
     private Map<String, String> jenkinsConfigurationMetrics() {
-        java.net.URI uri = baseUriJenkins(getConfig()).resolve("prometheus");
-        return Map.of(
-                "metricsUsername", (getConfig().getJenkins().getMetricsUsername() != null) ? getConfig().getJenkins().getMetricsUsername() : "",
-                "protocol", (uri != null && uri.getScheme() != null) ? uri.getScheme() : "",
-                "host", (uri != null && uri.getAuthority() != null) ? uri.getAuthority() : "",
-                "path", (uri != null && uri.getPath() != null) ? uri.getPath() : ""
-        );
+        URI uri = baseUriJenkins(getConfig()).resolve("prometheus");
+        Map<String, String> components = new HashMap<>(uriComponents(uri));
+        components.put("metricsUsername", (getConfig().getJenkins().getMetricsUsername() != null) ? getConfig().getJenkins().getMetricsUsername() : "");
+        return components;
     }
 
-    private static java.net.URI baseUriJenkins(Config config) {
+    private static URI baseUriJenkins(Config config) {
         try {
             if (Boolean.TRUE.equals(config.getJenkins().getInternal())) {
-                return new java.net.URI("http://jenkins." + config.getApplication().getNamePrefix() + config.getJenkins().getNamespace() + ".svc.cluster.local/");
+                return new URI("http://jenkins." + config.getApplication().getNamePrefix() + config.getJenkins().getNamespace() + ".svc.cluster.local/");
             }
             String urlString = config.getJenkins().getUrl() != null ? config.getJenkins().getUrl().trim() : "";
             if (urlString.isEmpty()) {
                 throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false");
             }
-            java.net.URI url = java.net.URI.create(urlString);
-            return url.toString().endsWith("/") ? url : java.net.URI.create(url.toString() + "/");
+            URI url = URI.create(urlString);
+            return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/");
         } catch (Exception e) {
             throw new RuntimeException("Failed to construct base Jenkins URI", e);
         }
@@ -292,7 +291,7 @@ public class Monitoring extends Tool {
     }
 
     private boolean hasScmManagerMetricsEndpoint() {
-        java.net.URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
+        URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
 
         if (uri == null) {
             return false;
@@ -308,14 +307,5 @@ public class Monitoring extends Tool {
     @Override
     public String getActiveNamespaceFromFeature(DeploymentContext context) {
         return isEnabled(context) ? activeNamespace(context) : null;
-    }
-
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
     }
 }

@@ -7,10 +7,13 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Singleton
@@ -27,6 +30,8 @@ public class Registry extends Tool {
     private static final String RELEASE_NAME = "docker-registry";
 
     private final K8sClient k8sClient;
+    @Getter
+    @Setter
     private String namespace;
 
     public Registry(FileSystemUtils fileSystemUtils,
@@ -87,7 +92,7 @@ public class Registry extends Tool {
     }
 
     private void prepareRegistryHelmValues() {
-        Map<String, Object> service = new java.util.HashMap<>();
+        Map<String, Object> service = new HashMap<>();
         service.put("nodePort", Config.DEFAULT_REGISTRY_PORT);
         service.put("type", "NodePort");
         addHelmValuesData("service", service);
@@ -123,12 +128,4 @@ public class Registry extends Tool {
                 namespace);
     }
 
-    @Override
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
 }

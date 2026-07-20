@@ -20,6 +20,8 @@ public class ScmmDestructionHandler implements DestructionHandler {
     private final K8sClient k8sClient;
     private final NetworkingUtils networkingUtils;
 
+    private ScmManagerApiClient scmmApiClient;
+
     @Override
     public void destroy() {
         deleteUser("gitops");
@@ -60,13 +62,16 @@ public class ScmmDestructionHandler implements DestructionHandler {
     }
 
     private ScmManagerApiClient getScmmApiClient() {
-        ScmManagerUrlResolver urls = new ScmManagerUrlResolver(contextBuilder.build(),
-                config.getScm().getScmManager(),
-                k8sClient,
-                networkingUtils);
+        if (scmmApiClient == null) {
+            ScmManagerUrlResolver urls = new ScmManagerUrlResolver(contextBuilder.build(),
+                    config.getScm().getScmManager(),
+                    k8sClient,
+                    networkingUtils);
 
-        return new ScmManagerApiClient(urls.clientApiBase().toString(),
-                config.getScm().getScmManager().getCredentials(),
-                config.getApplication().getInsecure());
+            scmmApiClient = new ScmManagerApiClient(urls.clientApiBase().toString(),
+                    config.getScm().getScmManager().getCredentials(),
+                    config.getApplication().getInsecure());
+        }
+        return scmmApiClient;
     }
 }

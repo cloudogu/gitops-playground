@@ -17,6 +17,7 @@ import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +28,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public abstract class Tool {
 
-    private static final ObjectMapper yamlMapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
+    private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
 
     protected FileSystemUtils fileSystemUtils;
@@ -176,8 +177,7 @@ public abstract class Tool {
          */
         Map<String, Object> helmValuesData = this.helmValuesTemplateData;
         if (helmValuesTemplatePath != null && !helmValuesTemplatePath.isEmpty()) {
-            String helmValuesPath = helmValuesTemplatePath.toString();
-            if (helmValuesPath.contains(".ftl")) {
+            if (helmValuesTemplatePath.contains(".ftl")) {
                 log.debug("Rendering helm values template from {}", helmValuesTemplatePath);
                 helmValuesData = templateToMap(helmValuesTemplatePath, this.helmValuesTemplateData);
             } else {

@@ -21,6 +21,14 @@ public class ApplicationConfigurator {
         this(new FileSystemUtils());
     }
 
+    private static boolean hasText(String value) {
+        return value != null && !value.isEmpty();
+    }
+
+    private static String firstNonBlank(String preferred, String fallback) {
+        return hasText(preferred) ? preferred : fallback;
+    }
+
     /**
      * Sets dynamic fields and validates params
      */
@@ -44,19 +52,19 @@ public class ApplicationConfigurator {
             newConfig.getFeatures().getSecrets().setActive(true);
         }
 
-        if (newConfig.getFeatures().getMail().getSmtpAddress() != null && !newConfig.getFeatures().getMail().getSmtpAddress().isEmpty()) {
+        if (hasText(newConfig.getFeatures().getMail().getSmtpAddress())) {
             newConfig.getFeatures().getMail().setActive(true);
         }
 
         if (Boolean.TRUE.equals(newConfig.getFeatures().getIngress().getActive()) &&
-                (newConfig.getApplication().getBaseUrl() == null || newConfig.getApplication().getBaseUrl().isEmpty())) {
+                !hasText(newConfig.getApplication().getBaseUrl())) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ");
         }
     }
 
     private void addNamePrefix(Config newConfig) {
         String namePrefix = newConfig.getApplication().getNamePrefix();
-        if (namePrefix != null && !namePrefix.isEmpty()) {
+        if (hasText(namePrefix)) {
             if (!namePrefix.endsWith("-")) {
                 newConfig.getApplication().setNamePrefix(namePrefix + "-");
             }
@@ -69,20 +77,15 @@ public class ApplicationConfigurator {
     private void addRegistryConfig(Config newConfig) {
         // Process image pull secrets first, they might even be relevant if no registry is set
         if (Boolean.TRUE.equals(newConfig.getRegistry().getCreateImagePullSecrets())) {
-            String username = (newConfig.getRegistry().getReadOnlyUsername() != null && !newConfig.getRegistry().getReadOnlyUsername().isEmpty())
-                    ? newConfig.getRegistry().getReadOnlyUsername()
-                    : newConfig.getRegistry().getUsername();
+            String username = firstNonBlank(newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry().getUsername());
+            String password = firstNonBlank(newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry().getPassword());
 
-            String password = (newConfig.getRegistry().getReadOnlyPassword() != null && !newConfig.getRegistry().getReadOnlyPassword().isEmpty())
-                    ? newConfig.getRegistry().getReadOnlyPassword()
-                    : newConfig.getRegistry().getPassword();
-
-            if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            if (!hasText(username) || !hasText(password)) {
                 throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants");
             }
         }
 
-        if (newConfig.getRegistry().getUrl() != null && !newConfig.getRegistry().getUrl().isEmpty()) {
+        if (hasText(newConfig.getRegistry().getUrl())) {
             newConfig.getRegistry().setInternal(false);
             newConfig.getRegistry().setActive(true);
         } else if (Boolean.TRUE.equals(newConfig.getRegistry().getActive())) {
@@ -99,10 +102,9 @@ public class ApplicationConfigurator {
             return;
         }
 
-        if (newConfig.getRegistry().getProxyUrl() != null && !newConfig.getRegistry().getProxyUrl().isEmpty()) {
+        if (hasText(newConfig.getRegistry().getProxyUrl())) {
             newConfig.getRegistry().setTwoRegistries(true);
-            if (newConfig.getRegistry().getProxyUsername() == null || newConfig.getRegistry().getProxyUsername().isEmpty() ||
-                    newConfig.getRegistry().getProxyPassword() == null || newConfig.getRegistry().getProxyPassword().isEmpty()) {
+            if (!hasText(newConfig.getRegistry().getProxyUsername()) || !hasText(newConfig.getRegistry().getProxyPassword())) {
                 throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password");
             }
         }
@@ -118,7 +120,7 @@ public class ApplicationConfigurator {
     private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM");
 
-        if (newConfig.getScm().getScmManager().getUrl() != null && !newConfig.getScm().getScmManager().getUrl().isEmpty()) {
+        if (hasText(newConfig.getScm().getScmManager().getUrl())) {
             log.debug("Setting external scmm config");
             newConfig.getScm().getScmManager().setInternal(false);
             newConfig.getScm().getScmManager().setUrlForJenkins(newConfig.getScm().getScmManager().getUrl());
@@ -132,7 +134,7 @@ public class ApplicationConfigurator {
         }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
-        if (newConfig.getApplication().getBaseUrl() != null && !newConfig.getApplication().getBaseUrl().isEmpty()) {
+        if (hasText(newConfig.getApplication().getBaseUrl())) {
             try {
                 newConfig.getScm().getScmManager().setIngress(new URL(injectSubdomain("scmm",
                         newConfig.getApplication().getBaseUrl(), Boolean.TRUE.equals(newConfig.getApplication().getUrlSeparatorHyphen()))).getHost());
@@ -152,7 +154,7 @@ public class ApplicationConfigurator {
 
     private void addJenkinsConfig(Config newConfig) {
         log.debug("Adding additional config for Jenkins");
-        if (newConfig.getJenkins().getUrl() != null && !newConfig.getJenkins().getUrl().isEmpty()) {
+        if (hasText(newConfig.getJenkins().getUrl())) {
             log.debug("Setting external jenkins config");
             newConfig.getJenkins().setActive(true);
             newConfig.getJenkins().setInternal(false);
@@ -169,7 +171,7 @@ public class ApplicationConfigurator {
             return;
         }
 
-        if (newConfig.getApplication().getBaseUrl() != null && !newConfig.getApplication().getBaseUrl().isEmpty()) {
+        if (hasText(newConfig.getApplication().getBaseUrl())) {
             try {
                 newConfig.getJenkins().setIngress(new URL(injectSubdomain("jenkins",
                         newConfig.getApplication().getBaseUrl(), Boolean.TRUE.equals(newConfig.getApplication().getUrlSeparatorHyphen()))).getHost());
@@ -189,7 +191,7 @@ public class ApplicationConfigurator {
 
     private void evaluateBaseUrl(Config newConfig) {
         String baseUrl = newConfig.getApplication().getBaseUrl();
-        if (baseUrl == null || baseUrl.isEmpty()) {
+        if (!hasText(baseUrl)) {
             return;
         }
         log.debug("Base URL set, adapting to individual tools");
@@ -198,15 +200,15 @@ public class ApplicationConfigurator {
         var vault = newConfig.getFeatures().getSecrets().getVault();
         boolean urlSeparatorHyphen = Boolean.TRUE.equals(newConfig.getApplication().getUrlSeparatorHyphen());
 
-        if (Boolean.TRUE.equals(argocd.getActive()) && (argocd.getUrl() == null || argocd.getUrl().isEmpty())) {
+        if (Boolean.TRUE.equals(argocd.getActive()) && !hasText(argocd.getUrl())) {
             argocd.setUrl(injectSubdomain("argocd", baseUrl, urlSeparatorHyphen));
             log.debug("Setting ArgoCD URL {}", argocd.getUrl());
         }
-        if (Boolean.TRUE.equals(monitoring.getActive()) && (monitoring.getGrafanaUrl() == null || monitoring.getGrafanaUrl().isEmpty())) {
+        if (Boolean.TRUE.equals(monitoring.getActive()) && !hasText(monitoring.getGrafanaUrl())) {
             monitoring.setGrafanaUrl(injectSubdomain("grafana", baseUrl, urlSeparatorHyphen));
             log.debug("Setting Monitoring URL {}", monitoring.getGrafanaUrl());
         }
-        if (Boolean.TRUE.equals(newConfig.getFeatures().getSecrets().getActive()) && (vault.getUrl() == null || vault.getUrl().isEmpty())) {
+        if (Boolean.TRUE.equals(newConfig.getFeatures().getSecrets().getActive()) && !hasText(vault.getUrl())) {
             vault.setUrl(injectSubdomain("vault", baseUrl, urlSeparatorHyphen));
             log.debug("Setting Vault URL {}", vault.getUrl());
         }
@@ -214,7 +216,7 @@ public class ApplicationConfigurator {
 
     public void setMultiTenantModeConfig(Config newConfig) {
         if (Boolean.TRUE.equals(newConfig.getMultiTenant().getUseDedicatedInstance())) {
-            if (newConfig.getApplication().getNamePrefix() == null || newConfig.getApplication().getNamePrefix().isEmpty()) {
+            if (!hasText(newConfig.getApplication().getNamePrefix())) {
                 throw new RuntimeException("To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.");
             }
 
@@ -272,7 +274,7 @@ public class ApplicationConfigurator {
     public boolean isUrlSetAndValid(Config config) {
         String url = config.getFeatures().getArgocd().getResourceInclusionsCluster();
 
-        if (url != null && !url.isEmpty()) {
+        if (hasText(url)) {
             try {
                 log.debug("Validating user-provided features.argocd.resourceInclusionsCluster URL: {}", url);
                 new URL(url);
@@ -295,7 +297,7 @@ public class ApplicationConfigurator {
                 "Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " +
                 "Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override.";
 
-        if (host == null || host.isEmpty() || port == null || port.isEmpty()) {
+        if (!hasText(host) || !hasText(port)) {
             throw new RuntimeException(errorMessage);
         }
 
@@ -312,7 +314,7 @@ public class ApplicationConfigurator {
     }
 
     public void checkAndSetNamespaces(Config config) {
-        if (config.getApplication().getNamespace() != null && !config.getApplication().getNamespace().isEmpty()) {
+        if (hasText(config.getApplication().getNamespace())) {
             String namespace = config.getApplication().getNamespace();
             config.getApplication().setGopNamespace(namespace);
             config.getRegistry().setNamespace(namespace);

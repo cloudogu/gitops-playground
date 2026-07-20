@@ -32,23 +32,17 @@ public class ImagePullSecretCreator {
 
         log.trace("Creating image pull secret '{}' in namespace {}", IMAGE_PULL_SECRET_NAME, namespace);
 
-        String url = (config.getRegistry().getProxyUrl() != null && !config.getRegistry().getProxyUrl().isEmpty())
-                ? config.getRegistry().getProxyUrl()
-                : config.getRegistry().getUrl();
-
-        String user = (config.getRegistry().getProxyUsername() != null && !config.getRegistry().getProxyUsername().isEmpty())
-                ? config.getRegistry().getProxyUsername()
-                : (config.getRegistry().getReadOnlyUsername() != null && !config.getRegistry().getReadOnlyUsername().isEmpty())
-                    ? config.getRegistry().getReadOnlyUsername()
-                    : config.getRegistry().getUsername();
-
-        String password = (config.getRegistry().getProxyPassword() != null && !config.getRegistry().getProxyPassword().isEmpty())
-                ? config.getRegistry().getProxyPassword()
-                : (config.getRegistry().getReadOnlyPassword() != null && !config.getRegistry().getReadOnlyPassword().isEmpty())
-                    ? config.getRegistry().getReadOnlyPassword()
-                    : config.getRegistry().getPassword();
+        String url = firstNonBlank(config.getRegistry().getProxyUrl(), config.getRegistry().getUrl());
+        String user = firstNonBlank(config.getRegistry().getProxyUsername(),
+                firstNonBlank(config.getRegistry().getReadOnlyUsername(), config.getRegistry().getUsername()));
+        String password = firstNonBlank(config.getRegistry().getProxyPassword(),
+                firstNonBlank(config.getRegistry().getReadOnlyPassword(), config.getRegistry().getPassword()));
 
         k8sClient.createNamespace(namespace);
         k8sClient.createImagePullSecret(IMAGE_PULL_SECRET_NAME, namespace, url, user, password);
+    }
+
+    private static String firstNonBlank(String preferred, String fallback) {
+        return (preferred != null && !preferred.isEmpty()) ? preferred : fallback;
     }
 }

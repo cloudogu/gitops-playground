@@ -12,17 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
 public class SingleTenantMode implements DeploymentMode {
-
-    private static final List<String> ARGOCD_SERVICE_ACCOUNTS = List.of(
-            "argocd-argocd-server",
-            "argocd-argocd-application-controller",
-            "argocd-applicationset-controller");
 
     private final Config config;
     private final K8sClient k8sClient;

@@ -12,6 +12,7 @@ import com.cloudogu.gitops.utils.Tuple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,11 +24,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DedicatedMultiTenantMode implements DeploymentMode {
-
-    private static final List<String> ARGOCD_SERVICE_ACCOUNTS = List.of(
-            "argocd-argocd-server",
-            "argocd-argocd-application-controller",
-            "argocd-applicationset-controller");
 
     private final Config config;
     private final K8sClient k8sClient;
@@ -121,11 +117,7 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
         String decoded = "";
         if (base64Namespaces != null) {
             byte[] decodedBytes = Base64.getDecoder().decode(base64Namespaces);
-            try {
-                decoded = new String(decodedBytes, "UTF-8");
-            } catch (java.io.UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            decoded = new String(decodedBytes, StandardCharsets.UTF_8);
         }
 
         List<String> decodedList = decoded.isEmpty() ? new ArrayList<>() : Arrays.asList(decoded.split(","));
