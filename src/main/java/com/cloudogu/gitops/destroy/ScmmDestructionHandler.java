@@ -8,25 +8,17 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
 @Order(200)
+@RequiredArgsConstructor
 public class ScmmDestructionHandler implements DestructionHandler {
 
     private final Config config;
     private final ContextBuilder contextBuilder;
     private final K8sClient k8sClient;
     private final NetworkingUtils networkingUtils;
-
-    public ScmmDestructionHandler(Config config,
-                                  ContextBuilder contextBuilder,
-                                  K8sClient k8sClient,
-                                  NetworkingUtils networkingUtils) {
-        this.config = config;
-        this.contextBuilder = contextBuilder;
-        this.k8sClient = k8sClient;
-        this.networkingUtils = networkingUtils;
-    }
 
     @Override
     public void destroy() {

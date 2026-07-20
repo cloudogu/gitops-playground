@@ -1,14 +1,12 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class PrometheusConfigurator {
     private final JenkinsApiClient apiClient;
-
-    public PrometheusConfigurator(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient;
-    }
 
     public void enableAuthentication() {
         String result = apiClient.runScript("""

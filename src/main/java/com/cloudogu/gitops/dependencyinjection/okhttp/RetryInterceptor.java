@@ -1,18 +1,19 @@
 package com.cloudogu.gitops.dependencyinjection.okhttp;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import okhttp3.Interceptor;
 import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Set;
 
+@RequiredArgsConstructor
+@Slf4j
 public class RetryInterceptor implements Interceptor {
-
-    private static final Logger log = LoggerFactory.getLogger(RetryInterceptor.class);
 
     private static final Set<Integer> STATUS_CODES_TO_RETRY = Set.of(
             408, // Request Timeout
@@ -28,11 +29,6 @@ public class RetryInterceptor implements Interceptor {
 
     public RetryInterceptor() {
         this(180, 2000);
-    }
-
-    public RetryInterceptor(int retries, int waitPeriodInMs) {
-        this.retries = retries;
-        this.waitPeriodInMs = waitPeriodInMs;
     }
 
     @NotNull

@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils;
 
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -13,9 +13,9 @@ import java.util.Comparator;
 import java.util.List;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class NetworkingUtils {
-
-    private static final Logger log = LoggerFactory.getLogger(NetworkingUtils.class);
 
     private final K8sClient k8sClient;
     private final CommandExecutor commandExecutor;
@@ -26,11 +26,6 @@ public class NetworkingUtils {
 
     public NetworkingUtils(K8sClient k8sClient) {
         this(k8sClient, new CommandExecutor());
-    }
-
-    public NetworkingUtils(K8sClient k8sClient, CommandExecutor commandExecutor) {
-        this.k8sClient = k8sClient;
-        this.commandExecutor = commandExecutor;
     }
 
     public String createUrl(String hostname, String port) {

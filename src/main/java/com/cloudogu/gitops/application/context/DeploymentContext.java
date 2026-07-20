@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.application.context;
 
 import com.cloudogu.gitops.config.Config;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class DeploymentContext {
 
     private final Config config;
@@ -9,18 +11,6 @@ public class DeploymentContext {
     private final ScmManagerDeploymentMode scmManagerDeploymentMode;
     private final Boolean airgapped;
     private final ClusterDistribution clusterDistribution;
-
-    public DeploymentContext(Config config,
-                             TenantMode tenantMode,
-                             ScmManagerDeploymentMode scmManagerDeploymentMode,
-                             Boolean airgapped,
-                             ClusterDistribution clusterDistribution) {
-        this.config = config;
-        this.tenantMode = tenantMode;
-        this.scmManagerDeploymentMode = scmManagerDeploymentMode;
-        this.airgapped = airgapped;
-        this.clusterDistribution = clusterDistribution;
-    }
 
     public Config getConfig() {
         return config;

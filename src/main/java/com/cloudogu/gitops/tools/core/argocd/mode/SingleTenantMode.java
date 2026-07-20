@@ -8,16 +8,16 @@ import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition;
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoLayout;
 import com.cloudogu.gitops.utils.Tuple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
+@Slf4j
 public class SingleTenantMode implements DeploymentMode {
-
-    private static final Logger log = LoggerFactory.getLogger(SingleTenantMode.class);
 
     private static final List<String> ARGOCD_SERVICE_ACCOUNTS = List.of(
             "argocd-argocd-server",
@@ -30,20 +30,6 @@ public class SingleTenantMode implements DeploymentMode {
     private final RepositoryWorkspace repositoryWorkspace;
     private final ArgoCDRepoLayout clusterResourcesRepo;
     private final String namespace;
-
-    public SingleTenantMode(Config config,
-                            K8sClient k8sClient,
-                            GitHandler gitHandler,
-                            RepositoryWorkspace repositoryWorkspace,
-                            ArgoCDRepoLayout clusterResourcesRepo,
-                            String namespace) {
-        this.config = config;
-        this.k8sClient = k8sClient;
-        this.gitHandler = gitHandler;
-        this.repositoryWorkspace = repositoryWorkspace;
-        this.clusterResourcesRepo = clusterResourcesRepo;
-        this.namespace = namespace;
-    }
 
     @Override
     public void createSCMCredentialsSecret() {

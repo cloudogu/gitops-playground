@@ -1,20 +1,18 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class UserManager {
 
-    private static final Logger log = LoggerFactory.getLogger(UserManager.class);
     private final JenkinsApiClient apiClient;
-
-    public UserManager(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient;
-    }
 
     public void createUser(String username, String password) {
         log.debug("Add user {} to jenkins", username);

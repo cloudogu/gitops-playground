@@ -10,16 +10,14 @@ import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @Order(400)
+@Slf4j
 public class ExternalSecretsOperator extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(ExternalSecretsOperator.class);
 
     public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml";
 

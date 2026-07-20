@@ -3,11 +3,11 @@ package com.cloudogu.gitops.infrastructure.deployment;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Singleton;
 import java.io.IOException;
@@ -20,14 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(ArgoCdApplicationStrategy.class);
     private final ArgoCdApplicationTargetResolver targetResolver;
-
-    public ArgoCdApplicationStrategy(ArgoCdApplicationTargetResolver targetResolver) {
-        this.targetResolver = targetResolver;
-    }
 
     @Override
     public void deployFeature(String repoURL,

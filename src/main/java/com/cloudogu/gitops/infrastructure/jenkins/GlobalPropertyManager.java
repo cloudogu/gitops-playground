@@ -1,15 +1,13 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class GlobalPropertyManager {
 
     private final JenkinsApiClient apiClient;
-
-    public GlobalPropertyManager(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient;
-    }
 
     public void setGlobalProperty(String key, String value) {
         String script = "\n" +

@@ -2,22 +2,18 @@ package com.cloudogu.gitops.infrastructure.deployment;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
+import lombok.RequiredArgsConstructor;
 
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.nio.file.Path;
 
 @Singleton
+@RequiredArgsConstructor
 public class Deployer {
 
     private final Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider;
     private final HelmStrategy helmStrategy;
-
-    public Deployer(Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider,
-                    HelmStrategy helmStrategy) {
-        this.argoCdStrategyProvider = argoCdStrategyProvider;
-        this.helmStrategy = helmStrategy;
-    }
 
     public HelmStrategy getHelmStrategy() {
         return helmStrategy;

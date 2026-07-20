@@ -1,24 +1,20 @@
 package com.cloudogu.gitops.infrastructure.helm;
 
 import com.cloudogu.gitops.utils.CommandExecutor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class HelmClient {
 
-    private static final Logger log = LoggerFactory.getLogger(HelmClient.class);
-
     private final CommandExecutor commandExecutor;
-
-    public HelmClient(CommandExecutor commandExecutor) {
-        this.commandExecutor = commandExecutor;
-    }
 
     public String addRepo(String repoName, String url) {
         return helm(List.of("repo", "add", repoName, url));

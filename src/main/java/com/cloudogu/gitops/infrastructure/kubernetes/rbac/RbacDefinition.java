@@ -3,17 +3,17 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@RequiredArgsConstructor
+@Slf4j
 public class RbacDefinition {
-
-	private static final Logger log = LoggerFactory.getLogger(RbacDefinition.class);
 
 	private final Role.Variant variant;
 	private String name;
@@ -24,10 +24,6 @@ public class RbacDefinition {
 	private Config config;
 
 	private final TemplatingEngine templater = new TemplatingEngine();
-
-	public RbacDefinition(Role.Variant variant) {
-		this.variant = variant;
-	}
 
 	public RbacDefinition withName(String name) {
 		this.name = name;

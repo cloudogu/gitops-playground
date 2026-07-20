@@ -7,10 +7,11 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.TemplateModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -21,9 +22,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class ArgoCDRepoSetup {
-
-    private static final Logger log = LoggerFactory.getLogger(ArgoCDRepoSetup.class);
 
     private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
     private static final String TENANT_BOOTSTRAP_SOURCE_DIR = "argocd/cluster-resources/apps/argocd/multiTenant/tenant";
@@ -33,16 +34,6 @@ public class ArgoCDRepoSetup {
     private final FileSystemUtils fileSystemUtils;
     private final GitHandler gitHandler;
     private final RepositoryWorkspace repositoryWorkspace;
-
-    private ArgoCDRepoSetup(DeploymentContext context,
-                            FileSystemUtils fileSystemUtils,
-                            GitHandler gitHandler,
-                            RepositoryWorkspace repositoryWorkspace) {
-        this.context = context;
-        this.fileSystemUtils = fileSystemUtils;
-        this.gitHandler = gitHandler;
-        this.repositoryWorkspace = repositoryWorkspace;
-    }
 
     public static ArgoCDRepoSetup create(DeploymentContext context,
                                          FileSystemUtils fileSystemUtils,

@@ -11,11 +11,11 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManage
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.TemplateModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
+@Slf4j
 public class ScmManagerSetup {
-
-    private static final Logger log = LoggerFactory.getLogger(ScmManagerSetup.class);
 
     private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml";
 
@@ -35,16 +35,6 @@ public class ScmManagerSetup {
     private final RepositoryWorkspace repositoryWorkspace;
 
     private Path tempValuesPath;
-
-    public ScmManagerSetup(ScmManagerProvider scmManager,
-                           Deployer deployer,
-                           DeploymentContext context,
-                           RepositoryWorkspace repositoryWorkspace) {
-        this.scmManager = scmManager;
-        this.deployer = deployer;
-        this.context = context;
-        this.repositoryWorkspace = repositoryWorkspace;
-    }
 
     private Config getConfig() {
         return context.getConfig();

@@ -11,10 +11,9 @@ import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.Tuple;
+import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.io.File;
@@ -26,9 +25,8 @@ import java.util.Map;
 @Singleton
 @Order(100)
 @SuppressWarnings("java:S1192")
+@Slf4j
 public class ArgoCD extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(ArgoCD.class);
 
     private final K8sClient k8sClient;
     private final HelmClient helmClient;

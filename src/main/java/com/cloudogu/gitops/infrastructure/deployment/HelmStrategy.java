@@ -4,8 +4,8 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import jakarta.inject.Singleton;
 import java.nio.file.Files;
@@ -15,16 +15,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class HelmStrategy implements DeploymentStrategy {
-    private static final Logger log = LoggerFactory.getLogger(HelmStrategy.class);
-    
-    private final HelmClient helmClient;
-    private final Config config;
 
-    public HelmStrategy(Config config, HelmClient helmClient) {
-        this.config = config;
-        this.helmClient = helmClient;
-    }
+    private final Config config;
+    private final HelmClient helmClient;
 
     @Override
     public void deployFeature(String repoURL,

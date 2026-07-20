@@ -5,14 +5,12 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
 
+@Slf4j
 public class ScmManagerUrlResolver {
-
-    private static final Logger log = LoggerFactory.getLogger(ScmManagerUrlResolver.class);
 
     private final DeploymentContext context;
     private final ScmManagerConfig scmm;

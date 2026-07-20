@@ -8,17 +8,17 @@ import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.tools.core.Jenkins;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD;
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class DeploymentOrchestrator {
-
-    private static final Logger log = LoggerFactory.getLogger(DeploymentOrchestrator.class);
 
     private final List<Tool> tools;
 
@@ -43,10 +43,6 @@ public class DeploymentOrchestrator {
                 externalSecretsOperator,
                 vault,
                 contentLoader));
-    }
-
-    public DeploymentOrchestrator(List<Tool> tools) {
-        this.tools = tools;
     }
 
     public void deployTools(DeploymentContext context, RepositoryWorkspace workspace) {

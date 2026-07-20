@@ -1,7 +1,10 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
+import lombok.RequiredArgsConstructor;
+
 import java.nio.file.Path;
 
+@RequiredArgsConstructor
 public class ArgoCDRepoLayout {
 
     private static final String APPS_ARGOCD_DIR = "apps/argocd";
@@ -15,10 +18,6 @@ public class ArgoCDRepoLayout {
     private static final String NETPOL_YAML = "templates/allow-namespaces.yaml";
 
     private final String repoRootDir;
-
-    public ArgoCDRepoLayout(String repoRootDir) {
-        this.repoRootDir = repoRootDir;
-    }
 
     public String rootDir() {
         return repoRootDir;

@@ -2,9 +2,8 @@ package com.cloudogu.gitops.application.repository;
 
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,9 +25,8 @@ import java.nio.file.Path;
  * {@link RepositoryProvisioning}. This class only exposes the prepared repositories and
  * the directory structure that tools can write to.</p>
  */
+@Slf4j
 public class RepositoryWorkspace implements AutoCloseable {
-
-    private static final Logger log = LoggerFactory.getLogger(RepositoryWorkspace.class);
 
     private final GitRepo clusterResourcesRepository;
     private final GitRepo tenantBootstrapRepository;

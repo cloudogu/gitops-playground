@@ -1,13 +1,13 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Singleton;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,16 +15,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class JobManager {
 
-    private static final Logger log = LoggerFactory.getLogger(JobManager.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final JenkinsApiClient apiClient;
-
-    public JobManager(JenkinsApiClient apiClient) {
-        this.apiClient = apiClient;
-    }
 
     public void createCredential(String jobName, String id, String username, String password, String description) {
         try {

@@ -5,22 +5,16 @@ import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager;
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
 @Order(300)
+@RequiredArgsConstructor
 public class JenkinsDestructionHandler implements DestructionHandler {
 
     private final JobManager jobManager;
-    private final GlobalPropertyManager globalPropertyManager;
     private final Config config;
-
-    public JenkinsDestructionHandler(JobManager jobManager,
-                                     Config config,
-                                     GlobalPropertyManager globalPropertyManager) {
-        this.jobManager = jobManager;
-        this.config = config;
-        this.globalPropertyManager = globalPropertyManager;
-    }
+    private final GlobalPropertyManager globalPropertyManager;
 
     @Override
     public void destroy() {

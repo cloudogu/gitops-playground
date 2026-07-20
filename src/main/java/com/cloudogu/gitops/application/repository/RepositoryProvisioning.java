@@ -4,9 +4,8 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,9 +35,8 @@ import java.io.IOException;
  * repository availability, local workspace preparation, and commit/push entry points.</p>
  */
 @Singleton
+@Slf4j
 public class RepositoryProvisioning {
-
-    private static final Logger log = LoggerFactory.getLogger(RepositoryProvisioning.class);
 
     public static final String CLUSTER_RESOURCES_REPO_TARGET = "argocd/cluster-resources";
 

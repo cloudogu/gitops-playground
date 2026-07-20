@@ -12,10 +12,9 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
@@ -25,10 +24,8 @@ import java.util.UUID;
 
 @Singleton
 @Order(500)
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class Vault extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(Vault.class);
 
     public static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh";
     public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml";

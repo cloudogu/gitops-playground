@@ -2,8 +2,8 @@ package com.cloudogu.gitops.cli;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -11,18 +11,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
+@Slf4j
 public class ApplicationConfigurator {
-
-    private static final Logger log = LoggerFactory.getLogger(ApplicationConfigurator.class);
 
     private final FileSystemUtils fileSystemUtils;
 
     public ApplicationConfigurator() {
         this(new FileSystemUtils());
-    }
-
-    public ApplicationConfigurator(FileSystemUtils fileSystemUtils) {
-        this.fileSystemUtils = fileSystemUtils;
     }
 
     /**

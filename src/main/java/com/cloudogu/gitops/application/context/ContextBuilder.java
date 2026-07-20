@@ -2,15 +2,13 @@ package com.cloudogu.gitops.application.context;
 
 import com.cloudogu.gitops.config.Config;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class ContextBuilder {
 
     private final Config config;
-
-    public ContextBuilder(Config config) {
-        this.config = config;
-    }
 
     public DeploymentContext build() {
         return new DeploymentContext(

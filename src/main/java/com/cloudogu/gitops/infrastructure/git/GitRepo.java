@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.jgit.helpers.InsecureCredentialProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.PushCommand;
@@ -22,8 +23,6 @@ import org.eclipse.jgit.transport.*;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -37,9 +36,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class GitRepo implements AutoCloseable {
-
-    private static final Logger log = LoggerFactory.getLogger(GitRepo.class);
 
     public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
 

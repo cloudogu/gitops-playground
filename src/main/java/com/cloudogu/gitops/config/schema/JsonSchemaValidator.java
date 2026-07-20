@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.config.schema;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import tools.jackson.databind.JsonNode;
@@ -10,9 +10,9 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class JsonSchemaValidator {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonSchemaValidator.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final SchemaRegistry schemaRegistry = SchemaRegistry.builder().build();
 

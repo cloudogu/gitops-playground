@@ -2,9 +2,7 @@ package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api;
 
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
@@ -15,8 +13,8 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 /**
  * Parent class for all SCMM Apis that lazily creates the APIs
  */
+@Slf4j
 public class ScmManagerApiClient {
-    private static final Logger log = LoggerFactory.getLogger(ScmManagerApiClient.class);
 
     private final Credentials credentials;
     private final OkHttpClient okHttpClient;

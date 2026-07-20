@@ -1,21 +1,18 @@
 package com.cloudogu.gitops.destroy;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class Destroyer {
 
-    private static final Logger log = LoggerFactory.getLogger(Destroyer.class);
-
     private final List<DestructionHandler> destructionHandlers;
-
-    public Destroyer(List<DestructionHandler> destructionHandlers) {
-        this.destructionHandlers = destructionHandlers;
-    }
 
     public void destroy() {
         log.info("Start destroying");

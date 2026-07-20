@@ -8,25 +8,20 @@ import com.cloudogu.gitops.infrastructure.git.providers.gitlab.GitlabProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
+@RequiredArgsConstructor
+@Slf4j
 public class GitHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GitHandler.class);
-
-    private NetworkingUtils networkingUtils;
-    private K8sClient k8sClient;
+    private final K8sClient k8sClient;
+    private final NetworkingUtils networkingUtils;
 
     private GitProvider tenant;
     private GitProvider central;
-
-    public GitHandler(K8sClient k8sClient, NetworkingUtils networkingUtils) {
-        this.k8sClient = k8sClient;
-        this.networkingUtils = networkingUtils;
-    }
 
     public void validate(DeploymentContext context) {
         Config config = context.getConfig();
@@ -136,16 +131,8 @@ public class GitHandler {
         return networkingUtils;
     }
 
-    public void setNetworkingUtils(NetworkingUtils networkingUtils) {
-        this.networkingUtils = networkingUtils;
-    }
-
     public K8sClient getK8sClient() {
         return k8sClient;
-    }
-
-    public void setK8sClient(K8sClient k8sClient) {
-        this.k8sClient = k8sClient;
     }
 
     public GitProvider getTenant() {

@@ -8,14 +8,13 @@ import com.cloudogu.gitops.infrastructure.git.providers.AccessRole;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope;
 import com.cloudogu.gitops.infrastructure.git.providers.Scope;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -24,9 +23,8 @@ import org.gitlab4j.api.models.Group;
 import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.Visibility;
 
+@Slf4j
 public class GitlabProvider implements GitProvider {
-
-    private static final Logger log = LoggerFactory.getLogger(GitlabProvider.class);
 
     private final DeploymentContext context;
     private final GitLabApi api;

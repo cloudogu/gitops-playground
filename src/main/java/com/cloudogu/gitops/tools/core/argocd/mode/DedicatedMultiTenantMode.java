@@ -9,8 +9,8 @@ import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoLayout;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoSetup;
 import com.cloudogu.gitops.utils.Tuple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
+@Slf4j
 public class DedicatedMultiTenantMode implements DeploymentMode {
-
-    private static final Logger log = LoggerFactory.getLogger(DedicatedMultiTenantMode.class);
 
     private static final List<String> ARGOCD_SERVICE_ACCOUNTS = List.of(
             "argocd-argocd-server",
@@ -36,22 +36,6 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
     private final ArgoCDRepoSetup repoSetup;
     private final ArgoCDRepoLayout clusterResourcesRepo;
     private final String namespace;
-
-    public DedicatedMultiTenantMode(Config config,
-                                    K8sClient k8sClient,
-                                    GitHandler gitHandler,
-                                    RepositoryWorkspace repositoryWorkspace,
-                                    ArgoCDRepoSetup repoSetup,
-                                    ArgoCDRepoLayout clusterResourcesRepo,
-                                    String namespace) {
-        this.config = config;
-        this.k8sClient = k8sClient;
-        this.gitHandler = gitHandler;
-        this.repositoryWorkspace = repositoryWorkspace;
-        this.repoSetup = repoSetup;
-        this.clusterResourcesRepo = clusterResourcesRepo;
-        this.namespace = namespace;
-    }
 
     @Override
     public void createSCMCredentialsSecret() {
