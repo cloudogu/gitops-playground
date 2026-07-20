@@ -128,8 +128,8 @@ class ArgoCDTest {
 	void setupKubernetesClient() {
 		k8sClient = spy(new K8sClientForTest())
 		k8sClient.client = client
-		k8sClient.SLEEPTIME = 1
-		k8sClient.DEFAULT_RETRIES = 1
+		k8sClient.sleepTimeMillis = 1
+		k8sClient.defaultRetries = 1
 
 		// no need to wait in tests, we stub!
 		doNothing().when(k8sClient).waitForResourcePhase(any(String),

@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
 import com.cloudogu.gitops.config.Config;
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +23,9 @@ public class JenkinsApiClient {
     private final OkHttpClient client;
 
     // Number of retries is uncommonly high, because we might have to outlive an unexpected Jenkins restart
+    @Setter(AccessLevel.PROTECTED)
     private int maxRetries = 180;
+    @Setter(AccessLevel.PROTECTED)
     private int waitPeriodInMs = 2000;
 
     public JenkinsApiClient(Config config, @Named("jenkins") OkHttpClient client) {
@@ -141,11 +145,4 @@ public class JenkinsApiClient {
         return response.code() == 401 || response.code() == 403;
     }
 
-    protected void setMaxRetries(int retries) {
-        this.maxRetries = retries;
-    }
-
-    protected void setWaitPeriodInMs(int waitPeriodInMs) {
-        this.waitPeriodInMs = waitPeriodInMs;
-    }
 }

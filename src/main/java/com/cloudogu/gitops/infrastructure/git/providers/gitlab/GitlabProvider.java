@@ -8,6 +8,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.AccessRole;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.RepoUrlScope;
 import com.cloudogu.gitops.infrastructure.git.providers.Scope;
+import com.cloudogu.gitops.utils.Tuple;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
@@ -53,16 +54,16 @@ public class GitlabProvider implements GitProvider {
 
     @Override
     public boolean createRepository(String repoTarget, String description, boolean initialize) {
-        String[] parts = repoTarget.split("/", 2);
-        String repoNamespace = parts[0];
-        String repoName = parts[1];
+        Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
+        String repoNamespace = target.getFirst();
+        String repoName = target.getSecond();
 
         Group parent = parentGroup();
         String repoNamespacePath = repoNamespace.toLowerCase();
         String projectPath = repoName.toLowerCase();
 
         long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
-        String fullProjectPath = parentFullPath() + "/" + repoNamespacePath + "/" + projectPath;
+        String fullProjectPath = parent.getFullPath() + "/" + repoNamespacePath + "/" + projectPath;
 
         if (findProject(fullProjectPath).isPresent()) {
             log.info("GitLab project already exists: " + fullProjectPath);

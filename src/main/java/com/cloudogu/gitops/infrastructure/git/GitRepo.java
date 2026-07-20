@@ -10,6 +10,8 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.jgit.helpers.InsecureCredentialProvider;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
@@ -42,15 +44,19 @@ public class GitRepo implements AutoCloseable {
     public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
 
     private final Config config;
-    public GitProvider gitProvider;
+    @Getter
+    @Setter
+    private GitProvider gitProvider;
     private final FileSystemUtils fileSystemUtils;
 
+    @Getter
     private final String repoTarget;
     private final boolean insecure;
     private final String gitName;
     private final String gitEmail;
 
     private Git gitMemoization;
+    @Getter
     private final String absoluteLocalRepoTmpDir;
 
     public GitRepo(Config config,
@@ -75,18 +81,6 @@ public class GitRepo implements AutoCloseable {
         this.gitEmail = config.getApplication().getGitEmail();
     }
 
-    public String getRepoTarget() {
-        return repoTarget;
-    }
-
-    public GitProvider getGitProvider() {
-        return gitProvider;
-    }
-
-    public void setGitProvider(GitProvider gitProvider) {
-        this.gitProvider = gitProvider;
-    }
-
     public boolean createRepositoryAndSetPermission(String description, boolean initialize) {
         boolean isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize);
         String gitOpsUsername = gitProvider.getGitOpsUsername();
@@ -101,10 +95,6 @@ public class GitRepo implements AutoCloseable {
 
     public boolean createRepositoryAndSetPermission(String description) {
         return createRepositoryAndSetPermission(description, true);
-    }
-
-    public String getAbsoluteLocalRepoTmpDir() {
-        return absoluteLocalRepoTmpDir;
     }
 
     public void cloneRepo() throws GitAPIException {
@@ -332,7 +322,7 @@ public class GitRepo implements AutoCloseable {
             return false;
         }
 
-        try (Git git = Git.open(repoPath)) {
+        return withGitOrFalse(repoPath, "checking if ref '" + ref + "' is a commit in repo '" + repoPath + "'", git -> {
             // Get all branch and tag names
             List<String> allRefs = new ArrayList<>();
 
@@ -356,11 +346,7 @@ public class GitRepo implements AutoCloseable {
             // If it's not a branch or tag, try to resolve it as a commit
             ObjectId objectId = git.getRepository().resolve(ref);
             return objectId != null;
-
-        } catch (GitAPIException | IOException e) {
-            log.warn("Error checking if ref '{}' is a commit in repo '{}': {}", ref, repoPath, e.getMessage());
-            return false;
-        }
+        });
     }
 
     /**
@@ -372,7 +358,7 @@ public class GitRepo implements AutoCloseable {
     public static boolean existFileInSomeBranch(String repo, String filename) {
         File repoPath = new File(repo);
 
-        try (Git git = Git.open(repoPath)) {
+        boolean found = withGitOrFalse(repoPath, "checking if file '" + filename + "' exists in repo '" + repoPath + "'", git -> {
             List<Ref> branches = git.branchList()
                     .setListMode(ListBranchCommand.ListMode.ALL)
                     .call();
@@ -397,28 +383,48 @@ public class GitRepo implements AutoCloseable {
                     }
                 }
             }
-        } catch (IOException | GitAPIException e) {
-            log.warn("Error checking if file '{}' exists in repo '{}': {}", filename, repoPath, e.getMessage());
+            return false;
+        });
+
+        if (!found) {
+            log.debug("File {} not found in repository {}", filename, repoPath);
         }
-        log.debug("File {} not found in repository {}", filename, repoPath);
-        return false;
+        return found;
     }
 
     public static boolean isTag(File repo, String ref) {
         if (ref == null || ref.isEmpty()) {
             return false;
         }
-        try (Git git = Git.open(repo)) {
+        return withGitOrFalse(repo, "checking if ref '" + ref + "' is a tag in repo '" + repo + "'", git -> {
             List<Ref> tags = git.tagList().call();
             for (Ref tag : tags) {
                 if (tag.getName().endsWith("/" + ref) || tag.getName().equals(ref)) {
                     return true;
                 }
             }
+            return false;
+        });
+    }
+
+    /**
+     * Opens the git repository at {@code repoPath} and runs {@code operation} against it, returning its
+     * result. If the repository can't be opened or the operation throws, logs a warning with
+     * {@code errorContext} and returns {@code false}. Centralizes the try-with-resources/catch pattern
+     * shared by the static ref-inspection helpers above.
+     */
+    private static boolean withGitOrFalse(File repoPath, String errorContext, GitBooleanOperation operation) {
+        try (Git git = Git.open(repoPath)) {
+            return operation.execute(git);
         } catch (IOException | GitAPIException e) {
-            log.warn("Error checking if ref '{}' is a tag in repo '{}': {}", ref, repo, e.getMessage());
+            log.warn("Error {}: {}", errorContext, e.getMessage());
+            return false;
         }
-        return false;
+    }
+
+    @FunctionalInterface
+    private interface GitBooleanOperation {
+        boolean execute(Git git) throws IOException, GitAPIException;
     }
 
     private PushCommand createPushCommand(String refSpec) {

@@ -1,5 +1,10 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api;
 
+import lombok.Getter;
+import lombok.ToString;
+
+@Getter
+@ToString
 public class Repository {
     private final String name;
     private final String namespace;
@@ -27,32 +32,7 @@ public class Repository {
         this.description = description;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getContact() {
-        return contact;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
     public String getFullRepoName() {
         return namespace + "/" + name;
-    }
-
-    @Override
-    public String toString() {
-        return "Repository{name='" + name + "', namespace='" + namespace + "', type='" + type + "', contact='" + contact + "', description='" + description + "'}";
     }
 }

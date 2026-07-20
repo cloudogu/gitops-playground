@@ -43,13 +43,13 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
         }
 
         for (var app : k8sClient.getCustomResource("app")) {
-            if ("bootstrap".equals(app.getName()) || "argocd".equals(app.getName()) || "projects".equals(app.getName())) {
+            if ("bootstrap".equals(app.name()) || "argocd".equals(app.name()) || "projects".equals(app.name())) {
                 continue;
             }
 
             k8sClient.patch("app",
-                    app.getName(),
-                    app.getNamespace(),
+                    app.name(),
+                    app.namespace(),
                     "merge",
                     Map.of("metadata", Map.of("finalizers", List.of("resources-finalizer.argocd.argoproj.io"))));
         }
@@ -67,7 +67,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
         installArgoCDViaHelm(repo);
         helmClient.uninstall("argocd", "argocd");
         for (var project : k8sClient.getCustomResource("appprojects")) {
-            k8sClient.delete("appproject", project.getNamespace(), project.getName());
+            k8sClient.delete("appproject", project.namespace(), project.name());
         }
 
         k8sClient.delete("app", "argocd", "projects");

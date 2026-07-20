@@ -17,12 +17,12 @@ public class UserManager {
     public void createUser(String username, String password) {
         log.debug("Add user {} to jenkins", username);
 
-        String script = "\n" +
-                "            def realm = Jenkins.getInstance().getSecurityRealm()\n" +
-                "            def user = realm.createAccount('%USERNAME%', '%PASSWORD%')\n" +
-                "\n" +
-                "            print(user)\n" +
-                "        ";
+        String script = """
+            def realm = Jenkins.getInstance().getSecurityRealm()
+            def user = realm.createAccount('%USERNAME%', '%PASSWORD%')
+
+            print(user)
+            """;
 
         script = script.replace("%USERNAME%", escapeString(username))
                 .replace("%PASSWORD%", escapeString(password));
@@ -42,16 +42,16 @@ public class UserManager {
 
         log.debug("Grant user {} permission {}", username, permission);
 
-        String script = "\n" +
-                "            import org.jenkinsci.plugins.matrixauth.PermissionEntry\n" +
-                "            import org.jenkinsci.plugins.matrixauth.AuthorizationType\n" +
-                "\n" +
-                "            def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()\n" +
-                "            permissions.computeIfAbsent(%PERMISSION%) {\n" +
-                "              new HashSet<>()\n" +
-                "            }\n" +
-                "            print(permissions[%PERMISSION%].add(new PermissionEntry(AuthorizationType.USER, '%USERNAME%')))\n" +
-                "        ";
+        String script = """
+            import org.jenkinsci.plugins.matrixauth.PermissionEntry
+            import org.jenkinsci.plugins.matrixauth.AuthorizationType
+
+            def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
+            permissions.computeIfAbsent(%PERMISSION%) {
+              new HashSet<>()
+            }
+            print(permissions[%PERMISSION%].add(new PermissionEntry(AuthorizationType.USER, '%USERNAME%')))
+            """;
 
         script = script.replace("%PERMISSION%", permission.toJenkinsPermissionEnum())
                 .replace("%USERNAME%", escapeString(username));

@@ -10,28 +10,28 @@ public class GlobalPropertyManager {
     private final JenkinsApiClient apiClient;
 
     public void setGlobalProperty(String key, String value) {
-        String script = "\n" +
-                "            instance = Jenkins.getInstance()\n" +
-                "            globalNodeProperties = instance.getGlobalNodeProperties()\n" +
-                "            envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)\n" +
-                "            \n" +
-                "            def newEnvVarsNodeProperty\n" +
-                "            def envVars\n" +
-                "            \n" +
-                "            if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {\n" +
-                "                newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty()\n" +
-                "                globalNodeProperties.add(newEnvVarsNodeProperty)\n" +
-                "                envVars = newEnvVarsNodeProperty.getEnvVars()\n" +
-                "            } else {\n" +
-                "                envVars = envVarsNodePropertyList.get(0).getEnvVars()\n" +
-                "            \n" +
-                "            }\n" +
-                "            \n" +
-                "            envVars.put(\"%KEY%\", \"%VALUE%\")\n" +
-                "            \n" +
-                "            instance.save()\n" +
-                "            print(\"Done\")\n" +
-                "        ";
+        String script = """
+            instance = Jenkins.getInstance()
+            globalNodeProperties = instance.getGlobalNodeProperties()
+            envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
+
+            def newEnvVarsNodeProperty
+            def envVars
+
+            if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
+                newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty()
+                globalNodeProperties.add(newEnvVarsNodeProperty)
+                envVars = newEnvVarsNodeProperty.getEnvVars()
+            } else {
+                envVars = envVarsNodePropertyList.get(0).getEnvVars()
+
+            }
+
+            envVars.put("%KEY%", "%VALUE%")
+
+            instance.save()
+            print("Done")
+            """;
 
         script = script.replace("%KEY%", key)
                 .replace("%VALUE%", value);
@@ -43,20 +43,20 @@ public class GlobalPropertyManager {
     }
 
     public void deleteGlobalProperty(String key) {
-        String script = "\n" +
-                "            def instance = Jenkins.getInstance()\n" +
-                "            def globalNodeProperties = instance.getGlobalNodeProperties()\n" +
-                "            def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)\n" +
-                "            \n" +
-                "            if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {\n" +
-                "                print(\"Nothing to do\")\n" +
-                "                return\n" +
-                "            }\n" +
-                "            \n" +
-                "            envVars = envVarsNodePropertyList.get(0).getEnvVars()            \n" +
-                "            envVars.remove(\"%KEY%\")\n" +
-                "            print(\"Done\")\n" +
-                "        ";
+        String script = """
+            def instance = Jenkins.getInstance()
+            def globalNodeProperties = instance.getGlobalNodeProperties()
+            def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
+
+            if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {
+                print("Nothing to do")
+                return
+            }
+
+            envVars = envVarsNodePropertyList.get(0).getEnvVars()
+            envVars.remove("%KEY%")
+            print("Done")
+            """;
 
         script = script.replace("%KEY%", key);
 

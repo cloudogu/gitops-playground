@@ -1,8 +1,11 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 
+import lombok.Getter;
+
 import java.util.List;
 import java.util.Map;
 
+@Getter
 public class ServiceAccountRef {
     private final String name;
     private final String namespace;
@@ -16,14 +19,6 @@ public class ServiceAccountRef {
         }
         this.name = name;
         this.namespace = namespace;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getNamespace() {
-        return namespace;
     }
 
     public static List<ServiceAccountRef> fromNames(String namespace, List<String> names) {

@@ -169,7 +169,7 @@ class K8sClientHelper {
         }
     }
 
-    static io.fabric8.kubernetes.client.dsl.Resource getResourceClient(KubernetesClient client, String resourceType, String name, String resolvedNamespace) {
+    static io.fabric8.kubernetes.client.dsl.Resource<? extends HasMetadata> getResourceClient(KubernetesClient client, String resourceType, String name, String resolvedNamespace) {
         switch (resourceType.toLowerCase()) {
             case "pod":
             case "pods":
@@ -212,7 +212,7 @@ class K8sClientHelper {
         }
     }
 
-    static io.fabric8.kubernetes.client.dsl.Resource getCustomResourceClient(KubernetesClient client, String resourceType, String name, String namespace) {
+    static io.fabric8.kubernetes.client.dsl.Resource<? extends HasMetadata> getCustomResourceClient(KubernetesClient client, String resourceType, String name, String namespace) {
         String normalized = resourceType.toLowerCase();
 
         Map<String, Object> match = findApiResourceViaDiscovery(client, normalized, resourceType);

@@ -34,8 +34,8 @@ class K8sClientTest {
 	void setup() {
 		k8sApiClient = new K8sClient()
 		k8sApiClient.client = client
-		k8sApiClient.SLEEPTIME = 10 // Speed up tests
-		k8sApiClient.DEFAULT_RETRIES = 3
+		k8sApiClient.sleepTimeMillis = 10 // Speed up tests
+		k8sApiClient.defaultRetries = 3
 	}
 
 	// ========================================
@@ -99,7 +99,7 @@ class K8sClientTest {
 			.get()
 			.withPath("/api/v1/nodes")
 			.andReturn(200, new NodeListBuilder().build())
-			.times(k8sApiClient.DEFAULT_RETRIES + 1)
+			.times(k8sApiClient.defaultRetries + 1)
 
 		// When/Then
 		def exception = shouldFail(RuntimeException) {
@@ -1380,8 +1380,8 @@ metadata:
 		def cr = new K8sClient.CustomResource("test-ns", "test-name")
 
 		// Then
-		assertThat(cr.namespace).isEqualTo("test-ns")
-		assertThat(cr.name).isEqualTo("test-name")
+		assertThat(cr.namespace()).isEqualTo("test-ns")
+		assertThat(cr.name()).isEqualTo("test-name")
 	}
 
 	@Test

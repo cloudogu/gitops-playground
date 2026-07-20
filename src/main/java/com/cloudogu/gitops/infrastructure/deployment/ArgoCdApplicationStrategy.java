@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,7 +83,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
             }
         }
 
-        Map<String, Object> helmConfig = new java.util.LinkedHashMap<>();
+        Map<String, Object> helmConfig = new LinkedHashMap<>();
         helmConfig.put("releaseName", releaseName);
 
         if (bootstrapDeploymentRequired) {
@@ -94,7 +95,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
             helmConfig.put("ignoreMissingValueFiles", true);
         }
 
-        Map<String, Object> helmSource = new java.util.LinkedHashMap<>();
+        Map<String, Object> helmSource = new LinkedHashMap<>();
         helmSource.put("repoURL", repoURL);
         helmSource.put(chooseKeyChartOrPath(repoType), chartOrPath);
         helmSource.put("targetRevision", version);
@@ -106,7 +107,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
         if (!bootstrapDeploymentRequired) {
             String toolRepoUrl = clusterResourcesRepo.getGitProvider().repoPrefix() + "argocd/cluster-resources.git";
 
-            Map<String, Object> gitSource = new java.util.LinkedHashMap<>();
+            Map<String, Object> gitSource = new LinkedHashMap<>();
             gitSource.put("repoURL", toolRepoUrl);
             gitSource.put("targetRevision", "main");
             gitSource.put("ref", "values");
@@ -122,24 +123,24 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
                 .build();
 
-        Map<String, Object> syncPolicy = new java.util.LinkedHashMap<>();
-        Map<String, Object> automated = new java.util.LinkedHashMap<>();
+        Map<String, Object> syncPolicy = new LinkedHashMap<>();
+        Map<String, Object> automated = new LinkedHashMap<>();
         automated.put("prune", true);
         automated.put("selfHeal", true);
         syncPolicy.put("automated", automated);
         syncPolicy.put("syncOptions", List.of("ServerSideApply=true", namespaceCreationSyncOption));
 
-        Map<String, Object> application = new java.util.LinkedHashMap<>();
+        Map<String, Object> application = new LinkedHashMap<>();
         application.put("apiVersion", "argoproj.io/v1alpha1");
         application.put("kind", "Application");
 
-        Map<String, Object> metadata = new java.util.LinkedHashMap<>();
+        Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("name", target.getApplicationName());
         metadata.put("namespace", target.getNamespace());
         application.put("metadata", metadata);
 
-        Map<String, Object> spec = new java.util.LinkedHashMap<>();
-        Map<String, Object> destination = new java.util.LinkedHashMap<>();
+        Map<String, Object> spec = new LinkedHashMap<>();
+        Map<String, Object> destination = new LinkedHashMap<>();
         destination.put("server", "https://kubernetes.default.svc");
         destination.put("namespace", namespace);
         spec.put("destination", destination);
@@ -168,14 +169,11 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     }
 
     public String chooseKeyChartOrPath(RepoType repoType) {
-        switch (repoType) {
-            case HELM:
-                return "chart";
-            case GIT:
-                return "path";
-            default:
-                throw new RuntimeException("Repo type " + repoType + " not implemented for " + this.getClass().getSimpleName());
-        }
+        return switch (repoType) {
+            case HELM -> "chart";
+            case GIT -> "path";
+            default -> throw new RuntimeException("Repo type " + repoType + " not implemented for " + this.getClass().getSimpleName());
+        };
     }
 
     private boolean requiresBootstrapDeployment(String toolName) {

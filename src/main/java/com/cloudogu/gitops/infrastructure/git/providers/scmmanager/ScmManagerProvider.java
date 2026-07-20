@@ -12,6 +12,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Repositor
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
+import com.cloudogu.gitops.utils.Tuple;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -74,9 +75,9 @@ public class ScmManagerProvider implements GitProvider {
 
     @Override
     public boolean createRepository(String repoTarget, String description, boolean initialize) {
-        String[] parts = repoTarget.split("/", 2);
-        String repoNamespace = parts[0];
-        String repoName = parts[1];
+        Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
+        String repoNamespace = target.getFirst();
+        String repoName = target.getSecond();
         Repository repo = new Repository(repoNamespace, repoName, description != null ? description : "");
 
         try {
@@ -89,9 +90,9 @@ public class ScmManagerProvider implements GitProvider {
 
     @Override
     public void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        String[] parts = repoTarget.split("/", 2);
-        String repoNamespace = parts[0];
-        String repoName = parts[1];
+        Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
+        String repoNamespace = target.getFirst();
+        String repoName = target.getSecond();
 
         boolean isGroup = (scope == Scope.GROUP);
         Permission.Role scmManagerRole = mapToScmManager(role);

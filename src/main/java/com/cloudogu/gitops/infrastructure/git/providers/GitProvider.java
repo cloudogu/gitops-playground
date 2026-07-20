@@ -1,9 +1,19 @@
 package com.cloudogu.gitops.infrastructure.git.providers;
 
 import com.cloudogu.gitops.config.Credentials;
+import com.cloudogu.gitops.utils.Tuple;
 import java.net.URI;
 
 public interface GitProvider {
+
+    /**
+     * Splits a "namespace/repoName" repo target into its namespace and name segments.
+     * Shared by providers that address repositories via a flat "namespace/name" string.
+     */
+    static Tuple<String, String> splitRepoTarget(String repoTarget) {
+        String[] parts = repoTarget.split("/", 2);
+        return new Tuple<>(parts[0], parts[1]);
+    }
 
     default boolean createRepository(String repoTarget, String description) {
         return createRepository(repoTarget, description, true);

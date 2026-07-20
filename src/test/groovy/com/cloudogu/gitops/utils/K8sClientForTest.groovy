@@ -9,6 +9,6 @@ class K8sClientForTest extends K8sClient {
 	K8sClientForTest() {
 		super()
 		this.client = new KubernetesMockServer().createClient()
-		this.SLEEPTIME = 1
+		this.sleepTimeMillis = 1
 	}
 }

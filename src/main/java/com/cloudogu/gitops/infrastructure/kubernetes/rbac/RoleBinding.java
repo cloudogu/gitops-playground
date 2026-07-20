@@ -1,9 +1,12 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 
+import lombok.Getter;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+@Getter
 public class RoleBinding {
     private final String name;
     private final String kind;
@@ -38,30 +41,6 @@ public class RoleBinding {
             this.kind = "RoleBinding";
             this.roleKind = "Role";
         }
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getKind() {
-        return kind;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public String getRoleKind() {
-        return roleKind;
-    }
-
-    public List<ServiceAccountRef> getServiceAccounts() {
-        return serviceAccounts;
     }
 
     public Map<String, Object> toTemplateParams() {

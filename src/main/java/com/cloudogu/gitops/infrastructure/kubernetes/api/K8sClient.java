@@ -46,8 +46,8 @@ public class K8sClient {
     private static final int FABRIC8_REQUEST_TIMEOUT_MILLIS = 60_000;
     private static final int FABRIC8_CONNECTION_TIMEOUT_MILLIS = 10_000;
 
-    protected int SLEEPTIME = 1000;
-    protected int DEFAULT_RETRIES = 120;
+    protected int sleepTimeMillis = 1000;
+    protected int defaultRetries = 120;
 
     private KubernetesClient client;
     private com.cloudogu.gitops.config.Config gopConfig;
@@ -650,30 +650,44 @@ public class K8sClient {
 
         executeWithErrorHandling("label " + resource + "/" + name, () -> {
             var resourceClient = K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
-            HasMetadata existingResource = (HasMetadata) resourceClient.get();
-
-            if (existingResource == null) {
-                throw new RuntimeException("Resource " + resource + "/" + name + " not found");
-            }
-
-            Map<String, String> existingLabels = existingResource.getMetadata().getLabels();
-            if (existingLabels == null) {
-                existingLabels = new HashMap<>();
-            } else {
-                existingLabels = new HashMap<>(existingLabels); // ensure mutable
-            }
-
-            for (String key : labelsToRemove) {
-                existingLabels.remove(key);
-            }
-            existingLabels.putAll(labelsToAdd);
-
-            existingResource.getMetadata().setLabels(existingLabels);
-            resourceClient.replace(existingResource);
+            applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
             return null;
         });
 
         log.debug("Labels updated successfully");
+    }
+
+    /**
+     * Fetches the resource behind {@code resourceClient}, applies the given label additions/removals
+     * and writes it back. Kept as a generic helper (rather than inline in {@link #label}) because
+     * {@code io.fabric8.kubernetes.client.dsl.Resource#replace} requires the exact type returned by
+     * {@code Resource#get}; a wildcard-typed local variable can't satisfy that across two separate
+     * calls due to Java's per-expression wildcard capture, whereas a type variable bound once for the
+     * whole method invocation can.
+     */
+    private static <T extends HasMetadata> void applyLabelChanges(io.fabric8.kubernetes.client.dsl.Resource<T> resourceClient,
+                                                                   String resource, String name,
+                                                                   Map<String, String> labelsToAdd, List<String> labelsToRemove) {
+        T existingResource = resourceClient.get();
+
+        if (existingResource == null) {
+            throw new RuntimeException("Resource " + resource + "/" + name + " not found");
+        }
+
+        Map<String, String> existingLabels = existingResource.getMetadata().getLabels();
+        if (existingLabels == null) {
+            existingLabels = new HashMap<>();
+        } else {
+            existingLabels = new HashMap<>(existingLabels); // ensure mutable
+        }
+
+        for (String key : labelsToRemove) {
+            existingLabels.remove(key);
+        }
+        existingLabels.putAll(labelsToAdd);
+
+        existingResource.getMetadata().setLabels(existingLabels);
+        resourceClient.replace(existingResource);
     }
 
     public void label(String resource, String name, String namespace, groovy.lang.Tuple2... keyValues) {
@@ -821,7 +835,7 @@ public class K8sClient {
 
         log.debug("Pod {} created successfully", name);
         if (K8sClientHelper.shouldReturnPodOutput(runParams)) {
-            return K8sClientHelper.collectPodRunOutput(client, createdPod.getMetadata().getName(), resolvedNamespace, K8sClientHelper.shouldRemovePod(runParams), DEFAULT_RETRIES, SLEEPTIME, this);
+            return K8sClientHelper.collectPodRunOutput(client, createdPod.getMetadata().getName(), resolvedNamespace, K8sClientHelper.shouldRemovePod(runParams), defaultRetries, sleepTimeMillis, this);
         }
 
         return "pod/" + createdPod.getMetadata().getName() + " created";
@@ -957,7 +971,7 @@ public class K8sClient {
         int tryCount = 0;
         T result = null;
 
-        while (result == null && tryCount < DEFAULT_RETRIES) {
+        while (result == null && tryCount < defaultRetries) {
             try {
                 result = fetchSupplier.get();
             } catch (Exception e) {
@@ -966,9 +980,9 @@ public class K8sClient {
 
             if (result == null) {
                 tryCount++;
-                log.debug("Still waiting for {}... (try {}/{})", resourceDescription, tryCount, DEFAULT_RETRIES);
+                log.debug("Still waiting for {}... (try {}/{})", resourceDescription, tryCount, defaultRetries);
                 try {
-                    Thread.sleep(SLEEPTIME);
+                    Thread.sleep(sleepTimeMillis);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Interrupted while waiting", e);
@@ -977,7 +991,7 @@ public class K8sClient {
         }
 
         if (result == null) {
-            throw new RuntimeException("Failed to retrieve " + resourceDescription + " after " + DEFAULT_RETRIES + " retries");
+            throw new RuntimeException("Failed to retrieve " + resourceDescription + " after " + defaultRetries + " retries");
         }
 
         return result;
@@ -1003,23 +1017,7 @@ public class K8sClient {
         return this.gopConfig != null && this.gopConfig.getApplication() != null && Boolean.TRUE.equals(this.gopConfig.getApplication().getOpenshift());
     }
 
-    public static class CustomResource {
-        private final String namespace;
-        private final String name;
-
-        public CustomResource(String namespace, String name) {
-            this.namespace = namespace;
-            this.name = name;
-        }
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
+    public record CustomResource(String namespace, String name) {}
 
     public static class KubernetesApiResourceNotFoundException extends RuntimeException {
         public KubernetesApiResourceNotFoundException(String resourceType) {

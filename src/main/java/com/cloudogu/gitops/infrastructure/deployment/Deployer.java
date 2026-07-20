@@ -2,6 +2,7 @@ package com.cloudogu.gitops.infrastructure.deployment;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import jakarta.inject.Provider;
@@ -13,11 +14,8 @@ import java.nio.file.Path;
 public class Deployer {
 
     private final Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider;
+    @Getter
     private final HelmStrategy helmStrategy;
-
-    public HelmStrategy getHelmStrategy() {
-        return helmStrategy;
-    }
 
     public void deployFeature(String repoURL,
                               String repoName,
