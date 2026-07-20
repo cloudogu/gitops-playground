@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils;
 
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.inject.Singleton;
@@ -222,27 +223,10 @@ public class CommandExecutor {
         }
     }
 
+    @Value
     public static class Output {
-        private final String stdErr;
-        private final String stdOut;
-        private final int exitCode;
-
-        public Output(String stdErr, String stdOut, int exitCode) {
-            this.stdErr = stdErr;
-            this.stdOut = stdOut;
-            this.exitCode = exitCode;
-        }
-
-        public String getStdErr() {
-            return stdErr;
-        }
-
-        public String getStdOut() {
-            return stdOut;
-        }
-
-        public int getExitCode() {
-            return exitCode;
-        }
+        String stdErr;
+        String stdOut;
+        int exitCode;
     }
 }

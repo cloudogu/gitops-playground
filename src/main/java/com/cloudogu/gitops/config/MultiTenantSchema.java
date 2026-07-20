@@ -5,9 +5,13 @@ import com.cloudogu.gitops.config.scm.ScmCentralSchema.ScmManagerCentralConfig;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import lombok.Getter;
+import lombok.Setter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
+@Getter
+@Setter
 public class MultiTenantSchema {
 
     public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
@@ -37,44 +41,4 @@ public class MultiTenantSchema {
     @Option(names = {"--dedicated-instance"}, description = CENTRAL_USEDEDICATED_DESCRIPTION)
     @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
     private Boolean useDedicatedInstance = false;
-
-    public ScmProviderType getScmProviderType() {
-        return scmProviderType;
-    }
-
-    public void setScmProviderType(ScmProviderType scmProviderType) {
-        this.scmProviderType = scmProviderType;
-    }
-
-    public GitlabCentralConfig getGitlab() {
-        return gitlab;
-    }
-
-    public void setGitlab(GitlabCentralConfig gitlab) {
-        this.gitlab = gitlab;
-    }
-
-    public ScmManagerCentralConfig getScmManager() {
-        return scmManager;
-    }
-
-    public void setScmManager(ScmManagerCentralConfig scmManager) {
-        this.scmManager = scmManager;
-    }
-
-    public String getCentralArgocdNamespace() {
-        return centralArgocdNamespace;
-    }
-
-    public void setCentralArgocdNamespace(String centralArgocdNamespace) {
-        this.centralArgocdNamespace = centralArgocdNamespace;
-    }
-
-    public Boolean getUseDedicatedInstance() {
-        return useDedicatedInstance;
-    }
-
-    public void setUseDedicatedInstance(Boolean useDedicatedInstance) {
-        this.useDedicatedInstance = useDedicatedInstance;
-    }
 }

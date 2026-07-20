@@ -2,6 +2,7 @@ package com.cloudogu.gitops.application.repository;
 
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -28,7 +29,9 @@ import java.nio.file.Path;
 @Slf4j
 public class RepositoryWorkspace implements AutoCloseable {
 
+    @Getter
     private final GitRepo clusterResourcesRepository;
+    @Getter
     private final GitRepo tenantBootstrapRepository;
 
     private boolean remoteRepositoriesEnsured = false;
@@ -41,14 +44,6 @@ public class RepositoryWorkspace implements AutoCloseable {
                                GitRepo tenantBootstrapRepository) {
         this.clusterResourcesRepository = clusterResourcesRepository;
         this.tenantBootstrapRepository = tenantBootstrapRepository;
-    }
-
-    public GitRepo getClusterResourcesRepository() {
-        return clusterResourcesRepository;
-    }
-
-    public GitRepo getTenantBootstrapRepository() {
-        return tenantBootstrapRepository;
     }
 
     public boolean hasTenantBootstrapRepository() {

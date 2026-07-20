@@ -12,11 +12,15 @@ import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import lombok.Getter;
+import lombok.Setter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 import java.util.HashMap;
 
+@Getter
+@Setter
 public class ScmTenantSchema {
 
     public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
@@ -36,36 +40,14 @@ public class ScmTenantSchema {
     @Mixin
     private ScmManagerTenantConfig scmManager;
 
-    public ScmProviderType getScmProviderType() {
-        return scmProviderType;
-    }
-
-    public void setScmProviderType(ScmProviderType scmProviderType) {
-        this.scmProviderType = scmProviderType;
-    }
-
-    public GitlabTenantConfig getGitlab() {
-        return gitlab;
-    }
-
-    public void setGitlab(GitlabTenantConfig gitlab) {
-        this.gitlab = gitlab;
-    }
-
-    public ScmManagerTenantConfig getScmManager() {
-        return scmManager;
-    }
-
-    public void setScmManager(ScmManagerTenantConfig scmManager) {
-        this.scmManager = scmManager;
-    }
-
     @JsonIgnore
     public Boolean getInternal() {
         return (gitlab != null && Boolean.TRUE.equals(gitlab.getInternal())) ||
                 (scmManager != null && Boolean.TRUE.equals(scmManager.getInternal()));
     }
 
+    @Getter
+    @Setter
     public static class GitlabTenantConfig implements GitlabConfig {
 
         public static final String GITLAB_INTERNAL_DESCRIPTION = "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL";
@@ -98,73 +80,15 @@ public class ScmTenantSchema {
 
         private String defaultVisibility = "";
 
-        public Boolean getInternal() {
-            return internal;
-        }
-
-        public void setInternal(Boolean internal) {
-            this.internal = internal;
-        }
-
-        @Override
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        @Override
-        public String getParentGroupId() {
-            return parentGroupId;
-        }
-
-        public void setParentGroupId(String parentGroupId) {
-            this.parentGroupId = parentGroupId;
-        }
-
         @Override
         @JsonIgnore
         public Credentials getCredentials() {
             return new Credentials(username, password);
         }
-
-        @Override
-        public String getGitOpsUsername() {
-            return gitOpsUsername;
-        }
-
-        public void setGitOpsUsername(String gitOpsUsername) {
-            this.gitOpsUsername = gitOpsUsername;
-        }
-
-        @Override
-        public String getDefaultVisibility() {
-            return defaultVisibility;
-        }
-
-        public void setDefaultVisibility(String defaultVisibility) {
-            this.defaultVisibility = defaultVisibility;
-        }
     }
 
+    @Getter
+    @Setter
     public static class ScmManagerTenantConfig implements ScmManagerConfig {
 
         public static final String SCMM_SKIP_RESTART_DESCRIPTION = "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'";
@@ -223,76 +147,6 @@ public class ScmTenantSchema {
             helm.setValues(new HashMap<>());
         }
 
-        @Override
-        public Boolean getInternal() {
-            return internal;
-        }
-
-        public void setInternal(Boolean internal) {
-            this.internal = internal;
-        }
-
-        @Override
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        @Override
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        @Override
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        @Override
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        @Override
-        public Config.HelmConfigWithValues getHelm() {
-            return helm;
-        }
-
-        public void setHelm(Config.HelmConfigWithValues helm) {
-            this.helm = helm;
-        }
-
-        public String getScmmImage() {
-            return scmmImage;
-        }
-
-        public void setScmmImage(String scmmImage) {
-            this.scmmImage = scmmImage;
-        }
-
-        public String getUrlForJenkins() {
-            return urlForJenkins;
-        }
-
-        public void setUrlForJenkins(String urlForJenkins) {
-            this.urlForJenkins = urlForJenkins;
-        }
-
         @JsonIgnore
         public String getHost() {
             return NetworkingUtils.getHost(url);
@@ -301,40 +155,6 @@ public class ScmTenantSchema {
         @JsonIgnore
         public String getProtocol() {
             return NetworkingUtils.getProtocol(url);
-        }
-
-        @Override
-        public String getIngress() {
-            return ingress;
-        }
-
-        public void setIngress(String ingress) {
-            this.ingress = ingress;
-        }
-
-        public Boolean getSkipRestart() {
-            return skipRestart;
-        }
-
-        public void setSkipRestart(Boolean skipRestart) {
-            this.skipRestart = skipRestart;
-        }
-
-        public Boolean getSkipPlugins() {
-            return skipPlugins;
-        }
-
-        public void setSkipPlugins(Boolean skipPlugins) {
-            this.skipPlugins = skipPlugins;
-        }
-
-        @Override
-        public String getGitOpsUsername() {
-            return gitOpsUsername;
-        }
-
-        public void setGitOpsUsername(String gitOpsUsername) {
-            this.gitOpsUsername = gitOpsUsername;
         }
 
         @Override

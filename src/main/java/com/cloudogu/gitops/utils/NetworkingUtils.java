@@ -84,13 +84,11 @@ public class NetworkingUtils {
 
     @Deprecated
     public static String getHost(String url) {
-        if (url.contains("https://")) {
-            return url.substring(8);
+        String protocol = getProtocol(url);
+        if (protocol.isEmpty()) {
+            return url;
         }
-        if (url.contains("http://")) {
-            return url.substring(7);
-        }
-        return url;
+        return url.substring(protocol.length() + "://".length());
     }
 
     @Deprecated

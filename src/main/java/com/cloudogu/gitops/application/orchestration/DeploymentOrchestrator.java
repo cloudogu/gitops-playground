@@ -8,6 +8,7 @@ import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.tools.core.Jenkins;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD;
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManager;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Inject;
@@ -20,6 +21,7 @@ import java.util.List;
 @Slf4j
 public class DeploymentOrchestrator {
 
+    @Getter
     private final List<Tool> tools;
 
     @Inject
@@ -59,9 +61,5 @@ public class DeploymentOrchestrator {
         }
 
         log.debug("Tool orchestration finished.");
-    }
-
-    public List<Tool> getTools() {
-        return tools;
     }
 }

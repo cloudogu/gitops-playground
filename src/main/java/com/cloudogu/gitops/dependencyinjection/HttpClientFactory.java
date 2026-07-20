@@ -8,6 +8,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Authoriza
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import lombok.Value;
 import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -88,21 +89,9 @@ public class HttpClientFactory {
         }
     }
 
+    @Value
     public static class InsecureSslContext {
-        private final SSLSocketFactory socketFactory;
-        private final X509TrustManager trustManager;
-
-        public InsecureSslContext(SSLSocketFactory socketFactory, X509TrustManager trustManager) {
-            this.socketFactory = socketFactory;
-            this.trustManager = trustManager;
-        }
-
-        public SSLSocketFactory getSocketFactory() {
-            return socketFactory;
-        }
-
-        public X509TrustManager getTrustManager() {
-            return trustManager;
-        }
+        SSLSocketFactory socketFactory;
+        X509TrustManager trustManager;
     }
 }

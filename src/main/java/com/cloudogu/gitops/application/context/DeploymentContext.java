@@ -1,8 +1,10 @@
 package com.cloudogu.gitops.application.context;
 
 import com.cloudogu.gitops.config.Config;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+@Getter
 @RequiredArgsConstructor
 public class DeploymentContext {
 
@@ -11,26 +13,6 @@ public class DeploymentContext {
     private final ScmManagerDeploymentMode scmManagerDeploymentMode;
     private final Boolean airgapped;
     private final ClusterDistribution clusterDistribution;
-
-    public Config getConfig() {
-        return config;
-    }
-
-    public TenantMode getTenantMode() {
-        return tenantMode;
-    }
-
-    public ScmManagerDeploymentMode getScmManagerDeploymentMode() {
-        return scmManagerDeploymentMode;
-    }
-
-    public Boolean getAirgapped() {
-        return airgapped;
-    }
-
-    public ClusterDistribution getClusterDistribution() {
-        return clusterDistribution;
-    }
 
     public Boolean isMultiTenant() {
         return tenantMode == TenantMode.MULTI_TENANT;

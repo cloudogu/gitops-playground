@@ -4,6 +4,8 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
 
@@ -43,7 +45,11 @@ public class RepositoryProvisioning {
     private final GitRepoFactory gitRepoFactory;
     private final GitHandler gitHandler;
 
+    @Getter
+    @Setter
     private RepositoryWorkspace workspace;
+    @Getter
+    @Setter
     private boolean repositoriesCloned = false;
 
     public RepositoryProvisioning(GitRepoFactory gitRepoFactory, GitHandler gitHandler) {
@@ -180,23 +186,5 @@ public class RepositoryProvisioning {
 
     private static boolean mustWaitForInternalScmManagerDeployment(DeploymentContext context) {
         return context.isInternalScmManager();
-    }
-
-    // Getters and setters
-
-    public RepositoryWorkspace getWorkspace() {
-        return workspace;
-    }
-
-    public void setWorkspace(RepositoryWorkspace workspace) {
-        this.workspace = workspace;
-    }
-
-    public boolean isRepositoriesCloned() {
-        return repositoriesCloned;
-    }
-
-    public void setRepositoriesCloned(boolean repositoriesCloned) {
-        this.repositoriesCloned = repositoriesCloned;
     }
 }

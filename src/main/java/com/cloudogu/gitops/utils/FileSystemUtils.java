@@ -83,23 +83,8 @@ public class FileSystemUtils {
             int from,
             int to
     ) {
-        Path file = Path.of(fileLocation);
-        String found = "";
-
-        try {
-            for (String line : Files.readAllLines(file)) {
-                if (line.contains(pattern)) {
-                    found = line.substring(from, to);
-                }
-            }
-
-            return found;
-        } catch (IOException exception) {
-            throw new UncheckedIOException(
-                    "Failed to read file: " + fileLocation,
-                    exception
-            );
-        }
+        String line = findLastMatchingLine(fileLocation, pattern);
+        return line != null ? line.substring(from, to) : "";
     }
 
     public String getSubstringOfFile(
@@ -107,31 +92,28 @@ public class FileSystemUtils {
             CharSequence pattern,
             int from
     ) {
-        Path file = Path.of(fileLocation);
-        String found = "";
-
-        try {
-            for (String line : Files.readAllLines(file)) {
-                if (line.contains(pattern)) {
-                    found = line.substring(from);
-                }
-            }
-
-            return found;
-        } catch (IOException exception) {
-            throw new UncheckedIOException(
-                    "Failed to read file: " + fileLocation,
-                    exception
-            );
-        }
+        String line = findLastMatchingLine(fileLocation, pattern);
+        return line != null ? line.substring(from) : "";
     }
 
     public String getLineFromFile(
             String fileLocation,
             CharSequence pattern
     ) {
+        String line = findLastMatchingLine(fileLocation, pattern);
+        return line != null ? line : "";
+    }
+
+    /**
+     * Scans the given file and returns the last line containing {@code pattern},
+     * or {@code null} if no line matches.
+     */
+    private String findLastMatchingLine(
+            String fileLocation,
+            CharSequence pattern
+    ) {
         Path file = Path.of(fileLocation);
-        String found = "";
+        String found = null;
 
         try {
             for (String line : Files.readAllLines(file)) {

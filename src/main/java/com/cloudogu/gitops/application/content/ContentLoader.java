@@ -18,6 +18,8 @@ import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -361,10 +363,10 @@ public class ContentLoader extends Tool {
                 engine.replaceTemplates(srcPath, Map.of(
                         "config", getConfig(),
                         "scm", Map.of(
-                                "baseUrl", repo.gitProvider.getUrl(),
-                                "host", repo.gitProvider.getHost(),
-                                "protocol", repo.gitProvider.getProtocol(),
-                                "repoUrl", repo.gitProvider.repoPrefix()
+                                "baseUrl", repo.getGitProvider().getUrl(),
+                                "host", repo.getGitProvider().getHost(),
+                                "protocol", repo.getGitProvider().getProtocol(),
+                                "repoUrl", repo.getGitProvider().repoPrefix()
                         ),
                         "statics", !getConfig().getContent().getUseWhitelist()
                                 ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
@@ -643,52 +645,14 @@ public class ContentLoader extends Tool {
         mergedReposFolder = null;
     }
 
+    @Getter
+    @Setter
     public static class RepoCoordinate {
         String namespace;
         String repoName;
         File clonedContentRepo;
         ContentRepositorySchema repoConfig;
         boolean refIsTag;
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        public String getRepoName() {
-            return repoName;
-        }
-
-        public void setRepoName(String repoName) {
-            this.repoName = repoName;
-        }
-
-        public File getClonedContentRepo() {
-            return clonedContentRepo;
-        }
-
-        public void setClonedContentRepo(File clonedContentRepo) {
-            this.clonedContentRepo = clonedContentRepo;
-        }
-
-        public ContentRepositorySchema getRepoConfig() {
-            return repoConfig;
-        }
-
-        public void setRepoConfig(ContentRepositorySchema repoConfig) {
-            this.repoConfig = repoConfig;
-        }
-
-        public boolean isRefIsTag() {
-            return refIsTag;
-        }
-
-        public void setRefIsTag(boolean refIsTag) {
-            this.refIsTag = refIsTag;
-        }
 
         @Override
         public String toString() {

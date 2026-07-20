@@ -8,7 +8,9 @@ import com.cloudogu.gitops.infrastructure.git.providers.gitlab.GitlabProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
 
@@ -17,10 +19,16 @@ import jakarta.inject.Singleton;
 @Slf4j
 public class GitHandler {
 
+    @Getter
     private final K8sClient k8sClient;
+    @Getter
     private final NetworkingUtils networkingUtils;
 
+    @Getter
+    @Setter
     private GitProvider tenant;
+    @Getter
+    @Setter
     private GitProvider central;
 
     public void validate(DeploymentContext context) {
@@ -69,41 +77,35 @@ public class GitHandler {
     private GitProvider createTenantScmProvider(DeploymentContext context) {
         Config config = context.getConfig();
 
-        switch (config.getScm().getScmProviderType()) {
-            case GITLAB:
-                return new GitlabProvider(context, config.getScm().getGitlab());
-            case SCM_MANAGER:
+        return switch (config.getScm().getScmProviderType()) {
+            case GITLAB -> new GitlabProvider(context, config.getScm().getGitlab());
+            case SCM_MANAGER -> {
                 String prefix = config.getApplication().getNamePrefix();
                 if (prefix == null) {
                     prefix = "";
                 }
-                return new ScmManagerProvider(context,
+                yield new ScmManagerProvider(context,
                         config.getScm().getScmManager(),
                         k8sClient,
                         networkingUtils,
                         prefix);
-
-            default:
-                throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm().getScmProviderType());
-        }
+            }
+            default -> throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm().getScmProviderType());
+        };
     }
 
     private GitProvider createCentralScmProvider(DeploymentContext context) {
         Config config = context.getConfig();
 
-        switch (config.getMultiTenant().getScmProviderType()) {
-            case GITLAB:
-                return new GitlabProvider(context, config.getMultiTenant().getGitlab());
-            case SCM_MANAGER:
-                return new ScmManagerProvider(context,
-                        config.getMultiTenant().getScmManager(),
-                        k8sClient,
-                        networkingUtils,
-                        centralScmManagerServicePrefix(config));
-
-            default:
-                throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant().getScmProviderType());
-        }
+        return switch (config.getMultiTenant().getScmProviderType()) {
+            case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
+            case SCM_MANAGER -> new ScmManagerProvider(context,
+                    config.getMultiTenant().getScmManager(),
+                    k8sClient,
+                    networkingUtils,
+                    centralScmManagerServicePrefix(config));
+            default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant().getScmProviderType());
+        };
     }
 
     private String centralScmManagerServicePrefix(Config config) {
@@ -123,31 +125,5 @@ public class GitHandler {
 
     private boolean isNullOrEmpty(String str) {
         return str == null || str.isEmpty();
-    }
-
-    // Getters and Setters
-
-    public NetworkingUtils getNetworkingUtils() {
-        return networkingUtils;
-    }
-
-    public K8sClient getK8sClient() {
-        return k8sClient;
-    }
-
-    public GitProvider getTenant() {
-        return tenant;
-    }
-
-    public void setTenant(GitProvider tenant) {
-        this.tenant = tenant;
-    }
-
-    public GitProvider getCentral() {
-        return central;
-    }
-
-    public void setCentral(GitProvider central) {
-        this.central = central;
     }
 }

@@ -18,7 +18,7 @@ public class JsonSchemaValidator {
 
     public static void validate(Map<?, ?> yaml) {
         JsonNode json = objectMapper.convertValue(yaml, JsonNode.class);
-        tools.jackson.databind.node.ObjectNode schemaNode = JsonSchemaGenerator.createSchema();
+        tools.jackson.databind.node.ObjectNode schemaNode = new JsonSchemaGenerator().createSchema();
         Schema schema = schemaRegistry.getSchema(schemaNode);
 
         log.debug("yaml configuration converted to json for validate {}", json);

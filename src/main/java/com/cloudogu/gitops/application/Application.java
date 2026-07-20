@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
@@ -22,6 +23,9 @@ import java.util.*;
 @Slf4j
 public class Application {
 
+    private static final String DEFAULT_GOP_NAMESPACE = "gop-job";
+
+    @Getter
     private final List<Tool> tools;
     private final ContextBuilder contextBuilder;
     private final K8sClient k8sClient;
@@ -61,7 +65,7 @@ public class Application {
     }
 
     private void storeGopInformationInSecret(DeploymentContext context) {
-        String namespace = "gop-job";
+        String namespace = DEFAULT_GOP_NAMESPACE;
         if (context.getConfig().getApplication().getGopNamespace() != null && !context.getConfig().getApplication().getGopNamespace().isEmpty()) {
             namespace = context.getConfig().getApplication().getNamePrefix() + context.getConfig().getApplication().getGopNamespace();
         } else if (this.k8sClient.getCurrentNamespace() != null) {
@@ -73,10 +77,6 @@ public class Application {
                 new Tuple<>("gop-initial-password", context.getConfig().getApplication().getPassword()),
                 new Tuple<>("gop-config", context.getConfig().toYaml(true))
         );
-    }
-
-    public List<Tool> getTools() {
-        return tools;
     }
 
     public void setNamespaceListToConfig(DeploymentContext context) {

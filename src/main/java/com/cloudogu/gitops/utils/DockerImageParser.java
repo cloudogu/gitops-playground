@@ -1,17 +1,14 @@
 package com.cloudogu.gitops.utils;
 
+import lombok.RequiredArgsConstructor;
+
 public class DockerImageParser {
     @lombok.Getter
+    @RequiredArgsConstructor
     public static class Image {
         private final String registry;
         private final String repository;
         private final String tag;
-
-        public Image(String registry, String repository, String tag) {
-            this.registry = registry;
-            this.repository = repository;
-            this.tag = tag;
-        }
 
         public String getRegistryAndRepositoryAsString() {
             if (registry == null || registry.isEmpty()) {

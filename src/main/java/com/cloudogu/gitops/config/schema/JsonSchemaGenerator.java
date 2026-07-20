@@ -10,7 +10,7 @@ import tools.jackson.databind.node.ObjectNode;
 @Singleton
 public class JsonSchemaGenerator {
     
-    public static ObjectNode createSchema() {
+    public ObjectNode createSchema() {
         SchemaGeneratorConfigBuilder configBuilder =
                 new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
                         // Make the schema strict: Only allow our fields, warn when additional fields are passed
