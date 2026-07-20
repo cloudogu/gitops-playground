@@ -3,6 +3,7 @@ package com.cloudogu.gitops.config;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -11,6 +12,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_REPO_CREDENTIAL
 @Getter
 @Setter
 @ToString(exclude = "password")
+@NoArgsConstructor
 public class Credentials {
 
     @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
@@ -31,8 +33,6 @@ public class Credentials {
 
     @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
     private String passwordKey = "password";
-
-    public Credentials() {}
 
     public Credentials(String username, String password) {
         this(username, password, "", "", "username", "password");
