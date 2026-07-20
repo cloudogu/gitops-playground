@@ -6,7 +6,7 @@
     <groupId>com.cloudogu</groupId>
     <artifactId>gitops-playground-cli</artifactId>
     <version>0.1</version>
-    <packaging>${packaging}</packaging>
+    <packaging>jar</packaging>
 
     <parent>
         <groupId>io.micronaut.platform</groupId>
@@ -17,7 +17,6 @@
     </parent>
 
     <properties>
-        <packaging>jar</packaging>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
@@ -124,7 +123,6 @@
         <dependency>
             <groupId>io.micronaut.reactor</groupId>
             <artifactId>micronaut-reactor</artifactId>
-            <version>3.9.1</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -234,7 +232,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>logging-interceptor</artifactId>
-            <version>5.3.2</version>
+            <version>${okhttpVersion}</version>
         </dependency>
 
         <dependency>
