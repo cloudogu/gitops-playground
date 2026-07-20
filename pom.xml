@@ -568,11 +568,20 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.15.0</version>
                 <configuration>
-                    <annotationProcessorPaths>
+                    <!-- Lombok must be listed before micronaut-inject-java: Micronaut's
+                    annotation processor needs to see Lombok-generated constructors when it
+                    builds bean definitions. The parent POM appends micronaut-inject-java to
+                    this list, which would otherwise put it before Lombok, so we override
+                    (rather than append to) the inherited list and order it explicitly. -->
+                    <annotationProcessorPaths combine.self="override">
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>1.18.36</version>
+                        </path>
+                        <path>
+                            <groupId>io.micronaut</groupId>
+                            <artifactId>micronaut-inject-java</artifactId>
                         </path>
                         <path>
                             <groupId>com.cloudogu.versionName</groupId>
