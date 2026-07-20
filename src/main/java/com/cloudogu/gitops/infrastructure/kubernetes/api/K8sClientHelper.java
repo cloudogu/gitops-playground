@@ -1,27 +1,28 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
 import com.cloudogu.gitops.utils.MapUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.Serialization;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.*;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 class K8sClientHelper {
 
-    private static final Logger log = LoggerFactory.getLogger(K8sClientHelper.class);
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
-    static Pod applyPodOverrides(Pod pod, Map overrides) {
-        Map podAsMap = Serialization.unmarshal(Serialization.asJson(pod), Map.class);
-        Map normalizedOverrides = (Map) normalizeOverrideValue(overrides);
-        Map mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap);
+    @SuppressWarnings("unchecked")
+    static Pod applyPodOverrides(Pod pod, Map<String, ?> overrides) {
+        Map<String, Object> podAsMap = Serialization.unmarshal(Serialization.asJson(pod), MAP_TYPE);
+        Map<String, Object> normalizedOverrides = (Map<String, Object>) normalizeOverrideValue(overrides);
+        Map<String, Object> mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap);
         return Serialization.unmarshal(Serialization.asJson(mergedPod), Pod.class);
     }
 
@@ -214,7 +215,7 @@ class K8sClientHelper {
     static io.fabric8.kubernetes.client.dsl.Resource getCustomResourceClient(KubernetesClient client, String resourceType, String name, String namespace) {
         String normalized = resourceType.toLowerCase();
 
-        Map match = findApiResourceViaDiscovery(client, normalized, resourceType);
+        Map<String, Object> match = findApiResourceViaDiscovery(client, normalized, resourceType);
 
         if (match == null) {
             throw new K8sClient.KubernetesApiResourceNotFoundException(resourceType);
@@ -235,7 +236,7 @@ class K8sClientHelper {
         return (Boolean) match.get("namespaced") ? resourceClient.inNamespace(namespace).withName(name) : resourceClient.withName(name);
     }
 
-    static Map findApiResourceViaDiscovery(KubernetesClient client, String normalized, String original) {
+    static Map<String, Object> findApiResourceViaDiscovery(KubernetesClient client, String normalized, String original) {
         List<io.fabric8.kubernetes.api.model.APIGroup> apiGroups;
         try {
             var groupList = client.getApiGroups();
@@ -332,7 +333,7 @@ class K8sClientHelper {
                 break;
 
             default:
-                Map match = findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
+                Map<String, Object> match = findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
                 if (match != null) {
                     ResourceDefinitionContext context = new ResourceDefinitionContext.Builder()
                             .withGroup((String) match.get("group"))

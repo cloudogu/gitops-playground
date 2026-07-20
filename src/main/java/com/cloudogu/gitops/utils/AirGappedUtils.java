@@ -6,10 +6,10 @@ import com.cloudogu.gitops.config.Config.HelmConfig;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import groovy.yaml.YamlSlurper;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,25 +19,15 @@ import java.util.List;
 import java.util.Map;
 
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked"})
+@RequiredArgsConstructor
+@Slf4j
 public class AirGappedUtils {
-
-    private static final Logger log = LoggerFactory.getLogger(AirGappedUtils.class);
 
     private final Config config;
     private final GitRepoFactory repoProvider;
     private final FileSystemUtils fileSystemUtils;
     private final HelmClient helmClient;
     private final GitHandler gitHandler;
-
-    public AirGappedUtils(Config config, GitRepoFactory repoProvider,
-                          FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
-        this.config = config;
-        this.repoProvider = repoProvider;
-        this.fileSystemUtils = fileSystemUtils;
-        this.helmClient = helmClient;
-        this.gitHandler = gitHandler;
-    }
 
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
@@ -63,7 +53,7 @@ public class AirGappedUtils {
 
             repo.copyDirectoryContents(localHelmChartFolder);
 
-            Map chartYaml = localizeChartYaml(repo);
+            Map<String, Object> chartYaml = localizeChartYaml(repo);
 
             // Chart.lock contains pinned dependencies and digest.
             // We either have to update or remove them. Take the easier approach.
@@ -90,24 +80,25 @@ public class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(GitRepo gitRepo) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> localizeChartYaml(GitRepo gitRepo) {
         log.debug("Preparing repo {} for air-gapped use: Changing Chart.yaml to resolve depencies locally", gitRepo.getRepoTarget());
 
         Path chartYamlPath = Path.of(gitRepo.getAbsoluteLocalRepoTmpDir(), "Chart.yaml");
 
-        Map chartYaml;
+        Map<String, Object> chartYaml;
         try {
-            chartYaml = (Map) new YamlSlurper().parse(chartYamlPath.toFile());
+            chartYaml = (Map<String, Object>) new YamlSlurper().parse(chartYamlPath.toFile());
         } catch (IOException e) {
             throw new RuntimeException("Failed to parse Chart.yaml: " + chartYamlPath, e);
         }
-        Map chartLock = parseChartLockIfExists(gitRepo);
+        Map<String, Object> chartLock = parseChartLockIfExists(gitRepo);
 
-        List<Map> dependencies = (List<Map>) chartYaml.get("dependencies");
+        List<Map<String, Object>> dependencies = (List<Map<String, Object>>) chartYaml.get("dependencies");
         if (dependencies == null) {
             dependencies = Collections.emptyList();
         }
-        for (Map chartYamlDep : dependencies) {
+        for (Map<String, Object> chartYamlDep : dependencies) {
             resolveDependencyVersion(chartLock, chartYamlDep, gitRepo);
 
             // Remove link to external repo, to force using local one
@@ -117,13 +108,14 @@ public class AirGappedUtils {
         return chartYaml;
     }
 
-    private static Map parseChartLockIfExists(GitRepo scmmRepo) {
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> parseChartLockIfExists(GitRepo scmmRepo) {
         Path chartLock = Path.of(scmmRepo.getAbsoluteLocalRepoTmpDir(), "Chart.lock");
         if (!chartLock.toFile().exists()) {
             return Collections.emptyMap();
         }
         try {
-            return (Map) new YamlSlurper().parse(chartLock.toFile());
+            return (Map<String, Object>) new YamlSlurper().parse(chartLock.toFile());
         } catch (IOException e) {
             throw new RuntimeException("Failed to parse Chart.lock: " + chartLock, e);
         }
@@ -132,9 +124,10 @@ public class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
-        List<Map> lockDependencies = (List<Map>) chartLock.get("dependencies");
-        Map chartLockDep = findByName(lockDependencies, String.valueOf(chartYamlDep.get("name")));
+    @SuppressWarnings("unchecked")
+    private void resolveDependencyVersion(Map<String, Object> chartLock, Map<String, Object> chartYamlDep, GitRepo gitRepo) {
+        List<Map<String, Object>> lockDependencies = (List<Map<String, Object>>) chartLock.get("dependencies");
+        Map<String, Object> chartLockDep = findByName(lockDependencies, String.valueOf(chartYamlDep.get("name")));
         if (chartLockDep != null && !chartLockDep.isEmpty()) {
             chartYamlDep.put("version", chartLockDep.get("version"));
         } else if (String.valueOf(chartYamlDep.get("version")).contains("*")) {
@@ -143,7 +136,7 @@ public class AirGappedUtils {
         }
     }
 
-    public Map findByName(List<Map> list, String name) {
+    public Map<String, Object> findByName(List<Map<String, Object>> list, String name) {
         if (list == null || list.isEmpty()) {
             return Collections.emptyMap();
         }

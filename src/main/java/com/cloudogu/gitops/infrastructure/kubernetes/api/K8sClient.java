@@ -2,6 +2,8 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.Tuple;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.inject.Singleton;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.ConfigBuilder;
@@ -13,8 +15,6 @@ import io.fabric8.kubernetes.client.utils.Serialization;
 import io.fabric8.openshift.api.model.Project;
 import io.fabric8.openshift.api.model.ProjectBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,10 +30,11 @@ import java.util.stream.Collectors;
  * Kubernetes client using Fabric8 Kubernetes Client.
  */
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked", "deprecation", "java:S3776"})
+@SuppressWarnings({"deprecation", "java:S3776"})
+@Slf4j
 public class K8sClient {
 
-    private static final Logger log = LoggerFactory.getLogger(K8sClient.class);
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private static final String DEFAULT_NAMESPACE = "default";
     private static final String INTERNAL_IP_TYPE = "InternalIP";
@@ -699,15 +700,15 @@ public class K8sClient {
         label(resource, name, namespace, tuples);
     }
 
-    public void patch(String resource, String name, Map yaml) {
+    public void patch(String resource, String name, Map<String, Object> yaml) {
         patch(resource, name, "", "", yaml);
     }
 
-    public void patch(String resource, String name, String namespace, Map yaml) {
+    public void patch(String resource, String name, String namespace, Map<String, Object> yaml) {
         patch(resource, name, namespace, "", yaml);
     }
 
-    public void patch(String resource, String name, String namespace, String type, Map yaml) {
+    public void patch(String resource, String name, String namespace, String type, Map<String, Object> yaml) {
         log.debug("Patching {}/{} in namespace {}", resource, name, namespace);
 
         PatchContext patchContext = K8sClientHelper.createPatchContext(type);
@@ -779,7 +780,7 @@ public class K8sClient {
         return run(name, image, namespace, Map.of(), new String[0]);
     }
 
-    public String run(String name, String image, String namespace, Map overrides) {
+    public String run(String name, String image, String namespace, Map<String, ?> overrides) {
         return run(name, image, namespace, overrides, new String[0]);
     }
 
@@ -787,7 +788,7 @@ public class K8sClient {
         return run(name, image, namespace, Map.of(), params);
     }
 
-    public String run(String name, String image, String namespace, Map overrides, String... params) {
+    public String run(String name, String image, String namespace, Map<String, ?> overrides, String... params) {
         log.debug("Running pod {} with image {} in namespace {}", name, image, namespace);
         String resolvedNamespace = resolveNamespace(namespace);
         List<String> runParams = params != null ? Arrays.asList(params) : Collections.emptyList();
@@ -830,7 +831,7 @@ public class K8sClient {
         log.debug("Getting custom resources of type {}", resource);
 
         try {
-            Map match = K8sClientHelper.findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
+            Map<String, Object> match = K8sClientHelper.findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
             if (match == null) {
                 return Collections.emptyList();
             }
@@ -850,7 +851,7 @@ public class K8sClient {
             }
 
             return resourceList.getItems().stream().map(item -> {
-                Map<String, Object> metadata = item.getMetadata() != null ? Serialization.unmarshal(Serialization.asJson(item.getMetadata()), Map.class) : Collections.emptyMap();
+                Map<String, Object> metadata = item.getMetadata() != null ? Serialization.unmarshal(Serialization.asJson(item.getMetadata()), MAP_TYPE) : Collections.emptyMap();
                 String ns = metadata.containsKey("namespace") ? String.valueOf(metadata.get("namespace")) : "";
                 String name = metadata.containsKey("name") ? String.valueOf(metadata.get("name")) : "";
                 return new CustomResource(ns, name);
@@ -946,8 +947,9 @@ public class K8sClient {
         }
 
         // Generic / Custom Resources
-        Map status = Serialization.unmarshal(Serialization.asJson(resource), Map.class);
-        Map statusMap = (Map) status.get("status");
+        Map<String, Object> status = Serialization.unmarshal(Serialization.asJson(resource), MAP_TYPE);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> statusMap = (Map<String, Object>) status.get("status");
         return statusMap != null ? (String) statusMap.get("phase") : null;
     }
 

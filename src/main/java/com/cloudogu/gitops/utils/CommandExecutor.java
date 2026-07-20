@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import jakarta.inject.Singleton;
 import org.apache.commons.io.output.TeeOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,10 +13,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class CommandExecutor {
-
-    private static final Logger log = LoggerFactory.getLogger(CommandExecutor.class);
 
     /* This timeout is mainly here to not freeze forever the apply process in the worst case scenario.
 
@@ -57,14 +55,14 @@ public class CommandExecutor {
         }
     }
 
-    public Output execute(String command, Map additionalEnv) {
+    public Output execute(String command, Map<String, ?> additionalEnv) {
         return execute(command, additionalEnv, true);
     }
 
     /**
      * @param additionalEnv a Map of env variables to add
      */
-    public Output execute(String command, Map additionalEnv, boolean failOnError) {
+    public Output execute(String command, Map<String, ?> additionalEnv, boolean failOnError) {
         try {
             java.util.Map<String, String> env = new java.util.HashMap<>(System.getenv());
             if (additionalEnv != null) {

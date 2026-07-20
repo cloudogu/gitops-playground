@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
@@ -33,7 +34,6 @@ import lombok.Setter;
 
 @Singleton
 @Command(name = BINARY_NAME, description = APP_DESCRIPTION)
-@SuppressWarnings({"rawtypes", "unchecked"})
 @Getter
 @Setter
 public class Config {
@@ -842,7 +842,7 @@ public class Config {
     }
 
     public Map<String, Object> toMap() {
-        return objectMapper.convertValue(this, Map.class);
+        return objectMapper.convertValue(this, new TypeReference<Map<String, Object>>() {});
     }
 
     public String toYaml(boolean includeInternals) {

@@ -12,11 +12,11 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.extern.slf4j.Slf4j;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +24,11 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public abstract class Tool {
 
-    private static final Logger log = LoggerFactory.getLogger(Tool.class);
-
     private static final ObjectMapper yamlMapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
+    private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
 
     protected FileSystemUtils fileSystemUtils;
     protected Deployer deployer;
@@ -127,7 +126,7 @@ public abstract class Tool {
         return isEnabled(context) ? activeNamespace(context) : null;
     }
 
-    public static Map templateToMap(String filePath, Map parameters) {
+    public static Map<String, Object> templateToMap(String filePath, Map<String, Object> parameters) {
         try {
             String hydratedString = new TemplatingEngine().template(new File(filePath), parameters);
 
@@ -135,7 +134,7 @@ public abstract class Tool {
                 // Otherwise empty array or exception, whereas we expect a Map
                 return Collections.emptyMap();
             }
-            return yamlMapper.readValue(hydratedString, Map.class);
+            return yamlMapper.readValue(hydratedString, YAML_MAP_TYPE);
         } catch (Exception e) {
             throw new RuntimeException("Failed to template file to map: " + filePath, e);
         }
@@ -175,7 +174,7 @@ public abstract class Tool {
          * Some Features might not use a values template and thus passing no helmValuesTemplatePath,
          * in that case we simply treat helmValuesTemplateData directly as helmValuesData.
          */
-        Map helmValuesData = this.helmValuesTemplateData;
+        Map<String, Object> helmValuesData = this.helmValuesTemplateData;
         if (helmValuesTemplatePath != null && !helmValuesTemplatePath.isEmpty()) {
             String helmValuesPath = helmValuesTemplatePath.toString();
             if (helmValuesPath.contains(".ftl")) {
@@ -198,7 +197,7 @@ public abstract class Tool {
             chartOrPath = ".";
             repoType = RepoType.GIT;
             try {
-                Map chartYaml = yamlMapper.readValue(Path.of(config.getApplication().getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml").toFile(), Map.class);
+                Map<String, Object> chartYaml = yamlMapper.readValue(Path.of(config.getApplication().getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml").toFile(), YAML_MAP_TYPE);
                 version = String.valueOf(chartYaml.get("version"));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to parse Chart.yaml for airgapped version mapping", e);

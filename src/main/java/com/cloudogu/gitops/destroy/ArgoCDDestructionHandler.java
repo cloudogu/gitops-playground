@@ -12,6 +12,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -19,30 +20,16 @@ import java.util.Map;
 
 @Singleton
 @Order(100)
-@SuppressWarnings({"rawtypes", "unchecked"})
+@RequiredArgsConstructor
 public class ArgoCDDestructionHandler implements DestructionHandler {
 
+    private final ContextBuilder contextBuilder;
     private final K8sClient k8sClient;
     private final HelmClient helmClient;
     private final GitRepoFactory repoProvider;
-    private final ContextBuilder contextBuilder;
     private final FileSystemUtils fileSystemUtils;
     private final GitHandler gitHandler;
     private DeploymentContext context;
-
-    public ArgoCDDestructionHandler(ContextBuilder contextBuilder,
-                                   K8sClient k8sClient,
-                                   HelmClient helmClient,
-                                   GitRepoFactory repoProvider,
-                                   FileSystemUtils fileSystemUtils,
-                                   GitHandler gitHandler) {
-        this.k8sClient = k8sClient;
-        this.helmClient = helmClient;
-        this.repoProvider = repoProvider;
-        this.contextBuilder = contextBuilder;
-        this.fileSystemUtils = fileSystemUtils;
-        this.gitHandler = gitHandler;
-    }
 
     @Override
     public void destroy() {
@@ -95,6 +82,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
         String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
         String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), "argocd/").toString();
 
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> helmDependencies = (List<Map<String, Object>>) fileSystemUtils.readYaml(Path.of(umbrellaChartPath, "Chart.yaml")).get("dependencies");
         helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
         helmClient.dependencyBuild(umbrellaChartPath);

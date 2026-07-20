@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class TemplatingEngine {
     private final Configuration engine;
 
@@ -39,7 +38,7 @@ public class TemplatingEngine {
     /**
      * Executes template with parameters and replaces the .ftl in the file name.
      */
-    public File replaceTemplate(File templateFile, Map parameters) throws IOException, freemarker.template.TemplateException {
+    public File replaceTemplate(File templateFile, Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
         File targetFile = new File(templateFile.toString().replace(".ftl", ""));
         String rendered = template(templateFile, parameters);
 
@@ -60,11 +59,11 @@ public class TemplatingEngine {
      * <p>
      * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.
      */
-    public void replaceTemplates(File path, Map parameters) throws IOException, freemarker.template.TemplateException {
+    public void replaceTemplates(File path, Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
         replaceTemplates(path, parameters, Pattern.compile("\\.ftl"));
     }
 
-    public void replaceTemplates(File path, Map parameters, Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
+    public void replaceTemplates(File path, Map<String, Object> parameters, Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
         try (var stream = Files.walk(path.toPath())) {
             List<Path> files = stream.filter(p -> filepathMatches.matcher(p.toString()).find()).toList();
             for (Path file : files) {
@@ -73,7 +72,8 @@ public class TemplatingEngine {
         }
     }
 
-    public static Map templateToMap(String filePath, Map parameters) {
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> templateToMap(String filePath, Map<String, Object> parameters) {
         String hydratedString;
         try {
             hydratedString = new TemplatingEngine().template(new File(filePath), parameters);
@@ -85,13 +85,13 @@ public class TemplatingEngine {
             // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
             return Collections.emptyMap();
         }
-        return (Map) new YamlSlurper().parseText(hydratedString);
+        return (Map<String, Object>) new YamlSlurper().parseText(hydratedString);
     }
 
     /**
      * Executes template and writes to targetFile, keeping the template file.
      */
-    public File template(File templateFile, File targetFile, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+    public File template(File templateFile, File targetFile, Map<String, Object> parameters) throws java.io.IOException, freemarker.template.TemplateException {
         Template template = prepareTemplate(templateFile);
         try (var writer = Files.newBufferedWriter(targetFile.toPath())) {
             template.process(parameters, writer);
@@ -99,14 +99,14 @@ public class TemplatingEngine {
         return targetFile;
     }
 
-    public String template(File templateFile, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+    public String template(File templateFile, Map<String, Object> parameters) throws java.io.IOException, freemarker.template.TemplateException {
         Template template = prepareTemplate(templateFile);
         StringWriter writer = new StringWriter();
         template.process(parameters, writer);
         return writer.toString();
     }
 
-    public String template(String template, Map parameters) throws java.io.IOException, freemarker.template.TemplateException {
+    public String template(String template, Map<String, Object> parameters) throws java.io.IOException, freemarker.template.TemplateException {
         StringWriter writer = new StringWriter();
         Template templateObj = new Template("template", new StringReader(template), engine);
         templateObj.process(parameters, writer);

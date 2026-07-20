@@ -18,6 +18,7 @@ import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import freemarker.template.Configuration;
@@ -29,8 +30,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,10 +40,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class ContentLoader extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(ContentLoader.class);
 
     private final K8sClient k8sClient;
     private final GitRepoFactory repoProvider;
@@ -159,7 +156,7 @@ public class ContentLoader extends Tool {
 
             Map<String, Object> fileValues = new HashMap<>();
             if (helmRelease.getValuesPath() != null && !helmRelease.getValuesPath().trim().isEmpty()) {
-                Map readValues = fileSystemUtils.readYaml(Path.of(helmRelease.getValuesPath()));
+                Map<String, Object> readValues = fileSystemUtils.readYaml(Path.of(helmRelease.getValuesPath()));
                 if (readValues != null) {
                     fileValues = readValues;
                 }

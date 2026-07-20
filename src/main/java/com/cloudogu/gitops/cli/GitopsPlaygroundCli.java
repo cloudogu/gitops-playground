@@ -21,6 +21,8 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
@@ -33,21 +35,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@RequiredArgsConstructor
+@Slf4j
 public class GitopsPlaygroundCli {
-
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(GitopsPlaygroundCli.class);
 
     private final K8sClient k8sClient;
     private final ApplicationConfigurator applicationConfigurator;
 
     public GitopsPlaygroundCli() {
         this(new K8sClient(), new ApplicationConfigurator());
-    }
-
-    public GitopsPlaygroundCli(K8sClient k8sClient, ApplicationConfigurator applicationConfigurator) {
-        this.k8sClient = k8sClient;
-        this.applicationConfigurator = applicationConfigurator;
     }
 
     public ReturnCode run(String[] args) {
@@ -124,7 +120,7 @@ public class GitopsPlaygroundCli {
     }
 
     private static boolean confirm(String message, Config config) {
-        System.out.println("[CONFIRM] Calling confirm for message: " + message + " | yes = " + config.getApplication().getYes() + " | System.in class: " + System.in.getClass().getName());
+        log.debug("Calling confirm for message: {} | yes = {} | System.in class: {}", message, config.getApplication().getYes(), System.in.getClass().getName());
         if (Boolean.TRUE.equals(config.getApplication().getYes())) {
             return true;
         }
@@ -195,8 +191,8 @@ public class GitopsPlaygroundCli {
 
         Config profileConfig = extractProfile(cliParams);
 
-        List<Map> configFile = new ArrayList<>();
-        List<Map> configMap = new ArrayList<>();
+        List<Map<String, Object>> configFile = new ArrayList<>();
+        List<Map<String, Object>> configMap = new ArrayList<>();
 
         if (cliParams.getApplication().getConfigFiles() != null) {
             for (String configFileItem : cliParams.getApplication().getConfigFiles()) {
@@ -217,34 +213,35 @@ public class GitopsPlaygroundCli {
             }
         }
 
-        Map mergedConfigs = new HashMap();
+        Map<String, Object> mergedConfigs = new HashMap<>();
         deepMerge(profileConfig.toMap(), mergedConfigs);
-        for (Map map : configMap) {
+        for (Map<String, Object> map : configMap) {
             deepMerge(map, mergedConfigs);
         }
-        for (Map map : configFile) {
+        for (Map<String, Object> map : configFile) {
             deepMerge(map, mergedConfigs);
         }
 
         mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap());
 
         log.debug("Writing CLI params into config");
-        System.out.println("[DEBUG] mergedConfigs keys: " + mergedConfigs.keySet() + " | application map: " + mergedConfigs.get("application"));
+        log.debug("mergedConfigs keys: {} | application map: {}", mergedConfigs.keySet(), mergedConfigs.get("application"));
         Config mergedConfig = Config.fromMap(mergedConfigs);
-        System.out.println("[DEBUG] mergedConfig yes before parseArgs: " + (mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null"));
+        log.debug("mergedConfig yes before parseArgs: {}", mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
         new CommandLine(mergedConfig).parseArgs(args);
-        System.out.println("[DEBUG] mergedConfig yes after parseArgs: " + (mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null"));
+        log.debug("mergedConfig yes after parseArgs: {}", mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
 
         return mergedConfig;
     }
 
-    public static Map validateConfig(String configValues) {
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> validateConfig(String configValues) {
         Object map = new YamlSlurper().parseText(configValues);
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: " + map);
         }
-        JsonSchemaValidator.validate((Map) map);
-        return (Map) map;
+        JsonSchemaValidator.validate((Map<?, ?>) map);
+        return (Map<String, Object>) map;
     }
 
     public void printWelcomeScreen(String password) {
@@ -300,7 +297,7 @@ public class GitopsPlaygroundCli {
                     throw new RuntimeException("Profile '" + profile + "' does not exist (resource '" + resourceName + "' not found).");
                 }
                 String content = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                Map profileFile = validateConfig(content);
+                Map<String, Object> profileFile = validateConfig(content);
                 profileConfig = Config.fromMap(profileFile);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read profile " + profile, e);

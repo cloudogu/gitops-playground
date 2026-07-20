@@ -13,10 +13,9 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
+import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
@@ -25,10 +24,8 @@ import java.util.*;
 
 @Singleton
 @Order(300)
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class Monitoring extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(Monitoring.class);
 
     public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml";
     public static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml";
@@ -214,7 +211,7 @@ public class Monitoring extends Tool {
         }
     }
 
-    private Map scmConfigurationMetrics() {
+    private Map<String, String> scmConfigurationMetrics() {
         java.net.URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
         return Map.of(
                 "protocol", (uri != null && uri.getScheme() != null) ? uri.getScheme() : "",
@@ -239,7 +236,7 @@ public class Monitoring extends Tool {
         }
     }
 
-    private Map jenkinsConfigurationMetrics() {
+    private Map<String, String> jenkinsConfigurationMetrics() {
         java.net.URI uri = baseUriJenkins(getConfig()).resolve("prometheus");
         return Map.of(
                 "metricsUsername", (getConfig().getJenkins().getMetricsUsername() != null) ? getConfig().getJenkins().getMetricsUsername() : "",

@@ -1,12 +1,13 @@
 package com.cloudogu.gitops.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import jakarta.inject.Singleton;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -18,11 +19,10 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 @Singleton
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class FileSystemUtils {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(FileSystemUtils.class);
+    private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
 
     private static final ObjectMapper yamlMapper = new ObjectMapper(
             new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
@@ -270,7 +270,7 @@ public class FileSystemUtils {
                 getAllFilesFromDirectoryWithEnding(parentDir, "");
 
         for (File file : files) {
-            System.out.println(file.getPath());
+            log.debug("{}", file.getPath());
         }
     }
 
@@ -580,10 +580,10 @@ public class FileSystemUtils {
         }
     }
 
-    public Map readYaml(Path path) {
+    public Map<String, Object> readYaml(Path path) {
         if (Files.exists(path)) {
             try {
-                return yamlMapper.readValue(path.toFile(), Map.class);
+                return yamlMapper.readValue(path.toFile(), YAML_MAP_TYPE);
             } catch (IOException exception) {
                 throw new UncheckedIOException(
                         "Failed to parse YAML file: " + path,
@@ -615,7 +615,7 @@ public class FileSystemUtils {
                 return Collections.emptyMap();
             }
 
-            return yamlMapper.readValue(inputStream, Map.class);
+            return yamlMapper.readValue(inputStream, YAML_MAP_TYPE);
         } catch (IOException exception) {
             throw new UncheckedIOException(
                     "Failed to read YAML resource from classpath: "
@@ -638,7 +638,7 @@ public class FileSystemUtils {
         return resourceName;
     }
 
-    public Path writeTempFile(Map mapValues) {
+    public Path writeTempFile(Map<String, Object> mapValues) {
         Path temporaryHelmValues =
                 createTempFile();
 
@@ -651,7 +651,7 @@ public class FileSystemUtils {
     }
 
     public void writeYaml(
-            Map yaml,
+            Map<String, ?> yaml,
             File file
     ) {
         try {

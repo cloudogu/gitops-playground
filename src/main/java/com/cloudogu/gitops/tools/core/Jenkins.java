@@ -15,10 +15,9 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.*;
+import lombok.extern.slf4j.Slf4j;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,10 +27,8 @@ import java.util.*;
 
 @Singleton
 @Order(200)
-@SuppressWarnings({"rawtypes", "unchecked"})
+@Slf4j
 public class Jenkins extends Tool {
-
-    private static final Logger log = LoggerFactory.getLogger(Jenkins.class);
 
     public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml";
 
@@ -373,7 +370,7 @@ public class Jenkins extends Tool {
         }
     }
 
-    Map createGidGrepperOverrides() {
+    Map<String, Object> createGidGrepperOverrides() {
         return Map.of("spec", Map.of(
                 "containers", List.of(Map.of(
                         "name", "tmp-docker-gid-grepper",

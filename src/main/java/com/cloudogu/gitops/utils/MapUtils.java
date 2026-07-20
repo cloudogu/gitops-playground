@@ -2,17 +2,17 @@ package com.cloudogu.gitops.utils;
 
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class MapUtils {
 
-    public static Map deepMerge(Map src, Map target) {
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> deepMerge(Map<String, Object> src, Map<String, Object> target) {
         if (src == null) {
             return target;
         }
         src.forEach((key, value) -> {
             Object oldVal = target.containsKey(key) ? target.get(key) : null;
             if (oldVal instanceof Map && value instanceof Map) {
-                target.put(key, deepMerge((Map) value, (Map) oldVal));
+                target.put(key, deepMerge((Map<String, Object>) value, (Map<String, Object>) oldVal));
             } else {
                 target.put(key, value);
             }
@@ -20,7 +20,8 @@ public class MapUtils {
         return target;
     }
 
-    public static Map deepMergeDefaults(Map src, Map target) {
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> deepMergeDefaults(Map<String, Object> src, Map<String, Object> target) {
         if (src == null) {
             return target;
         }
@@ -31,7 +32,7 @@ public class MapUtils {
 
             Object oldVal = target.containsKey(key) ? target.get(key) : null;
             if (oldVal instanceof Map && value instanceof Map) {
-                target.put(key, deepMergeDefaults((Map) value, (Map) oldVal));
+                target.put(key, deepMergeDefaults((Map<String, Object>) value, (Map<String, Object>) oldVal));
             } else {
                 target.put(key, value);
             }
