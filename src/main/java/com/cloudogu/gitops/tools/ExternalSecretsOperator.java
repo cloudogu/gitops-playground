@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
+import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -63,7 +64,8 @@ public class ExternalSecretsOperator extends Tool {
 
   @Override
   protected void deploy() {
-    var helmConfig = getConfig().getFeatures().getSecrets().getExternalSecrets().getHelm();
+    Config.SecretsSchema.ESOSchema.ESOHelmSchema helmConfig =
+        getConfig().getFeatures().getSecrets().getExternalSecrets().getHelm();
 
     deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context);
   }

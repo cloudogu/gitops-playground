@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
+import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -63,7 +64,8 @@ public class Ingress extends Tool {
 
   @Override
   protected void deploy() {
-    var helmConfig = context.getConfig().getFeatures().getIngress().getHelm();
+    Config.IngressSchema.IngressHelmSchema helmConfig =
+        context.getConfig().getFeatures().getIngress().getHelm();
 
     deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context);
   }

@@ -8,6 +8,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient.CustomResource;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
@@ -48,7 +49,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
       throw new RuntimeException("Failed to clone argocd cluster-resources repo", e);
     }
 
-    for (var app : k8sClient.getCustomResource("app")) {
+    for (CustomResource app : k8sClient.getCustomResource("app")) {
       if ("bootstrap".equals(app.name())
           || "argocd".equals(app.name())
           || "projects".equals(app.name())) {
@@ -70,13 +71,13 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
             new Tuple<>(argocdNamespace, "cluster-resources"),
             new Tuple<>(argocdNamespace, "example-apps"));
 
-    for (var app : appsToBeDeleted) {
+    for (Tuple<String, String> app : appsToBeDeleted) {
       k8sClient.delete("app", app.getV1(), app.getV2());
     }
 
     installArgoCDViaHelm(repo, argocdNamespace);
     helmClient.uninstall("argocd", "argocd");
-    for (var project : k8sClient.getCustomResource("appprojects")) {
+    for (CustomResource project : k8sClient.getCustomResource("appprojects")) {
       k8sClient.delete("appproject", project.namespace(), project.name());
     }
 

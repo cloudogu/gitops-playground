@@ -8,11 +8,13 @@ import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
@@ -401,7 +403,7 @@ public class FileSystemUtils {
 
     log.debug("Path {} not found on filesystem, trying classpath: {}", path, resourceName);
 
-    try (var inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)) {
+    try (InputStream inputStream = FileSystemUtils.class.getResourceAsStream(resourceName)) {
 
       if (inputStream == null) {
         log.warn("Could not find YAML at {} or on classpath {}", path, resourceName);
@@ -504,7 +506,7 @@ public class FileSystemUtils {
         Files.createDirectories(targetDir);
       }
 
-      try (var children = Files.list(sourceDir)) {
+      try (Stream<Path> children = Files.list(sourceDir)) {
         for (Path child : children.toList()) {
           Path destination = targetDir.resolve(child.getFileName());
 

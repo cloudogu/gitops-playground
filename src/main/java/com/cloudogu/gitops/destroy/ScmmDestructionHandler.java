@@ -9,6 +9,7 @@ import com.cloudogu.gitops.utils.NetworkingUtils;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
+import retrofit2.Response;
 
 @Singleton
 @Order(200)
@@ -37,7 +38,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
   private void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
     String namePrefix = prefixNamespace ? config.getApplication().getNamePrefix() : "";
     try {
-      var response =
+      Response<Void> response =
           getScmmApiClient().repositoryApi().delete(namePrefix + namespace, repository).execute();
       if (response.code() != 204 && response.code() != 404) {
         throw new RuntimeException(
@@ -63,7 +64,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
 
   private void deleteUser(String name) {
     try {
-      var response =
+      Response<Void> response =
           getScmmApiClient()
               .usersApi()
               .delete(config.getApplication().getNamePrefix() + name)

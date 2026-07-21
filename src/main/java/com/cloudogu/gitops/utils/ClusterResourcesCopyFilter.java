@@ -28,8 +28,8 @@ public class ClusterResourcesCopyFilter {
     Set<String> prefixes =
         subDirsToCopy.stream()
             .map(
-                s -> {
-                  String norm = s.replace('\\', '/');
+                subDir -> {
+                  String norm = subDir.replace('\\', '/');
                   norm = norm.replaceAll("^/+", "").replaceAll("/+$", "");
                   return norm + "/";
                 })
@@ -37,10 +37,10 @@ public class ClusterResourcesCopyFilter {
 
     Set<String> templateIncludePrefixes = Set.of("apps/argocd/argocd/templates/");
 
-    return f -> {
+    return candidateFile -> {
       File canon;
       try {
-        canon = f.getCanonicalFile();
+        canon = candidateFile.getCanonicalFile();
       } catch (IOException e) {
         return false;
       }
@@ -51,12 +51,12 @@ public class ClusterResourcesCopyFilter {
         return true;
       }
 
-      boolean isDir = f.isDirectory();
+      boolean isDir = candidateFile.isDirectory();
       String relDir = rel.endsWith("/") ? rel : rel + "/";
 
       final String finalRel = rel;
       if (templateIncludePrefixes.stream()
-          .anyMatch(p -> (isDir ? relDir : finalRel).startsWith(p))) {
+          .anyMatch(prefix -> (isDir ? relDir : finalRel).startsWith(prefix))) {
         return true;
       }
 
@@ -66,14 +66,18 @@ public class ClusterResourcesCopyFilter {
 
       if (isDir) {
         return prefixes.stream()
-            .anyMatch(p -> relDir.equals(p) || relDir.startsWith(p) || p.startsWith(relDir));
+            .anyMatch(
+                prefix ->
+                    relDir.equals(prefix)
+                        || relDir.startsWith(prefix)
+                        || prefix.startsWith(relDir));
       }
 
-      return prefixes.stream().anyMatch(p -> finalRel.startsWith(p));
+      return prefixes.stream().anyMatch(prefix -> finalRel.startsWith(prefix));
     };
   }
 
   private static FileFilter allowAllFilter() {
-    return f -> true;
+    return file -> true;
   }
 }

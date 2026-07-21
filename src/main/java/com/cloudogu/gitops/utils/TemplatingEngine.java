@@ -4,6 +4,7 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.Version;
 import groovy.yaml.YamlSlurper;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -14,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class TemplatingEngine {
   private final Configuration engine;
@@ -65,8 +67,11 @@ public class TemplatingEngine {
 
   public void replaceTemplates(File path, Map<String, Object> parameters, Pattern filepathMatches)
       throws IOException, freemarker.template.TemplateException {
-    try (var stream = Files.walk(path.toPath())) {
-      List<Path> files = stream.filter(p -> filepathMatches.matcher(p.toString()).find()).toList();
+    try (Stream<Path> stream = Files.walk(path.toPath())) {
+      List<Path> files =
+          stream
+              .filter(candidatePath -> filepathMatches.matcher(candidatePath.toString()).find())
+              .toList();
       for (Path file : files) {
         replaceTemplate(file.toFile(), parameters);
       }
@@ -93,7 +98,7 @@ public class TemplatingEngine {
   public File template(File templateFile, File targetFile, Map<String, Object> parameters)
       throws java.io.IOException, freemarker.template.TemplateException {
     Template template = prepareTemplate(templateFile);
-    try (var writer = Files.newBufferedWriter(targetFile.toPath())) {
+    try (BufferedWriter writer = Files.newBufferedWriter(targetFile.toPath())) {
       template.process(parameters, writer);
     }
     return targetFile;

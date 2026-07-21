@@ -3,6 +3,7 @@ package com.cloudogu.gitops.utils;
 import jakarta.inject.Singleton;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +107,7 @@ public class CommandExecutor {
 
       if (process1.exitValue() > 0) {
         log.error("Pipefail! First process of command failed " + pipedCommand + ".");
-        try (var is = process1.getErrorStream()) {
+        try (InputStream is = process1.getErrorStream()) {
           ByteArrayOutputStream bos = new ByteArrayOutputStream();
           is.transferTo(bos);
           log.error("Stderr: " + bos.toString().trim());
@@ -169,7 +170,7 @@ public class CommandExecutor {
     Thread outThread =
         new Thread(
             () -> {
-              try (var is = proc.getInputStream()) {
+              try (InputStream is = proc.getInputStream()) {
                 is.transferTo(finalOutDest);
               } catch (IOException ignored) {
               }
@@ -177,7 +178,7 @@ public class CommandExecutor {
     Thread errThread =
         new Thread(
             () -> {
-              try (var es = proc.getErrorStream()) {
+              try (InputStream es = proc.getErrorStream()) {
                 es.transferTo(finalErrDest);
               } catch (IOException ignored) {
               }

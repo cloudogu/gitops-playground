@@ -11,12 +11,14 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope;
 import com.cloudogu.gitops.utils.Tuple;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.GroupApi;
 import org.gitlab4j.api.models.AccessLevel;
 import org.gitlab4j.api.models.Group;
 import org.gitlab4j.api.models.Project;
@@ -109,10 +111,10 @@ public class GitlabProvider implements GitProvider {
         Group group =
             api.getGroupApi().getGroups(principal).stream()
                 .filter(
-                    g ->
-                        principal.equals(g.getFullPath())
-                            || principal.equals(g.getPath())
-                            || principal.equals(g.getName()))
+                    candidateGroup ->
+                        principal.equals(candidateGroup.getFullPath())
+                            || principal.equals(candidateGroup.getPath())
+                            || principal.equals(candidateGroup.getName()))
                 .findFirst()
                 .orElseThrow(
                     () -> new IllegalArgumentException("Group '" + principal + "' not found"));
@@ -120,7 +122,10 @@ public class GitlabProvider implements GitProvider {
       } else {
         org.gitlab4j.api.models.User user =
             api.getUserApi().findUsers(principal).stream()
-                .filter(u -> principal.equals(u.getUsername()) || principal.equals(u.getEmail()))
+                .filter(
+                    candidateUser ->
+                        principal.equals(candidateUser.getUsername())
+                            || principal.equals(candidateUser.getEmail()))
                 .findFirst()
                 .orElseThrow(
                     () -> new IllegalArgumentException("User '" + principal + "' not found"));
@@ -198,7 +203,7 @@ public class GitlabProvider implements GitProvider {
     boolean isNumeric = raw.matches("\\d+");
 
     try {
-      var groupApi = api.getGroupApi();
+      GroupApi groupApi = api.getGroupApi();
       parentGroupCache =
           isNumeric
               ? groupApi.getGroup(Long.parseLong(raw))
@@ -249,7 +254,7 @@ public class GitlabProvider implements GitProvider {
           return retry.getId();
         }
       }
-      var ve = e.hasValidationErrors() ? e.getValidationErrors() : null;
+      Map<String, List<String>> ve = e.hasValidationErrors() ? e.getValidationErrors() : null;
       log.error(
           "addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})",
           parent.getFullPath(),

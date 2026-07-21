@@ -9,7 +9,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.core.encoder.Encoder;
 import com.cloudogu.gitops.application.Application;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator;
@@ -167,11 +169,11 @@ public class GitopsPlaygroundCli {
   public void setSimpleLogPattern() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
-    var stdoutAppender = rootLogger.getAppender("STDOUT");
+    Appender<ILoggingEvent> stdoutAppender = rootLogger.getAppender("STDOUT");
     if (!(stdoutAppender instanceof ConsoleAppender)) {
       return;
     }
-    var encoderObj = ((ConsoleAppender) stdoutAppender).getEncoder();
+    Encoder<ILoggingEvent> encoderObj = ((ConsoleAppender) stdoutAppender).getEncoder();
     if (!(encoderObj instanceof PatternLayoutEncoder)) {
       return;
     }

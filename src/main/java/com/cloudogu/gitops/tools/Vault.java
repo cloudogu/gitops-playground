@@ -109,7 +109,7 @@ public class Vault extends Tool {
   }
 
   private void prepareDevModeIfRequired() {
-    var vaultMode = getConfig().getFeatures().getSecrets().getVault().getMode();
+    Config.VaultMode vaultMode = getConfig().getFeatures().getSecrets().getVault().getMode();
 
     if (vaultMode != Config.VaultMode.dev) {
       return;

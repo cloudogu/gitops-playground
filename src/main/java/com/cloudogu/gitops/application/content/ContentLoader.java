@@ -32,7 +32,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -168,7 +170,8 @@ public class ContentLoader extends Tool {
       return;
     }
 
-    for (var helmRelease : getConfig().getContent().getHelmReleases()) {
+    for (Config.ContentSchema.HelmReleaseSchema helmRelease :
+        getConfig().getContent().getHelmReleases()) {
       String version = helmRelease.getVersion() != null ? helmRelease.getVersion().trim() : "";
       if (version.isEmpty()) {
         version = "*";
@@ -436,13 +439,13 @@ public class ContentLoader extends Tool {
       return Collections.emptyList();
     }
     return Arrays.stream(files)
-        .filter(f -> f.isDirectory() && !f.getName().startsWith("."))
+        .filter(file -> file.isDirectory() && !file.getName().startsWith("."))
         .collect(Collectors.toList());
   }
 
   private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
     if (Boolean.TRUE.equals(repoConfig.getTemplating())) {
-      var engine = getTemplatingEngine();
+      TemplatingEngine engine = getTemplatingEngine();
 
       try (GitRepo repo =
           this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant())) {
@@ -484,7 +487,7 @@ public class ContentLoader extends Tool {
 
     try (Git git = cloneCommand.call()) {
       if (ContentRepoType.MIRROR == repoConfig.getType()) {
-        var fetch = git.fetch();
+        FetchCommand fetch = git.fetch();
 
         if (credentialsProvider != null) {
           fetch.setCredentialsProvider(credentialsProvider);
@@ -509,7 +512,7 @@ public class ContentLoader extends Tool {
         return repoConfig.getRef();
       }
 
-      var remoteCommand =
+      LsRemoteCommand remoteCommand =
           Git.lsRemoteRepository().setRemote(repoConfig.getUrl()).setHeads(true).setTags(true);
 
       Collection<Ref> refs = remoteCommand.call();

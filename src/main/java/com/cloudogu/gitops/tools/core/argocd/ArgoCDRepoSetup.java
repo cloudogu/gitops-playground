@@ -204,6 +204,6 @@ public class ArgoCDRepoSetup {
   }
 
   private static FileFilter allowAllFilter() {
-    return f -> true;
+    return file -> true;
   }
 }

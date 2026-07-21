@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 
 @Singleton
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class JobManager {
 
       String jsonPayload = objectMapper.writeValueAsString(payloadMap);
 
-      try (var response =
+      try (Response response =
           apiClient.postRequestWithCrumb(
               "job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
               new FormBody.Builder().add("json", jsonPayload).build())) {
@@ -82,7 +83,7 @@ public class JobManager {
 
         RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"));
 
-        try (var response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
+        try (Response response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
           if (response.code() != 200) {
             throw new RuntimeException(
                 "Could not create job '" + name + "'. StatusCode: " + response.code());
@@ -96,7 +97,7 @@ public class JobManager {
   }
 
   public boolean jobExists(String name) {
-    try (var response = apiClient.postRequestWithCrumb("job/" + name)) {
+    try (Response response = apiClient.postRequestWithCrumb("job/" + name)) {
       return response.code() == 200;
     }
   }
@@ -115,7 +116,8 @@ public class JobManager {
   }
 
   public void startJob(String jobName) {
-    try (var response = apiClient.postRequestWithCrumb("job/" + jobName + "/build?delay=0sec")) {
+    try (Response response =
+        apiClient.postRequestWithCrumb("job/" + jobName + "/build?delay=0sec")) {
       if (response.code() != 200) {
         throw new RuntimeException(
             "Could not trigger build of Jenkins job: "

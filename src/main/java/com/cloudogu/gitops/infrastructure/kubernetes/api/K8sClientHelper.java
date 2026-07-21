@@ -279,6 +279,8 @@ class K8sClientHelper {
             .withNamespaced((Boolean) match.get("namespaced"))
             .build();
 
+    // type is MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList,
+    // Resource<GenericKubernetesResource>>; kept as `var` deliberately.
     var resourceClient = client.genericKubernetesResources(context);
     return (Boolean) match.get("namespaced")
         ? resourceClient.inNamespace(namespace).withName(name)
@@ -289,20 +291,20 @@ class K8sClientHelper {
       KubernetesClient client, String normalized, String original) {
     List<io.fabric8.kubernetes.api.model.APIGroup> apiGroups;
     try {
-      var groupList = client.getApiGroups();
+      APIGroupList groupList = client.getApiGroups();
       apiGroups = groupList != null ? groupList.getGroups() : Collections.emptyList();
     } catch (Exception e) {
       log.warn("Failed to discover API groups: {}", e.getMessage());
       return null;
     }
 
-    for (var group : apiGroups) {
+    for (APIGroup group : apiGroups) {
       List<String> versions = new ArrayList<>();
       if (group.getPreferredVersion() != null && group.getPreferredVersion().getVersion() != null) {
         versions.add(group.getPreferredVersion().getVersion());
       }
       if (group.getVersions() != null) {
-        for (var v : group.getVersions()) {
+        for (GroupVersionForDiscovery v : group.getVersions()) {
           if (v.getVersion() != null && !versions.contains(v.getVersion())) {
             versions.add(v.getVersion());
           }
@@ -312,7 +314,7 @@ class K8sClientHelper {
       for (String version : versions) {
         List<io.fabric8.kubernetes.api.model.APIResource> resources;
         try {
-          var resourceList = client.getApiResources(group.getName() + "/" + version);
+          APIResourceList resourceList = client.getApiResources(group.getName() + "/" + version);
           resources = resourceList != null ? resourceList.getResources() : Collections.emptyList();
         } catch (Exception e) {
           log.trace("Failed to fetch {}/{}: {}", group.getName(), version, e.getMessage());
@@ -320,7 +322,7 @@ class K8sClientHelper {
         }
 
         io.fabric8.kubernetes.api.model.APIResource resolvedResult = null;
-        for (var res : resources) {
+        for (APIResource res : resources) {
           if (res.getName() != null && !res.getName().contains("/")) {
             boolean match =
                 res.getKind().equalsIgnoreCase(original)

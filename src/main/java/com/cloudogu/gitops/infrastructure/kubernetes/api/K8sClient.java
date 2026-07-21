@@ -7,6 +7,7 @@ import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.Serialization;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 /** Kubernetes client using Fabric8 Kubernetes Client. */
@@ -356,6 +358,8 @@ public class K8sClient {
     executeWithErrorHandling(
         "create secret " + name,
         () -> {
+          // type is NonNamespaceOperation<Secret, SecretList, Resource<Secret>>; kept as `var`
+          // deliberately, spelling it out would hurt readability more than it helps.
           var secretsClient = client.secrets().inNamespace(resolveNamespace(namespace));
           if (secretsClient.withName(name).get() != null) {
             secretsClient.withName(name).delete();
@@ -599,11 +603,11 @@ public class K8sClient {
 
     if (location.isDirectory()) {
       List<File> yamlFiles = new ArrayList<>();
-      try (var stream = Files.walk(location.toPath())) {
+      try (Stream<Path> stream = Files.walk(location.toPath())) {
         stream
             .filter(Files::isRegularFile)
             .map(Path::toFile)
-            .filter(f -> f.getName().endsWith(".yaml") || f.getName().endsWith(".yml"))
+            .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
             .forEach(yamlFiles::add);
       } catch (IOException e) {
         throw new RuntimeException("Failed to list YAML files in directory: " + yamlLocation, e);
@@ -705,7 +709,7 @@ public class K8sClient {
     executeWithErrorHandling(
         "label " + resource + "/" + name,
         () -> {
-          var resourceClient =
+          Resource<? extends HasMetadata> resourceClient =
               K8sClientHelper.getResourceClient(
                   client, resource, name, resolveNamespace(namespace));
           applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
@@ -795,7 +799,7 @@ public class K8sClient {
     executeWithErrorHandling(
         "patch " + resource + "/" + name,
         () -> {
-          var resourceClient =
+          Resource<? extends HasMetadata> resourceClient =
               K8sClientHelper.getResourceClient(
                   client, resource, name, resolveNamespace(namespace));
           resourceClient.patch(patchContext, patchJson);
@@ -845,7 +849,7 @@ public class K8sClient {
     log.debug("Deleting {}/{} in namespace {}", resource, name, namespace);
 
     try {
-      var resourceClient =
+      Resource<? extends HasMetadata> resourceClient =
           K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
       resourceClient.delete();
       log.debug("Resource {}/{} deleted successfully", resource, name);
@@ -936,8 +940,11 @@ public class K8sClient {
               .withNamespaced((Boolean) match.get("namespaced"))
               .build();
 
+      // `apiClient`'s type is a long nested generic (MixedOperation<GenericKubernetesResource,
+      // GenericKubernetesResourceList, Resource<GenericKubernetesResource>>); spelling it out
+      // would hurt readability more than `var` costs, so it's kept as `var` deliberately.
       var apiClient = client.genericKubernetesResources(context);
-      var resourceList = apiClient.inAnyNamespace().list();
+      GenericKubernetesResourceList resourceList = apiClient.inAnyNamespace().list();
 
       if (resourceList == null || resourceList.getItems() == null) {
         return Collections.emptyList();
@@ -973,7 +980,7 @@ public class K8sClient {
   public String getAnnotation(String resource, String name, String key, String namespace) {
     log.debug("Getting annotation {} from {}/{} in namespace {}", key, resource, name, namespace);
 
-    var resourceClient =
+    Resource<? extends HasMetadata> resourceClient =
         K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
     HasMetadata k8sResource = (HasMetadata) resourceClient.get();
 
@@ -993,7 +1000,7 @@ public class K8sClient {
 
   public String getCurrentContext() {
     try {
-      var currentContext = client.getConfiguration().getCurrentContext();
+      NamedContext currentContext = client.getConfiguration().getCurrentContext();
       String context = currentContext != null ? currentContext.getName() : null;
       return context != null ? context : "(current context not set)";
     } catch (Exception e) {
@@ -1030,7 +1037,7 @@ public class K8sClient {
 
     while (System.currentTimeMillis() < endTime) {
       try {
-        var resourceClient =
+        Resource<? extends HasMetadata> resourceClient =
             K8sClientHelper.getResourceClient(
                 client, resourceType, resourceName, resolveNamespace(namespace));
         HasMetadata resource = (HasMetadata) resourceClient.get();

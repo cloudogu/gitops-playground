@@ -234,9 +234,9 @@ public class ApplicationConfigurator {
       return;
     }
     log.debug("Base URL set, adapting to individual tools");
-    var argocd = newConfig.getFeatures().getArgocd();
-    var monitoring = newConfig.getFeatures().getMonitoring();
-    var vault = newConfig.getFeatures().getSecrets().getVault();
+    Config.ArgoCDSchema argocd = newConfig.getFeatures().getArgocd();
+    Config.MonitoringSchema monitoring = newConfig.getFeatures().getMonitoring();
+    Config.SecretsSchema.VaultSchema vault = newConfig.getFeatures().getSecrets().getVault();
     boolean urlSeparatorHyphen =
         Boolean.TRUE.equals(newConfig.getApplication().getUrlSeparatorHyphen());
 
