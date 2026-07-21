@@ -2,6 +2,7 @@ package com.cloudogu.gitops.infrastructure.jenkins
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.ArgumentMatchers.contains
 import static org.mockito.Mockito.*
 
 import org.junit.jupiter.api.Test
@@ -31,7 +32,7 @@ if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
 
 }
 
-envVars.put("the-key", "the-value")
+envVars.put('the-key', 'the-value')
 
 instance.save()
 print("Done")
@@ -66,7 +67,7 @@ if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {
 }
 
 envVars = envVarsNodePropertyList.get(0).getEnvVars()
-envVars.remove("the-key")
+envVars.remove('the-key')
 print("Done")
 """)
 	}
@@ -78,6 +79,25 @@ print("Done")
 
 		shouldFail(RuntimeException) {
 			new GlobalPropertyManager(client).deleteGlobalProperty("the-key")
+		}
+	}
+
+	@Test
+	void 'escapes single quotes in key and value to avoid breaking out of the groovy script'() {
+		def client = mock(JenkinsApiClient)
+		when(client.runScript(anyString())).thenReturn("Done")
+
+		new GlobalPropertyManager(client).setGlobalProperty("the'key", "the'value")
+
+		verify(client).runScript(contains("envVars.put('the\\'key', 'the\\'value')"))
+	}
+
+	@Test
+	void 'rejects values containing backslashes'() {
+		def client = mock(JenkinsApiClient)
+
+		shouldFail(IllegalArgumentException) {
+			new GlobalPropertyManager(client).setGlobalProperty("the-key", "the\\value")
 		}
 	}
 }

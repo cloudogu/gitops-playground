@@ -12,21 +12,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JenkinsDestructionHandler implements DestructionHandler {
 
-    private final JobManager jobManager;
-    private final Config config;
-    private final GlobalPropertyManager globalPropertyManager;
+  private final JobManager jobManager;
+  private final Config config;
+  private final GlobalPropertyManager globalPropertyManager;
 
-    @Override
-    public void destroy() {
-        String namePrefixForEnvVars = config.getApplication().getNamePrefixForEnvVars();
+  @Override
+  public void destroy() {
+    String namePrefixForEnvVars = config.getApplication().getNamePrefixForEnvVars();
 
-        jobManager.deleteJob(config.getApplication().getNamePrefix() + "example-apps");
-        globalPropertyManager.deleteGlobalProperty("SCMM_URL");
-        globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_URL");
-        globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PATH");
-        globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PROXY_URL");
-        globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PROXY_PATH");
+    jobManager.deleteJob(config.getApplication().getNamePrefix() + "example-apps");
+    globalPropertyManager.deleteGlobalProperty("SCMM_URL");
+    globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_URL");
+    globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PATH");
+    globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PROXY_URL");
+    globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "REGISTRY_PROXY_PATH");
 
-        globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "K8S_VERSION");
-    }
+    globalPropertyManager.deleteGlobalProperty(namePrefixForEnvVars + "K8S_VERSION");
+  }
 }

@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GlobalPropertyManager {
 
-    private final JenkinsApiClient apiClient;
+  private final JenkinsApiClient apiClient;
 
-    public void setGlobalProperty(String key, String value) {
-        String script = """
+  public void setGlobalProperty(String key, String value) {
+    String script =
+        """
             instance = Jenkins.getInstance()
             globalNodeProperties = instance.getGlobalNodeProperties()
             envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -27,23 +28,23 @@ public class GlobalPropertyManager {
 
             }
 
-            envVars.put("%KEY%", "%VALUE%")
+            envVars.put('%KEY%', '%VALUE%')
 
             instance.save()
             print("Done")
             """;
 
-        script = script.replace("%KEY%", key)
-                .replace("%VALUE%", value);
+    script = script.replace("%KEY%", escapeString(key)).replace("%VALUE%", escapeString(value));
 
-        String result = apiClient.runScript(script);
-        if (!"Done".equals(result)) {
-            throw new RuntimeException("Could not create global property: " + result);
-        }
+    String result = apiClient.runScript(script);
+    if (!"Done".equals(result)) {
+      throw new RuntimeException("Could not create global property: " + result);
     }
+  }
 
-    public void deleteGlobalProperty(String key) {
-        String script = """
+  public void deleteGlobalProperty(String key) {
+    String script =
+        """
             def instance = Jenkins.getInstance()
             def globalNodeProperties = instance.getGlobalNodeProperties()
             def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
@@ -54,15 +55,26 @@ public class GlobalPropertyManager {
             }
 
             envVars = envVarsNodePropertyList.get(0).getEnvVars()
-            envVars.remove("%KEY%")
+            envVars.remove('%KEY%')
             print("Done")
             """;
 
-        script = script.replace("%KEY%", key);
+    script = script.replace("%KEY%", escapeString(key));
 
-        String result = apiClient.runScript(script);
-        if (!"Nothing to do".equals(result) && !"Done".equals(result)) {
-            throw new RuntimeException("Could not delete global property: " + result);
-        }
+    String result = apiClient.runScript(script);
+    if (!"Nothing to do".equals(result) && !"Done".equals(result)) {
+      throw new RuntimeException("Could not delete global property: " + result);
     }
+  }
+
+  private String escapeString(String str) {
+    if (str.contains("\\")) {
+      // We don't want to get in trouble with escaping,
+      // e.g. `foo\'foo` => `foo\\'foo`. Now we would have a backslash followed by an unescaped
+      // quote.
+      throw new IllegalArgumentException("Backslashes within the escaped variables are forbidden.");
+    }
+
+    return str.replace("'", "\\'");
+  }
 }
