@@ -41,6 +41,8 @@ public class Monitoring extends Tool {
   private static final String RELEASE_NAME = "kube-prometheus-stack";
   private static final String MONITORING_APP_PATH = "apps/monitoring";
   private static final String PASSWORD_KEY = "password";
+  private static final String GENERIC_SECRET_TYPE = "generic";
+  private static final String NAMESPACE_KEY = "namespace";
   private static final String MONITORING_RBAC_PATH = MONITORING_APP_PATH + "/misc/rbac";
   private static final String MONITORING_NETPOLS_PATH = MONITORING_APP_PATH + "/misc/netpols";
   private static final String MONITORING_DASHBOARD_PATH = MONITORING_APP_PATH + "/misc/dashboard";
@@ -168,13 +170,13 @@ public class Monitoring extends Tool {
 
   private void setupMonitoringSecrets() {
     k8sClient.createSecret(
-        "generic",
+        GENERIC_SECRET_TYPE,
         "prometheus-metrics-creds-scmm",
         namespace,
         new Tuple<>(PASSWORD_KEY, getConfig().getApplication().getPassword()));
 
     k8sClient.createSecret(
-        "generic",
+        GENERIC_SECRET_TYPE,
         "prometheus-metrics-creds-jenkins",
         namespace,
         new Tuple<>(PASSWORD_KEY, getConfig().getJenkins().getMetricsPassword()));
@@ -184,7 +186,7 @@ public class Monitoring extends Tool {
         || (getConfig().getFeatures().getMail().getSmtpPassword() != null
             && !getConfig().getFeatures().getMail().getSmtpPassword().isEmpty())) {
       k8sClient.createSecret(
-          "generic",
+          GENERIC_SECRET_TYPE,
           "grafana-email-secret",
           namespace,
           new Tuple<>("user", getConfig().getFeatures().getMail().getSmtpUser()),
@@ -201,9 +203,12 @@ public class Monitoring extends Tool {
                 .template(
                     new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                     Map.of(
-                        "namespace", currentNamespace,
-                        "namePrefix", getConfig().getApplication().getNamePrefix(),
-                        "config", getConfig()));
+                        NAMESPACE_KEY,
+                        currentNamespace,
+                        "namePrefix",
+                        getConfig().getApplication().getNamePrefix(),
+                        "config",
+                        getConfig()));
 
         clusterResourcesRepo.writeFile(
             MONITORING_RBAC_PATH + "/" + currentNamespace + ".yaml", rbacYaml);
@@ -223,7 +228,7 @@ public class Monitoring extends Tool {
                 .template(
                     new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
                     Map.of(
-                        "namespace",
+                        NAMESPACE_KEY,
                         currentNamespace,
                         "namePrefix",
                         getConfig().getApplication().getNamePrefix()));
@@ -312,7 +317,7 @@ public class Monitoring extends Tool {
 
   private String findValidOpenShiftUid() {
     String uidRange =
-        k8sClient.getAnnotation("namespace", namespace, "openshift.io/sa.scc.uid-range");
+        k8sClient.getAnnotation(NAMESPACE_KEY, namespace, "openshift.io/sa.scc.uid-range");
 
     if (uidRange != null && !uidRange.isEmpty()) {
       log.debug("found UID={}", uidRange);
@@ -327,16 +332,16 @@ public class Monitoring extends Tool {
     String dashboardRoot = repoRoot + "/" + MONITORING_DASHBOARD_PATH;
 
     if (!Boolean.TRUE.equals(getConfig().getFeatures().getIngress().getActive())) {
-      fileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard.yaml");
-      fileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard-requests-handling.yaml");
+      FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard.yaml");
+      FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard-requests-handling.yaml");
     }
 
     if (!Boolean.TRUE.equals(getConfig().getJenkins().getActive())) {
-      fileSystemUtils.deleteFile(dashboardRoot + "/jenkins-dashboard.yaml");
+      FileSystemUtils.deleteFile(dashboardRoot + "/jenkins-dashboard.yaml");
     }
 
     if (!hasScmManagerMetricsEndpoint()) {
-      fileSystemUtils.deleteFile(dashboardRoot + "/scmm-dashboard.yaml");
+      FileSystemUtils.deleteFile(dashboardRoot + "/scmm-dashboard.yaml");
     }
   }
 

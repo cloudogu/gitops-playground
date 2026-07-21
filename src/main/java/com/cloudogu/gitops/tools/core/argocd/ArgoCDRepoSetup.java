@@ -132,9 +132,9 @@ public class ArgoCDRepoSetup {
     ArgoCDRepoLayout layout = clusterRepoLayout();
 
     if (getConfig().getFeatures().getArgocd().getOperator()) {
-      fileSystemUtils.deleteDir(layout.helmDir());
+      FileSystemUtils.deleteDir(layout.helmDir());
     } else {
-      fileSystemUtils.deleteDir(layout.operatorDir());
+      FileSystemUtils.deleteDir(layout.operatorDir());
     }
 
     if (context.isMultiTenant()) {
@@ -145,19 +145,19 @@ public class ArgoCDRepoSetup {
           layout.projectsDir(),
           layout.multiTenantDir());
 
-      fileSystemUtils.deleteDir(layout.applicationsDir());
-      fileSystemUtils.deleteDir(layout.projectsDir());
+      FileSystemUtils.deleteDir(layout.applicationsDir());
+      FileSystemUtils.deleteDir(layout.projectsDir());
 
       fileSystemUtils.moveDirectoryMergeOverwrite(
           Path.of(layout.multiTenantDir(), "central"), Path.of(layout.argocdRoot()));
 
-      fileSystemUtils.deleteDir(layout.multiTenantDir());
+      FileSystemUtils.deleteDir(layout.multiTenantDir());
     } else {
-      fileSystemUtils.deleteDir(layout.multiTenantDir());
+      FileSystemUtils.deleteDir(layout.multiTenantDir());
     }
 
     if (!Boolean.TRUE.equals(getConfig().getApplication().getNetpols())) {
-      fileSystemUtils.deleteFile(layout.netpolFile());
+      FileSystemUtils.deleteFile(layout.netpolFile());
     }
   }
 

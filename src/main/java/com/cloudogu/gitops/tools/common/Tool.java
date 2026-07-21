@@ -108,6 +108,10 @@ public abstract class Tool {
     return null;
   }
 
+  /**
+   * @param context may be used by overriding implementations to resolve the namespace from the
+   *     deployment context
+   */
   protected String activeNamespace(DeploymentContext context) {
     return null;
   }

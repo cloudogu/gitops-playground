@@ -82,24 +82,4 @@ public class NetworkingUtils {
       throw new RuntimeException("Could not determine local ip address", e);
     }
   }
-
-  @Deprecated
-  public static String getHost(String url) {
-    String protocol = getProtocol(url);
-    if (protocol.isEmpty()) {
-      return url;
-    }
-    return url.substring(protocol.length() + "://".length());
-  }
-
-  @Deprecated
-  public static String getProtocol(String url) {
-    if (url.contains("https://")) {
-      return "https";
-    }
-    if (url.contains("http://")) {
-      return "http";
-    }
-    return "";
-  }
 }

@@ -11,30 +11,30 @@ public class DeploymentContext {
   private final Config config;
   private final TenantMode tenantMode;
   private final ScmManagerDeploymentMode scmManagerDeploymentMode;
-  private final Boolean airgapped;
+  private final boolean airgapped;
   private final ClusterDistribution clusterDistribution;
 
-  public Boolean isMultiTenant() {
+  public boolean isMultiTenant() {
     return tenantMode == TenantMode.MULTI_TENANT;
   }
 
-  public Boolean isSingleTenant() {
+  public boolean isSingleTenant() {
     return tenantMode == TenantMode.SINGLE_TENANT;
   }
 
-  public Boolean isInternalScmManager() {
+  public boolean isInternalScmManager() {
     return scmManagerDeploymentMode == ScmManagerDeploymentMode.INTERNAL;
   }
 
-  public Boolean isExternalScmManager() {
+  public boolean isExternalScmManager() {
     return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
   }
 
-  public Boolean isAirgapped() {
+  public boolean isAirgapped() {
     return airgapped;
   }
 
-  public Boolean isOpenshift() {
+  public boolean isOpenshift() {
     return clusterDistribution == ClusterDistribution.OPENSHIFT;
   }
 

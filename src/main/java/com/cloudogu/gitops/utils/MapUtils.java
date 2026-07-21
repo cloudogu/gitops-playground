@@ -4,6 +4,8 @@ import java.util.Map;
 
 public class MapUtils {
 
+  private MapUtils() {}
+
   @SuppressWarnings("unchecked")
   public static Map<String, Object> deepMerge(Map<String, Object> src, Map<String, Object> target) {
     if (src == null) {

@@ -5,7 +5,6 @@ import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
@@ -31,19 +30,16 @@ public class Ingress extends Tool {
   private static final String INGRESS_APP_PATH = "apps/traefik";
 
   private final ImagePullSecretCreator imagePullSecretCreator;
-  private final K8sClient k8sClient;
   @Getter @Setter private String namespace;
 
   public Ingress(
       FileSystemUtils fileSystemUtils,
       Deployer deployer,
-      K8sClient k8sClient,
       AirGappedUtils airGappedUtils,
       GitHandler gitHandler,
       ImagePullSecretCreator imagePullSecretCreator) {
     this.deployer = deployer;
     this.fileSystemUtils = fileSystemUtils;
-    this.k8sClient = k8sClient;
     this.airGappedUtils = airGappedUtils;
     this.gitHandler = gitHandler;
     this.imagePullSecretCreator = imagePullSecretCreator;

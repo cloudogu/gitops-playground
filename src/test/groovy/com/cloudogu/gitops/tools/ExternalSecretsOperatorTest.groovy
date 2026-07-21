@@ -14,7 +14,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.deployment.Deployer
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
@@ -29,7 +28,6 @@ import groovy.yaml.YamlSlurper
 
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
@@ -68,14 +66,7 @@ class ExternalSecretsOperatorTest {
 	@Mock
 	ImagePullSecretCreator imagePullSecretCreator
 
-	K8sClient k8sClient
 	KubernetesClient client
-
-	@BeforeEach
-	void init() {
-		k8sClient = new K8sClient()
-		k8sClient.client = client
-	}
 
 	@Test
 	void "is disabled via active flag"() {
@@ -236,7 +227,6 @@ class ExternalSecretsOperatorTest {
 
 		return new ExternalSecretsOperator(fileSystemUtils,
 			deployer,
-			k8sClient,
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator)

@@ -23,6 +23,10 @@ public class CommandExecutor {
   Once they are migrated to groovy we can reduce this timeout.*/
   public static final int PROCESS_TIMEOUT_MINUTES = 15;
 
+  private static final String FAILED_TO_EXECUTE_PREFIX = "Failed to execute command: ";
+  private static final String EXECUTING_FAILED_PREFIX = "Executing command failed: ";
+  private static final String STDERR_PREFIX = "Stderr: ";
+
   public Output execute(String[] command) {
     return execute(command, true);
   }
@@ -32,26 +36,31 @@ public class CommandExecutor {
       Process proc = doExecute(command);
       return getOutput(proc, String.join(" ", command), failOnError);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to execute command: " + String.join(" ", command), e);
+      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + String.join(" ", command), e);
     }
   }
 
   /**
    * Please prefer using {@link #execute(java.lang.String[], boolean)}, because it avoids quoting
    * issues when passing arguments containing whitespaces.
+   *
+   * @deprecated use {@link #execute(java.lang.String[], boolean)} instead
    */
-  @Deprecated
+  @Deprecated(since = "1.0")
   public Output execute(String command) {
     return execute(command, true);
   }
 
-  @Deprecated
+  /**
+   * @deprecated use {@link #execute(java.lang.String[], boolean)} instead
+   */
+  @Deprecated(since = "1.0")
   public Output execute(String command, boolean failOnError) {
     try {
       Process proc = doExecute(command);
       return getOutput(proc, command, failOnError);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to execute command: " + command, e);
+      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + command, e);
     }
   }
 
@@ -67,9 +76,8 @@ public class CommandExecutor {
       java.util.Map<String, String> env = new java.util.HashMap<>(System.getenv());
       if (additionalEnv != null) {
         additionalEnv.forEach(
-            (key, value) -> {
-              env.put(String.valueOf(key), value != null ? String.valueOf(value) : null);
-            });
+            (key, value) ->
+                env.put(String.valueOf(key), value != null ? String.valueOf(value) : null));
       }
       List<String> envp =
           env.entrySet().stream()
@@ -81,7 +89,7 @@ public class CommandExecutor {
       Process proc = doExecute(command, envp);
       return getOutput(proc, command, failOnError);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to execute command: " + command, e);
+      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + command, e);
     }
   }
 
@@ -107,27 +115,32 @@ public class CommandExecutor {
 
       if (process1.exitValue() > 0) {
         log.error("Pipefail! First process of command failed " + pipedCommand + ".");
-        try (InputStream is = process1.getErrorStream()) {
-          ByteArrayOutputStream bos = new ByteArrayOutputStream();
-          is.transferTo(bos);
-          log.error("Stderr: " + bos.toString().trim());
-        } catch (IOException ignored) {
-        }
+        logProcessStderr(process1);
       }
       if (process2.exitValue() > 0) {
-        log.error("Executing command failed: " + pipedCommand);
-        log.error("Stderr: " + finalOutput.getStdErr());
+        log.error(EXECUTING_FAILED_PREFIX + pipedCommand);
+        log.error(STDERR_PREFIX + finalOutput.getStdErr());
         log.error("StdOut: " + finalOutput.getStdOut());
       }
 
       boolean success = process1.exitValue() == 0 && process2.exitValue() == 0;
       if (!success && failOnError) {
-        throw new RuntimeException("Executing command failed: " + pipedCommand);
+        throw new RuntimeException(EXECUTING_FAILED_PREFIX + pipedCommand);
       }
 
       return finalOutput;
     } catch (IOException e) {
       throw new RuntimeException("Failed to execute piped command: " + pipedCommand, e);
+    }
+  }
+
+  private void logProcessStderr(Process process) {
+    try (InputStream is = process.getErrorStream()) {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      is.transferTo(bos);
+      log.error(STDERR_PREFIX + bos.toString().trim());
+    } catch (IOException e) {
+      log.debug("Failed to read stderr of process", e);
     }
   }
 
@@ -172,7 +185,8 @@ public class CommandExecutor {
             () -> {
               try (InputStream is = proc.getInputStream()) {
                 is.transferTo(finalOutDest);
-              } catch (IOException ignored) {
+              } catch (IOException e) {
+                log.debug("Failed to read stdout of process {}", command, e);
               }
             });
     Thread errThread =
@@ -180,7 +194,8 @@ public class CommandExecutor {
             () -> {
               try (InputStream es = proc.getErrorStream()) {
                 es.transferTo(finalErrDest);
-              } catch (IOException ignored) {
+              } catch (IOException e) {
+                log.debug("Failed to read stderr of process {}", command, e);
               }
             });
 
@@ -200,13 +215,15 @@ public class CommandExecutor {
     if (teeOut != null) {
       try {
         teeOut.flush();
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        log.debug("Failed to flush stdout tee stream for command {}", command, e);
       }
     }
     if (teeErr != null) {
       try {
         teeErr.flush();
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        log.debug("Failed to flush stderr tee stream for command {}", command, e);
       }
     }
 
@@ -214,10 +231,10 @@ public class CommandExecutor {
         new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue());
 
     if (failOnError && proc.exitValue() > 0) {
-      log.error("Executing command failed: " + command);
-      log.error("Stderr: " + output.getStdErr());
+      log.error(EXECUTING_FAILED_PREFIX + command);
+      log.error(STDERR_PREFIX + output.getStdErr());
       log.error("StdOut: " + output.getStdOut());
-      throw new RuntimeException("Executing command failed: " + command);
+      throw new RuntimeException(EXECUTING_FAILED_PREFIX + command);
     }
 
     return output;

@@ -11,6 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScmManagerUrlResolver {
 
+  private static final String HTTP_PREFIX = "http://";
+  private static final String RELEASE_NAME = "scmm";
+  private static final String REPO_ROOT = "repo";
+
   private final DeploymentContext context;
   private final ScmManagerConfig scmm;
   private final K8sClient k8s;
@@ -18,8 +22,6 @@ public class ScmManagerUrlResolver {
   private final String servicePrefix;
 
   private URI cachedClusterBind;
-
-  private final String releaseName = "scmm";
 
   public ScmManagerUrlResolver(
       DeploymentContext context, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
@@ -57,7 +59,7 @@ public class ScmManagerUrlResolver {
 
   /** Client repo base …/scm/repo (no trailing slash) */
   public URI clientRepoBase() {
-    return noTrailSlash(withSlash(clientBase()).resolve(root() + "/"));
+    return noTrailSlash(withSlash(clientBase()).resolve(REPO_ROOT + "/"));
   }
 
   /** In-cluster base …/scm (no trailing slash) */
@@ -72,7 +74,7 @@ public class ScmManagerUrlResolver {
             ? getConfig().getApplication().getNamePrefix().trim()
             : "";
     URI base = withSlash(inClusterBase());
-    URI url = withSlash(base.resolve(root()));
+    URI url = withSlash(base.resolve(REPO_ROOT));
 
     return URI.create(url.toString() + prefix).toString();
   }
@@ -80,7 +82,8 @@ public class ScmManagerUrlResolver {
   /** In-cluster repo URL …/scm/repo/<ns>/<name> */
   public String inClusterRepoUrl(String repoTarget) {
     String repo = repoTarget.trim();
-    return noTrailSlash(withSlash(inClusterBase()).resolve(root() + "/" + repo + "/")).toString();
+    return noTrailSlash(withSlash(inClusterBase()).resolve(REPO_ROOT + "/" + repo + "/"))
+        .toString();
   }
 
   /** Client repo URL …/scm/repo/<ns>/<name> (no trailing slash) */
@@ -108,7 +111,8 @@ public class ScmManagerUrlResolver {
   }
 
   private URI serviceDnsBase() {
-    return URI.create("http://" + serviceName() + "." + serviceNamespace() + ".svc.cluster.local");
+    return URI.create(
+        HTTP_PREFIX + serviceName() + "." + serviceNamespace() + ".svc.cluster.local");
   }
 
   private URI externalBase() {
@@ -119,7 +123,7 @@ public class ScmManagerUrlResolver {
 
     String ingress = scmm.getIngress() != null ? scmm.getIngress().trim() : "";
     if (!ingress.isEmpty()) {
-      return URI.create("http://" + ingress);
+      return URI.create(HTTP_PREFIX + ingress);
     }
     throw new IllegalArgumentException(
         "Either scmm.url or scmm.ingress must be set when internal=false");
@@ -133,7 +137,7 @@ public class ScmManagerUrlResolver {
     String port = k8s.waitForNodePort(serviceName(), serviceNamespace());
     String host = net.findClusterBindAddress();
     try {
-      cachedClusterBind = new URI("http://" + host + ":" + port);
+      cachedClusterBind = new URI(HTTP_PREFIX + host + ":" + port);
     } catch (Exception e) {
       throw new RuntimeException("Failed to construct ScmManager node port base URI", e);
     }
@@ -144,10 +148,10 @@ public class ScmManagerUrlResolver {
     String prefix = servicePrefix.trim();
 
     if (!prefix.isEmpty()) {
-      return prefix + releaseName;
+      return prefix + RELEASE_NAME;
     }
 
-    return releaseName;
+    return RELEASE_NAME;
   }
 
   private String serviceNamespace() {
@@ -162,10 +166,6 @@ public class ScmManagerUrlResolver {
   }
 
   // ---------- Helpers ----------
-
-  private String root() {
-    return "repo";
-  }
 
   private static URI ensureScm(URI u) {
     URI us = withSlash(u);

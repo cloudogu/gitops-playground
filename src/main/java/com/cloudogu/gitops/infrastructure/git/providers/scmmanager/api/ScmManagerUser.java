@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -14,5 +15,7 @@ public class ScmManagerUser {
   private boolean external = false;
   private String password;
   private boolean active = true;
-  private Map<String, Object> _links = new HashMap<>();
+
+  @JsonProperty("_links")
+  private Map<String, Object> links = new HashMap<>();
 }

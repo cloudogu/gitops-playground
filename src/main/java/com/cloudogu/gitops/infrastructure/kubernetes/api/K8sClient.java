@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +38,8 @@ public class K8sClient {
   private static final String INTERNAL_IP_TYPE = "InternalIP";
   private static final String DOCKER_CONFIG_JSON_TYPE = "kubernetes.io/dockerconfigjson";
   private static final String DOCKER_CONFIG_JSON_KEY = ".dockerconfigjson";
+  private static final String NOT_FOUND_IN_NAMESPACE = " not found in namespace ";
+  private static final String APPLIED_PREFIX = "Applied ";
 
   private static final int DEFAULT_TIMEOUT_SECONDS = 60;
   private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1;
@@ -213,7 +214,7 @@ public class K8sClient {
     Service service = client.services().inNamespace(namespace).withName(serviceName).get();
 
     if (service == null) {
-      throw new RuntimeException("Service " + serviceName + " not found in namespace " + namespace);
+      throw new RuntimeException("Service " + serviceName + NOT_FOUND_IN_NAMESPACE + namespace);
     }
 
     List<ServicePort> ports = service.getSpec().getPorts();
@@ -326,20 +327,20 @@ public class K8sClient {
   }
 
   public void createSecret(String type, String name) {
-    createSecret(type, name, "", new Tuple[0]);
+    createSecret(type, name, "", new Tuple<?, ?>[0]);
   }
 
   public void createSecret(String type, String name, String namespace) {
-    createSecret(type, name, namespace, new Tuple[0]);
+    createSecret(type, name, namespace, new Tuple<?, ?>[0]);
   }
 
   /** Creates or updates a generic secret (idempotent). */
-  public void createSecret(String type, String name, String namespace, Tuple... literals) {
+  public void createSecret(String type, String name, String namespace, Tuple<?, ?>... literals) {
     log.debug("Creating secret {} of type {} in namespace {}", name, type, namespace);
 
     Map<String, String> data = new HashMap<>();
     if (literals != null) {
-      for (Tuple tuple : literals) {
+      for (Tuple<?, ?> tuple : literals) {
         data.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
       }
     }
@@ -373,9 +374,9 @@ public class K8sClient {
 
   public void createSecret(
       String type, String name, String namespace, groovy.lang.Tuple2... literals) {
-    Tuple[] tuples = new Tuple[literals.length];
+    Tuple<?, ?>[] tuples = new Tuple<?, ?>[literals.length];
     for (int i = 0; i < literals.length; i++) {
-      tuples[i] = new Tuple(literals[i].getFirst(), literals[i].getSecond());
+      tuples[i] = new Tuple<>(literals[i].getFirst(), literals[i].getSecond());
     }
     createSecret(type, name, namespace, tuples);
   }
@@ -464,8 +465,7 @@ public class K8sClient {
         () -> {
           Secret secret = client.secrets().inNamespace(namespace).withName(secretname).get();
           if (secret == null || secret.getData() == null) {
-            throw new RuntimeException(
-                "Secret " + secretname + " not found in namespace " + namespace);
+            throw new RuntimeException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
           }
 
           Map<String, String> secretData = secret.getData();
@@ -490,7 +490,7 @@ public class K8sClient {
             throw new RuntimeException(
                 "Secret "
                     + credentials.getSecretName()
-                    + " not found in namespace "
+                    + NOT_FOUND_IN_NAMESPACE
                     + credentials.getSecretNamespace());
           }
 
@@ -589,7 +589,7 @@ public class K8sClient {
     if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
       try {
         int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation);
-        return "Applied " + appliedResources + " resource(s) from " + yamlLocation;
+        return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
       } catch (IOException e) {
         throw new RuntimeException("Failed to apply YAML from URL: " + yamlLocation, e);
       }
@@ -625,12 +625,12 @@ public class K8sClient {
         }
       }
 
-      return "Applied " + appliedResources + " resource(s) from directory " + yamlLocation;
+      return APPLIED_PREFIX + appliedResources + " resource(s) from directory " + yamlLocation;
     }
 
     try {
       int appliedResources = applyYamlStream(Files.newInputStream(location.toPath()), yamlLocation);
-      return "Applied " + appliedResources + " resource(s) from " + yamlLocation;
+      return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
     } catch (IOException e) {
       throw new RuntimeException("Failed to apply YAML file: " + yamlLocation, e);
     }
@@ -646,7 +646,8 @@ public class K8sClient {
               } finally {
                 try {
                   stream.close();
-                } catch (IOException ignored) {
+                } catch (IOException e) {
+                  log.debug("Failed to close YAML input stream for {}", sourceDescription, e);
                 }
               }
             });
@@ -663,19 +664,19 @@ public class K8sClient {
     return resources.size();
   }
 
-  public void label(String resource, String name, Tuple... keyValues) {
+  public void label(String resource, String name, Tuple<?, ?>... keyValues) {
     label(resource, name, "", keyValues);
   }
 
   public void label(String resource, String name, groovy.lang.Tuple2... keyValues) {
-    Tuple[] tuples = new Tuple[keyValues.length];
+    Tuple<?, ?>[] tuples = new Tuple<?, ?>[keyValues.length];
     for (int i = 0; i < keyValues.length; i++) {
-      tuples[i] = new Tuple(keyValues[i].getFirst(), keyValues[i].getSecond());
+      tuples[i] = new Tuple<>(keyValues[i].getFirst(), keyValues[i].getSecond());
     }
     label(resource, name, tuples);
   }
 
-  public void label(String resource, String name, String namespace, Tuple... keyValues) {
+  public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
     if (keyValues == null || keyValues.length == 0) {
       throw new RuntimeException("Missing key-value-pairs");
     }
@@ -695,7 +696,7 @@ public class K8sClient {
     Map<String, String> labelsToAdd = new HashMap<>();
     List<String> labelsToRemove = new ArrayList<>();
 
-    for (Tuple tuple : keyValues) {
+    for (Tuple<?, ?> tuple : keyValues) {
       String key = String.valueOf(tuple.getFirst());
       String value = String.valueOf(tuple.getSecond());
 
@@ -757,9 +758,9 @@ public class K8sClient {
 
   public void label(
       String resource, String name, String namespace, groovy.lang.Tuple2... keyValues) {
-    Tuple[] tuples = new Tuple[keyValues.length];
+    Tuple<?, ?>[] tuples = new Tuple<?, ?>[keyValues.length];
     for (int i = 0; i < keyValues.length; i++) {
-      tuples[i] = new Tuple(keyValues[i].getFirst(), keyValues[i].getSecond());
+      tuples[i] = new Tuple<>(keyValues[i].getFirst(), keyValues[i].getSecond());
     }
     label(resource, name, namespace, tuples);
   }
@@ -773,9 +774,9 @@ public class K8sClient {
   }
 
   public void labelRemove(String resource, String name, String namespace, String... keys) {
-    Tuple[] tuples = new Tuple[keys.length];
+    Tuple<?, ?>[] tuples = new Tuple<?, ?>[keys.length];
     for (int i = 0; i < keys.length; i++) {
-      tuples[i] = new Tuple(keys[i] + "-", "");
+      tuples[i] = new Tuple<>(keys[i] + "-", "");
     }
     label(resource, name, namespace, tuples);
   }
@@ -810,14 +811,14 @@ public class K8sClient {
   }
 
   public void delete(String resource) {
-    delete(resource, "", new Tuple[0]);
+    delete(resource, "", new Tuple<?, ?>[0]);
   }
 
   public void delete(String resource, String namespace) {
-    delete(resource, namespace, new Tuple[0]);
+    delete(resource, namespace, new Tuple<?, ?>[0]);
   }
 
-  public void delete(String resource, String namespace, Tuple... selectors) {
+  public void delete(String resource, String namespace, Tuple<?, ?>... selectors) {
     if (selectors == null || selectors.length == 0) {
       throw new RuntimeException("Missing selectors");
     }
@@ -825,7 +826,7 @@ public class K8sClient {
     log.debug("Deleting {} in namespace {} with selectors", resource, namespace);
 
     Map<String, String> labels = new HashMap<>();
-    for (Tuple tuple : selectors) {
+    for (Tuple<?, ?> tuple : selectors) {
       labels.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
     }
 
@@ -838,9 +839,9 @@ public class K8sClient {
   }
 
   public void delete(String resource, String namespace, groovy.lang.Tuple2... selectors) {
-    Tuple[] tuples = new Tuple[selectors.length];
+    Tuple<?, ?>[] tuples = new Tuple<?, ?>[selectors.length];
     for (int i = 0; i < selectors.length; i++) {
-      tuples[i] = new Tuple(selectors[i].getFirst(), selectors[i].getSecond());
+      tuples[i] = new Tuple<>(selectors[i].getFirst(), selectors[i].getSecond());
     }
     delete(resource, namespace, tuples);
   }
@@ -966,7 +967,7 @@ public class K8sClient {
                     metadata.containsKey("name") ? String.valueOf(metadata.get("name")) : "";
                 return new CustomResource(ns, name);
               })
-          .collect(Collectors.toList());
+          .toList();
     } catch (Exception e) {
       log.warn("Failed to get custom resources: {}", e.getMessage());
       return Collections.emptyList();
@@ -982,7 +983,7 @@ public class K8sClient {
 
     Resource<? extends HasMetadata> resourceClient =
         K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
-    HasMetadata k8sResource = (HasMetadata) resourceClient.get();
+    HasMetadata k8sResource = resourceClient.get();
 
     if (k8sResource == null) {
       throw new RuntimeException("Resource " + resource + "/" + name + " not found");
@@ -1040,7 +1041,7 @@ public class K8sClient {
         Resource<? extends HasMetadata> resourceClient =
             K8sClientHelper.getResourceClient(
                 client, resourceType, resourceName, resolveNamespace(namespace));
-        HasMetadata resource = (HasMetadata) resourceClient.get();
+        HasMetadata resource = resourceClient.get();
 
         if (resource != null) {
           String phase = extractPhase(resource);

@@ -7,10 +7,10 @@ import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
-import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import java.net.URI;
 import java.util.HashMap;
 import lombok.Getter;
 import lombok.Setter;
@@ -180,12 +180,12 @@ public class ScmTenantSchema {
 
     @JsonIgnore
     public String getHost() {
-      return NetworkingUtils.getHost(url);
+      return URI.create(url).getHost();
     }
 
     @JsonIgnore
     public String getProtocol() {
-      return NetworkingUtils.getProtocol(url);
+      return URI.create(url).getScheme();
     }
 
     @Override

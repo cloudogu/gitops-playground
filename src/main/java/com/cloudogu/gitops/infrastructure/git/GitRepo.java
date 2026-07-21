@@ -40,6 +40,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 public class GitRepo implements AutoCloseable {
 
   public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
+  private static final String GIT_REMOTE_ORIGIN = "origin";
 
   private final Config config;
   @Getter @Setter private GitProvider gitProvider;
@@ -120,7 +121,7 @@ public class GitRepo implements AutoCloseable {
       // pullRebaseMain() pulls from the remote name 'origin'; without this the
       // repo has no remote.origin.url and JGit fails with
       // "No value for key remote.origin.url found in configuration".
-      git.remoteAdd().setName("origin").setUri(new URIish(getGitRepositoryUrl())).call();
+      git.remoteAdd().setName(GIT_REMOTE_ORIGIN).setUri(new URIish(getGitRepositoryUrl())).call();
     } catch (URISyntaxException e) {
       throw new RuntimeException("Invalid git repository URL: " + getGitRepositoryUrl(), e);
     }
@@ -131,7 +132,7 @@ public class GitRepo implements AutoCloseable {
 
     getGit()
         .pull()
-        .setRemote("origin")
+        .setRemote(GIT_REMOTE_ORIGIN)
         .setRemoteBranchName("main")
         .setRebase(true)
         .setCredentialsProvider(getCredentialProvider())
@@ -275,7 +276,7 @@ public class GitRepo implements AutoCloseable {
 
     Git git = getGit();
 
-    git.fetch().setRemote("origin").setCredentialsProvider(getCredentialProvider()).call();
+    git.fetch().setRemote(GIT_REMOTE_ORIGIN).setCredentialsProvider(getCredentialProvider()).call();
 
     Ref localMain = git.getRepository().findRef("refs/heads/main");
     Ref remoteMain = git.getRepository().findRef("refs/remotes/origin/main");

@@ -23,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
+  // Git repository paths always use '/', regardless of the host OS
+  private static final String GIT_PATH_SEPARATOR = "/";
+
   private final ArgoCdApplicationTargetResolver targetResolver;
 
   @Override
@@ -52,7 +55,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     Path.of(repoRoot, toolPath).toFile().mkdirs();
     Path.of(repoRoot, "apps/argocd/applications").toFile().mkdirs();
 
-    String gopValuesPath = toolPath + "/" + toolName + "-gop-helm.yaml";
+    String gopValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-gop-helm.yaml";
 
     String inlineValues;
     try {
@@ -61,7 +64,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       throw new UncheckedIOException(e);
     }
 
-    String userValuesPath = toolPath + "/" + toolName + "-user-values.yaml";
+    String userValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-user-values.yaml";
     Path userValuesAbsPath = Path.of(repoRoot, userValuesPath);
 
     if (bootstrapDeploymentRequired) {

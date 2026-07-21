@@ -73,11 +73,15 @@ public class HttpClientFactory {
           new X509TrustManager() {
             @Override
             public void checkClientTrusted(X509Certificate[] chain, String authType)
-                throws CertificateException {}
+                throws CertificateException {
+              // Intentionally empty: this trust manager accepts all client certificates
+            }
 
             @Override
             public void checkServerTrusted(X509Certificate[] chain, String authType)
-                throws CertificateException {}
+                throws CertificateException {
+              // Intentionally empty: this trust manager accepts all server certificates
+            }
 
             @Override
             public X509Certificate[] getAcceptedIssuers() {

@@ -11,6 +11,8 @@ import picocli.CommandLine.Option;
 
 public class ScmCentralSchema {
 
+  private ScmCentralSchema() {}
+
   @Getter
   @Setter
   public static class GitlabCentralConfig implements GitlabConfig {

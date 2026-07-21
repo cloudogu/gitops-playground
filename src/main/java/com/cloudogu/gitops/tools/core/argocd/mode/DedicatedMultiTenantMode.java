@@ -24,6 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DedicatedMultiTenantMode implements DeploymentMode {
 
+  private static final String SECRET_RESOURCE = "secret";
+  private static final String ARGOCD_DEFAULT_CLUSTER_CONFIG = "argocd-default-cluster-config";
+
   private final Config config;
   private final K8sClient k8sClient;
   private final GitHandler gitHandler;
@@ -70,8 +73,8 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
     log.debug("Updating managed namespaces in tenant ArgoCD configuration secret.");
 
     k8sClient.patch(
-        "secret",
-        "argocd-default-cluster-config",
+        SECRET_RESOURCE,
+        ARGOCD_DEFAULT_CLUSTER_CONFIG,
         namespace,
         Map.of(
             "stringData",
@@ -101,7 +104,7 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
           .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
           .withConfig(config)
           .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-          .withSubfolder(clusterResourcesRepo.operatorRbacTenantSubfolder())
+          .withSubfolder(ArgoCDRepoLayout.operatorRbacTenantSubfolder())
           .generate();
     }
   }
@@ -117,7 +120,7 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
               config.getMultiTenant().getCentralArgocdNamespace(), ARGOCD_SERVICE_ACCOUNTS)
           .withConfig(config)
           .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-          .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
+          .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
           .generate();
     }
   }
@@ -126,8 +129,7 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
     String base64Namespaces =
         (String)
             k8sClient.getArgoCDNamespacesSecret(
-                "argocd-default-cluster-config",
-                config.getMultiTenant().getCentralArgocdNamespace());
+                ARGOCD_DEFAULT_CLUSTER_CONFIG, config.getMultiTenant().getCentralArgocdNamespace());
 
     String decoded = "";
     if (base64Namespaces != null) {
@@ -150,8 +152,8 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
     log.debug("Updating Central Argocd 'argocd-default-cluster-config' secret");
 
     k8sClient.patch(
-        "secret",
-        "argocd-default-cluster-config",
+        SECRET_RESOURCE,
+        ARGOCD_DEFAULT_CLUSTER_CONFIG,
         config.getMultiTenant().getCentralArgocdNamespace(),
         Map.of("stringData", Map.of("namespaces", merged)));
   }
@@ -167,6 +169,9 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
         new Tuple<>("password", password));
 
     k8sClient.label(
-        "secret", secretName, ns, new Tuple<>("argocd.argoproj.io/secret-type", "repo-creds"));
+        SECRET_RESOURCE,
+        secretName,
+        ns,
+        new Tuple<>("argocd.argoproj.io/secret-type", "repo-creds"));
   }
 }

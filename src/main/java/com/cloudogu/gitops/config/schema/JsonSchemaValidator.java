@@ -15,6 +15,8 @@ public class JsonSchemaValidator {
   private static final ObjectMapper objectMapper = new ObjectMapper();
   private static final SchemaRegistry schemaRegistry = SchemaRegistry.builder().build();
 
+  private JsonSchemaValidator() {}
+
   public static void validate(Map<?, ?> yaml) {
     JsonNode json = objectMapper.convertValue(yaml, JsonNode.class);
     tools.jackson.databind.node.ObjectNode schemaNode = new JsonSchemaGenerator().createSchema();

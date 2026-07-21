@@ -13,10 +13,12 @@ import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Option;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+@Slf4j
 public class GenerateJsonSchema {
 
   public static final String SCHEMA_FILE = "docs/configuration.schema.json";
@@ -33,10 +35,10 @@ public class GenerateJsonSchema {
     } else {
       try {
         Files.writeString(new File(SCHEMA_FILE).toPath(), prettyJson);
-        System.out.println("Wrote schema to " + SCHEMA_FILE);
+        log.info("Wrote schema to {}", SCHEMA_FILE);
 
         Files.writeString(new File(DOCS_FILE).toPath(), generateDocs());
-        System.out.println("Wrote documentation to " + DOCS_FILE);
+        log.info("Wrote documentation to {}", DOCS_FILE);
       } catch (IOException e) {
         throw new RuntimeException("Failed to generate schema/documentation files", e);
       }
@@ -54,7 +56,7 @@ public class GenerateJsonSchema {
     List<Field> topFields =
         schemaFields(Config.class).stream()
             .filter(field -> !Set.of("features", "stages").contains(field.getName()))
-            .collect(Collectors.toList());
+            .toList();
 
     // Table of contents
     md.append("## Table of Contents\n\n");
@@ -137,39 +139,43 @@ public class GenerateJsonSchema {
       if (isInternalField(field)) {
         continue;
       }
-
-      field.setAccessible(true);
-      String key = prefix + "." + field.getName();
-
-      if (isSchemaType(field.getType())) {
-        rows.addAll(collectRows(safeGet(field, instance), field.getType(), key));
-      } else {
-        JsonPropertyDescription jsonDesc = field.getAnnotation(JsonPropertyDescription.class);
-        Option cliOpt = field.getAnnotation(Option.class);
-        if (jsonDesc == null && cliOpt == null) {
-          continue;
-        }
-
-        Map<String, String> r = new HashMap<>();
-        if (cliOpt != null) {
-          r.put(
-              "cli",
-              Arrays.stream(cliOpt.names())
-                  .map(opt -> "`" + opt + "`")
-                  .collect(Collectors.joining(", ")));
-        } else {
-          r.put("cli", "-");
-        }
-        r.put("key", key);
-        r.put("type", typeName(field));
-        r.put("default", formatDefault(safeGet(field, instance)));
-        r.put(
-            "desc",
-            (jsonDesc != null ? jsonDesc.value() : "-").replaceAll("\\s*\\n\\s*", " ").trim());
-        rows.add(r);
-      }
+      collectFieldRows(field, instance, prefix, rows);
     }
     return rows;
+  }
+
+  private static void collectFieldRows(
+      Field field, Object instance, String prefix, List<Map<String, String>> rows) {
+    field.setAccessible(true);
+    String key = prefix + "." + field.getName();
+
+    if (isSchemaType(field.getType())) {
+      rows.addAll(collectRows(safeGet(field, instance), field.getType(), key));
+      return;
+    }
+
+    JsonPropertyDescription jsonDesc = field.getAnnotation(JsonPropertyDescription.class);
+    Option cliOpt = field.getAnnotation(Option.class);
+    if (jsonDesc == null && cliOpt == null) {
+      return;
+    }
+
+    Map<String, String> r = new HashMap<>();
+    if (cliOpt != null) {
+      r.put(
+          "cli",
+          Arrays.stream(cliOpt.names())
+              .map(opt -> "`" + opt + "`")
+              .collect(Collectors.joining(", ")));
+    } else {
+      r.put("cli", "-");
+    }
+    r.put("key", key);
+    r.put("type", typeName(field));
+    r.put("default", formatDefault(safeGet(field, instance)));
+    r.put(
+        "desc", (jsonDesc != null ? jsonDesc.value() : "-").replaceAll("\\s*\\n\\s*", " ").trim());
+    rows.add(r);
   }
 
   public static List<Field> allFields(Class<?> clazz) {
@@ -183,7 +189,7 @@ public class GenerateJsonSchema {
   public static List<Field> schemaFields(Class<?> clazz) {
     return Arrays.stream(clazz.getDeclaredFields())
         .filter(field -> !isInternalField(field) && isSchemaType(field.getType()))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public static boolean isInternalField(Field field) {

@@ -49,7 +49,7 @@ public class SingleTenantMode implements DeploymentMode {
           .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
           .withConfig(config)
           .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-          .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
+          .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
           .generate();
     }
 
@@ -60,7 +60,7 @@ public class SingleTenantMode implements DeploymentMode {
           .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
           .withConfig(config)
           .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-          .withSubfolder(clusterResourcesRepo.operatorRbacSubfolder())
+          .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
           .generate();
     }
   }

@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 public class ClusterResourcesCopyFilter {
 
+  private ClusterResourcesCopyFilter() {}
+
   public static FileFilter forSubDir(String copyFromDirectory, String subDirToCopy) {
     return forSubDirs(copyFromDirectory, java.util.List.of(subDirToCopy));
   }
@@ -18,63 +20,72 @@ public class ClusterResourcesCopyFilter {
       return allowAllFilter();
     }
 
-    final File srcRoot;
-    try {
-      srcRoot = new File(copyFromDirectory).getCanonicalFile();
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to get canonical file for " + copyFromDirectory, e);
-    }
-
-    Set<String> prefixes =
-        subDirsToCopy.stream()
-            .map(
-                subDir -> {
-                  String norm = subDir.replace('\\', '/');
-                  norm = norm.replaceAll("^/+", "").replaceAll("/+$", "");
-                  return norm + "/";
-                })
-            .collect(Collectors.toSet());
-
+    File srcRoot = canonicalFile(copyFromDirectory);
+    Set<String> prefixes = normalizedPrefixes(subDirsToCopy);
     Set<String> templateIncludePrefixes = Set.of("apps/argocd/argocd/templates/");
 
-    return candidateFile -> {
-      File canon;
-      try {
-        canon = candidateFile.getCanonicalFile();
-      } catch (IOException e) {
-        return false;
-      }
+    return candidateFile -> matches(candidateFile, srcRoot, prefixes, templateIncludePrefixes);
+  }
+
+  private static File canonicalFile(String path) {
+    try {
+      return new File(path).getCanonicalFile();
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to get canonical file for " + path, e);
+    }
+  }
+
+  private static Set<String> normalizedPrefixes(Collection<String> subDirsToCopy) {
+    return subDirsToCopy.stream()
+        .map(ClusterResourcesCopyFilter::normalizePrefix)
+        .collect(Collectors.toSet());
+  }
+
+  private static String normalizePrefix(String subDir) {
+    String norm = subDir.replace('\\', '/');
+    norm = norm.replaceAll("^/+", "").replaceAll("/+$", "");
+    return norm + "/";
+  }
+
+  private static boolean matches(
+      File candidateFile, File srcRoot, Set<String> prefixes, Set<String> templateIncludePrefixes) {
+    String rel = relativePath(candidateFile, srcRoot);
+    if (rel == null) {
+      return false;
+    }
+    if (rel.isEmpty() || ".".equals(rel)) {
+      return true;
+    }
+
+    boolean isDir = candidateFile.isDirectory();
+    String relDir = rel.endsWith("/") ? rel : rel + "/";
+
+    if (templateIncludePrefixes.stream().anyMatch((isDir ? relDir : rel)::startsWith)) {
+      return true;
+    }
+
+    if (rel.startsWith("apps/") && relDir.contains("/templates/")) {
+      return false;
+    }
+
+    if (isDir) {
+      return prefixes.stream()
+          .anyMatch(
+              prefix ->
+                  relDir.equals(prefix) || relDir.startsWith(prefix) || prefix.startsWith(relDir));
+    }
+
+    return prefixes.stream().anyMatch(rel::startsWith);
+  }
+
+  private static String relativePath(File candidateFile, File srcRoot) {
+    try {
+      File canon = candidateFile.getCanonicalFile();
       String rel = srcRoot.toURI().relativize(canon.toURI()).toString();
-      rel = rel.replace('\\', '/');
-
-      if (rel.isEmpty() || ".".equals(rel)) {
-        return true;
-      }
-
-      boolean isDir = candidateFile.isDirectory();
-      String relDir = rel.endsWith("/") ? rel : rel + "/";
-
-      final String finalRel = rel;
-      if (templateIncludePrefixes.stream()
-          .anyMatch(prefix -> (isDir ? relDir : finalRel).startsWith(prefix))) {
-        return true;
-      }
-
-      if (rel.startsWith("apps/") && relDir.contains("/templates/")) {
-        return false;
-      }
-
-      if (isDir) {
-        return prefixes.stream()
-            .anyMatch(
-                prefix ->
-                    relDir.equals(prefix)
-                        || relDir.startsWith(prefix)
-                        || prefix.startsWith(relDir));
-      }
-
-      return prefixes.stream().anyMatch(prefix -> finalRel.startsWith(prefix));
-    };
+      return rel.replace('\\', '/');
+    } catch (IOException e) {
+      return null;
+    }
   }
 
   private static FileFilter allowAllFilter() {

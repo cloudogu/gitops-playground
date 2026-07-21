@@ -15,6 +15,9 @@ import lombok.ToString;
 @NoArgsConstructor
 public class Credentials {
 
+  private static final String DEFAULT_USERNAME_KEY = "username";
+  private static final String DEFAULT_PASSWORD_KEY = "password";
+
   @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
   private String username;
 
@@ -29,21 +32,27 @@ public class Credentials {
   private String secretName;
 
   @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String usernameKey = "username";
+  private String usernameKey = DEFAULT_USERNAME_KEY;
 
   @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String passwordKey = "password";
+  private String passwordKey = DEFAULT_PASSWORD_KEY;
 
   public Credentials(String username, String password) {
-    this(username, password, "", "", "username", "password");
+    this(username, password, "", "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
   }
 
   public Credentials(String username, String password, String secretName) {
-    this(username, password, secretName, "", "username", "password");
+    this(username, password, secretName, "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
   }
 
   public Credentials(String username, String password, String secretName, String secretNamespace) {
-    this(username, password, secretName, secretNamespace, "username", "password");
+    this(
+        username,
+        password,
+        secretName,
+        secretNamespace,
+        DEFAULT_USERNAME_KEY,
+        DEFAULT_PASSWORD_KEY);
   }
 
   public Credentials(
@@ -52,7 +61,7 @@ public class Credentials {
       String secretName,
       String secretNamespace,
       String usernameKey) {
-    this(username, password, secretName, secretNamespace, usernameKey, "password");
+    this(username, password, secretName, secretNamespace, usernameKey, DEFAULT_PASSWORD_KEY);
   }
 
   public Credentials(

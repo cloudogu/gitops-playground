@@ -13,13 +13,11 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 @Slf4j
 public class ScmManagerApiClient {
 
-  private final Credentials credentials;
   private final OkHttpClient okHttpClient;
   private final String url;
 
   public ScmManagerApiClient(String url, Credentials credentials, Boolean isInsecure) {
     this.url = url;
-    this.credentials = credentials;
     this.okHttpClient = HttpClientFactory.buildOkHttpClient(credentials, isInsecure);
   }
 

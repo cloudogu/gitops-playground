@@ -20,7 +20,6 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClientForTest
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -220,7 +219,6 @@ class CertManagerTest {
 
 		return new CertManager(testFileSystemUtils,
 			deploymentStrategy,
-			new K8sClientForTest(),
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator)

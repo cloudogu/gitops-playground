@@ -27,6 +27,10 @@ import org.gitlab4j.api.models.Visibility;
 @Slf4j
 public class GitlabProvider implements GitProvider {
 
+  // GitLab API paths always use '/', regardless of the host OS
+  private static final String PATH_SEPARATOR = "/";
+  private static final String NOT_FOUND_SUFFIX = "' not found";
+
   private final DeploymentContext context;
   private final GitLabApi api;
   private final GitlabConfig gitlabConfig;
@@ -66,7 +70,8 @@ public class GitlabProvider implements GitProvider {
     String projectPath = repoName.toLowerCase();
 
     long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
-    String fullProjectPath = parent.getFullPath() + "/" + repoNamespacePath + "/" + projectPath;
+    String fullProjectPath =
+        parent.getFullPath() + PATH_SEPARATOR + repoNamespacePath + PATH_SEPARATOR + projectPath;
 
     if (findProject(fullProjectPath).isPresent()) {
       log.info("GitLab project already exists: " + fullProjectPath);
@@ -117,7 +122,7 @@ public class GitlabProvider implements GitProvider {
                             || principal.equals(candidateGroup.getName()))
                 .findFirst()
                 .orElseThrow(
-                    () -> new IllegalArgumentException("Group '" + principal + "' not found"));
+                    () -> new IllegalArgumentException("Group '" + principal + NOT_FOUND_SUFFIX));
         api.getProjectApi().shareProject(project.getId(), group.getId(), level, null);
       } else {
         org.gitlab4j.api.models.User user =
@@ -128,7 +133,7 @@ public class GitlabProvider implements GitProvider {
                             || principal.equals(candidateUser.getEmail()))
                 .findFirst()
                 .orElseThrow(
-                    () -> new IllegalArgumentException("User '" + principal + "' not found"));
+                    () -> new IllegalArgumentException("User '" + principal + NOT_FOUND_SUFFIX));
         api.getProjectApi().addMember(project.getId(), user.getId(), level);
       }
     } catch (GitLabApiException e) {
@@ -309,7 +314,7 @@ public class GitlabProvider implements GitProvider {
   private Project findProjectOrThrow(String fullPath) {
     return findProject(fullPath)
         .orElseThrow(
-            () -> new IllegalStateException("GitLab project '" + fullPath + "' not found"));
+            () -> new IllegalStateException("GitLab project '" + fullPath + NOT_FOUND_SUFFIX));
   }
 
   private String resolveFullPath(String repoTarget) {

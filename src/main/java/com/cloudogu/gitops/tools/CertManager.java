@@ -4,7 +4,6 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
-import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
@@ -28,19 +27,16 @@ public class CertManager extends Tool {
   private static final String CERT_MANAGER_APP_PATH = "apps/cert-manager";
 
   private final ImagePullSecretCreator imagePullSecretCreator;
-  private final K8sClient k8sClient;
   private String namespace;
 
   public CertManager(
       FileSystemUtils fileSystemUtils,
       Deployer deployer,
-      K8sClient k8sClient,
       AirGappedUtils airGappedUtils,
       GitHandler gitHandler,
       ImagePullSecretCreator imagePullSecretCreator) {
     this.fileSystemUtils = fileSystemUtils;
     this.deployer = deployer;
-    this.k8sClient = k8sClient;
     this.airGappedUtils = airGappedUtils;
     this.gitHandler = gitHandler;
     this.imagePullSecretCreator = imagePullSecretCreator;

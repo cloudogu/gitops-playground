@@ -8,8 +8,8 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import groovy.yaml.YamlSlurper;
 import jakarta.inject.Singleton;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class AirGappedUtils {
+
+  private static final String VERSION_KEY = "version";
 
   private final Config config;
   private final GitRepoFactory repoProvider;
@@ -58,19 +60,19 @@ public class AirGappedUtils {
 
       // Chart.lock contains pinned dependencies and digest.
       // We either have to update or remove them. Take the easier approach.
-      new File(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock").delete();
+      Files.deleteIfExists(Path.of(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock"));
 
       repo.commitAndPush(
           "Chart "
               + chartYaml.get("name")
               + ", version: "
-              + chartYaml.get("version")
+              + chartYaml.get(VERSION_KEY)
               + "\n\n"
               + "Source: "
               + helmConfig.getRepoURL()
               + "\n"
               + "Dependencies localized to run in air-gapped environments",
-          String.valueOf(chartYaml.get("version")));
+          String.valueOf(chartYaml.get(VERSION_KEY)));
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
@@ -147,13 +149,13 @@ public class AirGappedUtils {
     Map<String, Object> chartLockDep =
         findByName(lockDependencies, String.valueOf(chartYamlDep.get("name")));
     if (chartLockDep != null && !chartLockDep.isEmpty()) {
-      chartYamlDep.put("version", chartLockDep.get("version"));
-    } else if (String.valueOf(chartYamlDep.get("version")).contains("*")) {
+      chartYamlDep.put(VERSION_KEY, chartLockDep.get(VERSION_KEY));
+    } else if (String.valueOf(chartYamlDep.get(VERSION_KEY)).contains("*")) {
       throw new RuntimeException(
           "Unable to determine proper version for dependency "
               + chartYamlDep.get("name")
               + " (version: "
-              + chartYamlDep.get("version")
+              + chartYamlDep.get(VERSION_KEY)
               + ") from repo "
               + gitRepo.getRepoTarget());
     }

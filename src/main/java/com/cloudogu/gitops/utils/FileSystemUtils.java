@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 public class FileSystemUtils {
 
   private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
+  private static final String TEMP_FILE_PREFIX = "gitops-playground-";
 
   private static final ObjectMapper yamlMapper =
       new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
@@ -249,26 +250,26 @@ public class FileSystemUtils {
 
       throw exception;
     }
-  }
 
-  private static void makePathWritable(Path path) throws IOException {
-    try {
-      if (path.toFile().setWritable(true)) {
-        return;
+    private static void makePathWritable(Path path) throws IOException {
+      try {
+        if (path.toFile().setWritable(true)) {
+          return;
+        }
+
+        /*
+         * The path may have disappeared between discovery and the
+         * permission change. Temporary Git lock files commonly exhibit
+         * this behavior.
+         */
+        if (Files.notExists(path)) {
+          return;
+        }
+
+        throw new IOException("Failed to make path writable: " + path);
+      } catch (SecurityException exception) {
+        throw new IOException("Insufficient permissions to make path writable: " + path, exception);
       }
-
-      /*
-       * The path may have disappeared between discovery and the
-       * permission change. Temporary Git lock files commonly exhibit
-       * this behavior.
-       */
-      if (Files.notExists(path)) {
-        return;
-      }
-
-      throw new IOException("Failed to make path writable: " + path);
-    } catch (SecurityException exception) {
-      throw new IOException("Insufficient permissions to make path writable: " + path, exception);
     }
   }
 
@@ -321,7 +322,7 @@ public class FileSystemUtils {
     Path sourcePath = Path.of(filePath);
 
     try {
-      Path destinationDirectory = Files.createTempDirectory("gitops-playground-");
+      Path destinationDirectory = Files.createTempDirectory(TEMP_FILE_PREFIX);
 
       Path destinationPath = destinationDirectory.resolve(sourcePath.getFileName());
 
@@ -372,7 +373,7 @@ public class FileSystemUtils {
 
   public Path createTempDir() {
     try {
-      return Files.createTempDirectory("gitops-playground-");
+      return Files.createTempDirectory(TEMP_FILE_PREFIX);
     } catch (IOException exception) {
       throw new UncheckedIOException("Failed to create temporary directory", exception);
     }
@@ -380,7 +381,7 @@ public class FileSystemUtils {
 
   public Path createTempFile() {
     try {
-      Path file = Files.createTempFile("gitops-playground-", "");
+      Path file = Files.createTempFile(TEMP_FILE_PREFIX, "");
 
       file.toFile().deleteOnExit();
 
@@ -482,46 +483,56 @@ public class FileSystemUtils {
   public void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
     try {
       if (Files.notExists(targetDir)) {
-        Path parent = targetDir.getParent();
-
-        if (parent != null) {
-          Files.createDirectories(parent);
-        }
-
-        try {
-          Files.move(sourceDir, targetDir);
+        if (tryMoveDirectoryDirect(sourceDir, targetDir)) {
           return;
-        } catch (IOException moveException) {
-          log.debug(
-              "Could not move directory directly from {} to {}; "
-                  + "falling back to recursive merge",
-              sourceDir,
-              targetDir,
-              moveException);
-
-          Files.createDirectories(targetDir);
         }
       } else if (!Files.isDirectory(targetDir)) {
         Files.delete(targetDir);
         Files.createDirectories(targetDir);
       }
 
-      try (Stream<Path> children = Files.list(sourceDir)) {
-        for (Path child : children.toList()) {
-          Path destination = targetDir.resolve(child.getFileName());
-
-          if (Files.isDirectory(child)) {
-            moveDirectoryMergeOverwrite(child, destination);
-          } else {
-            moveFileOverwrite(child, destination);
-          }
-        }
-      }
+      mergeDirectoryChildren(sourceDir, targetDir);
 
       Files.deleteIfExists(sourceDir);
     } catch (IOException exception) {
       throw new UncheckedIOException(
           "Failed to move directory " + sourceDir + " to " + targetDir, exception);
+    }
+  }
+
+  private boolean tryMoveDirectoryDirect(Path sourceDir, Path targetDir) throws IOException {
+    Path parent = targetDir.getParent();
+
+    if (parent != null) {
+      Files.createDirectories(parent);
+    }
+
+    try {
+      Files.move(sourceDir, targetDir);
+      return true;
+    } catch (IOException moveException) {
+      log.debug(
+          "Could not move directory directly from {} to {}; falling back to recursive merge",
+          sourceDir,
+          targetDir,
+          moveException);
+
+      Files.createDirectories(targetDir);
+      return false;
+    }
+  }
+
+  private void mergeDirectoryChildren(Path sourceDir, Path targetDir) throws IOException {
+    try (Stream<Path> children = Files.list(sourceDir)) {
+      for (Path child : children.toList()) {
+        Path destination = targetDir.resolve(child.getFileName());
+
+        if (Files.isDirectory(child)) {
+          moveDirectoryMergeOverwrite(child, destination);
+        } else {
+          moveFileOverwrite(child, destination);
+        }
+      }
     }
   }
 
@@ -533,22 +544,26 @@ public class FileSystemUtils {
         Files.createDirectories(parent);
       }
 
-      try {
-        Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-      } catch (IOException moveException) {
-        log.debug(
-            "Could not move file directly from {} to {}; " + "falling back to copy and delete",
-            sourceFile,
-            targetFile,
-            moveException);
-
-        Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-
-        Files.delete(sourceFile);
-      }
+      moveOrCopyFile(sourceFile, targetFile);
     } catch (IOException exception) {
       throw new UncheckedIOException(
           "Failed to move file " + sourceFile + " to " + targetFile, exception);
+    }
+  }
+
+  private void moveOrCopyFile(Path sourceFile, Path targetFile) throws IOException {
+    try {
+      Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException moveException) {
+      log.debug(
+          "Could not move file directly from {} to {}; falling back to copy and delete",
+          sourceFile,
+          targetFile,
+          moveException);
+
+      Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+
+      Files.delete(sourceFile);
     }
   }
 

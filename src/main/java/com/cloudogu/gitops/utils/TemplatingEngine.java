@@ -47,10 +47,10 @@ public class TemplatingEngine {
     if (rendered != null && !rendered.trim().isEmpty()) {
       Files.writeString(targetFile.toPath(), rendered);
     } else {
-      targetFile.delete();
+      Files.deleteIfExists(targetFile.toPath());
     }
 
-    templateFile.delete();
+    Files.deleteIfExists(templateFile.toPath());
     return targetFile;
   }
 

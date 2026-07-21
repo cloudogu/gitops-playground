@@ -23,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ArgoCDDestructionHandler implements DestructionHandler {
 
+  private static final String ARGOCD = "argocd";
+
   private final ContextBuilder contextBuilder;
   private final K8sClient k8sClient;
   private final HelmClient helmClient;
@@ -51,7 +53,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 
     for (CustomResource app : k8sClient.getCustomResource("app")) {
       if ("bootstrap".equals(app.name())
-          || "argocd".equals(app.name())
+          || ARGOCD.equals(app.name())
           || "projects".equals(app.name())) {
         continue;
       }
@@ -76,13 +78,13 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
     }
 
     installArgoCDViaHelm(repo, argocdNamespace);
-    helmClient.uninstall("argocd", "argocd");
+    helmClient.uninstall(ARGOCD, ARGOCD);
     for (CustomResource project : k8sClient.getCustomResource("appprojects")) {
       k8sClient.delete("appproject", project.namespace(), project.name());
     }
 
     k8sClient.delete("app", argocdNamespace, "projects");
-    k8sClient.delete("app", argocdNamespace, "argocd");
+    k8sClient.delete("app", argocdNamespace, ARGOCD);
 
     if (jenkinsNamespace != null) {
       k8sClient.delete("secret", jenkinsNamespace, "jenkins-credentials");
@@ -99,7 +101,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
             fileSystemUtils.readYaml(Path.of(umbrellaChartPath, "Chart.yaml")).get("dependencies");
     helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
     helmClient.dependencyBuild(umbrellaChartPath);
-    helmClient.upgrade("argocd", umbrellaChartPath, Map.of("namespace", argocdNamespace));
+    helmClient.upgrade(ARGOCD, umbrellaChartPath, Map.of("namespace", argocdNamespace));
   }
 
   private Config getConfig() {

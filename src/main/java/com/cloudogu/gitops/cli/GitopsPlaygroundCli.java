@@ -38,6 +38,8 @@ import picocli.CommandLine;
 @Slf4j
 public class GitopsPlaygroundCli {
 
+  private static final String STDOUT_APPENDER_NAME = "STDOUT";
+
   private final K8sClient k8sClient;
   private final ApplicationConfigurator applicationConfigurator;
 
@@ -168,8 +170,8 @@ public class GitopsPlaygroundCli {
 
   public void setSimpleLogPattern() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
-    Appender<ILoggingEvent> stdoutAppender = rootLogger.getAppender("STDOUT");
+    Logger rootLogger = loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+    Appender<ILoggingEvent> stdoutAppender = rootLogger.getAppender(STDOUT_APPENDER_NAME);
     if (!(stdoutAppender instanceof ConsoleAppender)) {
       return;
     }
@@ -180,14 +182,14 @@ public class GitopsPlaygroundCli {
 
     String defaultPattern = ((PatternLayoutEncoder) encoderObj).getPattern();
 
-    rootLogger.detachAppender("STDOUT");
+    rootLogger.detachAppender(STDOUT_APPENDER_NAME);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern(
         defaultPattern.replaceAll(" \\S*%thread\\S* ", " ").replaceAll(" \\S*%logger\\S* ", " "));
     encoder.setContext(loggerContext);
     encoder.start();
     ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
-    appender.setName("STDOUT");
+    appender.setName(STDOUT_APPENDER_NAME);
     appender.setContext(loggerContext);
     appender.setEncoder(encoder);
     appender.start();

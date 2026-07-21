@@ -575,7 +575,7 @@ public class Config {
       private LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
       private LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>();
 
-      public LinkedHashSet<String> getActiveNamespaces() {
+      public Set<String> getActiveNamespaces() {
         LinkedHashSet<String> active = new LinkedHashSet<>(dedicatedNamespaces);
         active.addAll(tenantNamespaces);
         return active;

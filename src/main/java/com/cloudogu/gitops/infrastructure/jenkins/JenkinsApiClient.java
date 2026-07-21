@@ -122,36 +122,47 @@ public class JenkinsApiClient {
     int retry = 0;
     Response response = null;
     do {
-      if (response != null) {
-        response.close();
-        response = null;
+      closeQuietly(response);
+      response = attemptRequest(requestSupplier, retry, retries);
+      if (response != null && !shouldRetryRequest(response)) {
+        break;
       }
-      try {
-        Request request = requestSupplier.get();
-        response = client.newCall(request).execute();
-        if (!shouldRetryRequest(response)) {
-          break;
-        }
-      } catch (Exception e) {
-        log.trace("Jenkins request failed, retrying... (try {}/{})", retry, retries, e);
-      }
-      if (retry + 1 < retries) {
-        try {
-          Thread.sleep(waitPeriodInMs);
-        } catch (InterruptedException e) {
-          if (response != null) {
-            response.close();
-          }
-          Thread.currentThread().interrupt();
-          throw new RuntimeException("Interrupted while waiting for retry", e);
-        }
-      }
+      waitBeforeRetry(retry, retries, response);
     } while (++retry < retries);
 
     if (response == null) {
       throw new RuntimeException("Failed to send request after " + retries + " retries");
     }
     return response;
+  }
+
+  private Response attemptRequest(RequestSupplier requestSupplier, int retry, int retries) {
+    try {
+      Request request = requestSupplier.get();
+      return client.newCall(request).execute();
+    } catch (Exception e) {
+      log.trace("Jenkins request failed, retrying... (try {}/{})", retry, retries, e);
+      return null;
+    }
+  }
+
+  private void waitBeforeRetry(int retry, int retries, Response response) {
+    if (retry + 1 >= retries) {
+      return;
+    }
+    try {
+      Thread.sleep(waitPeriodInMs);
+    } catch (InterruptedException e) {
+      closeQuietly(response);
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while waiting for retry", e);
+    }
+  }
+
+  private static void closeQuietly(Response response) {
+    if (response != null) {
+      response.close();
+    }
   }
 
   private boolean shouldRetryRequest(Response response) {

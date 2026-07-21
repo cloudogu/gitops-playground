@@ -16,6 +16,9 @@ import retrofit2.Response;
 @RequiredArgsConstructor
 public class ScmmDestructionHandler implements DestructionHandler {
 
+  private static final String ARGOCD = "argocd";
+  private static final String THIRD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
+
   private final Config config;
   private final ContextBuilder contextBuilder;
   private final K8sClient k8sClient;
@@ -26,13 +29,13 @@ public class ScmmDestructionHandler implements DestructionHandler {
   @Override
   public void destroy() {
     deleteUser("gitops");
-    deleteRepository("argocd", "argocd");
-    deleteRepository("argocd", "cluster-resources");
-    deleteRepository("argocd", "example-apps");
-    deleteRepository("3rd-party-dependencies", "ces-build-lib", false);
-    deleteRepository("3rd-party-dependencies", "gitops-build-lib", false);
-    deleteRepository("3rd-party-dependencies", "spring-boot-helm-chart", false);
-    deleteRepository("3rd-party-dependencies", "spring-boot-helm-chart-with-dependency", false);
+    deleteRepository(ARGOCD, ARGOCD);
+    deleteRepository(ARGOCD, "cluster-resources");
+    deleteRepository(ARGOCD, "example-apps");
+    deleteRepository(THIRD_PARTY_DEPENDENCIES, "ces-build-lib", false);
+    deleteRepository(THIRD_PARTY_DEPENDENCIES, "gitops-build-lib", false);
+    deleteRepository(THIRD_PARTY_DEPENDENCIES, "spring-boot-helm-chart", false);
+    deleteRepository(THIRD_PARTY_DEPENDENCIES, "spring-boot-helm-chart-with-dependency", false);
   }
 
   private void deleteRepository(String namespace, String repository, boolean prefixNamespace) {

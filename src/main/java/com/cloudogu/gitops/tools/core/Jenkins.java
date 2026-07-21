@@ -38,6 +38,7 @@ public class Jenkins extends Tool {
 
   private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
   private static final String TOOL_NAME = "jenkins";
+  private static final String ETC_GROUP_PATH = "/etc/group";
   private static final String JENKINS_APP_PATH = "apps/jenkins";
   private static final String RELEASE_NAME = "jenkins";
 
@@ -142,7 +143,7 @@ public class Jenkins extends Tool {
     k8sClient.labelRemove("node", "--all", "", "node");
 
     String nodeName = k8sClient.waitForNode().replace("node/", "");
-    k8sClient.label("node", nodeName, new Tuple<>("node", "jenkins"));
+    k8sClient.label("node", nodeName, new Tuple<>("node", TOOL_NAME));
   }
 
   private void createJenkinsCredentialsSecret() {
@@ -410,8 +411,10 @@ public class Jenkins extends Tool {
 
     if (gid.isEmpty()) {
       log.warn(
-          "Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!\n"
-              + "Group docker not found in /etc/group:\n{}",
+          """
+          Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!
+          Group docker not found in /etc/group:
+          {}""",
           etcGroup);
       return "";
     } else {
@@ -429,15 +432,19 @@ public class Jenkins extends Tool {
                     Map.of(
                         "name", "tmp-docker-gid-grepper",
                         "image", getConfig().getJenkins().getInternalBashImage(),
-                        "args", List.of("cat", "/etc/group"),
+                        "args", List.of("cat", ETC_GROUP_PATH),
                         "volumeMounts",
                             List.of(
                                 Map.of(
-                                    "name", "group",
-                                    "mountPath", "/etc/group",
-                                    "readOnly", true)))),
-            "nodeSelector", Map.of("node", "jenkins"),
-            "volumes", List.of(Map.of("name", "group", "hostPath", Map.of("path", "/etc/group")))));
+                                    "name",
+                                    "group",
+                                    "mountPath",
+                                    ETC_GROUP_PATH,
+                                    "readOnly",
+                                    true)))),
+            "nodeSelector", Map.of("node", TOOL_NAME),
+            "volumes",
+                List.of(Map.of("name", "group", "hostPath", Map.of("path", ETC_GROUP_PATH)))));
   }
 
   @Override

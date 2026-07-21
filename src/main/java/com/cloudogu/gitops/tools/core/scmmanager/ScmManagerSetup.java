@@ -333,7 +333,7 @@ public class ScmManagerSetup {
     userRequest.setExternal(false);
     userRequest.setPassword(password);
     userRequest.setActive(true);
-    userRequest.set_links(new HashMap<>());
+    userRequest.setLinks(new HashMap<>());
 
     ScmManagerApiClient.handleApiResponse(
         scmManager.getApiClient().usersApi().addUser(userRequest));
