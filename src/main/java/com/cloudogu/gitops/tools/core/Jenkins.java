@@ -55,6 +55,8 @@ public class Jenkins extends Tool {
   private static final int GID_GREPPER_POD_SUFFIX_BOUND = 10_000;
   private static final int ETC_GROUP_MIN_FIELDS = 3;
   private static final int ETC_GROUP_GID_FIELD_INDEX = 2;
+  // Not security-sensitive: only used to make a temporary pod name unique.
+  private static final Random RANDOM = new Random();
 
   @Getter @Setter private String namespace;
   private final CommandExecutor commandExecutor;
@@ -179,8 +181,8 @@ public class Jenkins extends Tool {
   @Override
   protected String activeNamespace(DeploymentContext context) {
     return context.getConfig().getJenkins().getInternal()
-        ? context.getConfig().getApplication().getNamePrefix()
-            + context.getConfig().getJenkins().getNamespace()
+        ? (context.getConfig().getApplication().getNamePrefix()
+            + context.getConfig().getJenkins().getNamespace())
         : null;
   }
 
@@ -369,11 +371,12 @@ public class Jenkins extends Tool {
       List<String> lines = Files.readAllLines(pluginsFile.toPath());
       for (String line : lines) {
         String pluginDefinition = line.trim();
-        if (!pluginDefinition.isEmpty() && !pluginDefinition.startsWith("#")) {
-          String pluginName = pluginDefinition.split(":", PLUGIN_NAME_SPLIT_LIMIT)[0];
-          if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
-            pinnedPlugins.put(pluginName, pluginDefinition);
-          }
+        if (pluginDefinition.isEmpty() || pluginDefinition.startsWith("#")) {
+          continue;
+        }
+        String pluginName = pluginDefinition.split(":", PLUGIN_NAME_SPLIT_LIMIT)[0];
+        if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
+          pinnedPlugins.put(pluginName, pluginDefinition);
         }
       }
     } catch (IOException e) {
@@ -402,7 +405,7 @@ public class Jenkins extends Tool {
     String gid = "";
     String etcGroup =
         k8sClient.run(
-            "tmp-docker-gid-grepper-" + new Random().nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
+            "tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
             "irrelevant" /* Redundant, but mandatory param */,
             namespace,
             createGidGrepperOverrides(),

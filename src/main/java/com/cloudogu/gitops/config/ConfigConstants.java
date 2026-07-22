@@ -2,8 +2,6 @@ package com.cloudogu.gitops.config;
 
 public final class ConfigConstants {
 
-  private ConfigConstants() {}
-
   public static final String BINARY_NAME = "apply-ng";
   public static final String APP_NAME = "gitops-playground (GOP)";
   public static final String APP_DESCRIPTION = "CLI-tool to deploy gitops-playground.";
@@ -278,4 +276,6 @@ public final class ConfigConstants {
 
   public static final String OIDC_DESCPRIPTION =
       "OIDC Config for this tool. See docs for more infos";
+
+  private ConfigConstants() {}
 }

@@ -187,32 +187,35 @@ public class GitRepo implements AutoCloseable {
       log.debug("Pushing repo: {}, refSpec: {}", repoTarget, refSpec);
 
       Iterable<PushResult> pushResults = pushCommand.call();
-
-      for (PushResult result : pushResults) {
-        for (RemoteRefUpdate update : result.getRemoteUpdates()) {
-          log.debug(
-              "Push result for repo '{}': remoteName='{}', status='{}', message='{}'",
-              repoTarget,
-              update.getRemoteName(),
-              update.getStatus(),
-              update.getMessage());
-
-          if (update.getStatus() != Status.OK && update.getStatus() != Status.UP_TO_DATE) {
-            throw new RuntimeException(
-                "Push failed for repo '"
-                    + repoTarget
-                    + "', remoteName='"
-                    + update.getRemoteName()
-                    + "', status='"
-                    + update.getStatus()
-                    + "', message='"
-                    + update.getMessage()
-                    + "'");
-          }
-        }
-      }
+      validatePushResults(pushResults, repoTarget);
     } else {
       log.debug("No changes after add, nothing to commit or push on repo: {}", repoTarget);
+    }
+  }
+
+  private static void validatePushResults(Iterable<PushResult> pushResults, String repoTarget) {
+    for (PushResult result : pushResults) {
+      for (RemoteRefUpdate update : result.getRemoteUpdates()) {
+        log.debug(
+            "Push result for repo '{}': remoteName='{}', status='{}', message='{}'",
+            repoTarget,
+            update.getRemoteName(),
+            update.getStatus(),
+            update.getMessage());
+
+        if (update.getStatus() != Status.OK && update.getStatus() != Status.UP_TO_DATE) {
+          throw new RuntimeException(
+              "Push failed for repo '"
+                  + repoTarget
+                  + "', remoteName='"
+                  + update.getRemoteName()
+                  + "', status='"
+                  + update.getStatus()
+                  + "', message='"
+                  + update.getMessage()
+                  + "'");
+        }
+      }
     }
   }
 
@@ -262,9 +265,7 @@ public class GitRepo implements AutoCloseable {
     if (file.isDirectory()) {
       throw new java.io.FileNotFoundException(file.getAbsolutePath() + " (Is a directory)");
     }
-    if (!file.exists()) {
-      file.createNewFile();
-    }
+    // Files.writeString creates the file if it doesn't exist yet.
     Files.writeString(file.toPath(), content);
   }
 
@@ -376,19 +377,24 @@ public class GitRepo implements AutoCloseable {
       String branchName = branch.getName();
 
       ObjectId commitId = git.getRepository().resolve(branchName);
-      if (commitId == null) {
-        continue;
+      if (commitId != null && branchContainsFile(git, commitId, filename, branchName)) {
+        return true;
       }
-      try (RevWalk revWalk = new RevWalk(git.getRepository())) {
-        RevCommit commit = revWalk.parseCommit(commitId);
-        try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
-          treeWalk.addTree(commit.getTree());
-          treeWalk.setFilter(PathFilter.create(filename));
+    }
+    return false;
+  }
 
-          if (treeWalk.next()) {
-            log.debug("File {} found in branch {}", filename, branchName);
-            return true;
-          }
+  private static boolean branchContainsFile(
+      Git git, ObjectId commitId, String filename, String branchName) throws IOException {
+    try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+      RevCommit commit = revWalk.parseCommit(commitId);
+      try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
+        treeWalk.addTree(commit.getTree());
+        treeWalk.setFilter(PathFilter.create(filename));
+
+        if (treeWalk.next()) {
+          log.debug("File {} found in branch {}", filename, branchName);
+          return true;
         }
       }
     }

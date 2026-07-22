@@ -47,10 +47,27 @@ public class Config {
   public static final String K8S_VERSION = "1.36.2";
   public static final String DEFAULT_ADMIN_USER = "admin";
 
-  @SuppressWarnings({"java:S1444", "java:S1104", "java:S3008"})
-  public static String DEFAULT_ADMIN_PW = generatePassword();
+  public static final String DEFAULT_ADMIN_PW = generatePassword();
 
   public static final int DEFAULT_REGISTRY_PORT = 30000;
+  private static final int GENERATED_PASSWORD_LENGTH = 12;
+
+  private static final ObjectMapper objectMapper =
+      new ObjectMapper()
+          .registerModule(
+              new SimpleModule()
+                  .addSerializer(
+                      groovy.lang.GString.class,
+                      new JsonSerializer<groovy.lang.GString>() {
+                        @Override
+                        public void serialize(
+                            groovy.lang.GString value,
+                            JsonGenerator jsonGenerator,
+                            SerializerProvider serializerProvider)
+                            throws IOException {
+                          jsonGenerator.writeString(value.toString());
+                        }
+                      }));
 
   @JsonPropertyDescription(REGISTRY_DESCRIPTION)
   @Mixin
@@ -79,8 +96,6 @@ public class Config {
   @JsonPropertyDescription(CONTENT_DESCRIPTION)
   @Mixin
   private ContentSchema content = new ContentSchema();
-
-  private static final int GENERATED_PASSWORD_LENGTH = 12;
 
   private static String generatePassword() {
     SecureRandom sr = new SecureRandom();
@@ -1044,23 +1059,6 @@ public class Config {
     RESET,
     UPGRADE
   }
-
-  private static final ObjectMapper objectMapper =
-      new ObjectMapper()
-          .registerModule(
-              new SimpleModule()
-                  .addSerializer(
-                      groovy.lang.GString.class,
-                      new JsonSerializer<groovy.lang.GString>() {
-                        @Override
-                        public void serialize(
-                            groovy.lang.GString value,
-                            JsonGenerator jsonGenerator,
-                            SerializerProvider serializerProvider)
-                            throws IOException {
-                          jsonGenerator.writeString(value.toString());
-                        }
-                      }));
 
   public static Config fromMap(Map<String, Object> map) {
     return objectMapper.convertValue(map, Config.class);

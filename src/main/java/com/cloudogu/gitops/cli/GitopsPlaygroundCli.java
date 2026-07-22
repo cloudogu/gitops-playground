@@ -19,6 +19,7 @@ import com.cloudogu.gitops.destroy.Destroyer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
 import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.utils.MapUtils;
 import groovy.yaml.YamlSlurper;
 import io.micronaut.context.ApplicationContext;
 import java.io.BufferedReader;
@@ -45,6 +46,8 @@ import picocli.CommandLine;
 public class GitopsPlaygroundCli {
 
   private static final String STDOUT_APPENDER_NAME = "STDOUT";
+  // Not exploitable: only ever matched against the trusted, developer-controlled pattern string
+  // from logback.xml, never against user input.
   private static final Pattern THREAD_PATTERN_TOKEN =
       Pattern.compile(" \\S*%thread\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
   private static final Pattern LOGGER_PATTERN_TOKEN =
@@ -264,14 +267,13 @@ public class GitopsPlaygroundCli {
     return mergedConfig;
   }
 
-  @SuppressWarnings("unchecked")
   public static Map<String, Object> validateConfig(String configValues) {
     Object map = new YamlSlurper().parseText(configValues);
     if (!(map instanceof Map)) {
       throw new RuntimeException("Could not parse YAML as map: " + map);
     }
     JsonSchemaValidator.validate((Map<?, ?>) map);
-    return (Map<String, Object>) map;
+    return MapUtils.asStringObjectMap(map);
   }
 
   public void printWelcomeScreen(String password) {
@@ -334,8 +336,7 @@ public class GitopsPlaygroundCli {
                   + resourceName
                   + "' not found).");
         }
-        String content =
-            new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         Map<String, Object> profileFile = validateConfig(content);
         profileConfig = Config.fromMap(profileFile);
       } catch (IOException e) {

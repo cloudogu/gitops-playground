@@ -23,6 +23,7 @@ public class GitHandler {
   @Getter private final NetworkingUtils networkingUtils;
 
   @Getter @Setter private GitProvider tenant;
+
   @Getter @Setter private GitProvider central;
 
   public void validate(DeploymentContext context) {

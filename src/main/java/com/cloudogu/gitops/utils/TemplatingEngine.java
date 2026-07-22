@@ -78,7 +78,6 @@ public class TemplatingEngine {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public static Map<String, Object> templateToMap(String filePath, Map<String, Object> parameters) {
     String hydratedString;
     try {
@@ -91,7 +90,7 @@ public class TemplatingEngine {
       // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
       return Collections.emptyMap();
     }
-    return (Map<String, Object>) new YamlSlurper().parseText(hydratedString);
+    return MapUtils.asStringObjectMap(new YamlSlurper().parseText(hydratedString));
   }
 
   /** Executes template and writes to targetFile, keeping the template file. */

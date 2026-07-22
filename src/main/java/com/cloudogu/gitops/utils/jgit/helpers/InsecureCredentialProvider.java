@@ -44,6 +44,8 @@ public class InsecureCredentialProvider extends CredentialsProvider {
         .anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
   }
 
+  // JGit's CredentialsProvider contract: true means "these items were handled", regardless of
+  // which prompt was matched, so both return paths are intentionally the same value.
   @Override
   @SuppressWarnings("java:S3516")
   public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {

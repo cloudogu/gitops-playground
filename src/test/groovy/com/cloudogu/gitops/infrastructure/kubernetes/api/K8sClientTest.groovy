@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.utils.Tuple
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -606,8 +607,8 @@ class K8sClientTest {
 
 		// When
 		k8sApiClient.createSecret("Opaque", "my-secret", "test-ns",
-			new Tuple2("username", "admin"),
-			new Tuple2("password", "secret"))
+			new Tuple("username", "admin"),
+			new Tuple("password", "secret"))
 
 		// Then - Verify secret was created
 	}
@@ -852,7 +853,7 @@ metadata:
 			.endMetadata()
 			.build()
 
-		// label() makes a GET, then replace() makes another GET followed by PUT
+		// label() makes a GET, then patch() makes another GET followed by PATCH
 		server.expect()
 			.get()
 			.withPath("/api/v1/namespaces/default/pods/test-pod")
@@ -866,15 +867,15 @@ metadata:
 			.once()
 
 		server.expect()
-			.put()
+			.patch()
 			.withPath("/api/v1/namespaces/default/pods/test-pod")
 			.andReturn(200, pod)
 			.once()
 
 		// When
 		k8sApiClient.label("pod", "test-pod", "default",
-			new Tuple2("app", "myapp"),
-			new Tuple2("version", "1.0"))
+			new Tuple("app", "myapp"),
+			new Tuple("version", "1.0"))
 
 		// Then - Verify labels were updated
 	}
@@ -890,7 +891,7 @@ metadata:
 			.endMetadata()
 			.build()
 
-		// label() makes a GET, then replace() makes another GET followed by PUT
+		// label() makes a GET, then patch() makes another GET followed by PATCH
 		server.expect()
 			.get()
 			.withPath("/api/v1/namespaces/default/pods/test-pod")
@@ -904,7 +905,7 @@ metadata:
 			.once()
 
 		server.expect()
-			.put()
+			.patch()
 			.withPath("/api/v1/namespaces/default/pods/test-pod")
 			.andReturn(200, pod)
 			.once()
@@ -953,7 +954,7 @@ metadata:
 			.once()
 
 		// When
-		k8sApiClient.delete("pod", "test-ns", new Tuple2("app", "myapp"))
+		k8sApiClient.delete("pod", "test-ns", new Tuple("app", "myapp"))
 
 		// Then - Verify delete was called
 	}
@@ -1340,7 +1341,7 @@ metadata:
 			.once()
 
 		// When
-		k8sApiClient.createSecret("Opaque", "test-secret", "", new Tuple2("key", "value"))
+		k8sApiClient.createSecret("Opaque", "test-secret", "", new Tuple("key", "value"))
 
 		// Then - Verify default namespace was used
 	}

@@ -47,6 +47,7 @@ public class RepositoryProvisioning {
   private final GitHandler gitHandler;
 
   @Getter @Setter private RepositoryWorkspace workspace;
+
   @Getter @Setter private boolean repositoriesCloned;
 
   public RepositoryProvisioning(GitRepoFactory gitRepoFactory, GitHandler gitHandler) {
@@ -136,6 +137,8 @@ public class RepositoryProvisioning {
     return CLUSTER_RESOURCES_REPO_TARGET;
   }
 
+  // Ownership of clusterResourcesRepository is handed off to the returned RepositoryWorkspace,
+  // which closes it in RepositoryWorkspace#close(). Sonar can't trace that across the boundary.
   @SuppressWarnings("java:S2095")
   private RepositoryWorkspace createSingleInstanceWorkspace(DeploymentContext context) {
     log.debug("Creating single-instance repository workspace.");
@@ -146,6 +149,8 @@ public class RepositoryProvisioning {
     return new RepositoryWorkspace(clusterResourcesRepository);
   }
 
+  // Ownership of both GitRepo instances is handed off to the returned RepositoryWorkspace,
+  // which closes them in RepositoryWorkspace#close(). Sonar can't trace that across the boundary.
   @SuppressWarnings("java:S2095")
   private RepositoryWorkspace createDedicatedInstanceWorkspace(DeploymentContext context) {
     log.debug("Creating dedicated-instance repository workspace.");

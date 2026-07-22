@@ -64,7 +64,7 @@ public class ClusterResourcesCopyFilter {
     }
 
     boolean isDir = candidateFile.isDirectory();
-    String relDir = rel.endsWith("/") ? rel : rel + "/";
+    String relDir = rel.endsWith("/") ? rel : (rel + "/");
 
     if (templateIncludePrefixes.stream().anyMatch((isDir ? relDir : rel)::startsWith)) {
       return true;

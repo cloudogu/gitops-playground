@@ -619,13 +619,10 @@ public class ContentLoader extends Tool {
 
       targetRepo.cloneRepo();
 
-      switch (repoCoordinate.repoConfig.getType()) {
-        case MIRROR:
-          handleRepoMirroring(repoCoordinate, targetRepo);
-          break;
-        case FOLDER_BASED, COPY:
-          handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo);
-          break;
+      if (repoCoordinate.repoConfig.getType() == ContentRepoType.MIRROR) {
+        handleRepoMirroring(repoCoordinate, targetRepo);
+      } else {
+        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo);
       }
 
       createJenkinsJobIfApplicable(repoCoordinate, targetRepo);
@@ -887,13 +884,13 @@ public class ContentLoader extends Tool {
       return namespace + "/" + repoName;
     }
 
-    public List<RepoCoordinate> findSame(List<RepoCoordinate> repoCoordinates) {
+    public List<RepoCoordinate> findSame(Collection<RepoCoordinate> repoCoordinates) {
       return repoCoordinates.stream()
           .filter(it -> it.getFullRepoName().equals(getFullRepoName()))
           .toList();
     }
 
-    public RepoCoordinate findSameNotMirror(List<RepoCoordinate> repoCoordinates) {
+    public RepoCoordinate findSameNotMirror(Collection<RepoCoordinate> repoCoordinates) {
       return repoCoordinates.stream()
           .filter(
               it ->

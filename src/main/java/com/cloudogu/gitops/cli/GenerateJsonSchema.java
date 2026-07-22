@@ -31,6 +31,13 @@ public class GenerateJsonSchema {
   public static final String SCHEMA_FILE = "docs/configuration.schema.json";
   public static final String DOCS_FILE = "docs/Configuration.md";
 
+  private static final Pattern UPPERCASE_LETTER =
+      Pattern.compile("\\p{Lu}", Pattern.UNICODE_CHARACTER_CLASS);
+  private static final Pattern WHITESPACE_RUN =
+      Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
+  private static final Pattern WHITESPACE_AROUND_NEWLINE =
+      Pattern.compile("\\s*\\n\\s*", Pattern.UNICODE_CHARACTER_CLASS);
+
   public static void main(String[] args) {
     try {
       ObjectNode jsonSchema =
@@ -272,11 +279,6 @@ public class GenerateJsonSchema {
     }
     return t.getSimpleName();
   }
-
-  private static final Pattern UPPERCASE_LETTER =
-      Pattern.compile("\\p{Lu}", Pattern.UNICODE_CHARACTER_CLASS);
-  private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+");
-  private static final Pattern WHITESPACE_AROUND_NEWLINE = Pattern.compile("\\s*\\n\\s*");
 
   public static String sectionTitle(String name) {
     String title = UPPERCASE_LETTER.matcher(name).replaceAll(" $0").trim();

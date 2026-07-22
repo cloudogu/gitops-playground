@@ -37,11 +37,10 @@ class K8sClientHelper {
 
   private K8sClientHelper() {}
 
-  @SuppressWarnings("unchecked")
   static Pod applyPodOverrides(Pod pod, Map<String, ?> overrides) {
     Map<String, Object> podAsMap = Serialization.unmarshal(Serialization.asJson(pod), MAP_TYPE);
     Map<String, Object> normalizedOverrides =
-        (Map<String, Object>) normalizeOverrideValue(overrides);
+        MapUtils.asStringObjectMap(normalizeOverrideValue(overrides));
     Map<String, Object> mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap);
     return Serialization.unmarshal(Serialization.asJson(mergedPod), Pod.class);
   }

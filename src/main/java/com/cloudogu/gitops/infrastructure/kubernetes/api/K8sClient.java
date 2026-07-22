@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
 import com.cloudogu.gitops.config.Credentials;
+import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -26,6 +27,7 @@ import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.dsl.NonDeletingOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
@@ -57,7 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Kubernetes client using Fabric8 Kubernetes Client. */
 @Singleton
-@SuppressWarnings({"deprecation", "java:S3776"})
+@SuppressWarnings("java:S3776")
 @Slf4j
 public class K8sClient {
 
@@ -229,7 +231,7 @@ public class K8sClient {
               .services()
               .inNamespace(resolveNamespace(namespace))
               .resource(service)
-              .createOrReplace();
+              .createOr(NonDeletingOperation::update);
           return null;
         });
 
@@ -404,15 +406,6 @@ public class K8sClient {
     log.debug("Secret {} created/updated successfully", name);
   }
 
-  public void createSecret(
-      String type, String name, String namespace, groovy.lang.Tuple2... literals) {
-    Tuple<?, ?>[] tuples = new Tuple<?, ?>[literals.length];
-    for (int i = 0; i < literals.length; i++) {
-      tuples[i] = new Tuple<>(literals[i].getFirst(), literals[i].getSecond());
-    }
-    createSecret(type, name, namespace, tuples);
-  }
-
   public void createImagePullSecret(String name, String host, String user, String password) {
     createImagePullSecret(name, "", host, user, password);
   }
@@ -453,7 +446,7 @@ public class K8sClient {
               .secrets()
               .inNamespace(resolveNamespace(namespace))
               .resource(secret)
-              .createOrReplace();
+              .createOr(NonDeletingOperation::update);
           return null;
         });
 
@@ -496,21 +489,22 @@ public class K8sClient {
       String secretname, String namespace, String usernameKey, String passwordKey) {
     return executeWithErrorHandling(
         "get credentials from secret " + secretname,
-        () -> {
-          Secret secret = client.secrets().inNamespace(namespace).withName(secretname).get();
-          if (secret == null || secret.getData() == null) {
-            throw new RuntimeException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
-          }
+        () -> resolveCredentialsFromSecret(secretname, namespace, usernameKey, passwordKey));
+  }
 
-          Map<String, String> secretData = secret.getData();
-          String username =
-              new String(
-                  Base64.getDecoder().decode(secretData.get(usernameKey)), StandardCharsets.UTF_8);
-          String password =
-              new String(
-                  Base64.getDecoder().decode(secretData.get(passwordKey)), StandardCharsets.UTF_8);
-          return new Credentials(username, password);
-        });
+  private Credentials resolveCredentialsFromSecret(
+      String secretname, String namespace, String usernameKey, String passwordKey) {
+    Secret secret = client.secrets().inNamespace(namespace).withName(secretname).get();
+    if (secret == null || secret.getData() == null) {
+      throw new RuntimeException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
+    }
+
+    Map<String, String> secretData = secret.getData();
+    String username =
+        new String(Base64.getDecoder().decode(secretData.get(usernameKey)), StandardCharsets.UTF_8);
+    String password =
+        new String(Base64.getDecoder().decode(secretData.get(passwordKey)), StandardCharsets.UTF_8);
+    return new Credentials(username, password);
   }
 
   /** Extracts credentials from a Kubernetes secret using a Credentials object as input. */
@@ -591,7 +585,7 @@ public class K8sClient {
               .configMaps()
               .inNamespace(resolveNamespace(namespace))
               .resource(configMap)
-              .createOrReplace();
+              .createOr(NonDeletingOperation::update);
           return null;
         });
 
@@ -682,24 +676,13 @@ public class K8sClient {
   private int applyYamlStream(InputStream stream, String sourceDescription) {
     List<HasMetadata> resources =
         executeWithErrorHandling(
-            "load YAML from " + sourceDescription,
-            () -> {
-              try {
-                return client.load(stream).items();
-              } finally {
-                try {
-                  stream.close();
-                } catch (IOException e) {
-                  log.debug("Failed to close YAML input stream for {}", sourceDescription, e);
-                }
-              }
-            });
+            "load YAML from " + sourceDescription, () -> loadYamlItems(stream, sourceDescription));
 
     for (HasMetadata resource : resources) {
       executeWithErrorHandling(
           "apply resource from " + sourceDescription,
           () -> {
-            client.resource(resource).createOrReplace();
+            client.resource(resource).createOr(NonDeletingOperation::update);
             return null;
           });
     }
@@ -707,16 +690,20 @@ public class K8sClient {
     return resources.size();
   }
 
-  public void label(String resource, String name, Tuple<?, ?>... keyValues) {
-    label(resource, name, "", keyValues);
+  private List<HasMetadata> loadYamlItems(InputStream stream, String sourceDescription) {
+    try {
+      return client.load(stream).items();
+    } finally {
+      try {
+        stream.close();
+      } catch (IOException e) {
+        log.debug("Failed to close YAML input stream for {}", sourceDescription, e);
+      }
+    }
   }
 
-  public void label(String resource, String name, groovy.lang.Tuple2... keyValues) {
-    Tuple<?, ?>[] tuples = new Tuple<?, ?>[keyValues.length];
-    for (int i = 0; i < keyValues.length; i++) {
-      tuples[i] = new Tuple<>(keyValues[i].getFirst(), keyValues[i].getSecond());
-    }
-    label(resource, name, tuples);
+  public void label(String resource, String name, Tuple<?, ?>... keyValues) {
+    label(resource, name, "", keyValues);
   }
 
   public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
@@ -772,7 +759,7 @@ public class K8sClient {
    * whole method invocation can.
    */
   private static <T extends HasMetadata> void applyLabelChanges(
-      io.fabric8.kubernetes.client.dsl.Resource<T> resourceClient,
+      Resource<T> resourceClient,
       String resource,
       String name,
       Map<String, String> labelsToAdd,
@@ -796,16 +783,7 @@ public class K8sClient {
     existingLabels.putAll(labelsToAdd);
 
     existingResource.getMetadata().setLabels(existingLabels);
-    resourceClient.replace(existingResource);
-  }
-
-  public void label(
-      String resource, String name, String namespace, groovy.lang.Tuple2... keyValues) {
-    Tuple<?, ?>[] tuples = new Tuple<?, ?>[keyValues.length];
-    for (int i = 0; i < keyValues.length; i++) {
-      tuples[i] = new Tuple<>(keyValues[i].getFirst(), keyValues[i].getSecond());
-    }
-    label(resource, name, namespace, tuples);
+    resourceClient.patch(existingResource);
   }
 
   public void labelRemove(String resource, String name) {
@@ -879,14 +857,6 @@ public class K8sClient {
     } catch (Exception e) {
       log.warn("Failed to delete resources (may not exist): {}", e.getMessage());
     }
-  }
-
-  public void delete(String resource, String namespace, groovy.lang.Tuple2... selectors) {
-    Tuple<?, ?>[] tuples = new Tuple<?, ?>[selectors.length];
-    for (int i = 0; i < selectors.length; i++) {
-      tuples[i] = new Tuple<>(selectors[i].getFirst(), selectors[i].getSecond());
-    }
-    delete(resource, namespace, tuples);
   }
 
   public void delete(String resource, String namespace, String name) {
@@ -1075,29 +1045,14 @@ public class K8sClient {
     long endTime = startTime + ((long) timeoutSeconds * MILLIS_PER_SECOND);
 
     while (System.currentTimeMillis() < endTime) {
-      try {
-        Resource<? extends HasMetadata> resourceClient =
-            K8sClientHelper.getResourceClient(
-                client, resourceType, resourceName, resolveNamespace(namespace));
-        HasMetadata resource = resourceClient.get();
-
-        if (resource != null) {
-          String phase = extractPhase(resource);
-
-          if (desiredPhase.equals(phase)) {
-            log.debug(
-                "Resource {}/{} in namespace {} reached the desired phase: {}",
-                resourceType,
-                resourceName,
-                namespace,
-                desiredPhase);
-            return;
-          }
-
-          log.debug("Current phase: {}. Waiting for phase: {}...", phase, desiredPhase);
-        }
-      } catch (Exception e) {
-        log.trace("Error checking resource phase: {}", e.getMessage());
+      if (hasReachedPhase(resourceType, resourceName, namespace, desiredPhase)) {
+        log.debug(
+            "Resource {}/{} in namespace {} reached the desired phase: {}",
+            resourceType,
+            resourceName,
+            namespace,
+            desiredPhase);
+        return;
       }
 
       try {
@@ -1122,6 +1077,30 @@ public class K8sClient {
             + " seconds.");
   }
 
+  private boolean hasReachedPhase(
+      String resourceType, String resourceName, String namespace, String desiredPhase) {
+    try {
+      Resource<? extends HasMetadata> resourceClient =
+          K8sClientHelper.getResourceClient(
+              client, resourceType, resourceName, resolveNamespace(namespace));
+      HasMetadata resource = resourceClient.get();
+      if (resource == null) {
+        return false;
+      }
+
+      String phase = extractPhase(resource);
+      if (desiredPhase.equals(phase)) {
+        return true;
+      }
+
+      log.debug("Current phase: {}. Waiting for phase: {}...", phase, desiredPhase);
+      return false;
+    } catch (Exception e) {
+      log.trace("Error checking resource phase: {}", e.getMessage());
+      return false;
+    }
+  }
+
   private static String extractPhase(HasMetadata resource) {
     if (resource instanceof Pod pod) {
       return pod.getStatus() != null ? pod.getStatus().getPhase() : null;
@@ -1129,8 +1108,7 @@ public class K8sClient {
 
     // Generic / Custom Resources
     Map<String, Object> status = Serialization.unmarshal(Serialization.asJson(resource), MAP_TYPE);
-    @SuppressWarnings("unchecked")
-    Map<String, Object> statusMap = (Map<String, Object>) status.get("status");
+    Map<String, Object> statusMap = MapUtils.asStringObjectMap(status.get("status"));
     return statusMap != null ? (String) statusMap.get("phase") : null;
   }
 

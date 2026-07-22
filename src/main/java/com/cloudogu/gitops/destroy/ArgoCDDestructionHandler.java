@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient.CustomResource;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
@@ -95,10 +96,9 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
   public void installArgoCDViaHelm(GitRepo repo, String argocdNamespace) {
     String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), "argocd/").toString();
 
-    @SuppressWarnings("unchecked")
     List<Map<String, Object>> helmDependencies =
-        (List<Map<String, Object>>)
-            fileSystemUtils.readYaml(Path.of(umbrellaChartPath, "Chart.yaml")).get("dependencies");
+        MapUtils.asListOfStringObjectMaps(
+            fileSystemUtils.readYaml(Path.of(umbrellaChartPath, "Chart.yaml")).get("dependencies"));
     helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
     helmClient.dependencyBuild(umbrellaChartPath);
     helmClient.upgrade(ARGOCD, umbrellaChartPath, Map.of("namespace", argocdNamespace));

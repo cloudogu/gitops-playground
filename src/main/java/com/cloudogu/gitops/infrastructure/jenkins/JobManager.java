@@ -69,33 +69,37 @@ public class JobManager {
     if (jobExists(name)) {
       log.warn("Job '{}' already exists, ignoring.", name);
       return false;
-    } else {
-      try {
-        // Note for development: the XML representation of an existing job can be exporting by
-        // adding /config.xml to the URL
-        String payloadXml =
-            new TemplatingEngine()
-                .template(
-                    new File(
-                        "argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl"),
-                    Map.of(
-                        "SCMM_NAMESPACE_JOB_SERVER_URL", serverUrl,
-                        "SCMM_NAMESPACE_JOB_NAMESPACE", jobNamespace,
-                        "SCMM_NAMESPACE_JOB_CREDENTIALS_ID", credentialsId));
-
-        RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"));
-
-        try (Response response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
-          if (response.code() != HTTP_OK) {
-            throw new RuntimeException(
-                "Could not create job '" + name + "'. StatusCode: " + response.code());
-          }
-        }
-      } catch (IOException | freemarker.template.TemplateException e) {
-        throw new RuntimeException("Failed to prepare or deploy Helm chart / template XML", e);
-      }
     }
+    createJobViaApi(name, serverUrl, jobNamespace, credentialsId);
     return true;
+  }
+
+  private void createJobViaApi(
+      String name, String serverUrl, String jobNamespace, String credentialsId) {
+    try {
+      // Note for development: the XML representation of an existing job can be exporting by
+      // adding /config.xml to the URL
+      String payloadXml =
+          new TemplatingEngine()
+              .template(
+                  new File(
+                      "argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl"),
+                  Map.of(
+                      "SCMM_NAMESPACE_JOB_SERVER_URL", serverUrl,
+                      "SCMM_NAMESPACE_JOB_NAMESPACE", jobNamespace,
+                      "SCMM_NAMESPACE_JOB_CREDENTIALS_ID", credentialsId));
+
+      RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"));
+
+      try (Response response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
+        if (response.code() != HTTP_OK) {
+          throw new RuntimeException(
+              "Could not create job '" + name + "'. StatusCode: " + response.code());
+        }
+      }
+    } catch (IOException | freemarker.template.TemplateException e) {
+      throw new RuntimeException("Failed to prepare or deploy Helm chart / template XML", e);
+    }
   }
 
   public boolean jobExists(String name) {

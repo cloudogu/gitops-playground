@@ -24,11 +24,12 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 
 @Singleton
 @Order(100)
-@SuppressWarnings("java:S1192")
 @Slf4j
 public class ArgoCD extends Tool {
 
   private static final int BCRYPT_LOG_ROUNDS = 4;
+  private static final String TOOL_NAME = "argocd";
+  private static final String SECRET_RESOURCE = "secret";
 
   private final K8sClient k8sClient;
   private final HelmClient helmClient;
@@ -214,7 +215,7 @@ public class ArgoCD extends Tool {
     // helm.
     // For development keeping it in helm makes it easier, e.g. for helm uninstall.
     k8sClient.delete(
-        "secret", namespace, new Tuple<>("owner", "helm"), new Tuple<>("name", "argocd"));
+        SECRET_RESOURCE, namespace, new Tuple<>("owner", "helm"), new Tuple<>("name", TOOL_NAME));
   }
 
   private void deployWithOperator() {
@@ -230,7 +231,7 @@ public class ArgoCD extends Tool {
     // ArgoCD is not installed until the ArgoCD-Operator did his job.
     // This can take some time, so we wait for the status of the custom resource to become
     // "Available"
-    k8sClient.waitForResourcePhase("argocd", "argocd", namespace, "Available");
+    k8sClient.waitForResourcePhase(TOOL_NAME, TOOL_NAME, namespace, "Available");
 
     updateAdminPasswordForOperator();
 
@@ -247,7 +248,7 @@ public class ArgoCD extends Tool {
     // it to show in git repo.
     // The Operator uses an extra secret to store the admin Password, which is not bcrypted.
     k8sClient.patch(
-        "secret",
+        SECRET_RESOURCE,
         "argocd-cluster",
         namespace,
         Map.of("stringData", Map.of("admin.password", password)));
@@ -272,7 +273,7 @@ public class ArgoCD extends Tool {
 
     helmClient.addRepo("argo", repository);
     helmClient.dependencyBuild(umbrellaChartPath);
-    helmClient.upgrade("argocd", umbrellaChartPath, Map.of("namespace", namespace));
+    helmClient.upgrade(TOOL_NAME, umbrellaChartPath, Map.of("namespace", namespace));
 
     updateBcryptAdminPassword();
   }
@@ -283,7 +284,7 @@ public class ArgoCD extends Tool {
     String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_LOG_ROUNDS));
 
     k8sClient.patch(
-        "secret",
+        SECRET_RESOURCE,
         "argocd-secret",
         namespace,
         Map.of("stringData", Map.of("admin.password", bcryptArgoCDPassword)));

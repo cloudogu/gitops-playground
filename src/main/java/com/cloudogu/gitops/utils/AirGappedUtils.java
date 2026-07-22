@@ -96,7 +96,6 @@ public class AirGappedUtils {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> localizeChartYaml(GitRepo gitRepo) {
     log.debug(
         "Preparing repo {} for air-gapped use: Changing Chart.yaml to resolve depencies locally",
@@ -106,14 +105,14 @@ public class AirGappedUtils {
 
     Map<String, Object> chartYaml;
     try {
-      chartYaml = (Map<String, Object>) new YamlSlurper().parse(chartYamlPath.toFile());
+      chartYaml = MapUtils.asStringObjectMap(new YamlSlurper().parse(chartYamlPath.toFile()));
     } catch (IOException e) {
       throw new RuntimeException("Failed to parse Chart.yaml: " + chartYamlPath, e);
     }
     Map<String, Object> chartLock = parseChartLockIfExists(gitRepo);
 
     List<Map<String, Object>> dependencies =
-        (List<Map<String, Object>>) chartYaml.get("dependencies");
+        MapUtils.asListOfStringObjectMaps(chartYaml.get("dependencies"));
     if (dependencies == null) {
       dependencies = Collections.emptyList();
     }
@@ -127,25 +126,23 @@ public class AirGappedUtils {
     return chartYaml;
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Object> parseChartLockIfExists(GitRepo scmmRepo) {
     Path chartLock = Path.of(scmmRepo.getAbsoluteLocalRepoTmpDir(), "Chart.lock");
     if (!chartLock.toFile().exists()) {
       return Collections.emptyMap();
     }
     try {
-      return (Map<String, Object>) new YamlSlurper().parse(chartLock.toFile());
+      return MapUtils.asStringObjectMap(new YamlSlurper().parse(chartLock.toFile()));
     } catch (IOException e) {
       throw new RuntimeException("Failed to parse Chart.lock: " + chartLock, e);
     }
   }
 
   /** Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1 */
-  @SuppressWarnings("unchecked")
   private void resolveDependencyVersion(
       Map<String, Object> chartLock, Map<String, Object> chartYamlDep, GitRepo gitRepo) {
     List<Map<String, Object>> lockDependencies =
-        (List<Map<String, Object>>) chartLock.get("dependencies");
+        MapUtils.asListOfStringObjectMaps(chartLock.get("dependencies"));
     Map<String, Object> chartLockDep =
         findByName(lockDependencies, String.valueOf(chartYamlDep.get("name")));
     if (chartLockDep != null && !chartLockDep.isEmpty()) {
