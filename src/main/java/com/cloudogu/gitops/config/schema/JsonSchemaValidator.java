@@ -29,7 +29,7 @@ public class JsonSchemaValidator {
     if (!validationMessages.isEmpty()) {
       String errorMsg =
           validationMessages.stream().map(Object::toString).collect(Collectors.joining("\n"));
-      throw new RuntimeException("Config file invalid: " + errorMsg);
+      throw new IllegalArgumentException("Config file invalid: " + errorMsg);
     }
   }
 }

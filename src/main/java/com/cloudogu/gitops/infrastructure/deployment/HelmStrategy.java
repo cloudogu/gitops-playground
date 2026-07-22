@@ -48,7 +48,7 @@ public class HelmStrategy implements DeploymentStrategy {
       RepoType repoType) {
 
     if (repoType == RepoType.GIT) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           "Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n"
               + "Repo URL: "
               + repoURL);

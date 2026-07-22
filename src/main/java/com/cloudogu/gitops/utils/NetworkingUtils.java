@@ -2,6 +2,7 @@ package com.cloudogu.gitops.utils;
 
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import jakarta.inject.Singleton;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -51,7 +52,7 @@ public class NetworkingUtils {
     log.debug("Cluster address: {}", potentialClusterBindAddress);
 
     if (potentialClusterBindAddress == null || potentialClusterBindAddress.isEmpty()) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Could not connect to kubernetes cluster: no cluster bind address");
     }
 
@@ -78,7 +79,7 @@ public class NetworkingUtils {
       }
       return "";
     } catch (SocketException e) {
-      throw new RuntimeException("Could not determine local ip address", e);
+      throw new UncheckedIOException("Could not determine local ip address", e);
     }
   }
 

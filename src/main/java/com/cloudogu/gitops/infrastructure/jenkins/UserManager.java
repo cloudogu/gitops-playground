@@ -31,7 +31,7 @@ public class UserManager {
     String result = apiClient.runScript(script);
 
     if (!username.equals(result)) {
-      throw new RuntimeException("Error when creating user: " + result);
+      throw new IllegalStateException("Error when creating user: " + result);
     }
   }
 
@@ -65,7 +65,7 @@ public class UserManager {
     if (!"true".equals(result) && !"false".equals(result)) {
       // Both are valid return values for Set.add(). true == was already in set, false == was not
       // already in set
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Failed to add permission " + permission + " to " + username + ": " + result);
     }
   }
@@ -75,7 +75,7 @@ public class UserManager {
         apiClient.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)");
 
     if (!result.startsWith("class ")) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Error when trying to determine authorization strategy: " + result);
     }
 
@@ -87,7 +87,7 @@ public class UserManager {
     String result = apiClient.runScript("print(Jenkins.getInstance().getSecurityRealm().class)");
 
     if (!result.startsWith("class ")) {
-      throw new RuntimeException("Error when trying to determine security realm: " + result);
+      throw new IllegalStateException("Error when trying to determine security realm: " + result);
     }
 
     return List.of(

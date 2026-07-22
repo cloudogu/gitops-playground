@@ -210,7 +210,7 @@ public class ScmManagerSetup {
       }
     }
 
-    throw new RuntimeException(
+    throw new IllegalStateException(
         "Timeout: SCM-Manager did not respond with 200 OK within " + timeoutSeconds + " seconds");
   }
 

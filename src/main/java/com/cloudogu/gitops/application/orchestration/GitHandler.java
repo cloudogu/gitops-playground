@@ -40,7 +40,7 @@ public class GitHandler {
           || isNullOrEmpty(config.getScm().getGitlab().getUrl())
           || isNullOrEmpty(config.getScm().getGitlab().getPassword())
           || isNullOrEmpty(config.getScm().getGitlab().getParentGroupId())) {
-        throw new RuntimeException(
+        throw new IllegalArgumentException(
             "GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
       }
       return;

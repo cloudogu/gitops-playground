@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import jakarta.inject.Singleton;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1072,7 +1073,7 @@ public class Config {
     try {
       return createYamlMapper(includeInternals).writeValueAsString(this);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to write Config as YAML string", e);
+      throw new UncheckedIOException("Failed to write Config as YAML string", e);
     }
   }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,7 @@ public class JobManager {
               "job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
               new FormBody.Builder().add("json", jsonPayload).build())) {
         if (response.code() != HTTP_OK) {
-          throw new RuntimeException(
+          throw new IllegalStateException(
               "Could not create credential id="
                   + id
                   + ",job="
@@ -57,7 +58,7 @@ public class JobManager {
         }
       }
     } catch (IOException e) {
-      throw new RuntimeException("Failed to serialize or send credential request", e);
+      throw new UncheckedIOException("Failed to serialize or send credential request", e);
     }
   }
 
@@ -93,7 +94,7 @@ public class JobManager {
 
       try (Response response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
         if (response.code() != HTTP_OK) {
-          throw new RuntimeException(
+          throw new IllegalStateException(
               "Could not create job '" + name + "'. StatusCode: " + response.code());
         }
       }
@@ -110,14 +111,14 @@ public class JobManager {
 
   public void deleteJob(String name) {
     if (name.contains("'")) {
-      throw new RuntimeException("Job name cannot contain quotes.");
+      throw new IllegalArgumentException("Job name cannot contain quotes.");
     }
 
     String script = "print(Jenkins.instance.getItem('" + name + "')?.delete())";
     String result = apiClient.runScript(script);
 
     if (!"null".equals(result)) {
-      throw new RuntimeException("Could not delete job " + name);
+      throw new IllegalStateException("Could not delete job " + name);
     }
   }
 
@@ -125,7 +126,7 @@ public class JobManager {
     try (Response response =
         apiClient.postRequestWithCrumb("job/" + jobName + "/build?delay=0sec")) {
       if (response.code() != HTTP_OK) {
-        throw new RuntimeException(
+        throw new IllegalStateException(
             "Could not trigger build of Jenkins job: "
                 + jobName
                 + ". StatusCode: "

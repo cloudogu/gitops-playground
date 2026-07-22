@@ -14,6 +14,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
 import retrofit2.Response;
@@ -88,7 +89,7 @@ public class ScmManagerProvider implements GitProvider {
       Response<Void> response = getApiClient().repositoryApi().create(repo, initialize).execute();
       return handle201or409(response, "Repository " + repoNamespace + "/" + repoName);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to create repository " + repoTarget, e);
+      throw new UncheckedIOException("Failed to create repository " + repoTarget, e);
     }
   }
 
@@ -112,7 +113,7 @@ public class ScmManagerProvider implements GitProvider {
 
       handle201or409(response, "Permission on " + repoNamespace + "/" + repoName);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to set permission on repository " + repoTarget, e);
+      throw new UncheckedIOException("Failed to set permission on repository " + repoTarget, e);
     }
   }
 
@@ -188,7 +189,7 @@ public class ScmManagerProvider implements GitProvider {
       return false;
     }
 
-    throw new RuntimeException(
+    throw new IllegalStateException(
         "Failed to create "
             + resourceName
             + ". HTTP Status: "

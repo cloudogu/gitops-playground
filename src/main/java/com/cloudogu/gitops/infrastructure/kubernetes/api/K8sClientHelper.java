@@ -108,7 +108,7 @@ class K8sClientHelper {
       }
 
       if ("Failed".equals(phase)) {
-        throw new RuntimeException("Pod " + podName + " failed:\n" + logOutput);
+        throw new IllegalStateException("Pod " + podName + " failed:\n" + logOutput);
       }
 
       return logOutput;
@@ -146,7 +146,7 @@ class K8sClientHelper {
       }
     }
 
-    throw new RuntimeException(
+    throw new IllegalStateException(
         "Failed to retrieve completed pod/" + podName + " after " + defaultRetries + " retries");
   }
 

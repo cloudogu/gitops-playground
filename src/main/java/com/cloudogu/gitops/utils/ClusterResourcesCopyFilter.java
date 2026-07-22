@@ -3,6 +3,7 @@ package com.cloudogu.gitops.utils;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -37,7 +38,7 @@ public class ClusterResourcesCopyFilter {
     try {
       return new File(path).getCanonicalFile();
     } catch (IOException e) {
-      throw new RuntimeException("Failed to get canonical file for " + path, e);
+      throw new UncheckedIOException("Failed to get canonical file for " + path, e);
     }
   }
 

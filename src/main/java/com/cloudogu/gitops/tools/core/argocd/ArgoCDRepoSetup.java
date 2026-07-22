@@ -12,6 +12,7 @@ import freemarker.template.TemplateModel;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -93,7 +94,7 @@ public class ArgoCDRepoSetup {
                 + clusterRoot);
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -174,7 +175,7 @@ public class ArgoCDRepoSetup {
               ? new URL(getConfig().getFeatures().getArgocd().getUrl()).getHost()
               : "");
     } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
     values.put("argocd", argocd);
 

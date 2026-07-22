@@ -38,7 +38,7 @@ public class GlobalPropertyManager {
 
     String result = apiClient.runScript(script);
     if (!"Done".equals(result)) {
-      throw new RuntimeException("Could not create global property: " + result);
+      throw new IllegalStateException("Could not create global property: " + result);
     }
   }
 
@@ -63,7 +63,7 @@ public class GlobalPropertyManager {
 
     String result = apiClient.runScript(script);
     if (!"Nothing to do".equals(result) && !"Done".equals(result)) {
-      throw new RuntimeException("Could not delete global property: " + result);
+      throw new IllegalStateException("Could not delete global property: " + result);
     }
   }
 

@@ -121,7 +121,7 @@ public class TemplatingEngine {
 
   protected Template prepareTemplate(File templateFile) throws IOException {
     if (!templateFile.getName().contains(".ftl")) {
-      throw new RuntimeException("File must contain .ftl to be a template");
+      throw new IllegalArgumentException("File must contain .ftl to be a template");
     }
 
     engine.setDirectoryForTemplateLoading(templateFile.getParentFile());

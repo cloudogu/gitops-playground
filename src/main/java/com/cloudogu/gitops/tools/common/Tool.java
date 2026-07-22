@@ -19,6 +19,7 @@ import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -209,7 +210,8 @@ public abstract class Tool {
                 YAML_MAP_TYPE);
         version = String.valueOf(chartYaml.get("version"));
       } catch (IOException e) {
-        throw new RuntimeException("Failed to parse Chart.yaml for airgapped version mapping", e);
+        throw new UncheckedIOException(
+            "Failed to parse Chart.yaml for airgapped version mapping", e);
       }
     }
 

@@ -325,7 +325,7 @@ public class Monitoring extends Tool {
       log.debug("found UID={}", uidRange);
       return uidRange.split("/")[0];
     } else {
-      throw new RuntimeException("Could not find a valid UID! Really running on OpenShift?");
+      throw new IllegalStateException("Could not find a valid UID! Really running on OpenShift?");
     }
   }
 

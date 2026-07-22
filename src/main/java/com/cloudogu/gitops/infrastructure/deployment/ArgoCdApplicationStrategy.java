@@ -159,7 +159,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     try {
       yamlResult = yamlMapper.writeValueAsString(application);
     } catch (JsonProcessingException e) {
-      throw new RuntimeException("Failed to generate YAML for ArgoCD application", e);
+      throw new UncheckedIOException("Failed to generate YAML for ArgoCD application", e);
     }
 
     String appManifestPath = "apps/argocd/applications/" + releaseName + ".yaml";
@@ -186,7 +186,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       case HELM -> "chart";
       case GIT -> "path";
       default ->
-          throw new RuntimeException(
+          throw new IllegalStateException(
               "Repo type " + repoType + " not implemented for " + this.getClass().getSimpleName());
     };
   }

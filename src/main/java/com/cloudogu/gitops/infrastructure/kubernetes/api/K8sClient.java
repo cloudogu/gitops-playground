@@ -39,6 +39,7 @@ import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -248,7 +249,8 @@ public class K8sClient {
     Service service = client.services().inNamespace(namespace).withName(serviceName).get();
 
     if (service == null) {
-      throw new RuntimeException("Service " + serviceName + NOT_FOUND_IN_NAMESPACE + namespace);
+      throw new IllegalStateException(
+          "Service " + serviceName + NOT_FOUND_IN_NAMESPACE + namespace);
     }
 
     List<ServicePort> ports = service.getSpec().getPorts();
@@ -261,7 +263,7 @@ public class K8sClient {
     }
 
     if (portIndex == -1) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Port with name " + portName + " not found in service " + serviceName + ".");
     }
 
@@ -496,7 +498,7 @@ public class K8sClient {
       String secretname, String namespace, String usernameKey, String passwordKey) {
     Secret secret = client.secrets().inNamespace(namespace).withName(secretname).get();
     if (secret == null || secret.getData() == null) {
-      throw new RuntimeException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
+      throw new IllegalStateException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
     }
 
     Map<String, String> secretData = secret.getData();
@@ -522,7 +524,7 @@ public class K8sClient {
             .withName(credentials.getSecretName())
             .get();
     if (secret == null || secret.getData() == null) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Secret "
               + credentials.getSecretName()
               + NOT_FOUND_IN_NAMESPACE
@@ -557,14 +559,14 @@ public class K8sClient {
 
     File file = new File(filePath);
     if (!file.exists()) {
-      throw new RuntimeException("File not found: " + filePath);
+      throw new IllegalStateException("File not found: " + filePath);
     }
 
     String fileContent;
     try {
       fileContent = Files.readString(file.toPath());
     } catch (IOException e) {
-      throw new RuntimeException("Failed to read file: " + filePath, e);
+      throw new UncheckedIOException("Failed to read file: " + filePath, e);
     }
 
     Map<String, String> data = Map.of(file.getName(), fileContent);
@@ -601,12 +603,12 @@ public class K8sClient {
     ConfigMap configMap = client.configMaps().inNamespace(namespace).withName(mapName).get();
 
     if (configMap == null) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Could not fetch configmap " + mapName + " from namespace " + namespace);
     }
 
     if (configMap.getData() == null || !configMap.getData().containsKey(key)) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Could not fetch "
               + key
               + " within config-map "
@@ -627,14 +629,14 @@ public class K8sClient {
         int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation);
         return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
       } catch (IOException e) {
-        throw new RuntimeException("Failed to apply YAML from URL: " + yamlLocation, e);
+        throw new UncheckedIOException("Failed to apply YAML from URL: " + yamlLocation, e);
       }
     }
 
     File location = new File(yamlLocation);
 
     if (!location.exists()) {
-      throw new RuntimeException("File or directory not found: " + yamlLocation);
+      throw new IllegalStateException("File or directory not found: " + yamlLocation);
     }
 
     if (location.isDirectory()) {
@@ -647,7 +649,8 @@ public class K8sClient {
                 .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
                 .collect(Collectors.toCollection(ArrayList::new));
       } catch (IOException e) {
-        throw new RuntimeException("Failed to list YAML files in directory: " + yamlLocation, e);
+        throw new UncheckedIOException(
+            "Failed to list YAML files in directory: " + yamlLocation, e);
       }
 
       yamlFiles.sort(Comparator.comparing(File::getAbsolutePath));
@@ -658,7 +661,7 @@ public class K8sClient {
           appliedResources +=
               applyYamlStream(Files.newInputStream(file.toPath()), file.getAbsolutePath());
         } catch (IOException e) {
-          throw new RuntimeException("Failed to apply YAML file: " + file.getAbsolutePath(), e);
+          throw new UncheckedIOException("Failed to apply YAML file: " + file.getAbsolutePath(), e);
         }
       }
 
@@ -669,7 +672,7 @@ public class K8sClient {
       int appliedResources = applyYamlStream(Files.newInputStream(location.toPath()), yamlLocation);
       return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
     } catch (IOException e) {
-      throw new RuntimeException("Failed to apply YAML file: " + yamlLocation, e);
+      throw new UncheckedIOException("Failed to apply YAML file: " + yamlLocation, e);
     }
   }
 
@@ -708,7 +711,7 @@ public class K8sClient {
 
   public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
     if (keyValues == null || keyValues.length == 0) {
-      throw new RuntimeException("Missing key-value-pairs");
+      throw new IllegalArgumentException("Missing key-value-pairs");
     }
 
     if ("--all".equals(name)) {
@@ -767,7 +770,7 @@ public class K8sClient {
     T existingResource = resourceClient.get();
 
     if (existingResource == null) {
-      throw new RuntimeException("Resource " + resource + "/" + name + " not found");
+      throw new IllegalStateException("Resource " + resource + "/" + name + " not found");
     }
 
     Map<String, String> existingLabels = existingResource.getMetadata().getLabels();
@@ -841,7 +844,7 @@ public class K8sClient {
 
   public void delete(String resource, String namespace, Tuple<?, ?>... selectors) {
     if (selectors == null || selectors.length == 0) {
-      throw new RuntimeException("Missing selectors");
+      throw new IllegalArgumentException("Missing selectors");
     }
 
     log.debug("Deleting {} in namespace {} with selectors", resource, namespace);
@@ -994,12 +997,12 @@ public class K8sClient {
     HasMetadata k8sResource = resourceClient.get();
 
     if (k8sResource == null) {
-      throw new RuntimeException("Resource " + resource + "/" + name + " not found");
+      throw new IllegalStateException("Resource " + resource + "/" + name + " not found");
     }
 
     Map<String, String> annotations = k8sResource.getMetadata().getAnnotations();
     if (annotations == null) {
-      throw new RuntimeException("No annotations found on resource " + resource + "/" + name);
+      throw new IllegalStateException("No annotations found on resource " + resource + "/" + name);
     }
 
     String value = annotations.get(key);
@@ -1063,7 +1066,7 @@ public class K8sClient {
       }
     }
 
-    throw new RuntimeException(
+    throw new IllegalStateException(
         "Timeout reached. Resource "
             + resourceType
             + "/"
@@ -1137,7 +1140,7 @@ public class K8sClient {
     }
 
     if (result == null) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Failed to retrieve " + resourceDescription + " after " + defaultRetries + " retries");
     }
 

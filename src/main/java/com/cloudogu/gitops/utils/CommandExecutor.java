@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,7 @@ public class CommandExecutor {
       Process proc = doExecute(command);
       return getOutput(proc, String.join(" ", command), failOnError);
     } catch (IOException e) {
-      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + String.join(" ", command), e);
+      throw new UncheckedIOException(FAILED_TO_EXECUTE_PREFIX + String.join(" ", command), e);
     }
   }
 
@@ -62,7 +63,7 @@ public class CommandExecutor {
       Process proc = doExecute(command);
       return getOutput(proc, command, failOnError);
     } catch (IOException e) {
-      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + command, e);
+      throw new UncheckedIOException(FAILED_TO_EXECUTE_PREFIX + command, e);
     }
   }
 
@@ -91,7 +92,7 @@ public class CommandExecutor {
       Process proc = doExecute(command, envp);
       return getOutput(proc, command, failOnError);
     } catch (IOException e) {
-      throw new RuntimeException(FAILED_TO_EXECUTE_PREFIX + command, e);
+      throw new UncheckedIOException(FAILED_TO_EXECUTE_PREFIX + command, e);
     }
   }
 
@@ -127,12 +128,12 @@ public class CommandExecutor {
 
       boolean success = process1.exitValue() == 0 && process2.exitValue() == 0;
       if (!success && failOnError) {
-        throw new RuntimeException(EXECUTING_FAILED_PREFIX + pipedCommand);
+        throw new IllegalStateException(EXECUTING_FAILED_PREFIX + pipedCommand);
       }
 
       return finalOutput;
     } catch (IOException e) {
-      throw new RuntimeException("Failed to execute piped command: " + pipedCommand, e);
+      throw new UncheckedIOException("Failed to execute piped command: " + pipedCommand, e);
     }
   }
 
@@ -239,7 +240,7 @@ public class CommandExecutor {
       log.error(EXECUTING_FAILED_PREFIX + command);
       log.error(STDERR_PREFIX + output.getStdErr());
       log.error("StdOut: " + output.getStdOut());
-      throw new RuntimeException(EXECUTING_FAILED_PREFIX + command);
+      throw new IllegalStateException(EXECUTING_FAILED_PREFIX + command);
     }
 
     return output;

@@ -46,7 +46,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
       Response<Void> response =
           getScmmApiClient().repositoryApi().delete(namePrefix + namespace, repository).execute();
       if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
-        throw new RuntimeException(
+        throw new IllegalStateException(
             "Could not delete repository "
                 + namespace
                 + "/"
@@ -75,7 +75,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
               .delete(config.getApplication().getNamePrefix() + name)
               .execute();
       if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
-        throw new RuntimeException(
+        throw new IllegalStateException(
             "Could not delete user "
                 + name
                 + " ("

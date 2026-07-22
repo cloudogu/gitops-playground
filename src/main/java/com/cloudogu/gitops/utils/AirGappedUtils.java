@@ -9,6 +9,7 @@ import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import groovy.yaml.YamlSlurper;
 import jakarta.inject.Singleton;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -107,7 +108,7 @@ public class AirGappedUtils {
     try {
       chartYaml = MapUtils.asStringObjectMap(new YamlSlurper().parse(chartYamlPath.toFile()));
     } catch (IOException e) {
-      throw new RuntimeException("Failed to parse Chart.yaml: " + chartYamlPath, e);
+      throw new UncheckedIOException("Failed to parse Chart.yaml: " + chartYamlPath, e);
     }
     Map<String, Object> chartLock = parseChartLockIfExists(gitRepo);
 
@@ -134,7 +135,7 @@ public class AirGappedUtils {
     try {
       return MapUtils.asStringObjectMap(new YamlSlurper().parse(chartLock.toFile()));
     } catch (IOException e) {
-      throw new RuntimeException("Failed to parse Chart.lock: " + chartLock, e);
+      throw new UncheckedIOException("Failed to parse Chart.lock: " + chartLock, e);
     }
   }
 
@@ -148,7 +149,7 @@ public class AirGappedUtils {
     if (chartLockDep != null && !chartLockDep.isEmpty()) {
       chartYamlDep.put(VERSION_KEY, chartLockDep.get(VERSION_KEY));
     } else if (String.valueOf(chartYamlDep.get(VERSION_KEY)).contains("*")) {
-      throw new RuntimeException(
+      throw new IllegalStateException(
           "Unable to determine proper version for dependency "
               + chartYamlDep.get("name")
               + " (version: "

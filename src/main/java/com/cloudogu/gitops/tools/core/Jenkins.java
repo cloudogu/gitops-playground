@@ -24,6 +24,7 @@ import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -380,7 +381,7 @@ public class Jenkins extends Tool {
         }
       }
     } catch (IOException e) {
-      throw new RuntimeException("Failed to read plugins file: " + pluginsFile, e);
+      throw new UncheckedIOException("Failed to read plugins file: " + pluginsFile, e);
     }
 
     List<String> missingPlugins =

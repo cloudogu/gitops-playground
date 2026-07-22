@@ -57,7 +57,7 @@ public class ScmManagerApiClient {
           errorMessage += " Additional Info: " + additionalMessage;
         }
         log.error(errorMessage);
-        throw new RuntimeException(errorMessage);
+        throw new IllegalStateException(errorMessage);
       } else {
         log.debug("Successfully completed " + apiCall);
       }

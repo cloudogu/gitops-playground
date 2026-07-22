@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.RequiredArgsConstructor;
@@ -81,7 +82,7 @@ public class ApplicationConfigurator {
               newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry().getPassword());
 
       if (!hasText(username) || !hasText(password)) {
-        throw new RuntimeException(
+        throw new IllegalArgumentException(
             "createImagePullSecrets needs to be used with either registry username and password or the readOnly variants");
       }
     }
@@ -107,7 +108,7 @@ public class ApplicationConfigurator {
       newConfig.getRegistry().setTwoRegistries(true);
       if (!hasText(newConfig.getRegistry().getProxyUsername())
           || !hasText(newConfig.getRegistry().getProxyPassword())) {
-        throw new RuntimeException(
+        throw new IllegalArgumentException(
             "Proxy URL needs to be used with proxy-username and proxy-password");
       }
     }
@@ -162,7 +163,7 @@ public class ApplicationConfigurator {
                             newConfig.getApplication().getUrlSeparatorHyphen()))
                     .getHost());
       } catch (MalformedURLException e) {
-        throw new RuntimeException("Failed to evaluate SCM ingress URL", e);
+        throw new UncheckedIOException("Failed to evaluate SCM ingress URL", e);
       }
     }
 
@@ -213,7 +214,7 @@ public class ApplicationConfigurator {
                             newConfig.getApplication().getUrlSeparatorHyphen()))
                     .getHost());
       } catch (MalformedURLException e) {
-        throw new RuntimeException("Failed to evaluate Jenkins ingress URL", e);
+        throw new UncheckedIOException("Failed to evaluate Jenkins ingress URL", e);
       }
     }
 
@@ -254,7 +255,7 @@ public class ApplicationConfigurator {
   public void setMultiTenantModeConfig(Config newConfig) {
     if (newConfig.getMultiTenant().getUseDedicatedInstance()) {
       if (!hasText(newConfig.getApplication().getNamePrefix())) {
-        throw new RuntimeException(
+        throw new IllegalArgumentException(
             "To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.");
       }
 
@@ -294,7 +295,7 @@ public class ApplicationConfigurator {
       newUrl += url.getPath();
       return newUrl;
     } catch (MalformedURLException e) {
-      throw new RuntimeException(
+      throw new UncheckedIOException(
           "Failed to inject subdomain '" + subdomain + "' into base URL: " + baseUrl, e);
     }
   }
@@ -344,7 +345,7 @@ public class ApplicationConfigurator {
             + "Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override.";
 
     if (!hasText(host) || !hasText(port)) {
-      throw new RuntimeException(errorMessage);
+      throw new IllegalStateException(errorMessage);
     }
 
     String internalClusterUrl = "https://" + host + ":" + port;
@@ -357,7 +358,7 @@ public class ApplicationConfigurator {
           "Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}",
           internalClusterUrl);
     } catch (MalformedURLException e) {
-      throw new RuntimeException(errorMessage, e);
+      throw new UncheckedIOException(errorMessage, e);
     }
   }
 

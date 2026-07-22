@@ -23,7 +23,7 @@ public class CommonToolConfig extends Tool {
         && (configToSet.getApplication().getLocalHelmChartFolder() == null
             || configToSet.getApplication().getLocalHelmChartFolder().isEmpty())) {
       // This should only happen when run outside the image, i.e. during development
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           "Missing config for localHelmChartFolder.\n"
               + "Either run inside the official container image or setting env var "
               + "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo");

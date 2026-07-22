@@ -31,7 +31,7 @@ public class DockerImageParser {
     int lastSlash = image.lastIndexOf('/');
     int lastColon = image.lastIndexOf(':');
     if (lastColon == -1 || lastColon < lastSlash) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           "Cannot set image '"
               + image
               + "' due to missing tag. Must be the format '$repository:$tag'");

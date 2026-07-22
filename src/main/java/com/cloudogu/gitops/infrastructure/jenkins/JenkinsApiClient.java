@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,11 +54,11 @@ public class JenkinsApiClient {
     try (Response response =
         postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())) {
       if (response.code() != HTTP_OK) {
-        throw new RuntimeException("Could not run script. Status code " + response.code());
+        throw new IllegalStateException("Could not run script. Status code " + response.code());
       }
       return response.body().string();
     } catch (IOException e) {
-      throw new RuntimeException("Failed to run Jenkins script", e);
+      throw new UncheckedIOException("Failed to run Jenkins script", e);
     }
   }
 
@@ -91,18 +92,18 @@ public class JenkinsApiClient {
     try (Response response =
         sendRequestWithRetries(() -> buildRequest("crumbIssuer/api/json").build(), 1)) {
       if (response.code() != HTTP_OK) {
-        throw new RuntimeException("Could not create crumb. Status code " + response.code());
+        throw new IllegalStateException("Could not create crumb. Status code " + response.code());
       }
 
       JsonNode json = objectMapper.readTree(response.body().byteStream());
 
       if (json == null || !json.has("crumb")) {
-        throw new RuntimeException("Could not create crumb. Invalid json.");
+        throw new IllegalStateException("Could not create crumb. Invalid json.");
       }
 
       return json.get("crumb").asText();
     } catch (IOException e) {
-      throw new RuntimeException("Failed to retrieve Jenkins crumb", e);
+      throw new UncheckedIOException("Failed to retrieve Jenkins crumb", e);
     }
   }
 
@@ -141,7 +142,7 @@ public class JenkinsApiClient {
     } while (retry < retries);
 
     if (response == null) {
-      throw new RuntimeException("Failed to send request after " + retries + " retries");
+      throw new IllegalStateException("Failed to send request after " + retries + " retries");
     }
     return response;
   }

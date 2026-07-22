@@ -23,6 +23,7 @@ import freemarker.template.DefaultObjectWrapperBuilder;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -115,12 +116,12 @@ public class ContentLoader extends Tool {
 
   private static void validateRepo(ContentRepositorySchema repo) {
     if (repo.getUrl() == null || repo.getUrl().isEmpty()) {
-      throw new RuntimeException("content.repos requires a url parameter.");
+      throw new IllegalArgumentException("content.repos requires a url parameter.");
     }
     if (repo.getTarget() != null
         && !repo.getTarget().isEmpty()
         && !repo.getTarget().contains("/")) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           "content.target needs / to separate namespace/group from repo name. Repo: "
               + repo.getUrl());
     }
@@ -140,7 +141,7 @@ public class ContentLoader extends Tool {
 
   private static void validateCopyRepo(ContentRepositorySchema repo) {
     if (repo.getTarget() == null || repo.getTarget().isEmpty()) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.COPY
               + " requires content.repos.target to be set. Repo: "
@@ -150,14 +151,14 @@ public class ContentLoader extends Tool {
 
   private static void validateFolderBasedRepo(ContentRepositorySchema repo) {
     if (repo.getTarget() != null && !repo.getTarget().isEmpty()) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.FOLDER_BASED
               + " does not support target parameter. Repo: "
               + repo.getUrl());
     }
     if (repo.getTargetRef() != null && !repo.getTargetRef().isEmpty()) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.FOLDER_BASED
               + " does not support targetRef parameter. Repo: "
@@ -167,14 +168,14 @@ public class ContentLoader extends Tool {
 
   private static void validateMirrorRepo(ContentRepositorySchema repo) {
     if (repo.getTarget() == null || repo.getTarget().isEmpty()) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.MIRROR
               + " requires content.repos.target to be set. Repo: "
               + repo.getUrl());
     }
     if (!ContentRepositorySchema.DEFAULT_PATH.equals(repo.getPath())) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.MIRROR
               + " does not support path. Current path: "
@@ -183,7 +184,7 @@ public class ContentLoader extends Tool {
               + repo.getUrl());
     }
     if (repo.getTemplating()) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.MIRROR
               + " does not support templating. Repo: "
@@ -310,7 +311,7 @@ public class ContentLoader extends Tool {
       mergedReposFolder =
           Files.createTempDirectory("gitops-playground-based-content-repos-").toFile();
     } catch (IOException e) {
-      throw new RuntimeException("Failed to create temporary directory", e);
+      throw new UncheckedIOException("Failed to create temporary directory", e);
     }
     List<RepoCoordinate> repoCoordinates = new ArrayList<>();
 
@@ -338,7 +339,7 @@ public class ContentLoader extends Tool {
     try {
       repoTmpDir = Files.createTempDirectory("gitops-playground-content-repo-").toFile();
     } catch (IOException e) {
-      throw new RuntimeException("Failed to create temporary directory", e);
+      throw new UncheckedIOException("Failed to create temporary directory", e);
     }
     log.debug(
         "Cloning content repo, {}, revision {}, path {}, overwriteMode {}",
@@ -460,7 +461,7 @@ public class ContentLoader extends Tool {
     try {
       FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter());
     } catch (IOException e) {
-      throw new RuntimeException("Failed to copy directory from " + src + " to " + target, e);
+      throw new UncheckedIOException("Failed to copy directory from " + src + " to " + target, e);
     }
 
     RepoCoordinate repoCoordinate = new RepoCoordinate();
@@ -564,7 +565,7 @@ public class ContentLoader extends Tool {
       }
 
       if (potentialRef == null) {
-        throw new RuntimeException(
+        throw new IllegalStateException(
             "Reference '"
                 + repoConfig.getRef()
                 + "' not found in content repository '"
@@ -783,7 +784,7 @@ public class ContentLoader extends Tool {
 
   private static void validateCommitReferences(RepoCoordinate repoCoordinate) {
     if (GitRepo.isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.getRef())) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           "Mirroring commit references is not supported for content repos at the moment. content repository '"
               + repoCoordinate.repoConfig.getUrl()
               + "', ref: "

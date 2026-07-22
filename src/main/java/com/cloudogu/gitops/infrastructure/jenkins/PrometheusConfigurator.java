@@ -21,7 +21,7 @@ public class PrometheusConfigurator {
             """);
 
     if (!"true".equals(result)) {
-      throw new RuntimeException("Cannot enable authentication for prometheus: " + result);
+      throw new IllegalStateException("Cannot enable authentication for prometheus: " + result);
     }
   }
 }

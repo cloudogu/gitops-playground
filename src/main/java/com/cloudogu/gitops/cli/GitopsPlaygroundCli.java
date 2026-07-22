@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -158,7 +159,7 @@ public class GitopsPlaygroundCli {
       String input = reader.readLine();
       return "y".equals(input);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to read user input", e);
+      throw new UncheckedIOException("Failed to read user input", e);
     }
   }
 
@@ -225,7 +226,7 @@ public class GitopsPlaygroundCli {
         try {
           configFile.add(validateConfig(Files.readString(Path.of(configFileItem))));
         } catch (IOException e) {
-          throw new RuntimeException("Failed to read config file: " + configFileItem, e);
+          throw new UncheckedIOException("Failed to read config file: " + configFileItem, e);
         }
       }
     }
@@ -270,7 +271,7 @@ public class GitopsPlaygroundCli {
   public static Map<String, Object> validateConfig(String configValues) {
     Object map = new YamlSlurper().parseText(configValues);
     if (!(map instanceof Map)) {
-      throw new RuntimeException("Could not parse YAML as map: " + map);
+      throw new IllegalArgumentException("Could not parse YAML as map: " + map);
     }
     JsonSchemaValidator.validate((Map<?, ?>) map);
     return MapUtils.asStringObjectMap(map);
@@ -329,7 +330,7 @@ public class GitopsPlaygroundCli {
       try (InputStream inputStream =
           GitopsPlaygroundCli.class.getResourceAsStream("/" + resourceName)) {
         if (inputStream == null) {
-          throw new RuntimeException(
+          throw new IllegalArgumentException(
               "Profile '"
                   + profile
                   + "' does not exist (resource '"
@@ -340,7 +341,7 @@ public class GitopsPlaygroundCli {
         Map<String, Object> profileFile = validateConfig(content);
         profileConfig = Config.fromMap(profileFile);
       } catch (IOException e) {
-        throw new RuntimeException("Failed to read profile " + profile, e);
+        throw new UncheckedIOException("Failed to read profile " + profile, e);
       }
     }
     return profileConfig;

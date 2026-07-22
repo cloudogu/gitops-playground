@@ -132,7 +132,7 @@ public class GitRepo implements AutoCloseable {
       // "No value for key remote.origin.url found in configuration".
       git.remoteAdd().setName(GIT_REMOTE_ORIGIN).setUri(new URIish(getGitRepositoryUrl())).call();
     } catch (URISyntaxException e) {
-      throw new RuntimeException("Invalid git repository URL: " + getGitRepositoryUrl(), e);
+      throw new IllegalArgumentException("Invalid git repository URL: " + getGitRepositoryUrl(), e);
     }
   }
 
@@ -204,7 +204,7 @@ public class GitRepo implements AutoCloseable {
             update.getMessage());
 
         if (update.getStatus() != Status.OK && update.getStatus() != Status.UP_TO_DATE) {
-          throw new RuntimeException(
+          throw new IllegalStateException(
               "Push failed for repo '"
                   + repoTarget
                   + "', remoteName='"
