@@ -81,7 +81,7 @@ public class Ingress extends Tool {
     imagePullSecretCreator.createIfRequired(context.getConfig(), namespace);
   }
 
-  private void prepareIngressApp(GitRepo clusterResourcesRepo) {
+  private static void prepareIngressApp(GitRepo clusterResourcesRepo) {
     log.debug("Preparing ingress repository content in {}", clusterResourcesRepo.getRepoTarget());
 
     clusterResourcesRepo.copyDirectoryContents(

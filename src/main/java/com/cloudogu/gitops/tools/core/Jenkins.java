@@ -14,13 +14,24 @@ import com.cloudogu.gitops.infrastructure.jenkins.UserManager;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.tools.common.Tool;
-import com.cloudogu.gitops.utils.*;
+import com.cloudogu.gitops.utils.AirGappedUtils;
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
+import com.cloudogu.gitops.utils.CommandExecutor;
+import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.NetworkingUtils;
+import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +51,10 @@ public class Jenkins extends Tool {
   private static final String TOOL_NAME = "jenkins";
   private static final String ETC_GROUP_PATH = "/etc/group";
   private static final String JENKINS_APP_PATH = "apps/jenkins";
-  private static final String RELEASE_NAME = "jenkins";
+  private static final int PLUGIN_NAME_SPLIT_LIMIT = 2;
+  private static final int GID_GREPPER_POD_SUFFIX_BOUND = 10_000;
+  private static final int ETC_GROUP_MIN_FIELDS = 3;
+  private static final int ETC_GROUP_GID_FIELD_INDEX = 2;
 
   @Getter @Setter private String namespace;
   private final CommandExecutor commandExecutor;
@@ -177,14 +191,13 @@ public class Jenkins extends Tool {
   private void deployInternalJenkins() {
     HelmConfigWithValues helmConfig = getConfig().getJenkins().getHelm();
 
-    deployHelmChart(
-        TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context, true);
+    deployHelmChart(TOOL_NAME, TOOL_NAME, namespace, helmConfig, HELM_VALUES_PATH, context, true);
   }
 
   private void updateJenkinsUrl() {
     // Defined here:
     // https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
-    String serviceName = RELEASE_NAME;
+    String serviceName = TOOL_NAME;
 
     // Update jenkins.url after it is deployed and ports are known.
     if (getConfig().getApplication().getRunningInsideK8s()) {
@@ -357,7 +370,7 @@ public class Jenkins extends Tool {
       for (String line : lines) {
         String pluginDefinition = line.trim();
         if (!pluginDefinition.isEmpty() && !pluginDefinition.startsWith("#")) {
-          String pluginName = pluginDefinition.split(":", 2)[0];
+          String pluginName = pluginDefinition.split(":", PLUGIN_NAME_SPLIT_LIMIT)[0];
           if (OIDC_BOOT_PLUGIN_NAMES.contains(pluginName)) {
             pinnedPlugins.put(pluginName, pluginDefinition);
           }
@@ -389,7 +402,7 @@ public class Jenkins extends Tool {
     String gid = "";
     String etcGroup =
         k8sClient.run(
-            "tmp-docker-gid-grepper-" + new Random().nextInt(10000),
+            "tmp-docker-gid-grepper-" + new Random().nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
             "irrelevant" /* Redundant, but mandatory param */,
             namespace,
             createGidGrepperOverrides(),
@@ -402,8 +415,8 @@ public class Jenkins extends Tool {
       String[] lines = etcGroup.split("\n");
       for (String line : lines) {
         String[] parts = line.split(":");
-        if (parts.length >= 3 && "docker".equals(parts[0])) {
-          gid = parts[2];
+        if (parts.length >= ETC_GROUP_MIN_FIELDS && "docker".equals(parts[0])) {
+          gid = parts[ETC_GROUP_GID_FIELD_INDEX];
           break;
         }
       }

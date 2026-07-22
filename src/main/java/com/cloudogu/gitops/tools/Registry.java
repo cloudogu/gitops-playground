@@ -79,8 +79,8 @@ public class Registry extends Tool {
   @Override
   protected String activeNamespace(DeploymentContext context) {
     return Boolean.TRUE.equals(context.getConfig().getRegistry().getInternal())
-        ? context.getConfig().getApplication().getNamePrefix()
-            + context.getConfig().getRegistry().getNamespace()
+        ? (context.getConfig().getApplication().getNamePrefix()
+            + context.getConfig().getRegistry().getNamespace())
         : null;
   }
 

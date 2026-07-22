@@ -12,7 +12,7 @@ public class MapUtils {
       return target;
     }
     src.forEach(
-        (key, value) -> {
+        (String key, Object value) -> {
           Object oldVal = target.containsKey(key) ? target.get(key) : null;
           if (oldVal instanceof Map && value instanceof Map) {
             target.put(key, deepMerge((Map<String, Object>) value, (Map<String, Object>) oldVal));
@@ -23,26 +23,26 @@ public class MapUtils {
     return target;
   }
 
-  @SuppressWarnings("unchecked")
   public static Map<String, Object> deepMergeDefaults(
       Map<String, Object> src, Map<String, Object> target) {
     if (src == null) {
       return target;
     }
-    src.forEach(
-        (key, value) -> {
-          if (value == null && target.containsKey(key)) {
-            return;
-          }
-
-          Object oldVal = target.containsKey(key) ? target.get(key) : null;
-          if (oldVal instanceof Map && value instanceof Map) {
-            target.put(
-                key, deepMergeDefaults((Map<String, Object>) value, (Map<String, Object>) oldVal));
-          } else {
-            target.put(key, value);
-          }
-        });
+    src.forEach((String key, Object value) -> mergeDefaultEntry(key, value, target));
     return target;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void mergeDefaultEntry(String key, Object value, Map<String, Object> target) {
+    if (value == null && target.containsKey(key)) {
+      return;
+    }
+
+    Object oldVal = target.containsKey(key) ? target.get(key) : null;
+    if (oldVal instanceof Map && value instanceof Map) {
+      target.put(key, deepMergeDefaults((Map<String, Object>) value, (Map<String, Object>) oldVal));
+    } else {
+      target.put(key, value);
+    }
   }
 }

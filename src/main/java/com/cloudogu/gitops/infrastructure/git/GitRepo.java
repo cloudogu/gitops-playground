@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +32,14 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.transport.*;
+import org.eclipse.jgit.transport.ChainingCredentialsProvider;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
@@ -41,6 +48,8 @@ public class GitRepo implements AutoCloseable {
 
   public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
   private static final String GIT_REMOTE_ORIGIN = "origin";
+  private static final Pattern REFS_HEADS_PREFIX = Pattern.compile("^refs/heads/");
+  private static final Pattern REFS_TAGS_PREFIX = Pattern.compile("^refs/tags/");
 
   private final Config config;
   @Getter @Setter private GitProvider gitProvider;
@@ -279,13 +288,13 @@ public class GitRepo implements AutoCloseable {
     git.fetch().setRemote(GIT_REMOTE_ORIGIN).setCredentialsProvider(getCredentialProvider()).call();
 
     Ref localMain = git.getRepository().findRef("refs/heads/main");
-    Ref remoteMain = git.getRepository().findRef("refs/remotes/origin/main");
 
     if (localMain != null) {
       git.checkout().setName("main").call();
       return;
     }
 
+    Ref remoteMain = git.getRepository().findRef("refs/remotes/origin/main");
     if (remoteMain != null) {
       log.debug("Creating local main branch from origin/main for repo '{}'", repoTarget);
 
@@ -308,31 +317,33 @@ public class GitRepo implements AutoCloseable {
     return withGitOrFalse(
         repoPath,
         "checking if ref '" + ref + "' is a commit in repo '" + repoPath + "'",
-        git -> {
-          // Get all branch and tag names
-          List<String> allRefs = new ArrayList<>();
+        (Git git) -> resolveIsCommit(git, ref));
+  }
 
-          // Add all branch names (without refs/heads/ prefix)
-          List<Ref> branches = git.branchList().call();
-          for (Ref branch : branches) {
-            allRefs.add(branch.getName().replaceFirst("^refs/heads/", ""));
-          }
+  private static boolean resolveIsCommit(Git git, String ref) throws IOException, GitAPIException {
+    // Get all branch and tag names
+    List<String> allRefs = new ArrayList<>();
 
-          // Add all tag names (without refs/tags/ prefix)
-          List<Ref> tags = git.tagList().call();
-          for (Ref tag : tags) {
-            allRefs.add(tag.getName().replaceFirst("^refs/tags/", ""));
-          }
+    // Add all branch names (without refs/heads/ prefix)
+    List<Ref> branches = git.branchList().call();
+    for (Ref branch : branches) {
+      allRefs.add(REFS_HEADS_PREFIX.matcher(branch.getName()).replaceFirst(""));
+    }
 
-          // If the ref matches any branch or tag name, it's not a commit hash
-          if (allRefs.contains(ref)) {
-            return false;
-          }
+    // Add all tag names (without refs/tags/ prefix)
+    List<Ref> tags = git.tagList().call();
+    for (Ref tag : tags) {
+      allRefs.add(REFS_TAGS_PREFIX.matcher(tag.getName()).replaceFirst(""));
+    }
 
-          // If it's not a branch or tag, try to resolve it as a commit
-          ObjectId objectId = git.getRepository().resolve(ref);
-          return objectId != null;
-        });
+    // If the ref matches any branch or tag name, it's not a commit hash
+    if (allRefs.contains(ref)) {
+      return false;
+    }
+
+    // If it's not a branch or tag, try to resolve it as a commit
+    ObjectId objectId = git.getRepository().resolve(ref);
+    return objectId != null;
   }
 
   /**
@@ -349,37 +360,39 @@ public class GitRepo implements AutoCloseable {
         withGitOrFalse(
             repoPath,
             "checking if file '" + filename + "' exists in repo '" + repoPath + "'",
-            git -> {
-              List<Ref> branches =
-                  git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
-
-              for (Ref branch : branches) {
-                String branchName = branch.getName();
-
-                ObjectId commitId = git.getRepository().resolve(branchName);
-                if (commitId == null) {
-                  continue;
-                }
-                try (RevWalk revWalk = new RevWalk(git.getRepository())) {
-                  RevCommit commit = revWalk.parseCommit(commitId);
-                  try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
-                    treeWalk.addTree(commit.getTree());
-                    treeWalk.setFilter(PathFilter.create(filename));
-
-                    if (treeWalk.next()) {
-                      log.debug("File {} found in branch {}", filename, branchName);
-                      return true;
-                    }
-                  }
-                }
-              }
-              return false;
-            });
+            (Git git) -> resolveExistsInSomeBranch(git, filename));
 
     if (!found) {
       log.debug("File {} not found in repository {}", filename, repoPath);
     }
     return found;
+  }
+
+  private static boolean resolveExistsInSomeBranch(Git git, String filename)
+      throws IOException, GitAPIException {
+    List<Ref> branches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
+
+    for (Ref branch : branches) {
+      String branchName = branch.getName();
+
+      ObjectId commitId = git.getRepository().resolve(branchName);
+      if (commitId == null) {
+        continue;
+      }
+      try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+        RevCommit commit = revWalk.parseCommit(commitId);
+        try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
+          treeWalk.addTree(commit.getTree());
+          treeWalk.setFilter(PathFilter.create(filename));
+
+          if (treeWalk.next()) {
+            log.debug("File {} found in branch {}", filename, branchName);
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   public static boolean isTag(File repo, String ref) {
@@ -389,7 +402,7 @@ public class GitRepo implements AutoCloseable {
     return withGitOrFalse(
         repo,
         "checking if ref '" + ref + "' is a tag in repo '" + repo + "'",
-        git -> {
+        (Git git) -> {
           List<Ref> tags = git.tagList().call();
           for (Ref tag : tags) {
             if (tag.getName().endsWith("/" + ref) || tag.getName().equals(ref)) {

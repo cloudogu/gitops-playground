@@ -21,6 +21,9 @@ import retrofit2.Response;
 @Slf4j
 public class ScmManagerProvider implements GitProvider {
 
+  private static final int HTTP_CREATED = 201;
+  private static final int HTTP_CONFLICT = 409;
+
   private ScmManagerUrlResolver urls;
   private ScmManagerApiClient apiClient;
   private final ScmManagerConfig scmmConfig;
@@ -135,14 +138,10 @@ public class ScmManagerProvider implements GitProvider {
 
   @Override
   public String repoUrl(String repoTarget, RepoUrlScope scope) {
-    switch (scope) {
-      case CLIENT:
-        return urls.clientRepoUrl(repoTarget);
-      case IN_CLUSTER:
-        return urls.inClusterRepoUrl(repoTarget);
-      default:
-        return urls.inClusterRepoUrl(repoTarget);
-    }
+    return switch (scope) {
+      case CLIENT -> urls.clientRepoUrl(repoTarget);
+      case IN_CLUSTER -> urls.inClusterRepoUrl(repoTarget);
+    };
   }
 
   @Override
@@ -179,12 +178,12 @@ public class ScmManagerProvider implements GitProvider {
   }
 
   private static boolean handle201or409(Response<Void> response, String resourceName) {
-    if (response.code() == 201) {
+    if (response.code() == HTTP_CREATED) {
       log.debug("{} created successfully", resourceName);
       return true;
     }
 
-    if (response.code() == 409) {
+    if (response.code() == HTTP_CONFLICT) {
       log.debug("{} already exists", resourceName);
       return false;
     }

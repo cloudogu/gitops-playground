@@ -25,7 +25,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -356,6 +362,8 @@ public class ContentLoader extends Tool {
       credentialsProvider =
           new UsernamePasswordCredentialsProvider(
               credentials.getUsername(), credentials.getPassword());
+    } else {
+      // no credentials configured for this repo; clone anonymously
     }
 
     cloneToLocalFolder(repoConfig, repoTmpDir, credentialsProvider);
@@ -463,7 +471,7 @@ public class ContentLoader extends Tool {
     return repoCoordinate;
   }
 
-  private static List<File> findRepoDirectories(File srcRepo) {
+  private static Collection<File> findRepoDirectories(File srcRepo) {
     File[] files = srcRepo.listFiles();
     if (files == null) {
       return Collections.emptyList();
@@ -852,11 +860,11 @@ public class ContentLoader extends Tool {
   @Getter
   @Setter
   public static class RepoCoordinate {
-    String namespace;
-    String repoName;
-    File clonedContentRepo;
-    ContentRepositorySchema repoConfig;
-    boolean refIsTag;
+    private String namespace;
+    private String repoName;
+    private File clonedContentRepo;
+    private ContentRepositorySchema repoConfig;
+    private boolean refIsTag;
 
     @Override
     public String toString() {

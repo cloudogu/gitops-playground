@@ -1,6 +1,11 @@
 package com.cloudogu.gitops.utils;
 
-import freemarker.template.*;
+import freemarker.template.DefaultObjectWrapper;
+import freemarker.template.TemplateHashModel;
+import freemarker.template.TemplateModel;
+import freemarker.template.TemplateModelException;
+import freemarker.template.Version;
+import java.util.HashSet;
 import java.util.Set;
 
 public class AllowListFreemarkerObjectWrapper extends DefaultObjectWrapper {
@@ -9,7 +14,7 @@ public class AllowListFreemarkerObjectWrapper extends DefaultObjectWrapper {
 
   public AllowListFreemarkerObjectWrapper(Version freemarkerVersion, Set<String> allowlist) {
     super(freemarkerVersion);
-    this.allowlist = allowlist;
+    this.allowlist = new HashSet<>(allowlist);
   }
 
   @Override

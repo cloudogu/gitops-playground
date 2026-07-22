@@ -5,9 +5,15 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ClusterResourcesCopyFilter {
+
+  private static final Pattern LEADING_SLASHES = Pattern.compile("^/+");
+  private static final Pattern TRAILING_SLASHES = Pattern.compile("/+$");
 
   private ClusterResourcesCopyFilter() {}
 
@@ -43,7 +49,7 @@ public class ClusterResourcesCopyFilter {
 
   private static String normalizePrefix(String subDir) {
     String norm = subDir.replace('\\', '/');
-    norm = norm.replaceAll("^/+", "").replaceAll("/+$", "");
+    norm = TRAILING_SLASHES.matcher(LEADING_SLASHES.matcher(norm).replaceAll("")).replaceAll("");
     return norm + "/";
   }
 
@@ -84,6 +90,7 @@ public class ClusterResourcesCopyFilter {
       String rel = srcRoot.toURI().relativize(canon.toURI()).toString();
       return rel.replace('\\', '/');
     } catch (IOException e) {
+      log.debug("Failed to compute relative path for {} against {}", candidateFile, srcRoot, e);
       return null;
     }
   }

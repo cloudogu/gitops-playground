@@ -39,10 +39,6 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 
     String namePrefix = getConfig().getApplication().getNamePrefix();
     String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
-    String jenkinsNamespace =
-        Boolean.TRUE.equals(getConfig().getJenkins().getInternal())
-            ? namePrefix + getConfig().getJenkins().getNamespace()
-            : null;
 
     GitRepo repo = repoProvider.create("argocd/cluster-resources", gitHandler.getResourcesScm());
     try {
@@ -86,6 +82,10 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
     k8sClient.delete("app", argocdNamespace, "projects");
     k8sClient.delete("app", argocdNamespace, ARGOCD);
 
+    String jenkinsNamespace =
+        Boolean.TRUE.equals(getConfig().getJenkins().getInternal())
+            ? (namePrefix + getConfig().getJenkins().getNamespace())
+            : null;
     if (jenkinsNamespace != null) {
       k8sClient.delete("secret", jenkinsNamespace, "jenkins-credentials");
     }

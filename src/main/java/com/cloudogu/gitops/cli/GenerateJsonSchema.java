@@ -6,12 +6,19 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.micronaut.context.ApplicationContext;
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine.Option;
@@ -24,24 +31,24 @@ public class GenerateJsonSchema {
   public static final String SCHEMA_FILE = "docs/configuration.schema.json";
   public static final String DOCS_FILE = "docs/Configuration.md";
 
-  public static void main(String[] args) throws Exception {
-    ObjectNode jsonSchema =
-        ApplicationContext.run().getBean(JsonSchemaGenerator.class).createSchema();
-    String prettyJson =
-        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
+  public static void main(String[] args) {
+    try {
+      ObjectNode jsonSchema =
+          ApplicationContext.run().getBean(JsonSchemaGenerator.class).createSchema();
+      String prettyJson =
+          new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
 
-    if (args.length > 0 && "-".equals(args[0])) {
-      System.out.println(prettyJson);
-    } else {
-      try {
+      if (args.length > 0 && "-".equals(args[0])) {
+        System.out.println(prettyJson);
+      } else {
         Files.writeString(new File(SCHEMA_FILE).toPath(), prettyJson);
         log.info("Wrote schema to {}", SCHEMA_FILE);
 
         Files.writeString(new File(DOCS_FILE).toPath(), generateDocs());
         log.info("Wrote documentation to {}", DOCS_FILE);
-      } catch (IOException e) {
-        throw new RuntimeException("Failed to generate schema/documentation files", e);
       }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to generate schema/documentation files", e);
     }
   }
 
@@ -58,15 +65,27 @@ public class GenerateJsonSchema {
             .filter(field -> !Set.of("features", "stages").contains(field.getName()))
             .toList();
 
-    // Table of contents
-    md.append("## Table of Contents\n\n");
-    for (Field f : topFields) {
-      md.append("- [")
-          .append(sectionTitle(f.getName()))
+    // Table of contents and top-level sections are built from the same fields in one pass.
+    StringBuilder toc = new StringBuilder();
+    StringBuilder sections = new StringBuilder();
+    for (Field field : topFields) {
+      toc.append("- [")
+          .append(sectionTitle(field.getName()))
           .append("](#")
-          .append(anchor(f.getName()))
+          .append(anchor(field.getName()))
           .append(")\n");
+
+      field.setAccessible(true);
+      sections.append("## ").append(sectionTitle(field.getName())).append("\n\n");
+      try {
+        sections.append(buildTable(field.get(config), field.getType(), field.getName()));
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
     }
+
+    md.append("## Table of Contents\n\n");
+    md.append(toc);
     md.append("- [Tools](#tools)\n");
     for (Field f : schemaFields(Config.FeaturesSchema.class)) {
       md.append("  - [")
@@ -77,16 +96,7 @@ public class GenerateJsonSchema {
     }
     md.append("\n");
 
-    // Top-level sections
-    for (Field field : topFields) {
-      field.setAccessible(true);
-      md.append("## ").append(sectionTitle(field.getName())).append("\n\n");
-      try {
-        md.append(buildTable(field.get(config), field.getType(), field.getName()));
-      } catch (IllegalAccessException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    md.append(sections);
 
     // Tools sub-sections
     md.append("## Tools\n\n");
@@ -174,7 +184,11 @@ public class GenerateJsonSchema {
     r.put("type", typeName(field));
     r.put("default", formatDefault(safeGet(field, instance)));
     r.put(
-        "desc", (jsonDesc != null ? jsonDesc.value() : "-").replaceAll("\\s*\\n\\s*", " ").trim());
+        "desc",
+        WHITESPACE_AROUND_NEWLINE
+            .matcher(jsonDesc != null ? jsonDesc.value() : "-")
+            .replaceAll(" ")
+            .trim());
     rows.add(r);
   }
 
@@ -214,6 +228,7 @@ public class GenerateJsonSchema {
       field.setAccessible(true);
       return field.get(instance);
     } catch (Exception e) {
+      log.debug("Failed to read field {} for documentation generation", field.getName(), e);
       return null;
     }
   }
@@ -258,12 +273,17 @@ public class GenerateJsonSchema {
     return t.getSimpleName();
   }
 
+  private static final Pattern UPPERCASE_LETTER =
+      Pattern.compile("\\p{Lu}", Pattern.UNICODE_CHARACTER_CLASS);
+  private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+");
+  private static final Pattern WHITESPACE_AROUND_NEWLINE = Pattern.compile("\\s*\\n\\s*");
+
   public static String sectionTitle(String name) {
-    String title = name.replaceAll("([A-Z])", " $1").trim();
+    String title = UPPERCASE_LETTER.matcher(name).replaceAll(" $0").trim();
     return Character.toUpperCase(title.charAt(0)) + title.substring(1);
   }
 
   public static String anchor(String name) {
-    return sectionTitle(name).toLowerCase().replaceAll("\\s+", "-");
+    return WHITESPACE_RUN.matcher(sectionTitle(name).toLowerCase(Locale.ROOT)).replaceAll("-");
   }
 }

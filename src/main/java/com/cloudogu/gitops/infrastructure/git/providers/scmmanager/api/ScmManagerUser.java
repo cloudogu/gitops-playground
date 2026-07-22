@@ -12,7 +12,7 @@ public class ScmManagerUser {
   private String name;
   private String displayName;
   private String mail;
-  private boolean external = false;
+  private boolean external;
   private String password;
   private boolean active = true;
 

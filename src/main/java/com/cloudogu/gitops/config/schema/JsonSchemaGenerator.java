@@ -2,8 +2,13 @@ package com.cloudogu.gitops.config.schema;
 
 import com.cloudogu.gitops.config.Config;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.github.victools.jsonschema.generator.*;
-import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
+import com.github.victools.jsonschema.generator.FieldScope;
+import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
+import com.github.victools.jsonschema.generator.SchemaGenerator;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import jakarta.inject.Singleton;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -20,7 +25,7 @@ public class JsonSchemaGenerator {
             .with(Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES)
             // All fields can be set to null to use the default
             .with(Option.NULLABLE_FIELDS_BY_DEFAULT)
-            .with(new JacksonSchemaModule(/* no options for now */ ));
+            .with(new JacksonModule(/* no options for now */ ));
 
     // Apply the rule to include only fields with @JsonProperty annotation (or here,
     // @JsonPropertyDescription)

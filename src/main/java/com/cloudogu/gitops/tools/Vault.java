@@ -119,11 +119,6 @@ public class Vault extends Tool {
         "WARNING! Vault dev mode is enabled! In this mode, Vault runs entirely in-memory\n"
             + "and starts unsealed with a single unseal key. ");
 
-    // Create config map from init script.
-    // Init script creates/authorizes secrets, users, service accounts, etc.
-    String vaultPostStartConfigMap = "vault-dev-post-start";
-    String vaultPostStartVolume = "dev-post-start";
-
     Path templatedFile =
         fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + "/" + VAULT_START_SCRIPT_PATH);
     File postStartScript;
@@ -139,6 +134,11 @@ public class Vault extends Tool {
 
     log.debug("Creating namespace for vault, so it can add its secrets there");
     k8sClient.createNamespace(namespace);
+
+    // Create config map from init script.
+    // Init script creates/authorizes secrets, users, service accounts, etc.
+    String vaultPostStartConfigMap = "vault-dev-post-start";
+    String vaultPostStartVolume = "dev-post-start";
     k8sClient.createConfigMapFromFile(
         vaultPostStartConfigMap, namespace, postStartScript.getAbsolutePath());
 

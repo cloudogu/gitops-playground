@@ -12,21 +12,17 @@ class GitopsPlaygroundCliMainTest {
 	@Test
 	void 'application returns exit code 0 on success'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
-		})
+		ReturnCode returnCode = gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
 
-		assertThat(status).isZero()
+		assertThat(returnCode.ordinal()).isZero()
 	}
 
 	@Test
 	void 'application returns exit code 1 on exception'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
-		})
+		ReturnCode returnCode = gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
 
-		assertThat(status).isNotZero()
+		assertThat(returnCode.ordinal()).isNotZero()
 	}
 
 	@Test

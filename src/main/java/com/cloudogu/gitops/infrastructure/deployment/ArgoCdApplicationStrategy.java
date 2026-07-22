@@ -191,7 +191,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     };
   }
 
-  private boolean requiresBootstrapDeployment(String toolName) {
+  private static boolean requiresBootstrapDeployment(String toolName) {
     return "scm-manager".equals(toolName);
   }
 }

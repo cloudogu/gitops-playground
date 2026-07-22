@@ -3,6 +3,10 @@ package com.cloudogu.gitops.utils;
 import lombok.RequiredArgsConstructor;
 
 public class DockerImageParser {
+
+  private static final int MIN_SEGMENTS_WITH_REGISTRY = 2;
+  private static final int REPOSITORY_SEGMENT_COUNT = 2;
+
   @lombok.Getter
   @RequiredArgsConstructor
   public static class Image {
@@ -41,10 +45,10 @@ public class DockerImageParser {
     String repository;
     String registry;
 
-    if (parts.length >= 2) {
-      repository = parts[parts.length - 2] + "/" + parts[parts.length - 1];
+    if (parts.length >= MIN_SEGMENTS_WITH_REGISTRY) {
+      repository = parts[parts.length - REPOSITORY_SEGMENT_COUNT] + "/" + parts[parts.length - 1];
       StringBuilder registryBuilder = new StringBuilder();
-      for (int i = 0; i < parts.length - 2; i++) {
+      for (int i = 0; i < parts.length - REPOSITORY_SEGMENT_COUNT; i++) {
         if (i > 0) {
           registryBuilder.append("/");
         }

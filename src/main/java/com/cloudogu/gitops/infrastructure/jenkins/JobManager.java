@@ -19,6 +19,8 @@ import okhttp3.Response;
 @Slf4j
 public class JobManager {
 
+  private static final int HTTP_OK = 200;
+
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   private final JenkinsApiClient apiClient;
@@ -44,7 +46,7 @@ public class JobManager {
           apiClient.postRequestWithCrumb(
               "job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
               new FormBody.Builder().add("json", jsonPayload).build())) {
-        if (response.code() != 200) {
+        if (response.code() != HTTP_OK) {
           throw new RuntimeException(
               "Could not create credential id="
                   + id
@@ -84,7 +86,7 @@ public class JobManager {
         RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"));
 
         try (Response response = apiClient.postRequestWithCrumb("createItem?name=" + name, body)) {
-          if (response.code() != 200) {
+          if (response.code() != HTTP_OK) {
             throw new RuntimeException(
                 "Could not create job '" + name + "'. StatusCode: " + response.code());
           }
@@ -98,7 +100,7 @@ public class JobManager {
 
   public boolean jobExists(String name) {
     try (Response response = apiClient.postRequestWithCrumb("job/" + name)) {
-      return response.code() == 200;
+      return response.code() == HTTP_OK;
     }
   }
 
@@ -118,7 +120,7 @@ public class JobManager {
   public void startJob(String jobName) {
     try (Response response =
         apiClient.postRequestWithCrumb("job/" + jobName + "/build?delay=0sec")) {
-      if (response.code() != 200) {
+      if (response.code() != HTTP_OK) {
         throw new RuntimeException(
             "Could not trigger build of Jenkins job: "
                 + jobName

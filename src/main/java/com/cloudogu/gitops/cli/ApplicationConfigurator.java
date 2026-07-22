@@ -57,7 +57,7 @@ public class ApplicationConfigurator {
     }
   }
 
-  private void addNamePrefix(Config newConfig) {
+  private static void addNamePrefix(Config newConfig) {
     String namePrefix = newConfig.getApplication().getNamePrefix();
     if (hasText(namePrefix)) {
       if (!namePrefix.endsWith("-")) {
@@ -70,7 +70,7 @@ public class ApplicationConfigurator {
     }
   }
 
-  private void addRegistryConfig(Config newConfig) {
+  private static void addRegistryConfig(Config newConfig) {
     // Process image pull secrets first, they might even be relevant if no registry is set
     if (Boolean.TRUE.equals(newConfig.getRegistry().getCreateImagePullSecrets())) {
       String username =
@@ -281,7 +281,8 @@ public class ApplicationConfigurator {
     }
   }
 
-  private String injectSubdomain(String subdomain, String baseUrl, boolean urlSeparatorHyphen) {
+  private static String injectSubdomain(
+      String subdomain, String baseUrl, boolean urlSeparatorHyphen) {
     try {
       URL url = new URL(baseUrl);
       String newUrl;

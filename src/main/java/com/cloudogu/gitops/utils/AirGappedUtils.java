@@ -158,6 +158,8 @@ public class AirGappedUtils {
               + chartYamlDep.get(VERSION_KEY)
               + ") from repo "
               + gitRepo.getRepoTarget());
+    } else {
+      // version is already pinned (no wildcard); keep it as-is
     }
   }
 

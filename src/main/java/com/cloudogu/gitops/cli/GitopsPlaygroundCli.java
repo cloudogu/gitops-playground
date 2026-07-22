@@ -25,10 +25,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
@@ -39,6 +45,10 @@ import picocli.CommandLine;
 public class GitopsPlaygroundCli {
 
   private static final String STDOUT_APPENDER_NAME = "STDOUT";
+  private static final Pattern THREAD_PATTERN_TOKEN =
+      Pattern.compile(" \\S*%thread\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
+  private static final Pattern LOGGER_PATTERN_TOKEN =
+      Pattern.compile(" \\S*%logger\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
 
   private final K8sClient k8sClient;
   private final ApplicationConfigurator applicationConfigurator;
@@ -140,7 +150,8 @@ public class GitopsPlaygroundCli {
     log.info("\n{}\nContinue? y/n [n]", message);
 
     try {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
       String input = reader.readLine();
       return "y".equals(input);
     } catch (IOException e) {
@@ -185,7 +196,9 @@ public class GitopsPlaygroundCli {
     rootLogger.detachAppender(STDOUT_APPENDER_NAME);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern(
-        defaultPattern.replaceAll(" \\S*%thread\\S* ", " ").replaceAll(" \\S*%logger\\S* ", " "));
+        LOGGER_PATTERN_TOKEN
+            .matcher(THREAD_PATTERN_TOKEN.matcher(defaultPattern).replaceAll(" "))
+            .replaceAll(" "));
     encoder.setContext(loggerContext);
     encoder.start();
     ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
@@ -199,8 +212,6 @@ public class GitopsPlaygroundCli {
   private Config readConfigs(String[] args) {
     Config cliParams = new Config();
     new CommandLine(cliParams).parseArgs(args);
-
-    Config profileConfig = extractProfile(cliParams);
 
     List<Map<String, Object>> configFile = new ArrayList<>();
     List<Map<String, Object>> configMap = new ArrayList<>();
@@ -224,6 +235,7 @@ public class GitopsPlaygroundCli {
       }
     }
 
+    Config profileConfig = extractProfile(cliParams);
     Map<String, Object> mergedConfigs = new HashMap<>();
     deepMerge(profileConfig.toMap(), mergedConfigs);
     for (Map<String, Object> map : configMap) {

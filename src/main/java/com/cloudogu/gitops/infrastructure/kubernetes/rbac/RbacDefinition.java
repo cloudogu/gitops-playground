@@ -35,7 +35,7 @@ public class RbacDefinition {
   }
 
   public RbacDefinition withServiceAccounts(List<ServiceAccountRef> accounts) {
-    this.serviceAccounts = accounts;
+    this.serviceAccounts = new ArrayList<>(accounts);
     return this;
   }
 

@@ -113,7 +113,7 @@ public class GitHandler {
     };
   }
 
-  private String centralScmManagerServicePrefix(Config config) {
+  private static String centralScmManagerServicePrefix(Config config) {
     String namespace = config.getMultiTenant().getScmManager().getNamespace();
     if (namespace == null) {
       namespace = "";
@@ -128,7 +128,7 @@ public class GitHandler {
     return namespace.substring(0, namespace.length() - baseNamespace.length());
   }
 
-  private boolean isNullOrEmpty(String str) {
+  private static boolean isNullOrEmpty(String str) {
     return str == null || str.isEmpty();
   }
 }

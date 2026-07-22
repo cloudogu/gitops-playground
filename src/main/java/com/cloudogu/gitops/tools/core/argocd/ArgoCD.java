@@ -28,6 +28,8 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 @Slf4j
 public class ArgoCD extends Tool {
 
+  private static final int BCRYPT_LOG_ROUNDS = 4;
+
   private final K8sClient k8sClient;
   private final HelmClient helmClient;
   private final DeploymentModeFactory deploymentModeFactory;
@@ -278,7 +280,7 @@ public class ArgoCD extends Tool {
   private void updateBcryptAdminPassword() {
     log.debug("Setting new argocd admin password");
 
-    String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4));
+    String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_LOG_ROUNDS));
 
     k8sClient.patch(
         "secret",

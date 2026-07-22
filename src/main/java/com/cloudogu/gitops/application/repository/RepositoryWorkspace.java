@@ -31,7 +31,7 @@ public class RepositoryWorkspace implements AutoCloseable {
   @Getter private final GitRepo clusterResourcesRepository;
   @Getter private final GitRepo tenantBootstrapRepository;
 
-  private boolean remoteRepositoriesEnsured = false;
+  private boolean remoteRepositoriesEnsured;
 
   public RepositoryWorkspace(GitRepo clusterResourcesRepository) {
     this(clusterResourcesRepository, null);

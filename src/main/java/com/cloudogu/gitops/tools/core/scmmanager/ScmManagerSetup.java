@@ -28,6 +28,13 @@ public class ScmManagerSetup {
 
   private static final String HELM_VALUES_PATH =
       "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml";
+  private static final long MILLIS_PER_SECOND = 1000L;
+  private static final int SCMM_AVAILABILITY_TIMEOUT_SECONDS = 180;
+  private static final int SCMM_AVAILABILITY_POLL_INTERVAL_MILLIS = 5000;
+  private static final int SCMM_RESTART_POLL_INTERVAL_MILLIS = 2000;
+  private static final int SCMM_RESTART_START_DELAY_MILLIS = 100;
+  private static final int DEFAULT_PROXY_PORT = 8080;
+  private static final int DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS = 300;
 
   private final ScmManagerProvider scmManager;
   private final Deployer deployer;
@@ -167,12 +174,13 @@ public class ScmManagerSetup {
   }
 
   public void waitForScmmAvailable() {
-    waitForScmmAvailable(180, 5000, 0);
+    waitForScmmAvailable(
+        SCMM_AVAILABILITY_TIMEOUT_SECONDS, SCMM_AVAILABILITY_POLL_INTERVAL_MILLIS, 0);
   }
 
   public void waitForScmmAvailable(int timeoutSeconds, int intervalMillis, int startDelay) {
     long startTime = System.currentTimeMillis();
-    long timeoutMillis = timeoutSeconds * 1000L;
+    long timeoutMillis = timeoutSeconds * MILLIS_PER_SECOND;
 
     if (startDelay > 0) {
       try {
@@ -260,14 +268,17 @@ public class ScmManagerSetup {
     log.debug("SCM-Manager plugin installation finished successfully!");
 
     if (restartForThisPlugin) {
-      waitForScmmAvailable(180, 2000, 100);
+      waitForScmmAvailable(
+          SCMM_AVAILABILITY_TIMEOUT_SECONDS,
+          SCMM_RESTART_POLL_INTERVAL_MILLIS,
+          SCMM_RESTART_START_DELAY_MILLIS);
     }
   }
 
   private void setSetupConfigs() {
     Map<String, Object> setupConfigs = new HashMap<>();
     setupConfigs.put("enableProxy", false);
-    setupConfigs.put("proxyPort", 8080);
+    setupConfigs.put("proxyPort", DEFAULT_PROXY_PORT);
     setupConfigs.put("proxyServer", "proxy.mydomain.com");
     setupConfigs.put("proxyUser", null);
     setupConfigs.put("proxyPassword", null);
@@ -284,7 +295,7 @@ public class ScmManagerSetup {
     setupConfigs.put(
         "pluginUrl",
         "https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}");
-    setupConfigs.put("loginAttemptLimitTimeout", 300);
+    setupConfigs.put("loginAttemptLimitTimeout", DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS);
     setupConfigs.put("enabledXsrfProtection", true);
     setupConfigs.put("namespaceStrategy", "CustomNamespaceStrategy");
     setupConfigs.put("loginInfoUrl", "https://login-info.scm-manager.org/api/v1/login-info");

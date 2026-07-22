@@ -59,6 +59,8 @@ public class InsecureCredentialProvider extends CredentialsProvider {
         } else if ("Always skip SSL verification for this server from now on".equals(prompt)) {
           // otherwise we would persistently overwrite our $HOME/.gitconfig
           yesNo.setValue(false);
+        } else {
+          // unrecognized prompt; leave the default value untouched
         }
       }
     }

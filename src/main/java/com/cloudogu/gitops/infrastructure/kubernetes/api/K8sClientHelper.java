@@ -2,13 +2,26 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
 import com.cloudogu.gitops.utils.MapUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.APIGroup;
+import io.fabric8.kubernetes.api.model.APIGroupList;
+import io.fabric8.kubernetes.api.model.APIResource;
+import io.fabric8.kubernetes.api.model.APIResourceList;
+import io.fabric8.kubernetes.api.model.GroupVersionForDiscovery;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.Serialization;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -144,7 +157,7 @@ class K8sClientHelper {
     if (type == null || type.isEmpty()) {
       patchType = PatchType.JSON_MERGE;
     } else {
-      switch (type.toLowerCase()) {
+      switch (type.toLowerCase(Locale.ROOT)) {
         case "merge", "json-merge":
           patchType = PatchType.JSON_MERGE;
           break;
@@ -215,7 +228,7 @@ class K8sClientHelper {
 
   private static io.fabric8.kubernetes.client.dsl.Resource<?> resolveResourceClient(
       KubernetesClient client, String resourceType, String name, String resolvedNamespace) {
-    switch (resourceType.toLowerCase()) {
+    switch (resourceType.toLowerCase(Locale.ROOT)) {
       case "pod", "pods":
         return client.pods().inNamespace(resolvedNamespace).withName(name);
 
@@ -252,7 +265,7 @@ class K8sClientHelper {
 
   static io.fabric8.kubernetes.client.dsl.Resource<?> getCustomResourceClient(
       KubernetesClient client, String resourceType, String name, String namespace) {
-    String normalized = resourceType.toLowerCase();
+    String normalized = resourceType.toLowerCase(Locale.ROOT);
 
     Map<String, Object> match = findApiResourceViaDiscovery(client, normalized, resourceType);
 
@@ -393,7 +406,7 @@ class K8sClientHelper {
 
   static void deleteResourcesByType(
       KubernetesClient client, String resource, String namespace, Map<String, String> labels) {
-    switch (resource.toLowerCase()) {
+    switch (resource.toLowerCase(Locale.ROOT)) {
       case "secret", "secrets":
         client.secrets().inNamespace(namespace).withLabels(labels).delete();
         break;
@@ -416,7 +429,7 @@ class K8sClientHelper {
 
       default:
         Map<String, Object> match =
-            findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
+            findApiResourceViaDiscovery(client, resource.toLowerCase(Locale.ROOT), resource);
         if (!match.isEmpty()) {
           ResourceDefinitionContext context = toResourceDefinitionContext(match);
           client

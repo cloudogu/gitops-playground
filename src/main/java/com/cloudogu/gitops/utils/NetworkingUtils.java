@@ -71,15 +71,23 @@ public class NetworkingUtils {
       sortedInterfaces.sort(Comparator.comparingInt(NetworkInterface::getIndex));
 
       for (NetworkInterface anInterface : sortedInterfaces) {
-        for (InetAddress address : Collections.list(anInterface.getInetAddresses())) {
-          if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
-            return address.getHostAddress();
-          }
+        String address = firstSiteLocalAddress(anInterface);
+        if (address != null) {
+          return address;
         }
       }
       return "";
     } catch (SocketException e) {
       throw new RuntimeException("Could not determine local ip address", e);
     }
+  }
+
+  private static String firstSiteLocalAddress(NetworkInterface networkInterface) {
+    for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
+      if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
+        return address.getHostAddress();
+      }
+    }
+    return null;
   }
 }

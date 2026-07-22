@@ -6,12 +6,14 @@ import java.net.URI;
 
 public interface GitProvider {
 
+  int REPO_TARGET_SEGMENT_COUNT = 2;
+
   /**
    * Splits a "namespace/repoName" repo target into its namespace and name segments. Shared by
    * providers that address repositories via a flat "namespace/name" string.
    */
   static Tuple<String, String> splitRepoTarget(String repoTarget) {
-    String[] parts = repoTarget.split("/", 2);
+    String[] parts = repoTarget.split("/", REPO_TARGET_SEGMENT_COUNT);
     return new Tuple<>(parts[0], parts[1]);
   }
 

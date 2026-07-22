@@ -96,7 +96,7 @@ public class TemplatingEngine {
 
   /** Executes template and writes to targetFile, keeping the template file. */
   public File template(File templateFile, File targetFile, Map<String, Object> parameters)
-      throws java.io.IOException, freemarker.template.TemplateException {
+      throws IOException, freemarker.template.TemplateException {
     Template template = prepareTemplate(templateFile);
     try (BufferedWriter writer = Files.newBufferedWriter(targetFile.toPath())) {
       template.process(parameters, writer);
@@ -105,7 +105,7 @@ public class TemplatingEngine {
   }
 
   public String template(File templateFile, Map<String, Object> parameters)
-      throws java.io.IOException, freemarker.template.TemplateException {
+      throws IOException, freemarker.template.TemplateException {
     Template template = prepareTemplate(templateFile);
     StringWriter writer = new StringWriter();
     template.process(parameters, writer);
@@ -113,14 +113,14 @@ public class TemplatingEngine {
   }
 
   public String template(String template, Map<String, Object> parameters)
-      throws java.io.IOException, freemarker.template.TemplateException {
+      throws IOException, freemarker.template.TemplateException {
     StringWriter writer = new StringWriter();
     Template templateObj = new Template("template", new StringReader(template), engine);
     templateObj.process(parameters, writer);
     return writer.toString();
   }
 
-  protected Template prepareTemplate(File templateFile) throws java.io.IOException {
+  protected Template prepareTemplate(File templateFile) throws IOException {
     if (!templateFile.getName().contains(".ftl")) {
       throw new RuntimeException("File must contain .ftl to be a template");
     }

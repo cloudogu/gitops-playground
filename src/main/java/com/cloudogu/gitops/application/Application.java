@@ -13,7 +13,10 @@ import com.cloudogu.gitops.utils.Tuple;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import jakarta.inject.Singleton;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,6 +74,8 @@ public class Application {
               + context.getConfig().getApplication().getGopNamespace();
     } else if (this.k8sClient.getCurrentNamespace() != null) {
       namespace = this.k8sClient.getCurrentNamespace();
+    } else {
+      // keep default namespace
     }
     log.debug(
         "Storing GOP configuration in secret 'gop-configuration' in namespace '{}'", namespace);
@@ -84,7 +89,6 @@ public class Application {
   }
 
   public void setNamespaceListToConfig(DeploymentContext context) {
-    LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
     LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>();
     TemplatingEngine engine = new TemplatingEngine();
 
@@ -108,6 +112,7 @@ public class Application {
       context.getConfig().getContent().setNamespaces(new ArrayList<>(tenantNamespaces));
     }
 
+    LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
     for (Tool tool : this.tools) {
       String activeNs = tool.getActiveNamespaceFromFeature(context);
       if (activeNs != null && !activeNs.isEmpty()) {

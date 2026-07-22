@@ -18,6 +18,8 @@ public class ScmmDestructionHandler implements DestructionHandler {
 
   private static final String ARGOCD = "argocd";
   private static final String THIRD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
+  private static final int HTTP_NO_CONTENT = 204;
+  private static final int HTTP_NOT_FOUND = 404;
 
   private final Config config;
   private final ContextBuilder contextBuilder;
@@ -43,7 +45,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
     try {
       Response<Void> response =
           getScmmApiClient().repositoryApi().delete(namePrefix + namespace, repository).execute();
-      if (response.code() != 204 && response.code() != 404) {
+      if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
         throw new RuntimeException(
             "Could not delete repository "
                 + namespace
@@ -72,7 +74,7 @@ public class ScmmDestructionHandler implements DestructionHandler {
               .usersApi()
               .delete(config.getApplication().getNamePrefix() + name)
               .execute();
-      if (response.code() != 204 && response.code() != 404) {
+      if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
         throw new RuntimeException(
             "Could not delete user "
                 + name

@@ -13,6 +13,9 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 @Slf4j
 public class ScmManagerApiClient {
 
+  private static final int HTTP_CREATED = 201;
+  private static final int HTTP_CONFLICT = 409;
+
   private final OkHttpClient okHttpClient;
   private final String url;
 
@@ -45,7 +48,9 @@ public class ScmManagerApiClient {
     try {
       Response<Void> response = apiCall.execute();
 
-      if (!response.isSuccessful() && response.code() != 409 && response.code() != 201) {
+      if (!response.isSuccessful()
+          && response.code() != HTTP_CONFLICT
+          && response.code() != HTTP_CREATED) {
         String errorMessage =
             "API call failed!'. HTTP Status: " + response.code() + " - " + response.message();
         if (additionalMessage != null && !additionalMessage.isEmpty()) {

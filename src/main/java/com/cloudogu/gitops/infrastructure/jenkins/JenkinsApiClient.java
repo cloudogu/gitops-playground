@@ -9,13 +9,23 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import okhttp3.Credentials;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 @Singleton
 @Slf4j
 public class JenkinsApiClient {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final int HTTP_OK = 200;
+  private static final int HTTP_UNAUTHORIZED = 401;
+  private static final int HTTP_FORBIDDEN = 403;
+  private static final int DEFAULT_MAX_RETRIES = 180;
+  private static final int DEFAULT_WAIT_PERIOD_MS = 2000;
 
   private final Config config;
   private final OkHttpClient client;
@@ -23,10 +33,10 @@ public class JenkinsApiClient {
   // Number of retries is uncommonly high, because we might have to outlive an unexpected Jenkins
   // restart
   @Setter(AccessLevel.PROTECTED)
-  private int maxRetries = 180;
+  private int maxRetries = DEFAULT_MAX_RETRIES;
 
   @Setter(AccessLevel.PROTECTED)
-  private int waitPeriodInMs = 2000;
+  private int waitPeriodInMs = DEFAULT_WAIT_PERIOD_MS;
 
   public JenkinsApiClient(Config config, @Named("jenkins") OkHttpClient client) {
     this.config = config;
@@ -43,7 +53,7 @@ public class JenkinsApiClient {
     log.trace("Running groovy script in Jenkins: {}", code);
     try (Response response =
         postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())) {
-      if (response.code() != 200) {
+      if (response.code() != HTTP_OK) {
         throw new RuntimeException("Could not run script. Status code " + response.code());
       }
       return response.body().string();
@@ -81,7 +91,7 @@ public class JenkinsApiClient {
     // attempts.
     try (Response response =
         sendRequestWithRetries(() -> buildRequest("crumbIssuer/api/json").build(), 1)) {
-      if (response.code() != 200) {
+      if (response.code() != HTTP_OK) {
         throw new RuntimeException("Could not create crumb. Status code " + response.code());
       }
 
@@ -128,7 +138,8 @@ public class JenkinsApiClient {
         break;
       }
       waitBeforeRetry(retry, retries, response);
-    } while (++retry < retries);
+      retry++;
+    } while (retry < retries);
 
     if (response == null) {
       throw new RuntimeException("Failed to send request after " + retries + " retries");
@@ -165,10 +176,10 @@ public class JenkinsApiClient {
     }
   }
 
-  private boolean shouldRetryRequest(Response response) {
+  private static boolean shouldRetryRequest(Response response) {
     // We might run into a 403 due to an invalid crumb from a previous session before jenkins was
     // restarted.
     // Here in the ApiClient, we simply retry all 401 and 403 including fetching a new crumb
-    return response.code() == 401 || response.code() == 403;
+    return response.code() == HTTP_UNAUTHORIZED || response.code() == HTTP_FORBIDDEN;
   }
 }

@@ -102,7 +102,7 @@ public class ScmManager extends Tool {
     return prefixedNamespace(context);
   }
 
-  private String prefixedNamespace(DeploymentContext context) {
+  private static String prefixedNamespace(DeploymentContext context) {
     String prefix = context.getConfig().getApplication().getNamePrefix();
     if (prefix == null) {
       prefix = "";

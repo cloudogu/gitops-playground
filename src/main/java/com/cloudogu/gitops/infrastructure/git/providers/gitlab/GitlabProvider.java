@@ -11,10 +11,12 @@ import com.cloudogu.gitops.infrastructure.git.providers.Scope;
 import com.cloudogu.gitops.utils.Tuple;
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -30,6 +32,11 @@ public class GitlabProvider implements GitProvider {
   // GitLab API paths always use '/', regardless of the host OS
   private static final String PATH_SEPARATOR = "/";
   private static final String NOT_FOUND_SUFFIX = "' not found";
+  private static final Pattern NUMERIC = Pattern.compile("\\d+");
+  private static final Pattern LEADING_SLASHES = Pattern.compile("^/+");
+  private static final int HTTP_BAD_REQUEST = 400;
+  private static final int HTTP_CONFLICT = 409;
+  private static final int HTTP_NOT_FOUND = 404;
 
   private final DeploymentContext context;
   private final GitLabApi api;
@@ -66,8 +73,8 @@ public class GitlabProvider implements GitProvider {
     String repoName = target.getSecond();
 
     Group parent = parentGroup();
-    String repoNamespacePath = repoNamespace.toLowerCase();
-    String projectPath = repoName.toLowerCase();
+    String repoNamespacePath = repoNamespace.toLowerCase(Locale.ROOT);
+    String projectPath = repoName.toLowerCase(Locale.ROOT);
 
     long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
     String fullProjectPath =
@@ -205,14 +212,14 @@ public class GitlabProvider implements GitProvider {
       throw new IllegalArgumentException("--gitlab-group-id is required");
     }
 
-    boolean isNumeric = raw.matches("\\d+");
+    boolean isNumeric = NUMERIC.matcher(raw).matches();
 
     try {
       GroupApi groupApi = api.getGroupApi();
       parentGroupCache =
           isNumeric
               ? groupApi.getGroup(Long.parseLong(raw))
-              : groupApi.getGroup(raw.replaceFirst("^/+", ""));
+              : groupApi.getGroup(LEADING_SLASHES.matcher(raw).replaceFirst(""));
       return parentGroupCache;
     } catch (GitLabApiException e) {
       throw new RuntimeException("Failed to get parent group: " + raw, e);
@@ -253,7 +260,7 @@ public class GitlabProvider implements GitProvider {
       log.info("Created group {}", created.getFullPath());
       return created.getId();
     } catch (GitLabApiException e) {
-      if (e.getHttpStatus() == 400 || e.getHttpStatus() == 409) {
+      if (e.getHttpStatus() == HTTP_BAD_REQUEST || e.getHttpStatus() == HTTP_CONFLICT) {
         Group retry = findDirectSubgroupByPath(parent.getId(), segPath);
         if (retry != null) {
           return retry.getId();
@@ -275,7 +282,9 @@ public class GitlabProvider implements GitProvider {
   private Group findDirectSubgroupByPath(Long parentId, String segPath) {
     try {
       List<Group> subGroups = api.getGroupApi().getSubGroups(parentId);
-      if (subGroups == null) return null;
+      if (subGroups == null) {
+        return null;
+      }
       return subGroups.stream()
           .filter(subGroup -> segPath.equals(subGroup.getPath()))
           .findFirst()
@@ -289,7 +298,9 @@ public class GitlabProvider implements GitProvider {
   private Project findDirectProjectByPath(Long parentId, String path) {
     try {
       List<Project> projects = api.getGroupApi().getProjects(parentId);
-      if (projects == null) return null;
+      if (projects == null) {
+        return null;
+      }
       return projects.stream()
           .filter(project -> path.equals(project.getPath()))
           .findFirst()
@@ -304,7 +315,7 @@ public class GitlabProvider implements GitProvider {
     try {
       return Optional.ofNullable(api.getProjectApi().getProject(fullPath));
     } catch (GitLabApiException e) {
-      if (e.getHttpStatus() == 404) {
+      if (e.getHttpStatus() == HTTP_NOT_FOUND) {
         return Optional.empty();
       }
       throw new RuntimeException("Failed to look up GitLab project: " + fullPath, e);
@@ -324,16 +335,16 @@ public class GitlabProvider implements GitProvider {
     Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
     return parentGroup().getFullPath()
         + "/"
-        + target.getFirst().toLowerCase()
+        + target.getFirst().toLowerCase(Locale.ROOT)
         + "/"
-        + target.getSecond().toLowerCase();
+        + target.getSecond().toLowerCase(Locale.ROOT);
   }
 
   private static Visibility toVisibility(String s) {
     if (s == null) {
       s = "private";
     }
-    return switch (s.toLowerCase()) {
+    return switch (s.toLowerCase(Locale.ROOT)) {
       case "public" -> Visibility.PUBLIC;
       case "internal" -> Visibility.INTERNAL;
       default -> Visibility.PRIVATE;

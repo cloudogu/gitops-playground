@@ -19,7 +19,9 @@ import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -131,7 +133,7 @@ public class Monitoring extends Tool {
       throw new RuntimeException("Failed to parse Grafana URL: " + grafanaUrl, e);
     }
 
-    addHelmValuesData("monitoring", Map.of("grafana", Map.of("host", host)));
+    addHelmValuesData(TOOL_NAME, Map.of("grafana", Map.of("host", host)));
     addHelmValuesData(
         "namespaces",
         getConfig().getApplication().getNamespaces().getActiveNamespaces() != null

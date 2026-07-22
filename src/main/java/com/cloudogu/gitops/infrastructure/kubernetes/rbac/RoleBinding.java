@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -32,7 +33,7 @@ public class RoleBinding {
     this.name = name;
     this.namespace = namespace;
     this.roleName = roleName;
-    this.serviceAccounts = serviceAccounts;
+    this.serviceAccounts = new ArrayList<>(serviceAccounts);
 
     if ("cluster-admin".equals(roleName)) {
       this.kind = "ClusterRoleBinding";

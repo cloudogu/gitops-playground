@@ -47,7 +47,7 @@ public class RepositoryProvisioning {
   private final GitHandler gitHandler;
 
   @Getter @Setter private RepositoryWorkspace workspace;
-  @Getter @Setter private boolean repositoriesCloned = false;
+  @Getter @Setter private boolean repositoriesCloned;
 
   public RepositoryProvisioning(GitRepoFactory gitRepoFactory, GitHandler gitHandler) {
     this.gitRepoFactory = gitRepoFactory;
@@ -108,7 +108,7 @@ public class RepositoryProvisioning {
 
   public void publishClusterResourcesRepositoryChanges(String toolName, String message) {
     assertWorkspacePrepared();
-    String actualMessage = message != null ? message : "Update " + toolName + " resources";
+    String actualMessage = message != null ? message : ("Update " + toolName + " resources");
     try {
       workspace.commitAndPushClusterResourcesChanges(actualMessage);
     } catch (Exception e) {
@@ -123,7 +123,7 @@ public class RepositoryProvisioning {
   public void publishClusterResourcesAndTenantBootstrapRepositoryChanges(
       String toolName, String message) {
     assertWorkspacePrepared();
-    String actualMessage = message != null ? message : "Update " + toolName + " resources";
+    String actualMessage = message != null ? message : ("Update " + toolName + " resources");
     try {
       workspace.commitAndPushClusterResourcesAndTenantBootstrapChanges(actualMessage);
     } catch (Exception e) {

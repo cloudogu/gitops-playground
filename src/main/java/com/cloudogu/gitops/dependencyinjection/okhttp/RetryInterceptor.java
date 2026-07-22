@@ -23,11 +23,14 @@ public class RetryInterceptor implements Interceptor {
           504 // Gateway Timeout
           );
 
+  private static final int DEFAULT_RETRIES = 180;
+  private static final int DEFAULT_WAIT_PERIOD_MS = 2000;
+
   private final int retries;
   private final int waitPeriodInMs;
 
   public RetryInterceptor() {
-    this(180, 2000);
+    this(DEFAULT_RETRIES, DEFAULT_WAIT_PERIOD_MS);
   }
 
   @NotNull

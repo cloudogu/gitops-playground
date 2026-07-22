@@ -3,7 +3,26 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.Tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.NamedContext;
+import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.NamespaceBuilder;
+import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeAddress;
+import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceBuilder;
+import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
@@ -19,10 +38,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,9 +74,12 @@ public class K8sClient {
   private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1;
   private static final int FABRIC8_REQUEST_TIMEOUT_MILLIS = 60_000;
   private static final int FABRIC8_CONNECTION_TIMEOUT_MILLIS = 10_000;
+  private static final int MILLIS_PER_SECOND = 1000;
+  private static final int DEFAULT_SLEEP_TIME_MILLIS = MILLIS_PER_SECOND;
+  private static final int DEFAULT_RETRIES = 120;
 
-  protected int sleepTimeMillis = 1000;
-  protected int defaultRetries = 120;
+  protected int sleepTimeMillis = DEFAULT_SLEEP_TIME_MILLIS;
+  protected int defaultRetries = DEFAULT_RETRIES;
 
   private KubernetesClient client;
   private com.cloudogu.gitops.config.Config gopConfig;
@@ -113,23 +145,22 @@ public class K8sClient {
 
     String internalIp =
         waitForResourceWithRetry(
-            "internal IP of node " + nodeName,
-            () -> {
-              Node node = client.nodes().withName(nodeName).get();
-              if (node != null
-                  && node.getStatus() != null
-                  && node.getStatus().getAddresses() != null) {
-                for (NodeAddress address : node.getStatus().getAddresses()) {
-                  if (INTERNAL_IP_TYPE.equals(address.getType())) {
-                    return address.getAddress();
-                  }
-                }
-              }
-              return null;
-            });
+            "internal IP of node " + nodeName, () -> findInternalNodeIp(nodeName));
 
     log.debug("Internal IP of node {}: {}", nodeName, internalIp);
     return internalIp;
+  }
+
+  private String findInternalNodeIp(String nodeName) {
+    Node node = client.nodes().withName(nodeName).get();
+    if (node != null && node.getStatus() != null && node.getStatus().getAddresses() != null) {
+      for (NodeAddress address : node.getStatus().getAddresses()) {
+        if (INTERNAL_IP_TYPE.equals(address.getType())) {
+          return address.getAddress();
+        }
+      }
+    }
+    return null;
   }
 
   /** Waits for a service's NodePort to become available. */
@@ -139,21 +170,22 @@ public class K8sClient {
     String nodePort =
         waitForResourceWithRetry(
             "node port for service " + serviceName,
-            () -> {
-              Service service =
-                  client.services().inNamespace(namespace).withName(serviceName).get();
-              if (service != null
-                  && service.getSpec() != null
-                  && service.getSpec().getPorts() != null
-                  && !service.getSpec().getPorts().isEmpty()) {
-                Integer port = service.getSpec().getPorts().get(0).getNodePort();
-                return port != null ? port.toString() : null;
-              }
-              return null;
-            });
+            () -> findServiceNodePort(serviceName, namespace));
 
     log.debug("Node port for service {}, ns={}: {}", serviceName, namespace, nodePort);
     return nodePort;
+  }
+
+  private String findServiceNodePort(String serviceName, String namespace) {
+    Service service = client.services().inNamespace(namespace).withName(serviceName).get();
+    if (service != null
+        && service.getSpec() != null
+        && service.getSpec().getPorts() != null
+        && !service.getSpec().getPorts().isEmpty()) {
+      Integer port = service.getSpec().getPorts().get(0).getNodePort();
+      return port != null ? port.toString() : null;
+    }
+    return null;
   }
 
   public void createServiceNodePort(String name, String tcp) {
@@ -390,7 +422,9 @@ public class K8sClient {
       String name, String namespace, String host, String user, String password) {
     log.debug("Creating image pull secret {} in namespace {}", name, namespace);
 
-    String auth = Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
+    String auth =
+        Base64.getEncoder()
+            .encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8));
     String dockerConfig =
         "{\"auths\":{\""
             + host
@@ -469,8 +503,12 @@ public class K8sClient {
           }
 
           Map<String, String> secretData = secret.getData();
-          String username = new String(Base64.getDecoder().decode(secretData.get(usernameKey)));
-          String password = new String(Base64.getDecoder().decode(secretData.get(passwordKey)));
+          String username =
+              new String(
+                  Base64.getDecoder().decode(secretData.get(usernameKey)), StandardCharsets.UTF_8);
+          String password =
+              new String(
+                  Base64.getDecoder().decode(secretData.get(passwordKey)), StandardCharsets.UTF_8);
           return new Credentials(username, password);
         });
   }
@@ -479,36 +517,40 @@ public class K8sClient {
   public Credentials getCredentialsFromSecret(Credentials credentials) {
     return executeWithErrorHandling(
         "get credentials from secret " + credentials.getSecretName(),
-        () -> {
-          Secret secret =
-              client
-                  .secrets()
-                  .inNamespace(credentials.getSecretNamespace())
-                  .withName(credentials.getSecretName())
-                  .get();
-          if (secret == null || secret.getData() == null) {
-            throw new RuntimeException(
-                "Secret "
-                    + credentials.getSecretName()
-                    + NOT_FOUND_IN_NAMESPACE
-                    + credentials.getSecretNamespace());
-          }
+        () -> resolveCredentialsFromSecret(credentials));
+  }
 
-          Map<String, String> secretData = secret.getData();
-          String usernameEncoded = secretData.get(credentials.getUsernameKey());
-          String username =
-              usernameEncoded != null
-                  ? new String(Base64.getDecoder().decode(usernameEncoded))
-                  : credentials.getUsername();
-          String password =
-              new String(Base64.getDecoder().decode(secretData.get(credentials.getPasswordKey())));
+  private Credentials resolveCredentialsFromSecret(Credentials credentials) {
+    Secret secret =
+        client
+            .secrets()
+            .inNamespace(credentials.getSecretNamespace())
+            .withName(credentials.getSecretName())
+            .get();
+    if (secret == null || secret.getData() == null) {
+      throw new RuntimeException(
+          "Secret "
+              + credentials.getSecretName()
+              + NOT_FOUND_IN_NAMESPACE
+              + credentials.getSecretNamespace());
+    }
 
-          Credentials credentialsNew = new Credentials(credentials);
-          credentialsNew.setUsername(username);
-          credentialsNew.setPassword(password);
+    Map<String, String> secretData = secret.getData();
+    String usernameEncoded = secretData.get(credentials.getUsernameKey());
+    String username =
+        usernameEncoded != null
+            ? new String(Base64.getDecoder().decode(usernameEncoded), StandardCharsets.UTF_8)
+            : credentials.getUsername();
+    String password =
+        new String(
+            Base64.getDecoder().decode(secretData.get(credentials.getPasswordKey())),
+            StandardCharsets.UTF_8);
 
-          return credentialsNew;
-        });
+    Credentials credentialsNew = new Credentials(credentials);
+    credentialsNew.setUsername(username);
+    credentialsNew.setPassword(password);
+
+    return credentialsNew;
   }
 
   public void createConfigMapFromFile(String name, String filePath) {
@@ -602,13 +644,14 @@ public class K8sClient {
     }
 
     if (location.isDirectory()) {
-      List<File> yamlFiles = new ArrayList<>();
+      List<File> yamlFiles;
       try (Stream<Path> stream = Files.walk(location.toPath())) {
-        stream
-            .filter(Files::isRegularFile)
-            .map(Path::toFile)
-            .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
-            .forEach(yamlFiles::add);
+        yamlFiles =
+            stream
+                .filter(Files::isRegularFile)
+                .map(Path::toFile)
+                .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
+                .collect(Collectors.toCollection(ArrayList::new));
       } catch (IOException e) {
         throw new RuntimeException("Failed to list YAML files in directory: " + yamlLocation, e);
       }
@@ -928,7 +971,8 @@ public class K8sClient {
 
     try {
       Map<String, Object> match =
-          K8sClientHelper.findApiResourceViaDiscovery(client, resource.toLowerCase(), resource);
+          K8sClientHelper.findApiResourceViaDiscovery(
+              client, resource.toLowerCase(Locale.ROOT), resource);
       if (match == null) {
         return Collections.emptyList();
       }
@@ -951,27 +995,21 @@ public class K8sClient {
         return Collections.emptyList();
       }
 
-      return resourceList.getItems().stream()
-          .map(
-              item -> {
-                Map<String, Object> metadata =
-                    item.getMetadata() != null
-                        ? Serialization.unmarshal(
-                            Serialization.asJson(item.getMetadata()), MAP_TYPE)
-                        : Collections.emptyMap();
-                String ns =
-                    metadata.containsKey("namespace")
-                        ? String.valueOf(metadata.get("namespace"))
-                        : "";
-                String name =
-                    metadata.containsKey("name") ? String.valueOf(metadata.get("name")) : "";
-                return new CustomResource(ns, name);
-              })
-          .toList();
+      return resourceList.getItems().stream().map(K8sClient::toCustomResource).toList();
     } catch (Exception e) {
       log.warn("Failed to get custom resources: {}", e.getMessage());
       return Collections.emptyList();
     }
+  }
+
+  private static CustomResource toCustomResource(GenericKubernetesResource item) {
+    Map<String, Object> metadata =
+        item.getMetadata() != null
+            ? Serialization.unmarshal(Serialization.asJson(item.getMetadata()), MAP_TYPE)
+            : Collections.emptyMap();
+    String ns = metadata.containsKey("namespace") ? String.valueOf(metadata.get("namespace")) : "";
+    String name = metadata.containsKey("name") ? String.valueOf(metadata.get("name")) : "";
+    return new CustomResource(ns, name);
   }
 
   public String getAnnotation(String resource, String name, String key) {
@@ -1034,7 +1072,7 @@ public class K8sClient {
     log.debug("Waiting for {}/{} to reach phase {}", resourceType, resourceName, desiredPhase);
 
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + ((long) timeoutSeconds * 1000);
+    long endTime = startTime + ((long) timeoutSeconds * MILLIS_PER_SECOND);
 
     while (System.currentTimeMillis() < endTime) {
       try {
@@ -1063,7 +1101,7 @@ public class K8sClient {
       }
 
       try {
-        Thread.sleep((long) checkIntervalSeconds * 1000);
+        Thread.sleep((long) checkIntervalSeconds * MILLIS_PER_SECOND);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException("Interrupted while waiting for resource phase", e);
@@ -1084,7 +1122,7 @@ public class K8sClient {
             + " seconds.");
   }
 
-  private String extractPhase(HasMetadata resource) {
+  private static String extractPhase(HasMetadata resource) {
     if (resource instanceof Pod pod) {
       return pod.getStatus() != null ? pod.getStatus().getPhase() : null;
     }
@@ -1128,7 +1166,7 @@ public class K8sClient {
     return result;
   }
 
-  private <T> T executeWithErrorHandling(String operation, Supplier<T> supplier) {
+  private static <T> T executeWithErrorHandling(String operation, Supplier<T> supplier) {
     try {
       return supplier.get();
     } catch (Exception e) {
@@ -1136,7 +1174,7 @@ public class K8sClient {
     }
   }
 
-  private String resolveNamespace(String namespace) {
+  private static String resolveNamespace(String namespace) {
     return namespace != null && !namespace.isEmpty() ? namespace : DEFAULT_NAMESPACE;
   }
 

@@ -10,9 +10,18 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +88,7 @@ public class FileSystemUtils {
    * Scans the given file and returns the last line containing {@code pattern}, or {@code null} if
    * no line matches.
    */
-  private String findLastMatchingLine(String fileLocation, CharSequence pattern) {
+  private static String findLastMatchingLine(String fileLocation, CharSequence pattern) {
     Path file = Path.of(fileLocation);
     String found = null;
 
@@ -489,6 +498,8 @@ public class FileSystemUtils {
       } else if (!Files.isDirectory(targetDir)) {
         Files.delete(targetDir);
         Files.createDirectories(targetDir);
+      } else {
+        // targetDir already exists as a directory; merge into it below
       }
 
       mergeDirectoryChildren(sourceDir, targetDir);

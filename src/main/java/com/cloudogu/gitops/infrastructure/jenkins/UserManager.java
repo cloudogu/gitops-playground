@@ -96,7 +96,7 @@ public class UserManager {
         .contains(result);
   }
 
-  private String escapeString(String str) {
+  private static String escapeString(String str) {
     if (str.contains("\\")) {
       // We don't want to get in trouble with escaping,
       // e.g. `foo\'foo` => `foo\\'foo`. Now we would have a backslash followed by an unescaped

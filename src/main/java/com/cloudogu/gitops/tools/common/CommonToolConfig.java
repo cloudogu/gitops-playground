@@ -18,7 +18,7 @@ public class CommonToolConfig extends Tool {
     validateMirrorReposHelmChartFolderSet(configToSet);
   }
 
-  private void validateMirrorReposHelmChartFolderSet(Config configToSet) {
+  private static void validateMirrorReposHelmChartFolderSet(Config configToSet) {
     if (Boolean.TRUE.equals(configToSet.getApplication().getMirrorRepos())
         && (configToSet.getApplication().getLocalHelmChartFolder() == null
             || configToSet.getApplication().getLocalHelmChartFolder().isEmpty())) {

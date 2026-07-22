@@ -8,7 +8,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
@@ -16,7 +20,15 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 import picocli.CommandLine.Command;
@@ -68,11 +80,13 @@ public class Config {
   @Mixin
   private ContentSchema content = new ContentSchema();
 
+  private static final int GENERATED_PASSWORD_LENGTH = 12;
+
   private static String generatePassword() {
     SecureRandom sr = new SecureRandom();
     String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&";
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < GENERATED_PASSWORD_LENGTH; i++) {
       sb.append(chars.charAt(sr.nextInt(chars.length())));
     }
     return sb.toString();
@@ -181,13 +195,13 @@ public class Config {
   @Setter
   public static class HelmConfig {
     @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
-    private String chart = null;
+    private String chart;
 
     @JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
-    private String repoURL = null;
+    private String repoURL;
 
     @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-    private String version = null;
+    private String version;
   }
 
   @Getter
@@ -400,6 +414,8 @@ public class Config {
   @Getter
   @Setter
   public static class ApplicationSchema {
+    private static final Pattern TRAILING_DASH = Pattern.compile("-$");
+
     private Boolean runningInsideK8s = false;
     private String namePrefixForEnvVars = "";
     private String internalKubernetesApiUrl = "";
@@ -584,7 +600,7 @@ public class Config {
 
     @JsonIgnore
     public String getTenantName() {
-      return namePrefix != null ? namePrefix.replaceAll("-$", "") : "";
+      return namePrefix != null ? TRAILING_DASH.matcher(namePrefix).replaceAll("") : "";
     }
   }
 
@@ -694,7 +710,7 @@ public class Config {
         names = {"--smtp-port"},
         description = SMTP_PORT_DESCRIPTION)
     @JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
-    private Integer smtpPort = null;
+    private Integer smtpPort;
 
     @Option(
         names = {"--smtp-user"},

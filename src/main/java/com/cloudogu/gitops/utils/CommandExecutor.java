@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +75,7 @@ public class CommandExecutor {
    */
   public Output execute(String command, Map<String, ?> additionalEnv, boolean failOnError) {
     try {
-      java.util.Map<String, String> env = new java.util.HashMap<>(System.getenv());
+      Map<String, String> env = new HashMap<>(System.getenv());
       if (additionalEnv != null) {
         additionalEnv.forEach(
             (key, value) ->
@@ -138,7 +140,7 @@ public class CommandExecutor {
     try (InputStream is = process.getErrorStream()) {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       is.transferTo(bos);
-      log.error(STDERR_PREFIX + bos.toString().trim());
+      log.error(STDERR_PREFIX + bos.toString(StandardCharsets.UTF_8).trim());
     } catch (IOException e) {
       log.debug("Failed to read stderr of process", e);
     }
@@ -228,7 +230,10 @@ public class CommandExecutor {
     }
 
     Output output =
-        new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue());
+        new Output(
+            stdErr.toString(StandardCharsets.UTF_8).trim(),
+            stdOut.toString(StandardCharsets.UTF_8).trim(),
+            proc.exitValue());
 
     if (failOnError && proc.exitValue() > 0) {
       log.error(EXECUTING_FAILED_PREFIX + command);
