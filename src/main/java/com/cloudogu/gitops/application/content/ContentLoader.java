@@ -182,7 +182,7 @@ public class ContentLoader extends Tool {
               + ". Repo: "
               + repo.getUrl());
     }
-    if (Boolean.TRUE.equals(repo.getTemplating())) {
+    if (repo.getTemplating()) {
       throw new RuntimeException(
           CONTENT_REPOS_TYPE_PREFIX
               + ContentRepoType.MIRROR
@@ -254,7 +254,7 @@ public class ContentLoader extends Tool {
   }
 
   void createImagePullSecrets() {
-    if (Boolean.TRUE.equals(getConfig().getRegistry().getCreateImagePullSecrets())) {
+    if (getConfig().getRegistry().getCreateImagePullSecrets()) {
       String registryUsername =
           (getConfig().getRegistry().getReadOnlyUsername() != null
                   && !getConfig().getRegistry().getReadOnlyUsername().isEmpty())
@@ -285,7 +285,7 @@ public class ContentLoader extends Tool {
             namespace,
             Map.of("imagePullSecrets", List.of(Map.of("name", registrySecretName))));
 
-        if (Boolean.TRUE.equals(getConfig().getRegistry().getTwoRegistries())) {
+        if (getConfig().getRegistry().getTwoRegistries()) {
           k8sClient.createImagePullSecret(
               "proxy-registry",
               namespace,
@@ -482,7 +482,7 @@ public class ContentLoader extends Tool {
   }
 
   private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
-    if (Boolean.TRUE.equals(repoConfig.getTemplating())) {
+    if (repoConfig.getTemplating()) {
       TemplatingEngine engine = getTemplatingEngine();
 
       try (GitRepo repo =
@@ -498,7 +498,7 @@ public class ContentLoader extends Tool {
                         "protocol", repo.getGitProvider().getProtocol(),
                         "repoUrl", repo.getGitProvider().repoPrefix()),
                 "statics",
-                    !Boolean.TRUE.equals(getConfig().getContent().getUseWhitelist())
+                    !getConfig().getContent().getUseWhitelist()
                         ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32)
                             .build()
                             .getStaticModels()
@@ -795,7 +795,7 @@ public class ContentLoader extends Tool {
   }
 
   private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
-    if (Boolean.TRUE.equals(repoCoordinate.repoConfig.getCreateJenkinsJob())
+    if (repoCoordinate.repoConfig.getCreateJenkinsJob()
         && jenkins.isEnabled(context)
         && GitRepo.existFileInSomeBranch(repo.getAbsoluteLocalRepoTmpDir(), "Jenkinsfile")) {
       jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace);

@@ -439,13 +439,13 @@ public class Config {
         names = {"-d", "--debug"},
         description = DEBUG_DESCRIPTION,
         scope = ScopeType.INHERIT)
-    private Boolean debug;
+    private Boolean debug = false;
 
     @Option(
         names = {"-x", "--trace"},
         description = TRACE_DESCRIPTION,
         scope = ScopeType.INHERIT)
-    private Boolean trace;
+    private Boolean trace = false;
 
     @Option(
         names = {"--output-config-file"},

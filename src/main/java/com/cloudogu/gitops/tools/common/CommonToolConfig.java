@@ -19,7 +19,7 @@ public class CommonToolConfig extends Tool {
   }
 
   private static void validateMirrorReposHelmChartFolderSet(Config configToSet) {
-    if (Boolean.TRUE.equals(configToSet.getApplication().getMirrorRepos())
+    if (configToSet.getApplication().getMirrorRepos()
         && (configToSet.getApplication().getLocalHelmChartFolder() == null
             || configToSet.getApplication().getLocalHelmChartFolder().isEmpty())) {
       // This should only happen when run outside the image, i.e. during development

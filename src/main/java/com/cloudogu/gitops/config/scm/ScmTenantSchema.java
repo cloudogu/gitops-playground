@@ -44,8 +44,8 @@ public class ScmTenantSchema {
 
   @JsonIgnore
   public Boolean getInternal() {
-    return (gitlab != null && Boolean.TRUE.equals(gitlab.getInternal()))
-        || (scmManager != null && Boolean.TRUE.equals(scmManager.getInternal()));
+    return (gitlab != null && gitlab.getInternal())
+        || (scmManager != null && scmManager.getInternal());
   }
 
   @Getter

@@ -15,12 +15,12 @@ public class ContextBuilder {
         config,
         tenantMode(),
         scmManagerDeploymentMode(),
-        Boolean.TRUE.equals(config.getApplication().getMirrorRepos()),
+        config.getApplication().getMirrorRepos(),
         clusterDistribution());
   }
 
   private DeploymentContext.TenantMode tenantMode() {
-    return Boolean.TRUE.equals(config.getMultiTenant().getUseDedicatedInstance())
+    return config.getMultiTenant().getUseDedicatedInstance()
         ? DeploymentContext.TenantMode.MULTI_TENANT
         : DeploymentContext.TenantMode.SINGLE_TENANT;
   }
@@ -29,14 +29,14 @@ public class ContextBuilder {
     boolean internal =
         config.getScm() != null
             && config.getScm().getScmManager() != null
-            && Boolean.TRUE.equals(config.getScm().getScmManager().getInternal());
+            && config.getScm().getScmManager().getInternal();
     return internal
         ? DeploymentContext.ScmManagerDeploymentMode.INTERNAL
         : DeploymentContext.ScmManagerDeploymentMode.EXTERNAL;
   }
 
   private DeploymentContext.ClusterDistribution clusterDistribution() {
-    return Boolean.TRUE.equals(config.getApplication().getOpenshift())
+    return config.getApplication().getOpenshift()
         ? DeploymentContext.ClusterDistribution.OPENSHIFT
         : DeploymentContext.ClusterDistribution.KUBERNETES;
   }

@@ -44,7 +44,7 @@ public class CertManager extends Tool {
 
   @Override
   public boolean isEnabled(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getFeatures().getCertManager().getActive());
+    return context.getConfig().getFeatures().getCertManager().getActive();
   }
 
   @Override

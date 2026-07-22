@@ -50,7 +50,7 @@ public class HttpClientFactory {
             .addInterceptor(createLoggingInterceptor())
             .addInterceptor(new RetryInterceptor());
 
-    if (Boolean.TRUE.equals(config.getApplication().getInsecure())) {
+    if (config.getApplication().getInsecure()) {
       InsecureSslContext sslContext = insecureSslContext();
       builder.sslSocketFactory(sslContext.getSocketFactory(), sslContext.getTrustManager());
       builder.hostnameVerifier((hostname, session) -> true);

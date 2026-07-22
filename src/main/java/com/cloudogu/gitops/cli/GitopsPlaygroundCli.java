@@ -64,13 +64,13 @@ public class GitopsPlaygroundCli {
     Config cliParams = new Config();
     new CommandLine(cliParams).parseArgs(args);
 
-    if (Boolean.TRUE.equals(cliParams.getApplication().getUsageHelpRequested())) {
+    if (cliParams.getApplication().getUsageHelpRequested()) {
       new CommandLine(cliParams).execute(args);
       return ReturnCode.SUCCESS;
     }
 
     String version = createVersionOutput();
-    if (Boolean.TRUE.equals(cliParams.getApplication().getVersionInfoRequested())) {
+    if (cliParams.getApplication().getVersionInfoRequested()) {
       System.out.println(version);
       return ReturnCode.SUCCESS;
     }
@@ -81,7 +81,7 @@ public class GitopsPlaygroundCli {
     Config config = readConfigs(args);
     runHook(app, "preConfigInit", Tool::preConfigInit, config);
 
-    if (Boolean.TRUE.equals(config.getApplication().getOutputConfigFile())) {
+    if (config.getApplication().getOutputConfigFile()) {
       System.out.println(config.toYaml(false));
       return ReturnCode.SUCCESS;
     }
@@ -94,7 +94,7 @@ public class GitopsPlaygroundCli {
     context = createApplicationContext();
     register(config, context);
 
-    if (Boolean.TRUE.equals(config.getApplication().getDestroy())) {
+    if (config.getApplication().getDestroy()) {
       log.info(version);
       if (!confirm(
           "Destroying gitops playground in kubernetes cluster '"
@@ -143,7 +143,7 @@ public class GitopsPlaygroundCli {
         message,
         config.getApplication().getYes(),
         System.in.getClass().getName());
-    if (Boolean.TRUE.equals(config.getApplication().getYes())) {
+    if (config.getApplication().getYes()) {
       return true;
     }
 

@@ -273,7 +273,7 @@ public class Jenkins extends Tool {
           getConfig().getRegistry().getPath());
     }
 
-    if (Boolean.TRUE.equals(getConfig().getRegistry().getTwoRegistries())) {
+    if (getConfig().getRegistry().getTwoRegistries()) {
       globalPropertyManager.setGlobalProperty(
           getConfig().getApplication().getNamePrefixForEnvVars() + "REGISTRY_PROXY_URL",
           getConfig().getRegistry().getProxyUrl());
@@ -303,8 +303,8 @@ public class Jenkins extends Tool {
     userManager.grantPermission(
         getConfig().getJenkins().getMetricsUsername(), UserManager.Permissions.METRICS_VIEW);
 
-    if (Boolean.TRUE.equals(getConfig().getFeatures().getMonitoring().getActive())
-        && Boolean.TRUE.equals(getConfig().getJenkins().getInternal())) {
+    if (getConfig().getFeatures().getMonitoring().getActive()
+        && getConfig().getJenkins().getInternal()) {
       // An external Jenkins can likely not be monitored
       prometheusConfigurator.enableAuthentication();
     }
@@ -343,7 +343,7 @@ public class Jenkins extends Tool {
         getConfig().getRegistry().getPassword(),
         "credentials for accessing the docker-registry for writing images built on jenkins");
 
-    if (Boolean.TRUE.equals(getConfig().getRegistry().getTwoRegistries())) {
+    if (getConfig().getRegistry().getTwoRegistries()) {
       jobManager.createCredential(
           jobName,
           "registry-proxy-user",

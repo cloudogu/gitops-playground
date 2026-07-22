@@ -78,7 +78,7 @@ public class GitRepo implements AutoCloseable {
 
     this.repoTarget = config.getApplication().getNamePrefix() + repoTarget;
 
-    this.insecure = Boolean.TRUE.equals(config.getApplication().getInsecure());
+    this.insecure = config.getApplication().getInsecure();
     this.gitName = config.getApplication().getGitName();
     this.gitEmail = config.getApplication().getGitEmail();
   }

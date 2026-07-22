@@ -23,7 +23,7 @@ public class ArgoCdApplicationTargetResolver {
     String namespace = namePrefix + config.getFeatures().getArgocd().getNamespace();
     String project = "cluster-resources";
 
-    boolean isOperatorMode = Boolean.TRUE.equals(config.getFeatures().getArgocd().getOperator());
+    boolean isOperatorMode = config.getFeatures().getArgocd().getOperator();
     boolean createDestinationNamespace = !isOperatorMode;
 
     if (context.isMultiTenant()) {

@@ -43,7 +43,7 @@ public class Registry extends Tool {
 
   @Override
   public boolean isEnabled(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getRegistry().getActive());
+    return context.getConfig().getRegistry().getActive();
   }
 
   @Override
@@ -78,14 +78,14 @@ public class Registry extends Tool {
 
   @Override
   protected String activeNamespace(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getRegistry().getInternal())
+    return context.getConfig().getRegistry().getInternal()
         ? (context.getConfig().getApplication().getNamePrefix()
             + context.getConfig().getRegistry().getNamespace())
         : null;
   }
 
   private boolean isInternalRegistry() {
-    return Boolean.TRUE.equals(context.getConfig().getRegistry().getInternal());
+    return context.getConfig().getRegistry().getInternal();
   }
 
   private void prepareRegistryHelmValues() {

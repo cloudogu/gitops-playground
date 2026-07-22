@@ -131,7 +131,7 @@ public class ArgoCDRepoSetup {
   private void prepareClusterResourcesLayout() {
     ArgoCDRepoLayout layout = clusterRepoLayout();
 
-    if (Boolean.TRUE.equals(getConfig().getFeatures().getArgocd().getOperator())) {
+    if (getConfig().getFeatures().getArgocd().getOperator()) {
       FileSystemUtils.deleteDir(layout.helmDir());
     } else {
       FileSystemUtils.deleteDir(layout.operatorDir());
@@ -156,7 +156,7 @@ public class ArgoCDRepoSetup {
       FileSystemUtils.deleteDir(layout.multiTenantDir());
     }
 
-    if (!Boolean.TRUE.equals(getConfig().getApplication().getNetpols())) {
+    if (!getConfig().getApplication().getNetpols()) {
       FileSystemUtils.deleteFile(layout.netpolFile());
     }
   }

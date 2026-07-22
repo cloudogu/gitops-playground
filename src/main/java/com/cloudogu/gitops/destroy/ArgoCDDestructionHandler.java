@@ -83,7 +83,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
     k8sClient.delete("app", argocdNamespace, ARGOCD);
 
     String jenkinsNamespace =
-        Boolean.TRUE.equals(getConfig().getJenkins().getInternal())
+        getConfig().getJenkins().getInternal()
             ? (namePrefix + getConfig().getJenkins().getNamespace())
             : null;
     if (jenkinsNamespace != null) {

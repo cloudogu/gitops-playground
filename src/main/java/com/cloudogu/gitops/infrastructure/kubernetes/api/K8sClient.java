@@ -1185,7 +1185,7 @@ public class K8sClient {
   private boolean runInOpenshift() {
     return this.gopConfig != null
         && this.gopConfig.getApplication() != null
-        && Boolean.TRUE.equals(this.gopConfig.getApplication().getOpenshift());
+        && this.gopConfig.getApplication().getOpenshift();
   }
 
   public record CustomResource(String namespace, String name) {}

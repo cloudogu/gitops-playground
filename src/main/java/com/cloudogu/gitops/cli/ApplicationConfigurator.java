@@ -50,7 +50,7 @@ public class ApplicationConfigurator {
       newConfig.getFeatures().getMail().setActive(true);
     }
 
-    if (Boolean.TRUE.equals(newConfig.getFeatures().getIngress().getActive())
+    if (newConfig.getFeatures().getIngress().getActive()
         && !hasText(newConfig.getApplication().getBaseUrl())) {
       log.warn(
           "Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ");
@@ -72,7 +72,7 @@ public class ApplicationConfigurator {
 
   private static void addRegistryConfig(Config newConfig) {
     // Process image pull secrets first, they might even be relevant if no registry is set
-    if (Boolean.TRUE.equals(newConfig.getRegistry().getCreateImagePullSecrets())) {
+    if (newConfig.getRegistry().getCreateImagePullSecrets()) {
       String username =
           firstNonBlank(
               newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry().getUsername());
@@ -89,7 +89,7 @@ public class ApplicationConfigurator {
     if (hasText(newConfig.getRegistry().getUrl())) {
       newConfig.getRegistry().setInternal(false);
       newConfig.getRegistry().setActive(true);
-    } else if (Boolean.TRUE.equals(newConfig.getRegistry().getActive())) {
+    } else if (newConfig.getRegistry().getActive()) {
       /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on
       docker push in the example application's Jenkins Jobs.
       Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
@@ -159,8 +159,7 @@ public class ApplicationConfigurator {
                         injectSubdomain(
                             "scmm",
                             newConfig.getApplication().getBaseUrl(),
-                            Boolean.TRUE.equals(
-                                newConfig.getApplication().getUrlSeparatorHyphen())))
+                            newConfig.getApplication().getUrlSeparatorHyphen()))
                     .getHost());
       } catch (MalformedURLException e) {
         throw new RuntimeException("Failed to evaluate SCM ingress URL", e);
@@ -183,7 +182,7 @@ public class ApplicationConfigurator {
       newConfig.getJenkins().setActive(true);
       newConfig.getJenkins().setInternal(false);
       newConfig.getJenkins().setUrlForScm(newConfig.getJenkins().getUrl());
-    } else if (Boolean.TRUE.equals(newConfig.getJenkins().getActive())) {
+    } else if (newConfig.getJenkins().getActive()) {
       log.debug("Setting configs for internal jenkins");
       // We use the K8s service as default name here, because it is the only option:
       // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g.
@@ -211,8 +210,7 @@ public class ApplicationConfigurator {
                         injectSubdomain(
                             "jenkins",
                             newConfig.getApplication().getBaseUrl(),
-                            Boolean.TRUE.equals(
-                                newConfig.getApplication().getUrlSeparatorHyphen())))
+                            newConfig.getApplication().getUrlSeparatorHyphen()))
                     .getHost());
       } catch (MalformedURLException e) {
         throw new RuntimeException("Failed to evaluate Jenkins ingress URL", e);
@@ -237,32 +235,30 @@ public class ApplicationConfigurator {
     Config.ArgoCDSchema argocd = newConfig.getFeatures().getArgocd();
     Config.MonitoringSchema monitoring = newConfig.getFeatures().getMonitoring();
     Config.SecretsSchema.VaultSchema vault = newConfig.getFeatures().getSecrets().getVault();
-    boolean urlSeparatorHyphen =
-        Boolean.TRUE.equals(newConfig.getApplication().getUrlSeparatorHyphen());
+    boolean urlSeparatorHyphen = newConfig.getApplication().getUrlSeparatorHyphen();
 
-    if (Boolean.TRUE.equals(argocd.getActive()) && !hasText(argocd.getUrl())) {
+    if (argocd.getActive() && !hasText(argocd.getUrl())) {
       argocd.setUrl(injectSubdomain("argocd", baseUrl, urlSeparatorHyphen));
       log.debug("Setting ArgoCD URL {}", argocd.getUrl());
     }
-    if (Boolean.TRUE.equals(monitoring.getActive()) && !hasText(monitoring.getGrafanaUrl())) {
+    if (monitoring.getActive() && !hasText(monitoring.getGrafanaUrl())) {
       monitoring.setGrafanaUrl(injectSubdomain("grafana", baseUrl, urlSeparatorHyphen));
       log.debug("Setting Monitoring URL {}", monitoring.getGrafanaUrl());
     }
-    if (Boolean.TRUE.equals(newConfig.getFeatures().getSecrets().getActive())
-        && !hasText(vault.getUrl())) {
+    if (newConfig.getFeatures().getSecrets().getActive() && !hasText(vault.getUrl())) {
       vault.setUrl(injectSubdomain("vault", baseUrl, urlSeparatorHyphen));
       log.debug("Setting Vault URL {}", vault.getUrl());
     }
   }
 
   public void setMultiTenantModeConfig(Config newConfig) {
-    if (Boolean.TRUE.equals(newConfig.getMultiTenant().getUseDedicatedInstance())) {
+    if (newConfig.getMultiTenant().getUseDedicatedInstance()) {
       if (!hasText(newConfig.getApplication().getNamePrefix())) {
         throw new RuntimeException(
             "To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.");
       }
 
-      if (!Boolean.TRUE.equals(newConfig.getFeatures().getArgocd().getOperator())) {
+      if (!newConfig.getFeatures().getArgocd().getOperator()) {
         newConfig.getFeatures().getArgocd().setOperator(true);
       }
 
@@ -305,7 +301,7 @@ public class ApplicationConfigurator {
 
   private void setResourceInclusionsCluster(Config configToSet) {
     // Return early if NOT deploying via operator
-    if (!Boolean.TRUE.equals(configToSet.getFeatures().getArgocd().getOperator())) {
+    if (!configToSet.getFeatures().getArgocd().getOperator()) {
       log.debug(
           "ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.");
       return;

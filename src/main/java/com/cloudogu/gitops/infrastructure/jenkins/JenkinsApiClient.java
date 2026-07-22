@@ -41,8 +41,7 @@ public class JenkinsApiClient {
   public JenkinsApiClient(Config config, @Named("jenkins") OkHttpClient client) {
     this.config = config;
 
-    if (config.getApplication() != null
-        && Boolean.TRUE.equals(config.getApplication().getInsecure())) {
+    if (config.getApplication() != null && config.getApplication().getInsecure()) {
       this.client = client.newBuilder().hostnameVerifier((hostname, session) -> true).build();
     } else {
       this.client = client;

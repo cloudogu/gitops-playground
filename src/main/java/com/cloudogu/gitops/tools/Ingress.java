@@ -47,7 +47,7 @@ public class Ingress extends Tool {
 
   @Override
   public boolean isEnabled(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getFeatures().getIngress().getActive());
+    return context.getConfig().getFeatures().getIngress().getActive();
   }
 
   @Override

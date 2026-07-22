@@ -59,7 +59,7 @@ public class Vault extends Tool {
 
   @Override
   public boolean isEnabled(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getFeatures().getSecrets().getActive());
+    return context.getConfig().getFeatures().getSecrets().getActive();
   }
 
   @Override

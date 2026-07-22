@@ -100,14 +100,14 @@ public class ScmManagerUrlResolver {
   // ---------- Base resolution ----------
 
   private URI clientBaseRaw() {
-    if (Boolean.TRUE.equals(scmm.getInternal())) {
+    if (scmm.getInternal()) {
       return getConfig().getApplication().getRunningInsideK8s() ? serviceDnsBase() : nodePortBase();
     }
     return externalBase();
   }
 
   private URI inClusterBaseRaw() {
-    return Boolean.TRUE.equals(scmm.getInternal()) ? serviceDnsBase() : externalBase();
+    return scmm.getInternal() ? serviceDnsBase() : externalBase();
   }
 
   private URI serviceDnsBase() {

@@ -53,7 +53,7 @@ public class SingleTenantMode implements DeploymentMode {
           .generate();
     }
 
-    if (Boolean.TRUE.equals(config.getApplication().getClusterAdmin())) {
+    if (config.getApplication().getClusterAdmin()) {
       new RbacDefinition(Role.Variant.CLUSTER_ADMIN)
           .withName("argocd-cluster-admin")
           .withNamespace(namespace)

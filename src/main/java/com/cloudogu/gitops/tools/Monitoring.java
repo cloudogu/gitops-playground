@@ -70,7 +70,7 @@ public class Monitoring extends Tool {
 
   @Override
   public boolean isEnabled(DeploymentContext context) {
-    return Boolean.TRUE.equals(context.getConfig().getFeatures().getMonitoring().getActive());
+    return context.getConfig().getFeatures().getMonitoring().getActive();
   }
 
   @Override
@@ -158,11 +158,11 @@ public class Monitoring extends Tool {
   }
 
   private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
-    if (Boolean.TRUE.equals(getConfig().getApplication().getNamespaceIsolation())) {
+    if (getConfig().getApplication().getNamespaceIsolation()) {
       generateNamespaceIsolationRBAC(clusterResourcesRepo);
     }
 
-    if (Boolean.TRUE.equals(getConfig().getApplication().getNetpols())) {
+    if (getConfig().getApplication().getNetpols()) {
       generateNetpols(clusterResourcesRepo);
     }
 
@@ -257,7 +257,7 @@ public class Monitoring extends Tool {
   }
 
   protected void createMonitoringCrd() {
-    if (!Boolean.TRUE.equals(getConfig().getApplication().getSkipCrds())) {
+    if (!getConfig().getApplication().getSkipCrds()) {
       String serviceMonitorCrdYaml;
       if (context.isAirgapped()) {
         serviceMonitorCrdYaml =
@@ -297,7 +297,7 @@ public class Monitoring extends Tool {
 
   private static URI baseUriJenkins(Config config) {
     try {
-      if (Boolean.TRUE.equals(config.getJenkins().getInternal())) {
+      if (config.getJenkins().getInternal()) {
         return new URI(
             "http://jenkins."
                 + config.getApplication().getNamePrefix()
@@ -333,12 +333,12 @@ public class Monitoring extends Tool {
     String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir();
     String dashboardRoot = repoRoot + "/" + MONITORING_DASHBOARD_PATH;
 
-    if (!Boolean.TRUE.equals(getConfig().getFeatures().getIngress().getActive())) {
+    if (!getConfig().getFeatures().getIngress().getActive()) {
       FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard.yaml");
       FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard-requests-handling.yaml");
     }
 
-    if (!Boolean.TRUE.equals(getConfig().getJenkins().getActive())) {
+    if (!getConfig().getJenkins().getActive()) {
       FileSystemUtils.deleteFile(dashboardRoot + "/jenkins-dashboard.yaml");
     }
 
