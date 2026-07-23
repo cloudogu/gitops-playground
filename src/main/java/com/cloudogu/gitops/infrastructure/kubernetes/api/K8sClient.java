@@ -87,10 +87,16 @@ public class K8sClient {
   private KubernetesClient client;
   private com.cloudogu.gitops.config.Config gopConfig;
 
+  /** Creates a client with default fabric8 configuration and no playground config. */
   public K8sClient() {
     this(null);
   }
 
+  /**
+   * Creates a client with default fabric8 configuration.
+   *
+   * @param gopConfig the GitOps Playground config, used e.g. to detect OpenShift mode; may be null
+   */
   public K8sClient(com.cloudogu.gitops.config.Config gopConfig) {
     io.fabric8.kubernetes.client.Config config =
         new ConfigBuilder()
@@ -102,18 +108,38 @@ public class K8sClient {
     this.gopConfig = gopConfig;
   }
 
+  /**
+   * Replaces the underlying fabric8 client, mainly for tests.
+   *
+   * @param client the fabric8 client to use
+   */
   public void setClient(KubernetesClient client) {
     this.client = client;
   }
 
+  /**
+   * Sets the GitOps Playground config after construction.
+   *
+   * @param gopConfig the GitOps Playground config; may be null
+   */
   public void setGopConfig(com.cloudogu.gitops.config.Config gopConfig) {
     this.gopConfig = gopConfig;
   }
 
+  /**
+   * Returns the underlying fabric8 client.
+   *
+   * @return the fabric8 client
+   */
   public KubernetesClient getClient() {
     return client;
   }
 
+  /**
+   * Returns the GitOps Playground config.
+   *
+   * @return the config; may be null
+   */
   public com.cloudogu.gitops.config.Config getGopConfig() {
     return gopConfig;
   }
@@ -141,7 +167,11 @@ public class K8sClient {
     return nodeName;
   }
 
-  /** Waits for and retrieves the internal IP address of the first node. */
+  /**
+   * Waits for and retrieves the internal IP address of the first node.
+   *
+   * @return the internal IP address of the first node
+   */
   public String waitForInternalNodeIp() {
     String nodeName = waitForNode();
     log.debug("Waiting for internal IP of node {}", nodeName);
@@ -166,7 +196,13 @@ public class K8sClient {
     return null;
   }
 
-  /** Waits for a service's NodePort to become available. */
+  /**
+   * Waits for a service's NodePort to become available.
+   *
+   * @param serviceName name of the service to inspect
+   * @param namespace namespace of the service; empty means the default namespace
+   * @return the NodePort of the service's first port
+   */
   public String waitForNodePort(String serviceName, String namespace) {
     log.debug("Getting node port for service {}, ns={}", serviceName, namespace);
 
@@ -191,15 +227,36 @@ public class K8sClient {
     return null;
   }
 
+  /**
+   * Creates a NodePort service in the default namespace with an auto-assigned node port
+   * (idempotent).
+   *
+   * @param name name of the service to create
+   * @param tcp port mapping in the form {@code port[:targetPort]}
+   */
   public void createServiceNodePort(String name, String tcp) {
     createServiceNodePort(name, tcp, "", "");
   }
 
+  /**
+   * Creates a NodePort service in the default namespace (idempotent).
+   *
+   * @param name name of the service to create
+   * @param tcp port mapping in the form {@code port[:targetPort]}
+   * @param nodePort fixed node port to expose; empty for auto-assignment
+   */
   public void createServiceNodePort(String name, String tcp, String nodePort) {
     createServiceNodePort(name, tcp, nodePort, "");
   }
 
-  /** Creates a NodePort service (idempotent). */
+  /**
+   * Creates a NodePort service (idempotent).
+   *
+   * @param name name of the service to create
+   * @param tcp port mapping in the form {@code port[:targetPort]}
+   * @param nodePort fixed node port to expose; empty for auto-assignment
+   * @param namespace target namespace; empty means the default namespace
+   */
   public void createServiceNodePort(String name, String tcp, String nodePort, String namespace) {
     log.debug("Creating NodePort service {} in namespace {}", name, namespace);
 
@@ -239,7 +296,14 @@ public class K8sClient {
     log.debug("NodePort service {} created/updated successfully", name);
   }
 
-  /** Patches the nodePort of a specific port in a service. */
+  /**
+   * Patches the nodePort of a specific port in a service.
+   *
+   * @param serviceName name of the service to patch
+   * @param namespace namespace of the service
+   * @param portName name of the port entry whose nodePort is replaced
+   * @param newNodePort new node port value
+   */
   public void patchServiceNodePort(
       String serviceName, String namespace, String portName, int newNodePort) {
     K8sClientHelper.validateServiceNodePortPatch(serviceName, namespace, portName, newNodePort);
@@ -303,7 +367,11 @@ public class K8sClient {
         portName);
   }
 
-  /** Creates a namespace if it does not already exist (idempotent). */
+  /**
+   * Creates a namespace (or an OpenShift project) if it does not already exist (idempotent).
+   *
+   * @param name name of the namespace to create
+   */
   public void createNamespace(String name) {
     K8sClientHelper.validateNamespaceName(name);
 
@@ -338,7 +406,11 @@ public class K8sClient {
     }
   }
 
-  /** Creates multiple namespaces. */
+  /**
+   * Creates multiple namespaces.
+   *
+   * @param names names of the namespaces to create
+   */
   public void createNamespaces(List<String> names) {
     if (names == null) {
       throw new IllegalArgumentException("Namespaces must be provided and cannot be null.");
@@ -348,7 +420,12 @@ public class K8sClient {
     }
   }
 
-  /** Checks if a namespace exists. */
+  /**
+   * Checks if a namespace exists.
+   *
+   * @param namespace name of the namespace to check
+   * @return true if the namespace exists
+   */
   public boolean namespaceExists(String namespace) {
     try {
       Namespace ns = client.namespaces().withName(namespace).get();
@@ -362,15 +439,35 @@ public class K8sClient {
     return false;
   }
 
+  /**
+   * Creates or updates an empty secret in the default namespace (idempotent).
+   *
+   * @param type secret type, e.g. {@code generic}
+   * @param name name of the secret
+   */
   public void createSecret(String type, String name) {
     createSecret(type, name, "", new Tuple<?, ?>[0]);
   }
 
+  /**
+   * Creates or updates an empty secret (idempotent).
+   *
+   * @param type secret type, e.g. {@code generic}
+   * @param name name of the secret
+   * @param namespace target namespace; empty means the default namespace
+   */
   public void createSecret(String type, String name, String namespace) {
     createSecret(type, name, namespace, new Tuple<?, ?>[0]);
   }
 
-  /** Creates or updates a generic secret (idempotent). */
+  /**
+   * Creates or updates a generic secret (idempotent).
+   *
+   * @param type secret type; {@code generic} is mapped to {@code Opaque}
+   * @param name name of the secret
+   * @param namespace target namespace; empty means the default namespace
+   * @param literals key-value pairs stored as string data
+   */
   public void createSecret(String type, String name, String namespace, Tuple<?, ?>... literals) {
     log.debug("Creating secret {} of type {} in namespace {}", name, type, namespace);
 
@@ -408,11 +505,27 @@ public class K8sClient {
     log.debug("Secret {} created/updated successfully", name);
   }
 
+  /**
+   * Creates or updates an image pull secret in the default namespace (idempotent).
+   *
+   * @param name name of the secret
+   * @param host registry host the credentials belong to
+   * @param user registry username
+   * @param password registry password
+   */
   public void createImagePullSecret(String name, String host, String user, String password) {
     createImagePullSecret(name, "", host, user, password);
   }
 
-  /** Creates or updates an image pull secret (idempotent). */
+  /**
+   * Creates or updates an image pull secret (idempotent).
+   *
+   * @param name name of the secret
+   * @param namespace target namespace; empty means the default namespace
+   * @param host registry host the credentials belong to
+   * @param user registry username
+   * @param password registry password
+   */
   public void createImagePullSecret(
       String name, String namespace, String host, String user, String password) {
     log.debug("Creating image pull secret {} in namespace {}", name, namespace);
@@ -455,11 +568,23 @@ public class K8sClient {
     log.debug("Image pull secret {} created/updated successfully", name);
   }
 
+  /**
+   * Retrieves the {@code namespaces} data from an ArgoCD secret in the default namespace.
+   *
+   * @param name name of the secret
+   * @return the base64-encoded {@code namespaces} value of the secret
+   */
   public String getArgoCDNamespacesSecret(String name) {
     return getArgoCDNamespacesSecret(name, "");
   }
 
-  /** Retrieves the 'namespaces' data from an ArgoCD secret. */
+  /**
+   * Retrieves the {@code namespaces} data from an ArgoCD secret, waiting for the secret to appear.
+   *
+   * @param name name of the secret
+   * @param namespace namespace of the secret; empty means the default namespace
+   * @return the base64-encoded {@code namespaces} value of the secret
+   */
   public String getArgoCDNamespacesSecret(String name, String namespace) {
     log.debug("Getting Secret {} from namespace {}", name, namespace);
 
@@ -477,16 +602,40 @@ public class K8sClient {
         });
   }
 
+  /**
+   * Extracts credentials from a secret using the default keys {@code username} and {@code
+   * password}.
+   *
+   * @param secretname name of the secret
+   * @param namespace namespace of the secret
+   * @return the decoded credentials
+   */
   public Credentials getCredentialsFromSecret(String secretname, String namespace) {
     return getCredentialsFromSecret(secretname, namespace, "username", "password");
   }
 
+  /**
+   * Extracts credentials from a secret using the default password key {@code password}.
+   *
+   * @param secretname name of the secret
+   * @param namespace namespace of the secret
+   * @param usernameKey data key holding the username
+   * @return the decoded credentials
+   */
   public Credentials getCredentialsFromSecret(
       String secretname, String namespace, String usernameKey) {
     return getCredentialsFromSecret(secretname, namespace, usernameKey, "password");
   }
 
-  /** Extracts credentials from a Kubernetes secret. */
+  /**
+   * Extracts credentials from a Kubernetes secret.
+   *
+   * @param secretname name of the secret
+   * @param namespace namespace of the secret
+   * @param usernameKey data key holding the username
+   * @param passwordKey data key holding the password
+   * @return the decoded credentials
+   */
   public Credentials getCredentialsFromSecret(
       String secretname, String namespace, String usernameKey, String passwordKey) {
     return executeWithErrorHandling(
@@ -509,7 +658,12 @@ public class K8sClient {
     return new Credentials(username, password);
   }
 
-  /** Extracts credentials from a Kubernetes secret using a Credentials object as input. */
+  /**
+   * Extracts credentials from a Kubernetes secret using a Credentials object as input.
+   *
+   * @param credentials reference describing secret name, namespace and data keys
+   * @return a copy of the input with username and password resolved from the secret
+   */
   public Credentials getCredentialsFromSecret(Credentials credentials) {
     return executeWithErrorHandling(
         "get credentials from secret " + credentials.getSecretName(),
@@ -549,11 +703,23 @@ public class K8sClient {
     return credentialsNew;
   }
 
+  /**
+   * Creates or updates a ConfigMap from a file in the default namespace (idempotent).
+   *
+   * @param name name of the ConfigMap
+   * @param filePath path of the file whose content becomes the ConfigMap data
+   */
   public void createConfigMapFromFile(String name, String filePath) {
     createConfigMapFromFile(name, "", filePath);
   }
 
-  /** Creates or updates a ConfigMap from a file (idempotent). */
+  /**
+   * Creates or updates a ConfigMap from a file (idempotent).
+   *
+   * @param name name of the ConfigMap
+   * @param namespace target namespace; empty means the default namespace
+   * @param filePath path of the file whose content becomes the ConfigMap data
+   */
   public void createConfigMapFromFile(String name, String namespace, String filePath) {
     log.debug("Creating ConfigMap {} from file {} in namespace {}", name, filePath, namespace);
 
@@ -594,7 +760,13 @@ public class K8sClient {
     log.debug("ConfigMap {} created/updated successfully", name);
   }
 
-  /** Retrieves a value from a ConfigMap. */
+  /**
+   * Retrieves a value from a ConfigMap in the current namespace.
+   *
+   * @param mapName name of the ConfigMap
+   * @param key data key to read
+   * @return the value stored under the given key
+   */
   public String getConfigMap(String mapName, String key) {
     String namespace = getCurrentNamespace();
 
@@ -620,7 +792,12 @@ public class K8sClient {
     return configMap.getData().get(key);
   }
 
-  /** Applies YAML resources from a file. */
+  /**
+   * Applies YAML resources from a URL, file or directory (recursively).
+   *
+   * @param yamlLocation http(s) URL, file path or directory path containing YAML resources
+   * @return a summary of how many resources were applied
+   */
   public String applyYaml(String yamlLocation) {
     log.debug("Applying YAML from {}", yamlLocation);
 
@@ -705,10 +882,25 @@ public class K8sClient {
     }
   }
 
+  /**
+   * Adds or removes labels on a resource in the default namespace.
+   *
+   * @param resource resource type, e.g. {@code node}
+   * @param name resource name; {@code --all} applies to all nodes
+   * @param keyValues labels to set; a key ending in {@code -} removes that label
+   */
   public void label(String resource, String name, Tuple<?, ?>... keyValues) {
     label(resource, name, "", keyValues);
   }
 
+  /**
+   * Adds or removes labels on a resource.
+   *
+   * @param resource resource type, e.g. {@code node}
+   * @param name resource name; {@code --all} applies to all nodes
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param keyValues labels to set; a key ending in {@code -} removes that label
+   */
   public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
     if (keyValues == null || keyValues.length == 0) {
       throw new IllegalArgumentException("Missing key-value-pairs");
@@ -789,14 +981,36 @@ public class K8sClient {
     resourceClient.patch(existingResource);
   }
 
+  /**
+   * Delegates to {@link #labelRemove(String, String, String, String...)} with the default namespace
+   * and no keys.
+   *
+   * @param resource resource type, e.g. {@code node}
+   * @param name resource name; {@code --all} applies to all nodes
+   */
   public void labelRemove(String resource, String name) {
     labelRemove(resource, name, "", new String[0]);
   }
 
+  /**
+   * Delegates to {@link #labelRemove(String, String, String, String...)} with no keys.
+   *
+   * @param resource resource type, e.g. {@code node}
+   * @param name resource name; {@code --all} applies to all nodes
+   * @param namespace namespace of the resource; empty means the default namespace
+   */
   public void labelRemove(String resource, String name, String namespace) {
     labelRemove(resource, name, namespace, new String[0]);
   }
 
+  /**
+   * Removes the given labels from a resource.
+   *
+   * @param resource resource type, e.g. {@code node}
+   * @param name resource name; {@code --all} applies to all nodes
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param keys label keys to remove
+   */
   public void labelRemove(String resource, String name, String namespace, String... keys) {
     Tuple<?, ?>[] tuples = new Tuple<?, ?>[keys.length];
     for (int i = 0; i < keys.length; i++) {
@@ -805,14 +1019,38 @@ public class K8sClient {
     label(resource, name, namespace, tuples);
   }
 
+  /**
+   * Patches a resource in the default namespace using the default patch type.
+   *
+   * @param resource resource type, e.g. {@code service}
+   * @param name resource name
+   * @param yaml patch content as nested map
+   */
   public void patch(String resource, String name, Map<String, Object> yaml) {
     patch(resource, name, "", "", yaml);
   }
 
+  /**
+   * Patches a resource using the default patch type.
+   *
+   * @param resource resource type, e.g. {@code service}
+   * @param name resource name
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param yaml patch content as nested map
+   */
   public void patch(String resource, String name, String namespace, Map<String, Object> yaml) {
     patch(resource, name, namespace, "", yaml);
   }
 
+  /**
+   * Patches a resource.
+   *
+   * @param resource resource type, e.g. {@code service}
+   * @param name resource name
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param type patch type: {@code merge}, {@code json-merge}, {@code strategic} or {@code json}
+   * @param yaml patch content as nested map
+   */
   public void patch(
       String resource, String name, String namespace, String type, Map<String, Object> yaml) {
     log.debug("Patching {}/{} in namespace {}", resource, name, namespace);
@@ -834,14 +1072,34 @@ public class K8sClient {
     log.debug("Resource {}/{} patched successfully", resource, name);
   }
 
+  /**
+   * Deletes resources by label selectors in the default namespace, see {@link #delete(String,
+   * String, Tuple...)}.
+   *
+   * @param resource resource type, e.g. {@code secret}
+   */
   public void delete(String resource) {
     delete(resource, "", new Tuple<?, ?>[0]);
   }
 
+  /**
+   * Deletes resources by label selectors, see {@link #delete(String, String, Tuple...)}.
+   *
+   * @param resource resource type, e.g. {@code secret}
+   * @param namespace namespace to delete in; empty means the default namespace
+   */
   public void delete(String resource, String namespace) {
     delete(resource, namespace, new Tuple<?, ?>[0]);
   }
 
+  /**
+   * Deletes all resources of a type matching the given label selectors. Failures are logged, not
+   * thrown, since the resources may not exist.
+   *
+   * @param resource resource type, e.g. {@code secret}
+   * @param namespace namespace to delete in; empty means the default namespace
+   * @param selectors label key-value pairs the resources must match
+   */
   public void delete(String resource, String namespace, Tuple<?, ?>... selectors) {
     if (selectors == null || selectors.length == 0) {
       throw new IllegalArgumentException("Missing selectors");
@@ -862,6 +1120,14 @@ public class K8sClient {
     }
   }
 
+  /**
+   * Deletes a single resource by name. Failures are logged, not thrown, since the resource may not
+   * exist.
+   *
+   * @param resource resource type, e.g. {@code secret}
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param name resource name
+   */
   public void delete(String resource, String namespace, String name) {
     log.debug("Deleting {}/{} in namespace {}", resource, name, namespace);
 
@@ -875,22 +1141,66 @@ public class K8sClient {
     }
   }
 
+  /**
+   * Runs a pod in the default namespace, see {@link #run(String, String, String, Map, String...)}.
+   *
+   * @param name name of the pod
+   * @param image container image to run
+   * @return a status message or, with {@code --rm}-style params, the pod output
+   */
   public String run(String name, String image) {
     return run(name, image, "", Map.of(), new String[0]);
   }
 
+  /**
+   * Runs a pod, see {@link #run(String, String, String, Map, String...)}.
+   *
+   * @param name name of the pod
+   * @param image container image to run
+   * @param namespace target namespace; empty means the default namespace
+   * @return a status message or, with {@code --rm}-style params, the pod output
+   */
   public String run(String name, String image, String namespace) {
     return run(name, image, namespace, Map.of(), new String[0]);
   }
 
+  /**
+   * Runs a pod with pod-spec overrides, see {@link #run(String, String, String, Map, String...)}.
+   *
+   * @param name name of the pod
+   * @param image container image to run
+   * @param namespace target namespace; empty means the default namespace
+   * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
+   * @return a status message or, with {@code --rm}-style params, the pod output
+   */
   public String run(String name, String image, String namespace, Map<String, ?> overrides) {
     return run(name, image, namespace, overrides, new String[0]);
   }
 
+  /**
+   * Runs a pod with kubectl-run-style params, see {@link #run(String, String, String, Map,
+   * String...)}.
+   *
+   * @param name name of the pod
+   * @param image container image to run
+   * @param namespace target namespace; empty means the default namespace
+   * @param params kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
+   * @return a status message or, with {@code --rm}-style params, the pod output
+   */
   public String run(String name, String image, String namespace, String... params) {
     return run(name, image, namespace, Map.of(), params);
   }
 
+  /**
+   * Runs a pod, analogous to {@code kubectl run}.
+   *
+   * @param name name of the pod
+   * @param image container image to run
+   * @param namespace target namespace; empty means the default namespace
+   * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
+   * @param params kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
+   * @return a status message or, when the params request output collection, the pod output
+   */
   public String run(
       String name, String image, String namespace, Map<String, ?> overrides, String... params) {
     log.debug("Running pod {} with image {} in namespace {}", name, image, namespace);
@@ -939,6 +1249,13 @@ public class K8sClient {
     return "pod/" + createdPod.getMetadata().getName() + " created";
   }
 
+  /**
+   * Lists custom resources of the given type across all namespaces.
+   *
+   * @param resource custom resource type, resolved via API discovery
+   * @return namespace/name pairs of all found resources; empty when the type is unknown or listing
+   *     fails
+   */
   public List<CustomResource> getCustomResource(String resource) {
     log.debug("Getting custom resources of type {}", resource);
 
@@ -985,10 +1302,27 @@ public class K8sClient {
     return new CustomResource(ns, name);
   }
 
+  /**
+   * Reads an annotation from a resource in the default namespace.
+   *
+   * @param resource resource type, e.g. {@code service}
+   * @param name resource name
+   * @param key annotation key to read
+   * @return the annotation value; may be null when the annotation is not set
+   */
   public String getAnnotation(String resource, String name, String key) {
     return getAnnotation(resource, name, key, "");
   }
 
+  /**
+   * Reads an annotation from a resource.
+   *
+   * @param resource resource type, e.g. {@code service}
+   * @param name resource name
+   * @param key annotation key to read
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @return the annotation value; may be null when the annotation is not set
+   */
   public String getAnnotation(String resource, String name, String key, String namespace) {
     log.debug("Getting annotation {} from {}/{} in namespace {}", key, resource, name, namespace);
 
@@ -1010,6 +1344,11 @@ public class K8sClient {
     return value;
   }
 
+  /**
+   * Returns the name of the current kubeconfig context.
+   *
+   * @return the context name, or a placeholder when no context is set
+   */
   public String getCurrentContext() {
     try {
       NamedContext currentContext = client.getConfiguration().getCurrentContext();
@@ -1021,6 +1360,14 @@ public class K8sClient {
     }
   }
 
+  /**
+   * Waits for a resource to reach a phase using default timeout and check interval.
+   *
+   * @param resourceType resource type, e.g. {@code pod}
+   * @param resourceName resource name
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param desiredPhase phase to wait for, e.g. {@code Running}
+   */
   public void waitForResourcePhase(
       String resourceType, String resourceName, String namespace, String desiredPhase) {
     waitForResourcePhase(
@@ -1032,6 +1379,16 @@ public class K8sClient {
         DEFAULT_CHECK_INTERVAL_SECONDS);
   }
 
+  /**
+   * Waits for a resource to reach a phase, polling in fixed intervals until the timeout expires.
+   *
+   * @param resourceType resource type, e.g. {@code pod}
+   * @param resourceName resource name
+   * @param namespace namespace of the resource; empty means the default namespace
+   * @param desiredPhase phase to wait for, e.g. {@code Running}
+   * @param timeoutSeconds maximum time to wait before failing
+   * @param checkIntervalSeconds pause between phase checks
+   */
   public void waitForResourcePhase(
       String resourceType,
       String resourceName,
@@ -1159,6 +1516,11 @@ public class K8sClient {
     return namespace != null && !namespace.isEmpty() ? namespace : DEFAULT_NAMESPACE;
   }
 
+  /**
+   * Returns the namespace the client currently operates in.
+   *
+   * @return the current namespace from the kubeconfig context
+   */
   public String getCurrentNamespace() {
     return this.client.getNamespace();
   }
@@ -1169,9 +1531,21 @@ public class K8sClient {
         && this.gopConfig.getApplication().getOpenshift();
   }
 
+  /**
+   * Namespace/name coordinate of a custom resource as returned by {@link #getCustomResource}.
+   *
+   * @param namespace namespace the resource lives in; empty for cluster-scoped resources
+   * @param name name of the resource
+   */
   public record CustomResource(String namespace, String name) {}
 
+  /** Thrown when a custom resource type cannot be resolved via Kubernetes API discovery. */
   public static class KubernetesApiResourceNotFoundException extends RuntimeException {
+    /**
+     * Creates the exception for the given unresolvable type.
+     *
+     * @param resourceType the custom resource type that could not be found
+     */
     public KubernetesApiResourceNotFoundException(String resourceType) {
       super("No API resource found for custom resource type '" + resourceType + "'");
     }

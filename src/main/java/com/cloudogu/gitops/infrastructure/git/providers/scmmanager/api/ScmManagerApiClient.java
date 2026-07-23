@@ -19,31 +19,70 @@ public class ScmManagerApiClient {
   private final OkHttpClient okHttpClient;
   private final String url;
 
+  /**
+   * Creates a client for the SCM-Manager REST API.
+   *
+   * @param url base URL of the SCM-Manager REST API
+   * @param credentials basic auth credentials used for every request
+   * @param isInsecure whether TLS certificate and hostname verification should be disabled
+   */
   public ScmManagerApiClient(String url, Credentials credentials, Boolean isInsecure) {
     this.url = url;
     this.okHttpClient = HttpClientFactory.buildOkHttpClient(credentials, isInsecure);
   }
 
+  /**
+   * Creates a {@link UsersApi} bound to this client's base URL and credentials.
+   *
+   * @return a users API client
+   */
   public UsersApi usersApi() {
     return retrofit().create(UsersApi.class);
   }
 
+  /**
+   * Creates a {@link RepositoryApi} bound to this client's base URL and credentials.
+   *
+   * @return a repository API client
+   */
   public RepositoryApi repositoryApi() {
     return retrofit().create(RepositoryApi.class);
   }
 
+  /**
+   * Creates a {@link ScmManagerApi} bound to this client's base URL and credentials.
+   *
+   * @return a general API client
+   */
   public ScmManagerApi generalApi() {
     return retrofit().create(ScmManagerApi.class);
   }
 
+  /**
+   * Creates a {@link PluginApi} bound to this client's base URL and credentials.
+   *
+   * @return a plugin API client
+   */
   public PluginApi pluginApi() {
     return retrofit().create(PluginApi.class);
   }
 
+  /**
+   * Executes the API call without additional context, see {@link #handleApiResponse(Call, String)}.
+   *
+   * @param apiCall the call to execute
+   */
   public static void handleApiResponse(Call<Void> apiCall) {
     handleApiResponse(apiCall, "");
   }
 
+  /**
+   * Executes the API call and throws when the response is neither successful nor an acceptable
+   * status (201 Created, 409 Conflict for already existing resources).
+   *
+   * @param apiCall the call to execute
+   * @param additionalMessage extra context appended to the error message on failure
+   */
   public static void handleApiResponse(Call<Void> apiCall, String additionalMessage) {
     try {
       Response<Void> response = apiCall.execute();

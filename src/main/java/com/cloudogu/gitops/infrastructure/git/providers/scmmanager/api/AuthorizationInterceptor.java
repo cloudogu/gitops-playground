@@ -8,6 +8,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 
+/** OkHttp interceptor that adds HTTP basic auth credentials to every SCM-Manager request. */
 @RequiredArgsConstructor
 public class AuthorizationInterceptor implements Interceptor {
   private final String username;
