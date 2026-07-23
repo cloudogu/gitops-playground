@@ -144,7 +144,7 @@ public class ScmManagerSetup {
           new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels();
       templateVars.put("statics", statics);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to expose freemarker statics model", e);
     }
 
     Map<String, Object> templatedMap =

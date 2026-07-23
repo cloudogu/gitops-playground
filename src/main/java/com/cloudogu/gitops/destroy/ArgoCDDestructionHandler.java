@@ -39,7 +39,6 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
     this.context = contextBuilder.build();
 
     String namePrefix = getConfig().getApplication().getNamePrefix();
-    String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
 
     GitRepo repo = repoProvider.create("argocd/cluster-resources", gitHandler.getResourcesScm());
     try {
@@ -64,6 +63,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
               "metadata", Map.of("finalizers", List.of("resources-finalizer.argocd.argoproj.io"))));
     }
 
+    String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
     List<Tuple<String, String>> appsToBeDeleted =
         List.of(
             new Tuple<>(argocdNamespace, "bootstrap"),

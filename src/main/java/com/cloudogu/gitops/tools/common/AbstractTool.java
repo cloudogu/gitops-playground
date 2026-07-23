@@ -27,7 +27,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public abstract class Tool {
+public abstract class AbstractTool {
 
   private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
@@ -67,7 +67,7 @@ public abstract class Tool {
   /**
    * Technical initialization of runtime state.
    *
-   * <p>This is not a lifecycle phase. Tool-specific preparation belongs into preDeploy().
+   * <p>This is not a lifecycle phase. AbstractTool-specific preparation belongs into preDeploy().
    */
   protected void prepareExecution(DeploymentContext context, RepositoryWorkspace workspace) {
     this.context = context;
@@ -157,10 +157,6 @@ public abstract class Tool {
       DeploymentContext context,
       boolean initByHelm) {
     Config config = context.getConfig();
-    String repoURL = helmConfig.getRepoURL();
-    String chartOrPath = helmConfig.getChart();
-    String version = helmConfig.getVersion();
-    RepoType repoType = RepoType.HELM;
 
     this.addHelmValuesData("config", config);
     try {
@@ -189,7 +185,11 @@ public abstract class Tool {
     }
 
     helmValuesData = MapUtils.deepMerge(helmConfig.getValues(), helmValuesData);
-    Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData);
+
+    String repoURL = helmConfig.getRepoURL();
+    String chartOrPath = helmConfig.getChart();
+    String version = helmConfig.getVersion();
+    RepoType repoType = RepoType.HELM;
 
     if (context.isAirgapped()) {
       log.debug(
@@ -218,6 +218,7 @@ public abstract class Tool {
     log.debug("Starting deployment of feature {} from {}.", featureName, repoURL);
     log.debug("helm values used: {}", helmValuesData);
 
+    Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData);
     this.deployer.deployFeature(
         repoURL,
         featureName,

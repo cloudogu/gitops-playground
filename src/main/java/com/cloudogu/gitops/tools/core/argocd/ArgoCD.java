@@ -5,7 +5,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentMode;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -25,7 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 @Singleton
 @Order(100)
 @Slf4j
-public class ArgoCD extends Tool {
+public class ArgoCD extends AbstractTool {
 
   private static final int BCRYPT_LOG_ROUNDS = 4;
   private static final String TOOL_NAME = "argocd";

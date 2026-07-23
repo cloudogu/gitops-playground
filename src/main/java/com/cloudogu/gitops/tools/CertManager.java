@@ -4,8 +4,8 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(160)
 @Slf4j
-public class CertManager extends Tool {
+public class CertManager extends AbstractTool {
 
   public static final String HELM_VALUES_PATH =
       "argocd/cluster-resources/apps/cert-manager/templates/values.ftl.yaml";

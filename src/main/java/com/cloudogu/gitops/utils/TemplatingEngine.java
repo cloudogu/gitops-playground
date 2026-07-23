@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class TemplatingEngine {
+  private static final Pattern FTL_FILE_PATTERN = Pattern.compile("\\.ftl");
+
   private final Configuration engine;
 
   public TemplatingEngine() {
@@ -62,7 +64,7 @@ public class TemplatingEngine {
    */
   public void replaceTemplates(File path, Map<String, Object> parameters)
       throws IOException, freemarker.template.TemplateException {
-    replaceTemplates(path, parameters, Pattern.compile("\\.ftl"));
+    replaceTemplates(path, parameters, FTL_FILE_PATTERN);
   }
 
   public void replaceTemplates(File path, Map<String, Object> parameters, Pattern filepathMatches)

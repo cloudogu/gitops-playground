@@ -6,8 +6,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -15,6 +15,7 @@ import com.cloudogu.gitops.utils.TemplatingEngine;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Map;
@@ -26,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(500)
 @Slf4j
-public class Vault extends Tool {
+public class Vault extends AbstractTool {
 
   public static final String VAULT_START_SCRIPT_PATH =
       "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh";
@@ -103,8 +104,8 @@ public class Vault extends Tool {
     String url = getConfig().getFeatures().getSecrets().getVault().getUrl();
     try {
       addHelmValuesData("host", (url != null && !url.isEmpty()) ? new URL(url).getHost() : "");
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to parse Vault URL: " + url, e);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException("Failed to parse Vault URL: " + url, e);
     }
   }
 

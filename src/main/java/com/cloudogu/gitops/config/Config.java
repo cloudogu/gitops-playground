@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -143,6 +144,7 @@ public class Config {
 
     @Getter
     @Setter
+    @NoArgsConstructor
     public static class ContentRepositorySchema {
       public static final String DEFAULT_PATH = ".";
       public static final ContentRepoType DEFAULT_TYPE = ContentRepoType.MIRROR;
@@ -209,6 +211,7 @@ public class Config {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class HelmConfig {
     @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
     private String chart;
@@ -429,6 +432,7 @@ public class Config {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class ApplicationSchema {
     private static final Pattern TRAILING_DASH = Pattern.compile("-$");
 
@@ -650,6 +654,7 @@ public class Config {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class ArgoCDSchema {
     private Boolean configOnly = false;
 
@@ -713,6 +718,7 @@ public class Config {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class MailSchema {
     private Boolean active = false;
 

@@ -87,7 +87,7 @@ public class GenerateJsonSchema {
       try {
         sections.append(buildTable(field.get(config), field.getType(), field.getName()));
       } catch (IllegalAccessException e) {
-        throw new RuntimeException(e);
+        throw new IllegalStateException("Failed to read config field via reflection", e);
       }
     }
 
@@ -116,7 +116,7 @@ public class GenerateJsonSchema {
             buildTable(
                 field.get(config.getFeatures()), field.getType(), "features." + field.getName()));
       } catch (IllegalAccessException e) {
-        throw new RuntimeException(e);
+        throw new IllegalStateException("Failed to read config field via reflection", e);
       }
     }
 

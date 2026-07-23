@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** Request payload describing an SCM-Manager user account, created via {@link UsersApi}. */
 @Getter
 @Setter
+@NoArgsConstructor
 public class ScmManagerUser {
   private String name;
   private String displayName;

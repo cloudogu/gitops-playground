@@ -7,7 +7,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
 import freemarker.template.Configuration;
@@ -26,7 +26,7 @@ public class Application {
 
   private static final String DEFAULT_GOP_NAMESPACE = "gop-job";
 
-  @Getter private final List<Tool> tools;
+  @Getter private final List<AbstractTool> tools;
   private final ContextBuilder contextBuilder;
   private final K8sClient k8sClient;
   private final GitHandler gitHandler;
@@ -113,7 +113,7 @@ public class Application {
     }
 
     LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
-    for (Tool tool : this.tools) {
+    for (AbstractTool tool : this.tools) {
       String activeNs = tool.getActiveNamespaceFromFeature(context);
       if (activeNs != null && !activeNs.isEmpty()) {
         dedicatedNamespaces.add(activeNs);

@@ -47,15 +47,11 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     GitRepo clusterResourcesRepo = repositoryWorkspace.getClusterResourcesRepository();
 
     String toolName = repoName;
-    boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName);
-    ArgoCdApplicationTarget target = targetResolver.resolve(context, repoName);
 
     String toolPath = "apps/" + toolName;
     String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir();
     Path.of(repoRoot, toolPath).toFile().mkdirs();
     Path.of(repoRoot, "apps/argocd/applications").toFile().mkdirs();
-
-    String gopValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-gop-helm.yaml";
 
     String inlineValues;
     try {
@@ -64,8 +60,12 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       throw new UncheckedIOException(e);
     }
 
+    String gopValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-gop-helm.yaml";
     String userValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-user-values.yaml";
     Path userValuesAbsPath = Path.of(repoRoot, userValuesPath);
+
+    boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName);
+    ArgoCdApplicationTarget target = targetResolver.resolve(context, repoName);
 
     if (bootstrapDeploymentRequired) {
       log.info(
@@ -76,17 +76,82 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
           releaseName,
           namespace);
     } else {
-      try {
-        clusterResourcesRepo.writeFile(gopValuesPath, inlineValues);
-
-        if (!userValuesAbsPath.toFile().exists()) {
-          clusterResourcesRepo.writeFile(userValuesPath, "");
-        }
-      } catch (Exception e) {
-        throw new RuntimeException("Failed to write values files for " + toolName, e);
-      }
+      writeValuesFiles(
+          clusterResourcesRepo,
+          toolName,
+          gopValuesPath,
+          userValuesPath,
+          userValuesAbsPath,
+          inlineValues);
     }
 
+    Map<String, Object> helmSource = new LinkedHashMap<>();
+    helmSource.put("repoURL", repoURL);
+    helmSource.put(chooseKeyChartOrPath(repoType), chartOrPath);
+    helmSource.put("targetRevision", version);
+    helmSource.put(
+        "helm",
+        buildHelmValuesConfig(
+            releaseName,
+            bootstrapDeploymentRequired,
+            toolName,
+            inlineValues,
+            gopValuesPath,
+            userValuesPath));
+
+    List<Map<String, Object>> sources = new ArrayList<>();
+    sources.add(helmSource);
+
+    if (!bootstrapDeploymentRequired) {
+      sources.add(buildGitValuesSource(clusterResourcesRepo, toolPath));
+    }
+
+    String yamlResult = renderApplicationYaml(target, namespace, sources);
+
+    String appManifestPath = "apps/argocd/applications/" + releaseName + ".yaml";
+
+    try {
+      clusterResourcesRepo.writeFile(appManifestPath, yamlResult);
+    } catch (Exception e) {
+      throw new RuntimeException(
+          "Failed to write ArgoCD application manifest for " + releaseName, e);
+    }
+
+    log.debug(
+        "Prepared ArgoCD application for helm release {} basing on chart {} from {}, version {}, into namespace {}. Application was written to shared repository workspace:\n{}",
+        releaseName,
+        chartOrPath,
+        repoURL,
+        version,
+        namespace,
+        yamlResult);
+  }
+
+  private static void writeValuesFiles(
+      GitRepo clusterResourcesRepo,
+      String toolName,
+      String gopValuesPath,
+      String userValuesPath,
+      Path userValuesAbsPath,
+      String inlineValues) {
+    try {
+      clusterResourcesRepo.writeFile(gopValuesPath, inlineValues);
+
+      if (!userValuesAbsPath.toFile().exists()) {
+        clusterResourcesRepo.writeFile(userValuesPath, "");
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to write values files for " + toolName, e);
+    }
+  }
+
+  private static Map<String, Object> buildHelmValuesConfig(
+      String releaseName,
+      boolean bootstrapDeploymentRequired,
+      String toolName,
+      String inlineValues,
+      String gopValuesPath,
+      String userValuesPath) {
     Map<String, Object> helmConfig = new LinkedHashMap<>();
     helmConfig.put("releaseName", releaseName);
 
@@ -100,34 +165,26 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
           "valueFiles", List.of("$values/" + gopValuesPath, "$values/" + userValuesPath));
       helmConfig.put("ignoreMissingValueFiles", true);
     }
+    return helmConfig;
+  }
 
-    Map<String, Object> helmSource = new LinkedHashMap<>();
-    helmSource.put("repoURL", repoURL);
-    helmSource.put(chooseKeyChartOrPath(repoType), chartOrPath);
-    helmSource.put("targetRevision", version);
-    helmSource.put("helm", helmConfig);
+  private static Map<String, Object> buildGitValuesSource(
+      GitRepo clusterResourcesRepo, String toolPath) {
+    String toolRepoUrl =
+        clusterResourcesRepo.getGitProvider().repoPrefix() + "argocd/cluster-resources.git";
 
-    List<Map<String, Object>> sources = new ArrayList<>();
-    sources.add(helmSource);
+    Map<String, Object> gitSource = new LinkedHashMap<>();
+    gitSource.put("repoURL", toolRepoUrl);
+    gitSource.put("targetRevision", "main");
+    gitSource.put("ref", "values");
+    gitSource.put("path", toolPath);
+    gitSource.put("directory", Map.of("recurse", true));
+    return gitSource;
+  }
 
-    if (!bootstrapDeploymentRequired) {
-      String toolRepoUrl =
-          clusterResourcesRepo.getGitProvider().repoPrefix() + "argocd/cluster-resources.git";
-
-      Map<String, Object> gitSource = new LinkedHashMap<>();
-      gitSource.put("repoURL", toolRepoUrl);
-      gitSource.put("targetRevision", "main");
-      gitSource.put("ref", "values");
-      gitSource.put("path", toolPath);
-      gitSource.put("directory", Map.of("recurse", true));
-
-      sources.add(gitSource);
-    }
-
+  private static String renderApplicationYaml(
+      ArgoCdApplicationTarget target, String namespace, List<Map<String, Object>> sources) {
     String namespaceCreationSyncOption = "CreateNamespace=" + target.isCreateDestinationNamespace();
-
-    YAMLMapper yamlMapper =
-        YAMLMapper.builder().enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE).build();
 
     Map<String, Object> syncPolicy = new LinkedHashMap<>();
     Map<String, Object> automated = new LinkedHashMap<>();
@@ -155,30 +212,13 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     spec.put("syncPolicy", syncPolicy);
     application.put("spec", spec);
 
-    String yamlResult;
+    YAMLMapper yamlMapper =
+        YAMLMapper.builder().enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE).build();
     try {
-      yamlResult = yamlMapper.writeValueAsString(application);
+      return yamlMapper.writeValueAsString(application);
     } catch (JsonProcessingException e) {
       throw new UncheckedIOException("Failed to generate YAML for ArgoCD application", e);
     }
-
-    String appManifestPath = "apps/argocd/applications/" + releaseName + ".yaml";
-
-    try {
-      clusterResourcesRepo.writeFile(appManifestPath, yamlResult);
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Failed to write ArgoCD application manifest for " + releaseName, e);
-    }
-
-    log.debug(
-        "Prepared ArgoCD application for helm release {} basing on chart {} from {}, version {}, into namespace {}. Application was written to shared repository workspace:\n{}",
-        releaseName,
-        chartOrPath,
-        repoURL,
-        version,
-        namespace,
-        yamlResult);
   }
 
   public String chooseKeyChartOrPath(RepoType repoType) {

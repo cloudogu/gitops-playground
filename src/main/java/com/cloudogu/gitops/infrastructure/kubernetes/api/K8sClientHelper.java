@@ -183,12 +183,9 @@ class K8sClientHelper {
 
   static void validateServiceNodePortPatch(
       String serviceName, String namespace, String portName, int newNodePort) {
-    if (serviceName == null
-        || serviceName.isEmpty()
-        || namespace == null
-        || namespace.isEmpty()
-        || portName == null
-        || portName.isEmpty()
+    if (isNullOrEmpty(serviceName)
+        || isNullOrEmpty(namespace)
+        || isNullOrEmpty(portName)
         || newNodePort <= 0) {
       throw new IllegalArgumentException(
           "Service name, namespace, port name, and valid nodePort must be provided");
@@ -202,20 +199,20 @@ class K8sClientHelper {
       String desiredPhase,
       int timeoutSeconds,
       int checkIntervalSeconds) {
-    if (resourceType == null
-        || resourceType.isEmpty()
-        || resourceName == null
-        || resourceName.isEmpty()
-        || namespace == null
-        || namespace.isEmpty()
-        || desiredPhase == null
-        || desiredPhase.isEmpty()) {
+    if (isNullOrEmpty(resourceType)
+        || isNullOrEmpty(resourceName)
+        || isNullOrEmpty(namespace)
+        || isNullOrEmpty(desiredPhase)) {
       throw new IllegalArgumentException(
           "Resource type, name, namespace, and desired phase must be provided");
     }
     if (timeoutSeconds <= 0 || checkIntervalSeconds <= 0) {
       throw new IllegalArgumentException("Timeout and check interval must be greater than zero");
     }
+  }
+
+  private static boolean isNullOrEmpty(String value) {
+    return value == null || value.isEmpty();
   }
 
   @SuppressWarnings("unchecked")

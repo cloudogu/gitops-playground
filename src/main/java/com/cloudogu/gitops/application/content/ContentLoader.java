@@ -12,7 +12,7 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.core.Jenkins;
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -41,13 +42,14 @@ import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LsRemoteCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 @Singleton
 @Slf4j
-public class ContentLoader extends Tool {
+public class ContentLoader extends AbstractTool {
 
   private static final String CONTENT_REPOS_TYPE_PREFIX = "content.repos.type ";
   private static final String REFS_HEADS_PREFIX = "refs/heads/";
@@ -192,7 +194,7 @@ public class ContentLoader extends Tool {
     }
   }
 
-  protected void deployHelmReleasesFromContent() throws Exception {
+  protected void deployHelmReleasesFromContent() throws GitAPIException {
     if (getConfig().getContent() == null
         || getConfig().getContent().getHelmReleases() == null
         || getConfig().getContent().getHelmReleases().isEmpty()) {
@@ -207,7 +209,7 @@ public class ContentLoader extends Tool {
   }
 
   private void deployHelmReleaseFromContent(Config.ContentSchema.HelmReleaseSchema helmRelease)
-      throws Exception {
+      throws GitAPIException {
     String version = helmRelease.getVersion() != null ? helmRelease.getVersion().trim() : "";
     if (version.isEmpty()) {
       version = "*";
@@ -857,6 +859,7 @@ public class ContentLoader extends Tool {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class RepoCoordinate {
     private String namespace;
     private String repoName;

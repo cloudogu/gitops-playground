@@ -17,8 +17,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator;
 import com.cloudogu.gitops.destroy.Destroyer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.MapUtils;
 import groovy.yaml.YamlSlurper;
 import io.micronaut.context.ApplicationContext;
@@ -83,7 +83,7 @@ public class GitopsPlaygroundCli {
     Application app = context.getBean(Application.class);
 
     Config config = readConfigs(args);
-    runHook(app, "preConfigInit", Tool::preConfigInit, config);
+    runHook(app, "preConfigInit", AbstractTool::preConfigInit, config);
 
     if (config.getApplication().getOutputConfigFile()) {
       System.out.println(config.toYaml(false));
@@ -92,7 +92,7 @@ public class GitopsPlaygroundCli {
 
     config = applicationConfigurator.initConfig(config);
     log.debug("Actual config: {}", config.toYaml(true));
-    runHook(app, "postConfigInit", Tool::postConfigInit, config);
+    runHook(app, "postConfigInit", AbstractTool::postConfigInit, config);
 
     context.close();
     context = createApplicationContext();
@@ -168,25 +168,30 @@ public class GitopsPlaygroundCli {
   }
 
   private void setLogging(String[] args) {
-    Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops");
     List<String> argList = Arrays.asList(args);
     if (argList.contains("--trace") || argList.contains("-x")) {
       log.info("Setting loglevel to trace");
-      logger.setLevel(Level.TRACE);
+      setGitopsLogLevel(Level.TRACE);
       System.setProperty("picocli.trace", "DEBUG");
     } else if (argList.contains("--debug") || argList.contains("-d")) {
       System.setProperty("picocli.trace", "INFO");
-      logger.setLevel(Level.DEBUG);
+      setGitopsLogLevel(Level.DEBUG);
       log.info("Setting loglevel to debug");
     } else {
       setSimpleLogPattern();
     }
   }
 
+  private static void setGitopsLogLevel(Level level) {
+    ((Logger) LoggerFactory.getLogger("com.cloudogu.gitops")).setLevel(level);
+  }
+
   public void setSimpleLogPattern() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    Logger rootLogger = loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-    Appender<ILoggingEvent> stdoutAppender = rootLogger.getAppender(STDOUT_APPENDER_NAME);
+    Appender<ILoggingEvent> stdoutAppender =
+        loggerContext
+            .getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+            .getAppender(STDOUT_APPENDER_NAME);
     if (!(stdoutAppender instanceof ConsoleAppender)) {
       return;
     }
@@ -197,7 +202,7 @@ public class GitopsPlaygroundCli {
 
     String defaultPattern = ((PatternLayoutEncoder) encoderObj).getPattern();
 
-    rootLogger.detachAppender(STDOUT_APPENDER_NAME);
+    loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).detachAppender(STDOUT_APPENDER_NAME);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern(
         LOGGER_PATTERN_TOKEN
@@ -210,7 +215,7 @@ public class GitopsPlaygroundCli {
     appender.setContext(loggerContext);
     appender.setEncoder(encoder);
     appender.start();
-    rootLogger.addAppender(appender);
+    loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).addAppender(appender);
   }
 
   private Config readConfigs(String[] args) {
@@ -218,7 +223,6 @@ public class GitopsPlaygroundCli {
     new CommandLine(cliParams).parseArgs(args);
 
     List<Map<String, Object>> configFile = new ArrayList<>();
-    List<Map<String, Object>> configMap = new ArrayList<>();
 
     if (cliParams.getApplication().getConfigFiles() != null) {
       for (String configFileItem : cliParams.getApplication().getConfigFiles()) {
@@ -231,6 +235,7 @@ public class GitopsPlaygroundCli {
       }
     }
 
+    List<Map<String, Object>> configMap = new ArrayList<>();
     if (cliParams.getApplication().getConfigMaps() != null) {
       for (String configMapItem : cliParams.getApplication().getConfigMaps()) {
         log.debug("Reading config map {}", configMapItem);
@@ -303,12 +308,12 @@ public class GitopsPlaygroundCli {
   }
 
   public static void runHook(
-      Application app, String hookName, BiConsumer<Tool, Config> hook, Config config) {
-    List<Tool> allFeatures = new ArrayList<>();
+      Application app, String hookName, BiConsumer<AbstractTool, Config> hook, Config config) {
+    List<AbstractTool> allFeatures = new ArrayList<>();
     allFeatures.add(new CommonToolConfig());
     allFeatures.addAll(app.getTools());
 
-    for (Tool feature : allFeatures) {
+    for (AbstractTool feature : allFeatures) {
       try {
         log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
         hook.accept(feature, config);

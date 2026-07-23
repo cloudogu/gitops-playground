@@ -6,6 +6,7 @@ import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import java.net.URI;
+import java.net.URISyntaxException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -138,8 +139,8 @@ public class ScmManagerUrlResolver {
     String host = net.findClusterBindAddress();
     try {
       cachedClusterBind = new URI(HTTP_PREFIX + host + ":" + port);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to construct ScmManager node port base URI", e);
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException("Failed to construct ScmManager node port base URI", e);
     }
     return cachedClusterBind;
   }

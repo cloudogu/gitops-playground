@@ -6,8 +6,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -16,6 +16,7 @@ import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(300)
 @Slf4j
-public class Monitoring extends Tool {
+public class Monitoring extends AbstractTool {
 
   public static final String HELM_VALUES_PATH =
       "argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml";
@@ -129,8 +130,8 @@ public class Monitoring extends Tool {
       if (grafanaUrl != null && !grafanaUrl.isEmpty()) {
         host = new URL(grafanaUrl).getHost();
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to parse Grafana URL: " + grafanaUrl, e);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException("Failed to parse Grafana URL: " + grafanaUrl, e);
     }
 
     addHelmValuesData(TOOL_NAME, Map.of("grafana", Map.of("host", host)));
@@ -250,10 +251,17 @@ public class Monitoring extends Tool {
   }
 
   private static Map<String, String> uriComponents(URI uri) {
+    if (uri == null) {
+      return Map.of("protocol", "", "host", "", "path", "");
+    }
     return Map.of(
-        "protocol", (uri != null && uri.getScheme() != null) ? uri.getScheme() : "",
-        "host", (uri != null && uri.getAuthority() != null) ? uri.getAuthority() : "",
-        "path", (uri != null && uri.getPath() != null) ? uri.getPath() : "");
+        "protocol", orEmpty(uri.getScheme()),
+        "host", orEmpty(uri.getAuthority()),
+        "path", orEmpty(uri.getPath()));
+  }
+
+  private static String orEmpty(String value) {
+    return value != null ? value : "";
   }
 
   protected void createMonitoringCrd() {

@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Creates the registry image pull secret for tools that deploy workloads into Kubernetes.
  *
- * <p>The creator is intentionally not part of the Tool base class. Tools call it explicitly in
- * their setup flow when an image pull secret is relevant for their namespace.
+ * <p>The creator is intentionally not part of the AbstractTool base class. Tools call it explicitly
+ * in their setup flow when an image pull secret is relevant for their namespace.
  */
 @Singleton
 @RequiredArgsConstructor

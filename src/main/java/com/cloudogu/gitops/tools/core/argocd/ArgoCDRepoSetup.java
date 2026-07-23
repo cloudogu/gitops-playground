@@ -198,7 +198,7 @@ public class ArgoCDRepoSetup {
               .getStaticModels();
       values.put("statics", statics);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to expose freemarker statics model", e);
     }
 
     return values;

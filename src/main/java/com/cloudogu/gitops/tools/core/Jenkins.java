@@ -12,8 +12,8 @@ import com.cloudogu.gitops.infrastructure.jenkins.JobManager;
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator;
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.CommandExecutor;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(200)
 @Slf4j
-public class Jenkins extends Tool {
+public class Jenkins extends AbstractTool {
 
   public static final String HELM_VALUES_PATH =
       "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml";
@@ -248,12 +248,13 @@ public class Jenkins extends Tool {
     commandExecutor.execute(
         fileSystemUtils.getRootDir() + "/scripts/jenkins/init-jenkins.sh", scriptParams);
 
-    globalPropertyManager.setGlobalProperty(
-        getConfig().getApplication().getNamePrefixForEnvVars() + "SCM_URL",
-        this.gitHandler.getTenant().getUrl());
-    globalPropertyManager.setGlobalProperty(
-        getConfig().getApplication().getNamePrefixForEnvVars() + "PREFIXED_SCM_URL",
-        this.gitHandler.getTenant().repoPrefix());
+    configureGlobalProperties();
+    configureMetricsUser();
+  }
+
+  private void configureGlobalProperties() {
+    setPrefixedGlobalProperty("SCM_URL", this.gitHandler.getTenant().getUrl());
+    setPrefixedGlobalProperty("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
 
     if (getConfig().getJenkins().getAdditionalEnvs() != null) {
       for (Map.Entry<String, String> entry :
@@ -262,39 +263,21 @@ public class Jenkins extends Tool {
       }
     }
 
-    if (getConfig().getRegistry().getUrl() != null
-        && !getConfig().getRegistry().getUrl().isEmpty()) {
-      globalPropertyManager.setGlobalProperty(
-          getConfig().getApplication().getNamePrefixForEnvVars() + "REGISTRY_URL",
-          getConfig().getRegistry().getUrl());
-    }
-
-    if (getConfig().getRegistry().getPath() != null
-        && !getConfig().getRegistry().getPath().isEmpty()) {
-      globalPropertyManager.setGlobalProperty(
-          getConfig().getApplication().getNamePrefixForEnvVars() + "REGISTRY_PATH",
-          getConfig().getRegistry().getPath());
-    }
+    setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_URL", getConfig().getRegistry().getUrl());
+    setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_PATH", getConfig().getRegistry().getPath());
 
     if (getConfig().getRegistry().getTwoRegistries()) {
-      globalPropertyManager.setGlobalProperty(
-          getConfig().getApplication().getNamePrefixForEnvVars() + "REGISTRY_PROXY_URL",
-          getConfig().getRegistry().getProxyUrl());
-      globalPropertyManager.setGlobalProperty(
-          getConfig().getApplication().getNamePrefixForEnvVars() + "REGISTRY_PROXY_PATH",
-          getConfig().getRegistry().getProxyPath());
+      setPrefixedGlobalProperty("REGISTRY_PROXY_URL", getConfig().getRegistry().getProxyUrl());
+      setPrefixedGlobalProperty("REGISTRY_PROXY_PATH", getConfig().getRegistry().getProxyPath());
     }
 
-    if (getConfig().getJenkins().getMavenCentralMirror() != null
-        && !getConfig().getJenkins().getMavenCentralMirror().isEmpty()) {
-      globalPropertyManager.setGlobalProperty(
-          getConfig().getApplication().getNamePrefixForEnvVars() + "MAVEN_CENTRAL_MIRROR",
-          getConfig().getJenkins().getMavenCentralMirror());
-    }
+    setPrefixedGlobalPropertyIfNotEmpty(
+        "MAVEN_CENTRAL_MIRROR", getConfig().getJenkins().getMavenCentralMirror());
 
-    globalPropertyManager.setGlobalProperty(
-        getConfig().getApplication().getNamePrefixForEnvVars() + "K8S_VERSION", Config.K8S_VERSION);
+    setPrefixedGlobalProperty("K8S_VERSION", Config.K8S_VERSION);
+  }
 
+  private void configureMetricsUser() {
     if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
       log.trace("Using a security realm without local user creation. Must not create user.");
     } else {
@@ -310,6 +293,17 @@ public class Jenkins extends Tool {
         && getConfig().getJenkins().getInternal()) {
       // An external Jenkins can likely not be monitored
       prometheusConfigurator.enableAuthentication();
+    }
+  }
+
+  private void setPrefixedGlobalProperty(String name, String value) {
+    globalPropertyManager.setGlobalProperty(
+        getConfig().getApplication().getNamePrefixForEnvVars() + name, value);
+  }
+
+  private void setPrefixedGlobalPropertyIfNotEmpty(String name, String value) {
+    if (value != null && !value.isEmpty()) {
+      setPrefixedGlobalProperty(name, value);
     }
   }
 

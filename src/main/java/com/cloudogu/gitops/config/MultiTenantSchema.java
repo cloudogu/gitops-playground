@@ -5,12 +5,14 @@ import com.cloudogu.gitops.config.scm.ScmCentralSchema.ScmManagerCentralConfig;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class MultiTenantSchema {
 
   public static final String SCM_PROVIDER_TYPE_DESCRIPTION =

@@ -9,7 +9,7 @@ import com.cloudogu.gitops.tools.Ingress;
 import com.cloudogu.gitops.tools.Monitoring;
 import com.cloudogu.gitops.tools.Registry;
 import com.cloudogu.gitops.tools.Vault;
-import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.core.Jenkins;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD;
 import com.cloudogu.gitops.tools.core.scmmanager.ScmManager;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DeploymentOrchestrator {
 
-  @Getter private final List<Tool> tools;
+  @Getter private final List<AbstractTool> tools;
 
   @Inject
   public DeploymentOrchestrator(
@@ -56,7 +56,7 @@ public class DeploymentOrchestrator {
   public void deployTools(DeploymentContext context, RepositoryWorkspace workspace) {
     log.debug("Starting tool orchestration.");
 
-    for (Tool tool : tools) {
+    for (AbstractTool tool : tools) {
       if (!tool.isEnabled(context)) {
         log.debug("Skipping disabled tool {}", tool.getClass().getSimpleName());
         continue;

@@ -118,7 +118,7 @@ public class JenkinsApiClient {
 
   @FunctionalInterface
   interface RequestSupplier {
-    Request get() throws Exception;
+    Request get();
   }
 
   // We pass a supplier, so that we actually refetch a new crumb for a failed request

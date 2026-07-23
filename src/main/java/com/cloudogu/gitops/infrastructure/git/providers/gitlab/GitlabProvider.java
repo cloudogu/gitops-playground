@@ -76,7 +76,6 @@ public class GitlabProvider implements GitProvider {
     String repoNamespacePath = repoNamespace.toLowerCase(Locale.ROOT);
     String projectPath = repoName.toLowerCase(Locale.ROOT);
 
-    long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
     String fullProjectPath =
         parent.getFullPath() + PATH_SEPARATOR + repoNamespacePath + PATH_SEPARATOR + projectPath;
 
@@ -85,6 +84,7 @@ public class GitlabProvider implements GitProvider {
       return false;
     }
 
+    long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
     Project project =
         new Project()
             .withName(repoName)
@@ -274,7 +274,7 @@ public class GitlabProvider implements GitProvider {
           e.getHttpStatus(),
           e.getMessage(),
           ve);
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to add GitLab group", e);
     }
   }
 
@@ -290,7 +290,7 @@ public class GitlabProvider implements GitProvider {
           .findFirst()
           .orElse(null);
     } catch (GitLabApiException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to list subgroups of group " + parentId, e);
     }
   }
 
@@ -306,7 +306,7 @@ public class GitlabProvider implements GitProvider {
           .findFirst()
           .orElse(null);
     } catch (GitLabApiException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to list projects of group " + parentId, e);
     }
   }
 

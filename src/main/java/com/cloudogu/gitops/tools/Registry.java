@@ -4,7 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.Tool;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import io.micronaut.core.annotation.Order;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(30)
 @Slf4j
-public class Registry extends Tool {
+public class Registry extends AbstractTool {
 
   /** Local container port of the registry within the pod */
   public static final String CONTAINER_PORT = "5000";

@@ -14,7 +14,7 @@ import groovy.transform.CompileStatic
 import org.junit.jupiter.api.Test
 
 @CompileStatic
-class ToolTest {
+class AbstractToolTest {
 
 	@Test
 	void 'execute stores context and repository workspace'() {
@@ -29,7 +29,7 @@ class ToolTest {
 		assertThat(tool.repositoryWorkspace).isSameAs(workspace)
 	}
 
-	class ToolForTest extends Tool {
+	class ToolForTest extends AbstractTool {
 
 		@Override
 		boolean isEnabled(DeploymentContext context) {

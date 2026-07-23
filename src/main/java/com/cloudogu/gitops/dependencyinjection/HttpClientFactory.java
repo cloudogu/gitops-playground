@@ -8,6 +8,7 @@ import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.net.CookieManager;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -60,9 +61,9 @@ public class HttpClientFactory {
   }
 
   public static HttpLoggingInterceptor createLoggingInterceptor() {
-    org.slf4j.Logger logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient");
-
-    HttpLoggingInterceptor ret = new HttpLoggingInterceptor(logger::trace);
+    HttpLoggingInterceptor ret =
+        new HttpLoggingInterceptor(
+            LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")::trace);
 
     ret.setLevel(HttpLoggingInterceptor.Level.HEADERS);
     ret.redactHeader("Authorization");
@@ -95,8 +96,8 @@ public class HttpClientFactory {
       sslCtxt.init(null, new TrustManager[] {noCheckTrustManager}, new SecureRandom());
 
       return new InsecureSslContext(sslCtxt.getSocketFactory(), noCheckTrustManager);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to construct insecure SSL context", e);
+    } catch (GeneralSecurityException e) {
+      throw new IllegalStateException("Failed to construct insecure SSL context", e);
     }
   }
 

@@ -13,12 +13,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.net.URI;
 import java.util.HashMap;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class ScmTenantSchema {
 
   public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
@@ -50,6 +52,7 @@ public class ScmTenantSchema {
 
   @Getter
   @Setter
+  @NoArgsConstructor
   public static class GitlabTenantConfig implements GitlabConfig {
 
     public static final String GITLAB_INTERNAL_DESCRIPTION =

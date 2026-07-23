@@ -5,8 +5,8 @@ import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
-import com.cloudogu.gitops.tools.common.Tool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import io.micronaut.core.annotation.Order;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(10)
 @Slf4j
-public class ScmManager extends Tool {
+public class ScmManager extends AbstractTool {
 
   @Getter @Setter private String namespace;
   private final ImagePullSecretCreator imagePullSecretCreator;

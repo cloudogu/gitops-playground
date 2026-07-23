@@ -3,7 +3,7 @@ package com.cloudogu.gitops.tools.common;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.config.Config;
 
-public class CommonToolConfig extends Tool {
+public class CommonToolConfig extends AbstractTool {
 
   @Override
   public void preConfigInit(Config configToSet) {
