@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.Serialization;
+import io.micronaut.core.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -183,9 +184,9 @@ class K8sClientHelper {
 
   static void validateServiceNodePortPatch(
       String serviceName, String namespace, String portName, int newNodePort) {
-    if (isNullOrEmpty(serviceName)
-        || isNullOrEmpty(namespace)
-        || isNullOrEmpty(portName)
+    if (StringUtils.isEmpty(serviceName)
+        || StringUtils.isEmpty(namespace)
+        || StringUtils.isEmpty(portName)
         || newNodePort <= 0) {
       throw new IllegalArgumentException(
           "Service name, namespace, port name, and valid nodePort must be provided");
@@ -199,20 +200,16 @@ class K8sClientHelper {
       String desiredPhase,
       int timeoutSeconds,
       int checkIntervalSeconds) {
-    if (isNullOrEmpty(resourceType)
-        || isNullOrEmpty(resourceName)
-        || isNullOrEmpty(namespace)
-        || isNullOrEmpty(desiredPhase)) {
+    if (StringUtils.isEmpty(resourceType)
+        || StringUtils.isEmpty(resourceName)
+        || StringUtils.isEmpty(namespace)
+        || StringUtils.isEmpty(desiredPhase)) {
       throw new IllegalArgumentException(
           "Resource type, name, namespace, and desired phase must be provided");
     }
     if (timeoutSeconds <= 0 || checkIntervalSeconds <= 0) {
       throw new IllegalArgumentException("Timeout and check interval must be greater than zero");
     }
-  }
-
-  private static boolean isNullOrEmpty(String value) {
-    return value == null || value.isEmpty();
   }
 
   @SuppressWarnings("unchecked")

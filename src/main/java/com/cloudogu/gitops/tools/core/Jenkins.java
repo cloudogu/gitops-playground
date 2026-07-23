@@ -21,6 +21,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
+import io.micronaut.core.util.StringUtils;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
@@ -302,7 +303,7 @@ public class Jenkins extends AbstractTool {
   }
 
   private void setPrefixedGlobalPropertyIfNotEmpty(String name, String value) {
-    if (value != null && !value.isEmpty()) {
+    if (StringUtils.isNotEmpty(value)) {
       setPrefixedGlobalProperty(name, value);
     }
   }

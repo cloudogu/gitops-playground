@@ -60,9 +60,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       throw new UncheckedIOException(e);
     }
 
-    String gopValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-gop-helm.yaml";
-    String userValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-user-values.yaml";
-    Path userValuesAbsPath = Path.of(repoRoot, userValuesPath);
+    ValuesFilePaths valuesFilePaths = ValuesFilePaths.of(toolPath, toolName, repoRoot);
 
     boolean bootstrapDeploymentRequired = requiresBootstrapDeployment(toolName);
     ArgoCdApplicationTarget target = targetResolver.resolve(context, repoName);
@@ -76,13 +74,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
           releaseName,
           namespace);
     } else {
-      writeValuesFiles(
-          clusterResourcesRepo,
-          toolName,
-          gopValuesPath,
-          userValuesPath,
-          userValuesAbsPath,
-          inlineValues);
+      writeValuesFiles(clusterResourcesRepo, toolName, valuesFilePaths, inlineValues);
     }
 
     Map<String, Object> helmSource = new LinkedHashMap<>();
@@ -92,12 +84,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
     helmSource.put(
         "helm",
         buildHelmValuesConfig(
-            releaseName,
-            bootstrapDeploymentRequired,
-            toolName,
-            inlineValues,
-            gopValuesPath,
-            userValuesPath));
+            releaseName, bootstrapDeploymentRequired, toolName, inlineValues, valuesFilePaths));
 
     List<Map<String, Object>> sources = new ArrayList<>();
     sources.add(helmSource);
@@ -130,15 +117,13 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
   private static void writeValuesFiles(
       GitRepo clusterResourcesRepo,
       String toolName,
-      String gopValuesPath,
-      String userValuesPath,
-      Path userValuesAbsPath,
+      ValuesFilePaths valuesFilePaths,
       String inlineValues) {
     try {
-      clusterResourcesRepo.writeFile(gopValuesPath, inlineValues);
+      clusterResourcesRepo.writeFile(valuesFilePaths.gopValuesPath(), inlineValues);
 
-      if (!userValuesAbsPath.toFile().exists()) {
-        clusterResourcesRepo.writeFile(userValuesPath, "");
+      if (!valuesFilePaths.userValuesAbsPath().toFile().exists()) {
+        clusterResourcesRepo.writeFile(valuesFilePaths.userValuesPath(), "");
       }
     } catch (Exception e) {
       throw new RuntimeException("Failed to write values files for " + toolName, e);
@@ -150,8 +135,7 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       boolean bootstrapDeploymentRequired,
       String toolName,
       String inlineValues,
-      String gopValuesPath,
-      String userValuesPath) {
+      ValuesFilePaths valuesFilePaths) {
     Map<String, Object> helmConfig = new LinkedHashMap<>();
     helmConfig.put("releaseName", releaseName);
 
@@ -162,10 +146,26 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
       helmConfig.put("values", inlineValues);
     } else {
       helmConfig.put(
-          "valueFiles", List.of("$values/" + gopValuesPath, "$values/" + userValuesPath));
+          "valueFiles",
+          List.of(
+              "$values/" + valuesFilePaths.gopValuesPath(),
+              "$values/" + valuesFilePaths.userValuesPath()));
       helmConfig.put("ignoreMissingValueFiles", true);
     }
     return helmConfig;
+  }
+
+  /**
+   * Locations of the gop and user Helm values files of a tool within the cluster-resources repo.
+   */
+  private record ValuesFilePaths(
+      String gopValuesPath, String userValuesPath, Path userValuesAbsPath) {
+
+    static ValuesFilePaths of(String toolPath, String toolName, String repoRoot) {
+      String gopValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-gop-helm.yaml";
+      String userValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-user-values.yaml";
+      return new ValuesFilePaths(gopValuesPath, userValuesPath, Path.of(repoRoot, userValuesPath));
+    }
   }
 
   private static Map<String, Object> buildGitValuesSource(

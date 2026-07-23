@@ -8,6 +8,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.gitlab.GitlabProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
+import io.micronaut.core.util.StringUtils;
 import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -31,15 +32,16 @@ public class GitHandler {
 
     boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
     boolean gitlabUrlConfigured =
-        config.getScm().getGitlab() != null && !isNullOrEmpty(config.getScm().getGitlab().getUrl());
+        config.getScm().getGitlab() != null
+            && !StringUtils.isEmpty(config.getScm().getGitlab().getUrl());
     if (gitlabRequested || gitlabUrlConfigured) {
       config.getScm().setScmProviderType(ScmProviderType.GITLAB);
       config.getScm().setScmManager(null);
 
       if (config.getScm().getGitlab() == null
-          || isNullOrEmpty(config.getScm().getGitlab().getUrl())
-          || isNullOrEmpty(config.getScm().getGitlab().getPassword())
-          || isNullOrEmpty(config.getScm().getGitlab().getParentGroupId())) {
+          || StringUtils.isEmpty(config.getScm().getGitlab().getUrl())
+          || StringUtils.isEmpty(config.getScm().getGitlab().getPassword())
+          || StringUtils.isEmpty(config.getScm().getGitlab().getParentGroupId())) {
         throw new IllegalArgumentException(
             "GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
       }
@@ -127,9 +129,5 @@ public class GitHandler {
     }
 
     return namespace.substring(0, namespace.length() - baseNamespace.length());
-  }
-
-  private static boolean isNullOrEmpty(String str) {
-    return str == null || str.isEmpty();
   }
 }

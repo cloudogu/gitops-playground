@@ -189,9 +189,7 @@ public class GitopsPlaygroundCli {
   public void setSimpleLogPattern() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     Appender<ILoggingEvent> stdoutAppender =
-        loggerContext
-            .getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
-            .getAppender(STDOUT_APPENDER_NAME);
+        rootLogger(loggerContext).getAppender(STDOUT_APPENDER_NAME);
     if (!(stdoutAppender instanceof ConsoleAppender)) {
       return;
     }
@@ -202,7 +200,7 @@ public class GitopsPlaygroundCli {
 
     String defaultPattern = ((PatternLayoutEncoder) encoderObj).getPattern();
 
-    loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).detachAppender(STDOUT_APPENDER_NAME);
+    rootLogger(loggerContext).detachAppender(STDOUT_APPENDER_NAME);
     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setPattern(
         LOGGER_PATTERN_TOKEN
@@ -215,7 +213,11 @@ public class GitopsPlaygroundCli {
     appender.setContext(loggerContext);
     appender.setEncoder(encoder);
     appender.start();
-    loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).addAppender(appender);
+    rootLogger(loggerContext).addAppender(appender);
+  }
+
+  private static Logger rootLogger(LoggerContext loggerContext) {
+    return loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
   }
 
   private Config readConfigs(String[] args) {

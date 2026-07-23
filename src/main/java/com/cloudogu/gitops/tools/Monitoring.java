@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -255,13 +256,9 @@ public class Monitoring extends AbstractTool {
       return Map.of("protocol", "", "host", "", "path", "");
     }
     return Map.of(
-        "protocol", orEmpty(uri.getScheme()),
-        "host", orEmpty(uri.getAuthority()),
-        "path", orEmpty(uri.getPath()));
-  }
-
-  private static String orEmpty(String value) {
-    return value != null ? value : "";
+        "protocol", Objects.requireNonNullElse(uri.getScheme(), ""),
+        "host", Objects.requireNonNullElse(uri.getAuthority(), ""),
+        "path", Objects.requireNonNullElse(uri.getPath(), ""));
   }
 
   protected void createMonitoringCrd() {

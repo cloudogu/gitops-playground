@@ -982,28 +982,6 @@ public class K8sClient {
   }
 
   /**
-   * Delegates to {@link #labelRemove(String, String, String, String...)} with the default namespace
-   * and no keys.
-   *
-   * @param resource resource type, e.g. {@code node}
-   * @param name resource name; {@code --all} applies to all nodes
-   */
-  public void labelRemove(String resource, String name) {
-    labelRemove(resource, name, "", new String[0]);
-  }
-
-  /**
-   * Delegates to {@link #labelRemove(String, String, String, String...)} with no keys.
-   *
-   * @param resource resource type, e.g. {@code node}
-   * @param name resource name; {@code --all} applies to all nodes
-   * @param namespace namespace of the resource; empty means the default namespace
-   */
-  public void labelRemove(String resource, String name, String namespace) {
-    labelRemove(resource, name, namespace, new String[0]);
-  }
-
-  /**
    * Removes the given labels from a resource.
    *
    * @param resource resource type, e.g. {@code node}
