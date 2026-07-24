@@ -58,7 +58,8 @@ RUN apk add curl grep
 # 3.1: Version Configuration
 # -----------------------------------------------------------------------------
 
-# When updating Helm, also upgrade helm image in Config.groovy
+# When updating Helm, also upgrade the helm chart version in Config.java
+# renovate: depName=helm/helm datasource=github-releases
 ARG HELM_VERSION=4.2.1
 
 # Install additional tools required for downloads

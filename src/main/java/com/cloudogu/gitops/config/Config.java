@@ -791,8 +791,7 @@ public class Config {
       helm = new MonitoringHelmSchema();
       helm.setChart("kube-prometheus-stack");
       helm.setRepoURL("https://prometheus-community.github.io/helm-charts");
-      // renovate: depName=kube-prometheus-stack
-      // registryUrl=https://prometheus-community.github.io/helm-charts
+      // renovate: depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
       helm.setVersion("80.2.2");
       helm.setValues(new HashMap<>());
     }

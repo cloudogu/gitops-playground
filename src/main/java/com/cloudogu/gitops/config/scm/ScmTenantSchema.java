@@ -177,6 +177,7 @@ public class ScmTenantSchema {
       helm = new Config.HelmConfigWithValues();
       helm.setChart("scm-manager");
       helm.setRepoURL("https://packages.scm-manager.org/repository/helm-v2-releases/");
+      // renovate: depName=scm-manager registryUrl=https://packages.scm-manager.org/repository/helm-v2-releases/
       helm.setVersion("3.11.10");
       helm.setValues(new HashMap<>());
     }
