@@ -11,18 +11,18 @@ import org.jetbrains.annotations.NotNull;
 /** OkHttp interceptor that adds HTTP basic auth credentials to every SCM-Manager request. */
 @RequiredArgsConstructor
 public class AuthorizationInterceptor implements Interceptor {
-  private final String username;
-  private final String password;
+private final String username;
+private final String password;
 
-  @Override
-  public Response intercept(@NotNull Chain chain) throws IOException {
-    Request newRequest =
-        chain
-            .request()
-            .newBuilder()
-            .header("Authorization", Credentials.basic(username, password))
-            .build();
+@Override
+public Response intercept(@NotNull Chain chain) throws IOException {
+	Request newRequest =
+		chain
+			.request()
+			.newBuilder()
+			.header("Authorization", Credentials.basic(username, password))
+			.build();
 
-    return chain.proceed(newRequest);
-  }
+	return chain.proceed(newRequest);
+}
 }

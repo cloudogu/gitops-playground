@@ -12,28 +12,28 @@ import jakarta.inject.Singleton;
 @Singleton
 public class DeploymentModeFactory {
 
-  public DeploymentMode create(
-      DeploymentContext context,
-      Config config,
-      K8sClient k8sClient,
-      GitHandler gitHandler,
-      RepositoryWorkspace repositoryWorkspace,
-      ArgoCDRepoSetup repoSetup,
-      ArgoCDRepoLayout clusterResourcesRepo,
-      String namespace) {
+public DeploymentMode create(
+	DeploymentContext context,
+	Config config,
+	K8sClient k8sClient,
+	GitHandler gitHandler,
+	RepositoryWorkspace repositoryWorkspace,
+	ArgoCDRepoSetup repoSetup,
+	ArgoCDRepoLayout clusterResourcesRepo,
+	String namespace) {
 
-    if (context.isMultiTenant()) {
-      return new DedicatedMultiTenantMode(
-          config,
-          k8sClient,
-          gitHandler,
-          repositoryWorkspace,
-          repoSetup,
-          clusterResourcesRepo,
-          namespace);
-    }
+	if (context.isMultiTenant()) {
+	return new DedicatedMultiTenantMode(
+		config,
+		k8sClient,
+		gitHandler,
+		repositoryWorkspace,
+		repoSetup,
+		clusterResourcesRepo,
+		namespace);
+	}
 
-    return new SingleTenantMode(
-        config, k8sClient, gitHandler, repositoryWorkspace, clusterResourcesRepo, namespace);
-  }
+	return new SingleTenantMode(
+		config, k8sClient, gitHandler, repositoryWorkspace, clusterResourcesRepo, namespace);
+}
 }

@@ -12,24 +12,24 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 public class JsonSchemaValidator {
 
-  private static final ObjectMapper objectMapper = new ObjectMapper();
-  private static final SchemaRegistry schemaRegistry = SchemaRegistry.builder().build();
+private static final ObjectMapper objectMapper = new ObjectMapper();
+private static final SchemaRegistry schemaRegistry = SchemaRegistry.builder().build();
 
-  private JsonSchemaValidator() {}
+private JsonSchemaValidator() {}
 
-  public static void validate(Map<?, ?> yaml) {
-    JsonNode json = objectMapper.convertValue(yaml, JsonNode.class);
-    tools.jackson.databind.node.ObjectNode schemaNode = new JsonSchemaGenerator().createSchema();
-    Schema schema = schemaRegistry.getSchema(schemaNode);
+public static void validate(Map<?, ?> yaml) {
+	JsonNode json = objectMapper.convertValue(yaml, JsonNode.class);
+	tools.jackson.databind.node.ObjectNode schemaNode = new JsonSchemaGenerator().createSchema();
+	Schema schema = schemaRegistry.getSchema(schemaNode);
 
-    log.debug("yaml configuration converted to json for validate {}", json);
+	log.debug("yaml configuration converted to json for validate {}", json);
 
-    List<?> validationMessages = schema.validate(json);
+	List<?> validationMessages = schema.validate(json);
 
-    if (!validationMessages.isEmpty()) {
-      String errorMsg =
-          validationMessages.stream().map(Object::toString).collect(Collectors.joining("\n"));
-      throw new IllegalArgumentException("Config file invalid: " + errorMsg);
-    }
-  }
+	if (!validationMessages.isEmpty()) {
+	String errorMsg =
+		validationMessages.stream().map(Object::toString).collect(Collectors.joining("\n"));
+	throw new IllegalArgumentException("Config file invalid: " + errorMsg);
+	}
+}
 }

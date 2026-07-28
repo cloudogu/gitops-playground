@@ -15,27 +15,27 @@ import tools.jackson.databind.node.ObjectNode;
 @Singleton
 public class JsonSchemaGenerator {
 
-  public ObjectNode createSchema() {
-    SchemaGeneratorConfigBuilder configBuilder =
-        new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
-            // Make the schema strict: Only allow our fields, warn when additional fields are passed
-            .with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT)
-            // Exception to the above: For Maps allow additional fields.
-            // We use this to allow inline helm values without having to validate them
-            .with(Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES)
-            // All fields can be set to null to use the default
-            .with(Option.NULLABLE_FIELDS_BY_DEFAULT)
-            .with(new JacksonSchemaModule(/* no options for now */ ));
+public ObjectNode createSchema() {
+	SchemaGeneratorConfigBuilder configBuilder =
+		new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+			// Make the schema strict: Only allow our fields, warn when additional fields are passed
+			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT)
+			// Exception to the above: For Maps allow additional fields.
+			// We use this to allow inline helm values without having to validate them
+			.with(Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES)
+			// All fields can be set to null to use the default
+			.with(Option.NULLABLE_FIELDS_BY_DEFAULT)
+			.with(new JacksonSchemaModule(/* no options for now */ ));
 
-    // Apply the rule to include only fields with @JsonProperty annotation (or here,
-    // @JsonPropertyDescription)
-    configBuilder
-        .forFields()
-        .withIgnoreCheck(
-            (FieldScope field) -> field.getAnnotation(JsonPropertyDescription.class) == null);
+	// Apply the rule to include only fields with @JsonProperty annotation (or here,
+	// @JsonPropertyDescription)
+	configBuilder
+		.forFields()
+		.withIgnoreCheck(
+			(FieldScope field) -> field.getAnnotation(JsonPropertyDescription.class) == null);
 
-    SchemaGenerator generator = new SchemaGenerator(configBuilder.build());
+	SchemaGenerator generator = new SchemaGenerator(configBuilder.build());
 
-    return generator.generateSchema(Config.class);
-  }
+	return generator.generateSchema(Config.class);
+}
 }

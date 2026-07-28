@@ -12,73 +12,73 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Deployer {
 
-  private final Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider;
-  @Getter private final HelmStrategy helmStrategy;
+private final Provider<ArgoCdApplicationStrategy> argoCdStrategyProvider;
+@Getter private final HelmStrategy helmStrategy;
 
-  public void deployFeature(
-      String repoURL,
-      String repoName,
-      String chartOrPath,
-      String version,
-      String namespace,
-      String releaseName,
-      Path helmValuesPath,
-      DeploymentStrategy.RepoType repoType,
-      boolean bootstrapWithHelm,
-      DeploymentContext context,
-      RepositoryWorkspace repositoryWorkspace) {
+public void deployFeature(
+	String repoURL,
+	String repoName,
+	String chartOrPath,
+	String version,
+	String namespace,
+	String releaseName,
+	Path helmValuesPath,
+	DeploymentStrategy.RepoType repoType,
+	boolean bootstrapWithHelm,
+	DeploymentContext context,
+	RepositoryWorkspace repositoryWorkspace) {
 
-    if (bootstrapWithHelm) {
-      helmStrategy.deployFeature(
-          repoURL,
-          repoName,
-          chartOrPath,
-          version,
-          namespace,
-          releaseName,
-          helmValuesPath,
-          repoType,
-          context,
-          repositoryWorkspace);
-    }
+	if (bootstrapWithHelm) {
+	helmStrategy.deployFeature(
+		repoURL,
+		repoName,
+		chartOrPath,
+		version,
+		namespace,
+		releaseName,
+		helmValuesPath,
+		repoType,
+		context,
+		repositoryWorkspace);
+	}
 
-    argoCdStrategyProvider
-        .get()
-        .deployFeature(
-            repoURL,
-            repoName,
-            chartOrPath,
-            version,
-            namespace,
-            releaseName,
-            helmValuesPath,
-            repoType,
-            context,
-            repositoryWorkspace);
-  }
+	argoCdStrategyProvider
+		.get()
+		.deployFeature(
+			repoURL,
+			repoName,
+			chartOrPath,
+			version,
+			namespace,
+			releaseName,
+			helmValuesPath,
+			repoType,
+			context,
+			repositoryWorkspace);
+}
 
-  public void deployFeature(
-      String repoURL,
-      String repoName,
-      String chartOrPath,
-      String version,
-      String namespace,
-      String releaseName,
-      Path helmValuesPath,
-      DeploymentStrategy.RepoType repoType,
-      DeploymentContext context,
-      RepositoryWorkspace repositoryWorkspace) {
-    deployFeature(
-        repoURL,
-        repoName,
-        chartOrPath,
-        version,
-        namespace,
-        releaseName,
-        helmValuesPath,
-        repoType,
-        false,
-        context,
-        repositoryWorkspace);
-  }
+public void deployFeature(
+	String repoURL,
+	String repoName,
+	String chartOrPath,
+	String version,
+	String namespace,
+	String releaseName,
+	Path helmValuesPath,
+	DeploymentStrategy.RepoType repoType,
+	DeploymentContext context,
+	RepositoryWorkspace repositoryWorkspace) {
+	deployFeature(
+		repoURL,
+		repoName,
+		chartOrPath,
+		version,
+		namespace,
+		releaseName,
+		helmValuesPath,
+		repoType,
+		false,
+		context,
+		repositoryWorkspace);
+}
 }

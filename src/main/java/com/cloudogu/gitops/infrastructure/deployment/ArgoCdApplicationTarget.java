@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ArgoCdApplicationTarget {
 
-  private final String applicationName;
-  private final String namespace;
-  private final String project;
-  private final boolean createDestinationNamespace;
+private final String applicationName;
+private final String namespace;
+private final String project;
+private final boolean createDestinationNamespace;
 }

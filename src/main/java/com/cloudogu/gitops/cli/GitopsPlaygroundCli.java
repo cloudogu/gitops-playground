@@ -46,311 +46,311 @@ import picocli.CommandLine;
 @Slf4j
 public class GitopsPlaygroundCli {
 
-  private static final String STDOUT_APPENDER_NAME = "STDOUT";
-  // Not exploitable: only ever matched against the trusted, developer-controlled pattern string
-  // from logback.xml, never against user input.
-  private static final Pattern THREAD_PATTERN_TOKEN =
-      Pattern.compile(" \\S*%thread\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
-  private static final Pattern LOGGER_PATTERN_TOKEN =
-      Pattern.compile(" \\S*%logger\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
+private static final String STDOUT_APPENDER_NAME = "STDOUT";
+// Not exploitable: only ever matched against the trusted, developer-controlled pattern string
+// from logback.xml, never against user input.
+private static final Pattern THREAD_PATTERN_TOKEN =
+	Pattern.compile(" \\S*%thread\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
+private static final Pattern LOGGER_PATTERN_TOKEN =
+	Pattern.compile(" \\S*%logger\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
 
-  private final K8sClient k8sClient;
-  private final ApplicationConfigurator applicationConfigurator;
+private final K8sClient k8sClient;
+private final ApplicationConfigurator applicationConfigurator;
 
-  public GitopsPlaygroundCli() {
-    this(new K8sClient(), new ApplicationConfigurator());
-  }
+public GitopsPlaygroundCli() {
+	this(new K8sClient(), new ApplicationConfigurator());
+}
 
-  public ReturnCode run(String[] args) {
-    setLogging(args);
+public ReturnCode run(String[] args) {
+	setLogging(args);
 
-    log.debug("Reading initial CLI params");
-    Config cliParams = new Config();
-    new CommandLine(cliParams).parseArgs(args);
+	log.debug("Reading initial CLI params");
+	Config cliParams = new Config();
+	new CommandLine(cliParams).parseArgs(args);
 
-    if (cliParams.getApplication().getUsageHelpRequested()) {
-      new CommandLine(cliParams).execute(args);
-      return ReturnCode.SUCCESS;
-    }
+	if (cliParams.getApplication().getUsageHelpRequested()) {
+	new CommandLine(cliParams).execute(args);
+	return ReturnCode.SUCCESS;
+	}
 
-    String version = createVersionOutput();
-    if (cliParams.getApplication().getVersionInfoRequested()) {
-      System.out.println(version);
-      return ReturnCode.SUCCESS;
-    }
+	String version = createVersionOutput();
+	if (cliParams.getApplication().getVersionInfoRequested()) {
+	System.out.println(version);
+	return ReturnCode.SUCCESS;
+	}
 
-    ApplicationContext context = createApplicationContext();
-    Application app = context.getBean(Application.class);
+	ApplicationContext context = createApplicationContext();
+	Application app = context.getBean(Application.class);
 
-    Config config = readConfigs(args);
-    runHook(app, "preConfigInit", AbstractTool::preConfigInit, config);
+	Config config = readConfigs(args);
+	runHook(app, "preConfigInit", AbstractTool::preConfigInit, config);
 
-    if (config.getApplication().getOutputConfigFile()) {
-      System.out.println(config.toYaml(false));
-      return ReturnCode.SUCCESS;
-    }
+	if (config.getApplication().getOutputConfigFile()) {
+	System.out.println(config.toYaml(false));
+	return ReturnCode.SUCCESS;
+	}
 
-    config = applicationConfigurator.initConfig(config);
-    log.debug("Actual config: {}", config.toYaml(true));
-    runHook(app, "postConfigInit", AbstractTool::postConfigInit, config);
+	config = applicationConfigurator.initConfig(config);
+	log.debug("Actual config: {}", config.toYaml(true));
+	runHook(app, "postConfigInit", AbstractTool::postConfigInit, config);
 
-    context.close();
-    context = createApplicationContext();
-    register(config, context);
+	context.close();
+	context = createApplicationContext();
+	register(config, context);
 
-    if (config.getApplication().getDestroy()) {
-      log.info(version);
-      if (!confirm(
-          "Destroying gitops playground in kubernetes cluster '"
-              + k8sClient.getCurrentContext()
-              + "'.",
-          config)) {
-        return ReturnCode.NOT_CONFIRMED;
-      }
+	if (config.getApplication().getDestroy()) {
+	log.info(version);
+	if (!confirm(
+		"Destroying gitops playground in kubernetes cluster '"
+			+ k8sClient.getCurrentContext()
+			+ "'.",
+		config)) {
+		return ReturnCode.NOT_CONFIRMED;
+	}
 
-      Destroyer destroyer = context.getBean(Destroyer.class);
-      destroyer.destroy();
-    } else {
-      log.info(version);
-      if (!confirm(
-          "Applying gitops playground to kubernetes cluster '"
-              + k8sClient.getCurrentContext()
-              + "'.",
-          config)) {
-        return ReturnCode.NOT_CONFIRMED;
-      }
-      app = context.getBean(Application.class);
-      app.start();
+	Destroyer destroyer = context.getBean(Destroyer.class);
+	destroyer.destroy();
+	} else {
+	log.info(version);
+	if (!confirm(
+		"Applying gitops playground to kubernetes cluster '"
+			+ k8sClient.getCurrentContext()
+			+ "'.",
+		config)) {
+		return ReturnCode.NOT_CONFIRMED;
+	}
+	app = context.getBean(Application.class);
+	app.start();
 
-      printWelcomeScreen(config.getApplication().getPassword());
-    }
+	printWelcomeScreen(config.getApplication().getPassword());
+	}
 
-    return ReturnCode.SUCCESS;
-  }
+	return ReturnCode.SUCCESS;
+}
 
-  protected String createVersionOutput() {
-    String versionName = Version.NAME.replace("\\n", "\n");
+protected String createVersionOutput() {
+	String versionName = Version.NAME.replace("\\n", "\n");
 
-    if (versionName.trim().startsWith("(")) {
-      versionName = versionName.trim().replace("(", "").replace(")", "");
-    }
-    return APP_NAME + " " + versionName;
-  }
+	if (versionName.trim().startsWith("(")) {
+	versionName = versionName.trim().replace("(", "").replace(")", "");
+	}
+	return APP_NAME + " " + versionName;
+}
 
-  protected void register(Config config, ApplicationContext context) {
-    context.registerSingleton(config);
-  }
+protected void register(Config config, ApplicationContext context) {
+	context.registerSingleton(config);
+}
 
-  private static boolean confirm(String message, Config config) {
-    log.debug(
-        "Calling confirm for message: {} | yes = {} | System.in class: {}",
-        message,
-        config.getApplication().getYes(),
-        System.in.getClass().getName());
-    if (config.getApplication().getYes()) {
-      return true;
-    }
+private static boolean confirm(String message, Config config) {
+	log.debug(
+		"Calling confirm for message: {} | yes = {} | System.in class: {}",
+		message,
+		config.getApplication().getYes(),
+		System.in.getClass().getName());
+	if (config.getApplication().getYes()) {
+	return true;
+	}
 
-    log.info("\n{}\nContinue? y/n [n]", message);
+	log.info("\n{}\nContinue? y/n [n]", message);
 
-    try {
-      BufferedReader reader =
-          new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-      String input = reader.readLine();
-      return "y".equals(input);
-    } catch (IOException e) {
-      throw new UncheckedIOException("Failed to read user input", e);
-    }
-  }
+	try {
+	BufferedReader reader =
+		new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+	String input = reader.readLine();
+	return "y".equals(input);
+	} catch (IOException e) {
+	throw new UncheckedIOException("Failed to read user input", e);
+	}
+}
 
-  protected ApplicationContext createApplicationContext() {
-    return ApplicationContext.run();
-  }
+protected ApplicationContext createApplicationContext() {
+	return ApplicationContext.run();
+}
 
-  private void setLogging(String[] args) {
-    List<String> argList = Arrays.asList(args);
-    if (argList.contains("--trace") || argList.contains("-x")) {
-      log.info("Setting loglevel to trace");
-      setGitopsLogLevel(Level.TRACE);
-      System.setProperty("picocli.trace", "DEBUG");
-    } else if (argList.contains("--debug") || argList.contains("-d")) {
-      System.setProperty("picocli.trace", "INFO");
-      setGitopsLogLevel(Level.DEBUG);
-      log.info("Setting loglevel to debug");
-    } else {
-      setSimpleLogPattern();
-    }
-  }
+private void setLogging(String[] args) {
+	List<String> argList = Arrays.asList(args);
+	if (argList.contains("--trace") || argList.contains("-x")) {
+	log.info("Setting loglevel to trace");
+	setGitopsLogLevel(Level.TRACE);
+	System.setProperty("picocli.trace", "DEBUG");
+	} else if (argList.contains("--debug") || argList.contains("-d")) {
+	System.setProperty("picocli.trace", "INFO");
+	setGitopsLogLevel(Level.DEBUG);
+	log.info("Setting loglevel to debug");
+	} else {
+	setSimpleLogPattern();
+	}
+}
 
-  private static void setGitopsLogLevel(Level level) {
-    ((Logger) LoggerFactory.getLogger("com.cloudogu.gitops")).setLevel(level);
-  }
+private static void setGitopsLogLevel(Level level) {
+	((Logger) LoggerFactory.getLogger("com.cloudogu.gitops")).setLevel(level);
+}
 
-  public void setSimpleLogPattern() {
-    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    Appender<ILoggingEvent> stdoutAppender =
-        rootLogger(loggerContext).getAppender(STDOUT_APPENDER_NAME);
-    if (!(stdoutAppender instanceof ConsoleAppender)) {
-      return;
-    }
-    Encoder<ILoggingEvent> encoderObj = ((ConsoleAppender) stdoutAppender).getEncoder();
-    if (!(encoderObj instanceof PatternLayoutEncoder)) {
-      return;
-    }
+public void setSimpleLogPattern() {
+	LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+	Appender<ILoggingEvent> stdoutAppender =
+		rootLogger(loggerContext).getAppender(STDOUT_APPENDER_NAME);
+	if (!(stdoutAppender instanceof ConsoleAppender)) {
+	return;
+	}
+	Encoder<ILoggingEvent> encoderObj = ((ConsoleAppender) stdoutAppender).getEncoder();
+	if (!(encoderObj instanceof PatternLayoutEncoder)) {
+	return;
+	}
 
-    String defaultPattern = ((PatternLayoutEncoder) encoderObj).getPattern();
+	String defaultPattern = ((PatternLayoutEncoder) encoderObj).getPattern();
 
-    rootLogger(loggerContext).detachAppender(STDOUT_APPENDER_NAME);
-    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-    encoder.setPattern(
-        LOGGER_PATTERN_TOKEN
-            .matcher(THREAD_PATTERN_TOKEN.matcher(defaultPattern).replaceAll(" "))
-            .replaceAll(" "));
-    encoder.setContext(loggerContext);
-    encoder.start();
-    ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
-    appender.setName(STDOUT_APPENDER_NAME);
-    appender.setContext(loggerContext);
-    appender.setEncoder(encoder);
-    appender.start();
-    rootLogger(loggerContext).addAppender(appender);
-  }
+	rootLogger(loggerContext).detachAppender(STDOUT_APPENDER_NAME);
+	PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+	encoder.setPattern(
+		LOGGER_PATTERN_TOKEN
+			.matcher(THREAD_PATTERN_TOKEN.matcher(defaultPattern).replaceAll(" "))
+			.replaceAll(" "));
+	encoder.setContext(loggerContext);
+	encoder.start();
+	ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+	appender.setName(STDOUT_APPENDER_NAME);
+	appender.setContext(loggerContext);
+	appender.setEncoder(encoder);
+	appender.start();
+	rootLogger(loggerContext).addAppender(appender);
+}
 
-  private static Logger rootLogger(LoggerContext loggerContext) {
-    return loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-  }
+private static Logger rootLogger(LoggerContext loggerContext) {
+	return loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+}
 
-  private Config readConfigs(String[] args) {
-    Config cliParams = new Config();
-    new CommandLine(cliParams).parseArgs(args);
+private Config readConfigs(String[] args) {
+	Config cliParams = new Config();
+	new CommandLine(cliParams).parseArgs(args);
 
-    List<Map<String, Object>> configFile = new ArrayList<>();
+	List<Map<String, Object>> configFile = new ArrayList<>();
 
-    if (cliParams.getApplication().getConfigFiles() != null) {
-      for (String configFileItem : cliParams.getApplication().getConfigFiles()) {
-        log.debug("Reading config file {}", configFileItem);
-        try {
-          configFile.add(validateConfig(Files.readString(Path.of(configFileItem))));
-        } catch (IOException e) {
-          throw new UncheckedIOException("Failed to read config file: " + configFileItem, e);
-        }
-      }
-    }
+	if (cliParams.getApplication().getConfigFiles() != null) {
+	for (String configFileItem : cliParams.getApplication().getConfigFiles()) {
+		log.debug("Reading config file {}", configFileItem);
+		try {
+		configFile.add(validateConfig(Files.readString(Path.of(configFileItem))));
+		} catch (IOException e) {
+		throw new UncheckedIOException("Failed to read config file: " + configFileItem, e);
+		}
+	}
+	}
 
-    List<Map<String, Object>> configMap = new ArrayList<>();
-    if (cliParams.getApplication().getConfigMaps() != null) {
-      for (String configMapItem : cliParams.getApplication().getConfigMaps()) {
-        log.debug("Reading config map {}", configMapItem);
-        String configValues = k8sClient.getConfigMap(configMapItem, "config.yaml");
-        configMap.add(validateConfig(configValues));
-      }
-    }
+	List<Map<String, Object>> configMap = new ArrayList<>();
+	if (cliParams.getApplication().getConfigMaps() != null) {
+	for (String configMapItem : cliParams.getApplication().getConfigMaps()) {
+		log.debug("Reading config map {}", configMapItem);
+		String configValues = k8sClient.getConfigMap(configMapItem, "config.yaml");
+		configMap.add(validateConfig(configValues));
+	}
+	}
 
-    Config profileConfig = extractProfile(cliParams);
-    Map<String, Object> mergedConfigs = new HashMap<>();
-    deepMerge(profileConfig.toMap(), mergedConfigs);
-    for (Map<String, Object> map : configMap) {
-      deepMerge(map, mergedConfigs);
-    }
-    for (Map<String, Object> map : configFile) {
-      deepMerge(map, mergedConfigs);
-    }
+	Config profileConfig = extractProfile(cliParams);
+	Map<String, Object> mergedConfigs = new HashMap<>();
+	deepMerge(profileConfig.toMap(), mergedConfigs);
+	for (Map<String, Object> map : configMap) {
+	deepMerge(map, mergedConfigs);
+	}
+	for (Map<String, Object> map : configFile) {
+	deepMerge(map, mergedConfigs);
+	}
 
-    mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap());
+	mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap());
 
-    log.debug("Writing CLI params into config");
-    log.debug(
-        "mergedConfigs keys: {} | application map: {}",
-        mergedConfigs.keySet(),
-        mergedConfigs.get("application"));
-    Config mergedConfig = Config.fromMap(mergedConfigs);
-    log.debug(
-        "mergedConfig yes before parseArgs: {}",
-        mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
-    new CommandLine(mergedConfig).parseArgs(args);
-    log.debug(
-        "mergedConfig yes after parseArgs: {}",
-        mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
+	log.debug("Writing CLI params into config");
+	log.debug(
+		"mergedConfigs keys: {} | application map: {}",
+		mergedConfigs.keySet(),
+		mergedConfigs.get("application"));
+	Config mergedConfig = Config.fromMap(mergedConfigs);
+	log.debug(
+		"mergedConfig yes before parseArgs: {}",
+		mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
+	new CommandLine(mergedConfig).parseArgs(args);
+	log.debug(
+		"mergedConfig yes after parseArgs: {}",
+		mergedConfig.getApplication() != null ? mergedConfig.getApplication().getYes() : "null");
 
-    return mergedConfig;
-  }
+	return mergedConfig;
+}
 
-  public static Map<String, Object> validateConfig(String configValues) {
-    Object map = new YamlSlurper().parseText(configValues);
-    if (!(map instanceof Map)) {
-      throw new IllegalArgumentException("Could not parse YAML as map: " + map);
-    }
-    JsonSchemaValidator.validate((Map<?, ?>) map);
-    return MapUtils.asStringObjectMap(map);
-  }
+public static Map<String, Object> validateConfig(String configValues) {
+	Object map = new YamlSlurper().parseText(configValues);
+	if (!(map instanceof Map)) {
+	throw new IllegalArgumentException("Could not parse YAML as map: " + map);
+	}
+	JsonSchemaValidator.validate((Map<?, ?>) map);
+	return MapUtils.asStringObjectMap(map);
+}
 
-  public void printWelcomeScreen(String password) {
-    log.info(
-        """
+public void printWelcomeScreen(String password) {
+	log.info(
+		"""
 
-                  |----------------------------------------------------------------------------------------------|
-                  |                       Welcome to the GitOps playground by Cloudogu!
-                  |----------------------------------------------------------------------------------------------|
-                  |
-                  | Please find the URLs of the individual applications in our README:
-                  | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
-                  |
-                  | A good starting point might also be the services or ingresses inside your cluster: \s
-                  | kubectl get svc -A
-                  | Or (depending on your config)
-                  | kubectl get ing -A
-                  |
-                  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
-                  |\s
-                  | Your initial password for all apps (if not set manually): %s
-                  |\s
-                  |----------------------------------------------------------------------------------------------|
-                """
-            .formatted(password));
-  }
+				|----------------------------------------------------------------------------------------------|
+				|                       Welcome to the GitOps playground by Cloudogu!
+				|----------------------------------------------------------------------------------------------|
+				|
+				| Please find the URLs of the individual applications in our README:
+				| https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
+				|
+				| A good starting point might also be the services or ingresses inside your cluster: \s
+				| kubectl get svc -A
+				| Or (depending on your config)
+				| kubectl get ing -A
+				|
+				| Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+				|\s
+				| Your initial password for all apps (if not set manually): %s
+				|\s
+				|----------------------------------------------------------------------------------------------|
+				"""
+			.formatted(password));
+}
 
-  public static void runHook(
-      Application app, String hookName, BiConsumer<AbstractTool, Config> hook, Config config) {
-    List<AbstractTool> allFeatures = new ArrayList<>();
-    allFeatures.add(new CommonToolConfig());
-    allFeatures.addAll(app.getTools());
+public static void runHook(
+	Application app, String hookName, BiConsumer<AbstractTool, Config> hook, Config config) {
+	List<AbstractTool> allFeatures = new ArrayList<>();
+	allFeatures.add(new CommonToolConfig());
+	allFeatures.addAll(app.getTools());
 
-    for (AbstractTool feature : allFeatures) {
-      try {
-        log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
-        hook.accept(feature, config);
-      } catch (Exception e) {
-        throw new RuntimeException(
-            "Failed to execute hook " + hookName + " on " + feature.getClass().getName(), e);
-      }
-    }
-  }
+	for (AbstractTool feature : allFeatures) {
+	try {
+		log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
+		hook.accept(feature, config);
+	} catch (Exception e) {
+		throw new RuntimeException(
+			"Failed to execute hook " + hookName + " on " + feature.getClass().getName(), e);
+	}
+	}
+}
 
-  private static Config extractProfile(Config newConfig) {
-    String profile = newConfig.getApplication().getProfile();
+private static Config extractProfile(Config newConfig) {
+	String profile = newConfig.getApplication().getProfile();
 
-    Config profileConfig = new Config();
-    if (profile != null && !profile.isEmpty()) {
-      String resourceName = "application-" + profile + ".yaml";
-      log.debug("Loading profile '{}' from classpath", resourceName);
+	Config profileConfig = new Config();
+	if (profile != null && !profile.isEmpty()) {
+	String resourceName = "application-" + profile + ".yaml";
+	log.debug("Loading profile '{}' from classpath", resourceName);
 
-      try (InputStream inputStream =
-          GitopsPlaygroundCli.class.getResourceAsStream("/" + resourceName)) {
-        if (inputStream == null) {
-          throw new IllegalArgumentException(
-              "Profile '"
-                  + profile
-                  + "' does not exist (resource '"
-                  + resourceName
-                  + "' not found).");
-        }
-        String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        Map<String, Object> profileFile = validateConfig(content);
-        profileConfig = Config.fromMap(profileFile);
-      } catch (IOException e) {
-        throw new UncheckedIOException("Failed to read profile " + profile, e);
-      }
-    }
-    return profileConfig;
-  }
+	try (InputStream inputStream =
+		GitopsPlaygroundCli.class.getResourceAsStream("/" + resourceName)) {
+		if (inputStream == null) {
+		throw new IllegalArgumentException(
+			"Profile '"
+				+ profile
+				+ "' does not exist (resource '"
+				+ resourceName
+				+ "' not found).");
+		}
+		String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+		Map<String, Object> profileFile = validateConfig(content);
+		profileConfig = Config.fromMap(profileFile);
+	} catch (IOException e) {
+		throw new UncheckedIOException("Failed to read profile " + profile, e);
+	}
+	}
+	return profileConfig;
+}
 }

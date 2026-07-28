@@ -23,49 +23,49 @@ import org.eclipse.jgit.transport.URIish;
  *     https://archive.eclipse.org/jgit/site/4.10.0.201712302008-r/apidocs/org/eclipse/jgit/transport/CredentialsProvider.html
  */
 public class InsecureCredentialProvider extends CredentialsProvider {
-  private static final Pattern INSECURE_CONNECTION_PATTERN =
-      Pattern.compile("^A secure connection to .* could not be established");
-  private static final Pattern SKIP_SSL_PATTERN =
-      Pattern.compile("^Skip SSL verification for git operations for repository");
+private static final Pattern INSECURE_CONNECTION_PATTERN =
+	Pattern.compile("^A secure connection to .* could not be established");
+private static final Pattern SKIP_SSL_PATTERN =
+	Pattern.compile("^Skip SSL verification for git operations for repository");
 
-  @Override
-  public boolean isInteractive() {
-    return false;
-  }
+@Override
+public boolean isInteractive() {
+	return false;
+}
 
-  @Override
-  public boolean supports(CredentialItem... items) {
-    if (items == null) {
-      return false;
-    }
-    return Arrays.stream(items)
-        .filter(it -> it instanceof CredentialItem.InformationalMessage)
-        .map(it -> (CredentialItem.InformationalMessage) it)
-        .anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
-  }
+@Override
+public boolean supports(CredentialItem... items) {
+	if (items == null) {
+	return false;
+	}
+	return Arrays.stream(items)
+		.filter(it -> it instanceof CredentialItem.InformationalMessage)
+		.map(it -> (CredentialItem.InformationalMessage) it)
+		.anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
+}
 
-  // JGit's CredentialsProvider contract: true means "these items were handled", regardless of
-  // which prompt was matched, so both return paths are intentionally the same value.
-  @Override
-  @SuppressWarnings("java:S3516")
-  public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
-    if (items == null) {
-      return true;
-    }
-    for (CredentialItem item : items) {
-      if (item instanceof CredentialItem.YesNoType yesNo) {
-        String prompt = yesNo.getPromptText();
-        if ("Skip SSL verification for this single git operation".equals(prompt)
-            || SKIP_SSL_PATTERN.matcher(prompt).find()) {
-          yesNo.setValue(true);
-        } else if ("Always skip SSL verification for this server from now on".equals(prompt)) {
-          // otherwise we would persistently overwrite our $HOME/.gitconfig
-          yesNo.setValue(false);
-        } else {
-          // unrecognized prompt; leave the default value untouched
-        }
-      }
-    }
-    return true;
-  }
+// JGit's CredentialsProvider contract: true means "these items were handled", regardless of
+// which prompt was matched, so both return paths are intentionally the same value.
+@Override
+@SuppressWarnings("java:S3516")
+public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
+	if (items == null) {
+	return true;
+	}
+	for (CredentialItem item : items) {
+	if (item instanceof CredentialItem.YesNoType yesNo) {
+		String prompt = yesNo.getPromptText();
+		if ("Skip SSL verification for this single git operation".equals(prompt)
+			|| SKIP_SSL_PATTERN.matcher(prompt).find()) {
+		yesNo.setValue(true);
+		} else if ("Always skip SSL verification for this server from now on".equals(prompt)) {
+		// otherwise we would persistently overwrite our $HOME/.gitconfig
+		yesNo.setValue(false);
+		} else {
+		// unrecognized prompt; leave the default value untouched
+		}
+	}
+	}
+	return true;
+}
 }

@@ -15,76 +15,76 @@ import lombok.ToString;
 @NoArgsConstructor
 public class Credentials {
 
-  private static final String DEFAULT_USERNAME_KEY = "username";
-  private static final String DEFAULT_PASSWORD_KEY = "password";
+private static final String DEFAULT_USERNAME_KEY = "username";
+private static final String DEFAULT_PASSWORD_KEY = "password";
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String username;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+private String username;
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  @JsonIgnore
-  private String password;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+@JsonIgnore
+private String password;
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String secretNamespace;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+private String secretNamespace;
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String secretName;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+private String secretName;
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String usernameKey = DEFAULT_USERNAME_KEY;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+private String usernameKey = DEFAULT_USERNAME_KEY;
 
-  @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-  private String passwordKey = DEFAULT_PASSWORD_KEY;
+@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+private String passwordKey = DEFAULT_PASSWORD_KEY;
 
-  public Credentials(String username, String password) {
-    this(username, password, "", "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
-  }
+public Credentials(String username, String password) {
+	this(username, password, "", "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
+}
 
-  public Credentials(String username, String password, String secretName) {
-    this(username, password, secretName, "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
-  }
+public Credentials(String username, String password, String secretName) {
+	this(username, password, secretName, "", DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
+}
 
-  public Credentials(String username, String password, String secretName, String secretNamespace) {
-    this(
-        username,
-        password,
-        secretName,
-        secretNamespace,
-        DEFAULT_USERNAME_KEY,
-        DEFAULT_PASSWORD_KEY);
-  }
+public Credentials(String username, String password, String secretName, String secretNamespace) {
+	this(
+		username,
+		password,
+		secretName,
+		secretNamespace,
+		DEFAULT_USERNAME_KEY,
+		DEFAULT_PASSWORD_KEY);
+}
 
-  public Credentials(
-      String username,
-      String password,
-      String secretName,
-      String secretNamespace,
-      String usernameKey) {
-    this(username, password, secretName, secretNamespace, usernameKey, DEFAULT_PASSWORD_KEY);
-  }
+public Credentials(
+	String username,
+	String password,
+	String secretName,
+	String secretNamespace,
+	String usernameKey) {
+	this(username, password, secretName, secretNamespace, usernameKey, DEFAULT_PASSWORD_KEY);
+}
 
-  public Credentials(
-      String username,
-      String password,
-      String secretName,
-      String secretNamespace,
-      String usernameKey,
-      String passwordKey) {
-    this.username = username;
-    this.password = password;
-    this.secretNamespace = secretNamespace;
-    this.secretName = secretName;
-    this.usernameKey = usernameKey;
-    this.passwordKey = passwordKey;
-  }
+public Credentials(
+	String username,
+	String password,
+	String secretName,
+	String secretNamespace,
+	String usernameKey,
+	String passwordKey) {
+	this.username = username;
+	this.password = password;
+	this.secretNamespace = secretNamespace;
+	this.secretName = secretName;
+	this.usernameKey = usernameKey;
+	this.passwordKey = passwordKey;
+}
 
-  public Credentials(Credentials unsafeCredentials) {
-    if (unsafeCredentials != null) {
-      this.secretNamespace = unsafeCredentials.secretNamespace;
-      this.secretName = unsafeCredentials.secretName;
-      this.usernameKey = unsafeCredentials.usernameKey;
-      this.passwordKey = unsafeCredentials.passwordKey;
-    }
-  }
+public Credentials(Credentials unsafeCredentials) {
+	if (unsafeCredentials != null) {
+	this.secretNamespace = unsafeCredentials.secretNamespace;
+	this.secretName = unsafeCredentials.secretName;
+	this.usernameKey = unsafeCredentials.usernameKey;
+	this.passwordKey = unsafeCredentials.passwordKey;
+	}
+}
 }

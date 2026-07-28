@@ -25,47 +25,47 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DeploymentOrchestrator {
 
-  @Getter private final List<AbstractTool> tools;
+@Getter private final List<AbstractTool> tools;
 
-  @Inject
-  public DeploymentOrchestrator(
-      ScmManager scmManager,
-      Jenkins jenkins,
-      Registry registry,
-      ArgoCD argoCD,
-      Ingress ingress,
-      CertManager certManager,
-      Monitoring monitoring,
-      ExternalSecretsOperator externalSecretsOperator,
-      Vault vault,
-      ContentLoader contentLoader) {
-    this(
-        List.of(
-            scmManager,
-            argoCD,
-            jenkins,
-            registry,
-            ingress,
-            certManager,
-            monitoring,
-            externalSecretsOperator,
-            vault,
-            contentLoader));
-  }
+@Inject
+public DeploymentOrchestrator(
+	ScmManager scmManager,
+	Jenkins jenkins,
+	Registry registry,
+	ArgoCD argoCD,
+	Ingress ingress,
+	CertManager certManager,
+	Monitoring monitoring,
+	ExternalSecretsOperator externalSecretsOperator,
+	Vault vault,
+	ContentLoader contentLoader) {
+	this(
+		List.of(
+			scmManager,
+			argoCD,
+			jenkins,
+			registry,
+			ingress,
+			certManager,
+			monitoring,
+			externalSecretsOperator,
+			vault,
+			contentLoader));
+}
 
-  public void deployTools(DeploymentContext context, RepositoryWorkspace workspace) {
-    log.debug("Starting tool orchestration.");
+public void deployTools(DeploymentContext context, RepositoryWorkspace workspace) {
+	log.debug("Starting tool orchestration.");
 
-    for (AbstractTool tool : tools) {
-      if (!tool.isEnabled(context)) {
-        log.debug("Skipping disabled tool {}", tool.getClass().getSimpleName());
-        continue;
-      }
+	for (AbstractTool tool : tools) {
+	if (!tool.isEnabled(context)) {
+		log.debug("Skipping disabled tool {}", tool.getClass().getSimpleName());
+		continue;
+	}
 
-      log.debug("Deploying tool {}", tool.getClass().getSimpleName());
-      tool.execute(context, workspace);
-    }
+	log.debug("Deploying tool {}", tool.getClass().getSimpleName());
+	tool.execute(context, workspace);
+	}
 
-    log.debug("Tool orchestration finished.");
-  }
+	log.debug("Tool orchestration finished.");
+}
 }

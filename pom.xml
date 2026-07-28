@@ -440,7 +440,10 @@
 
                 <configuration>
                     <java>
-                        <googleJavaFormat />
+                        <indent>
+                            <tabs>true</tabs>
+                            <spacesPerTab>4</spacesPerTab>
+                        </indent>
                     </java>
                 </configuration>
             </plugin>
