@@ -69,7 +69,12 @@ public class ContentLoader extends AbstractTool {
 	private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>();
 	protected File mergedReposFolder;
 
-	public ContentLoader(K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils, Deployer deployer) {
+	public ContentLoader(K8sClient k8sClient,
+	                     GitRepoFactory repoProvider,
+	                     Jenkins jenkins,
+	                     GitHandler gitHandler,
+	                     FileSystemUtils fileSystemUtils,
+	                     Deployer deployer) {
 		this.k8sClient = k8sClient;
 		this.repoProvider = repoProvider;
 		this.jenkins = jenkins;
@@ -277,7 +282,9 @@ public class ContentLoader extends AbstractTool {
 		return templatingEngine;
 	}
 
-	private void createRepoCoordinates(ContentRepositorySchema repoConfig, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) throws Exception {
+	private void createRepoCoordinates(ContentRepositorySchema repoConfig,
+	                                   File mergedReposFolder,
+	                                   List<RepoCoordinate> repoCoordinates) throws Exception {
 		File repoTmpDir;
 		try {
 			repoTmpDir = Files.createTempDirectory("gitops-playground-content-repo-").toFile();
@@ -331,7 +338,11 @@ public class ContentLoader extends AbstractTool {
 		log.debug("Finished cloning content repos. repoCoordinates={}", repoCoordinates);
 	}
 
-	private static void createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig, File contentRepoDir, File mergedRepoFolder, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig,
+	                                                     File contentRepoDir,
+	                                                     File mergedRepoFolder,
+	                                                     File repoTmpDir,
+	                                                     List<RepoCoordinate> repoCoordinates) {
 		String namespace = repoConfig.getTarget().split("/")[0];
 		String repoName = repoConfig.getTarget().split("/")[1];
 
@@ -340,7 +351,11 @@ public class ContentLoader extends AbstractTool {
 		addRepoCoordinates(repoCoordinates, repoCoordinate);
 	}
 
-	private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedRepoFolder, List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig,
+	                                                            File repoTmpDir,
+	                                                            File contentRepoDir,
+	                                                            File mergedRepoFolder,
+	                                                            List<RepoCoordinate> repoCoordinates) {
 		boolean refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.getRef());
 		for (File contentRepoNamespaceDir : findRepoDirectories(contentRepoDir)) {
 			for (File contentRepoFolder : findRepoDirectories(contentRepoNamespaceDir)) {
@@ -353,7 +368,9 @@ public class ContentLoader extends AbstractTool {
 		}
 	}
 
-	private static void createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig,
+	                                                      File repoTmpDir,
+	                                                      List<RepoCoordinate> repoCoordinates) {
 		String namespace = repoConfig.getTarget().split("/")[0];
 		String repoName = repoConfig.getTarget().split("/")[1];
 		RepoCoordinate repoCoordinate = new RepoCoordinate();
@@ -365,7 +382,11 @@ public class ContentLoader extends AbstractTool {
 		addRepoCoordinates(repoCoordinates, repoCoordinate);
 	}
 
-	private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder, ContentRepositorySchema repoConfig) {
+	private static RepoCoordinate mergeRepoDirs(File src,
+	                                            String namespace,
+	                                            String repoName,
+	                                            File mergedRepoFolder,
+	                                            ContentRepositorySchema repoConfig) {
 		File target = new File(new File(mergedRepoFolder, namespace), repoName);
 		log.debug("Merging content repo, namespace {}, repoName {} from {} to {}", namespace, repoName, src, target);
 		try {
@@ -409,7 +430,9 @@ public class ContentLoader extends AbstractTool {
 		}
 	}
 
-	private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir, UsernamePasswordCredentialsProvider credentialsProvider) {
+	private void cloneToLocalFolder(ContentRepositorySchema repoConfig,
+	                                File repoTmpDir,
+	                                UsernamePasswordCredentialsProvider credentialsProvider) {
 		CloneCommand cloneCommand = gitClone().setURI(repoConfig.getUrl())
 		                                      .setDirectory(repoTmpDir)
 		                                      .setNoCheckout(false);
@@ -516,7 +539,9 @@ public class ContentLoader extends AbstractTool {
 		}
 	}
 
-	private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, GitRepo targetRepo, boolean isNewRepo) throws Exception {
+	private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate,
+	                                                   GitRepo targetRepo,
+	                                                   boolean isNewRepo) throws Exception {
 		log.trace("Copying ContentLoader content into repo '{}'. isNewRepo='{}', overwriteMode='{}', source='{}', target='{}'", repoCoordinate.getFullRepoName(), isNewRepo, repoCoordinate.repoConfig.getOverwriteMode(), repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null, targetRepo.getAbsoluteLocalRepoTmpDir());
 
 		if (!isNewRepo) {

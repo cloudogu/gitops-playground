@@ -20,114 +20,116 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GitHandler {
 
-@Getter private final K8sClient k8sClient;
-@Getter private final NetworkingUtils networkingUtils;
+	@Getter
+	private final K8sClient k8sClient;
 
-@Getter @Setter private GitProvider tenant;
+	@Getter
+	private final NetworkingUtils networkingUtils;
 
-@Getter @Setter private GitProvider central;
+	@Getter
+	@Setter
+	private GitProvider tenant;
 
-public void validate(DeploymentContext context) {
-	Config config = context.getConfig();
+	@Getter
+	@Setter
+	private GitProvider central;
 
-	boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
-	boolean gitlabUrlConfigured =
-		config.getScm().getGitlab() != null
-			&& !StringUtils.isEmpty(config.getScm().getGitlab().getUrl());
-	if (gitlabRequested || gitlabUrlConfigured) {
-	config.getScm().setScmProviderType(ScmProviderType.GITLAB);
-	config.getScm().setScmManager(null);
+	public void validate(DeploymentContext context) {
+		Config config = context.getConfig();
 
-	if (config.getScm().getGitlab() == null
-		|| StringUtils.isEmpty(config.getScm().getGitlab().getUrl())
-		|| StringUtils.isEmpty(config.getScm().getGitlab().getPassword())
-		|| StringUtils.isEmpty(config.getScm().getGitlab().getParentGroupId())) {
-		throw new IllegalArgumentException(
-			"GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
-	}
-	return;
-	}
+		boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
+		boolean gitlabUrlConfigured = config.getScm().getGitlab() != null && !StringUtils.isEmpty(config.getScm()
+		                                                                                                .getGitlab()
+		                                                                                                .getUrl());
+		if (gitlabRequested || gitlabUrlConfigured) {
+			config.getScm().setScmProviderType(ScmProviderType.GITLAB);
+			config.getScm().setScmManager(null);
 
-	config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
-	if (config.getScm().getScmManager() != null) {
-	String prefix = config.getApplication().getNamePrefix();
-	if (prefix == null) {
-		prefix = "";
-	}
-	config.getScm().getScmManager().setGitOpsUsername(prefix + "gitops");
-	}
-}
-
-public void prepareProviders(DeploymentContext context) {
-	this.tenant = createTenantScmProvider(context);
-
-	if (context.isMultiTenant()) {
-	this.central = createCentralScmProvider(context);
-	}
-}
-
-public GitProvider getResourcesScm() {
-	if (central != null) {
-	return central;
-	}
-
-	if (tenant != null) {
-	return tenant;
-	}
-
-	throw new IllegalStateException("No SCM provider found.");
-}
-
-private GitProvider createTenantScmProvider(DeploymentContext context) {
-	Config config = context.getConfig();
-
-	return switch (config.getScm().getScmProviderType()) {
-	case GITLAB -> new GitlabProvider(context, config.getScm().getGitlab());
-	case SCM_MANAGER -> {
-		String prefix = config.getApplication().getNamePrefix();
-		if (prefix == null) {
-		prefix = "";
+			if (config.getScm().getGitlab() == null || StringUtils.isEmpty(config.getScm()
+			                                                                     .getGitlab()
+			                                                                     .getUrl()) || StringUtils.isEmpty(config.getScm()
+			                                                                                                             .getGitlab()
+			                                                                                                             .getPassword()) || StringUtils.isEmpty(config.getScm()
+			                                                                                                                                                          .getGitlab()
+			                                                                                                                                                          .getParentGroupId())) {
+				throw new IllegalArgumentException("GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
+			}
+			return;
 		}
-		yield new ScmManagerProvider(
-			context, config.getScm().getScmManager(), k8sClient, networkingUtils, prefix);
-	}
-	default ->
-		throw new IllegalArgumentException(
-			"Unsupported SCM provider found in TenantSCM: "
-				+ config.getScm().getScmProviderType());
-	};
-}
 
-private GitProvider createCentralScmProvider(DeploymentContext context) {
-	Config config = context.getConfig();
-
-	return switch (config.getMultiTenant().getScmProviderType()) {
-	case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
-	case SCM_MANAGER ->
-		new ScmManagerProvider(
-			context,
-			config.getMultiTenant().getScmManager(),
-			k8sClient,
-			networkingUtils,
-			centralScmManagerServicePrefix(config));
-	default ->
-		throw new IllegalArgumentException(
-			"Unsupported SCM-Central provider: " + config.getMultiTenant().getScmProviderType());
-	};
-}
-
-private static String centralScmManagerServicePrefix(Config config) {
-	String namespace = config.getMultiTenant().getScmManager().getNamespace();
-	if (namespace == null) {
-	namespace = "";
-	}
-	namespace = namespace.strip();
-	String baseNamespace = "scm-manager";
-
-	if (namespace.equals(baseNamespace) || !namespace.endsWith(baseNamespace)) {
-	return "";
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		if (config.getScm().getScmManager() != null) {
+			String prefix = config.getApplication().getNamePrefix();
+			if (prefix == null) {
+				prefix = "";
+			}
+			config.getScm().getScmManager().setGitOpsUsername(prefix + "gitops");
+		}
 	}
 
-	return namespace.substring(0, namespace.length() - baseNamespace.length());
-}
+	public void prepareProviders(DeploymentContext context) {
+		this.tenant = createTenantScmProvider(context);
+
+		if (context.isMultiTenant()) {
+			this.central = createCentralScmProvider(context);
+		}
+	}
+
+	public GitProvider getResourcesScm() {
+		if (central != null) {
+			return central;
+		}
+
+		if (tenant != null) {
+			return tenant;
+		}
+
+		throw new IllegalStateException("No SCM provider found.");
+	}
+
+	private GitProvider createTenantScmProvider(DeploymentContext context) {
+		Config config = context.getConfig();
+
+		return switch (config.getScm().getScmProviderType()) {
+			case GITLAB -> new GitlabProvider(context, config.getScm().getGitlab());
+			case SCM_MANAGER -> {
+				String prefix = config.getApplication().getNamePrefix();
+				if (prefix == null) {
+					prefix = "";
+				}
+				yield new ScmManagerProvider(context, config.getScm()
+				                                            .getScmManager(), k8sClient, networkingUtils, prefix);
+			}
+			default ->
+					throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm()
+					                                                                                           .getScmProviderType());
+		};
+	}
+
+	private GitProvider createCentralScmProvider(DeploymentContext context) {
+		Config config = context.getConfig();
+
+		return switch (config.getMultiTenant().getScmProviderType()) {
+			case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
+			case SCM_MANAGER -> new ScmManagerProvider(context, config.getMultiTenant()
+			                                                          .getScmManager(), k8sClient, networkingUtils, centralScmManagerServicePrefix(config));
+			default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant()
+			                                                                                           .getScmProviderType());
+		};
+	}
+
+	private static String centralScmManagerServicePrefix(Config config) {
+		String namespace = config.getMultiTenant().getScmManager().getNamespace();
+		if (namespace == null) {
+			namespace = "";
+		}
+		namespace = namespace.strip();
+		String baseNamespace = "scm-manager";
+
+		if (namespace.equals(baseNamespace) || !namespace.endsWith(baseNamespace)) {
+			return "";
+		}
+
+		return namespace.substring(0, namespace.length() - baseNamespace.length());
+	}
 }

@@ -8,48 +8,48 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DeploymentContext {
 
-private final Config config;
-private final TenantMode tenantMode;
-private final ScmManagerDeploymentMode scmManagerDeploymentMode;
-private final boolean airgapped;
-private final ClusterDistribution clusterDistribution;
+	private final Config config;
+	private final TenantMode tenantMode;
+	private final ScmManagerDeploymentMode scmManagerDeploymentMode;
+	private final boolean airgapped;
+	private final ClusterDistribution clusterDistribution;
 
-public boolean isMultiTenant() {
-	return tenantMode == TenantMode.MULTI_TENANT;
-}
+	public boolean isMultiTenant() {
+		return tenantMode == TenantMode.MULTI_TENANT;
+	}
 
-public boolean isSingleTenant() {
-	return tenantMode == TenantMode.SINGLE_TENANT;
-}
+	public boolean isSingleTenant() {
+		return tenantMode == TenantMode.SINGLE_TENANT;
+	}
 
-public boolean isInternalScmManager() {
-	return scmManagerDeploymentMode == ScmManagerDeploymentMode.INTERNAL;
-}
+	public boolean isInternalScmManager() {
+		return scmManagerDeploymentMode == ScmManagerDeploymentMode.INTERNAL;
+	}
 
-public boolean isExternalScmManager() {
-	return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
-}
+	public boolean isExternalScmManager() {
+		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
+	}
 
-public boolean isAirgapped() {
-	return airgapped;
-}
+	public boolean isAirgapped() {
+		return airgapped;
+	}
 
-public boolean isOpenshift() {
-	return clusterDistribution == ClusterDistribution.OPENSHIFT;
-}
+	public boolean isOpenshift() {
+		return clusterDistribution == ClusterDistribution.OPENSHIFT;
+	}
 
-public enum TenantMode {
-	SINGLE_TENANT,
-	MULTI_TENANT
-}
+	public enum TenantMode {
+		SINGLE_TENANT,
+		MULTI_TENANT
+	}
 
-public enum ScmManagerDeploymentMode {
-	INTERNAL,
-	EXTERNAL
-}
+	public enum ScmManagerDeploymentMode {
+		INTERNAL,
+		EXTERNAL
+	}
 
-public enum ClusterDistribution {
-	KUBERNETES,
-	OPENSHIFT
-}
+	public enum ClusterDistribution {
+		KUBERNETES,
+		OPENSHIFT
+	}
 }

@@ -9,10 +9,10 @@ import lombok.RequiredArgsConstructor;
 @Singleton
 @RequiredArgsConstructor
 public class GitRepoFactory {
-protected final Config config;
-protected final FileSystemUtils fileSystemUtils;
+	protected final Config config;
+	protected final FileSystemUtils fileSystemUtils;
 
-public GitRepo create(String repoTarget, GitProvider gitProvider) {
-	return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils);
-}
+	public GitRepo create(String repoTarget, GitProvider gitProvider) {
+		return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils);
+	}
 }

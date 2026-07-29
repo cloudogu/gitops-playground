@@ -2,11 +2,12 @@ package com.cloudogu.gitops.application.repository;
 
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
-import java.io.IOException;
-import java.nio.file.Path;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Represents the prepared local GitOps repository workspace used during a GOP deployment.
@@ -28,199 +29,190 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 @Slf4j
 public class RepositoryWorkspace implements AutoCloseable {
 
-@Getter private final GitRepo clusterResourcesRepository;
-@Getter private final GitRepo tenantBootstrapRepository;
+	@Getter
+	private final GitRepo clusterResourcesRepository;
 
-private boolean remoteRepositoriesEnsured;
+	@Getter
+	private final GitRepo tenantBootstrapRepository;
 
-public RepositoryWorkspace(GitRepo clusterResourcesRepository) {
-	this(clusterResourcesRepository, null);
-}
+	private boolean remoteRepositoriesEnsured;
 
-public RepositoryWorkspace(
-	GitRepo clusterResourcesRepository, GitRepo tenantBootstrapRepository) {
-	this.clusterResourcesRepository = clusterResourcesRepository;
-	this.tenantBootstrapRepository = tenantBootstrapRepository;
-}
-
-public boolean hasTenantBootstrapRepository() {
-	return tenantBootstrapRepository != null;
-}
-
-/**
-* Returns the tenant bootstrap repository or fails if this workspace was created for a
-* single-instance setup.
-*/
-public GitRepo tenantBootstrapRepositoryOrFail() {
-	if (tenantBootstrapRepository == null) {
-	throw new IllegalStateException(
-		"Tenant bootstrap repository is not available in single-instance mode.");
+	public RepositoryWorkspace(GitRepo clusterResourcesRepository) {
+		this(clusterResourcesRepository, null);
 	}
 
-	return tenantBootstrapRepository;
-}
-
-/**
-* Ensures that all remote repositories represented by this workspace exist.
-*
-* <p>The decision which repositories are part of this workspace still belongs to {@link
-* RepositoryProvisioning}. This method only ensures the already prepared repository handles.
-*/
-public void ensureRemoteRepositoriesExist() {
-	if (remoteRepositoriesEnsured) {
-	log.debug("Remote repositories already ensured. Skipping.");
-	return;
+	public RepositoryWorkspace(GitRepo clusterResourcesRepository, GitRepo tenantBootstrapRepository) {
+		this.clusterResourcesRepository = clusterResourcesRepository;
+		this.tenantBootstrapRepository = tenantBootstrapRepository;
 	}
 
-	log.debug(
-		"Ensuring cluster resources repository. repoTarget='{}'",
-		clusterResourcesRepository.getRepoTarget());
-
-	ensureRepositoryExists(
-		clusterResourcesRepository.getGitProvider(),
-		clusterResourcesRepository.getRepoTarget(),
-		"GitOps repo for basic cluster-resources");
-
-	if (hasTenantBootstrapRepository()) {
-	log.debug(
-		"Ensuring tenant bootstrap repository. repoTarget='{}'",
-		tenantBootstrapRepositoryOrFail().getRepoTarget());
-
-	ensureRepositoryExists(
-		tenantBootstrapRepositoryOrFail().getGitProvider(),
-		tenantBootstrapRepositoryOrFail().getRepoTarget(),
-		"GitOps repo for tenant bootstrap resources");
+	public boolean hasTenantBootstrapRepository() {
+		return tenantBootstrapRepository != null;
 	}
 
-	remoteRepositoriesEnsured = true;
-}
+	/**
+	 * Returns the tenant bootstrap repository or fails if this workspace was created for a
+	 * single-instance setup.
+	 */
+	public GitRepo tenantBootstrapRepositoryOrFail() {
+		if (tenantBootstrapRepository == null) {
+			throw new IllegalStateException("Tenant bootstrap repository is not available in single-instance mode.");
+		}
 
-public void createLocalDirectories() {
-	Path.of(clusterResourcesRootDir()).toFile().mkdirs();
-	Path.of(clusterResourcesAppsDir()).toFile().mkdirs();
-	Path.of(clusterResourcesArgoCdDir()).toFile().mkdirs();
-	Path.of(clusterResourcesApplicationsDir()).toFile().mkdirs();
-	Path.of(clusterResourcesProjectsDir()).toFile().mkdirs();
-
-	if (hasTenantBootstrapRepository()) {
-	Path.of(tenantBootstrapRootDir()).toFile().mkdirs();
-	Path.of(tenantBootstrapAppsDir()).toFile().mkdirs();
-	Path.of(tenantBootstrapArgoCdDir()).toFile().mkdirs();
-	Path.of(tenantBootstrapApplicationsDir()).toFile().mkdirs();
-	Path.of(tenantBootstrapProjectsDir()).toFile().mkdirs();
+		return tenantBootstrapRepository;
 	}
-}
 
-public void cloneRepositories() throws GitAPIException {
-	clusterResourcesRepository.cloneRepo();
+	/**
+	 * Ensures that all remote repositories represented by this workspace exist.
+	 *
+	 * <p>The decision which repositories are part of this workspace still belongs to {@link
+	 * RepositoryProvisioning}. This method only ensures the already prepared repository handles.
+	 */
+	public void ensureRemoteRepositoriesExist() {
+		if (remoteRepositoriesEnsured) {
+			log.debug("Remote repositories already ensured. Skipping.");
+			return;
+		}
 
-	if (hasTenantBootstrapRepository()) {
-	tenantBootstrapRepositoryOrFail().cloneRepo();
+		log.debug("Ensuring cluster resources repository. repoTarget='{}'", clusterResourcesRepository.getRepoTarget());
+
+		ensureRepositoryExists(clusterResourcesRepository.getGitProvider(), clusterResourcesRepository.getRepoTarget(), "GitOps repo for basic cluster-resources");
+
+		if (hasTenantBootstrapRepository()) {
+			log.debug("Ensuring tenant bootstrap repository. repoTarget='{}'", tenantBootstrapRepositoryOrFail().getRepoTarget());
+
+			ensureRepositoryExists(tenantBootstrapRepositoryOrFail().getGitProvider(), tenantBootstrapRepositoryOrFail().getRepoTarget(), "GitOps repo for tenant bootstrap resources");
+		}
+
+		remoteRepositoriesEnsured = true;
 	}
-}
 
-/**
-* Initializes local repositories when they cannot be cloned yet.
-*
-* <p>This is needed when GOP deploys an internal SCM-Manager first. In that case, the remote
-* repositories are not available at the beginning of the deployment, but tools still need local
-* directories to write their generated resources.
-*/
-public void initLocalRepositoriesIfNeeded() throws GitAPIException {
-	clusterResourcesRepository.initLocalRepoIfNeeded();
+	public void createLocalDirectories() {
+		Path.of(clusterResourcesRootDir()).toFile().mkdirs();
+		Path.of(clusterResourcesAppsDir()).toFile().mkdirs();
+		Path.of(clusterResourcesArgoCdDir()).toFile().mkdirs();
+		Path.of(clusterResourcesApplicationsDir()).toFile().mkdirs();
+		Path.of(clusterResourcesProjectsDir()).toFile().mkdirs();
 
-	if (hasTenantBootstrapRepository()) {
-	tenantBootstrapRepositoryOrFail().initLocalRepoIfNeeded();
+		if (hasTenantBootstrapRepository()) {
+			Path.of(tenantBootstrapRootDir()).toFile().mkdirs();
+			Path.of(tenantBootstrapAppsDir()).toFile().mkdirs();
+			Path.of(tenantBootstrapArgoCdDir()).toFile().mkdirs();
+			Path.of(tenantBootstrapApplicationsDir()).toFile().mkdirs();
+			Path.of(tenantBootstrapProjectsDir()).toFile().mkdirs();
+		}
 	}
-}
 
-public String clusterResourcesRootDir() {
-	return clusterResourcesRepository.getAbsoluteLocalRepoTmpDir();
-}
+	public void cloneRepositories() throws GitAPIException {
+		clusterResourcesRepository.cloneRepo();
 
-public String clusterResourcesAppsDir() {
-	return Path.of(clusterResourcesRootDir(), "apps").toString();
-}
-
-public String clusterResourcesArgoCdDir() {
-	return Path.of(clusterResourcesAppsDir(), "argocd").toString();
-}
-
-public String clusterResourcesApplicationsDir() {
-	return Path.of(clusterResourcesArgoCdDir(), "applications").toString();
-}
-
-public String clusterResourcesProjectsDir() {
-	return Path.of(clusterResourcesArgoCdDir(), "projects").toString();
-}
-
-public String tenantBootstrapRootDir() {
-	return tenantBootstrapRepositoryOrFail().getAbsoluteLocalRepoTmpDir();
-}
-
-public String tenantBootstrapAppsDir() {
-	return Path.of(tenantBootstrapRootDir(), "apps").toString();
-}
-
-public String tenantBootstrapArgoCdDir() {
-	return Path.of(tenantBootstrapAppsDir(), "argocd").toString();
-}
-
-public String tenantBootstrapApplicationsDir() {
-	return Path.of(tenantBootstrapArgoCdDir(), "applications").toString();
-}
-
-public String tenantBootstrapProjectsDir() {
-	return Path.of(tenantBootstrapArgoCdDir(), "projects").toString();
-}
-
-public void commitAndPushClusterResourcesAndTenantBootstrapChanges(String message)
-	throws GitAPIException {
-	commitAndPushClusterResourcesChanges(message);
-
-	if (hasTenantBootstrapRepository()) {
-	commitAndPushTenantBootstrapChanges(message);
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().cloneRepo();
+		}
 	}
-}
 
-public void commitAndPushTenantBootstrapChanges(String message) throws GitAPIException {
-	tenantBootstrapRepositoryOrFail().commitAndPush(message);
-}
+	/**
+	 * Initializes local repositories when they cannot be cloned yet.
+	 *
+	 * <p>This is needed when GOP deploys an internal SCM-Manager first. In that case, the remote
+	 * repositories are not available at the beginning of the deployment, but tools still need local
+	 * directories to write their generated resources.
+	 */
+	public void initLocalRepositoriesIfNeeded() throws GitAPIException {
+		clusterResourcesRepository.initLocalRepoIfNeeded();
 
-public void commitAndPushClusterResourcesChanges(String message) throws GitAPIException {
-	log.debug(message);
-	clusterResourcesRepository.commitAndPush(message);
-}
-
-/** Aligns locally initialized repositories with the remote main branch if it already exists. */
-public void alignWithRemoteMainIfPresent() throws GitAPIException, IOException {
-	clusterResourcesRepository.checkoutRemoteMainIfLocalMainMissing();
-
-	if (hasTenantBootstrapRepository()) {
-	tenantBootstrapRepositoryOrFail().checkoutRemoteMainIfLocalMainMissing();
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().initLocalRepoIfNeeded();
+		}
 	}
-}
 
-private static void ensureRepositoryExists(
-	GitProvider gitProvider, String repoTarget, String description) {
-	gitProvider.createRepository(repoTarget, description, true);
-}
+	public String clusterResourcesRootDir() {
+		return clusterResourcesRepository.getAbsoluteLocalRepoTmpDir();
+	}
 
-@Override
-public void close() {
-	try {
-	if (clusterResourcesRepository != null) {
-		clusterResourcesRepository.close();
+	public String clusterResourcesAppsDir() {
+		return Path.of(clusterResourcesRootDir(), "apps").toString();
 	}
-	} catch (Exception e) {
-	log.warn("Error closing cluster resources repository", e);
+
+	public String clusterResourcesArgoCdDir() {
+		return Path.of(clusterResourcesAppsDir(), "argocd").toString();
 	}
-	try {
-	if (tenantBootstrapRepository != null) {
-		tenantBootstrapRepository.close();
+
+	public String clusterResourcesApplicationsDir() {
+		return Path.of(clusterResourcesArgoCdDir(), "applications").toString();
 	}
-	} catch (Exception e) {
-	log.warn("Error closing tenant bootstrap repository", e);
+
+	public String clusterResourcesProjectsDir() {
+		return Path.of(clusterResourcesArgoCdDir(), "projects").toString();
 	}
-}
+
+	public String tenantBootstrapRootDir() {
+		return tenantBootstrapRepositoryOrFail().getAbsoluteLocalRepoTmpDir();
+	}
+
+	public String tenantBootstrapAppsDir() {
+		return Path.of(tenantBootstrapRootDir(), "apps").toString();
+	}
+
+	public String tenantBootstrapArgoCdDir() {
+		return Path.of(tenantBootstrapAppsDir(), "argocd").toString();
+	}
+
+	public String tenantBootstrapApplicationsDir() {
+		return Path.of(tenantBootstrapArgoCdDir(), "applications").toString();
+	}
+
+	public String tenantBootstrapProjectsDir() {
+		return Path.of(tenantBootstrapArgoCdDir(), "projects").toString();
+	}
+
+	public void commitAndPushClusterResourcesAndTenantBootstrapChanges(String message) throws GitAPIException {
+		commitAndPushClusterResourcesChanges(message);
+
+		if (hasTenantBootstrapRepository()) {
+			commitAndPushTenantBootstrapChanges(message);
+		}
+	}
+
+	public void commitAndPushTenantBootstrapChanges(String message) throws GitAPIException {
+		tenantBootstrapRepositoryOrFail().commitAndPush(message);
+	}
+
+	public void commitAndPushClusterResourcesChanges(String message) throws GitAPIException {
+		log.debug(message);
+		clusterResourcesRepository.commitAndPush(message);
+	}
+
+	/**
+	 * Aligns locally initialized repositories with the remote main branch if it already exists.
+	 */
+	public void alignWithRemoteMainIfPresent() throws GitAPIException, IOException {
+		clusterResourcesRepository.checkoutRemoteMainIfLocalMainMissing();
+
+		if (hasTenantBootstrapRepository()) {
+			tenantBootstrapRepositoryOrFail().checkoutRemoteMainIfLocalMainMissing();
+		}
+	}
+
+	private static void ensureRepositoryExists(GitProvider gitProvider, String repoTarget, String description) {
+		gitProvider.createRepository(repoTarget, description, true);
+	}
+
+	@Override
+	public void close() {
+		try {
+			if (clusterResourcesRepository != null) {
+				clusterResourcesRepository.close();
+			}
+		} catch (Exception e) {
+			log.warn("Error closing cluster resources repository", e);
+		}
+		try {
+			if (tenantBootstrapRepository != null) {
+				tenantBootstrapRepository.close();
+			}
+		} catch (Exception e) {
+			log.warn("Error closing tenant bootstrap repository", e);
+		}
+	}
 }

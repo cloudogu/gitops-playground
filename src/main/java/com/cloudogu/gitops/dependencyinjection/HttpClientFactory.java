@@ -7,103 +7,94 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.Authoriza
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
-import java.net.CookieManager;
-import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import lombok.Value;
 import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.net.CookieManager;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
 @Factory
 public class HttpClientFactory {
 
-public static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
-	OkHttpClient.Builder builder =
-		new OkHttpClient.Builder()
-			.addInterceptor(
-				new AuthorizationInterceptor(credentials.getUsername(), credentials.getPassword()))
-			.addInterceptor(createLoggingInterceptor())
-			.addInterceptor(new RetryInterceptor());
+	public static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
+		OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(new AuthorizationInterceptor(credentials.getUsername(), credentials.getPassword()))
+		                                                         .addInterceptor(createLoggingInterceptor())
+		                                                         .addInterceptor(new RetryInterceptor());
 
-	if (Boolean.TRUE.equals(isInsecure)) {
-	InsecureSslContext context = insecureSslContext();
-	builder.sslSocketFactory(context.getSocketFactory(), context.getTrustManager());
-	builder.hostnameVerifier((hostname, session) -> true);
+		if (Boolean.TRUE.equals(isInsecure)) {
+			InsecureSslContext context = insecureSslContext();
+			builder.sslSocketFactory(context.getSocketFactory(), context.getTrustManager());
+			builder.hostnameVerifier((hostname, session) -> true);
+		}
+
+		return builder.build();
 	}
 
-	return builder.build();
-}
+	@Singleton
+	@Named("jenkins")
+	public OkHttpClient okHttpClientJenkins(Config config) {
+		OkHttpClient.Builder builder = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(new CookieManager()))
+		                                                         .addInterceptor(createLoggingInterceptor())
+		                                                         .addInterceptor(new RetryInterceptor());
 
-@Singleton
-@Named("jenkins")
-public OkHttpClient okHttpClientJenkins(Config config) {
-	OkHttpClient.Builder builder =
-		new OkHttpClient.Builder()
-			.cookieJar(new JavaNetCookieJar(new CookieManager()))
-			.addInterceptor(createLoggingInterceptor())
-			.addInterceptor(new RetryInterceptor());
+		if (config.getApplication().getInsecure()) {
+			InsecureSslContext sslContext = insecureSslContext();
+			builder.sslSocketFactory(sslContext.getSocketFactory(), sslContext.getTrustManager());
+			builder.hostnameVerifier((hostname, session) -> true);
+		}
 
-	if (config.getApplication().getInsecure()) {
-	InsecureSslContext sslContext = insecureSslContext();
-	builder.sslSocketFactory(sslContext.getSocketFactory(), sslContext.getTrustManager());
-	builder.hostnameVerifier((hostname, session) -> true);
+		return builder.build();
 	}
 
-	return builder.build();
-}
+	public static HttpLoggingInterceptor createLoggingInterceptor() {
+		HttpLoggingInterceptor ret = new HttpLoggingInterceptor(LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")::trace);
 
-public static HttpLoggingInterceptor createLoggingInterceptor() {
-	HttpLoggingInterceptor ret =
-		new HttpLoggingInterceptor(
-			LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")::trace);
+		ret.setLevel(HttpLoggingInterceptor.Level.HEADERS);
+		ret.redactHeader("Authorization");
 
-	ret.setLevel(HttpLoggingInterceptor.Level.HEADERS);
-	ret.redactHeader("Authorization");
-
-	return ret;
-}
-
-public static InsecureSslContext insecureSslContext() {
-	try {
-	X509TrustManager noCheckTrustManager =
-		new X509TrustManager() {
-			@Override
-			public void checkClientTrusted(X509Certificate[] chain, String authType)
-				throws CertificateException {
-			// Intentionally empty: this trust manager accepts all client certificates
-			}
-
-			@Override
-			public void checkServerTrusted(X509Certificate[] chain, String authType)
-				throws CertificateException {
-			// Intentionally empty: this trust manager accepts all server certificates
-			}
-
-			@Override
-			public X509Certificate[] getAcceptedIssuers() {
-			return new X509Certificate[0];
-			}
-		};
-	SSLContext sslCtxt = SSLContext.getInstance("TLS");
-	sslCtxt.init(null, new TrustManager[] {noCheckTrustManager}, new SecureRandom());
-
-	return new InsecureSslContext(sslCtxt.getSocketFactory(), noCheckTrustManager);
-	} catch (GeneralSecurityException e) {
-	throw new IllegalStateException("Failed to construct insecure SSL context", e);
+		return ret;
 	}
-}
 
-@Value
-public static class InsecureSslContext {
-	SSLSocketFactory socketFactory;
-	X509TrustManager trustManager;
-}
+	public static InsecureSslContext insecureSslContext() {
+		try {
+			X509TrustManager noCheckTrustManager = new X509TrustManager() {
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+					// Intentionally empty: this trust manager accepts all client certificates
+				}
+
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+					// Intentionally empty: this trust manager accepts all server certificates
+				}
+
+				@Override
+				public X509Certificate[] getAcceptedIssuers() {
+					return new X509Certificate[0];
+				}
+			};
+			SSLContext sslCtxt = SSLContext.getInstance("TLS");
+			sslCtxt.init(null, new TrustManager[] {noCheckTrustManager}, new SecureRandom());
+
+			return new InsecureSslContext(sslCtxt.getSocketFactory(), noCheckTrustManager);
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException("Failed to construct insecure SSL context", e);
+		}
+	}
+
+	@Value
+	public static class InsecureSslContext {
+		SSLSocketFactory socketFactory;
+		X509TrustManager trustManager;
+	}
 }

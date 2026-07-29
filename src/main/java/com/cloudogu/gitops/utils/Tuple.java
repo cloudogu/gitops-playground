@@ -1,20 +1,24 @@
 package com.cloudogu.gitops.utils;
 
-public record Tuple<F, S>(F first, S second) {
+public record Tuple<F, S>(
+		F first,
 
-public F getFirst() {
-	return first;
-}
+		S second
+) {
 
-public S getSecond() {
-	return second;
-}
+	public F getFirst() {
+		return first;
+	}
 
-public F getV1() {
-	return first;
-}
+	public S getSecond() {
+		return second;
+	}
 
-public S getV2() {
-	return second;
-}
+	public F getV1() {
+		return first;
+	}
+
+	public S getV2() {
+		return second;
+	}
 }

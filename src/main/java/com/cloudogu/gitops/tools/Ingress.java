@@ -21,71 +21,71 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Ingress extends AbstractTool {
 
-public static final String HELM_VALUES_PATH =
-	"argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml";
+	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml";
 
-private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
-private static final String TOOL_NAME = "traefik";
-private static final String RELEASE_NAME = "traefik";
-private static final String INGRESS_APP_PATH = "apps/traefik";
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
+	private static final String TOOL_NAME = "traefik";
+	private static final String RELEASE_NAME = "traefik";
+	private static final String INGRESS_APP_PATH = "apps/traefik";
 
-private final ImagePullSecretCreator imagePullSecretCreator;
-@Getter @Setter private String namespace;
+	private final ImagePullSecretCreator imagePullSecretCreator;
 
-public Ingress(
-	FileSystemUtils fileSystemUtils,
-	Deployer deployer,
-	AirGappedUtils airGappedUtils,
-	GitHandler gitHandler,
-	ImagePullSecretCreator imagePullSecretCreator) {
-	this.deployer = deployer;
-	this.fileSystemUtils = fileSystemUtils;
-	this.airGappedUtils = airGappedUtils;
-	this.gitHandler = gitHandler;
-	this.imagePullSecretCreator = imagePullSecretCreator;
-}
+	@Getter
+	@Setter
+	private String namespace;
 
-@Override
-public boolean isEnabled(DeploymentContext context) {
-	return context.getConfig().getFeatures().getIngress().getActive();
-}
+	public Ingress(FileSystemUtils fileSystemUtils,
+	               Deployer deployer,
+	               AirGappedUtils airGappedUtils,
+	               GitHandler gitHandler,
+	               ImagePullSecretCreator imagePullSecretCreator) {
+		this.deployer = deployer;
+		this.fileSystemUtils = fileSystemUtils;
+		this.airGappedUtils = airGappedUtils;
+		this.gitHandler = gitHandler;
+		this.imagePullSecretCreator = imagePullSecretCreator;
+	}
 
-@Override
-protected void preDeploy() {
-	this.namespace = activeNamespace(context);
+	@Override
+	public boolean isEnabled(DeploymentContext context) {
+		return context.getConfig().getFeatures().getIngress().getActive();
+	}
 
-	createImagePullSecret();
-	prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
-}
+	@Override
+	protected void preDeploy() {
+		this.namespace = activeNamespace(context);
 
-@Override
-protected void deploy() {
-	Config.IngressSchema.IngressHelmSchema helmConfig =
-		context.getConfig().getFeatures().getIngress().getHelm();
+		createImagePullSecret();
+		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
+	}
 
-	deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context);
-}
+	@Override
+	protected void deploy() {
+		Config.IngressSchema.IngressHelmSchema helmConfig = context.getConfig().getFeatures().getIngress().getHelm();
 
-@Override
-protected void publishChanges() {
-	publishClusterResourcesChanges(TOOL_NAME);
-}
+		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context);
+	}
 
-@Override
-protected String activeNamespace(DeploymentContext context) {
-	return context.getConfig().getApplication().getNamePrefix()
-		+ context.getConfig().getFeatures().getIngress().getIngressNamespace();
-}
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME);
+	}
 
-private void createImagePullSecret() {
-	imagePullSecretCreator.createIfRequired(context.getConfig(), namespace);
-}
+	@Override
+	protected String activeNamespace(DeploymentContext context) {
+		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
+		                                                                     .getFeatures()
+		                                                                     .getIngress()
+		                                                                     .getIngressNamespace();
+	}
 
-private static void prepareIngressApp(GitRepo clusterResourcesRepo) {
-	log.debug("Preparing ingress repository content in {}", clusterResourcesRepo.getRepoTarget());
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(context.getConfig(), namespace);
+	}
 
-	clusterResourcesRepo.copyDirectoryContents(
-		CLUSTER_RESOURCES_SOURCE_DIR,
-		ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH));
-}
+	private static void prepareIngressApp(GitRepo clusterResourcesRepo) {
+		log.debug("Preparing ingress repository content in {}", clusterResourcesRepo.getRepoTarget());
+
+		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH));
+	}
 }

@@ -10,6 +10,6 @@ package com.cloudogu.gitops.infrastructure.git.providers;
  * selected automatically.
  */
 public enum RepoUrlScope {
-IN_CLUSTER,
-CLIENT
+	IN_CLUSTER,
+	CLIENT
 }
