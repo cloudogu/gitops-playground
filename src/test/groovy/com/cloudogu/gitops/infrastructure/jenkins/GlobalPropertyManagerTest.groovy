@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.infrastructure.jenkins
 
+import org.junit.jupiter.api.Test
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.ArgumentMatchers.contains
-import static org.mockito.Mockito.*
-
-import org.junit.jupiter.api.Test
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class GlobalPropertyManagerTest {
 	@Test
@@ -24,11 +26,11 @@ def newEnvVarsNodeProperty
 def envVars
 
 if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
-    newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty()
-    globalNodeProperties.add(newEnvVarsNodeProperty)
-    envVars = newEnvVarsNodeProperty.getEnvVars()
+	newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty()
+	globalNodeProperties.add(newEnvVarsNodeProperty)
+	envVars = newEnvVarsNodeProperty.getEnvVars()
 } else {
-    envVars = envVarsNodePropertyList.get(0).getEnvVars()
+	envVars = envVarsNodePropertyList.get(0).getEnvVars()
 
 }
 
@@ -62,8 +64,8 @@ def globalNodeProperties = instance.getGlobalNodeProperties()
 def envVarsNodePropertyList = globalNodeProperties.getAll(hudson.slaves.EnvironmentVariablesNodeProperty.class)
 
 if (envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0) {
-    print("Nothing to do")
-    return
+	print("Nothing to do")
+	return
 }
 
 envVars = envVarsNodePropertyList.get(0).getEnvVars()

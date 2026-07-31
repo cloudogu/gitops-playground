@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.cli;
 
 import com.cloudogu.gitops.config.Config;
-import com.cloudogu.gitops.utils.FileSystemUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,12 +11,6 @@ import java.net.URL;
 @RequiredArgsConstructor
 @Slf4j
 public class ApplicationConfigurator {
-
-	private final FileSystemUtils fileSystemUtils;
-
-	public ApplicationConfigurator() {
-		this(new FileSystemUtils());
-	}
 
 	private static boolean hasText(String value) {
 		return value != null && !value.isEmpty();
@@ -278,7 +271,7 @@ public class ApplicationConfigurator {
 	private void setResourceInclusionsCluster(Config configToSet) {
 		// Return early if NOT deploying via operator
 		if (!configToSet.getFeatures().getArgocd().getOperator()) {
-			log.debug("ArgoCD operator is not enabled. Skipping features. argocd.resourceInclusionsCluster setup.");
+			log.debug("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.");
 			return;
 		}
 		log.info("Starting setup of features.argocd.resourceInclusionsCluster for ArgoCD Operator");

@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.infrastructure.jenkins
 
+import org.junit.jupiter.api.Test
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.*
-
-import org.junit.jupiter.api.Test
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class UserManagerTest {
 	@Test
@@ -62,7 +64,7 @@ import org.jenkinsci.plugins.matrixauth.AuthorizationType
 
 def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
 permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
-  new HashSet<>()
+new HashSet<>()
 }
 print(permissions[jenkins.metrics.api.Metrics.VIEW].add(new PermissionEntry(AuthorizationType.USER, 'the-\\'user')))
 """)
