@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 

@@ -1,10 +1,5 @@
 package com.cloudogu.gitops.tools.core.argocd
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
-
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -20,13 +15,8 @@ import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
-
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.stream.Collectors
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
-
 import io.fabric8.kubernetes.api.model.NamespaceBuilder
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
@@ -37,6 +27,18 @@ import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.stream.Collectors
+
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.doNothing
+import static org.mockito.Mockito.doReturn
+import static org.mockito.Mockito.spy
+import static org.mockito.Mockito.verify
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDTest {
@@ -56,61 +58,61 @@ class ArgoCDTest {
 	                                             gitEmail            : 'hello@cloudogu.com',
 	                                             namespaces          : [dedicatedNamespaces: ['argocd', 'monitoring', 'traefik', 'secrets'],
 	                                                                    tenantNamespaces   : ['example-apps-staging', 'example-apps-production']]],
-		scm: [scmManager: [internal: true],
-		      gitlab    : [url: '']],
-		multiTenant: [scmManager            : [url: ''],
-		              gitlab                : [url: ''],
-		              useDedicatedInstance  : false,
-		              centralArgocdNamespace: 'argocd'],
-		content: [repos     : [[url          : 'https://github.com/cloudogu/gitops-build-lib',
-		                        target       : '3rd-party-dependencies/gitops-build-lib',
-		                        overwriteMode: 'RESET'],
-		                       [url          : 'https://github.com/cloudogu/ces-build-lib',
-		                        target       : '3rd-party-dependencies/ces-build-lib',
-		                        overwriteMode: 'RESET'],
-		                       [url          : 'https://github.com/cloudogu/spring-boot-helm-chart',
-		                        target       : '3rd-party-dependencies/spring-boot-helm-chart',
-		                        overwriteMode: 'RESET'],
-		                       [url             : 'https://github.com/cloudogu/spring-petclinic',
-		                        target          : 'argocd/petclinic-plain',
-		                        ref             : 'feature/gitops_ready',
-		                        targetRef       : 'main',
-		                        overwriteMode   : 'UPGRADE',
-		                        createJenkinsJob: true],
-		                       [url             : 'https://github.com/cloudogu/spring-petclinic',
-		                        target          : 'argocd/petclinic-helm',
-		                        ref             : 'feature/gitops_ready',
-		                        targetRef       : 'main',
-		                        overwriteMode   : 'UPGRADE',
-		                        createJenkinsJob: true],
-		                       [url          : 'https://github.com/cloudogu/gitops-playground',
-		                        path         : 'example-apps-via-content-loader/',
-		                        ref          : 'main',
-		                        templating   : true,
-		                        type         : 'FOLDER_BASED',
-		                        overwriteMode: 'UPGRADE']],
-		          namespaces: ['example-apps-production',
-		                       'example-apps-staging'],
-		          variables : [petclinic: [baseDomain: 'petclinic.localhost'],
-		                       images   : [kubectl    : 'alpine/kubectl:1.35.0',
-		                                   helm       : 'ghcr.io/cloudogu/helm:4.2.1-1',
-		                                   kubeval    : 'ghcr.io/cloudogu/helm:4.2.1-1',
-		                                   helmKubeval: 'ghcr.io/cloudogu/helm:4.2.1-1',
-		                                   yamllint   : 'cytopia/yamllint:1.25-0.7',
-		                                   petclinic  : 'eclipse-temurin:17-jre-alpine',
-		                                   maven      : '']]],
-		features: [argocd    : [operator                 : false,
-		                        active                   : true,
-		                        configOnly               : true,
-		                        emailFrom                : 'argocd@example.org',
-		                        emailToUser              : 'app-team@example.org',
-		                        emailToAdmin             : 'infra@example.org',
-		                        resourceInclusionsCluster: ''],
-		           monitoring: [active: true,
-		                        helm  : [chart  : 'kube-prometheus-stack',
-		                                 version: '42.0.3']],
-		           ingress   : [active: true],
-		           secrets   : [active: true]])
+			scm: [scmManager: [internal: true],
+			      gitlab    : [url: '']],
+			multiTenant: [scmManager            : [url: ''],
+			              gitlab                : [url: ''],
+			              useDedicatedInstance  : false,
+			              centralArgocdNamespace: 'argocd'],
+			content: [repos     : [[url          : 'https://github.com/cloudogu/gitops-build-lib',
+			                        target       : '3rd-party-dependencies/gitops-build-lib',
+			                        overwriteMode: 'RESET'],
+			                       [url          : 'https://github.com/cloudogu/ces-build-lib',
+			                        target       : '3rd-party-dependencies/ces-build-lib',
+			                        overwriteMode: 'RESET'],
+			                       [url          : 'https://github.com/cloudogu/spring-boot-helm-chart',
+			                        target       : '3rd-party-dependencies/spring-boot-helm-chart',
+			                        overwriteMode: 'RESET'],
+			                       [url             : 'https://github.com/cloudogu/spring-petclinic',
+			                        target          : 'argocd/petclinic-plain',
+			                        ref             : 'feature/gitops_ready',
+			                        targetRef       : 'main',
+			                        overwriteMode   : 'UPGRADE',
+			                        createJenkinsJob: true],
+			                       [url             : 'https://github.com/cloudogu/spring-petclinic',
+			                        target          : 'argocd/petclinic-helm',
+			                        ref             : 'feature/gitops_ready',
+			                        targetRef       : 'main',
+			                        overwriteMode   : 'UPGRADE',
+			                        createJenkinsJob: true],
+			                       [url          : 'https://github.com/cloudogu/gitops-playground',
+			                        path         : 'example-apps-via-content-loader/',
+			                        ref          : 'main',
+			                        templating   : true,
+			                        type         : 'FOLDER_BASED',
+			                        overwriteMode: 'UPGRADE']],
+			          namespaces: ['example-apps-production',
+			                       'example-apps-staging'],
+			          variables : [petclinic: [baseDomain: 'petclinic.localhost'],
+			                       images   : [kubectl    : 'alpine/kubectl:1.35.0',
+			                                   helm       : 'ghcr.io/cloudogu/helm:4.2.1-1',
+			                                   kubeval    : 'ghcr.io/cloudogu/helm:4.2.1-1',
+			                                   helmKubeval: 'ghcr.io/cloudogu/helm:4.2.1-1',
+			                                   yamllint   : 'cytopia/yamllint:1.25-0.7',
+			                                   petclinic  : 'eclipse-temurin:17-jre-alpine',
+			                                   maven      : '']]],
+			features: [argocd    : [operator                 : false,
+			                        active                   : true,
+			                        configOnly               : true,
+			                        emailFrom                : 'argocd@example.org',
+			                        emailToUser              : 'app-team@example.org',
+			                        emailToAdmin             : 'infra@example.org',
+			                        resourceInclusionsCluster: ''],
+			           monitoring: [active: true,
+			                        helm  : [chart  : 'kube-prometheus-stack',
+			                                 version: '42.0.3']],
+			           ingress   : [active: true],
+			           secrets   : [active: true]])
 
 	KubernetesClient client
 	K8sClient k8sClient
@@ -133,9 +135,9 @@ class ArgoCDTest {
 
 		// no need to wait in tests, we stub!
 		doNothing().when(k8sClient).waitForResourcePhase(any(String),
-			any(String),
-			any(String),
-			any(String))
+				any(String),
+				any(String),
+				any(String))
 	}
 
 	@Test
@@ -153,49 +155,49 @@ class ArgoCDTest {
 
 		// check values.yaml
 		List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepoLayout.rootDir()),
-			clusterResourcesRepo.gitProvider.url)
+				clusterResourcesRepo.gitProvider.url)
 		assertThat(filesWithInternalSCMM).isNotEmpty()
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
-			.isEqualTo('ClusterIP')
+				.isEqualTo('ClusterIP')
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
 		assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
 
 		Secret repoCredentialsSecret = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-repo-creds-scm')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-repo-creds-scm')
+				.get()
 
 		assertThat(repoCredentialsSecret).isNotNull()
 		assertThat(repoCredentialsSecret.metadata.labels['argocd.argoproj.io/secret-type']).isEqualTo('repo-creds')
 
 		// Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
 		assertThat(helmCommands.actualCommands[0].trim())
-			.isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
+				.isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
 		assertThat(helmCommands.actualCommands[1].trim())
-			.isEqualTo("helm dependency build ${clusterResourcesRepoLayout.helmDir()}".toString())
+				.isEqualTo("helm dependency build ${clusterResourcesRepoLayout.helmDir()}".toString())
 		assertThat(helmCommands.actualCommands[2].trim())
-			.isEqualTo("helm upgrade -i argocd ${clusterResourcesRepoLayout.helmDir()} --create-namespace --namespace argocd".toString())
+				.isEqualTo("helm upgrade -i argocd ${clusterResourcesRepoLayout.helmDir()} --create-namespace --namespace argocd".toString())
 
 		Secret argocdSecret = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-secret')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-secret')
+				.get()
 
 		assertThat(argocdSecret).isNotNull()
 
 		String patchedPasswordHash = decodedSecretValue(argocdSecret, 'admin.password')
 
 		assertThat(BCrypt.checkpw(config.application.password as String, patchedPasswordHash))
-			.as('Password hash mismatch')
-			.isTrue()
+				.as('Password hash mismatch')
+				.isTrue()
 
 		assertThat(client.secrets()
-			.inNamespace('argocd')
-			.withLabels([owner: 'helm', name: 'argocd'])
-			.list()
-			.items).isEmpty()
+				.inNamespace('argocd')
+				.withLabels([owner: 'helm', name: 'argocd'])
+				.list()
+				.items).isEmpty()
 
 		// Operator disabled -> operator Ordner sollte fehlen
 		assertThat(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toFile()).doesNotExist()
@@ -212,7 +214,7 @@ class ArgoCDTest {
 
 		// Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
 		assertThat(argocdYaml['spec']['source']['path'] as String)
-			.isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
+				.isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
 	}
 
 	@Test
@@ -233,12 +235,12 @@ class ArgoCDTest {
 		def argoCDForTest = argocd as ArgoCDForTest
 
 		assertThat(argoCDForTest.repositoryWorkspace.clusterResourcesRepository)
-			.isSameAs(argoCDForTest.clusterResourcesRepo)
+				.isSameAs(argoCDForTest.clusterResourcesRepo)
 
 		clusterResourcesRepoLayout = argoCDForTest.getClusterRepoLayout()
 
 		assertThat(new File(clusterResourcesRepoLayout.rootDir()).canonicalFile)
-			.isEqualTo(new File(argoCDForTest.clusterResourcesRepo.absoluteLocalRepoTmpDir).canonicalFile)
+				.isEqualTo(new File(argoCDForTest.clusterResourcesRepo.absoluteLocalRepoTmpDir).canonicalFile)
 	}
 
 	@Test
@@ -271,9 +273,9 @@ class ArgoCDTest {
 	@Test
 	void 'configures Argo CD OIDC from structured config'() {
 		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
-			clientId: 'argocd',
-			clientSecret: 'argocd-secret',
-			adminGroupName: 'gop-admins')
+				clientId: 'argocd',
+				clientSecret: 'argocd-secret',
+				adminGroupName: 'gop-admins')
 
 		def argocd = createArgoCD()
 		execute(argocd)
@@ -305,9 +307,9 @@ class ArgoCDTest {
 	@Test
 	void 'When Argo CD OIDC scopes are null: Uses default scopes'() {
 		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
-			clientId: 'argocd',
-			clientSecret: 'argocd-secret',
-			scopes: null)
+				clientId: 'argocd',
+				clientSecret: 'argocd-secret',
+				scopes: null)
 
 		def argocd = createArgoCD()
 		execute(argocd)
@@ -411,9 +413,9 @@ class ArgoCDTest {
 		assertThat(serviceEmail['password']).isEqualTo('$email-password')
 
 		Secret mailSecret = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-notifications-secret')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-notifications-secret')
+				.get()
 
 		assertThat(mailSecret).isNotNull()
 		assertThat(decodedSecretValue(mailSecret, 'email-username')).isEqualTo(config.features.mail.smtpUser)
@@ -429,9 +431,9 @@ class ArgoCDTest {
 		execute(createArgoCD())
 
 		Secret mailSecret = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-notifications-secret')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-notifications-secret')
+				.get()
 
 		assertThat(mailSecret).isNotNull()
 		assertThat(decodedSecretValue(mailSecret, 'email-username')).isEqualTo(config.features.mail.smtpUser)
@@ -446,9 +448,9 @@ class ArgoCDTest {
 		execute(createArgoCD())
 
 		Secret mailSecret = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-notifications-secret')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-notifications-secret')
+				.get()
 
 		assertThat(mailSecret).isNotNull()
 		assertThat(decodedSecretValue(mailSecret, 'email-password')).isEqualTo(config.features.mail.smtpPassword)
@@ -570,7 +572,7 @@ class ArgoCDTest {
 
 		String valuesYaml = new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text
 		String allowNamespacesYaml = new File(clusterResourcesRepoLayout.argocdRoot(),
-			'/argocd/templates/allow-namespaces.yaml').text
+				'/argocd/templates/allow-namespaces.yaml').text
 
 		assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
 
@@ -590,8 +592,8 @@ class ArgoCDTest {
 				sourceRepos.each {
 					if (it.startsWith(scmmUrl)) {
 						assertThat(it)
-							.as("$file sourceRepos have name prefix")
-							.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+								.as("$file sourceRepos have name prefix")
+								.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
 					}
 				}
 			}
@@ -599,8 +601,8 @@ class ArgoCDTest {
 			String metadataNamespace = yaml['metadata']['namespace'] as String
 			if (metadataNamespace) {
 				assertThat(metadataNamespace)
-					.as("$file metadata.namespace has name prefix")
-					.isEqualTo("${expectedPrefix}argocd".toString())
+						.as("$file metadata.namespace has name prefix")
+						.isEqualTo("${expectedPrefix}argocd".toString())
 			}
 
 			List<String> sourceNamespaces = yaml['spec']['sourceNamespaces'] as List<String>
@@ -608,8 +610,8 @@ class ArgoCDTest {
 				sourceNamespaces.each {
 					if (it != '*') {
 						assertThat(it)
-							.as("$file spec.sourceNamespace has name prefix")
-							.startsWith("${expectedPrefix}")
+								.as("$file spec.sourceNamespace has name prefix")
+								.startsWith("${expectedPrefix}")
 					}
 				}
 			}
@@ -618,33 +620,33 @@ class ArgoCDTest {
 		assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'applications', 3) { Path file ->
 			def yaml = parseActualYaml(file.toString())
 			assertThat(yaml['spec']['source']['repoURL'] as String)
-				.as("$file repoURL have name prefix")
-				.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+					.as("$file repoURL have name prefix")
+					.startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
 
 			assertThat(yaml['metadata']['namespace'])
-				.as("$file metadata.namespace has name prefix")
-				.isEqualTo("${expectedPrefix}argocd".toString())
+					.as("$file metadata.namespace has name prefix")
+					.isEqualTo("${expectedPrefix}argocd".toString())
 
 			assertThat(yaml['spec']['destination']['namespace'])
-				.as("$file spec.destination.namespace has name prefix")
-				.isEqualTo("${expectedPrefix}argocd".toString())
+					.as("$file spec.destination.namespace has name prefix")
+					.isEqualTo("${expectedPrefix}argocd".toString())
 		}
 	}
 
 	private static void assertAllYamlFiles(File rootDir,
-		String childDir,
-		Integer numberOfFiles,
-		List<String> excludeContains = [],
-		Closure cl) {
+	                                       String childDir,
+	                                       Integer numberOfFiles,
+	                                       List<String> excludeContains = [],
+	                                       Closure cl) {
 		def rootPath = Path.of(rootDir.absolutePath, childDir)
 
 		def yamlFiles = Files.walk(rootPath)
-			.filter { Files.isRegularFile(it) }
-			.filter { Path p ->
-				def s = p.toString().replace('\\', '/')
-				(s.endsWith('.yaml') || s.endsWith('.yml')) && !excludeContains.any { ex -> s.contains(ex) }
-			}
-			.collect(Collectors.toList())
+				.filter { Files.isRegularFile(it) }
+				.filter { Path p ->
+					def s = p.toString().replace('\\', '/')
+					(s.endsWith('.yaml') || s.endsWith('.yml')) && !excludeContains.any { ex -> s.contains(ex) }
+				}
+				.collect(Collectors.toList())
 
 		yamlFiles.each(cl)
 
@@ -665,8 +667,8 @@ class ArgoCDTest {
 		prepareKubernetesObjectsForArgoCd()
 
 		def argoCD = ArgoCDForTest.newWithAutoProviders(config,
-			k8sClient,
-			helmCommands)
+				k8sClient,
+				helmCommands)
 
 		this.repositoryWorkspace = (argoCD as ArgoCDForTest).repositoryWorkspace
 
@@ -691,11 +693,11 @@ class ArgoCDTest {
 		createSecretIfMissing('argocd-secret', namespace)
 		createSecretIfMissing('argocd-cluster', namespace)
 		createSecretIfMissing('argocd-default-cluster-config', namespace,
-			[namespaces: Base64.encoder.encodeToString('testnamespace1,testnamespace2'.bytes)])
+				[namespaces: Base64.encoder.encodeToString('testnamespace1,testnamespace2'.bytes)])
 
 		if (config.multiTenant.useDedicatedInstance) {
 			createSecretIfMissing('argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace ?: 'argocd',
-				[namespaces: Base64.encoder.encodeToString('testnamespace1,testnamespace2'.bytes)])
+					[namespaces: Base64.encoder.encodeToString('testnamespace1,testnamespace2'.bytes)])
 		}
 	}
 
@@ -706,46 +708,46 @@ class ArgoCDTest {
 	}
 
 	private void createNamespacedCrd(String name,
-		String group,
-		String version,
-		String kind,
-		String plural,
-		String singular) {
+	                                 String group,
+	                                 String version,
+	                                 String kind,
+	                                 String plural,
+	                                 String singular) {
 		if (client.apiextensions().v1().customResourceDefinitions().withName(name).get()) {
 			return
 		}
 
 		CustomResourceDefinition crd = new CustomResourceDefinitionBuilder()
-			.withNewMetadata()
-			.withName(name)
-			.endMetadata()
-			.withNewSpec()
-			.withGroup(group)
-			.withScope('Namespaced')
-			.withNewNames()
-			.withKind(kind)
-			.withPlural(plural)
-			.withSingular(singular)
-			.endNames()
-			.addNewVersion()
-			.withName(version)
-			.withServed(true)
-			.withStorage(true)
-			.withNewSchema()
-			.withNewOpenAPIV3Schema()
-			.withType('object')
-			.withXKubernetesPreserveUnknownFields(true)
-			.endOpenAPIV3Schema()
-			.endSchema()
-			.endVersion()
-			.endSpec()
-			.build()
+				.withNewMetadata()
+				.withName(name)
+				.endMetadata()
+				.withNewSpec()
+				.withGroup(group)
+				.withScope('Namespaced')
+				.withNewNames()
+				.withKind(kind)
+				.withPlural(plural)
+				.withSingular(singular)
+				.endNames()
+				.addNewVersion()
+				.withName(version)
+				.withServed(true)
+				.withStorage(true)
+				.withNewSchema()
+				.withNewOpenAPIV3Schema()
+				.withType('object')
+				.withXKubernetesPreserveUnknownFields(true)
+				.endOpenAPIV3Schema()
+				.endSchema()
+				.endVersion()
+				.endSpec()
+				.build()
 
 		client.apiextensions()
-			.v1()
-			.customResourceDefinitions()
-			.resource(crd)
-			.create()
+				.v1()
+				.customResourceDefinitions()
+				.resource(crd)
+				.create()
 	}
 
 	private void createNamespaceIfMissing(String name) {
@@ -755,11 +757,11 @@ class ArgoCDTest {
 
 		if (!client.namespaces().withName(name).get()) {
 			client.namespaces().resource(new NamespaceBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.endMetadata()
-				.build())
-				.create()
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build())
+					.create()
 		}
 	}
 
@@ -784,18 +786,18 @@ class ArgoCDTest {
 
 		if (!client.secrets().inNamespace(namespace).withName(name).get()) {
 			Secret secret = new SecretBuilder()
-				.withNewMetadata()
-				.withName(name)
-				.withNamespace(namespace)
-				.endMetadata()
-				.withType('Opaque')
-				.withData(data)
-				.build()
+					.withNewMetadata()
+					.withName(name)
+					.withNamespace(namespace)
+					.endMetadata()
+					.withType('Opaque')
+					.withData(data)
+					.build()
 
 			client.secrets()
-				.inNamespace(namespace)
-				.resource(secret)
-				.create()
+					.inNamespace(namespace)
+					.resource(secret)
+					.create()
 		}
 	}
 
@@ -895,8 +897,8 @@ class ArgoCDTest {
 			assertThat(subjects*.kind).containsOnly('ServiceAccount')
 			assertThat(subjects*.namespace).containsOnly('testPrefix-argocd')
 			assertThat(subjects*.name).containsExactlyInAnyOrder('argocd-argocd-server',
-				'argocd-argocd-application-controller',
-				'argocd-applicationset-controller')
+					'argocd-argocd-application-controller',
+					'argocd-applicationset-controller')
 
 			Map<String, Object> roleRef = bindingYaml['roleRef'] as Map
 			assertThat(roleRef).isNotNull()
@@ -997,10 +999,10 @@ class ArgoCDTest {
 		config.application.internalKubernetesApiUrl = 'https://192.168.0.1:6443'
 
 		withEnvironmentVariable('KUBERNETES_SERVICE_HOST', '100.125.0.1')
-			.and('KUBERNETES_SERVICE_PORT', '443')
-			.execute {
-				execute(argocd)
-			}
+				.and('KUBERNETES_SERVICE_PORT', '443')
+				.execute {
+					execute(argocd)
+				}
 
 		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
 
@@ -1152,16 +1154,16 @@ class ArgoCDTest {
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
 		assertThat(ingressFile)
-			.as('Ingress file should be generated for insecure mode on non-OpenShift')
-			.exists()
+				.as('Ingress file should be generated for insecure mode on non-OpenShift')
+				.exists()
 
 		def ingressYaml = parseActualYaml(ingressFile.toString())
 
 		def rules = ingressYaml['spec']['rules'] as List<Map>
 		def host = rules[0]['host']
 		assertThat(host)
-			.as('Ingress host should match configured ArgoCD hostname')
-			.isEqualTo(new URL(config.features.argocd.url).host)
+				.as('Ingress host should match configured ArgoCD hostname')
+				.isEqualTo(new URL(config.features.argocd.url).host)
 	}
 
 	@Test
@@ -1173,8 +1175,8 @@ class ArgoCDTest {
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
 		assertThat(ingressFile)
-			.as('Ingress file should not be generated when insecure is false')
-			.doesNotExist()
+				.as('Ingress file should not be generated when insecure is false')
+				.doesNotExist()
 	}
 
 	@Test
@@ -1186,8 +1188,8 @@ class ArgoCDTest {
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
 		assertThat(ingressFile)
-			.as('Ingress file should not be generated on OpenShift')
-			.doesNotExist()
+				.as('Ingress file should not be generated on OpenShift')
+				.doesNotExist()
 	}
 
 	@Test
@@ -1199,8 +1201,8 @@ class ArgoCDTest {
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
 		assertThat(ingressFile)
-			.as('Ingress file should not be generated when both flags are false')
-			.doesNotExist()
+				.as('Ingress file should not be generated when both flags are false')
+				.doesNotExist()
 	}
 
 	@Test
@@ -1211,8 +1213,8 @@ class ArgoCDTest {
 
 		def ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), 'ingress.yaml')
 		assertThat(ingressFile)
-			.as('Ingress file should not be generated when insecure is false')
-			.doesNotExist()
+				.as('Ingress file should not be generated when insecure is false')
+				.doesNotExist()
 	}
 
 	@Test
@@ -1256,13 +1258,13 @@ class ArgoCDTest {
 		execute(createArgoCD())
 
 		Secret centralRepoCredentialsSecret = client.secrets()
-			.inNamespace(config.multiTenant.centralArgocdNamespace)
-			.withName('argocd-repo-creds-central-scm')
-			.get()
+				.inNamespace(config.multiTenant.centralArgocdNamespace)
+				.withName('argocd-repo-creds-central-scm')
+				.get()
 
 		assertThat(centralRepoCredentialsSecret).isNotNull()
 		assertThat(centralRepoCredentialsSecret.metadata.labels['argocd.argoproj.io/secret-type'])
-			.isEqualTo('repo-creds')
+				.isEqualTo('repo-creds')
 	}
 
 	@Test
@@ -1312,9 +1314,9 @@ class ArgoCDTest {
 		setupDedicatedInstanceMode()
 
 		Secret defaultClusterConfig = client.secrets()
-			.inNamespace('argocd')
-			.withName('argocd-default-cluster-config')
-			.get()
+				.inNamespace('argocd')
+				.withName('argocd-default-cluster-config')
+				.get()
 
 		assertThat(defaultClusterConfig).isNotNull()
 
@@ -1442,22 +1444,22 @@ class ArgoCDTest {
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://charts.external-secrets.io',
-			'https://codecentric.github.io/helm-charts',
-			'https://prometheus-community.github.io/helm-charts',
-			'https://traefik.github.io/charts',
-			'https://helm.releases.hashicorp.com',
-			'https://charts.jetstack.io')
+				'https://codecentric.github.io/helm-charts',
+				'https://prometheus-community.github.io/helm-charts',
+				'https://traefik.github.io/charts',
+				'https://helm.releases.hashicorp.com',
+				'https://charts.jetstack.io')
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
 	}
 
 	@Test
@@ -1472,15 +1474,15 @@ class ArgoCDTest {
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-			'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
-			'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-			'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-			'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+				'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+				'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+				'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+				'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-			'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+				'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
 	}
 
 	@Test
@@ -1495,10 +1497,10 @@ class ArgoCDTest {
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
 	}
 
 	@Test
@@ -1515,16 +1517,16 @@ class ArgoCDTest {
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
-			'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+				'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git')
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
 	}
 
 	@Test
@@ -1539,16 +1541,16 @@ class ArgoCDTest {
 		def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), '/cluster-resources.yaml'))
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager')
 
 		assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-			'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+				'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git')
 	}
 
 	void setupDedicatedInstanceMode() {
@@ -1594,34 +1596,34 @@ class ArgoCDTest {
 		GitRepo tenantBootstrapRepo
 
 		static ArgoCDForTest newWithAutoProviders(Config cfg,
-			K8sClient k8sClient,
-			CommandExecutorForTest helmCommands) {
+		                                          K8sClient k8sClient,
+		                                          CommandExecutorForTest helmCommands) {
 			def provider = TestGitProvider.buildProviders(cfg)
 
 			GitProvider tenantProvider = provider.tenant as GitProvider
 			GitProvider centralProvider = provider.central as GitProvider
 
 			ArgoCDTestContext testContext = createTestContext(cfg,
-				tenantProvider,
-				centralProvider)
+					tenantProvider,
+					centralProvider)
 
 			return new ArgoCDForTest(cfg,
-				k8sClient,
-				helmCommands,
-				tenantProvider,
-				centralProvider,
-				testContext)
+					k8sClient,
+					helmCommands,
+					tenantProvider,
+					centralProvider,
+					testContext)
 		}
 
 		private static ArgoCDTestContext createTestContext(Config cfg,
-			GitProvider tenantProvider,
-			GitProvider centralProvider) {
+		                                                   GitProvider tenantProvider,
+		                                                   GitProvider centralProvider) {
 			def repoFactory = new TestGitRepoFactory(cfg, new FileSystemUtils())
 
 			GitProvider clusterResourcesProvider = cfg.multiTenant.useDedicatedInstance ? centralProvider : tenantProvider
 
 			GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
-				clusterResourcesProvider)
+					clusterResourcesProvider)
 			doNothing().when(clusterResourcesRepo).commitAndPush(any(String))
 
 			RepositoryWorkspace repositoryWorkspace
@@ -1640,35 +1642,35 @@ class ArgoCDTest {
 				 * and tenant bootstrap templates would overwrite central bootstrap templates.
 				 */
 				tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
-					tenantProvider)
+						tenantProvider)
 				doNothing().when(tenantBootstrapRepo).commitAndPush(any(String))
 
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
-					tenantBootstrapRepo)
+						tenantBootstrapRepo)
 			} else {
 				repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
 			}
 
 			GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
-				centralProvider)
+					centralProvider)
 
 			return new ArgoCDTestContext(gitHandler: gitHandler,
-				repositoryWorkspace: repositoryWorkspace,
-				clusterResourcesRepo: clusterResourcesRepo,
-				tenantBootstrapRepo: tenantBootstrapRepo)
+					repositoryWorkspace: repositoryWorkspace,
+					clusterResourcesRepo: clusterResourcesRepo,
+					tenantBootstrapRepo: tenantBootstrapRepo)
 		}
 
 		ArgoCDForTest(Config cfg,
-			K8sClient k8sClient,
-			CommandExecutorForTest helmCommands,
-			GitProvider tenantProvider,
-			GitProvider centralProvider,
-			ArgoCDTestContext testContext) {
+		              K8sClient k8sClient,
+		              CommandExecutorForTest helmCommands,
+		              GitProvider tenantProvider,
+		              GitProvider centralProvider,
+		              ArgoCDTestContext testContext) {
 			super(k8sClient,
-				new HelmClient(helmCommands),
-				new FileSystemUtils(),
-				testContext.gitHandler,
-				new DeploymentModeFactory())
+					new HelmClient(helmCommands),
+					new FileSystemUtils(),
+					testContext.gitHandler,
+					new DeploymentModeFactory())
 
 			this.cfg = cfg
 			this.tenantProvider = tenantProvider

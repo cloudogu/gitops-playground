@@ -24,7 +24,7 @@ pipeline {
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
         DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
-        MAVEN_IMAGE = 'maven:3-eclipse-temurin-17'
+        MAVEN_IMAGE = 'maven:3-eclipse-temurin-25'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
         GOLANG_IMAGE = 'golang:1.25-alpine'

@@ -1,17 +1,20 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api
 
-import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.utils.Tuple
-
-import java.nio.file.Files
-import java.nio.file.Path
 import groovy.json.JsonSlurper
-
-import io.fabric8.kubernetes.api.model.*
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource
+import io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder
+import io.fabric8.kubernetes.api.model.NamespaceBuilder
+import io.fabric8.kubernetes.api.model.NodeBuilder
+import io.fabric8.kubernetes.api.model.NodeListBuilder
+import io.fabric8.kubernetes.api.model.PodBuilder
+import io.fabric8.kubernetes.api.model.PodListBuilder
+import io.fabric8.kubernetes.api.model.SecretBuilder
+import io.fabric8.kubernetes.api.model.ServiceBuilder
+import io.fabric8.kubernetes.api.model.StatusBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer
@@ -19,6 +22,12 @@ import io.fabric8.openshift.api.model.ProjectBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+
+import java.nio.file.Files
+import java.nio.file.Path
+
+import static groovy.test.GroovyAssert.shouldFail
+import static org.assertj.core.api.Assertions.assertThat
 
 @EnableKubernetesMockClient
 class K8sClientTest {
@@ -47,16 +56,16 @@ class K8sClientTest {
 	void 'waitForNode returns first node name'() {
 		// Given
 		def node = new NodeBuilder()
-			.withNewMetadata()
-			.withName("test-node-1")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-node-1")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().withItems(node).build())
-			.once()
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().withItems(node).build())
+				.once()
 
 		// When
 		String nodeName = k8sApiClient.waitForNode()
@@ -69,22 +78,22 @@ class K8sClientTest {
 	void 'waitForNode retries when no nodes available'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().build())
-			.times(2)
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().build())
+				.times(2)
 
 		def node = new NodeBuilder()
-			.withNewMetadata()
-			.withName("test-node-1")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-node-1")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().withItems(node).build())
-			.once()
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().withItems(node).build())
+				.once()
 
 		// When
 		String nodeName = k8sApiClient.waitForNode()
@@ -97,10 +106,10 @@ class K8sClientTest {
 	void 'waitForNode throws exception after max retries'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().build())
-			.times(k8sApiClient.defaultRetries + 1)
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().build())
+				.times(k8sApiClient.defaultRetries + 1)
 
 		// When/Then
 		def exception = shouldFail(RuntimeException) {
@@ -113,29 +122,29 @@ class K8sClientTest {
 	void 'waitForInternalNodeIp returns node internal IP'() {
 		// Given - First call for waitForNode
 		def node = new NodeBuilder()
-			.withNewMetadata()
-			.withName("test-node-1")
-			.endMetadata()
-			.withNewStatus()
-			.addNewAddress()
-			.withType("InternalIP")
-			.withAddress("192.168.1.100")
-			.endAddress()
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-node-1")
+				.endMetadata()
+				.withNewStatus()
+				.addNewAddress()
+				.withType("InternalIP")
+				.withAddress("192.168.1.100")
+				.endAddress()
+				.endStatus()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().withItems(node).build())
-			.once()
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().withItems(node).build())
+				.once()
 
 		// Second call for waitForInternalNodeIp
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes/test-node-1")
-			.andReturn(200, node)
-			.once()
+				.get()
+				.withPath("/api/v1/nodes/test-node-1")
+				.andReturn(200, node)
+				.once()
 
 		// When
 		String ip = k8sApiClient.waitForInternalNodeIp()
@@ -148,32 +157,32 @@ class K8sClientTest {
 	void 'waitForInternalNodeIp ignores IPv6 addresses'() {
 		// Given
 		def node = new NodeBuilder()
-			.withNewMetadata()
-			.withName("test-node-1")
-			.endMetadata()
-			.withNewStatus()
-			.addNewAddress()
-			.withType("InternalIP")
-			.withAddress("192.168.1.100")
-			.endAddress()
-			.addNewAddress()
-			.withType("InternalIP")
-			.withAddress("fe80::1")
-			.endAddress()
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-node-1")
+				.endMetadata()
+				.withNewStatus()
+				.addNewAddress()
+				.withType("InternalIP")
+				.withAddress("192.168.1.100")
+				.endAddress()
+				.addNewAddress()
+				.withType("InternalIP")
+				.withAddress("fe80::1")
+				.endAddress()
+				.endStatus()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes")
-			.andReturn(200, new NodeListBuilder().withItems(node).build())
-			.once()
+				.get()
+				.withPath("/api/v1/nodes")
+				.andReturn(200, new NodeListBuilder().withItems(node).build())
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/nodes/test-node-1")
-			.andReturn(200, node)
-			.once()
+				.get()
+				.withPath("/api/v1/nodes/test-node-1")
+				.andReturn(200, node)
+				.once()
 
 		// When
 		String ip = k8sApiClient.waitForInternalNodeIp()
@@ -190,23 +199,23 @@ class K8sClientTest {
 	void 'waitForNodePort returns service nodePort'() {
 		// Given
 		def service = new ServiceBuilder()
-			.withNewMetadata()
-			.withName("test-service")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewSpec()
-			.addNewPort()
-			.withPort(8080)
-			.withNodePort(30080)
-			.endPort()
-			.endSpec()
-			.build()
+				.withNewMetadata()
+				.withName("test-service")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewSpec()
+				.addNewPort()
+				.withPort(8080)
+				.withNodePort(30080)
+				.endPort()
+				.endSpec()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/services/test-service")
-			.andReturn(200, service)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/services/test-service")
+				.andReturn(200, service)
+				.once()
 
 		// When
 		String nodePort = k8sApiClient.waitForNodePort("test-service", "test-ns")
@@ -220,15 +229,15 @@ class K8sClientTest {
 		// Given
 		// createOrReplace() tries POST first
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/default/services")
-			.andReturn(201, new ServiceBuilder()
-				.withNewMetadata()
-				.withName("my-service")
-				.withNamespace("default")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/default/services")
+				.andReturn(201, new ServiceBuilder()
+						.withNewMetadata()
+						.withName("my-service")
+						.withNamespace("default")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createServiceNodePort("my-service", "8080:80", "30000", "")
@@ -240,15 +249,15 @@ class K8sClientTest {
 	void 'createServiceNodePort creates service without explicit nodePort'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/test-ns/services")
-			.andReturn(201, new ServiceBuilder()
-				.withNewMetadata()
-				.withName("my-service")
-				.withNamespace("test-ns")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/test-ns/services")
+				.andReturn(201, new ServiceBuilder()
+						.withNewMetadata()
+						.withName("my-service")
+						.withNamespace("test-ns")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createServiceNodePort("my-service", "8080:80", "", "test-ns")
@@ -260,37 +269,37 @@ class K8sClientTest {
 	void 'patchServiceNodePort updates service port'() {
 		// Given
 		def service = new ServiceBuilder()
-			.withNewMetadata()
-			.withName("test-service")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewSpec()
-			.addNewPort()
-			.withName("http")
-			.withPort(8080)
-			.withNodePort(30080)
-			.endPort()
-			.endSpec()
-			.build()
+				.withNewMetadata()
+				.withName("test-service")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewSpec()
+				.addNewPort()
+				.withName("http")
+				.withPort(8080)
+				.withNodePort(30080)
+				.endPort()
+				.endSpec()
+				.build()
 
 		// patchServiceNodePort makes a GET, then patch() makes another GET followed by PATCH
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/services/test-service")
-			.andReturn(200, service)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/services/test-service")
+				.andReturn(200, service)
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/services/test-service")
-			.andReturn(200, service)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/services/test-service")
+				.andReturn(200, service)
+				.once()
 
 		server.expect()
-			.patch()
-			.withPath("/api/v1/namespaces/test-ns/services/test-service")
-			.andReturn(200, service)
-			.once()
+				.patch()
+				.withPath("/api/v1/namespaces/test-ns/services/test-service")
+				.andReturn(200, service)
+				.once()
 
 		// When
 		k8sApiClient.patchServiceNodePort("test-service", "test-ns", "http", 30090)
@@ -311,23 +320,23 @@ class K8sClientTest {
 	void 'patchServiceNodePort throws exception when port not found'() {
 		// Given
 		def service = new ServiceBuilder()
-			.withNewMetadata()
-			.withName("test-service")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewSpec()
-			.addNewPort()
-			.withName("http")
-			.withPort(8080)
-			.endPort()
-			.endSpec()
-			.build()
+				.withNewMetadata()
+				.withName("test-service")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewSpec()
+				.addNewPort()
+				.withName("http")
+				.withPort(8080)
+				.endPort()
+				.endSpec()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/services/test-service")
-			.andReturn(200, service)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/services/test-service")
+				.andReturn(200, service)
+				.once()
 
 		// When/Then
 		def exception = shouldFail(RuntimeException) {
@@ -344,20 +353,20 @@ class K8sClientTest {
 	void 'createNamespace creates new namespace'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder()
-				.withNewMetadata()
-				.withName("test-ns")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder()
+						.withNewMetadata()
+						.withName("test-ns")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("test-ns")
@@ -372,20 +381,20 @@ class K8sClientTest {
 		k8sApiClient.gopConfig = config
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-project")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-project")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/apis/project.openshift.io/v1/projects")
-			.andReturn(201, new ProjectBuilder()
-				.withNewMetadata()
-				.withName("test-project")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/apis/project.openshift.io/v1/projects")
+				.andReturn(201, new ProjectBuilder()
+						.withNewMetadata()
+						.withName("test-project")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("test-project")
@@ -403,20 +412,20 @@ class K8sClientTest {
 		k8sApiClient.gopConfig = config
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder()
-				.withNewMetadata()
-				.withName("test-ns")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder()
+						.withNewMetadata()
+						.withName("test-ns")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("test-ns")
@@ -431,16 +440,16 @@ class K8sClientTest {
 	void 'createNamespace does not create existing namespace'() {
 		// Given
 		def namespace = new NamespaceBuilder()
-			.withNewMetadata()
-			.withName("test-ns")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-ns")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns")
-			.andReturn(200, namespace)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns")
+				.andReturn(200, namespace)
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("test-ns")
@@ -456,20 +465,20 @@ class K8sClientTest {
 		k8sApiClient.gopConfig = null
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder()
-				.withNewMetadata()
-				.withName("test-ns")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder()
+						.withNewMetadata()
+						.withName("test-ns")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("test-ns")
@@ -487,16 +496,16 @@ class K8sClientTest {
 		k8sApiClient.gopConfig = config
 
 		def namespace = new NamespaceBuilder()
-			.withNewMetadata()
-			.withName("existing-project")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("existing-project")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/existing-project")
-			.andReturn(200, namespace)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/existing-project")
+				.andReturn(200, namespace)
+				.once()
 
 		// When
 		k8sApiClient.createNamespace("existing-project")
@@ -519,28 +528,28 @@ class K8sClientTest {
 	void 'createNamespaces creates multiple namespaces'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/ns1")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/ns1")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder().withNewMetadata().withName("ns1").endMetadata().build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder().withNewMetadata().withName("ns1").endMetadata().build())
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/ns2")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/ns2")
+				.andReturn(404, "")
+				.once()
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder().withNewMetadata().withName("ns2").endMetadata().build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder().withNewMetadata().withName("ns2").endMetadata().build())
+				.once()
 
 		// When
 		k8sApiClient.createNamespaces(["ns1", "ns2"])
@@ -552,16 +561,16 @@ class K8sClientTest {
 	void 'namespaceExists returns true for existing namespace'() {
 		// Given
 		def namespace = new NamespaceBuilder()
-			.withNewMetadata()
-			.withName("test-ns")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-ns")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns")
-			.andReturn(200, namespace)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns")
+				.andReturn(200, namespace)
+				.once()
 
 		// When
 		boolean exists = k8sApiClient.namespaceExists("test-ns")
@@ -574,10 +583,10 @@ class K8sClientTest {
 	void 'namespaceExists returns false for non-existing namespace'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/non-existing")
-			.andReturn(404, "")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/non-existing")
+				.andReturn(404, "")
+				.once()
 
 		// When
 		boolean exists = k8sApiClient.namespaceExists("non-existing")
@@ -594,21 +603,21 @@ class K8sClientTest {
 	void 'createSecret creates generic secret'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/test-ns/secrets")
-			.andReturn(201, new SecretBuilder()
-				.withNewMetadata()
-				.withName("my-secret")
-				.withNamespace("test-ns")
-				.endMetadata()
-				.withType("Opaque")
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/test-ns/secrets")
+				.andReturn(201, new SecretBuilder()
+						.withNewMetadata()
+						.withName("my-secret")
+						.withNamespace("test-ns")
+						.endMetadata()
+						.withType("Opaque")
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createSecret("Opaque", "my-secret", "test-ns",
-			new Tuple("username", "admin"),
-			new Tuple("password", "secret"))
+				new Tuple("username", "admin"),
+				new Tuple("password", "secret"))
 
 		// Then - Verify secret was created
 	}
@@ -617,16 +626,16 @@ class K8sClientTest {
 	void 'createImagePullSecret creates docker registry secret'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/default/secrets")
-			.andReturn(201, new SecretBuilder()
-				.withNewMetadata()
-				.withName("my-registry")
-				.withNamespace("default")
-				.endMetadata()
-				.withType("kubernetes.io/dockerconfigjson")
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/default/secrets")
+				.andReturn(201, new SecretBuilder()
+						.withNewMetadata()
+						.withName("my-registry")
+						.withNamespace("default")
+						.endMetadata()
+						.withType("kubernetes.io/dockerconfigjson")
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createImagePullSecret("my-registry", "", "docker.io", "user", "pass")
@@ -638,18 +647,18 @@ class K8sClientTest {
 	void 'getArgoCDNamespacesSecret retrieves secret data'() {
 		// Given
 		def secret = new SecretBuilder()
-			.withNewMetadata()
-			.withName("argocd-secret")
-			.withNamespace("argocd")
-			.endMetadata()
-			.withData(["namespaces": Base64.encoder.encodeToString("ns1,ns2".bytes)])
-			.build()
+				.withNewMetadata()
+				.withName("argocd-secret")
+				.withNamespace("argocd")
+				.endMetadata()
+				.withData(["namespaces": Base64.encoder.encodeToString("ns1,ns2".bytes)])
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/argocd/secrets/argocd-secret")
-			.andReturn(200, secret)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/argocd/secrets/argocd-secret")
+				.andReturn(200, secret)
+				.once()
 
 		// When
 		String data = k8sApiClient.getArgoCDNamespacesSecret("argocd-secret", "argocd")
@@ -662,19 +671,19 @@ class K8sClientTest {
 	void 'getCredentialsFromSecret extracts username and password'() {
 		// Given
 		def secret = new SecretBuilder()
-			.withNewMetadata()
-			.withName("my-secret")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withData(["username": Base64.encoder.encodeToString("admin".bytes),
-			           "password": Base64.encoder.encodeToString("secret123".bytes)])
-			.build()
+				.withNewMetadata()
+				.withName("my-secret")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withData(["username": Base64.encoder.encodeToString("admin".bytes),
+				           "password": Base64.encoder.encodeToString("secret123".bytes)])
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/secrets/my-secret")
-			.andReturn(200, secret)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/secrets/my-secret")
+				.andReturn(200, secret)
+				.once()
 
 		// When
 		Credentials creds = k8sApiClient.getCredentialsFromSecret("my-secret", "test-ns")
@@ -688,24 +697,24 @@ class K8sClientTest {
 	void 'getCredentialsFromSecret with Credentials object'() {
 		// Given
 		def inputCreds = new Credentials(secretName: "my-secret",
-			secretNamespace: "test-ns",
-			usernameKey: "user",
-			passwordKey: "pass")
+				secretNamespace: "test-ns",
+				usernameKey: "user",
+				passwordKey: "pass")
 
 		def secret = new SecretBuilder()
-			.withNewMetadata()
-			.withName("my-secret")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withData(["user": Base64.encoder.encodeToString("testuser".bytes),
-			           "pass": Base64.encoder.encodeToString("testpass".bytes)])
-			.build()
+				.withNewMetadata()
+				.withName("my-secret")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withData(["user": Base64.encoder.encodeToString("testuser".bytes),
+				           "pass": Base64.encoder.encodeToString("testpass".bytes)])
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/secrets/my-secret")
-			.andReturn(200, secret)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/secrets/my-secret")
+				.andReturn(200, secret)
+				.once()
 
 		// When
 		Credentials result = k8sApiClient.getCredentialsFromSecret(inputCreds)
@@ -726,15 +735,15 @@ class K8sClientTest {
 		Files.writeString(testFile, "test content")
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/default/configmaps")
-			.andReturn(201, new ConfigMapBuilder()
-				.withNewMetadata()
-				.withName("my-config")
-				.withNamespace("default")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/default/configmaps")
+				.andReturn(201, new ConfigMapBuilder()
+						.withNewMetadata()
+						.withName("my-config")
+						.withNamespace("default")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createConfigMapFromFile("my-config", "", testFile.toString())
@@ -755,18 +764,18 @@ class K8sClientTest {
 	void 'getConfigMap retrieves value from configmap'() {
 		// Given
 		def configMap = new ConfigMapBuilder()
-			.withNewMetadata()
-			.withName("my-config")
-			.withNamespace("test")
-			.endMetadata()
-			.withData(["key1": "value1", "key2": "value2"])
-			.build()
+				.withNewMetadata()
+				.withName("my-config")
+				.withNamespace("test")
+				.endMetadata()
+				.withData(["key1": "value1", "key2": "value2"])
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test/configmaps/my-config")
-			.andReturn(200, configMap)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test/configmaps/my-config")
+				.andReturn(200, configMap)
+				.once()
 
 		// When
 		String value = k8sApiClient.getConfigMap("my-config", "key1")
@@ -779,18 +788,18 @@ class K8sClientTest {
 	void 'getConfigMap throws exception for non-existing key'() {
 		// Given
 		def configMap = new ConfigMapBuilder()
-			.withNewMetadata()
-			.withName("my-config")
-			.withNamespace("test")
-			.endMetadata()
-			.withData(["key1": "value1"])
-			.build()
+				.withNewMetadata()
+				.withName("my-config")
+				.withNamespace("test")
+				.endMetadata()
+				.withData(["key1": "value1"])
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test/configmaps/my-config")
-			.andReturn(200, configMap)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test/configmaps/my-config")
+				.andReturn(200, configMap)
+				.once()
 
 		// When/Then
 		def exception = shouldFail(RuntimeException) {
@@ -815,14 +824,14 @@ metadata:
 """)
 
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces")
-			.andReturn(201, new NamespaceBuilder()
-				.withNewMetadata()
-				.withName("test-ns")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces")
+				.andReturn(201, new NamespaceBuilder()
+						.withNewMetadata()
+						.withName("test-ns")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		String result = k8sApiClient.applyYaml(yamlFile.toString())
@@ -846,36 +855,36 @@ metadata:
 	void 'label adds labels to resource'() {
 		// Given
 		def pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withLabels(["existing": "label"])
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("default")
+				.withLabels(["existing": "label"])
+				.endMetadata()
+				.build()
 
 		// label() makes a GET, then patch() makes another GET followed by PATCH
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		server.expect()
-			.patch()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.patch()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		// When
 		k8sApiClient.label("pod", "test-pod", "default",
-			new Tuple("app", "myapp"),
-			new Tuple("version", "1.0"))
+				new Tuple("app", "myapp"),
+				new Tuple("version", "1.0"))
 
 		// Then - Verify labels were updated
 	}
@@ -884,31 +893,31 @@ metadata:
 	void 'labelRemove removes labels from resource'() {
 		// Given
 		def pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withLabels(["app": "myapp", "version": "1.0"])
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("default")
+				.withLabels(["app": "myapp", "version": "1.0"])
+				.endMetadata()
+				.build()
 
 		// label() makes a GET, then patch() makes another GET followed by PATCH
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		server.expect()
-			.patch()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.patch()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		// When
 		k8sApiClient.labelRemove("pod", "test-pod", "default", "version")
@@ -920,23 +929,23 @@ metadata:
 	void 'patch patches resource with strategic merge'() {
 		// Given
 		def pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("default")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		server.expect()
-			.patch()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.patch()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		// When
 		k8sApiClient.patch("pod", "test-pod", "default", "strategic", ["metadata": ["labels": ["new": "label"]]])
@@ -948,10 +957,10 @@ metadata:
 	void 'delete removes resources by label selector'() {
 		// Given
 		server.expect()
-			.delete()
-			.withPath("/api/v1/namespaces/test-ns/pods?labelSelector=app%3Dmyapp")
-			.andReturn(200, new StatusBuilder().build())
-			.once()
+				.delete()
+				.withPath("/api/v1/namespaces/test-ns/pods?labelSelector=app%3Dmyapp")
+				.andReturn(200, new StatusBuilder().build())
+				.once()
 
 		// When
 		k8sApiClient.delete("pod", "test-ns", new Tuple("app", "myapp"))
@@ -963,10 +972,10 @@ metadata:
 	void 'delete removes specific resource by name'() {
 		// Given
 		server.expect()
-			.delete()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, new StatusBuilder().build())
-			.once()
+				.delete()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, new StatusBuilder().build())
+				.once()
 
 		// When
 		k8sApiClient.delete("pod", "test-ns", "test-pod")
@@ -978,14 +987,14 @@ metadata:
 	void 'run creates pod with image'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/default/pods")
-			.andReturn(201, new PodBuilder()
-				.withNewMetadata()
-				.withName("test-pod")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/default/pods")
+				.andReturn(201, new PodBuilder()
+						.withNewMetadata()
+						.withName("test-pod")
+						.endMetadata()
+						.build())
+				.once()
 
 		// When
 		String result = k8sApiClient.run("test-pod", "nginx:latest", "", [:])
@@ -998,14 +1007,14 @@ metadata:
 	void 'run applies pod overrides instead of generated parameter values'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/jenkins/pods")
-			.andReturn(201, new PodBuilder()
-				.withNewMetadata()
-				.withName("test-pod")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/jenkins/pods")
+				.andReturn(201, new PodBuilder()
+						.withNewMetadata()
+						.withName("test-pod")
+						.endMetadata()
+						.build())
+				.once()
 
 		String overrideImage = "bash:42"
 		Map overrides = [spec: [containers  : [[name        : "override-container",
@@ -1045,57 +1054,57 @@ metadata:
 	void 'run returns pod logs and removes pod for interactive rm mode'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/jenkins/pods")
-			.andReturn(201, new PodBuilder()
-				.withNewMetadata()
-				.withName("gid-pod")
-				.endMetadata()
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/jenkins/pods")
+				.andReturn(201, new PodBuilder()
+						.withNewMetadata()
+						.withName("gid-pod")
+						.endMetadata()
+						.build())
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
-			.andReturn(200, new PodBuilder()
+				.get()
+				.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+				.andReturn(200, new PodBuilder()
+						.withNewMetadata()
+						.withName("gid-pod")
+						.endMetadata()
+						.withNewStatus()
+						.withPhase("Succeeded")
+						.endStatus()
+						.build())
+				.once()
+
+		def succeededPod = new PodBuilder()
 				.withNewMetadata()
 				.withName("gid-pod")
 				.endMetadata()
 				.withNewStatus()
 				.withPhase("Succeeded")
 				.endStatus()
-				.build())
-			.once()
-
-		def succeededPod = new PodBuilder()
-			.withNewMetadata()
-			.withName("gid-pod")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Succeeded")
-			.endStatus()
-			.build()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/jenkins/pods?fieldSelector=metadata.name%3Dgid-pod")
-			.andReturn(200, new PodListBuilder().withItems(succeededPod).build())
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/jenkins/pods?fieldSelector=metadata.name%3Dgid-pod")
+				.andReturn(200, new PodListBuilder().withItems(succeededPod).build())
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod/log?pretty=false")
-			.andReturn(200, "root:x:0:\ndocker:x:42:\n")
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/jenkins/pods/gid-pod/log?pretty=false")
+				.andReturn(200, "root:x:0:\ndocker:x:42:\n")
+				.once()
 
 		server.expect()
-			.delete()
-			.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
-			.andReturn(200, new StatusBuilder().build())
-			.once()
+				.delete()
+				.withPath("/api/v1/namespaces/jenkins/pods/gid-pod")
+				.andReturn(200, new StatusBuilder().build())
+				.once()
 
 		// When
-		String result = k8sApiClient.run("gid-pod", "bash:42", "jenkins", [:], "--restart=Never", "-ti", "--rm", "--quiet")
+		String result = k8sApiClient.run("gid-pod", "bash:42", "jenkins", "--restart=Never", "-ti", "--rm", "--quiet")
 
 		// Then
 		assertThat(result).isEqualTo("root:x:0:\ndocker:x:42:\n")
@@ -1119,18 +1128,18 @@ metadata:
 	void 'getAnnotation retrieves annotation value'() {
 		// Given
 		def pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withAnnotations(["key1": "value1", "key2": "value2"])
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("default")
+				.withAnnotations(["key1": "value1", "key2": "value2"])
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		// When
 		String value = k8sApiClient.getAnnotation("pod", "test-pod", "key1", "default")
@@ -1143,18 +1152,18 @@ metadata:
 	void 'getAnnotation returns null for non-existing annotation'() {
 		// Given
 		def pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withAnnotations(["key1": "value1"])
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("default")
+				.withAnnotations(["key1": "value1"])
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/default/pods/test-pod")
-			.andReturn(200, pod)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/default/pods/test-pod")
+				.andReturn(200, pod)
+				.once()
 
 		// When
 		String value = k8sApiClient.getAnnotation("pod", "test-pod", "non-existing", "default")
@@ -1181,20 +1190,20 @@ metadata:
 	void 'waitForResourcePhase waits for pod to reach Running phase'() {
 		// Given
 		def podRunning = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Running")
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Running")
+				.endStatus()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podRunning)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podRunning)
+				.once()
 
 		// When
 		k8sApiClient.waitForResourcePhase("pod", "test-pod", "test-ns", "Running", 5, 1)
@@ -1206,44 +1215,44 @@ metadata:
 	void 'waitForResourcePhase retries until phase is reached'() {
 		// Given
 		def podPending = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Pending")
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Pending")
+				.endStatus()
+				.build()
 
 		def podRunning = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Running")
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Running")
+				.endStatus()
+				.build()
 
 		// First two requests return Pending
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podPending)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podPending)
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podPending)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podPending)
+				.once()
 
 		// Third request returns Running
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podRunning)
-			.once()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podRunning)
+				.once()
 
 		// When
 		k8sApiClient.waitForResourcePhase("pod", "test-pod", "test-ns", "Running", 10, 1)
@@ -1255,20 +1264,20 @@ metadata:
 	void 'waitForResourcePhase throws exception on timeout'() {
 		// Given
 		def podPending = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Pending")
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Pending")
+				.endStatus()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podPending)
-			.always()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podPending)
+				.always()
 
 		// When/Then
 		def exception = shouldFail(RuntimeException) {
@@ -1281,20 +1290,20 @@ metadata:
 	void 'waitForResourcePhase with default timeout'() {
 		// Given
 		def podRunning = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewStatus()
-			.withPhase("Running")
-			.endStatus()
-			.build()
+				.withNewMetadata()
+				.withName("test-pod")
+				.withNamespace("test-ns")
+				.endMetadata()
+				.withNewStatus()
+				.withPhase("Running")
+				.endStatus()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
-			.andReturn(200, podRunning)
-			.always()
+				.get()
+				.withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+				.andReturn(200, podRunning)
+				.always()
 
 		// When
 		k8sApiClient.waitForResourcePhase("pod", "test-pod", "test-ns", "Running")
@@ -1329,16 +1338,16 @@ metadata:
 	void 'resolves default namespace for empty string'() {
 		// Given
 		server.expect()
-			.post()
-			.withPath("/api/v1/namespaces/default/secrets")
-			.andReturn(201, new SecretBuilder()
-				.withNewMetadata()
-				.withName("test-secret")
-				.withNamespace("default")
-				.endMetadata()
-				.withType("Opaque")
-				.build())
-			.once()
+				.post()
+				.withPath("/api/v1/namespaces/default/secrets")
+				.andReturn(201, new SecretBuilder()
+						.withNewMetadata()
+						.withName("test-secret")
+						.withNamespace("default")
+						.endMetadata()
+						.withType("Opaque")
+						.build())
+				.once()
 
 		// When
 		k8sApiClient.createSecret("Opaque", "test-secret", "", new Tuple("key", "value"))
@@ -1351,23 +1360,23 @@ metadata:
 		// Test covered indirectly by other tests, but we can verify deployment
 		// Given
 		def deployment = new io.fabric8.kubernetes.api.model.apps.DeploymentBuilder()
-			.withNewMetadata()
-			.withName("test-deploy")
-			.withNamespace("default")
-			.endMetadata()
-			.build()
+				.withNewMetadata()
+				.withName("test-deploy")
+				.withNamespace("default")
+				.endMetadata()
+				.build()
 
 		server.expect()
-			.get()
-			.withPath("/apis/apps/v1/namespaces/default/deployments/test-deploy")
-			.andReturn(200, deployment)
-			.once()
+				.get()
+				.withPath("/apis/apps/v1/namespaces/default/deployments/test-deploy")
+				.andReturn(200, deployment)
+				.once()
 
 		server.expect()
-			.delete()
-			.withPath("/apis/apps/v1/namespaces/default/deployments/test-deploy")
-			.andReturn(200, new StatusBuilder().build())
-			.once()
+				.delete()
+				.withPath("/apis/apps/v1/namespaces/default/deployments/test-deploy")
+				.andReturn(200, new StatusBuilder().build())
+				.once()
 
 		// When
 		k8sApiClient.delete("deployment", "default", "test-deploy")
@@ -1389,43 +1398,43 @@ metadata:
 	void 'waitForResourcePhase resolves ArgoCD custom resource via discovery'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/apis")
-			.andReturn(200, [groups: [[name            : "argoproj.io",
-			                           preferredVersion: [version: "v1beta1"],
-			                           versions        : [[version: "v1beta1"]]]]])
-			.once()
+				.get()
+				.withPath("/apis")
+				.andReturn(200, [groups: [[name            : "argoproj.io",
+				                           preferredVersion: [version: "v1beta1"],
+				                           versions        : [[version: "v1beta1"]]]]])
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/apis/argoproj.io/v1beta1")
-			.andReturn(200, [resources: [[name        : "argocds",
-			                              singularName: "argocd",
-			                              namespaced  : true,
-			                              kind        : "ArgoCD",
-			                              shortNames  : []]]])
-			.once()
+				.get()
+				.withPath("/apis/argoproj.io/v1beta1")
+				.andReturn(200, [resources: [[name        : "argocds",
+				                              singularName: "argocd",
+				                              namespaced  : true,
+				                              kind        : "ArgoCD",
+				                              shortNames  : []]]])
+				.once()
 
 		GenericKubernetesResource argocdResource = new GenericKubernetesResourceBuilder()
-			.withApiVersion("argoproj.io/v1beta1")
-			.withKind("ArgoCD")
-			.withNewMetadata()
-			.withName("argocd")
-			.withNamespace("argocd")
-			.endMetadata()
-			.addToAdditionalProperties("status", [phase: "Available"])
-			.build()
+				.withApiVersion("argoproj.io/v1beta1")
+				.withKind("ArgoCD")
+				.withNewMetadata()
+				.withName("argocd")
+				.withNamespace("argocd")
+				.endMetadata()
+				.addToAdditionalProperties("status", [phase: "Available"])
+				.build()
 
 		boolean argocdResourceWasRequested = false
 
 		server.expect()
-			.get()
-			.withPath("/apis/argoproj.io/v1beta1/namespaces/argocd/argocds/argocd")
-			.andReply(200, { request ->
-				argocdResourceWasRequested = true
-				return argocdResource
-			})
-			.once()
+				.get()
+				.withPath("/apis/argoproj.io/v1beta1/namespaces/argocd/argocds/argocd")
+				.andReply(200, { request ->
+					argocdResourceWasRequested = true
+					return argocdResource
+				})
+				.once()
 
 		// When
 		k8sApiClient.waitForResourcePhase("argocd", "argocd", "argocd", "Available", 5, 1)
@@ -1442,22 +1451,22 @@ metadata:
 	void 'throws KubernetesApiResourceNotFoundException when custom resource cannot be resolved'() {
 		// Given
 		server.expect()
-			.get()
-			.withPath("/apis")
-			.andReturn(200, [groups: [[name            : "argoproj.io",
-			                           preferredVersion: [version: "v1beta1"],
-			                           versions        : [[version: "v1beta1"]]]]])
-			.once()
+				.get()
+				.withPath("/apis")
+				.andReturn(200, [groups: [[name            : "argoproj.io",
+				                           preferredVersion: [version: "v1beta1"],
+				                           versions        : [[version: "v1beta1"]]]]])
+				.once()
 
 		server.expect()
-			.get()
-			.withPath("/apis/argoproj.io/v1beta1")
-			.andReturn(200, [resources: [[name        : "argocds",
-			                              singularName: "argocd",
-			                              namespaced  : true,
-			                              kind        : "ArgoCD",
-			                              shortNames  : []]]])
-			.once()
+				.get()
+				.withPath("/apis/argoproj.io/v1beta1")
+				.andReturn(200, [resources: [[name        : "argocds",
+				                              singularName: "argocd",
+				                              namespaced  : true,
+				                              kind        : "ArgoCD",
+				                              shortNames  : []]]])
+				.once()
 
 		// When/Then
 		def exception = shouldFail(K8sClient.KubernetesApiResourceNotFoundException) {
@@ -1465,6 +1474,6 @@ metadata:
 		}
 
 		assertThat(exception.message)
-			.isEqualTo("No API resource found for custom resource type 'does-not-exist'")
+				.isEqualTo("No API resource found for custom resource type 'does-not-exist'")
 	}
 }

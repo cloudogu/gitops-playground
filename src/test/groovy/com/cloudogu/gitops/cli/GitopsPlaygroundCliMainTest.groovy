@@ -2,7 +2,7 @@ package com.cloudogu.gitops.cli
 
 import static org.assertj.core.api.Assertions.assertThat
 
-import com.github.stefanbirkner.systemlambda.SystemLambda
+import uk.org.webcompere.systemstubs.SystemStubs
 import org.junit.jupiter.api.Test
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -27,7 +27,7 @@ class GitopsPlaygroundCliMainTest {
 
 	@Test
 	void 'application returns exit code != 0 on invalid param'() {
-		int status = SystemLambda.catchSystemExit(() -> {
+		int status = SystemStubs.catchSystemExit(() -> {
 			GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
 			                              '--debug' // avoids changing default log pattern
 			] as String[])

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.cloudogu</groupId>
     <artifactId>gitops-playground-cli</artifactId>
@@ -17,8 +17,8 @@
     </parent>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
         <!--suppress
@@ -343,11 +343,13 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- provides withEnvironmentVariable in Tests -->
+        <!-- provides withEnvironmentVariable/catchSystemExit in Tests.
+        Replaces system-lambda (unmaintained since 2021, raw reflection into java.util internals).
+        Uses ByteBuddy instead, see https://github.com/webcompere/system-stubs#readme -->
         <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-lambda</artifactId>
-            <version>1.2.1</version>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-core</artifactId>
+            <version>2.1.8</version>
             <scope>test</scope>
         </dependency>
 
@@ -425,7 +427,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
+            <version>1.18.46</version>
             <scope>provided</scope>
         </dependency>
 
@@ -465,6 +467,9 @@
                         </property>
                     </systemProperties>
 
+                    <!-- Speed up unit tests by running them in parallel. The default is 1C, which means one thread per CPU core. -->
+                    <forkCount>4</forkCount>
+                    <reuseForks>true</reuseForks>
                 </configuration>
             </plugin>
             <plugin>
@@ -542,35 +547,68 @@
                 </executions>
                 <configuration>
                     <configScript>compiler.groovy</configScript>
-                    <targetBytecode>17</targetBytecode>
+                    <targetBytecode>25</targetBytecode>
                 </configuration>
             </plugin>
 
             <!--  Since some dependencies are signed, and we have an uber jar, there will be some
             security conflicts.
-                  So we delete the responsible files -->
+                  So we delete the responsible files.
+                  Uses Ant's zip task to rebuild the jar without the signature files (the documented
+                  way to "delete" entries from a zip, see https://ant.apache.org/manual/Tasks/unzip.html#relatedtasks),
+                  then moves the rebuilt jar over the original. -->
+            <!--            TODO: REMOVE!-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-antrun-plugin</artifactId>-->
+            <!--                <version>3.2.0</version>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <id>remove-a-file-in-sub-archive</id>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>run</goal>-->
+            <!--                        </goals>-->
+            <!--                        <configuration>-->
+            <!--                            <target>-->
+            <!--                                <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp">-->
+            <!--                                    <zipfileset src="${project.build.directory}/${project.artifactId}-${project.version}.jar">-->
+            <!--                                        <exclude name="META-INF/*.DSA"/>-->
+            <!--                                        <exclude name="META-INF/*.RSA"/>-->
+            <!--                                        <exclude name="META-INF/*.SF"/>-->
+            <!--                                    </zipfileset>-->
+            <!--                                </zip>-->
+            <!--                                <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp"-->
+            <!--                                      tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>-->
+            <!--                            </target>-->
+            <!--                        </configuration>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>truezip-maven-plugin</artifactId>
-                <version>1.2</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>remove-a-file-in-sub-archive</id>
-                        <goals>
-                            <goal>remove</goal>
-                        </goals>
                         <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                         <configuration>
-                            <fileset>
-                                <directory>
-                                    ${project.build.directory}/${project.artifactId}-${project.version}.jar/META-INF/
-                                </directory>
-                                <includes>
-                                    <include>*.DSA</include>
-                                    <include>*.RSA</include>
-                                    <include>*.SF</include>
-                                </includes>
-                            </fileset>
+                            <target>
+                                <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp">
+                                    <zipfileset
+                                            src="${project.build.directory}/${project.artifactId}-${project.version}.jar">
+                                        <exclude name="META-INF/*.DSA"/>
+                                        <exclude name="META-INF/*.RSA"/>
+                                        <exclude name="META-INF/*.SF"/>
+                                    </zipfileset>
+                                </zip>
+                                <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp"
+                                      tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -590,11 +628,12 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.36</version>
+                            <version>1.18.46</version>
                         </path>
                         <path>
                             <groupId>io.micronaut</groupId>
                             <artifactId>micronaut-inject-java</artifactId>
+                            <version>${micronaut.version}</version>
                         </path>
                         <path>
                             <groupId>com.cloudogu.versionName</groupId>

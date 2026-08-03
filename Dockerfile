@@ -2,7 +2,7 @@
 # BUILD ARGUMENTS
 # ============================================================================
 # Keep in sync with the versions in pom.xml
-ARG JDK_VERSION='17'
+ARG JDK_VERSION='25'
 
 # ============================================================================
 # STAGE 1: Maven Dependency Cache
