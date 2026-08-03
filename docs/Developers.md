@@ -8,12 +8,12 @@ It provides workarounds or solutions for the given issues.
 
 The versions listed in this README may not always reflect the most current release. 
 Please be aware that newer versions may exist. 
-The versions are also specified in the `Config.groovy` file, so it is recommended to consult that file for the latest version information.
+The versions are also specified in the `Config.java` file, so it is recommended to consult that file for the latest version information.
 
 
 ## Table of contents
 
-<!-- Update with `doctoc --notitle docs/developers.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle docs/Developers.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -25,6 +25,8 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
   - [Solution](#solution)
   - [Updating all plugins](#updating-all-plugins)
 - [Local development](#local-development)
+- [Testing OIDC locally](#testing-oidc-locally)
+  - [External OIDC providers](#external-oidc-providers)
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
@@ -211,6 +213,62 @@ We should automate this!
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```
+
+## Testing OIDC locally
+
+The GOP can be tested with a local Keycloak realm. SCM-Manager is excluded because it currently has no OIDC support in GOP.
+
+Create or reuse a local k3d cluster, install Keycloak and apply the OIDC-enabled GOP profile:
+
+```bash
+make cluster
+make keycloak
+make image
+docker run --rm -t \
+  -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  local/gop --profile=keycloak
+```
+
+`make keycloak` installs the local Keycloak realm from [`docs/oidc/realm-export.json`](oidc/realm-export.json) and
+configures CoreDNS so pods can resolve `keycloak.local.gd`. The `keycloak` profile uses the matching typed OIDC config
+from [`src/main/resources/application-keycloak.yaml`](../src/main/resources/application-keycloak.yaml).
+
+Local test users:
+
+| Username | Password | Group | Expected access |
+| :--- | :--- | :--- | :--- |
+| `admin` | `admin` | `gop-admins` | Full admin access in Argo CD, Jenkins, Grafana and Vault |
+| `user` | `user` | - | No GOP admin permissions |
+
+The relevant GOP OIDC config fields are `issuerUrl`, `clientId`, `clientSecret`, `scopes` and `adminGroupName`.
+`adminGroupName` is intentionally the only authorization mapping GOP configures. New users must not receive admin
+permissions unless the identity provider includes them in that group claim.
+
+Jenkins uses the OIDC security realm and an explicit `escapeHatch` with the configured local Jenkins admin user and
+password. Opening Jenkins normally starts the OIDC login flow. Use `http://jenkins.localhost/login` with the configured
+local Jenkins admin credentials for the fallback login. The form posts to Jenkins' internal `securityRealm/escapeHatch`
+endpoint; that endpoint is not a standalone browser page. If the browser has already started an OIDC login flow and gets
+redirected between Jenkins and Keycloak, use a private browser window or clear the Jenkins and Keycloak cookies before
+testing the fallback login. This keeps the local fallback login deterministic instead of depending on manually supplied
+JCasC snippets.
+
+### External OIDC providers
+
+For external providers, create one client per tool and configure the same fields under:
+
+* `features.argocd.oidc`
+* `features.monitoring.oidc`
+* `features.secrets.vault.oidc`
+* `jenkins.oidc`
+
+The provider must expose a `groups` claim containing the configured `adminGroupName`. Configure redirect URIs for the
+tool URLs that GOP exposes, for example:
+
+* Argo CD: `<argocd-url>/auth/callback`
+* Jenkins: `<jenkins-url>/securityRealm/finishLogin`
+* Grafana: `<grafana-url>/login/generic_oauth`
+* Vault: `<vault-url>/ui/vault/auth/oidc/oidc/callback`
 
 ## Testing URL separator hyphens
 ```bash

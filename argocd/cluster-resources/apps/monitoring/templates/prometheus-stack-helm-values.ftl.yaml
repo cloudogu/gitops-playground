@@ -142,11 +142,29 @@ alertmanager:
   enabled: false
 grafana:
   assertNoLeakedSecrets: false
+<#assign grafanaOidc = (config.features.monitoring.oidc)!{}>
   grafana.ini:
-<#if config.features.monitoring.oidc?has_content>
-    <#list config.features.monitoring.oidc?trim?split("\n") as line>
-    ${line}
-    </#list>
+<#if grafanaOidc?has_content && grafanaOidc.enabled>
+    server:
+      domain: ${monitoring.grafana.host}
+      root_url: ${config.features.monitoring.grafanaUrl}
+    auth.generic_oauth:
+      enabled: true
+      name: ${(grafanaOidc.providerName)!"Keycloak"}
+      allow_sign_up: true
+      client_id: ${grafanaOidc.clientId}
+      client_secret: ${grafanaOidc.clientSecret}
+      scopes: <#list (grafanaOidc.scopes!["openid", "profile", "email"]) as scope>${scope}<#sep> </#list>
+      auth_url: ${grafanaOidc.issuerUrl}/protocol/openid-connect/auth
+      token_url: ${grafanaOidc.issuerUrl}/protocol/openid-connect/token
+      api_url: ${grafanaOidc.issuerUrl}/protocol/openid-connect/userinfo
+      signout_redirect_url: ${config.features.monitoring.grafanaUrl}
+      groups_attribute_path: groups
+<#if grafanaOidc.adminGroupName?has_content>
+      role_attribute_path: contains(groups[*], '${grafanaOidc.adminGroupName}') && 'Admin' || 'None'
+      role_attribute_strict: true
+      allow_assign_grafana_admin: true
+</#if>
 </#if>
     analytics:
       check_for_updates: false

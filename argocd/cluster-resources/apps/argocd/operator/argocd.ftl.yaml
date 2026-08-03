@@ -6,6 +6,12 @@ metadata:
 spec:
   extraConfig:
     application.resourceTrackingMethod: annotation
+    <#if config.features.argocd.url?has_content && argocd.host?has_content>
+    url: ${config.features.argocd.url}
+    additionalUrls: |
+      - http://${argocd.host}
+      - https://${argocd.host}
+    </#if>
   applicationSet:
     enabled: true
     resources:

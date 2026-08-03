@@ -44,6 +44,7 @@ kubernetes-client-api:7.3.1-256.v788a_0b_787114
 kubernetes-credentials:207.v492f58828b_ed
 mailer:534.v1b_36f5864073
 metrics:4.2.37-494.v06f9a_939d33a_
+matrix-auth:3.2.10
 mina-sshd-api-common:2.16.0-184.v1e0e8b_e8e813
 mina-sshd-api-core:2.16.0-184.v1e0e8b_e8e813
 okhttp-api:5.3.2-200.vedb_720a_cf1f8

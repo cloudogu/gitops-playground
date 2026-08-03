@@ -255,6 +255,71 @@ class ArgoCDTest {
 	}
 
 	@Test
+	void 'Configures Argo CD URL and additional redirect URLs'() {
+		config.features.argocd.url = 'https://argocd.localhost'
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def cm = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['cm']
+		assertThat(cm['url']).isEqualTo('https://argocd.localhost')
+		assertThat(cm['additionalUrls'] as String).contains('http://argocd.localhost', 'https://argocd.localhost')
+	}
+
+	@Test
+	void 'configures Argo CD OIDC from structured config'() {
+		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'argocd',
+			clientSecret: 'argocd-secret',
+			adminGroupName: 'gop-admins')
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		def oidcConfig = new YamlSlurper().parseText(valuesYaml['cm']['oidc.config'] as String)
+		assertThat(oidcConfig['issuer']).isEqualTo('http://keycloak.local.gd/realms/gop')
+		assertThat(oidcConfig['clientID']).isEqualTo('argocd')
+		assertThat(valuesYaml['rbac']['policy.csv'] as String).contains('g, gop-admins, role:admin')
+		assertThat(valuesYaml['rbac']['scopes']).isEqualTo('[groups]')
+	}
+
+	@Test
+	void 'When Argo CD OIDC config is null: Does not include OIDC configuration'() {
+		config.features.argocd.oidc = null
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		assertThat(valuesYaml['cm']['oidc.config']).isNull()
+		assertThat(valuesYaml['rbac']).isNull()
+	}
+
+	@Test
+	void 'When Argo CD OIDC scopes are null: Uses default scopes'() {
+		config.features.argocd.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'argocd',
+			clientSecret: 'argocd-secret',
+			scopes: null)
+
+		def argocd = createArgoCD()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+		this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
+
+		def valuesYaml = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']
+		def oidcConfig = new YamlSlurper().parseText(valuesYaml['cm']['oidc.config'] as String)
+		assertThat(oidcConfig['requestedScopes'] as List).containsExactly('openid', 'profile', 'email')
+	}
+
+	@Test
 	void 'When mailServer disabled: Does not include mail configurations into cluster resources'() {
 		config.features.mail.active = false
 
@@ -1052,6 +1117,19 @@ class ArgoCDTest {
 
 		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
 		assertThat(yaml['spec']['key']).isEqualTo('value')
+	}
+
+	@Test
+	void 'Operator config sets Argo CD URL and additional redirect URLs'() {
+		config.features.argocd.url = 'https://argocd.localhost'
+		def argocd = setupOperatorTest()
+		execute(argocd)
+		clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
+
+		def yaml = parseActualYaml(Path.of(clusterResourcesRepoLayout.operatorConfigFile()).toString())
+		def extraConfig = yaml['spec']['extraConfig']
+		assertThat(extraConfig['url']).isEqualTo('https://argocd.localhost')
+		assertThat(extraConfig['additionalUrls'] as String).contains('http://argocd.localhost', 'https://argocd.localhost')
 	}
 
 	@Test

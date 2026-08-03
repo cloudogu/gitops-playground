@@ -83,6 +83,21 @@ class GitopsPlaygroundCliTest {
 	}
 
 	@Test
+	void 'Starts with documented keycloak OIDC profile'() {
+		def status = cli.run('--profile=keycloak')
+
+		assertThat(status).isEqualTo(ReturnCode.SUCCESS)
+		assertThat(cli.lastSchema.features.argocd.oidc.enabled).isTrue()
+		assertThat(cli.lastSchema.features.argocd.oidc.clientId).isEqualTo('argocd')
+		assertThat(cli.lastSchema.features.monitoring.oidc.enabled).isTrue()
+		assertThat(cli.lastSchema.features.monitoring.oidc.clientId).isEqualTo('grafana')
+		assertThat(cli.lastSchema.features.secrets.vault.oidc.enabled).isTrue()
+		assertThat(cli.lastSchema.features.secrets.vault.oidc.clientId).isEqualTo('vault')
+		assertThat(cli.lastSchema.jenkins.oidc.enabled).isTrue()
+		assertThat(cli.lastSchema.jenkins.oidc.clientId).isEqualTo('jenkins')
+	}
+
+	@Test
 	void 'Outputs config file'() {
 		def status = cli.run('--output-config-file')
 

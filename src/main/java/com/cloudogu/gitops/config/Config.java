@@ -472,7 +472,7 @@ public class Config {
 		private String mavenCentralMirror = "";
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		private String oidc = "";
+		private OidcSchema oidc = new OidcSchema("jenkins");
 
 		@Option(names = {"--jenkins-additional-envs"}, description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
 		@JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
@@ -700,7 +700,7 @@ public class Config {
 		private Map<String, Object> values = new HashMap<>();
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		private String oidc = "";
+		private OidcSchema oidc = new OidcSchema("argocd");
 	}
 
 	@Getter
@@ -746,7 +746,7 @@ public class Config {
 		private String grafanaEmailTo = "infra@example.org";
 
 		@JsonPropertyDescription(OIDC_DESCPRIPTION)
-		private String oidc = "";
+		private OidcSchema oidc = new OidcSchema("grafana");
 
 		@Mixin
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -851,7 +851,7 @@ public class Config {
 			private String url = "";
 
 			@JsonPropertyDescription(OIDC_DESCPRIPTION)
-			private VaultOidcSchema oidc;
+			private OidcSchema oidc = new OidcSchema("vault");
 
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
@@ -873,18 +873,44 @@ public class Config {
 				private String image = "";
 			}
 
-			@Getter
-			@Setter
-			public static class VaultOidcSchema {
-				@JsonPropertyDescription("OIDC client ID")
-				private String clientId = "vault";
+		}
+	}
 
-				@JsonPropertyDescription("OIDC client secret")
-				private String clientSecret = "";
+	@Getter
+	@Setter
+	public static class OidcSchema {
+		@JsonPropertyDescription("Name of the OIDC provider displayed in tool login screens")
+		private String providerName = "Keycloak";
 
-				@JsonPropertyDescription("OIDC discovery URL")
-				private String discoveryUrl = "";
-			}
+		@JsonPropertyDescription("OIDC issuer URL, for example http://keycloak.local.gd/realms/gop")
+		private String issuerUrl = "";
+
+		@JsonPropertyDescription("OIDC client ID")
+		private String clientId = "";
+
+		@JsonPropertyDescription("OIDC client secret")
+		private String clientSecret = "";
+
+		@JsonPropertyDescription("OIDC scopes requested by the tool")
+		private List<String> scopes = new ArrayList<>(Arrays.asList("openid", "profile", "email"));
+
+		@JsonPropertyDescription("OIDC group that receives full admin permissions in all OIDC-enabled tools")
+		private String adminGroupName = "";
+
+		public OidcSchema() {
+		}
+
+		private OidcSchema(String clientId) {
+			this.clientId = clientId;
+		}
+
+		@JsonIgnore
+		public boolean isEnabled() {
+			return isNotBlank(clientSecret) && isNotBlank(issuerUrl) && isNotBlank(clientId);
+		}
+
+		private static boolean isNotBlank(String value) {
+			return value != null && !value.trim().isEmpty();
 		}
 	}
 

@@ -444,7 +444,17 @@
       ]
     }
   },
-  "groups": [],
+  "groups": [
+    {
+      "id": "c53f9f52-70fd-4a44-8434-b2e0afde2ed9",
+      "name": "gop-admins",
+      "path": "/gop-admins",
+      "attributes": {},
+      "realmRoles": [],
+      "clientRoles": {},
+      "subGroups": []
+    }
+  ],
   "defaultRole": {
     "id": "5c67838d-09d4-498e-b237-06439f12e298",
     "name": "default-roles-gop",
@@ -498,6 +508,56 @@
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "webAuthnPolicyPasswordlessExtraOrigins": [],
   "users": [
+    {
+      "id": "67462229-3abf-4da5-812c-30d27068fc5f",
+      "username": "admin",
+      "firstName": "GOP",
+      "lastName": "Admin",
+      "email": "admin@example.org",
+      "emailVerified": true,
+      "enabled": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-gop"
+      ],
+      "notBefore": 0,
+      "groups": [
+        "/gop-admins"
+      ]
+    },
+    {
+      "id": "348d24de-24d9-494e-8470-bc899b6e33df",
+      "username": "user",
+      "firstName": "GOP",
+      "lastName": "User",
+      "email": "user@example.org",
+      "emailVerified": true,
+      "enabled": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-gop"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
     {
       "id": "f88d9807-35f6-4f31-ac26-124a9d59373e",
       "username": "service-account-argocd",
@@ -769,11 +829,13 @@
         "http://argocd.localhost/auth/callback",
         "http://argocd.localhost/auth/callback/",
         "http://argocd.localhost/",
-        "*",
-        "https://argocd.localhost/auth/callback"
+        "https://argocd.localhost",
+        "https://argocd.localhost/",
+        "https://argocd.localhost/*"
       ],
       "webOrigins": [
         "http://argocd.localhost",
+        "https://argocd.localhost",
         "*"
       ],
       "notBefore": 0,
@@ -809,6 +871,7 @@
         "profile",
         "roles",
         "basic",
+        "groups",
         "email"
       ],
       "optionalClientScopes": [
@@ -911,6 +974,7 @@
         "profile",
         "roles",
         "basic",
+        "groups",
         "email"
       ],
       "optionalClientScopes": [
@@ -971,6 +1035,7 @@
         "profile",
         "roles",
         "basic",
+        "groups",
         "email"
       ],
       "optionalClientScopes": [
@@ -1143,6 +1208,7 @@
         "profile",
         "roles",
         "basic",
+        "groups",
         "email"
       ],
       "optionalClientScopes": [
@@ -1155,6 +1221,33 @@
     }
   ],
   "clientScopes": [
+    {
+      "id": "51501633-93f2-4b93-9252-6fd8c765c9f4",
+      "name": "groups",
+      "description": "OIDC group membership claim for local GOP testing",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "a186dd76-a626-4ef2-92d7-2516b3bb7d97",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ]
+    },
     {
       "id": "abf4e1b3-548b-45c5-af89-1dd6c6c04175",
       "name": "address",

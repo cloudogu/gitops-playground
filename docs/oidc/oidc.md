@@ -23,6 +23,18 @@ before using this outside of a local throwaway cluster.
 
 Run the following commands from the repository root.
 
+For the usual local developer setup, prefer the make target and the matching GOP profile:
+
+```bash
+make keycloak
+docker run --rm -t \
+  -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  local/gop --profile=keycloak
+```
+
+The manual steps below are useful when you want to inspect or adapt individual parts of the Keycloak setup.
+
 ## Reapply GOP from a clean local k3d cluster
 
 If you already have a local GOP instance and want to reapply it from scratch, delete the current k3d cluster first.
@@ -163,6 +175,10 @@ For local development from this repository, use the same config file directly:
 
 ## Troubleshooting
 
+- `Substituted images detected`: this warning is expected for the `bitnamilegacy` images used by the local setup. It is
+  not fatal by itself. Check the actual pod state and events with `kubectl -n keycloak describe pod keycloak-0`.
+  During the first start Keycloak can take around two minutes until the Quarkus augmentation, database initialization and
+  realm import are complete. Temporary readiness probe failures with `connection refused` are expected during that time.
 - `Script upload is disabled`: the export still contains Keycloak Authorization Services JavaScript policies. The
   checked-in export intentionally removes Authorization Services from the demo OIDC clients because Argo CD, Jenkins,
   Vault and Grafana only need normal OIDC clients.
@@ -176,5 +192,8 @@ For local development from this repository, use the same config file directly:
   The demo export in this repository already matches the file.
 - Jenkins fails during startup with
   `No hudson.security.SecurityRealm implementation found for oic`: Jenkins is reading the OIDC JCasC file before the
-  OIDC plugin is available. Install `oic-auth` through the Jenkins Helm values so it is present during controller boot;
-  installing it later through GOP's post-start plugin upload is too late for JCasC.
+  OIDC plugin is available. Install the Jenkins OIDC boot plugins through the Jenkins Helm values so they are present
+  during controller boot; installing them later through GOP's post-start plugin upload is too late for JCasC.
+- Jenkins redirects between `http://jenkins.localhost/login` and Keycloak during fallback login: the fallback form at
+  `/login` posts to the configured `escapeHatch`, but stale OIDC browser state can continue an already started Keycloak
+  login flow. Use a private browser window or clear the Jenkins and Keycloak cookies before testing the fallback login.

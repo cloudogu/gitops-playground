@@ -1,0 +1,96 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://localhost
+  password: "admin"
+features:
+  certManager:
+    active: true
+  argocd:
+    active: true
+    operator: false
+    oidc:
+      providerName: Keycloak
+      issuerUrl: http://keycloak.local.gd/realms/gop
+      clientId: argocd
+      clientSecret: Cq3U2Dvx6WR5ep2ZLH8rZXNKFNcIX5Zx
+      adminGroupName: gop-admins
+  ingress:
+    active: true
+  monitoring:
+    active: true
+    oidc:
+      providerName: Keycloak
+      issuerUrl: http://keycloak.local.gd/realms/gop
+      clientId: grafana
+      clientSecret: 46uALR2HeqLPtJxzkkn6tK6FVC9vMmRc
+      adminGroupName: gop-admins
+  secrets:
+    vault:
+      mode: "dev"
+      oidc:
+        providerName: Keycloak
+        issuerUrl: http://keycloak.local.gd/realms/gop
+        clientId: vault
+        clientSecret: XySg7UyAzVkcaU4Visqfe9EChDvARYA1
+        adminGroupName: gop-admins
+jenkins:
+  active: true
+  password: "admin"
+  metricsUsername: "admin"
+  metricsPassword: "admin"
+  oidc:
+    providerName: Keycloak
+    issuerUrl: http://keycloak.local.gd/realms/gop
+    clientId: jenkins
+    clientSecret: "mtuIbUdggI2ZSy7jSsQW0WkwK0CwMbvO"
+    adminGroupName: gop-admins
+registry:
+  active: true
+  password: "admin"
+scm:
+  scmManager:
+    password: "admin"
+content:
+  repos:
+    - url: https://github.com/cloudogu/gitops-build-lib
+      target: 3rd-party-dependencies/gitops-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/ces-build-lib
+      target: 3rd-party-dependencies/ces-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-boot-helm-chart
+      target: 3rd-party-dependencies/spring-boot-helm-chart
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-plain
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-helm
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/gitops-examples
+      path: example-apps-via-content-loader/
+      ref: main
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+  namespaces:
+    - ${config.application.namePrefix}example-apps-production
+    - ${config.application.namePrefix}example-apps-staging
+  variables:
+    petclinic:
+      baseDomain: "petclinic"
+    images:
+      kubectl: "alpine/kubectl:latest"
+      helm: "ghcr.io/cloudogu/helm:latest"
+      kubeval: "ghcr.io/cloudogu/helm:latest"
+      helmKubeval: "ghcr.io/cloudogu/helm:latest"
+      yamllint: "cytopia/yamllint:1.25-0.7"
+      petclinic: "eclipse-temurin:17-jre-alpine"
+      maven: ""

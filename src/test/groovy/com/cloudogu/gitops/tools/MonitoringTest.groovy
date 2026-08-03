@@ -251,6 +251,47 @@ policies:
 	}
 
 	@Test
+	void "configures Grafana OIDC from structured config"() {
+		config.features.monitoring.grafanaUrl = 'http://grafana.localhost'
+		config.features.monitoring.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'grafana',
+			clientSecret: 'grafana-secret',
+			adminGroupName: 'gop-admins')
+
+		install(createStack(scmManagerMock))
+
+		def oauth = parseActualYaml()['grafana']['grafana.ini']['auth.generic_oauth']
+		assertThat(oauth['enabled']).isEqualTo(true)
+		assertThat(oauth['client_id']).isEqualTo('grafana')
+		assertThat(oauth['auth_url']).isEqualTo('http://keycloak.local.gd/realms/gop/protocol/openid-connect/auth')
+		assertThat(oauth['role_attribute_path']).isEqualTo("contains(groups[*], 'gop-admins') && 'Admin' || 'None'")
+		assertThat(oauth['role_attribute_strict']).isEqualTo(true)
+	}
+
+	@Test
+	void "does not configure Grafana OIDC when OIDC config is null"() {
+		config.features.monitoring.oidc = null
+
+		install(createStack(scmManagerMock))
+
+		assertThat(parseActualYaml()['grafana']['grafana.ini'] as Map).doesNotContainKey('auth.generic_oauth')
+	}
+
+	@Test
+	void "uses default Grafana OIDC scopes when scopes are null"() {
+		config.features.monitoring.grafanaUrl = 'http://grafana.localhost'
+		config.features.monitoring.oidc = new Config.OidcSchema(issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			clientId: 'grafana',
+			clientSecret: 'grafana-secret',
+			scopes: null)
+
+		install(createStack(scmManagerMock))
+
+		def oauth = parseActualYaml()['grafana']['grafana.ini']['auth.generic_oauth']
+		assertThat(oauth['scopes']).isEqualTo('openid profile email')
+	}
+
+	@Test
 	void 'uses ingress if enabled'() {
 		config.features.monitoring.grafanaUrl = 'http://grafana.local'
 
