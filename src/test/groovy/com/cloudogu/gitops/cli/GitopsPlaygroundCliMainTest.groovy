@@ -1,11 +1,10 @@
 package com.cloudogu.gitops.cli
 
-import static org.assertj.core.api.Assertions.assertThat
-
-import uk.org.webcompere.systemstubs.SystemStubs
 import org.junit.jupiter.api.Test
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+
+import static org.assertj.core.api.Assertions.assertThat
 
 class GitopsPlaygroundCliMainTest {
 
@@ -27,13 +26,12 @@ class GitopsPlaygroundCliMainTest {
 
 	@Test
 	void 'application returns exit code != 0 on invalid param'() {
-		int status = SystemStubs.catchSystemExit(() -> {
-			GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
-			                              '--debug' // avoids changing default log pattern
-			] as String[])
-		})
+		ReturnCode returnCode = new GitopsPlaygroundCliMain().exec([
+				'--parameter-that-doesnt-exist ',
+				'--debug' // avoids changing default log pattern
+		] as String[], GitopsPlaygroundCli.class)
 
-		assertThat(status).isNotZero()
+		assertThat(returnCode.ordinal()).isNotZero()
 	}
 
 	static class ThrowingCommand extends MockedCommand {

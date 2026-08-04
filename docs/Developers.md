@@ -50,7 +50,7 @@ The versions are also specified in the `Config.java` file, so it is recommended 
 
 ## Prerequisites
 
-- Java 17
+- Java 25
 - Groovy
 - Maven
 - Docker

@@ -17,8 +17,9 @@
     </parent>
 
     <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <!-- Micronaut derives source/target from jdk.version and the release flag from release.version. -->
+        <jdk.version>25</jdk.version>
+        <release.version>25</release.version>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
         <!--suppress
@@ -343,9 +344,8 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- provides withEnvironmentVariable/catchSystemExit in Tests.
-        Replaces system-lambda (unmaintained since 2021, raw reflection into java.util internals).
-        Uses ByteBuddy instead, see https://github.com/webcompere/system-stubs#readme -->
+        <!-- Provides withEnvironmentVariable in tests. Replaces the unmaintained system-lambda
+        implementation with a Byte Buddy based implementation that supports current JDKs. -->
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-core</artifactId>
@@ -411,7 +411,7 @@
             <version>4.8.184</version>
         </dependency>
 
-        <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
+        <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
@@ -453,9 +453,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
                 <configuration>
-                    <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's
-                    withEnvironmentVariable -->
-                    <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
                     <systemProperties>
                         <property>
                             <name>ROOT_LOG_LEVEL</name>
@@ -466,10 +463,6 @@
                             <value>OFF</value>
                         </property>
                     </systemProperties>
-
-                    <!-- Speed up unit tests by running them in parallel. The default is 1C, which means one thread per CPU core. -->
-                    <forkCount>4</forkCount>
-                    <reuseForks>true</reuseForks>
                 </configuration>
             </plugin>
             <plugin>
@@ -549,69 +542,6 @@
                     <configScript>compiler.groovy</configScript>
                     <targetBytecode>25</targetBytecode>
                 </configuration>
-            </plugin>
-
-            <!--  Since some dependencies are signed, and we have an uber jar, there will be some
-            security conflicts.
-                  So we delete the responsible files.
-                  Uses Ant's zip task to rebuild the jar without the signature files (the documented
-                  way to "delete" entries from a zip, see https://ant.apache.org/manual/Tasks/unzip.html#relatedtasks),
-                  then moves the rebuilt jar over the original. -->
-            <!--            TODO: REMOVE!-->
-            <!--            <plugin>-->
-            <!--                <groupId>org.apache.maven.plugins</groupId>-->
-            <!--                <artifactId>maven-antrun-plugin</artifactId>-->
-            <!--                <version>3.2.0</version>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <id>remove-a-file-in-sub-archive</id>-->
-            <!--                        <phase>package</phase>-->
-            <!--                        <goals>-->
-            <!--                            <goal>run</goal>-->
-            <!--                        </goals>-->
-            <!--                        <configuration>-->
-            <!--                            <target>-->
-            <!--                                <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp">-->
-            <!--                                    <zipfileset src="${project.build.directory}/${project.artifactId}-${project.version}.jar">-->
-            <!--                                        <exclude name="META-INF/*.DSA"/>-->
-            <!--                                        <exclude name="META-INF/*.RSA"/>-->
-            <!--                                        <exclude name="META-INF/*.SF"/>-->
-            <!--                                    </zipfileset>-->
-            <!--                                </zip>-->
-            <!--                                <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp"-->
-            <!--                                      tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>-->
-            <!--                            </target>-->
-            <!--                        </configuration>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--            </plugin>-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>remove-a-file-in-sub-archive</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp">
-                                    <zipfileset
-                                            src="${project.build.directory}/${project.artifactId}-${project.version}.jar">
-                                        <exclude name="META-INF/*.DSA"/>
-                                        <exclude name="META-INF/*.RSA"/>
-                                        <exclude name="META-INF/*.SF"/>
-                                    </zipfileset>
-                                </zip>
-                                <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar.tmp"
-                                      tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
