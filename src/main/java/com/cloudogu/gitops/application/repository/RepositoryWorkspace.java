@@ -7,7 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 /**
  * Represents the prepared local GitOps repository workspace used during a GOP deployment.
@@ -99,18 +102,30 @@ public class RepositoryWorkspace implements AutoCloseable {
 	}
 
 	public void createLocalDirectories() {
-		Path.of(clusterResourcesRootDir()).toFile().mkdirs();
-		Path.of(clusterResourcesAppsDir()).toFile().mkdirs();
-		Path.of(clusterResourcesArgoCdDir()).toFile().mkdirs();
-		Path.of(clusterResourcesApplicationsDir()).toFile().mkdirs();
-		Path.of(clusterResourcesProjectsDir()).toFile().mkdirs();
+		Stream.of(
+			clusterResourcesRootDir(),
+			clusterResourcesAppsDir(),
+			clusterResourcesArgoCdDir(),
+			clusterResourcesApplicationsDir(),
+			clusterResourcesProjectsDir()
+		).forEach(this::createDirectorySafely);
 
 		if (hasTenantBootstrapRepository()) {
-			Path.of(tenantBootstrapRootDir()).toFile().mkdirs();
-			Path.of(tenantBootstrapAppsDir()).toFile().mkdirs();
-			Path.of(tenantBootstrapArgoCdDir()).toFile().mkdirs();
-			Path.of(tenantBootstrapApplicationsDir()).toFile().mkdirs();
-			Path.of(tenantBootstrapProjectsDir()).toFile().mkdirs();
+			Stream.of(
+				tenantBootstrapRootDir(),
+				tenantBootstrapAppsDir(),
+				tenantBootstrapArgoCdDir(),
+				tenantBootstrapApplicationsDir(),
+				tenantBootstrapProjectsDir()
+			).forEach(this::createDirectorySafely);
+		}
+	}
+
+	private void createDirectorySafely(String directory) {
+		try {
+			Files.createDirectories(Path.of(directory));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create directory: " + directory, e);
 		}
 	}
 
@@ -190,7 +205,7 @@ public class RepositoryWorkspace implements AutoCloseable {
 	}
 
 	public void commitAndPushClusterResourcesChanges(String message) throws GitAPIException {
-		log.debug(message);
+		log.debug("Committing cluster resources: {}", message);
 		clusterResourcesRepository.commitAndPush(message);
 	}
 
