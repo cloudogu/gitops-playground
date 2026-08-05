@@ -54,10 +54,11 @@ public class ClusterResourcesCopyFilter {
 		return norm + "/";
 	}
 
-	private static boolean matches(File candidateFile,
-	                               File srcRoot,
-	                               Set<String> prefixes,
-	                               Set<String> templateIncludePrefixes) {
+	private static boolean matches(
+		File candidateFile,
+		File srcRoot,
+		Set<String> prefixes,
+		Set<String> templateIncludePrefixes) {
 		String rel = relativePath(candidateFile, srcRoot);
 		if (rel == null) {
 			return false;
@@ -79,7 +80,8 @@ public class ClusterResourcesCopyFilter {
 
 		if (isDir) {
 			return prefixes.stream()
-			               .anyMatch(prefix -> relDir.equals(prefix) || relDir.startsWith(prefix) || prefix.startsWith(relDir));
+			               .anyMatch(prefix -> relDir.equals(prefix) || relDir.startsWith(prefix) || prefix.startsWith(
+							   relDir));
 		}
 
 		return prefixes.stream().anyMatch(rel::startsWith);

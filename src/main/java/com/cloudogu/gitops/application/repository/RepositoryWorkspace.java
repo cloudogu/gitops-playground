@@ -76,12 +76,23 @@ public class RepositoryWorkspace implements AutoCloseable {
 
 		log.debug("Ensuring cluster resources repository. repoTarget='{}'", clusterResourcesRepository.getRepoTarget());
 
-		ensureRepositoryExists(clusterResourcesRepository.getGitProvider(), clusterResourcesRepository.getRepoTarget(), "GitOps repo for basic cluster-resources");
+		ensureRepositoryExists(
+			clusterResourcesRepository.getGitProvider(),
+			clusterResourcesRepository.getRepoTarget(),
+			"GitOps repo for basic cluster-resources"
+		);
 
 		if (hasTenantBootstrapRepository()) {
-			log.debug("Ensuring tenant bootstrap repository. repoTarget='{}'", tenantBootstrapRepositoryOrFail().getRepoTarget());
+			log.debug(
+				"Ensuring tenant bootstrap repository. repoTarget='{}'",
+				tenantBootstrapRepositoryOrFail().getRepoTarget()
+			);
 
-			ensureRepositoryExists(tenantBootstrapRepositoryOrFail().getGitProvider(), tenantBootstrapRepositoryOrFail().getRepoTarget(), "GitOps repo for tenant bootstrap resources");
+			ensureRepositoryExists(
+				tenantBootstrapRepositoryOrFail().getGitProvider(),
+				tenantBootstrapRepositoryOrFail().getRepoTarget(),
+				"GitOps repo for tenant bootstrap resources"
+			);
 		}
 
 		remoteRepositoriesEnsured = true;

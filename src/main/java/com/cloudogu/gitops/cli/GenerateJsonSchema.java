@@ -34,7 +34,10 @@ public class GenerateJsonSchema {
 
 	private static final Pattern UPPERCASE_LETTER = Pattern.compile("\\p{Lu}", Pattern.UNICODE_CHARACTER_CLASS);
 	private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-	private static final Pattern WHITESPACE_AROUND_NEWLINE = Pattern.compile("\\s*\\n\\s*", Pattern.UNICODE_CHARACTER_CLASS);
+	private static final Pattern WHITESPACE_AROUND_NEWLINE = Pattern.compile(
+		"\\s*\\n\\s*",
+		Pattern.UNICODE_CHARACTER_CLASS
+	);
 
 	public static void main(String[] args) {
 		try {
@@ -178,9 +181,11 @@ public class GenerateJsonSchema {
 		r.put("key", key);
 		r.put("type", typeName(field));
 		r.put("default", formatDefault(safeGet(field, instance)));
-		r.put("desc", WHITESPACE_AROUND_NEWLINE.matcher(jsonDesc != null ? jsonDesc.value() : "-")
-		                                       .replaceAll(" ")
-		                                       .trim());
+		r.put(
+			"desc", WHITESPACE_AROUND_NEWLINE.matcher(jsonDesc != null ? jsonDesc.value() : "-")
+			                                 .replaceAll(" ")
+			                                 .trim()
+		);
 		rows.add(r);
 	}
 

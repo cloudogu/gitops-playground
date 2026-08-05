@@ -23,8 +23,10 @@ import java.util.regex.Pattern;
  * @link https://archive.eclipse.org/jgit/site/4.10.0.201712302008-r/apidocs/org/eclipse/jgit/transport/CredentialsProvider.html
  */
 public class InsecureCredentialProvider extends CredentialsProvider {
-	private static final Pattern INSECURE_CONNECTION_PATTERN = Pattern.compile("^A secure connection to .* could not be established");
-	private static final Pattern SKIP_SSL_PATTERN = Pattern.compile("^Skip SSL verification for git operations for repository");
+	private static final Pattern INSECURE_CONNECTION_PATTERN = Pattern.compile(
+		"^A secure connection to .* could not be established");
+	private static final Pattern SKIP_SSL_PATTERN = Pattern.compile(
+		"^Skip SSL verification for git operations for repository");
 
 	@Override
 	public boolean isInteractive() {
@@ -53,7 +55,8 @@ public class InsecureCredentialProvider extends CredentialsProvider {
 		for (CredentialItem item : items) {
 			if (item instanceof CredentialItem.YesNoType yesNo) {
 				String prompt = yesNo.getPromptText();
-				if ("Skip SSL verification for this single git operation".equals(prompt) || SKIP_SSL_PATTERN.matcher(prompt)
+				if ("Skip SSL verification for this single git operation".equals(prompt) || SKIP_SSL_PATTERN.matcher(
+																												prompt)
 				                                                                                            .find()) {
 					yesNo.setValue(true);
 				} else if ("Always skip SSL verification for this server from now on".equals(prompt)) {

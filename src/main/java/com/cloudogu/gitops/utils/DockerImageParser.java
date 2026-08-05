@@ -68,9 +68,9 @@ public class DockerImageParser {
 	}
 
 	private record ImageAndTag(
-			String imageWithoutTag,
+		String imageWithoutTag,
 
-			String tag
+		String tag
 	) {
 	}
 }

@@ -42,8 +42,9 @@ public class TemplatingEngine {
 	/**
 	 * Executes template with parameters and replaces the .ftl in the file name.
 	 */
-	public File replaceTemplate(File templateFile,
-	                            Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
+	public File replaceTemplate(
+		File templateFile,
+		Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
 		File targetFile = new File(templateFile.toString().replace(".ftl", ""));
 		String rendered = template(templateFile, parameters);
 
@@ -65,14 +66,16 @@ public class TemplatingEngine {
 	 * <p>That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching
 	 * <code>filepathMatches</code>.
 	 */
-	public void replaceTemplates(File path,
-	                             Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
+	public void replaceTemplates(
+		File path,
+		Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
 		replaceTemplates(path, parameters, FTL_FILE_PATTERN);
 	}
 
-	public void replaceTemplates(File path,
-	                             Map<String, Object> parameters,
-	                             Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
+	public void replaceTemplates(
+		File path,
+		Map<String, Object> parameters,
+		Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
 		try (Stream<Path> stream = Files.walk(path.toPath())) {
 			List<Path> files = stream.filter(candidatePath -> filepathMatches.matcher(candidatePath.toString()).find())
 			                         .toList();
@@ -100,9 +103,10 @@ public class TemplatingEngine {
 	/**
 	 * Executes template and writes to targetFile, keeping the template file.
 	 */
-	public File template(File templateFile,
-	                     File targetFile,
-	                     Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
+	public File template(
+		File templateFile,
+		File targetFile,
+		Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
 		Template template = prepareTemplate(templateFile);
 		try (BufferedWriter writer = Files.newBufferedWriter(targetFile.toPath())) {
 			template.process(parameters, writer);
@@ -110,16 +114,18 @@ public class TemplatingEngine {
 		return targetFile;
 	}
 
-	public String template(File templateFile,
-	                       Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
+	public String template(
+		File templateFile,
+		Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
 		Template template = prepareTemplate(templateFile);
 		StringWriter writer = new StringWriter();
 		template.process(parameters, writer);
 		return writer.toString();
 	}
 
-	public String template(String template,
-	                       Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
+	public String template(
+		String template,
+		Map<String, Object> parameters) throws IOException, freemarker.template.TemplateException {
 		StringWriter writer = new StringWriter();
 		Template templateObj = new Template("template", new StringReader(template), engine);
 		templateObj.process(parameters, writer);

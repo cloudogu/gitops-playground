@@ -27,15 +27,19 @@ public class SingleTenantMode implements DeploymentMode {
 
 	@Override
 	public void createSCMCredentialsSecret() {
-		log.debug("Creating repo credential secret that is used by ArgoCD to access repos in {}", config.getScm()
-		                                                                                                .getScmProviderType());
+		log.debug(
+			"Creating repo credential secret that is used by ArgoCD to access repos in {}", config.getScm()
+			                                                                                      .getScmProviderType()
+		);
 
-		createRepoCredentialsSecret("argocd-repo-creds-scm", namespace, gitHandler.getTenant()
-		                                                                          .getUrl(), gitHandler.getTenant()
-		                                                                                               .getCredentials()
-		                                                                                               .getUsername(), gitHandler.getTenant()
-		                                                                                                                         .getCredentials()
-		                                                                                                                         .getPassword());
+		createRepoCredentialsSecret(
+			"argocd-repo-creds-scm", namespace, gitHandler.getTenant()
+			                                              .getUrl(), gitHandler.getTenant()
+			                                                                   .getCredentials()
+			                                                                   .getUsername(), gitHandler.getTenant()
+			                                                                                             .getCredentials()
+			                                                                                             .getPassword()
+		);
 	}
 
 	@Override
@@ -67,9 +71,17 @@ public class SingleTenantMode implements DeploymentMode {
 	public void updateManagedNamespaces() {
 		log.debug("Updating managed namespaces in ArgoCD configuration secret.");
 
-		k8sClient.patch("secret", "argocd-default-cluster-config", namespace, Map.of("stringData", Map.of("namespaces", String.join(",", config.getApplication()
-		                                                                                                                                       .getNamespaces()
-		                                                                                                                                       .getActiveNamespaces()))));
+		k8sClient.patch(
+			"secret", "argocd-default-cluster-config", namespace, Map.of(
+				"stringData", Map.of(
+					"namespaces", String.join(
+						",", config.getApplication()
+						           .getNamespaces()
+						           .getActiveNamespaces()
+					)
+				)
+			)
+		);
 	}
 
 	@Override
@@ -78,12 +90,20 @@ public class SingleTenantMode implements DeploymentMode {
 		k8sClient.applyYaml(Path.of(clusterResourcesRepo.applicationsDir(), "bootstrap.yaml").toString());
 	}
 
-	private void createRepoCredentialsSecret(String secretName,
-	                                         String ns,
-	                                         String url,
-	                                         String username,
-	                                         String password) {
-		k8sClient.createSecret("generic", secretName, ns, new Tuple<>("url", url), new Tuple<>("username", username), new Tuple<>("password", password));
+	private void createRepoCredentialsSecret(
+		String secretName,
+		String ns,
+		String url,
+		String username,
+		String password) {
+		k8sClient.createSecret(
+			"generic",
+			secretName,
+			ns,
+			new Tuple<>("url", url),
+			new Tuple<>("username", username),
+			new Tuple<>("password", password)
+		);
 
 		k8sClient.label("secret", secretName, ns, new Tuple<>("argocd.argoproj.io/secret-type", "repo-creds"));
 	}

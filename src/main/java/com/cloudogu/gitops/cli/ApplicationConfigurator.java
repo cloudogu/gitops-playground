@@ -48,7 +48,8 @@ public class ApplicationConfigurator {
 		}
 
 		if (newConfig.getFeatures().getIngress().getActive() && !hasText(newConfig.getApplication().getBaseUrl())) {
-			log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ");
+			log.warn(
+				"Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ");
 		}
 	}
 
@@ -69,13 +70,18 @@ public class ApplicationConfigurator {
 	private static void addRegistryConfig(Config newConfig) {
 		// Process image pull secrets first, they might even be relevant if no registry is set
 		if (newConfig.getRegistry().getCreateImagePullSecrets()) {
-			String username = firstNonBlank(newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry()
-			                                                                                        .getUsername());
-			String password = firstNonBlank(newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry()
-			                                                                                        .getPassword());
+			String username = firstNonBlank(
+				newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry()
+				                                                        .getUsername()
+			);
+			String password = firstNonBlank(
+				newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry()
+				                                                        .getPassword()
+			);
 
 			if (!hasText(username) || !hasText(password)) {
-				throw new IllegalArgumentException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants");
+				throw new IllegalArgumentException(
+					"createImagePullSecrets needs to be used with either registry username and password or the readOnly variants");
 			}
 		}
 
@@ -139,9 +145,11 @@ public class ApplicationConfigurator {
 			try {
 				newConfig.getScm()
 				         .getScmManager()
-				         .setIngress(new URL(injectSubdomain("scmm", newConfig.getApplication()
-				                                                              .getBaseUrl(), newConfig.getApplication()
-				                                                                                      .getUrlSeparatorHyphen())).getHost());
+				         .setIngress(new URL(injectSubdomain(
+							 "scmm", newConfig.getApplication()
+					                          .getBaseUrl(), newConfig.getApplication()
+					                                                  .getUrlSeparatorHyphen()
+						 )).getHost());
 			} catch (MalformedURLException e) {
 				throw new UncheckedIOException("Failed to evaluate SCM ingress URL", e);
 			}
@@ -181,9 +189,11 @@ public class ApplicationConfigurator {
 		if (hasText(newConfig.getApplication().getBaseUrl())) {
 			try {
 				newConfig.getJenkins()
-				         .setIngress(new URL(injectSubdomain("jenkins", newConfig.getApplication()
-				                                                                 .getBaseUrl(), newConfig.getApplication()
-				                                                                                         .getUrlSeparatorHyphen())).getHost());
+				         .setIngress(new URL(injectSubdomain(
+							 "jenkins", newConfig.getApplication()
+					                             .getBaseUrl(), newConfig.getApplication()
+					                                                     .getUrlSeparatorHyphen()
+						 )).getHost());
 			} catch (MalformedURLException e) {
 				throw new UncheckedIOException("Failed to evaluate Jenkins ingress URL ", e);
 			}
@@ -226,7 +236,8 @@ public class ApplicationConfigurator {
 	public void setMultiTenantModeConfig(Config newConfig) {
 		if (newConfig.getMultiTenant().getUseDedicatedInstance()) {
 			if (!hasText(newConfig.getApplication().getNamePrefix())) {
-				throw new IllegalArgumentException("To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.");
+				throw new IllegalArgumentException(
+					"To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.");
 			}
 
 			if (!newConfig.getFeatures().getArgocd().getOperator()) {
@@ -264,7 +275,10 @@ public class ApplicationConfigurator {
 			newUrl += url.getPath();
 			return newUrl;
 		} catch (MalformedURLException e) {
-			throw new UncheckedIOException("Failed to inject subdomain '" + subdomain + "' into base URL: " + baseUrl, e);
+			throw new UncheckedIOException(
+				"Failed to inject subdomain '" + subdomain + "' into base URL: " + baseUrl,
+				e
+			);
 		}
 	}
 
@@ -291,7 +305,10 @@ public class ApplicationConfigurator {
 				log.info("Found valid URL in features.argocd.resourceInclusionsCluster: {}", url);
 				return true;
 			} catch (MalformedURLException e) {
-				throw new IllegalArgumentException("Invalid URL for 'features.argocd.resourceInclusionsCluster': " + url + ".", e);
+				throw new IllegalArgumentException(
+					"Invalid URL for 'features.argocd.resourceInclusionsCluster': " + url + ".",
+					e
+				);
 			}
 		}
 		return false;
@@ -315,7 +332,10 @@ public class ApplicationConfigurator {
 		try {
 			new URL(internalClusterUrl);
 			config.getFeatures().getArgocd().setResourceInclusionsCluster(internalClusterUrl);
-			log.info("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}", internalClusterUrl);
+			log.info(
+				"Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}",
+				internalClusterUrl
+			);
 		} catch (MalformedURLException e) {
 			throw new UncheckedIOException(errorMessage, e);
 		}

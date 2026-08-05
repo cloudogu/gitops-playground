@@ -38,26 +38,40 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 
 	@Override
 	public void createSCMCredentialsSecret() {
-		log.debug("Creating tenant repo credential secret that is used by tenant ArgoCD to access repos in {}", config.getScm()
-		                                                                                                              .getScmProviderType());
+		log.debug(
+			"Creating tenant repo credential secret that is used by tenant ArgoCD to access repos in {}",
+			config.getScm()
+			      .getScmProviderType()
+		);
 
-		createRepoCredentialsSecret("argocd-repo-creds-scm", namespace, gitHandler.getTenant()
-		                                                                          .getUrl(), gitHandler.getTenant()
-		                                                                                               .getCredentials()
-		                                                                                               .getUsername(), gitHandler.getTenant()
-		                                                                                                                         .getCredentials()
-		                                                                                                                         .getPassword());
+		createRepoCredentialsSecret(
+			"argocd-repo-creds-scm", namespace, gitHandler.getTenant()
+			                                              .getUrl(), gitHandler.getTenant()
+			                                                                   .getCredentials()
+			                                                                   .getUsername(), gitHandler.getTenant()
+			                                                                                             .getCredentials()
+			                                                                                             .getPassword()
+		);
 
-		log.debug("Creating central repo credential secret that is used by central ArgoCD to access repos in {}", config.getScm()
-		                                                                                                                .getScmProviderType());
+		log.debug(
+			"Creating central repo credential secret that is used by central ArgoCD to access repos in {}",
+			config.getScm()
+			      .getScmProviderType()
+		);
 
-		createRepoCredentialsSecret("argocd-repo-creds-central-scm", config.getMultiTenant()
-		                                                                   .getCentralArgocdNamespace(), gitHandler.getCentral()
-		                                                                                                           .getUrl(), gitHandler.getCentral()
-		                                                                                                                                .getCredentials()
-		                                                                                                                                .getUsername(), gitHandler.getCentral()
-		                                                                                                                                                          .getCredentials()
-		                                                                                                                                                          .getPassword());
+		createRepoCredentialsSecret(
+			"argocd-repo-creds-central-scm",
+			config.getMultiTenant()
+			      .getCentralArgocdNamespace(),
+			gitHandler.getCentral()
+			          .getUrl(),
+			gitHandler.getCentral()
+			          .getCredentials()
+			          .getUsername(),
+			gitHandler.getCentral()
+			          .getCredentials()
+			          .getPassword()
+		);
 	}
 
 	@Override
@@ -72,9 +86,17 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 	public void updateManagedNamespaces() {
 		log.debug("Updating managed namespaces in tenant ArgoCD configuration secret.");
 
-		k8sClient.patch(SECRET_RESOURCE, ARGOCD_DEFAULT_CLUSTER_CONFIG, namespace, Map.of("stringData", Map.of("namespaces", String.join(",", config.getApplication()
-		                                                                                                                                            .getNamespaces()
-		                                                                                                                                            .getTenantNamespaces()))));
+		k8sClient.patch(
+			SECRET_RESOURCE, ARGOCD_DEFAULT_CLUSTER_CONFIG, namespace, Map.of(
+				"stringData", Map.of(
+					"namespaces", String.join(
+						",", config.getApplication()
+						           .getNamespaces()
+						           .getTenantNamespaces()
+					)
+				)
+			)
+		);
 
 		updateCentralManagedNamespaces();
 	}
@@ -107,8 +129,10 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 
 			new RbacDefinition(Role.Variant.ARGOCD).withName("argocd-central")
 			                                       .withNamespace(ns)
-			                                       .withServiceAccountsFrom(config.getMultiTenant()
-			                                                                      .getCentralArgocdNamespace(), ARGOCD_SERVICE_ACCOUNTS)
+			                                       .withServiceAccountsFrom(
+													   config.getMultiTenant()
+				                                             .getCentralArgocdNamespace(), ARGOCD_SERVICE_ACCOUNTS
+												   )
 			                                       .withConfig(config)
 			                                       .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 			                                       .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
@@ -117,8 +141,10 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 	}
 
 	private void updateCentralManagedNamespaces() {
-		String base64Namespaces = (String) k8sClient.getArgoCDNamespacesSecret(ARGOCD_DEFAULT_CLUSTER_CONFIG, config.getMultiTenant()
-		                                                                                                            .getCentralArgocdNamespace());
+		String base64Namespaces = (String) k8sClient.getArgoCDNamespacesSecret(
+			ARGOCD_DEFAULT_CLUSTER_CONFIG, config.getMultiTenant()
+			                                     .getCentralArgocdNamespace()
+		);
 
 		String decoded = "";
 		if (base64Namespaces != null) {
@@ -138,16 +164,29 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 
 		log.debug("Updating Central Argocd 'argocd-default-cluster-config' secret");
 
-		k8sClient.patch(SECRET_RESOURCE, ARGOCD_DEFAULT_CLUSTER_CONFIG, config.getMultiTenant()
-		                                                                      .getCentralArgocdNamespace(), Map.of("stringData", Map.of("namespaces", merged)));
+		k8sClient.patch(
+			SECRET_RESOURCE,
+			ARGOCD_DEFAULT_CLUSTER_CONFIG,
+			config.getMultiTenant()
+			      .getCentralArgocdNamespace(),
+			Map.of("stringData", Map.of("namespaces", merged))
+		);
 	}
 
-	private void createRepoCredentialsSecret(String secretName,
-	                                         String ns,
-	                                         String url,
-	                                         String username,
-	                                         String password) {
-		k8sClient.createSecret("generic", secretName, ns, new Tuple<>("url", url), new Tuple<>("username", username), new Tuple<>("password", password));
+	private void createRepoCredentialsSecret(
+		String secretName,
+		String ns,
+		String url,
+		String username,
+		String password) {
+		k8sClient.createSecret(
+			"generic",
+			secretName,
+			ns,
+			new Tuple<>("url", url),
+			new Tuple<>("username", username),
+			new Tuple<>("password", password)
+		);
 
 		k8sClient.label(SECRET_RESOURCE, secretName, ns, new Tuple<>("argocd.argoproj.io/secret-type", "repo-creds"));
 	}

@@ -69,12 +69,13 @@ public class ContentLoader extends AbstractTool {
 	private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>();
 	protected File mergedReposFolder;
 
-	public ContentLoader(K8sClient k8sClient,
-	                     GitRepoFactory repoProvider,
-	                     Jenkins jenkins,
-	                     GitHandler gitHandler,
-	                     FileSystemUtils fileSystemUtils,
-	                     Deployer deployer) {
+	public ContentLoader(
+		K8sClient k8sClient,
+		GitRepoFactory repoProvider,
+		Jenkins jenkins,
+		GitHandler gitHandler,
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer) {
 		this.k8sClient = k8sClient;
 		this.repoProvider = repoProvider;
 		this.jenkins = jenkins;
@@ -124,7 +125,8 @@ public class ContentLoader extends AbstractTool {
 			throw new IllegalArgumentException("content.repos requires a url parameter.");
 		}
 		if (repo.getTarget() != null && !repo.getTarget().isEmpty() && !repo.getTarget().contains("/")) {
-			throw new IllegalArgumentException("content.target needs / to separate namespace/group from repo name. Repo: " + repo.getUrl());
+			throw new IllegalArgumentException(
+				"content.target needs / to separate namespace/group from repo name. Repo: " + repo.getUrl());
 		}
 
 		switch (repo.getType()) {
@@ -211,7 +213,15 @@ public class ContentLoader extends AbstractTool {
 		String releaseName = (helmRelease.getReleaseName() != null && !helmRelease.getReleaseName()
 		                                                                          .isEmpty()) ? helmRelease.getReleaseName() : helmRelease.getName();
 
-		deployHelmChart(helmRelease.getName(), releaseName, helmRelease.getNamespace(), helmConfig, mergedValuesFilePath, context, false);
+		deployHelmChart(
+			helmRelease.getName(),
+			releaseName,
+			helmRelease.getNamespace(),
+			helmConfig,
+			mergedValuesFilePath,
+			context,
+			false
+		);
 
 		repositoryWorkspace.commitAndPushClusterResourcesChanges("Update " + releaseName + " GitOps resources");
 	}
@@ -237,16 +247,29 @@ public class ContentLoader extends AbstractTool {
 
 				k8sClient.createNamespace(namespace);
 
-				k8sClient.createImagePullSecret(registrySecretName, namespace, getConfig().getRegistry()
-				                                                                          .getUrl(), registryUsername, registryPassword);
+				k8sClient.createImagePullSecret(
+					registrySecretName, namespace, getConfig().getRegistry()
+					                                          .getUrl(), registryUsername, registryPassword
+				);
 
-				k8sClient.patch("serviceaccount", "default", namespace, Map.of("imagePullSecrets", List.of(Map.of("name", registrySecretName))));
+				k8sClient.patch(
+					"serviceaccount",
+					"default",
+					namespace,
+					Map.of("imagePullSecrets", List.of(Map.of("name", registrySecretName)))
+				);
 
 				if (getConfig().getRegistry().getTwoRegistries()) {
-					k8sClient.createImagePullSecret("proxy-registry", namespace, getConfig().getRegistry()
-					                                                                        .getProxyUrl(), getConfig().getRegistry()
-					                                                                                                   .getProxyUsername(), getConfig().getRegistry()
-					                                                                                                                                   .getProxyPassword());
+					k8sClient.createImagePullSecret(
+						"proxy-registry",
+						namespace,
+						getConfig().getRegistry()
+						           .getProxyUrl(),
+						getConfig().getRegistry()
+						           .getProxyUsername(),
+						getConfig().getRegistry()
+						           .getProxyPassword()
+					);
 				}
 			}
 		}
@@ -282,29 +305,41 @@ public class ContentLoader extends AbstractTool {
 		return templatingEngine;
 	}
 
-	private void createRepoCoordinates(ContentRepositorySchema repoConfig,
-	                                   File mergedReposFolder,
-	                                   List<RepoCoordinate> repoCoordinates) throws Exception {
+	private void createRepoCoordinates(
+		ContentRepositorySchema repoConfig,
+		File mergedReposFolder,
+		List<RepoCoordinate> repoCoordinates) throws Exception {
 		File repoTmpDir;
 		try {
 			repoTmpDir = Files.createTempDirectory("gitops-playground-content-repo-").toFile();
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to create temporary directory", e);
 		}
-		log.debug("Cloning content repo, {}, revision {}, path {}, overwriteMode {}", repoConfig.getUrl(), repoConfig.getRef(), repoConfig.getPath(), repoConfig.getOverwriteMode());
+		log.debug(
+			"Cloning content repo, {}, revision {}, path {}, overwriteMode {}",
+			repoConfig.getUrl(),
+			repoConfig.getRef(),
+			repoConfig.getPath(),
+			repoConfig.getOverwriteMode()
+		);
 
 		UsernamePasswordCredentialsProvider credentialsProvider = null;
 		if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
 		                                                     .getUsername() != null && repoConfig.getCredentials()
 		                                                                                         .getPassword() != null) {
-			credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.getCredentials()
-			                                                                        .getUsername(), repoConfig.getCredentials()
-			                                                                                                  .getPassword());
+			credentialsProvider = new UsernamePasswordCredentialsProvider(
+				repoConfig.getCredentials()
+				          .getUsername(), repoConfig.getCredentials()
+				                                    .getPassword()
+			);
 		} else if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
 		                                                            .getSecretName() != null && repoConfig.getCredentials()
 		                                                                                                  .getSecretNamespace() != null) {
 			Credentials credentials = this.k8sClient.getCredentialsFromSecret(repoConfig.getCredentials());
-			credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.getUsername(), credentials.getPassword());
+			credentialsProvider = new UsernamePasswordCredentialsProvider(
+				credentials.getUsername(),
+				credentials.getPassword()
+			);
 		} else {
 			// no credentials configured for this repo; clone anonymously
 		}
@@ -316,7 +351,13 @@ public class ContentLoader extends AbstractTool {
 
 		switch (repoConfig.getType()) {
 			case FOLDER_BASED:
-				createRepoCoordinatesForTypeFolderBased(repoConfig, repoTmpDir, contentRepoDir, mergedReposFolder, repoCoordinates);
+				createRepoCoordinatesForTypeFolderBased(
+					repoConfig,
+					repoTmpDir,
+					contentRepoDir,
+					mergedReposFolder,
+					repoCoordinates
+				);
 				try {
 					FileUtils.deleteDirectory(repoTmpDir);
 				} catch (IOException e) {
@@ -324,7 +365,13 @@ public class ContentLoader extends AbstractTool {
 				}
 				break;
 			case COPY:
-				createRepoCoordinatesForTypeCopy(repoConfig, contentRepoDir, mergedReposFolder, repoTmpDir, repoCoordinates);
+				createRepoCoordinatesForTypeCopy(
+					repoConfig,
+					contentRepoDir,
+					mergedReposFolder,
+					repoTmpDir,
+					repoCoordinates
+				);
 				try {
 					FileUtils.deleteDirectory(repoTmpDir);
 				} catch (IOException e) {
@@ -338,39 +385,54 @@ public class ContentLoader extends AbstractTool {
 		log.debug("Finished cloning content repos. repoCoordinates={}", repoCoordinates);
 	}
 
-	private static void createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig,
-	                                                     File contentRepoDir,
-	                                                     File mergedRepoFolder,
-	                                                     File repoTmpDir,
-	                                                     List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeCopy(
+		ContentRepositorySchema repoConfig,
+		File contentRepoDir,
+		File mergedRepoFolder,
+		File repoTmpDir,
+		List<RepoCoordinate> repoCoordinates) {
 		String namespace = repoConfig.getTarget().split("/")[0];
 		String repoName = repoConfig.getTarget().split("/")[1];
 
-		RepoCoordinate repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedRepoFolder, repoConfig);
+		RepoCoordinate repoCoordinate = mergeRepoDirs(
+			contentRepoDir,
+			namespace,
+			repoName,
+			mergedRepoFolder,
+			repoConfig
+		);
 		repoCoordinate.refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.getRef());
 		addRepoCoordinates(repoCoordinates, repoCoordinate);
 	}
 
-	private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig,
-	                                                            File repoTmpDir,
-	                                                            File contentRepoDir,
-	                                                            File mergedRepoFolder,
-	                                                            List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinatesForTypeFolderBased(
+		ContentRepositorySchema repoConfig,
+		File repoTmpDir,
+		File contentRepoDir,
+		File mergedRepoFolder,
+		List<RepoCoordinate> repoCoordinates) {
 		boolean refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.getRef());
 		for (File contentRepoNamespaceDir : findRepoDirectories(contentRepoDir)) {
 			for (File contentRepoFolder : findRepoDirectories(contentRepoNamespaceDir)) {
 				String namespace = contentRepoNamespaceDir.getName();
 				String repoName = contentRepoFolder.getName();
-				RepoCoordinate repoCoordinate = mergeRepoDirs(contentRepoFolder, namespace, repoName, mergedRepoFolder, repoConfig);
+				RepoCoordinate repoCoordinate = mergeRepoDirs(
+					contentRepoFolder,
+					namespace,
+					repoName,
+					mergedRepoFolder,
+					repoConfig
+				);
 				repoCoordinate.refIsTag = refIsTag;
 				addRepoCoordinates(repoCoordinates, repoCoordinate);
 			}
 		}
 	}
 
-	private static void createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig,
-	                                                      File repoTmpDir,
-	                                                      List<RepoCoordinate> repoCoordinates) {
+	private static void createRepoCoordinateForTypeMirror(
+		ContentRepositorySchema repoConfig,
+		File repoTmpDir,
+		List<RepoCoordinate> repoCoordinates) {
 		String namespace = repoConfig.getTarget().split("/")[0];
 		String repoName = repoConfig.getTarget().split("/")[1];
 		RepoCoordinate repoCoordinate = new RepoCoordinate();
@@ -382,11 +444,12 @@ public class ContentLoader extends AbstractTool {
 		addRepoCoordinates(repoCoordinates, repoCoordinate);
 	}
 
-	private static RepoCoordinate mergeRepoDirs(File src,
-	                                            String namespace,
-	                                            String repoName,
-	                                            File mergedRepoFolder,
-	                                            ContentRepositorySchema repoConfig) {
+	private static RepoCoordinate mergeRepoDirs(
+		File src,
+		String namespace,
+		String repoName,
+		File mergedRepoFolder,
+		ContentRepositorySchema repoConfig) {
 		File target = new File(new File(mergedRepoFolder, namespace), repoName);
 		log.debug("Merging content repo, namespace {}, repoName {} from {} to {}", namespace, repoName, src, target);
 		try {
@@ -416,23 +479,39 @@ public class ContentLoader extends AbstractTool {
 			TemplatingEngine engine = getTemplatingEngine();
 
 			try (GitRepo repo = this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant())) {
-				engine.replaceTemplates(srcPath, Map.of("config", getConfig(), "scm", Map.of("baseUrl", repo.getGitProvider()
-				                                                                                            .getUrl(), "host", repo.getGitProvider()
-				                                                                                                                   .getHost(), "protocol", repo.getGitProvider()
-				                                                                                                                                               .getProtocol(), "repoUrl", repo.getGitProvider()
-				                                                                                                                                                                              .repoPrefix()), "statics", !getConfig().getContent()
-				                                                                                                                                                                                                                     .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-				                                                                                                                                                                                                                                                                                                       .getStaticModels() : new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, getConfig().getContent()
-				                                                                                                                                                                                                                                                                                                                                                                                                          .getAllowedStaticsWhitelist()).getStaticModels()));
+				engine.replaceTemplates(
+					srcPath, Map.of(
+						"config", getConfig(), "scm", Map.of(
+							"baseUrl",
+							repo.getGitProvider()
+							    .getUrl(),
+							"host",
+							repo.getGitProvider()
+							    .getHost(),
+							"protocol",
+							repo.getGitProvider()
+							    .getProtocol(),
+							"repoUrl",
+							repo.getGitProvider()
+							    .repoPrefix()
+						), "statics", !getConfig().getContent()
+						                          .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+						                                                                                                            .getStaticModels() : new AllowListFreemarkerObjectWrapper(
+							Configuration.VERSION_2_3_32, getConfig().getContent()
+							                                         .getAllowedStaticsWhitelist()
+						).getStaticModels()
+					)
+				);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to replace templates in " + srcPath, e);
 			}
 		}
 	}
 
-	private void cloneToLocalFolder(ContentRepositorySchema repoConfig,
-	                                File repoTmpDir,
-	                                UsernamePasswordCredentialsProvider credentialsProvider) {
+	private void cloneToLocalFolder(
+		ContentRepositorySchema repoConfig,
+		File repoTmpDir,
+		UsernamePasswordCredentialsProvider credentialsProvider) {
 		CloneCommand cloneCommand = gitClone().setURI(repoConfig.getUrl())
 		                                      .setDirectory(repoTmpDir)
 		                                      .setNoCheckout(false);
@@ -491,7 +570,10 @@ public class ContentLoader extends AbstractTool {
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to find ref " + repoConfig.getRef() + " in repo " + repoConfig.getUrl(), e);
+			throw new RuntimeException(
+				"Failed to find ref " + repoConfig.getRef() + " in repo " + repoConfig.getUrl(),
+				e
+			);
 		}
 	}
 
@@ -502,14 +584,32 @@ public class ContentLoader extends AbstractTool {
 	}
 
 	private void pushTargetRepo(RepoCoordinate repoCoordinate) throws Exception {
-		log.trace("Preparing ContentLoader target repo '{}'. type='{}', overwriteMode='{}', targetRef='{}', refIsTag='{}', source='{}'", repoCoordinate.getFullRepoName(), repoCoordinate.repoConfig.getType(), repoCoordinate.repoConfig.getOverwriteMode(), repoCoordinate.repoConfig.getTargetRef(), repoCoordinate.refIsTag, repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null);
+		log.trace(
+			"Preparing ContentLoader target repo '{}'. type='{}', overwriteMode='{}', targetRef='{}', refIsTag='{}', source='{}'",
+			repoCoordinate.getFullRepoName(),
+			repoCoordinate.repoConfig.getType(),
+			repoCoordinate.repoConfig.getOverwriteMode(),
+			repoCoordinate.repoConfig.getTargetRef(),
+			repoCoordinate.refIsTag,
+			repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null
+		);
 
 		try (GitRepo targetRepo = repoProvider.create(repoCoordinate.getFullRepoName(), this.gitHandler.getTenant())) {
 			boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false);
-			log.trace("ContentLoader target repo '{}'. isNewRepo='{}', localTargetRepo='{}'", repoCoordinate.getFullRepoName(), isNewRepo, targetRepo.getAbsoluteLocalRepoTmpDir());
+			log.trace(
+				"ContentLoader target repo '{}'. isNewRepo='{}', localTargetRepo='{}'",
+				repoCoordinate.getFullRepoName(),
+				isNewRepo,
+				targetRepo.getAbsoluteLocalRepoTmpDir()
+			);
 
 			if (!isValidForPush(isNewRepo, repoCoordinate)) {
-				log.debug("Skipping ContentLoader push for repo '{}'. isNewRepo='{}', overwriteMode='{}'", repoCoordinate.getFullRepoName(), isNewRepo, repoCoordinate.repoConfig.getOverwriteMode());
+				log.debug(
+					"Skipping ContentLoader push for repo '{}'. isNewRepo='{}', overwriteMode='{}'",
+					repoCoordinate.getFullRepoName(),
+					isNewRepo,
+					repoCoordinate.repoConfig.getOverwriteMode()
+				);
 				return;
 			}
 
@@ -527,7 +627,12 @@ public class ContentLoader extends AbstractTool {
 	}
 
 	private static void cleanUpTargetRepoTempFolders(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
-		log.trace("Cleaning ContentLoader temp folders for repo '{}'. source='{}', target='{}'", repoCoordinate.getFullRepoName(), repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null, targetRepo.getAbsoluteLocalRepoTmpDir());
+		log.trace(
+			"Cleaning ContentLoader temp folders for repo '{}'. source='{}', target='{}'",
+			repoCoordinate.getFullRepoName(),
+			repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null,
+			targetRepo.getAbsoluteLocalRepoTmpDir()
+		);
 
 		try {
 			if (repoCoordinate.clonedContentRepo != null) {
@@ -539,17 +644,28 @@ public class ContentLoader extends AbstractTool {
 		}
 	}
 
-	private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate,
-	                                                   GitRepo targetRepo,
-	                                                   boolean isNewRepo) throws Exception {
-		log.trace("Copying ContentLoader content into repo '{}'. isNewRepo='{}', overwriteMode='{}', source='{}', target='{}'", repoCoordinate.getFullRepoName(), isNewRepo, repoCoordinate.repoConfig.getOverwriteMode(), repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null, targetRepo.getAbsoluteLocalRepoTmpDir());
+	private static void handleRepoCopyingOrFolderBased(
+		RepoCoordinate repoCoordinate,
+		GitRepo targetRepo,
+		boolean isNewRepo) throws Exception {
+		log.trace(
+			"Copying ContentLoader content into repo '{}'. isNewRepo='{}', overwriteMode='{}', source='{}', target='{}'",
+			repoCoordinate.getFullRepoName(),
+			isNewRepo,
+			repoCoordinate.repoConfig.getOverwriteMode(),
+			repoCoordinate.clonedContentRepo != null ? repoCoordinate.clonedContentRepo.getAbsolutePath() : null,
+			targetRepo.getAbsoluteLocalRepoTmpDir()
+		);
 
 		if (!isNewRepo) {
 			clearTargetRepoIfApplicable(repoCoordinate, targetRepo);
 		}
 
 		try {
-			targetRepo.copyDirectoryContents(repoCoordinate.clonedContentRepo.getAbsolutePath(), new FileSystemUtils.IgnoreDotGitFolderFilter());
+			targetRepo.copyDirectoryContents(
+				repoCoordinate.clonedContentRepo.getAbsolutePath(),
+				new FileSystemUtils.IgnoreDotGitFolderFilter()
+			);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to copy directory contents", e);
 		}
@@ -561,7 +677,12 @@ public class ContentLoader extends AbstractTool {
 
 		if (!targetRefShort.isEmpty()) {
 			String refSpec = setRefSpec(repoCoordinate, targetRefShort);
-			log.trace("Committing ContentLoader repo '{}'. targetRefShort='{}', refSpec='{}'", repoCoordinate.getFullRepoName(), targetRefShort, refSpec);
+			log.trace(
+				"Committing ContentLoader repo '{}'. targetRefShort='{}', refSpec='{}'",
+				repoCoordinate.getFullRepoName(),
+				targetRefShort,
+				refSpec
+			);
 			targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec);
 		} else {
 			log.trace("Committing ContentLoader repo '{}' to default main branch.", repoCoordinate.getFullRepoName());
@@ -573,7 +694,8 @@ public class ContentLoader extends AbstractTool {
 		String refSpec;
 		if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.getTargetRef()
 		                                                          .startsWith(REFS_HEADS_PREFIX)) || repoCoordinate.repoConfig.getTargetRef()
-		                                                                                                                      .startsWith(REFS_TAGS_PREFIX)) {
+		                                                                                                                      .startsWith(
+																																  REFS_TAGS_PREFIX)) {
 			refSpec = REFS_TAGS_PREFIX + targetRefShort + ":" + REFS_TAGS_PREFIX + targetRefShort;
 		} else {
 			refSpec = "HEAD:" + REFS_HEADS_PREFIX + targetRefShort;
@@ -610,26 +732,45 @@ public class ContentLoader extends AbstractTool {
 			validateCommitReferences(repoCoordinate);
 			if (repoCoordinate.repoConfig.getTargetRef() != null && !repoCoordinate.repoConfig.getTargetRef()
 			                                                                                  .isEmpty()) {
-				log.debug("Mirroring repo '{}' ref '{}' to target repo {}, targetRef: '{}'", repoCoordinate.repoConfig.getUrl(), repoCoordinate.repoConfig.getRef(), repoCoordinate.getFullRepoName(), repoCoordinate.repoConfig.getTargetRef());
+				log.debug(
+					"Mirroring repo '{}' ref '{}' to target repo {}, targetRef: '{}'",
+					repoCoordinate.repoConfig.getUrl(),
+					repoCoordinate.repoConfig.getRef(),
+					repoCoordinate.getFullRepoName(),
+					repoCoordinate.repoConfig.getTargetRef()
+				);
 				targetRepo.pushRef(repoCoordinate.repoConfig.getRef(), repoCoordinate.repoConfig.getTargetRef(), true);
 			} else {
-				log.debug("Mirroring repo '{}' ref '{}' to target repo {}", repoCoordinate.repoConfig.getUrl(), repoCoordinate.repoConfig.getRef(), repoCoordinate.getFullRepoName());
+				log.debug(
+					"Mirroring repo '{}' ref '{}' to target repo {}",
+					repoCoordinate.repoConfig.getUrl(),
+					repoCoordinate.repoConfig.getRef(),
+					repoCoordinate.getFullRepoName()
+				);
 				targetRepo.pushRef(repoCoordinate.repoConfig.getRef(), true);
 			}
 		} else {
-			log.debug("Mirroring whole repo '{}' to target repo {}", repoCoordinate.repoConfig.getUrl(), repoCoordinate.getFullRepoName());
+			log.debug(
+				"Mirroring whole repo '{}' to target repo {}",
+				repoCoordinate.repoConfig.getUrl(),
+				repoCoordinate.getFullRepoName()
+			);
 			targetRepo.pushAll(true);
 		}
 	}
 
 	private static void validateCommitReferences(RepoCoordinate repoCoordinate) {
 		if (GitRepo.isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.getRef())) {
-			throw new IllegalArgumentException("Mirroring commit references is not supported for content repos at the moment. content repository '" + repoCoordinate.repoConfig.getUrl() + "', ref: " + repoCoordinate.repoConfig.getRef());
+			throw new IllegalArgumentException(
+				"Mirroring commit references is not supported for content repos at the moment. content repository '" + repoCoordinate.repoConfig.getUrl() + "', ref: " + repoCoordinate.repoConfig.getRef());
 		}
 	}
 
 	private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
-		if (repoCoordinate.repoConfig.getCreateJenkinsJob() && jenkins.isEnabled(context) && GitRepo.existFileInSomeBranch(repo.getAbsoluteLocalRepoTmpDir(), "Jenkinsfile")) {
+		if (repoCoordinate.repoConfig.getCreateJenkinsJob() && jenkins.isEnabled(context) && GitRepo.existFileInSomeBranch(
+			repo.getAbsoluteLocalRepoTmpDir(),
+			"Jenkinsfile"
+		)) {
 			jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace);
 		}
 	}
@@ -647,7 +788,11 @@ public class ContentLoader extends AbstractTool {
 			RepoCoordinate repoCoordinateToOverwrite = newRepoCoordinate.findSameNotMirror(existingRepoCoordinates);
 			if (repoCoordinateToOverwrite != null) {
 				repoCoordinates.remove(repoCoordinateToOverwrite);
-				log.debug("Replacing existing repo coordinate {} with new one: {}", existingRepoCoordinates, newRepoCoordinate);
+				log.debug(
+					"Replacing existing repo coordinate {} with new one: {}",
+					existingRepoCoordinates,
+					newRepoCoordinate
+				);
 			}
 		}
 		repoCoordinates.add(newRepoCoordinate);

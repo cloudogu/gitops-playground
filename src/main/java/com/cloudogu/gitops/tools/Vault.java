@@ -45,12 +45,13 @@ public class Vault extends AbstractTool {
 	@Setter
 	private String namespace;
 
-	public Vault(FileSystemUtils fileSystemUtils,
-	             Deployer deployer,
-	             K8sClient k8sClient,
-	             AirGappedUtils airGappedUtils,
-	             GitHandler gitHandler,
-	             ImagePullSecretCreator imagePullSecretCreator) {
+	public Vault(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -77,10 +78,12 @@ public class Vault extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
-		                                                               .getSecrets()
-		                                                               .getVault()
-		                                                               .getHelm(), HELM_VALUES_PATH, context);
+		deployHelmChart(
+			TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
+			                                               .getSecrets()
+			                                               .getVault()
+			                                               .getHelm(), HELM_VALUES_PATH, context
+		);
 	}
 
 	@Override
@@ -121,8 +124,12 @@ public class Vault extends AbstractTool {
 		Path templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + "/" + VAULT_START_SCRIPT_PATH);
 		File postStartScript;
 		try {
-			postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), Map.of("namePrefix", getConfig().getApplication()
-			                                                                                                                 .getNamePrefix()));
+			postStartScript = new TemplatingEngine().replaceTemplate(
+				templatedFile.toFile(), Map.of(
+					"namePrefix", getConfig().getApplication()
+					                         .getNamePrefix()
+				)
+			);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to template Vault post-start script", e);
 		}
@@ -136,14 +143,28 @@ public class Vault extends AbstractTool {
 		String vaultPostStartVolume = "dev-post-start";
 		k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.getAbsolutePath());
 
-		addHelmValuesData("dev", Map.of("rootToken", UUID.randomUUID()
-		                                                 .toString(), "vaultPostStartConfigMap", vaultPostStartConfigMap, "vaultPostStartVolume", vaultPostStartVolume, "postStartScriptName", postStartScript.getName()));
+		addHelmValuesData(
+			"dev", Map.of(
+				"rootToken",
+				UUID.randomUUID()
+				    .toString(),
+				"vaultPostStartConfigMap",
+				vaultPostStartConfigMap,
+				"vaultPostStartVolume",
+				vaultPostStartVolume,
+				"postStartScriptName",
+				postStartScript.getName()
+			)
+		);
 	}
 
 	private void prepareVaultApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing vault repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, VAULT_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, VAULT_APP_PATH)
+		);
 	}
 
 	private void replaceVaultTemplates(GitRepo clusterResourcesRepo) {

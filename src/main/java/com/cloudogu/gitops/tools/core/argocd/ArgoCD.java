@@ -42,11 +42,12 @@ public class ArgoCD extends AbstractTool {
 	private ArgoCDRepoLayout clusterResourcesRepo;
 	private DeploymentMode deploymentMode;
 
-	public ArgoCD(K8sClient k8sClient,
-	              HelmClient helmClient,
-	              FileSystemUtils fileSystemUtils,
-	              GitHandler gitHandler,
-	              DeploymentModeFactory deploymentModeFactory) {
+	public ArgoCD(
+		K8sClient k8sClient,
+		HelmClient helmClient,
+		FileSystemUtils fileSystemUtils,
+		GitHandler gitHandler,
+		DeploymentModeFactory deploymentModeFactory) {
 		this.k8sClient = k8sClient;
 		this.helmClient = helmClient;
 		this.fileSystemUtils = fileSystemUtils;
@@ -68,7 +69,16 @@ public class ArgoCD extends AbstractTool {
 
 		this.clusterResourcesRepo = repoSetup.clusterRepoLayout();
 
-		this.deploymentMode = deploymentModeFactory.create(context, getConfig(), k8sClient, gitHandler, repositoryWorkspace, repoSetup, clusterResourcesRepo, namespace);
+		this.deploymentMode = deploymentModeFactory.create(
+			context,
+			getConfig(),
+			k8sClient,
+			gitHandler,
+			repositoryWorkspace,
+			repoSetup,
+			clusterResourcesRepo,
+			namespace
+		);
 
 		log.debug("Preparing ArgoCD repository content");
 		repoSetup.prepareRepositories();
@@ -106,7 +116,8 @@ public class ArgoCD extends AbstractTool {
 	@Override
 	protected void publishChanges() {
 		try {
-			repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges("Update ArgoCD repository content");
+			repositoryWorkspace.commitAndPushClusterResourcesAndTenantBootstrapChanges(
+				"Update ArgoCD repository content");
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to publish ArgoCD changes", e);
 		}
@@ -141,11 +152,14 @@ public class ArgoCD extends AbstractTool {
 
 		for (Object entry : env) {
 			if (!(entry instanceof Map)) {
-				throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + entry);
+				throw new IllegalArgumentException(
+					"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + entry);
 			}
 			Map<String, String> map = (Map<String, String>) entry;
 			if (!map.containsKey("name") || !map.containsKey("value")) {
-				throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + formatMapLikeGroovy(map));
+				throw new IllegalArgumentException(
+					"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + formatMapLikeGroovy(
+						map));
 			}
 		}
 
@@ -166,7 +180,13 @@ public class ArgoCD extends AbstractTool {
 		String smtpUser = getConfig().getFeatures().getMail().getSmtpUser();
 		String smtpPassword = getConfig().getFeatures().getMail().getSmtpPassword();
 		if ((smtpUser != null && !smtpUser.isEmpty()) || (smtpPassword != null && !smtpPassword.isEmpty())) {
-			k8sClient.createSecret("generic", "argocd-notifications-secret", namespace, new Tuple<>("email-username", smtpUser), new Tuple<>("email-password", smtpPassword));
+			k8sClient.createSecret(
+				"generic",
+				"argocd-notifications-secret",
+				namespace,
+				new Tuple<>("email-username", smtpUser),
+				new Tuple<>("email-password", smtpPassword)
+			);
 		}
 	}
 
@@ -226,7 +246,12 @@ public class ArgoCD extends AbstractTool {
 		// Set admin password imperatively here instead of operator/argocd.yaml, because we don't want
 		// it to show in git repo.
 		// The Operator uses an extra secret to store the admin Password, which is not bcrypted.
-		k8sClient.patch(SECRET_RESOURCE, "argocd-cluster", namespace, Map.of("stringData", Map.of("admin.password", password)));
+		k8sClient.patch(
+			SECRET_RESOURCE,
+			"argocd-cluster",
+			namespace,
+			Map.of("stringData", Map.of("admin.password", password))
+		);
 
 		// In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as
 		// generated initial password,
@@ -256,7 +281,12 @@ public class ArgoCD extends AbstractTool {
 
 		String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_LOG_ROUNDS));
 
-		k8sClient.patch(SECRET_RESOURCE, "argocd-secret", namespace, Map.of("stringData", Map.of("admin.password", bcryptArgoCDPassword)));
+		k8sClient.patch(
+			SECRET_RESOURCE,
+			"argocd-secret",
+			namespace,
+			Map.of("stringData", Map.of("admin.password", bcryptArgoCDPassword))
+		);
 	}
 
 	protected ArgoCDRepoSetup getRepoSetup() {

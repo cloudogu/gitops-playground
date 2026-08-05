@@ -52,8 +52,10 @@ public class JenkinsApiClient {
 
 	public String runScript(String code) {
 		log.trace("Running groovy script in Jenkins: {}", code);
-		try (Response response = postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code)
-		                                                                                  .build())) {
+		try (Response response = postRequestWithCrumb(
+			"scriptText", new FormBody.Builder().add("script", code)
+			                                    .build()
+		)) {
 			if (response.code() != HTTP_OK) {
 				throw new IllegalStateException("Could not run script. Status code " + response.code());
 			}
@@ -108,9 +110,13 @@ public class JenkinsApiClient {
 
 	private Request.Builder buildRequest(String url) {
 		return new Request.Builder().url(config.getJenkins().getUrl() + "/" + url)
-		                            .header("Authorization", Credentials.basic(config.getJenkins()
-		                                                                             .getUsername(), config.getJenkins()
-		                                                                                                   .getPassword()));
+		                            .header(
+										"Authorization", Credentials.basic(
+											config.getJenkins()
+				                                  .getUsername(), config.getJenkins()
+				                                                        .getPassword()
+										)
+									);
 	}
 
 	@FunctionalInterface

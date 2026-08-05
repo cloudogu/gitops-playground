@@ -53,11 +53,21 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 				continue;
 			}
 
-			k8sClient.patch("app", app.name(), app.namespace(), "merge", Map.of("metadata", Map.of("finalizers", List.of("resources-finalizer.argocd.argoproj.io"))));
+			k8sClient.patch(
+				"app",
+				app.name(),
+				app.namespace(),
+				"merge",
+				Map.of("metadata", Map.of("finalizers", List.of("resources-finalizer.argocd.argoproj.io")))
+			);
 		}
 
 		String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
-		List<Tuple<String, String>> appsToBeDeleted = List.of(new Tuple<>(argocdNamespace, "bootstrap"), new Tuple<>(argocdNamespace, "cluster-resources"), new Tuple<>(argocdNamespace, "example-apps"));
+		List<Tuple<String, String>> appsToBeDeleted = List.of(
+			new Tuple<>(argocdNamespace, "bootstrap"),
+			new Tuple<>(argocdNamespace, "cluster-resources"),
+			new Tuple<>(argocdNamespace, "example-apps")
+		);
 
 		for (Tuple<String, String> app : appsToBeDeleted) {
 			k8sClient.delete("app", app.getV1(), app.getV2());
@@ -83,8 +93,12 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 	public void installArgoCDViaHelm(GitRepo repo, String argocdNamespace) {
 		String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), "argocd/").toString();
 
-		List<Map<String, Object>> helmDependencies = MapUtils.asListOfStringObjectMaps(fileSystemUtils.readYaml(Path.of(umbrellaChartPath, "Chart.yaml"))
-		                                                                                              .get("dependencies"));
+		List<Map<String, Object>> helmDependencies = MapUtils.asListOfStringObjectMaps(fileSystemUtils.readYaml(Path.of(
+																										  umbrellaChartPath,
+																										  "Chart.yaml"
+																									  ))
+		                                                                                              .get(
+																										  "dependencies"));
 		helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
 		helmClient.dependencyBuild(umbrellaChartPath);
 		helmClient.upgrade(ARGOCD, umbrellaChartPath, Map.of("namespace", argocdNamespace));

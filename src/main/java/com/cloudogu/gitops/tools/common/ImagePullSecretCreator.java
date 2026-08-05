@@ -33,12 +33,20 @@ public class ImagePullSecretCreator {
 		log.trace("Creating image pull secret '{}' in namespace {}", IMAGE_PULL_SECRET_NAME, namespace);
 
 		String url = firstNonBlank(config.getRegistry().getProxyUrl(), config.getRegistry().getUrl());
-		String user = firstNonBlank(config.getRegistry().getProxyUsername(), firstNonBlank(config.getRegistry()
-		                                                                                         .getReadOnlyUsername(), config.getRegistry()
-		                                                                                                                       .getUsername()));
-		String password = firstNonBlank(config.getRegistry().getProxyPassword(), firstNonBlank(config.getRegistry()
-		                                                                                             .getReadOnlyPassword(), config.getRegistry()
-		                                                                                                                           .getPassword()));
+		String user = firstNonBlank(
+			config.getRegistry().getProxyUsername(), firstNonBlank(
+				config.getRegistry()
+				      .getReadOnlyUsername(), config.getRegistry()
+				                                    .getUsername()
+			)
+		);
+		String password = firstNonBlank(
+			config.getRegistry().getProxyPassword(), firstNonBlank(
+				config.getRegistry()
+				      .getReadOnlyPassword(), config.getRegistry()
+				                                    .getPassword()
+			)
+		);
 
 		k8sClient.createNamespace(namespace);
 		k8sClient.createImagePullSecret(IMAGE_PULL_SECRET_NAME, namespace, url, user, password);

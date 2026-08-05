@@ -56,12 +56,13 @@ public class Monitoring extends AbstractTool {
 	@Setter
 	private String namespace;
 
-	public Monitoring(FileSystemUtils fileSystemUtils,
-	                  Deployer deployer,
-	                  K8sClient k8sClient,
-	                  AirGappedUtils airGappedUtils,
-	                  GitHandler gitHandler,
-	                  ImagePullSecretCreator imagePullSecretCreator) {
+	public Monitoring(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		K8sClient k8sClient,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -94,9 +95,11 @@ public class Monitoring extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
-		                                                               .getMonitoring()
-		                                                               .getHelm(), HELM_VALUES_PATH, context);
+		deployHelmChart(
+			TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
+			                                               .getMonitoring()
+			                                               .getHelm(), HELM_VALUES_PATH, context
+		);
 	}
 
 	@Override
@@ -134,11 +137,13 @@ public class Monitoring extends AbstractTool {
 		}
 
 		addHelmValuesData(TOOL_NAME, Map.of("grafana", Map.of("host", host)));
-		addHelmValuesData("namespaces", getConfig().getApplication()
-		                                           .getNamespaces()
-		                                           .getActiveNamespaces() != null ? getConfig().getApplication()
-		                                                                                       .getNamespaces()
-		                                                                                       .getActiveNamespaces() : Collections.emptySet());
+		addHelmValuesData(
+			"namespaces", getConfig().getApplication()
+			                         .getNamespaces()
+			                         .getActiveNamespaces() != null ? getConfig().getApplication()
+			                                                                     .getNamespaces()
+			                                                                     .getActiveNamespaces() : Collections.emptySet()
+		);
 		addHelmValuesData("scm", scmConfigurationMetrics());
 		addHelmValuesData("jenkins", jenkinsConfigurationMetrics());
 		addHelmValuesData("uid", uid);
@@ -147,7 +152,10 @@ public class Monitoring extends AbstractTool {
 	private void prepareMonitoringApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing Monitoring repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, MONITORING_APP_PATH)
+		);
 	}
 
 	private void replaceMonitoringTemplates(GitRepo clusterResourcesRepo) {
@@ -168,11 +176,19 @@ public class Monitoring extends AbstractTool {
 	}
 
 	private void setupMonitoringSecrets() {
-		k8sClient.createSecret(GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(PASSWORD_KEY, getConfig().getApplication()
-		                                                                                                                             .getPassword()));
+		k8sClient.createSecret(
+			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(
+				PASSWORD_KEY, getConfig().getApplication()
+				                         .getPassword()
+			)
+		);
 
-		k8sClient.createSecret(GENERIC_SECRET_TYPE, "prometheus-metrics-creds-jenkins", namespace, new Tuple<>(PASSWORD_KEY, getConfig().getJenkins()
-		                                                                                                                                .getMetricsPassword()));
+		k8sClient.createSecret(
+			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-jenkins", namespace, new Tuple<>(
+				PASSWORD_KEY, getConfig().getJenkins()
+				                         .getMetricsPassword()
+			)
+		);
 
 		if ((getConfig().getFeatures().getMail().getSmtpUser() != null && !getConfig().getFeatures()
 		                                                                              .getMail()
@@ -183,19 +199,34 @@ public class Monitoring extends AbstractTool {
 		                                                                                                                                                   .getMail()
 		                                                                                                                                                   .getSmtpPassword()
 		                                                                                                                                                   .isEmpty())) {
-			k8sClient.createSecret(GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>("user", getConfig().getFeatures()
-			                                                                                                              .getMail()
-			                                                                                                              .getSmtpUser()), new Tuple<>(PASSWORD_KEY, getConfig().getFeatures()
-			                                                                                                                                                                    .getMail()
-			                                                                                                                                                                    .getSmtpPassword()));
+			k8sClient.createSecret(
+				GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>(
+					"user", getConfig().getFeatures()
+					                   .getMail()
+					                   .getSmtpUser()
+				), new Tuple<>(
+					PASSWORD_KEY, getConfig().getFeatures()
+					                         .getMail()
+					                         .getSmtpPassword()
+				)
+			);
 		}
 	}
 
 	private void generateNamespaceIsolationRBAC(GitRepo clusterResourcesRepo) {
 		for (String currentNamespace : getConfig().getApplication().getNamespaces().getActiveNamespaces()) {
 			try {
-				String rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE), Map.of(NAMESPACE_KEY, currentNamespace, "namePrefix", getConfig().getApplication()
-				                                                                                                                                                                .getNamePrefix(), "config", getConfig()));
+				String rbacYaml = new TemplatingEngine().template(
+					new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE), Map.of(
+						NAMESPACE_KEY,
+						currentNamespace,
+						"namePrefix",
+						getConfig().getApplication()
+						           .getNamePrefix(),
+						"config",
+						getConfig()
+					)
+				);
 
 				clusterResourcesRepo.writeFile(MONITORING_RBAC_PATH + "/" + currentNamespace + ".yaml", rbacYaml);
 			} catch (Exception e) {
@@ -207,8 +238,12 @@ public class Monitoring extends AbstractTool {
 	private void generateNetpols(GitRepo clusterResourcesRepo) {
 		for (String currentNamespace : getConfig().getApplication().getNamespaces().getActiveNamespaces()) {
 			try {
-				String netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE), Map.of(NAMESPACE_KEY, currentNamespace, "namePrefix", getConfig().getApplication()
-				                                                                                                                                                                            .getNamePrefix()));
+				String netpolsYaml = new TemplatingEngine().template(
+					new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE), Map.of(
+						NAMESPACE_KEY, currentNamespace, "namePrefix", getConfig().getApplication()
+						                                                          .getNamePrefix()
+					)
+				);
 
 				clusterResourcesRepo.writeFile(MONITORING_NETPOLS_PATH + "/" + currentNamespace + ".yaml", netpolsYaml);
 			} catch (Exception e) {
@@ -226,18 +261,28 @@ public class Monitoring extends AbstractTool {
 		if (uri == null) {
 			return Map.of("protocol", "", "host", "", "path", "");
 		}
-		return Map.of("protocol", Objects.requireNonNullElse(uri.getScheme(), ""), "host", Objects.requireNonNullElse(uri.getAuthority(), ""), "path", Objects.requireNonNullElse(uri.getPath(), ""));
+		return Map.of(
+			"protocol",
+			Objects.requireNonNullElse(uri.getScheme(), ""),
+			"host",
+			Objects.requireNonNullElse(uri.getAuthority(), ""),
+			"path",
+			Objects.requireNonNullElse(uri.getPath(), "")
+		);
 	}
 
 	protected void createMonitoringCrd() {
 		if (!getConfig().getApplication().getSkipCrds()) {
 			String serviceMonitorCrdYaml;
 			if (context.isAirgapped()) {
-				serviceMonitorCrdYaml = Path.of(getConfig().getApplication()
-				                                           .getLocalHelmChartFolder() + "/" + getConfig().getFeatures()
-				                                                                                         .getMonitoring()
-				                                                                                         .getHelm()
-				                                                                                         .getChart(), "charts/crds/crds/crd-servicemonitors.yaml")
+				serviceMonitorCrdYaml = Path.of(
+												getConfig().getApplication()
+					                                       .getLocalHelmChartFolder() + "/" + getConfig().getFeatures()
+					                                                                                     .getMonitoring()
+					                                                                                     .getHelm()
+					                                                                                     .getChart(),
+												"charts/crds/crds/crd-servicemonitors.yaml"
+											)
 				                            .toString();
 			} else {
 				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-" + getConfig().getFeatures()
@@ -246,7 +291,10 @@ public class Monitoring extends AbstractTool {
 				                                                                                                                                      .getVersion() + "/" + "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml";
 			}
 
-			log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" + "Applying from path {}", serviceMonitorCrdYaml);
+			log.debug(
+				"Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" + "Applying from path {}",
+				serviceMonitorCrdYaml
+			);
 			k8sClient.applyYaml(serviceMonitorCrdYaml);
 		}
 	}
@@ -254,9 +302,11 @@ public class Monitoring extends AbstractTool {
 	private Map<String, String> jenkinsConfigurationMetrics() {
 		URI uri = baseUriJenkins(getConfig()).resolve("prometheus");
 		Map<String, String> components = new HashMap<>(uriComponents(uri));
-		components.put("metricsUsername", (getConfig().getJenkins()
-		                                              .getMetricsUsername() != null) ? getConfig().getJenkins()
-		                                                                                          .getMetricsUsername() : "");
+		components.put(
+			"metricsUsername", (getConfig().getJenkins()
+			                               .getMetricsUsername() != null) ? getConfig().getJenkins()
+			                                                                           .getMetricsUsername() : ""
+		);
 		return components;
 	}
 

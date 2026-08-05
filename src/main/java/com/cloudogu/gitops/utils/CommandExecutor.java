@@ -79,7 +79,10 @@ public class CommandExecutor {
 		try {
 			Map<String, String> env = new HashMap<>(System.getenv());
 			if (additionalEnv != null) {
-				additionalEnv.forEach((key, value) -> env.put(String.valueOf(key), value != null ? String.valueOf(value) : null));
+				additionalEnv.forEach((key, value) -> env.put(
+					String.valueOf(key),
+					value != null ? String.valueOf(value) : null
+				));
 			}
 			List<String> envp = env.entrySet()
 			                       .stream()
@@ -223,8 +226,10 @@ public class CommandExecutor {
 			}
 		}
 
-		Output output = new Output(stdErr.toString(StandardCharsets.UTF_8)
-		                                 .trim(), stdOut.toString(StandardCharsets.UTF_8).trim(), proc.exitValue());
+		Output output = new Output(
+			stdErr.toString(StandardCharsets.UTF_8)
+			      .trim(), stdOut.toString(StandardCharsets.UTF_8).trim(), proc.exitValue()
+		);
 
 		if (failOnError && proc.exitValue() > 0) {
 			log.error(EXECUTING_FAILED_PREFIX + command);

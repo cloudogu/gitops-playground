@@ -199,7 +199,13 @@ public class GitRepo implements AutoCloseable {
 	private static void validatePushResults(Iterable<PushResult> pushResults, String repoTarget) {
 		for (PushResult result : pushResults) {
 			for (RemoteRefUpdate update : result.getRemoteUpdates()) {
-				log.debug("Push result for repo '{}': remoteName='{}', status='{}', message='{}'", repoTarget, update.getRemoteName(), update.getStatus(), update.getMessage());
+				log.debug(
+					"Push result for repo '{}': remoteName='{}', status='{}', message='{}'",
+					repoTarget,
+					update.getRemoteName(),
+					update.getStatus(),
+					update.getMessage()
+				);
 
 				if (update.getStatus() != Status.OK && update.getStatus() != Status.UP_TO_DATE) {
 					throw new IllegalStateException("Push failed for repo '" + repoTarget + "', remoteName='" + update.getRemoteName() + "', status='" + update.getStatus() + "', message='" + update.getMessage() + "'");
@@ -245,7 +251,10 @@ public class GitRepo implements AutoCloseable {
 		}
 
 		log.debug("Initializing repo {} from {}", repoTarget, srcDir);
-		String absoluteSrcDirLocation = new File(srcDir).isAbsolute() ? srcDir : Path.of(fileSystemUtils.getRootDir(), srcDir)
+		String absoluteSrcDirLocation = new File(srcDir).isAbsolute() ? srcDir : Path.of(
+																						 fileSystemUtils.getRootDir(),
+																						 srcDir
+																					 )
 		                                                                             .toString();
 		fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter);
 	}
@@ -302,7 +311,11 @@ public class GitRepo implements AutoCloseable {
 			return false;
 		}
 
-		return withGitOrFalse(repoPath, "checking if ref '" + ref + "' is a commit in repo '" + repoPath + "'", (Git git) -> resolveIsCommit(git, ref));
+		return withGitOrFalse(
+			repoPath,
+			"checking if ref '" + ref + "' is a commit in repo '" + repoPath + "'",
+			(Git git) -> resolveIsCommit(git, ref)
+		);
 	}
 
 	private static boolean resolveIsCommit(Git git, String ref) throws IOException, GitAPIException {
@@ -341,7 +354,11 @@ public class GitRepo implements AutoCloseable {
 	public static boolean existFileInSomeBranch(String repo, String filename) {
 		File repoPath = new File(repo);
 
-		boolean found = withGitOrFalse(repoPath, "checking if file '" + filename + "' exists in repo '" + repoPath + "'", (Git git) -> resolveExistsInSomeBranch(git, filename));
+		boolean found = withGitOrFalse(
+			repoPath,
+			"checking if file '" + filename + "' exists in repo '" + repoPath + "'",
+			(Git git) -> resolveExistsInSomeBranch(git, filename)
+		);
 
 		if (!found) {
 			log.debug("File {} not found in repository {}", filename, repoPath);
@@ -363,10 +380,11 @@ public class GitRepo implements AutoCloseable {
 		return false;
 	}
 
-	private static boolean branchContainsFile(Git git,
-	                                          ObjectId commitId,
-	                                          String filename,
-	                                          String branchName) throws IOException {
+	private static boolean branchContainsFile(
+		Git git,
+		ObjectId commitId,
+		String filename,
+		String branchName) throws IOException {
 		try (RevWalk revWalk = new RevWalk(git.getRepository())) {
 			RevCommit commit = revWalk.parseCommit(commitId);
 			try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
@@ -386,15 +404,17 @@ public class GitRepo implements AutoCloseable {
 		if (ref == null || ref.isEmpty()) {
 			return false;
 		}
-		return withGitOrFalse(repo, "checking if ref '" + ref + "' is a tag in repo '" + repo + "'", (Git git) -> {
-			List<Ref> tags = git.tagList().call();
-			for (Ref tag : tags) {
-				if (tag.getName().endsWith("/" + ref) || tag.getName().equals(ref)) {
-					return true;
+		return withGitOrFalse(
+			repo, "checking if ref '" + ref + "' is a tag in repo '" + repo + "'", (Git git) -> {
+				List<Ref> tags = git.tagList().call();
+				for (Ref tag : tags) {
+					if (tag.getName().endsWith("/" + ref) || tag.getName().equals(ref)) {
+						return true;
+					}
 				}
+				return false;
 			}
-			return false;
-		});
+		);
 	}
 
 	/**
@@ -439,8 +459,14 @@ public class GitRepo implements AutoCloseable {
 
 	private CredentialsProvider getCredentialProvider() {
 		Credentials auth = this.gitProvider.getCredentials();
-		UsernamePasswordCredentialsProvider passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.getUsername(), auth.getPassword());
-		return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication;
+		UsernamePasswordCredentialsProvider passwordAuthentication = new UsernamePasswordCredentialsProvider(
+			auth.getUsername(),
+			auth.getPassword()
+		);
+		return insecure ? new ChainingCredentialsProvider(
+			new InsecureCredentialProvider(),
+			passwordAuthentication
+		) : passwordAuthentication;
 	}
 
 	@Override

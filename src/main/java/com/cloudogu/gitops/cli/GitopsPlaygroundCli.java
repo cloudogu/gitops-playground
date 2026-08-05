@@ -50,8 +50,14 @@ public class GitopsPlaygroundCli {
 	private static final String STDOUT_APPENDER_NAME = "STDOUT";
 	// Not exploitable: only ever matched against the trusted, developer-controlled pattern string
 	// from logback.xml, never against user input.
-	private static final Pattern THREAD_PATTERN_TOKEN = Pattern.compile(" \\S*%thread\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
-	private static final Pattern LOGGER_PATTERN_TOKEN = Pattern.compile(" \\S*%logger\\S* ", Pattern.UNICODE_CHARACTER_CLASS);
+	private static final Pattern THREAD_PATTERN_TOKEN = Pattern.compile(
+		" \\S*%thread\\S* ",
+		Pattern.UNICODE_CHARACTER_CLASS
+	);
+	private static final Pattern LOGGER_PATTERN_TOKEN = Pattern.compile(
+		" \\S*%logger\\S* ",
+		Pattern.UNICODE_CHARACTER_CLASS
+	);
 
 	private final K8sClient k8sClient;
 	private final ApplicationConfigurator applicationConfigurator;
@@ -99,7 +105,10 @@ public class GitopsPlaygroundCli {
 
 		if (config.getApplication().getDestroy()) {
 			log.info(version);
-			if (!confirm("Destroying gitops playground in kubernetes cluster '" + k8sClient.getCurrentContext() + "'.", config)) {
+			if (!confirm(
+				"Destroying gitops playground in kubernetes cluster '" + k8sClient.getCurrentContext() + "'.",
+				config
+			)) {
 				return ReturnCode.NOT_CONFIRMED;
 			}
 
@@ -107,7 +116,10 @@ public class GitopsPlaygroundCli {
 			destroyer.destroy();
 		} else {
 			log.info(version);
-			if (!confirm("Applying gitops playground to kubernetes cluster '" + k8sClient.getCurrentContext() + "'.", config)) {
+			if (!confirm(
+				"Applying gitops playground to kubernetes cluster '" + k8sClient.getCurrentContext() + "'.",
+				config
+			)) {
 				return ReturnCode.NOT_CONFIRMED;
 			}
 			app = context.getBean(Application.class);
@@ -133,9 +145,14 @@ public class GitopsPlaygroundCli {
 	}
 
 	private static boolean confirm(String message, Config config) {
-		log.debug("Calling confirm for message: {} | yes = {} | System.in class: {}", message, config.getApplication()
-		                                                                                             .getYes(), System.in.getClass()
-		                                                                                                                 .getName());
+		log.debug(
+			"Calling confirm for message: {} | yes = {} | System.in class: {}",
+			message,
+			config.getApplication()
+			      .getYes(),
+			System.in.getClass()
+			         .getName()
+		);
 		if (config.getApplication().getYes()) {
 			return true;
 		}
@@ -244,13 +261,23 @@ public class GitopsPlaygroundCli {
 		mergedConfigs = deepMergeDefaults(mergedConfigs, new Config().toMap());
 
 		log.debug("Writing CLI params into config");
-		log.debug("mergedConfigs keys: {} | application map: {}", mergedConfigs.keySet(), mergedConfigs.get("application"));
+		log.debug(
+			"mergedConfigs keys: {} | application map: {}",
+			mergedConfigs.keySet(),
+			mergedConfigs.get("application")
+		);
 		Config mergedConfig = Config.fromMap(mergedConfigs);
-		log.debug("mergedConfig yes before parseArgs: {}", mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-		                                                                                                       .getYes() : "null");
+		log.debug(
+			"mergedConfig yes before parseArgs: {}",
+			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
+			                                                    .getYes() : "null"
+		);
 		new CommandLine(mergedConfig).parseArgs(args);
-		log.debug("mergedConfig yes after parseArgs: {}", mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-		                                                                                                      .getYes() : "null");
+		log.debug(
+			"mergedConfig yes after parseArgs: {}",
+			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
+			                                                    .getYes() : "null"
+		);
 
 		return mergedConfig;
 	}
@@ -266,25 +293,25 @@ public class GitopsPlaygroundCli {
 
 	public void printWelcomeScreen(String password) {
 		log.info("""
-				
-				|----------------------------------------------------------------------------------------------|
-				|                       Welcome to the GitOps playground by Cloudogu!
-				|----------------------------------------------------------------------------------------------|
-				|
-				| Please find the URLs of the individual applications in our README:
-				| https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
-				|
-				| A good starting point might also be the services or ingresses inside your cluster: \s
-				| kubectl get svc -A
-				| Or (depending on your config)
-				| kubectl get ing -A
-				|
-				| Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
-				|\s
-				| Your initial password for all apps (if not set manually): %s
-				|\s
-				|----------------------------------------------------------------------------------------------|
-				""".formatted(password));
+			
+			|----------------------------------------------------------------------------------------------|
+			|                       Welcome to the GitOps playground by Cloudogu!
+			|----------------------------------------------------------------------------------------------|
+			|
+			| Please find the URLs of the individual applications in our README:
+			| https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
+			|
+			| A good starting point might also be the services or ingresses inside your cluster: \s
+			| kubectl get svc -A
+			| Or (depending on your config)
+			| kubectl get ing -A
+			|
+			| Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+			|\s
+			| Your initial password for all apps (if not set manually): %s
+			|\s
+			|----------------------------------------------------------------------------------------------|
+			""".formatted(password));
 	}
 
 	public static void runHook(Application app, String hookName, BiConsumer<AbstractTool, Config> hook, Config config) {
@@ -297,8 +324,10 @@ public class GitopsPlaygroundCli {
 				log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
 				hook.accept(feature, config);
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to execute hook " + hookName + " on " + feature.getClass()
-				                                                                                  .getName(), e);
+				throw new RuntimeException(
+					"Failed to execute hook " + hookName + " on " + feature.getClass()
+					                                                       .getName(), e
+				);
 			}
 		}
 	}

@@ -143,7 +143,10 @@ public class FileSystemUtils {
 		int directoryIndex = filePath.indexOf(directory);
 
 		if (directoryIndex < 0) {
-			throw new IllegalArgumentException("Directory '%s' is not part of path '%s'".formatted(directory, filePath));
+			throw new IllegalArgumentException("Directory '%s' is not part of path '%s'".formatted(
+				directory,
+				filePath
+			));
 		}
 
 		return filePath.substring(0, directoryIndex + directory.length());
@@ -163,26 +166,28 @@ public class FileSystemUtils {
 		List<File> foundFiles = new ArrayList<>();
 
 		try {
-			Files.walkFileTree(root, new SimpleFileVisitor<>() {
+			Files.walkFileTree(
+				root, new SimpleFileVisitor<>() {
 
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
-					if (file.getFileName().toString().endsWith(ending)) {
-						foundFiles.add(file.toFile());
-					}
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+						if (file.getFileName().toString().endsWith(ending)) {
+							foundFiles.add(file.toFile());
+						}
 
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
-					if (exception instanceof NoSuchFileException) {
 						return FileVisitResult.CONTINUE;
 					}
 
-					throw exception;
+					@Override
+					public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
+						if (exception instanceof NoSuchFileException) {
+							return FileVisitResult.CONTINUE;
+						}
+
+						throw exception;
+					}
 				}
-			});
+			);
 
 			return foundFiles;
 		} catch (IOException exception) {
@@ -307,7 +312,10 @@ public class FileSystemUtils {
 
 			FileUtils.copyFile(sourceFile, destinationFile);
 		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to copy file from " + sourcePath + " to " + destinationPath, exception);
+			throw new UncheckedIOException(
+				"Failed to copy file from " + sourcePath + " to " + destinationPath,
+				exception
+			);
 		}
 	}
 
@@ -341,28 +349,30 @@ public class FileSystemUtils {
 		}
 
 		try {
-			Files.walkFileTree(path, new SimpleFileVisitor<>() {
+			Files.walkFileTree(
+				path, new SimpleFileVisitor<>() {
 
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-					if (attributes.size() == 0 && pathPattern.matcher(file.toString()).find()) {
-						log.trace("Deleting empty file {}", file);
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+						if (attributes.size() == 0 && pathPattern.matcher(file.toString()).find()) {
+							log.trace("Deleting empty file {}", file);
 
-						Files.deleteIfExists(file);
-					}
+							Files.deleteIfExists(file);
+						}
 
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
-					if (exception instanceof NoSuchFileException) {
 						return FileVisitResult.CONTINUE;
 					}
 
-					throw exception;
+					@Override
+					public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
+						if (exception instanceof NoSuchFileException) {
+							return FileVisitResult.CONTINUE;
+						}
+
+						throw exception;
+					}
 				}
-			});
+			);
 		} catch (IOException exception) {
 			throw new UncheckedIOException("Failed to walk path for deleting empty files: " + path, exception);
 		}
@@ -507,7 +517,12 @@ public class FileSystemUtils {
 			Files.move(sourceDir, targetDir);
 			return true;
 		} catch (IOException moveException) {
-			log.debug("Could not move directory directly from {} to {}; falling back to recursive merge", sourceDir, targetDir, moveException);
+			log.debug(
+				"Could not move directory directly from {} to {}; falling back to recursive merge",
+				sourceDir,
+				targetDir,
+				moveException
+			);
 
 			Files.createDirectories(targetDir);
 			return false;
@@ -546,7 +561,12 @@ public class FileSystemUtils {
 		try {
 			Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException moveException) {
-			log.debug("Could not move file directly from {} to {}; falling back to copy and delete", sourceFile, targetFile, moveException);
+			log.debug(
+				"Could not move file directly from {} to {}; falling back to copy and delete",
+				sourceFile,
+				targetFile,
+				moveException
+			);
 
 			Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 

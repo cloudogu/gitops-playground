@@ -14,12 +14,13 @@ import java.util.Set;
 @Slf4j
 public class RetryInterceptor implements Interceptor {
 
-	private static final Set<Integer> STATUS_CODES_TO_RETRY = Set.of(408, // Request Timeout
-			429, // Too Many Requests
-			500, // Internal Server Error
-			502, // Bad Gateway
-			503, // Service Unavailable
-			504 // Gateway Timeout
+	private static final Set<Integer> STATUS_CODES_TO_RETRY = Set.of(
+		408, // Request Timeout
+		429, // Too Many Requests
+		500, // Internal Server Error
+		502, // Bad Gateway
+		503, // Service Unavailable
+		504 // Gateway Timeout
 	);
 
 	private static final int DEFAULT_RETRIES = 180;
@@ -54,8 +55,10 @@ public class RetryInterceptor implements Interceptor {
 
 			} catch (SocketTimeoutException e) {
 				lastException = e;
-				log.trace("Retry HTTP Request to {} due to SocketTimeoutException: {}", chain.request()
-				                                                                             .url(), e.getMessage());
+				log.trace(
+					"Retry HTTP Request to {} due to SocketTimeoutException: {}", chain.request()
+					                                                                   .url(), e.getMessage()
+				);
 			}
 
 			// Wait before next retry (but not after the last attempt)

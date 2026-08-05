@@ -45,9 +45,22 @@ public class RoleBinding {
 	}
 
 	public Map<String, Object> toTemplateParams() {
-		return Map.of("name", name, "kind", kind, "namespace", namespace, "roleName", roleName, "roleKind", roleKind, "serviceAccounts", serviceAccounts.stream()
-		                                                                                                                                                .map(ServiceAccountRef::toMap)
-		                                                                                                                                                .toList());
+		return Map.of(
+			"name",
+			name,
+			"kind",
+			kind,
+			"namespace",
+			namespace,
+			"roleName",
+			roleName,
+			"roleKind",
+			roleKind,
+			"serviceAccounts",
+			serviceAccounts.stream()
+			               .map(ServiceAccountRef::toMap)
+			               .toList()
+		);
 	}
 
 	public String getTemplatePath() {

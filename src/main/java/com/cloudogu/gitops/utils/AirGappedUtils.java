@@ -50,7 +50,10 @@ public class AirGappedUtils {
 		GitRepo repo = repoProvider.create(repoNamespaceAndName, gitHandler.getTenant());
 
 		try {
-			repo.createRepositoryAndSetPermission("Mirror of Helm chart " + repoName + " from " + helmConfig.getRepoURL(), false);
+			repo.createRepositoryAndSetPermission(
+				"Mirror of Helm chart " + repoName + " from " + helmConfig.getRepoURL(),
+				false
+			);
 
 			repo.cloneRepo();
 
@@ -62,7 +65,10 @@ public class AirGappedUtils {
 			// We either have to update or remove them. Take the easier approach.
 			Files.deleteIfExists(Path.of(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock"));
 
-			repo.commitAndPush("Chart " + chartYaml.get("name") + ", version: " + chartYaml.get(VERSION_KEY) + "\n\n" + "Source: " + helmConfig.getRepoURL() + "\n" + "Dependencies localized to run in air-gapped environments", String.valueOf(chartYaml.get(VERSION_KEY)));
+			repo.commitAndPush(
+				"Chart " + chartYaml.get("name") + ", version: " + chartYaml.get(VERSION_KEY) + "\n\n" + "Source: " + helmConfig.getRepoURL() + "\n" + "Dependencies localized to run in air-gapped environments",
+				String.valueOf(chartYaml.get(VERSION_KEY))
+			);
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -72,7 +78,11 @@ public class AirGappedUtils {
 	}
 
 	private void validateChart(String repoNamespaceAndName, String localHelmChartFolder, String repoName) {
-		log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" + "Potential repo: {}, chart folder: {}", repoNamespaceAndName, localHelmChartFolder);
+		log.debug(
+			"Validating helm chart before pushing it to SCM, by running helm template.\n" + "Potential repo: {}, chart folder: {}",
+			repoNamespaceAndName,
+			localHelmChartFolder
+		);
 		try {
 			helmClient.template(repoName, localHelmChartFolder);
 		} catch (RuntimeException e) {
@@ -81,7 +91,10 @@ public class AirGappedUtils {
 	}
 
 	private Map<String, Object> localizeChartYaml(GitRepo gitRepo) {
-		log.debug("Preparing repo {} for air-gapped use: Changing Chart.yaml to resolve depencies locally", gitRepo.getRepoTarget());
+		log.debug(
+			"Preparing repo {} for air-gapped use: Changing Chart.yaml to resolve depencies locally",
+			gitRepo.getRepoTarget()
+		);
 
 		Path chartYamlPath = Path.of(gitRepo.getAbsoluteLocalRepoTmpDir(), "Chart.yaml");
 
@@ -122,15 +135,17 @@ public class AirGappedUtils {
 	/**
 	 * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
 	 */
-	private void resolveDependencyVersion(Map<String, Object> chartLock,
-	                                      Map<String, Object> chartYamlDep,
-	                                      GitRepo gitRepo) {
+	private void resolveDependencyVersion(
+		Map<String, Object> chartLock,
+		Map<String, Object> chartYamlDep,
+		GitRepo gitRepo) {
 		List<Map<String, Object>> lockDependencies = MapUtils.asListOfStringObjectMaps(chartLock.get("dependencies"));
 		Map<String, Object> chartLockDep = findByName(lockDependencies, String.valueOf(chartYamlDep.get("name")));
 		if (chartLockDep != null && !chartLockDep.isEmpty()) {
 			chartYamlDep.put(VERSION_KEY, chartLockDep.get(VERSION_KEY));
 		} else if (String.valueOf(chartYamlDep.get(VERSION_KEY)).contains("*")) {
-			throw new IllegalStateException("Unable to determine proper version for dependency " + chartYamlDep.get("name") + " (version: " + chartYamlDep.get(VERSION_KEY) + ") from repo " + gitRepo.getRepoTarget());
+			throw new IllegalStateException("Unable to determine proper version for dependency " + chartYamlDep.get(
+				"name") + " (version: " + chartYamlDep.get(VERSION_KEY) + ") from repo " + gitRepo.getRepoTarget());
 		} else {
 			// version is already pinned (no wildcard); keep it as-is
 		}

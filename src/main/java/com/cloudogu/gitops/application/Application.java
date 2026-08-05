@@ -35,11 +35,12 @@ public class Application {
 	private final RepositoryProvisioning repositoryProvisioning;
 	private final DeploymentOrchestrator deploymentOrchestrator;
 
-	public Application(ContextBuilder contextBuilder,
-	                   K8sClient k8sClient,
-	                   GitHandler gitHandler,
-	                   RepositoryProvisioning repositoryProvisioning,
-	                   DeploymentOrchestrator deploymentOrchestrator) {
+	public Application(
+		ContextBuilder contextBuilder,
+		K8sClient k8sClient,
+		GitHandler gitHandler,
+		RepositoryProvisioning repositoryProvisioning,
+		DeploymentOrchestrator deploymentOrchestrator) {
 		this.contextBuilder = contextBuilder;
 		this.k8sClient = k8sClient;
 		this.gitHandler = gitHandler;
@@ -82,10 +83,20 @@ public class Application {
 		}
 		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '{}'", namespace);
 		k8sClient.createNamespace(namespace);
-		k8sClient.createSecret("generic", "gop-configuration", namespace, new Tuple<>("gop-initial-password", context.getConfig()
-		                                                                                                             .getApplication()
-		                                                                                                             .getPassword()), new Tuple<>("gop-config", context.getConfig()
-		                                                                                                                                                               .toYaml(true)));
+		k8sClient.createSecret(
+			"generic",
+			"gop-configuration",
+			namespace,
+			new Tuple<>(
+				"gop-initial-password", context.getConfig()
+				                               .getApplication()
+				                               .getPassword()
+			),
+			new Tuple<>(
+				"gop-config", context.getConfig()
+				                     .toYaml(true)
+			)
+		);
 	}
 
 	public void setNamespaceListToConfig(DeploymentContext context) {
@@ -95,8 +106,15 @@ public class Application {
 		if (context.getConfig().getContent() != null && context.getConfig().getContent().getNamespaces() != null) {
 			for (String ns : context.getConfig().getContent().getNamespaces()) {
 				try {
-					tenantNamespaces.add(engine.template(ns, Map.of("config", context.getConfig(), "statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-					                                                                                                                                                       .getStaticModels())));
+					tenantNamespaces.add(engine.template(
+						ns, Map.of(
+							"config",
+							context.getConfig(),
+							"statics",
+							new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+							                                                             .getStaticModels()
+						)
+					));
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to render namespace template: " + ns, e);
 				}
@@ -114,9 +132,11 @@ public class Application {
 
 		context.getConfig().getApplication().getNamespaces().setDedicatedNamespaces(dedicatedNamespaces);
 		context.getConfig().getApplication().getNamespaces().setTenantNamespaces(tenantNamespaces);
-		log.debug("Active namespaces retrieved: {}", context.getConfig()
-		                                                    .getApplication()
-		                                                    .getNamespaces()
-		                                                    .getActiveNamespaces());
+		log.debug(
+			"Active namespaces retrieved: {}", context.getConfig()
+			                                          .getApplication()
+			                                          .getNamespaces()
+			                                          .getActiveNamespaces()
+		);
 	}
 }

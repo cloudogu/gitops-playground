@@ -46,7 +46,11 @@ public class Jenkins extends AbstractTool {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml";
 
-	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = Arrays.asList("oic-auth", "json-path-api", "matrix-auth");
+	private static final List<String> OIDC_BOOT_PLUGIN_NAMES = Arrays.asList(
+		"oic-auth",
+		"json-path-api",
+		"matrix-auth"
+	);
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
 	private static final String TOOL_NAME = "jenkins";
@@ -72,18 +76,19 @@ public class Jenkins extends AbstractTool {
 	private final K8sClient k8sClient;
 	private final NetworkingUtils networkingUtils;
 
-	public Jenkins(CommandExecutor commandExecutor,
-	               FileSystemUtils fileSystemUtils,
-	               GlobalPropertyManager globalPropertyManager,
-	               JobManager jobManager,
-	               UserManager userManager,
-	               PrometheusConfigurator prometheusConfigurator,
-	               Deployer deployer,
-	               K8sClient k8sClient,
-	               NetworkingUtils networkingUtils,
-	               AirGappedUtils airGappedUtils,
-	               GitHandler gitHandler,
-	               ImagePullSecretCreator imagePullSecretCreator) {
+	public Jenkins(
+		CommandExecutor commandExecutor,
+		FileSystemUtils fileSystemUtils,
+		GlobalPropertyManager globalPropertyManager,
+		JobManager jobManager,
+		UserManager userManager,
+		PrometheusConfigurator prometheusConfigurator,
+		Deployer deployer,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.commandExecutor = commandExecutor;
 		this.fileSystemUtils = fileSystemUtils;
 		this.globalPropertyManager = globalPropertyManager;
@@ -165,14 +170,23 @@ public class Jenkins extends AbstractTool {
 	}
 
 	private void createJenkinsCredentialsSecret() {
-		k8sClient.createSecret("generic", "jenkins-credentials", namespace, new Tuple<>("jenkins-admin-user", getConfig().getJenkins()
-		                                                                                                                 .getUsername()), new Tuple<>("jenkins-admin-password", getConfig().getJenkins()
-		                                                                                                                                                                                   .getPassword()));
+		k8sClient.createSecret(
+			"generic", "jenkins-credentials", namespace, new Tuple<>(
+				"jenkins-admin-user", getConfig().getJenkins()
+				                                 .getUsername()
+			), new Tuple<>(
+				"jenkins-admin-password", getConfig().getJenkins()
+				                                     .getPassword()
+			)
+		);
 	}
 
 	private void prepareJenkinsHelmValues() {
 		addHelmValuesData("dockerGid", findDockerGid());
-		addHelmValuesData("jenkinsBootPlugins", jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : Collections.emptyList());
+		addHelmValuesData(
+			"jenkinsBootPlugins",
+			jenkinsOidcConfigured() ? getJenkinsOidcBootPlugins() : Collections.emptyList()
+		);
 	}
 
 	@Override
@@ -205,7 +219,8 @@ public class Jenkins extends AbstractTool {
 			getConfig().getJenkins()
 			           .setUrl(networkingUtils.createUrl(serviceName + "." + namespace + ".svc.cluster.local", "80"));
 		} else {
-			log.debug("Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...");
+			log.debug(
+				"Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...");
 			String port = k8sClient.waitForNodePort(serviceName, namespace);
 			String clusterBindAddress = networkingUtils.findClusterBindAddress();
 			getConfig().getJenkins().setUrl(networkingUtils.createUrl(clusterBindAddress, port));
@@ -215,7 +230,10 @@ public class Jenkins extends AbstractTool {
 	private void prepareJenkinsApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing Jenkins repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, JENKINS_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, JENKINS_APP_PATH)
+		);
 	}
 
 	private void runSetupScript() {
@@ -269,12 +287,16 @@ public class Jenkins extends AbstractTool {
 		if (userManager.isUsingSecurityRealmWithoutLocalUserCreation()) {
 			log.trace("Using a security realm without local user creation. Must not create user.");
 		} else {
-			userManager.createUser(getConfig().getJenkins().getMetricsUsername(), getConfig().getJenkins()
-			                                                                                 .getMetricsPassword());
+			userManager.createUser(
+				getConfig().getJenkins().getMetricsUsername(), getConfig().getJenkins()
+				                                                          .getMetricsPassword()
+			);
 		}
 
-		userManager.grantPermission(getConfig().getJenkins()
-		                                       .getMetricsUsername(), UserManager.Permissions.METRICS_VIEW);
+		userManager.grantPermission(
+			getConfig().getJenkins()
+			           .getMetricsUsername(), UserManager.Permissions.METRICS_VIEW
+		);
 
 		if (getConfig().getFeatures().getMonitoring().getActive() && getConfig().getJenkins().getInternal()) {
 			// An external Jenkins can likely not be monitored
@@ -300,28 +322,52 @@ public class Jenkins extends AbstractTool {
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
 
 		if (getConfig().getScm().getScmProviderType() == ScmProviderType.SCM_MANAGER) {
-			jobManager.createCredential(jobName, credentialId, getConfig().getApplication()
-			                                                              .getNamePrefix() + "gitops", getConfig().getScm()
-			                                                                                                      .getScmManager()
-			                                                                                                      .getPassword(), "credentials for accessing scm-manager");
+			jobManager.createCredential(
+				jobName,
+				credentialId,
+				getConfig().getApplication()
+				           .getNamePrefix() + "gitops",
+				getConfig().getScm()
+				           .getScmManager()
+				           .getPassword(),
+				"credentials for accessing scm-manager"
+			);
 		}
 
 		if (getConfig().getScm().getScmProviderType() == ScmProviderType.GITLAB) {
-			jobManager.createCredential(jobName, credentialId, getConfig().getScm()
-			                                                              .getGitlab()
-			                                                              .getUsername(), getConfig().getScm()
-			                                                                                         .getGitlab()
-			                                                                                         .getPassword(), "credentials for accessing gitlab");
+			jobManager.createCredential(
+				jobName,
+				credentialId,
+				getConfig().getScm()
+				           .getGitlab()
+				           .getUsername(),
+				getConfig().getScm()
+				           .getGitlab()
+				           .getPassword(),
+				"credentials for accessing gitlab"
+			);
 		}
 
-		jobManager.createCredential(jobName, "registry-user", getConfig().getRegistry()
-		                                                                 .getUsername(), getConfig().getRegistry()
-		                                                                                            .getPassword(), "credentials for accessing the docker-registry for writing images built on jenkins");
+		jobManager.createCredential(
+			jobName,
+			"registry-user",
+			getConfig().getRegistry()
+			           .getUsername(),
+			getConfig().getRegistry()
+			           .getPassword(),
+			"credentials for accessing the docker-registry for writing images built on jenkins"
+		);
 
 		if (getConfig().getRegistry().getTwoRegistries()) {
-			jobManager.createCredential(jobName, "registry-proxy-user", getConfig().getRegistry()
-			                                                                       .getProxyUsername(), getConfig().getRegistry()
-			                                                                                                       .getProxyPassword(), "credentials for accessing the docker-registry that contains 3rd party or base images");
+			jobManager.createCredential(
+				jobName,
+				"registry-proxy-user",
+				getConfig().getRegistry()
+				           .getProxyUsername(),
+				getConfig().getRegistry()
+				           .getProxyPassword(),
+				"credentials for accessing the docker-registry that contains 3rd party or base images"
+			);
 		}
 
 		jobManager.startJob(jobName);
@@ -356,7 +402,10 @@ public class Jenkins extends AbstractTool {
 		                                                    .toList();
 
 		if (!missingPlugins.isEmpty()) {
-			throw new IllegalStateException("Required Jenkins OIDC boot plugins missing from " + pluginsFile + ": " + String.join(", ", missingPlugins));
+			throw new IllegalStateException("Required Jenkins OIDC boot plugins missing from " + pluginsFile + ": " + String.join(
+				", ",
+				missingPlugins
+			));
 		}
 
 		List<String> result = new ArrayList<>();
@@ -368,7 +417,16 @@ public class Jenkins extends AbstractTool {
 
 	protected String findDockerGid() {
 		String gid = "";
-		String etcGroup = k8sClient.run("tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND), "irrelevant" /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(), "--restart=Never", "-ti", "--rm", "--quiet");
+		String etcGroup = k8sClient.run(
+			"tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
+			"irrelevant" /* Redundant, but mandatory param */,
+			namespace,
+			createGidGrepperOverrides(),
+			"--restart=Never",
+			"-ti",
+			"--rm",
+			"--quiet"
+		);
 
 		if (etcGroup != null) {
 			String[] lines = etcGroup.split("\n");
@@ -382,10 +440,12 @@ public class Jenkins extends AbstractTool {
 		}
 
 		if (gid.isEmpty()) {
-			log.warn("""
+			log.warn(
+				"""
 					Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!
 					Group docker not found in /etc/group:
-					{}""", etcGroup);
+					{}""", etcGroup
+			);
 			return "";
 		} else {
 			log.debug("Using Docker Group ID (GID) {} for Jenkins Agent pods", gid);
@@ -394,8 +454,26 @@ public class Jenkins extends AbstractTool {
 	}
 
 	Map<String, Object> createGidGrepperOverrides() {
-		return Map.of("spec", Map.of("containers", List.of(Map.of("name", "tmp-docker-gid-grepper", "image", getConfig().getJenkins()
-		                                                                                                                .getInternalBashImage(), "args", List.of("cat", ETC_GROUP_PATH), "volumeMounts", List.of(Map.of("name", "group", "mountPath", ETC_GROUP_PATH, "readOnly", true)))), "nodeSelector", Map.of("node", TOOL_NAME), "volumes", List.of(Map.of("name", "group", "hostPath", Map.of("path", ETC_GROUP_PATH)))));
+		return Map.of(
+			"spec", Map.of(
+				"containers",
+				List.of(Map.of(
+					"name",
+					"tmp-docker-gid-grepper",
+					"image",
+					getConfig().getJenkins()
+					           .getInternalBashImage(),
+					"args",
+					List.of("cat", ETC_GROUP_PATH),
+					"volumeMounts",
+					List.of(Map.of("name", "group", "mountPath", ETC_GROUP_PATH, "readOnly", true))
+				)),
+				"nodeSelector",
+				Map.of("node", TOOL_NAME),
+				"volumes",
+				List.of(Map.of("name", "group", "hostPath", Map.of("path", ETC_GROUP_PATH)))
+			)
+		);
 	}
 
 	@Override

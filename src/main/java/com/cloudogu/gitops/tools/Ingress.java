@@ -34,11 +34,12 @@ public class Ingress extends AbstractTool {
 	@Setter
 	private String namespace;
 
-	public Ingress(FileSystemUtils fileSystemUtils,
-	               Deployer deployer,
-	               AirGappedUtils airGappedUtils,
-	               GitHandler gitHandler,
-	               ImagePullSecretCreator imagePullSecretCreator) {
+	public Ingress(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.airGappedUtils = airGappedUtils;
@@ -86,6 +87,9 @@ public class Ingress extends AbstractTool {
 	private static void prepareIngressApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing ingress repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH)
+		);
 	}
 }

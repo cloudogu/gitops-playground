@@ -42,8 +42,11 @@ public class JobManager {
 
 			String jsonPayload = objectMapper.writeValueAsString(payloadMap);
 
-			try (Response response = apiClient.postRequestWithCrumb("job/" + jobName + "/credentials/store/folder/domain/_/createCredentials", new FormBody.Builder().add("json", jsonPayload)
-			                                                                                                                                                         .build())) {
+			try (Response response = apiClient.postRequestWithCrumb(
+				"job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
+				new FormBody.Builder().add("json", jsonPayload)
+				                      .build()
+			)) {
 				if (response.code() != HTTP_OK) {
 					throw new IllegalStateException("Could not create credential id=" + id + ",job=" + jobName + ". StatusCode: " + response.code());
 				}
@@ -69,7 +72,17 @@ public class JobManager {
 		try {
 			// Note for development: the XML representation of an existing job can be exporting by
 			// adding /config.xml to the URL
-			String payloadXml = new TemplatingEngine().template(new File("argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl"), Map.of("SCMM_NAMESPACE_JOB_SERVER_URL", serverUrl, "SCMM_NAMESPACE_JOB_NAMESPACE", jobNamespace, "SCMM_NAMESPACE_JOB_CREDENTIALS_ID", credentialsId));
+			String payloadXml = new TemplatingEngine().template(
+				new File("argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl"),
+				Map.of(
+					"SCMM_NAMESPACE_JOB_SERVER_URL",
+					serverUrl,
+					"SCMM_NAMESPACE_JOB_NAMESPACE",
+					jobNamespace,
+					"SCMM_NAMESPACE_JOB_CREDENTIALS_ID",
+					credentialsId
+				)
+			);
 
 			RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"));
 

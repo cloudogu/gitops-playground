@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils;
 
 public record Tuple<F, S>(
-		F first,
+	F first,
 
-		S second
+	S second
 ) {
 
 	public F getFirst() {

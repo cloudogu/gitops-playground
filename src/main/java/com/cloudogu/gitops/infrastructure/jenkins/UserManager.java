@@ -17,11 +17,11 @@ public class UserManager {
 		log.debug("Add user {} to jenkins", username);
 
 		String script = """
-				def realm = Jenkins.getInstance().getSecurityRealm()
-				def user = realm.createAccount('%USERNAME%', '%PASSWORD%')
-				
-				print(user)
-				""";
+			def realm = Jenkins.getInstance().getSecurityRealm()
+			def user = realm.createAccount('%USERNAME%', '%PASSWORD%')
+			
+			print(user)
+			""";
 
 		script = script.replace("%USERNAME%", escapeString(username)).replace("%PASSWORD%", escapeString(password));
 
@@ -41,15 +41,15 @@ public class UserManager {
 		log.debug("Grant user {} permission {}", username, permission);
 
 		String script = """
-				import org.jenkinsci.plugins.matrixauth.PermissionEntry
-				import org.jenkinsci.plugins.matrixauth.AuthorizationType
-				
-				def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
-				permissions.computeIfAbsent(%PERMISSION%) {
-				new HashSet<>()
-				}
-				print(permissions[%PERMISSION%].add(new PermissionEntry(AuthorizationType.USER, '%USERNAME%')))
-				""";
+			import org.jenkinsci.plugins.matrixauth.PermissionEntry
+			import org.jenkinsci.plugins.matrixauth.AuthorizationType
+			
+			def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
+			permissions.computeIfAbsent(%PERMISSION%) {
+			new HashSet<>()
+			}
+			print(permissions[%PERMISSION%].add(new PermissionEntry(AuthorizationType.USER, '%USERNAME%')))
+			""";
 
 		script = script.replace("%PERMISSION%", permission.toJenkinsPermissionEnum())
 		               .replace("%USERNAME%", escapeString(username));
@@ -70,7 +70,8 @@ public class UserManager {
 			throw new IllegalStateException("Error when trying to determine authorization strategy: " + result);
 		}
 
-		return "class hudson.security.GlobalMatrixAuthorizationStrategy".equals(result) || "class hudson.security.ProjectMatrixAuthorizationStrategy".equals(result);
+		return "class hudson.security.GlobalMatrixAuthorizationStrategy".equals(result) || "class hudson.security.ProjectMatrixAuthorizationStrategy".equals(
+			result);
 	}
 
 	public boolean isUsingSecurityRealmWithoutLocalUserCreation() {
@@ -80,7 +81,10 @@ public class UserManager {
 			throw new IllegalStateException("Error when trying to determine security realm: " + result);
 		}
 
-		return List.of("class org.jenkinsci.plugins.cas.CasSecurityRealm", "class org.jenkinsci.plugins.oic.OicSecurityRealm")
+		return List.of(
+					   "class org.jenkinsci.plugins.cas.CasSecurityRealm",
+					   "class org.jenkinsci.plugins.oic.OicSecurityRealm"
+				   )
 		           .contains(result);
 	}
 

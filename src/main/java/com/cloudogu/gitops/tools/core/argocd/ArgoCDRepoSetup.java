@@ -36,10 +36,11 @@ public class ArgoCDRepoSetup {
 	private final GitHandler gitHandler;
 	private final RepositoryWorkspace repositoryWorkspace;
 
-	public static ArgoCDRepoSetup create(DeploymentContext context,
-	                                     FileSystemUtils fileSystemUtils,
-	                                     GitHandler gitHandler,
-	                                     RepositoryWorkspace repositoryWorkspace) {
+	public static ArgoCDRepoSetup create(
+		DeploymentContext context,
+		FileSystemUtils fileSystemUtils,
+		GitHandler gitHandler,
+		RepositoryWorkspace repositoryWorkspace) {
 		return new ArgoCDRepoSetup(context, fileSystemUtils, gitHandler, repositoryWorkspace);
 	}
 
@@ -93,9 +94,17 @@ public class ArgoCDRepoSetup {
 	private void prepareClusterResourcesRepo() {
 		GitRepo clusterResourcesRepo = repositoryWorkspace.getClusterResourcesRepository();
 
-		log.debug("Preparing ArgoCD repository content in {} from {}/{}", clusterResourcesRepo.getRepoTarget(), CLUSTER_RESOURCES_SOURCE_DIR, ARGOCD_APP_PATH);
+		log.debug(
+			"Preparing ArgoCD repository content in {} from {}/{}",
+			clusterResourcesRepo.getRepoTarget(),
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ARGOCD_APP_PATH
+		);
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, ARGOCD_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, ARGOCD_APP_PATH)
+		);
 
 		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo));
 
@@ -105,7 +114,11 @@ public class ArgoCDRepoSetup {
 	private void prepareTenantBootstrapRepo() {
 		GitRepo tenantBootstrapRepo = repositoryWorkspace.tenantBootstrapRepositoryOrFail();
 
-		log.debug("Preparing tenant bootstrap repo {} from {}", tenantBootstrapRepo.getRepoTarget(), TENANT_BOOTSTRAP_SOURCE_DIR);
+		log.debug(
+			"Preparing tenant bootstrap repo {} from {}",
+			tenantBootstrapRepo.getRepoTarget(),
+			TENANT_BOOTSTRAP_SOURCE_DIR
+		);
 
 		tenantBootstrapRepo.copyDirectoryContents(TENANT_BOOTSTRAP_SOURCE_DIR, allowAllFilter());
 
@@ -122,12 +135,20 @@ public class ArgoCDRepoSetup {
 		}
 
 		if (context.isMultiTenant()) {
-			log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: " + "applications={}, projects={}, tenant={}/tenant", layout.applicationsDir(), layout.projectsDir(), layout.multiTenantDir());
+			log.debug(
+				"Deleting unnecessary non dedicated instances folders from argocd repo: " + "applications={}, projects={}, tenant={}/tenant",
+				layout.applicationsDir(),
+				layout.projectsDir(),
+				layout.multiTenantDir()
+			);
 
 			FileSystemUtils.deleteDir(layout.applicationsDir());
 			FileSystemUtils.deleteDir(layout.projectsDir());
 
-			fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(layout.multiTenantDir(), "central"), Path.of(layout.argocdRoot()));
+			fileSystemUtils.moveDirectoryMergeOverwrite(
+				Path.of(layout.multiTenantDir(), "central"),
+				Path.of(layout.argocdRoot())
+			);
 
 			FileSystemUtils.deleteDir(layout.multiTenantDir());
 		} else {
@@ -145,12 +166,15 @@ public class ArgoCDRepoSetup {
 
 		Map<String, Object> argocd = new HashMap<>();
 		try {
-			argocd.put("host", getConfig().getFeatures().getArgocd().getUrl() != null && !getConfig().getFeatures()
-			                                                                                         .getArgocd()
-			                                                                                         .getUrl()
-			                                                                                         .isEmpty() ? new URL(getConfig().getFeatures()
-			                                                                                                                         .getArgocd()
-			                                                                                                                         .getUrl()).getHost() : "");
+			argocd.put(
+				"host", getConfig().getFeatures().getArgocd().getUrl() != null && !getConfig().getFeatures()
+				                                                                              .getArgocd()
+				                                                                              .getUrl()
+				                                                                              .isEmpty() ? new URL(
+					getConfig().getFeatures()
+					           .getArgocd()
+					           .getUrl()).getHost() : ""
+			);
 		} catch (MalformedURLException e) {
 			throw new UncheckedIOException(e);
 		}

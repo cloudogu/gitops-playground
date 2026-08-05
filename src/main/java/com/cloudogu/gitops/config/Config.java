@@ -191,14 +191,17 @@ public class Config {
 	public static final int DEFAULT_REGISTRY_PORT = 30000;
 	private static final int GENERATED_PASSWORD_LENGTH = 12;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(groovy.lang.GString.class, new JsonSerializer<groovy.lang.GString>() {
-		@Override
-		public void serialize(groovy.lang.GString value,
-		                      JsonGenerator jsonGenerator,
-		                      SerializerProvider serializerProvider) throws IOException {
-			jsonGenerator.writeString(value.toString());
+	private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(
+		groovy.lang.GString.class, new JsonSerializer<groovy.lang.GString>() {
+			@Override
+			public void serialize(
+				groovy.lang.GString value,
+				JsonGenerator jsonGenerator,
+				SerializerProvider serializerProvider) throws IOException {
+				jsonGenerator.writeString(value.toString());
+			}
 		}
-	}));
+	));
 
 	@JsonPropertyDescription(REGISTRY_DESCRIPTION)
 	@Mixin
@@ -258,7 +261,16 @@ public class Config {
 		private Boolean useWhitelist = false;
 
 		@JsonPropertyDescription(CONTENT_STATICSWHITELIST_DESCRIPTION)
-		private Set<String> allowedStaticsWhitelist = new HashSet<>(Arrays.asList("java.lang.String", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Boolean", "java.lang.Math", "com.cloudogu.gitops.utils.DockerImageParser"));
+		private Set<String> allowedStaticsWhitelist = new HashSet<>(Arrays.asList(
+			"java.lang.String",
+			"java.lang.Integer",
+			"java.lang.Long",
+			"java.lang.Double",
+			"java.lang.Float",
+			"java.lang.Boolean",
+			"java.lang.Math",
+			"com.cloudogu.gitops.utils.DockerImageParser"
+		));
 
 		@Getter
 		@Setter
@@ -1020,8 +1032,10 @@ public class Config {
 	}
 
 	public Map<String, Object> toMap() {
-		return objectMapper.convertValue(this, new TypeReference<Map<String, Object>>() {
-		});
+		return objectMapper.convertValue(
+			this, new TypeReference<Map<String, Object>>() {
+			}
+		);
 	}
 
 	public String toYaml(boolean includeInternals) {
@@ -1037,9 +1051,10 @@ public class Config {
 			YAMLMapper mapper = new YAMLMapper();
 			mapper.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
 				@Override
-				public List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig,
-				                                                 BeanDescription beanDesc,
-				                                                 List<BeanPropertyWriter> beanProperties) {
+				public List<BeanPropertyWriter> changeProperties(
+					SerializationConfig serializationConfig,
+					BeanDescription beanDesc,
+					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
 					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
 					                     .toList();

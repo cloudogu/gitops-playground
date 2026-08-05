@@ -27,7 +27,10 @@ import java.security.cert.X509Certificate;
 public class HttpClientFactory {
 
 	public static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
-		OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(new AuthorizationInterceptor(credentials.getUsername(), credentials.getPassword()))
+		OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(new AuthorizationInterceptor(
+																	 credentials.getUsername(),
+																	 credentials.getPassword()
+																 ))
 		                                                         .addInterceptor(createLoggingInterceptor())
 		                                                         .addInterceptor(new RetryInterceptor());
 
@@ -84,7 +87,7 @@ public class HttpClientFactory {
 				}
 			};
 			SSLContext sslCtxt = SSLContext.getInstance("TLS");
-			sslCtxt.init(null, new TrustManager[] {noCheckTrustManager}, new SecureRandom());
+			sslCtxt.init(null, new TrustManager[]{noCheckTrustManager}, new SecureRandom());
 
 			return new InsecureSslContext(sslCtxt.getSocketFactory(), noCheckTrustManager);
 		} catch (GeneralSecurityException e) {

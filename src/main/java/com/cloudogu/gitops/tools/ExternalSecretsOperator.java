@@ -34,11 +34,12 @@ public class ExternalSecretsOperator extends AbstractTool {
 	@Setter
 	private String namespace;
 
-	public ExternalSecretsOperator(FileSystemUtils fileSystemUtils,
-	                               Deployer deployer,
-	                               AirGappedUtils airGappedUtils,
-	                               GitHandler gitHandler,
-	                               ImagePullSecretCreator imagePullSecretCreator) {
+	public ExternalSecretsOperator(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.airGappedUtils = airGappedUtils;
@@ -89,6 +90,9 @@ public class ExternalSecretsOperator extends AbstractTool {
 	private void prepareExternalSecretsApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing external-secrets repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, EXTERNAL_SECRETS_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, EXTERNAL_SECRETS_APP_PATH)
+		);
 	}
 }

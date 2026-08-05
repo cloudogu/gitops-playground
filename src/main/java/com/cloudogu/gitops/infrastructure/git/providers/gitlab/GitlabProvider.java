@@ -114,7 +114,8 @@ public class GitlabProvider implements GitProvider {
 				Group group = api.getGroupApi()
 				                 .getGroups(principal)
 				                 .stream()
-				                 .filter(candidateGroup -> principal.equals(candidateGroup.getFullPath()) || principal.equals(candidateGroup.getPath()) || principal.equals(candidateGroup.getName()))
+				                 .filter(candidateGroup -> principal.equals(candidateGroup.getFullPath()) || principal.equals(
+									 candidateGroup.getPath()) || principal.equals(candidateGroup.getName()))
 				                 .findFirst()
 				                 .orElseThrow(() -> new IllegalArgumentException("Group '" + principal + NOT_FOUND_SUFFIX));
 				api.getProjectApi().shareProject(project.getId(), group.getId(), level, null);
@@ -122,7 +123,8 @@ public class GitlabProvider implements GitProvider {
 				org.gitlab4j.api.models.User user = api.getUserApi()
 				                                       .findUsers(principal)
 				                                       .stream()
-				                                       .filter(candidateUser -> principal.equals(candidateUser.getUsername()) || principal.equals(candidateUser.getEmail()))
+				                                       .filter(candidateUser -> principal.equals(candidateUser.getUsername()) || principal.equals(
+														   candidateUser.getEmail()))
 				                                       .findFirst()
 				                                       .orElseThrow(() -> new IllegalArgumentException("User '" + principal + NOT_FOUND_SUFFIX));
 				api.getProjectApi().addMember(project.getId(), user.getId(), level);
@@ -197,8 +199,10 @@ public class GitlabProvider implements GitProvider {
 
 		try {
 			GroupApi groupApi = api.getGroupApi();
-			parentGroupCache = isNumeric ? groupApi.getGroup(Long.parseLong(raw)) : groupApi.getGroup(LEADING_SLASHES.matcher(raw)
-			                                                                                                         .replaceFirst(""));
+			parentGroupCache = isNumeric ? groupApi.getGroup(Long.parseLong(raw)) : groupApi.getGroup(LEADING_SLASHES.matcher(
+																														 raw)
+			                                                                                                         .replaceFirst(
+																														 ""));
 			return parentGroupCache;
 		} catch (GitLabApiException e) {
 			throw new RuntimeException("Failed to get parent group: " + raw, e);
@@ -237,7 +241,14 @@ public class GitlabProvider implements GitProvider {
 				}
 			}
 			Map<String, List<String>> ve = e.hasValidationErrors() ? e.getValidationErrors() : null;
-			log.error("addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})", parent.getFullPath(), segPath, e.getHttpStatus(), e.getMessage(), ve);
+			log.error(
+				"addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})",
+				parent.getFullPath(),
+				segPath,
+				e.getHttpStatus(),
+				e.getMessage(),
+				ve
+			);
 			throw new RuntimeException("Failed to add GitLab group", e);
 		}
 	}
@@ -294,7 +305,8 @@ public class GitlabProvider implements GitProvider {
 		}
 		Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
 		return parentGroup().getFullPath() + "/" + target.getFirst().toLowerCase(Locale.ROOT) + "/" + target.getSecond()
-		                                                                                                    .toLowerCase(Locale.ROOT);
+		                                                                                                    .toLowerCase(
+																												Locale.ROOT);
 	}
 
 	private static Visibility toVisibility(String s) {

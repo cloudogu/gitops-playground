@@ -29,11 +29,12 @@ public class CertManager extends AbstractTool {
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private String namespace;
 
-	public CertManager(FileSystemUtils fileSystemUtils,
-	                   Deployer deployer,
-	                   AirGappedUtils airGappedUtils,
-	                   GitHandler gitHandler,
-	                   ImagePullSecretCreator imagePullSecretCreator) {
+	public CertManager(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.fileSystemUtils = fileSystemUtils;
 		this.deployer = deployer;
 		this.airGappedUtils = airGappedUtils;
@@ -57,9 +58,11 @@ public class CertManager extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(TOOL_NAME, TOOL_NAME, namespace, getConfig().getFeatures()
-		                                                            .getCertManager()
-		                                                            .getHelm(), HELM_VALUES_PATH, context);
+		deployHelmChart(
+			TOOL_NAME, TOOL_NAME, namespace, getConfig().getFeatures()
+			                                            .getCertManager()
+			                                            .getHelm(), HELM_VALUES_PATH, context
+		);
 	}
 
 	@Override
@@ -87,7 +90,10 @@ public class CertManager extends AbstractTool {
 	private void prepareCertManagerApp(GitRepo clusterResourcesRepo) {
 		log.debug("Preparing cert-manager repository content in {}", clusterResourcesRepo.getRepoTarget());
 
-		clusterResourcesRepo.copyDirectoryContents(CLUSTER_RESOURCES_SOURCE_DIR, ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH));
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH)
+		);
 	}
 
 	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {

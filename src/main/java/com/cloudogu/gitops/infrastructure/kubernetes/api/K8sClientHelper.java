@@ -91,13 +91,14 @@ class K8sClientHelper {
 		return params.contains("--rm");
 	}
 
-	static String collectPodRunOutput(KubernetesClient client,
-	                                  String podName,
-	                                  String namespace,
-	                                  boolean removePod,
-	                                  int defaultRetries,
-	                                  int sleepTime,
-	                                  K8sClient k8sClient) {
+	static String collectPodRunOutput(
+		KubernetesClient client,
+		String podName,
+		String namespace,
+		boolean removePod,
+		int defaultRetries,
+		int sleepTime,
+		K8sClient k8sClient) {
 		String phase = null;
 		try {
 			phase = waitForPodCompletion(client, podName, namespace, defaultRetries, sleepTime);
@@ -118,11 +119,12 @@ class K8sClientHelper {
 		}
 	}
 
-	static String waitForPodCompletion(KubernetesClient client,
-	                                   String podName,
-	                                   String namespace,
-	                                   int defaultRetries,
-	                                   int sleepTime) {
+	static String waitForPodCompletion(
+		KubernetesClient client,
+		String podName,
+		String namespace,
+		int defaultRetries,
+		int sleepTime) {
 		int tryCount = 0;
 
 		while (tryCount < defaultRetries) {
@@ -182,13 +184,15 @@ class K8sClientHelper {
 		}
 	}
 
-	static void validateWaitForResourcePhaseParams(String resourceType,
-	                                               String resourceName,
-	                                               String namespace,
-	                                               String desiredPhase,
-	                                               int timeoutSeconds,
-	                                               int checkIntervalSeconds) {
-		if (StringUtils.isEmpty(resourceType) || StringUtils.isEmpty(resourceName) || StringUtils.isEmpty(namespace) || StringUtils.isEmpty(desiredPhase)) {
+	static void validateWaitForResourcePhaseParams(
+		String resourceType,
+		String resourceName,
+		String namespace,
+		String desiredPhase,
+		int timeoutSeconds,
+		int checkIntervalSeconds) {
+		if (StringUtils.isEmpty(resourceType) || StringUtils.isEmpty(resourceName) || StringUtils.isEmpty(namespace) || StringUtils.isEmpty(
+			desiredPhase)) {
 			throw new IllegalArgumentException("Resource type, name, namespace, and desired phase must be provided");
 		}
 		if (timeoutSeconds <= 0 || checkIntervalSeconds <= 0) {
@@ -197,17 +201,24 @@ class K8sClientHelper {
 	}
 
 	@SuppressWarnings("unchecked")
-	static io.fabric8.kubernetes.client.dsl.Resource<HasMetadata> getResourceClient(KubernetesClient client,
-	                                                                                String resourceType,
-	                                                                                String name,
-	                                                                                String resolvedNamespace) {
-		return (io.fabric8.kubernetes.client.dsl.Resource<HasMetadata>) resolveResourceClient(client, resourceType, name, resolvedNamespace);
+	static io.fabric8.kubernetes.client.dsl.Resource<HasMetadata> getResourceClient(
+		KubernetesClient client,
+		String resourceType,
+		String name,
+		String resolvedNamespace) {
+		return (io.fabric8.kubernetes.client.dsl.Resource<HasMetadata>) resolveResourceClient(
+			client,
+			resourceType,
+			name,
+			resolvedNamespace
+		);
 	}
 
-	private static io.fabric8.kubernetes.client.dsl.Resource<?> resolveResourceClient(KubernetesClient client,
-	                                                                                  String resourceType,
-	                                                                                  String name,
-	                                                                                  String resolvedNamespace) {
+	private static io.fabric8.kubernetes.client.dsl.Resource<?> resolveResourceClient(
+		KubernetesClient client,
+		String resourceType,
+		String name,
+		String resolvedNamespace) {
 		switch (resourceType.toLowerCase(Locale.ROOT)) {
 			case "pod", "pods":
 				return client.pods().inNamespace(resolvedNamespace).withName(name);
@@ -234,15 +245,21 @@ class K8sClientHelper {
 				return client.serviceAccounts().inNamespace(resolvedNamespace).withName(name);
 
 			default:
-				log.debug("Searching API resource via discovery for resourceType={}, name={}, ns={}", resourceType, name, resolvedNamespace);
+				log.debug(
+					"Searching API resource via discovery for resourceType={}, name={}, ns={}",
+					resourceType,
+					name,
+					resolvedNamespace
+				);
 				return getCustomResourceClient(client, resourceType, name, resolvedNamespace);
 		}
 	}
 
-	static io.fabric8.kubernetes.client.dsl.Resource<?> getCustomResourceClient(KubernetesClient client,
-	                                                                            String resourceType,
-	                                                                            String name,
-	                                                                            String namespace) {
+	static io.fabric8.kubernetes.client.dsl.Resource<?> getCustomResourceClient(
+		KubernetesClient client,
+		String resourceType,
+		String name,
+		String namespace) {
 		String normalized = resourceType.toLowerCase(Locale.ROOT);
 
 		Map<String, Object> match = findApiResourceViaDiscovery(client, normalized, resourceType);
@@ -251,7 +268,15 @@ class K8sClientHelper {
 			throw new K8sClient.KubernetesApiResourceNotFoundException(resourceType);
 		}
 
-		log.debug("Resolved '{}' via discovery to {}/{} kind={} plural={} namespaced={}", resourceType, match.get(GROUP_KEY), match.get(VERSION_KEY), match.get(KIND_KEY), match.get(PLURAL_KEY), match.get(NAMESPACED_KEY));
+		log.debug(
+			"Resolved '{}' via discovery to {}/{} kind={} plural={} namespaced={}",
+			resourceType,
+			match.get(GROUP_KEY),
+			match.get(VERSION_KEY),
+			match.get(KIND_KEY),
+			match.get(PLURAL_KEY),
+			match.get(NAMESPACED_KEY)
+		);
 
 		ResourceDefinitionContext context = toResourceDefinitionContext(match);
 		boolean namespaced = Boolean.TRUE.equals(match.get(NAMESPACED_KEY));
@@ -271,9 +296,10 @@ class K8sClientHelper {
 		                                              .build();
 	}
 
-	static Map<String, Object> findApiResourceViaDiscovery(KubernetesClient client,
-	                                                       String normalized,
-	                                                       String original) {
+	static Map<String, Object> findApiResourceViaDiscovery(
+		KubernetesClient client,
+		String normalized,
+		String original) {
 		for (APIGroup group : fetchApiGroups(client)) {
 			Map<String, Object> match = findApiResourceInGroup(client, group, normalized, original);
 			if (!match.isEmpty()) {
@@ -293,10 +319,11 @@ class K8sClientHelper {
 		}
 	}
 
-	private static Map<String, Object> findApiResourceInGroup(KubernetesClient client,
-	                                                          APIGroup group,
-	                                                          String normalized,
-	                                                          String original) {
+	private static Map<String, Object> findApiResourceInGroup(
+		KubernetesClient client,
+		APIGroup group,
+		String normalized,
+		String original) {
 		for (String version : groupVersions(group)) {
 			APIResource resolved = findMatchingResourceInVersion(client, group, version, normalized, original);
 			if (resolved != null) {
@@ -321,11 +348,12 @@ class K8sClientHelper {
 		return versions;
 	}
 
-	private static APIResource findMatchingResourceInVersion(KubernetesClient client,
-	                                                         APIGroup group,
-	                                                         String version,
-	                                                         String normalized,
-	                                                         String original) {
+	private static APIResource findMatchingResourceInVersion(
+		KubernetesClient client,
+		APIGroup group,
+		String version,
+		String normalized,
+		String original) {
 		for (APIResource res : fetchApiResources(client, group, version)) {
 			if (isTopLevelResource(res) && matchesResource(res, normalized, original)) {
 				return res;
@@ -351,7 +379,8 @@ class K8sClientHelper {
 	private static boolean matchesResource(APIResource res, String normalized, String original) {
 		boolean match = res.getKind().equalsIgnoreCase(original) || res.getName()
 		                                                               .equalsIgnoreCase(normalized) || (res.getSingularName() != null && res.getSingularName()
-		                                                                                                                                     .equalsIgnoreCase(normalized));
+		                                                                                                                                     .equalsIgnoreCase(
+																																				 normalized));
 		if (match || res.getShortNames() == null) {
 			return match;
 		}
@@ -373,10 +402,11 @@ class K8sClientHelper {
 		return map;
 	}
 
-	static void deleteResourcesByType(KubernetesClient client,
-	                                  String resource,
-	                                  String namespace,
-	                                  Map<String, String> labels) {
+	static void deleteResourcesByType(
+		KubernetesClient client,
+		String resource,
+		String namespace,
+		Map<String, String> labels) {
 		switch (resource.toLowerCase(Locale.ROOT)) {
 			case "secret", "secrets":
 				client.secrets().inNamespace(namespace).withLabels(labels).delete();
@@ -399,7 +429,11 @@ class K8sClientHelper {
 				break;
 
 			default:
-				Map<String, Object> match = findApiResourceViaDiscovery(client, resource.toLowerCase(Locale.ROOT), resource);
+				Map<String, Object> match = findApiResourceViaDiscovery(
+					client,
+					resource.toLowerCase(Locale.ROOT),
+					resource
+				);
 				if (!match.isEmpty()) {
 					ResourceDefinitionContext context = toResourceDefinitionContext(match);
 					client.genericKubernetesResources(context).inNamespace(namespace).withLabels(labels).delete();

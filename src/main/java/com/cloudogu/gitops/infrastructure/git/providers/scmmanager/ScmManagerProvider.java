@@ -34,24 +34,32 @@ public class ScmManagerProvider implements GitProvider {
 	private final K8sClient k8sClient;
 	private final DeploymentContext context;
 
-	public ScmManagerProvider(DeploymentContext context,
-	                          ScmManagerConfig scmmConfig,
-	                          K8sClient k8sClient,
-	                          NetworkingUtils networkingUtils) {
+	public ScmManagerProvider(
+		DeploymentContext context,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils) {
 		this(context, scmmConfig, k8sClient, networkingUtils, "");
 	}
 
-	public ScmManagerProvider(DeploymentContext context,
-	                          ScmManagerConfig scmmConfig,
-	                          K8sClient k8sClient,
-	                          NetworkingUtils networkingUtils,
-	                          String servicePrefix) {
+	public ScmManagerProvider(
+		DeploymentContext context,
+		ScmManagerConfig scmmConfig,
+		K8sClient k8sClient,
+		NetworkingUtils networkingUtils,
+		String servicePrefix) {
 		this.scmmConfig = scmmConfig;
 		this.context = context;
 		this.k8sClient = k8sClient;
 		this.networkingUtils = networkingUtils;
 
-		this.urls = new ScmManagerUrlResolver(this.context, this.scmmConfig, this.k8sClient, this.networkingUtils, servicePrefix);
+		this.urls = new ScmManagerUrlResolver(
+			this.context,
+			this.scmmConfig,
+			this.k8sClient,
+			this.networkingUtils,
+			servicePrefix
+		);
 	}
 
 	public ScmManagerConfig getScmmConfig() {
@@ -64,10 +72,12 @@ public class ScmManagerProvider implements GitProvider {
 
 	public ScmManagerApiClient getApiClient() {
 		if (this.apiClient == null) {
-			this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase()
-			                                                  .toString(), this.scmmConfig.getCredentials(), this.getConfig()
-			                                                                                                     .getApplication()
-			                                                                                                     .getInsecure());
+			this.apiClient = new ScmManagerApiClient(
+				this.urls.clientApiBase()
+				         .toString(), this.scmmConfig.getCredentials(), this.getConfig()
+				                                                            .getApplication()
+				                                                            .getInsecure()
+			);
 		}
 
 		return this.apiClient;

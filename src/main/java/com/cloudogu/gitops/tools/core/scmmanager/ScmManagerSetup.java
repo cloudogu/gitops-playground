@@ -52,13 +52,28 @@ public class ScmManagerSetup {
 		Config.HelmConfigWithValues helmConfig = this.scmManager.getScmmConfig().getHelm();
 		String releaseName = scmmReleaseName();
 
-		log.info("Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}", releaseName, this.scmManager.getScmmConfig()
-		                                                                                                                                                    .getNamespace(), getConfig().getApplication()
-		                                                                                                                                                                                .getNamePrefix(), context.isMultiTenant());
+		log.info(
+			"Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+			releaseName,
+			this.scmManager.getScmmConfig()
+			               .getNamespace(),
+			getConfig().getApplication()
+			           .getNamePrefix(),
+			context.isMultiTenant()
+		);
 
 		deployer.getHelmStrategy()
-		        .deployFeature(helmConfig.getRepoURL(), "scm-manager", helmConfig.getChart(), helmConfig.getVersion(), this.scmManager.getScmmConfig()
-		                                                                                                                              .getNamespace(), releaseName, valuesPath, DeploymentStrategy.RepoType.HELM);
+		        .deployFeature(
+					helmConfig.getRepoURL(),
+					"scm-manager",
+					helmConfig.getChart(),
+					helmConfig.getVersion(),
+					this.scmManager.getScmmConfig()
+			                       .getNamespace(),
+					releaseName,
+					valuesPath,
+					DeploymentStrategy.RepoType.HELM
+				);
 	}
 
 	public void createArgocdApplication() {
@@ -66,12 +81,30 @@ public class ScmManagerSetup {
 		Config.HelmConfigWithValues helmConfig = this.scmManager.getScmmConfig().getHelm();
 		String releaseName = scmmReleaseName();
 
-		log.info("Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}", releaseName, this.scmManager.getScmmConfig()
-		                                                                                                                                                             .getNamespace(), getConfig().getApplication()
-		                                                                                                                                                                                         .getNamePrefix(), context.isMultiTenant());
+		log.info(
+			"Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
+			releaseName,
+			this.scmManager.getScmmConfig()
+			               .getNamespace(),
+			getConfig().getApplication()
+			           .getNamePrefix(),
+			context.isMultiTenant()
+		);
 
-		deployer.deployFeature(helmConfig.getRepoURL(), "scm-manager", helmConfig.getChart(), helmConfig.getVersion(), this.scmManager.getScmmConfig()
-		                                                                                                                              .getNamespace(), releaseName, valuesPath, DeploymentStrategy.RepoType.HELM, false, context, repositoryWorkspace);
+		deployer.deployFeature(
+			helmConfig.getRepoURL(),
+			"scm-manager",
+			helmConfig.getChart(),
+			helmConfig.getVersion(),
+			this.scmManager.getScmmConfig()
+			               .getNamespace(),
+			releaseName,
+			valuesPath,
+			DeploymentStrategy.RepoType.HELM,
+			false,
+			context,
+			repositoryWorkspace
+		);
 	}
 
 	public void prepareBootstrapRepositoriesAfterScmManagerDeployment() {
@@ -87,10 +120,12 @@ public class ScmManagerSetup {
 
 	public void pushBootstrapRepositoriesAfterScmManagerDeployment() {
 		try {
-			repositoryWorkspace.commitAndPushClusterResourcesChanges("Bootstrap cluster-resources repository after SCM-Manager deployment");
+			repositoryWorkspace.commitAndPushClusterResourcesChanges(
+				"Bootstrap cluster-resources repository after SCM-Manager deployment");
 
 			if (repositoryWorkspace.hasTenantBootstrapRepository()) {
-				repositoryWorkspace.commitAndPushTenantBootstrapChanges("Bootstrap tenant repository after SCM-Manager deployment");
+				repositoryWorkspace.commitAndPushTenantBootstrapChanges(
+					"Bootstrap tenant repository after SCM-Manager deployment");
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to push bootstrap repositories", e);
@@ -100,8 +135,12 @@ public class ScmManagerSetup {
 	private Path prepareHelmValues() {
 		String releaseName = scmmReleaseName();
 
-		log.debug("Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'", releaseName, this.scmManager.getScmmConfig()
-		                                                                                                                 .getNamespace());
+		log.debug(
+			"Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
+			releaseName,
+			this.scmManager.getScmmConfig()
+			               .getNamespace()
+		);
 
 		Map<String, Object> templateVars = new HashMap<>();
 		templateVars.put("config", this.scmManager.getConfig());
@@ -202,7 +241,18 @@ public class ScmManagerSetup {
 			return;
 		}
 
-		List<String> pluginNames = new ArrayList<>(List.of("scm-mail-plugin", "scm-review-plugin", "scm-code-editor-plugin", "scm-editor-plugin", "scm-landingpage-plugin", "scm-el-plugin", "scm-readme-plugin", "scm-webhook-plugin", "scm-ci-plugin", "scm-metrics-prometheus-plugin"));
+		List<String> pluginNames = new ArrayList<>(List.of(
+			"scm-mail-plugin",
+			"scm-review-plugin",
+			"scm-code-editor-plugin",
+			"scm-editor-plugin",
+			"scm-landingpage-plugin",
+			"scm-el-plugin",
+			"scm-readme-plugin",
+			"scm-webhook-plugin",
+			"scm-ci-plugin",
+			"scm-metrics-prometheus-plugin"
+		));
 
 		if (this.scmManager.getConfig().getJenkins().getActive()) {
 			pluginNames.add("scm-jenkins-plugin");
@@ -227,7 +277,11 @@ public class ScmManagerSetup {
 		log.debug("SCM-Manager plugin installation finished successfully!");
 
 		if (restartForThisPlugin) {
-			waitForScmmAvailable(SCMM_AVAILABILITY_TIMEOUT_SECONDS, SCMM_RESTART_POLL_INTERVAL_MILLIS, SCMM_RESTART_START_DELAY_MILLIS);
+			waitForScmmAvailable(
+				SCMM_AVAILABILITY_TIMEOUT_SECONDS,
+				SCMM_RESTART_POLL_INTERVAL_MILLIS,
+				SCMM_RESTART_START_DELAY_MILLIS
+			);
 		}
 	}
 
@@ -248,7 +302,10 @@ public class ScmManagerSetup {
 		setupConfigs.put("loginAttemptLimit", -1);
 		setupConfigs.put("proxyExcludes", new ArrayList<>());
 		setupConfigs.put("skipFailedAuthenticators", false);
-		setupConfigs.put("pluginUrl", "https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}");
+		setupConfigs.put(
+			"pluginUrl",
+			"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}"
+		);
 		setupConfigs.put("loginAttemptLimitTimeout", DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS);
 		setupConfigs.put("enabledXsrfProtection", true);
 		setupConfigs.put("namespaceStrategy", "CustomNamespaceStrategy");
@@ -281,8 +338,10 @@ public class ScmManagerSetup {
 	private void addDefaultUsers() {
 		String metricsUsername = this.scmManager.getConfig().getApplication().getNamePrefix() + "metrics";
 
-		addUser(this.scmManager.getScmmConfig().getGitOpsUsername(), this.scmManager.getScmmConfig()
-		                                                                            .getPassword(), "changeme@test.local");
+		addUser(
+			this.scmManager.getScmmConfig().getGitOpsUsername(), this.scmManager.getScmmConfig()
+			                                                                    .getPassword(), "changeme@test.local"
+		);
 		addUser(metricsUsername, this.scmManager.getScmmConfig().getPassword(), "changeme@test.local");
 		grantUserPermissions(metricsUsername, List.of("metrics:read"));
 	}

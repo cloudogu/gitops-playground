@@ -75,13 +75,17 @@ public class ScmmDestructionHandler implements DestructionHandler {
 
 	private ScmManagerApiClient getScmmApiClient() {
 		if (scmmApiClient == null) {
-			ScmManagerUrlResolver urls = new ScmManagerUrlResolver(contextBuilder.build(), config.getScm()
-			                                                                                     .getScmManager(), k8sClient, networkingUtils);
+			ScmManagerUrlResolver urls = new ScmManagerUrlResolver(
+				contextBuilder.build(), config.getScm()
+				                              .getScmManager(), k8sClient, networkingUtils
+			);
 
-			scmmApiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), config.getScm()
-			                                                                               .getScmManager()
-			                                                                               .getCredentials(), config.getApplication()
-			                                                                                                        .getInsecure());
+			scmmApiClient = new ScmManagerApiClient(
+				urls.clientApiBase().toString(), config.getScm()
+				                                       .getScmManager()
+				                                       .getCredentials(), config.getApplication()
+				                                                                .getInsecure()
+			);
 		}
 		return scmmApiClient;
 	}

@@ -29,11 +29,12 @@ public class ScmManagerUrlResolver {
 		this(context, scmm, k8s, net, "");
 	}
 
-	public ScmManagerUrlResolver(DeploymentContext context,
-	                             ScmManagerConfig scmm,
-	                             K8sClient k8s,
-	                             NetworkingUtils net,
-	                             String servicePrefix) {
+	public ScmManagerUrlResolver(
+		DeploymentContext context,
+		ScmManagerConfig scmm,
+		K8sClient k8s,
+		NetworkingUtils net,
+		String servicePrefix) {
 		this.context = context;
 		this.scmm = scmm;
 		this.k8s = k8s;

@@ -49,20 +49,22 @@ public class Credentials {
 		this(username, password, secretName, secretNamespace, DEFAULT_USERNAME_KEY, DEFAULT_PASSWORD_KEY);
 	}
 
-	public Credentials(String username,
-	                   String password,
-	                   String secretName,
-	                   String secretNamespace,
-	                   String usernameKey) {
+	public Credentials(
+		String username,
+		String password,
+		String secretName,
+		String secretNamespace,
+		String usernameKey) {
 		this(username, password, secretName, secretNamespace, usernameKey, DEFAULT_PASSWORD_KEY);
 	}
 
-	public Credentials(String username,
-	                   String password,
-	                   String secretName,
-	                   String secretNamespace,
-	                   String usernameKey,
-	                   String passwordKey) {
+	public Credentials(
+		String username,
+		String password,
+		String secretName,
+		String secretNamespace,
+		String usernameKey,
+		String passwordKey) {
 		this.username = username;
 		this.password = password;
 		this.secretNamespace = secretNamespace;

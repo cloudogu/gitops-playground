@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record Permission(
-		String name,
+	String name,
 
-		Role role,
+	Role role,
 
-		boolean groupPermission,
+	boolean groupPermission,
 
-		List<String> verbs
+	List<String> verbs
 ) {
 
 	public Permission(String name, Role role) {

@@ -153,28 +153,32 @@ public abstract class AbstractTool {
 		}
 	}
 
-	protected void deployHelmChart(String featureName,
-	                               String releaseName,
-	                               String namespace,
-	                               HelmConfigWithValues helmConfig,
-	                               String helmValuesTemplatePath,
-	                               DeploymentContext context) {
+	protected void deployHelmChart(
+		String featureName,
+		String releaseName,
+		String namespace,
+		HelmConfigWithValues helmConfig,
+		String helmValuesTemplatePath,
+		DeploymentContext context) {
 		deployHelmChart(featureName, releaseName, namespace, helmConfig, helmValuesTemplatePath, context, false);
 	}
 
-	protected void deployHelmChart(String featureName,
-	                               String releaseName,
-	                               String namespace,
-	                               HelmConfigWithValues helmConfig,
-	                               String helmValuesTemplatePath,
-	                               DeploymentContext context,
-	                               boolean initByHelm) {
+	protected void deployHelmChart(
+		String featureName,
+		String releaseName,
+		String namespace,
+		HelmConfigWithValues helmConfig,
+		String helmValuesTemplatePath,
+		DeploymentContext context,
+		boolean initByHelm) {
 		Config config = context.getConfig();
 
 		this.addHelmValuesData("config", config);
 		try {
-			this.addHelmValuesData("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-			                                                                                               .getStaticModels());
+			this.addHelmValuesData(
+				"statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+				                                                                        .getStaticModels()
+			);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to retrieve Freemarker static models for template mapping", e);
 		}
@@ -210,9 +214,13 @@ public abstract class AbstractTool {
 			chartOrPath = ".";
 			repoType = RepoType.GIT;
 			try {
-				Map<String, Object> chartYaml = yamlMapper.readValue(Path.of(config.getApplication()
-				                                                                   .getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml")
-				                                                         .toFile(), YAML_MAP_TYPE);
+				Map<String, Object> chartYaml = yamlMapper.readValue(
+					Path.of(
+							config.getApplication()
+						          .getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml"
+						)
+					    .toFile(), YAML_MAP_TYPE
+				);
 				version = String.valueOf(chartYaml.get("version"));
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to parse Chart.yaml for airgapped version mapping", e);
@@ -223,7 +231,19 @@ public abstract class AbstractTool {
 		log.debug("helm values used: {}", helmValuesData);
 
 		Path tempValuesPath = this.fileSystemUtils.writeTempFile(helmValuesData);
-		this.deployer.deployFeature(repoURL, featureName, chartOrPath, version, namespace, releaseName, tempValuesPath, repoType, initByHelm, context, repositoryWorkspace);
+		this.deployer.deployFeature(
+			repoURL,
+			featureName,
+			chartOrPath,
+			version,
+			namespace,
+			releaseName,
+			tempValuesPath,
+			repoType,
+			initByHelm,
+			context,
+			repositoryWorkspace
+		);
 	}
 
 	public Config getConfig() {

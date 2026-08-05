@@ -6,13 +6,13 @@ import java.io.File;
 import java.util.Map;
 
 public record Role(
-		String name,
+	String name,
 
-		String namespace,
+	String namespace,
 
-		Variant variant,
+	Variant variant,
 
-		Config config
+	Config config
 ) {
 
 	public Role {

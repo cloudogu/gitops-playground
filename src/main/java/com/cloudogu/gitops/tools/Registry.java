@@ -35,9 +35,10 @@ public class Registry extends AbstractTool {
 	@Setter
 	private String namespace;
 
-	public Registry(FileSystemUtils fileSystemUtils, K8sClient k8sClient, AirGappedUtils airGappedUtils,
-	                // Bootstrap with Helm first, then create an ArgoCD Application for GitOps management.
-	                Deployer deployer) {
+	public Registry(
+		FileSystemUtils fileSystemUtils, K8sClient k8sClient, AirGappedUtils airGappedUtils,
+		// Bootstrap with Helm first, then create an ArgoCD Application for GitOps management.
+		Deployer deployer) {
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -100,9 +101,11 @@ public class Registry extends AbstractTool {
 	}
 
 	private void deployInternalRegistry() {
-		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, context.getConfig()
-		                                                           .getRegistry()
-		                                                           .getHelm(), "", context, true);
+		deployHelmChart(
+			TOOL_NAME, RELEASE_NAME, namespace, context.getConfig()
+			                                           .getRegistry()
+			                                           .getHelm(), "", context, true
+		);
 	}
 
 	private void createInternalRegistryNodePortIfRequired() {
@@ -119,9 +122,11 @@ public class Registry extends AbstractTool {
 		 * See "-p 30000" in init-cluster.sh.
 		 * e.g. 32769 is needed so the kubelet can access the image inside the server-0 container.
 		 */
-		k8sClient.createServiceNodePort("docker-registry-internal-port", CONTAINER_PORT + ":" + CONTAINER_PORT, context.getConfig()
-		                                                                                                               .getRegistry()
-		                                                                                                               .getInternalPort()
-		                                                                                                               .toString(), namespace);
+		k8sClient.createServiceNodePort(
+			"docker-registry-internal-port", CONTAINER_PORT + ":" + CONTAINER_PORT, context.getConfig()
+			                                                                               .getRegistry()
+			                                                                               .getInternalPort()
+			                                                                               .toString(), namespace
+		);
 	}
 }

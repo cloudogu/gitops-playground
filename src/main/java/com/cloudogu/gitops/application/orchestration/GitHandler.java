@@ -47,12 +47,14 @@ public class GitHandler {
 
 			if (config.getScm().getGitlab() == null || StringUtils.isEmpty(config.getScm()
 			                                                                     .getGitlab()
-			                                                                     .getUrl()) || StringUtils.isEmpty(config.getScm()
-			                                                                                                             .getGitlab()
-			                                                                                                             .getPassword()) || StringUtils.isEmpty(config.getScm()
-			                                                                                                                                                          .getGitlab()
-			                                                                                                                                                          .getParentGroupId())) {
-				throw new IllegalArgumentException("GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
+			                                                                     .getUrl()) || StringUtils.isEmpty(
+				config.getScm()
+				      .getGitlab()
+				      .getPassword()) || StringUtils.isEmpty(config.getScm()
+			                                                       .getGitlab()
+			                                                       .getParentGroupId())) {
+				throw new IllegalArgumentException(
+					"GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
 			}
 			return;
 		}
@@ -97,12 +99,14 @@ public class GitHandler {
 				if (prefix == null) {
 					prefix = "";
 				}
-				yield new ScmManagerProvider(context, config.getScm()
-				                                            .getScmManager(), k8sClient, networkingUtils, prefix);
+				yield new ScmManagerProvider(
+					context, config.getScm()
+					               .getScmManager(), k8sClient, networkingUtils, prefix
+				);
 			}
 			default ->
-					throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm()
-					                                                                                           .getScmProviderType());
+				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm()
+				                                                                                           .getScmProviderType());
 		};
 	}
 
@@ -111,8 +115,10 @@ public class GitHandler {
 
 		return switch (config.getMultiTenant().getScmProviderType()) {
 			case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
-			case SCM_MANAGER -> new ScmManagerProvider(context, config.getMultiTenant()
-			                                                          .getScmManager(), k8sClient, networkingUtils, centralScmManagerServicePrefix(config));
+			case SCM_MANAGER -> new ScmManagerProvider(
+				context, config.getMultiTenant()
+				               .getScmManager(), k8sClient, networkingUtils, centralScmManagerServicePrefix(config)
+			);
 			default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant()
 			                                                                                           .getScmProviderType());
 		};

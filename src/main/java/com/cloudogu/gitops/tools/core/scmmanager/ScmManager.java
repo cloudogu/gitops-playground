@@ -26,11 +26,12 @@ public class ScmManager extends AbstractTool {
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private ScmManagerSetup setup;
 
-	public ScmManager(GitHandler gitHandler,
-	                  Deployer deployer,
-	                  FileSystemUtils fileSystemUtils,
-	                  AirGappedUtils airGappedUtils,
-	                  ImagePullSecretCreator imagePullSecretCreator) {
+	public ScmManager(
+		GitHandler gitHandler,
+		Deployer deployer,
+		FileSystemUtils fileSystemUtils,
+		AirGappedUtils airGappedUtils,
+		ImagePullSecretCreator imagePullSecretCreator) {
 		this.gitHandler = gitHandler;
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;

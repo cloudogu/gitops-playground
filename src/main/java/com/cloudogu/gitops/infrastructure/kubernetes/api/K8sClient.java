@@ -104,8 +104,10 @@ public class K8sClient {
 	 * @param gopConfig the GitOps Playground config, used e.g. to detect OpenShift mode; may be null
 	 */
 	public K8sClient(com.cloudogu.gitops.config.Config gopConfig) {
-		io.fabric8.kubernetes.client.Config config = new ConfigBuilder().withRequestTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS)
-		                                                                .withConnectionTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS)
+		io.fabric8.kubernetes.client.Config config = new ConfigBuilder().withRequestTimeout(
+																			FABRIC8_REQUEST_TIMEOUT_MILLIS)
+		                                                                .withConnectionTimeout(
+																			FABRIC8_CONNECTION_TIMEOUT_MILLIS)
 		                                                                .build();
 
 		this.client = new KubernetesClientBuilder().withConfig(config).build();
@@ -156,13 +158,15 @@ public class K8sClient {
 	public String waitForNode() {
 		log.debug("Waiting for first node of the cluster to become ready");
 
-		String nodeName = waitForResourceWithRetry("node", () -> {
-			NodeList nodes = client.nodes().list();
-			if (nodes != null && nodes.getItems() != null && !nodes.getItems().isEmpty()) {
-				return nodes.getItems().get(0).getMetadata().getName();
+		String nodeName = waitForResourceWithRetry(
+			"node", () -> {
+				NodeList nodes = client.nodes().list();
+				if (nodes != null && nodes.getItems() != null && !nodes.getItems().isEmpty()) {
+					return nodes.getItems().get(0).getMetadata().getName();
+				}
+				return null;
 			}
-			return null;
-		});
+		);
 
 		log.debug("First node of the cluster is ready: {}", nodeName);
 		return nodeName;
@@ -177,7 +181,10 @@ public class K8sClient {
 		String nodeName = waitForNode();
 		log.debug("Waiting for internal IP of node {}", nodeName);
 
-		String internalIp = waitForResourceWithRetry("internal IP of node " + nodeName, () -> findInternalNodeIp(nodeName));
+		String internalIp = waitForResourceWithRetry(
+			"internal IP of node " + nodeName,
+			() -> findInternalNodeIp(nodeName)
+		);
 
 		log.debug("Internal IP of node {}: {}", nodeName, internalIp);
 		return internalIp;
@@ -205,7 +212,10 @@ public class K8sClient {
 	public String waitForNodePort(String serviceName, String namespace) {
 		log.debug("Getting node port for service {}, ns={}", serviceName, namespace);
 
-		String nodePort = waitForResourceWithRetry("node port for service " + serviceName, () -> findServiceNodePort(serviceName, namespace));
+		String nodePort = waitForResourceWithRetry(
+			"node port for service " + serviceName,
+			() -> findServiceNodePort(serviceName, namespace)
+		);
 
 		log.debug("Node port for service {}, ns={}: {}", serviceName, namespace, nodePort);
 		return nodePort;
@@ -276,13 +286,15 @@ public class K8sClient {
 		                                      .endSpec()
 		                                      .build();
 
-		executeWithErrorHandling("create NodePort service " + name, () -> {
-			client.services()
-			      .inNamespace(resolveNamespace(namespace))
-			      .resource(service)
-			      .createOr(NonDeletingOperation::update);
-			return null;
-		});
+		executeWithErrorHandling(
+			"create NodePort service " + name, () -> {
+				client.services()
+				      .inNamespace(resolveNamespace(namespace))
+				      .resource(service)
+				      .createOr(NonDeletingOperation::update);
+				return null;
+			}
+		);
 
 		log.debug("NodePort service {} created/updated successfully", name);
 	}
@@ -320,18 +332,33 @@ public class K8sClient {
 		}
 
 		// Create JSON patch
-		List<Map<String, Object>> patch = List.of(Map.of("op", "replace", "path", "/spec/ports/" + portIndex + "/nodePort", "value", newNodePort));
+		List<Map<String, Object>> patch = List.of(Map.of(
+			"op",
+			"replace",
+			"path",
+			"/spec/ports/" + portIndex + "/nodePort",
+			"value",
+			newNodePort
+		));
 
 		String patchJson = Serialization.asJson(patch);
 		PatchContext patchContext = new PatchContext.Builder().withPatchType(io.fabric8.kubernetes.client.dsl.base.PatchType.JSON)
 		                                                      .build();
 
-		executeWithErrorHandling("patch service " + serviceName, () -> {
-			client.services().inNamespace(namespace).withName(serviceName).patch(patchContext, patchJson);
-			return null;
-		});
+		executeWithErrorHandling(
+			"patch service " + serviceName, () -> {
+				client.services().inNamespace(namespace).withName(serviceName).patch(patchContext, patchJson);
+				return null;
+			}
+		);
 
-		log.debug("Service {} in namespace {} successfully patched with nodePort {} for port {}.", serviceName, namespace, newNodePort, portName);
+		log.debug(
+			"Service {} in namespace {} successfully patched with nodePort {} for port {}.",
+			serviceName,
+			namespace,
+			newNodePort,
+			portName
+		);
 	}
 
 	/**
@@ -349,18 +376,22 @@ public class K8sClient {
 				OpenShiftClient osClient = client.adapt(OpenShiftClient.class);
 
 				Project project = new ProjectBuilder().withNewMetadata().withName(name).endMetadata().build();
-				executeWithErrorHandling("create project " + name, () -> {
-					osClient.projects().resource(project).create();
-					return null;
-				});
+				executeWithErrorHandling(
+					"create project " + name, () -> {
+						osClient.projects().resource(project).create();
+						return null;
+					}
+				);
 				log.debug("Project {} created successfully.", name);
 			} else {
 				Namespace namespace = new NamespaceBuilder().withNewMetadata().withName(name).endMetadata().build();
 
-				executeWithErrorHandling("create namespace " + name, () -> {
-					client.namespaces().resource(namespace).create();
-					return null;
-				});
+				executeWithErrorHandling(
+					"create namespace " + name, () -> {
+						client.namespaces().resource(namespace).create();
+						return null;
+					}
+				);
 
 				log.debug("Namespace {} created successfully.", name);
 			}
@@ -448,16 +479,18 @@ public class K8sClient {
 		                                   .withStringData(data)
 		                                   .build();
 
-		executeWithErrorHandling("create secret " + name, () -> {
-			// type is NonNamespaceOperation<Secret, SecretList, Resource<Secret>>; kept as `var`
-			// deliberately, spelling it out would hurt readability more than it helps.
-			var secretsClient = client.secrets().inNamespace(resolveNamespace(namespace));
-			if (secretsClient.withName(name).get() != null) {
-				secretsClient.withName(name).delete();
+		executeWithErrorHandling(
+			"create secret " + name, () -> {
+				// type is NonNamespaceOperation<Secret, SecretList, Resource<Secret>>; kept as `var`
+				// deliberately, spelling it out would hurt readability more than it helps.
+				var secretsClient = client.secrets().inNamespace(resolveNamespace(namespace));
+				if (secretsClient.withName(name).get() != null) {
+					secretsClient.withName(name).delete();
+				}
+				secretsClient.resource(secret).create();
+				return null;
 			}
-			secretsClient.resource(secret).create();
-			return null;
-		});
+		);
 
 		log.debug("Secret {} created/updated successfully", name);
 	}
@@ -497,13 +530,15 @@ public class K8sClient {
 		                                   .addToStringData(DOCKER_CONFIG_JSON_KEY, dockerConfig)
 		                                   .build();
 
-		executeWithErrorHandling("create image pull secret " + name, () -> {
-			client.secrets()
-			      .inNamespace(resolveNamespace(namespace))
-			      .resource(secret)
-			      .createOr(NonDeletingOperation::update);
-			return null;
-		});
+		executeWithErrorHandling(
+			"create image pull secret " + name, () -> {
+				client.secrets()
+				      .inNamespace(resolveNamespace(namespace))
+				      .resource(secret)
+				      .createOr(NonDeletingOperation::update);
+				return null;
+			}
+		);
 
 		log.debug("Image pull secret {} created/updated successfully", name);
 	}
@@ -528,13 +563,16 @@ public class K8sClient {
 	public String getArgoCDNamespacesSecret(String name, String namespace) {
 		log.debug("Getting Secret {} from namespace {}", name, namespace);
 
-		return waitForResourceWithRetry("secret " + name, () -> {
-			Secret secret = client.secrets().inNamespace(resolveNamespace(namespace)).withName(name).get();
+		return waitForResourceWithRetry(
+			"secret " + name, () -> {
+				Secret secret = client.secrets().inNamespace(resolveNamespace(namespace)).withName(name).get();
 
-			return (secret != null && secret.getData() != null && secret.getData()
-			                                                            .containsKey("namespaces")) ? secret.getData()
-			                                                                                                .get("namespaces") : null;
-		});
+				return (secret != null && secret.getData() != null && secret.getData()
+				                                                            .containsKey("namespaces")) ? secret.getData()
+				                                                                                                .get(
+																													"namespaces") : null;
+			}
+		);
 	}
 
 	/**
@@ -570,17 +608,22 @@ public class K8sClient {
 	 * @param passwordKey data key holding the password
 	 * @return the decoded credentials
 	 */
-	public Credentials getCredentialsFromSecret(String secretname,
-	                                            String namespace,
-	                                            String usernameKey,
-	                                            String passwordKey) {
-		return executeWithErrorHandling("get credentials from secret " + secretname, () -> resolveCredentialsFromSecret(secretname, namespace, usernameKey, passwordKey));
+	public Credentials getCredentialsFromSecret(
+		String secretname,
+		String namespace,
+		String usernameKey,
+		String passwordKey) {
+		return executeWithErrorHandling(
+			"get credentials from secret " + secretname,
+			() -> resolveCredentialsFromSecret(secretname, namespace, usernameKey, passwordKey)
+		);
 	}
 
-	private Credentials resolveCredentialsFromSecret(String secretname,
-	                                                 String namespace,
-	                                                 String usernameKey,
-	                                                 String passwordKey) {
+	private Credentials resolveCredentialsFromSecret(
+		String secretname,
+		String namespace,
+		String usernameKey,
+		String passwordKey) {
 		Secret secret = client.secrets().inNamespace(namespace).withName(secretname).get();
 		if (secret == null || secret.getData() == null) {
 			throw new IllegalStateException("Secret " + secretname + NOT_FOUND_IN_NAMESPACE + namespace);
@@ -599,7 +642,10 @@ public class K8sClient {
 	 * @return a copy of the input with username and password resolved from the secret
 	 */
 	public Credentials getCredentialsFromSecret(Credentials credentials) {
-		return executeWithErrorHandling("get credentials from secret " + credentials.getSecretName(), () -> resolveCredentialsFromSecret(credentials));
+		return executeWithErrorHandling(
+			"get credentials from secret " + credentials.getSecretName(),
+			() -> resolveCredentialsFromSecret(credentials)
+		);
 	}
 
 	private Credentials resolveCredentialsFromSecret(Credentials credentials) {
@@ -613,10 +659,14 @@ public class K8sClient {
 
 		Map<String, String> secretData = secret.getData();
 		String usernameEncoded = secretData.get(credentials.getUsernameKey());
-		String username = usernameEncoded != null ? new String(Base64.getDecoder()
-		                                                             .decode(usernameEncoded), StandardCharsets.UTF_8) : credentials.getUsername();
-		String password = new String(Base64.getDecoder()
-		                                   .decode(secretData.get(credentials.getPasswordKey())), StandardCharsets.UTF_8);
+		String username = usernameEncoded != null ? new String(
+			Base64.getDecoder()
+			      .decode(usernameEncoded), StandardCharsets.UTF_8
+		) : credentials.getUsername();
+		String password = new String(
+			Base64.getDecoder()
+			      .decode(secretData.get(credentials.getPasswordKey())), StandardCharsets.UTF_8
+		);
 
 		Credentials credentialsNew = new Credentials(credentials);
 		credentialsNew.setUsername(username);
@@ -666,13 +716,15 @@ public class K8sClient {
 		                                            .withData(data)
 		                                            .build();
 
-		executeWithErrorHandling("create ConfigMap " + name + " from file", () -> {
-			client.configMaps()
-			      .inNamespace(resolveNamespace(namespace))
-			      .resource(configMap)
-			      .createOr(NonDeletingOperation::update);
-			return null;
-		});
+		executeWithErrorHandling(
+			"create ConfigMap " + name + " from file", () -> {
+				client.configMaps()
+				      .inNamespace(resolveNamespace(namespace))
+				      .resource(configMap)
+				      .createOr(NonDeletingOperation::update);
+				return null;
+			}
+		);
 
 		log.debug("ConfigMap {} created/updated successfully", name);
 	}
@@ -760,13 +812,18 @@ public class K8sClient {
 	}
 
 	private int applyYamlStream(InputStream stream, String sourceDescription) {
-		List<HasMetadata> resources = executeWithErrorHandling("load YAML from " + sourceDescription, () -> loadYamlItems(stream, sourceDescription));
+		List<HasMetadata> resources = executeWithErrorHandling(
+			"load YAML from " + sourceDescription,
+			() -> loadYamlItems(stream, sourceDescription)
+		);
 
 		for (HasMetadata resource : resources) {
-			executeWithErrorHandling("apply resource from " + sourceDescription, () -> {
-				client.resource(resource).createOr(NonDeletingOperation::update);
-				return null;
-			});
+			executeWithErrorHandling(
+				"apply resource from " + sourceDescription, () -> {
+					client.resource(resource).createOr(NonDeletingOperation::update);
+					return null;
+				}
+			);
 		}
 
 		return resources.size();
@@ -834,11 +891,18 @@ public class K8sClient {
 			}
 		}
 
-		executeWithErrorHandling("label " + resource + "/" + name, () -> {
-			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
-			applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
-			return null;
-		});
+		executeWithErrorHandling(
+			"label " + resource + "/" + name, () -> {
+				Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+					client,
+					resource,
+					name,
+					resolveNamespace(namespace)
+				);
+				applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
+				return null;
+			}
+		);
 
 		log.debug("Labels updated successfully");
 	}
@@ -851,11 +915,12 @@ public class K8sClient {
 	 * calls due to Java's per-expression wildcard capture, whereas a type variable bound once for the
 	 * whole method invocation can.
 	 */
-	private static <T extends HasMetadata> void applyLabelChanges(Resource<T> resourceClient,
-	                                                              String resource,
-	                                                              String name,
-	                                                              Map<String, String> labelsToAdd,
-	                                                              List<String> labelsToRemove) {
+	private static <T extends HasMetadata> void applyLabelChanges(
+		Resource<T> resourceClient,
+		String resource,
+		String name,
+		Map<String, String> labelsToAdd,
+		List<String> labelsToRemove) {
 		T existingResource = resourceClient.get();
 
 		if (existingResource == null) {
@@ -933,11 +998,18 @@ public class K8sClient {
 		String patchJson = Serialization.asJson(yaml);
 		log.trace("Patch JSON: {}", patchJson);
 
-		executeWithErrorHandling("patch " + resource + "/" + name, () -> {
-			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
-			resourceClient.patch(patchContext, patchJson);
-			return null;
-		});
+		executeWithErrorHandling(
+			"patch " + resource + "/" + name, () -> {
+				Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+					client,
+					resource,
+					name,
+					resolveNamespace(namespace)
+				);
+				resourceClient.patch(patchContext, patchJson);
+				return null;
+			}
+		);
 
 		log.debug("Resource {}/{} patched successfully", resource, name);
 	}
@@ -1002,7 +1074,12 @@ public class K8sClient {
 		log.debug("Deleting {}/{} in namespace {}", resource, name, namespace);
 
 		try {
-			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
+			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+				client,
+				resource,
+				name,
+				resolveNamespace(namespace)
+			);
 			resourceClient.delete();
 			log.debug("Resource {}/{} deleted successfully", resource, name);
 		} catch (Exception e) {
@@ -1095,15 +1172,25 @@ public class K8sClient {
 		}
 
 		final Pod finalPod = pod;
-		Pod createdPod = executeWithErrorHandling("run pod " + name, () -> client.pods()
-		                                                                         .inNamespace(resolvedNamespace)
-		                                                                         .resource(finalPod)
-		                                                                         .create());
+		Pod createdPod = executeWithErrorHandling(
+			"run pod " + name, () -> client.pods()
+			                               .inNamespace(resolvedNamespace)
+			                               .resource(finalPod)
+			                               .create()
+		);
 
 		log.debug("Pod {} created successfully", name);
 		if (K8sClientHelper.shouldReturnPodOutput(runParams)) {
-			return K8sClientHelper.collectPodRunOutput(client, createdPod.getMetadata()
-			                                                             .getName(), resolvedNamespace, K8sClientHelper.shouldRemovePod(runParams), defaultRetries, sleepTimeMillis, this);
+			return K8sClientHelper.collectPodRunOutput(
+				client,
+				createdPod.getMetadata()
+				          .getName(),
+				resolvedNamespace,
+				K8sClientHelper.shouldRemovePod(runParams),
+				defaultRetries,
+				sleepTimeMillis,
+				this
+			);
 		}
 
 		return "pod/" + createdPod.getMetadata().getName() + " created";
@@ -1120,15 +1207,24 @@ public class K8sClient {
 		log.debug("Getting custom resources of type {}", resource);
 
 		try {
-			Map<String, Object> match = K8sClientHelper.findApiResourceViaDiscovery(client, resource.toLowerCase(Locale.ROOT), resource);
+			Map<String, Object> match = K8sClientHelper.findApiResourceViaDiscovery(
+				client,
+				resource.toLowerCase(Locale.ROOT),
+				resource
+			);
 			if (match == null) {
 				return Collections.emptyList();
 			}
-			ResourceDefinitionContext context = new ResourceDefinitionContext.Builder().withGroup((String) match.get("group"))
-			                                                                           .withVersion((String) match.get("version"))
-			                                                                           .withKind((String) match.get("kind"))
-			                                                                           .withPlural((String) match.get("plural"))
-			                                                                           .withNamespaced((Boolean) match.get("namespaced"))
+			ResourceDefinitionContext context = new ResourceDefinitionContext.Builder().withGroup((String) match.get(
+																						   "group"))
+			                                                                           .withVersion((String) match.get(
+																						   "version"))
+			                                                                           .withKind((String) match.get(
+																						   "kind"))
+			                                                                           .withPlural((String) match.get(
+																						   "plural"))
+			                                                                           .withNamespaced((Boolean) match.get(
+																						   "namespaced"))
 			                                                                           .build();
 
 			// `apiClient`'s type is a long nested generic (MixedOperation<GenericKubernetesResource,
@@ -1149,7 +1245,10 @@ public class K8sClient {
 	}
 
 	private static CustomResource toCustomResource(GenericKubernetesResource item) {
-		Map<String, Object> metadata = item.getMetadata() != null ? Serialization.unmarshal(Serialization.asJson(item.getMetadata()), MAP_TYPE) : Collections.emptyMap();
+		Map<String, Object> metadata = item.getMetadata() != null ? Serialization.unmarshal(
+			Serialization.asJson(item.getMetadata()),
+			MAP_TYPE
+		) : Collections.emptyMap();
 		String ns = metadata.containsKey("namespace") ? String.valueOf(metadata.get("namespace")) : "";
 		String name = metadata.containsKey("name") ? String.valueOf(metadata.get("name")) : "";
 		return new CustomResource(ns, name);
@@ -1179,7 +1278,12 @@ public class K8sClient {
 	public String getAnnotation(String resource, String name, String key, String namespace) {
 		log.debug("Getting annotation {} from {}/{} in namespace {}", key, resource, name, namespace);
 
-		Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(client, resource, name, resolveNamespace(namespace));
+		Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+			client,
+			resource,
+			name,
+			resolveNamespace(namespace)
+		);
 		HasMetadata k8sResource = resourceClient.get();
 
 		if (k8sResource == null) {
@@ -1221,7 +1325,14 @@ public class K8sClient {
 	 * @param desiredPhase phase to wait for, e.g. {@code Running}
 	 */
 	public void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
-		waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase, DEFAULT_TIMEOUT_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS);
+		waitForResourcePhase(
+			resourceType,
+			resourceName,
+			namespace,
+			desiredPhase,
+			DEFAULT_TIMEOUT_SECONDS,
+			DEFAULT_CHECK_INTERVAL_SECONDS
+		);
 	}
 
 	/**
@@ -1234,13 +1345,21 @@ public class K8sClient {
 	 * @param timeoutSeconds       maximum time to wait before failing
 	 * @param checkIntervalSeconds pause between phase checks
 	 */
-	public void waitForResourcePhase(String resourceType,
-	                                 String resourceName,
-	                                 String namespace,
-	                                 String desiredPhase,
-	                                 int timeoutSeconds,
-	                                 int checkIntervalSeconds) {
-		K8sClientHelper.validateWaitForResourcePhaseParams(resourceType, resourceName, namespace, desiredPhase, timeoutSeconds, checkIntervalSeconds);
+	public void waitForResourcePhase(
+		String resourceType,
+		String resourceName,
+		String namespace,
+		String desiredPhase,
+		int timeoutSeconds,
+		int checkIntervalSeconds) {
+		K8sClientHelper.validateWaitForResourcePhaseParams(
+			resourceType,
+			resourceName,
+			namespace,
+			desiredPhase,
+			timeoutSeconds,
+			checkIntervalSeconds
+		);
 
 		log.debug("Waiting for {}/{} to reach phase {}", resourceType, resourceName, desiredPhase);
 
@@ -1249,7 +1368,13 @@ public class K8sClient {
 
 		while (System.currentTimeMillis() < endTime) {
 			if (hasReachedPhase(resourceType, resourceName, namespace, desiredPhase)) {
-				log.debug("Resource {}/{} in namespace {} reached the desired phase: {}", resourceType, resourceName, namespace, desiredPhase);
+				log.debug(
+					"Resource {}/{} in namespace {} reached the desired phase: {}",
+					resourceType,
+					resourceName,
+					namespace,
+					desiredPhase
+				);
 				return;
 			}
 
@@ -1266,7 +1391,12 @@ public class K8sClient {
 
 	private boolean hasReachedPhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
 		try {
-			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(client, resourceType, resourceName, resolveNamespace(namespace));
+			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+				client,
+				resourceType,
+				resourceName,
+				resolveNamespace(namespace)
+			);
 			HasMetadata resource = resourceClient.get();
 			if (resource == null) {
 				return false;
@@ -1359,9 +1489,9 @@ public class K8sClient {
 	 * @param name      name of the resource
 	 */
 	public record CustomResource(
-			String namespace,
+		String namespace,
 
-			String name
+		String name
 	) {
 	}
 

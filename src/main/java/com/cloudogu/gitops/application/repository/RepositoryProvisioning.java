@@ -131,7 +131,10 @@ public class RepositoryProvisioning {
 	private RepositoryWorkspace createSingleInstanceWorkspace(DeploymentContext context) {
 		log.debug("Creating single-instance repository workspace.");
 
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(), gitHandler.getResourcesScm());
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(
+			clusterResourcesRepoTarget(),
+			gitHandler.getResourcesScm()
+		);
 
 		return new RepositoryWorkspace(clusterResourcesRepository);
 	}
@@ -141,11 +144,17 @@ public class RepositoryProvisioning {
 	private RepositoryWorkspace createDedicatedInstanceWorkspace(DeploymentContext context) {
 		log.debug("Creating dedicated-instance repository workspace.");
 
-		GitRepo clusterResourcesRepository = gitRepoFactory.create(clusterResourcesRepoTarget(), gitHandler.getResourcesScm());
+		GitRepo clusterResourcesRepository = gitRepoFactory.create(
+			clusterResourcesRepoTarget(),
+			gitHandler.getResourcesScm()
+		);
 
 		GitRepo tenantBootstrapRepository = gitRepoFactory.create(clusterResourcesRepoTarget(), gitHandler.getTenant());
 
-		RepositoryWorkspace dedicatedWorkspace = new RepositoryWorkspace(clusterResourcesRepository, tenantBootstrapRepository);
+		RepositoryWorkspace dedicatedWorkspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		validateDedicatedWorkspace(dedicatedWorkspace);
 
@@ -167,7 +176,8 @@ public class RepositoryProvisioning {
 
 	private void assertWorkspacePrepared() {
 		if (workspace == null) {
-			throw new IllegalStateException("Repository workspace must be prepared before repository changes can be published.");
+			throw new IllegalStateException(
+				"Repository workspace must be prepared before repository changes can be published.");
 		}
 	}
 

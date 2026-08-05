@@ -11,8 +11,10 @@ public class ContextBuilder {
 	private final Config config;
 
 	public DeploymentContext build() {
-		return new DeploymentContext(config, tenantMode(), scmManagerDeploymentMode(), config.getApplication()
-		                                                                                     .getMirrorRepos(), clusterDistribution());
+		return new DeploymentContext(
+			config, tenantMode(), scmManagerDeploymentMode(), config.getApplication()
+			                                                        .getMirrorRepos(), clusterDistribution()
+		);
 	}
 
 	private DeploymentContext.TenantMode tenantMode() {
