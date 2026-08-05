@@ -1,4 +1,13 @@
-.idea
+.idea/*
+
+# Allow the codeStyles directory
+!.idea/codeStyles/
+
+# If you want to allow ONLY those two specific files and ignore everything else inside codeStyles, use this:
+.idea/codeStyles/*
+!.idea/codeStyles/Project.xml
+!.idea/codeStyles/codeStylesconfig.xml
+
 .run
 *.iml
 target
