@@ -151,22 +151,19 @@ public class ArgoCD extends AbstractTool {
 		log.info("Validating env list in features.argocd.env with {} entries.", env.size());
 
 		for (Object entry : env) {
-			if (!(entry instanceof Map)) {
-				throw new IllegalArgumentException(
-					"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + entry);
+			if (entry instanceof Map<?, ?> map && map.get("name") instanceof String && map.get("value") instanceof String) {
+				continue;
 			}
-			Map<String, String> map = (Map<String, String>) entry;
-			if (!map.containsKey("name") || !map.containsKey("value")) {
-				throw new IllegalArgumentException(
-					"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + formatMapLikeGroovy(
-						map));
-			}
+
+			throw new IllegalArgumentException(
+				"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: " + (entry instanceof Map<?, ?> map ? formatMapLikeGroovy(
+					map) : entry));
 		}
 
 		log.info("Env list validation for features.argocd.env completed successfully.");
 	}
 
-	private static String formatMapLikeGroovy(Map<String, String> map) {
+	private static String formatMapLikeGroovy(Map<?, ?> map) {
 		if (map == null) {
 			return "null";
 		}

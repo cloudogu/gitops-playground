@@ -20,12 +20,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Singleton
@@ -37,91 +34,6 @@ public class FileSystemUtils {
 	private static final String TEMP_FILE_PREFIX = "gitops-playground-";
 
 	private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
-
-	/**
-	 * Replaces text in files. If you want to change a YAML field, better use {@link #readYaml(Path)}
-	 * and {@link #writeYaml(Map, File)}.
-	 */
-	public File replaceFileContent(String folder, String fileToChange, String from, String to) {
-		File file = new File(folder, fileToChange);
-
-		try {
-			String newConfig = Files.readString(file.toPath()).replace(from, to);
-
-			Files.writeString(file.toPath(), newConfig);
-
-			return file;
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to replace file content: " + file, exception);
-		}
-	}
-
-	public String replaceFileContent(String fileToChange, String from, String to) {
-		Path file = Path.of(fileToChange);
-
-		try {
-			String newConfig = Files.readString(file).replaceAll(from, to);
-
-			Files.writeString(file, newConfig);
-
-			return newConfig;
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to replace file content: " + file, exception);
-		}
-	}
-
-	public String getSubstringOfFile(String fileLocation, CharSequence pattern, int from, int to) {
-		String line = findLastMatchingLine(fileLocation, pattern);
-		return line != null ? line.substring(from, to) : "";
-	}
-
-	public String getSubstringOfFile(String fileLocation, CharSequence pattern, int from) {
-		String line = findLastMatchingLine(fileLocation, pattern);
-		return line != null ? line.substring(from) : "";
-	}
-
-	public String getLineFromFile(String fileLocation, CharSequence pattern) {
-		String line = findLastMatchingLine(fileLocation, pattern);
-		return line != null ? line : "";
-	}
-
-	/**
-	 * Scans the given file and returns the last line containing {@code pattern}, or {@code null} if
-	 * no line matches.
-	 */
-	private static String findLastMatchingLine(String fileLocation, CharSequence pattern) {
-		Path file = Path.of(fileLocation);
-		String found = null;
-
-		try {
-			for (String line : Files.readAllLines(file)) {
-				if (line.contains(pattern)) {
-					found = line;
-				}
-			}
-
-			return found;
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to read file: " + fileLocation, exception);
-		}
-	}
-
-	public List<String> getAllLinesFromFile(String fileLocation, CharSequence pattern) {
-		Path file = Path.of(fileLocation);
-		List<String> foundLines = new ArrayList<>();
-
-		try {
-			for (String line : Files.readAllLines(file)) {
-				if (line.contains(pattern)) {
-					foundLines.add(line);
-				}
-			}
-
-			return foundLines;
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to read file: " + fileLocation, exception);
-		}
-	}
 
 	public static void deleteFile(String path) {
 		try {
@@ -139,68 +51,8 @@ public class FileSystemUtils {
 		}
 	}
 
-	public String goBackToDir(String filePath, String directory) {
-		int directoryIndex = filePath.indexOf(directory);
-
-		if (directoryIndex < 0) {
-			throw new IllegalArgumentException("Directory '%s' is not part of path '%s'".formatted(
-				directory,
-				filePath
-			));
-		}
-
-		return filePath.substring(0, directoryIndex + directory.length());
-	}
-
 	public String getRootDir() {
 		return System.getProperty("user.dir");
-	}
-
-	public List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
-		Path root = Path.of(directory);
-
-		if (Files.notExists(root)) {
-			return Collections.emptyList();
-		}
-
-		List<File> foundFiles = new ArrayList<>();
-
-		try {
-			Files.walkFileTree(
-				root, new SimpleFileVisitor<>() {
-
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
-						if (file.getFileName().toString().endsWith(ending)) {
-							foundFiles.add(file.toFile());
-						}
-
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
-						if (exception instanceof NoSuchFileException) {
-							return FileVisitResult.CONTINUE;
-						}
-
-						throw exception;
-					}
-				}
-			);
-
-			return foundFiles;
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to walk directory: " + directory, exception);
-		}
-	}
-
-	public void listDirectories(String parentDir) {
-		List<File> files = getAllFilesFromDirectoryWithEnding(parentDir, "");
-
-		for (File file : files) {
-			log.debug("{}", file.getPath());
-		}
 	}
 
 	/**
@@ -283,10 +135,6 @@ public class FileSystemUtils {
 		}
 	}
 
-	public void copyDirectory(String source, String destination) {
-		copyDirectory(source, destination, null);
-	}
-
 	public void copyDirectory(String source, String destination, FileFilter fileFilter) {
 		log.debug("Copying directory {} to {}", source, destination);
 
@@ -294,28 +142,6 @@ public class FileSystemUtils {
 			FileUtils.copyDirectory(new File(source), new File(destination), fileFilter);
 		} catch (IOException exception) {
 			throw new UncheckedIOException("Failed to copy directory from " + source + " to " + destination, exception);
-		}
-	}
-
-	public void copyFile(String sourcePath, String destinationPath) {
-		File sourceFile = new File(sourcePath);
-		File destinationFile = new File(destinationPath);
-
-		log.debug("Copying file from {} to {}", sourcePath, destinationPath);
-
-		try {
-			File parentDirectory = destinationFile.getParentFile();
-
-			if (parentDirectory != null) {
-				Files.createDirectories(parentDirectory.toPath());
-			}
-
-			FileUtils.copyFile(sourceFile, destinationFile);
-		} catch (IOException exception) {
-			throw new UncheckedIOException(
-				"Failed to copy file from " + sourcePath + " to " + destinationPath,
-				exception
-			);
 		}
 	}
 
@@ -340,49 +166,6 @@ public class FileSystemUtils {
 			return Files.copy(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException exception) {
 			throw new UncheckedIOException("Failed to copy " + filePath + " to temporary directory", exception);
-		}
-	}
-
-	public void deleteEmptyFiles(Path path, Pattern pathPattern) {
-		if (Files.notExists(path)) {
-			return;
-		}
-
-		try {
-			Files.walkFileTree(
-				path, new SimpleFileVisitor<>() {
-
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-						if (attributes.size() == 0 && pathPattern.matcher(file.toString()).find()) {
-							log.trace("Deleting empty file {}", file);
-
-							Files.deleteIfExists(file);
-						}
-
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
-						if (exception instanceof NoSuchFileException) {
-							return FileVisitResult.CONTINUE;
-						}
-
-						throw exception;
-					}
-				}
-			);
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to walk path for deleting empty files: " + path, exception);
-		}
-	}
-
-	public Path createTempDir() {
-		try {
-			return Files.createTempDirectory(TEMP_FILE_PREFIX);
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to create temporary directory", exception);
 		}
 	}
 

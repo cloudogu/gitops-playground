@@ -99,7 +99,7 @@ class K8sClientHelper {
 		int defaultRetries,
 		int sleepTime,
 		K8sClient k8sClient) {
-		String phase = null;
+		String phase;
 		try {
 			phase = waitForPodCompletion(client, podName, namespace, defaultRetries, sleepTime);
 			String logOutput = client.pods().inNamespace(namespace).withName(podName).getLog();
@@ -149,25 +149,13 @@ class K8sClientHelper {
 	}
 
 	static PatchContext createPatchContext(String type) {
-		PatchType patchType;
-
-		if (type == null || type.isEmpty()) {
-			patchType = PatchType.JSON_MERGE;
-		} else {
-			switch (type.toLowerCase(Locale.ROOT)) {
-				case "merge", "json-merge":
-					patchType = PatchType.JSON_MERGE;
-					break;
-				case "strategic":
-					patchType = PatchType.STRATEGIC_MERGE;
-					break;
-				case "json":
-					patchType = PatchType.JSON;
-					break;
-				default:
-					patchType = PatchType.STRATEGIC_MERGE;
-			}
-		}
+		PatchType patchType = type == null || type.isEmpty() ? PatchType.JSON_MERGE : switch (type.toLowerCase(
+			Locale.ROOT)) {
+			case "merge", "json-merge" -> PatchType.JSON_MERGE;
+			case "strategic" -> PatchType.STRATEGIC_MERGE;
+			case "json" -> PatchType.JSON;
+			default -> throw new IllegalArgumentException("Unsupported patch type: " + type);
+		};
 
 		return new PatchContext.Builder().withPatchType(patchType).build();
 	}
@@ -219,40 +207,27 @@ class K8sClientHelper {
 		String resourceType,
 		String name,
 		String resolvedNamespace) {
-		switch (resourceType.toLowerCase(Locale.ROOT)) {
-			case "pod", "pods":
-				return client.pods().inNamespace(resolvedNamespace).withName(name);
-
-			case "service", "services", "svc":
-				return client.services().inNamespace(resolvedNamespace).withName(name);
-
-			case "deployment", "deployments":
-				return client.apps().deployments().inNamespace(resolvedNamespace).withName(name);
-
-			case "configmap", "configmaps", "cm":
-				return client.configMaps().inNamespace(resolvedNamespace).withName(name);
-
-			case "secret", "secrets":
-				return client.secrets().inNamespace(resolvedNamespace).withName(name);
-
-			case "namespace", "namespaces", "ns":
-				return client.namespaces().withName(name);
-
-			case "node", "nodes":
-				return client.nodes().withName(name);
-
-			case "serviceaccount", "serviceaccounts":
-				return client.serviceAccounts().inNamespace(resolvedNamespace).withName(name);
-
-			default:
+		return switch (resourceType.toLowerCase(Locale.ROOT)) {
+			case "pod", "pods" -> client.pods().inNamespace(resolvedNamespace).withName(name);
+			case "service", "services", "svc" -> client.services().inNamespace(resolvedNamespace).withName(name);
+			case "deployment", "deployments" ->
+				client.apps().deployments().inNamespace(resolvedNamespace).withName(name);
+			case "configmap", "configmaps", "cm" -> client.configMaps().inNamespace(resolvedNamespace).withName(name);
+			case "secret", "secrets" -> client.secrets().inNamespace(resolvedNamespace).withName(name);
+			case "namespace", "namespaces", "ns" -> client.namespaces().withName(name);
+			case "node", "nodes" -> client.nodes().withName(name);
+			case "serviceaccount", "serviceaccounts" ->
+				client.serviceAccounts().inNamespace(resolvedNamespace).withName(name);
+			default -> {
 				log.debug(
 					"Searching API resource via discovery for resourceType={}, name={}, ns={}",
 					resourceType,
 					name,
 					resolvedNamespace
 				);
-				return getCustomResourceClient(client, resourceType, name, resolvedNamespace);
-		}
+				yield getCustomResourceClient(client, resourceType, name, resolvedNamespace);
+			}
+		};
 	}
 
 	static io.fabric8.kubernetes.client.dsl.Resource<?> getCustomResourceClient(

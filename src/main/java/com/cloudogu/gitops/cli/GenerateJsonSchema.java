@@ -39,7 +39,7 @@ public class GenerateJsonSchema {
 		Pattern.UNICODE_CHARACTER_CLASS
 	);
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		try {
 			ObjectNode jsonSchema = ApplicationContext.run().getBean(JsonSchemaGenerator.class).createSchema();
 			String prettyJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
@@ -58,7 +58,6 @@ public class GenerateJsonSchema {
 		}
 	}
 
-	//
 	public static String generateDocs() {
 		Config config = new Config();
 		StringBuilder md = new StringBuilder();
@@ -161,7 +160,7 @@ public class GenerateJsonSchema {
 	private static void collectFieldRows(Field field, Object instance, String prefix, List<Map<String, String>> rows) {
 		String key = prefix + "." + field.getName();
 
-		if (isSchemaType(field.getType())) {
+		if (isSchemaType(field.getType()) && !field.getType().isEnum()) {
 			rows.addAll(collectRows(safeGet(field, instance), field.getType(), key));
 			return;
 		}
@@ -222,7 +221,7 @@ public class GenerateJsonSchema {
 
 	public static Object safeGet(Field field, Object instance) {
 		try {
-			//field.setAccessible(true);
+			field.setAccessible(true);
 			return field.get(instance);
 		} catch (Exception e) {
 			log.debug("Failed to read field {} for documentation generation", field.getName(), e);
@@ -231,16 +230,12 @@ public class GenerateJsonSchema {
 	}
 
 	public static String formatDefault(Object value) {
-		if (value == null) {
-			return "-";
-		}
-		if (value instanceof Map<?, ?> map) {
-			return map.isEmpty() ? "[:]" : value.toString();
-		}
-		if (value instanceof Collection<?> collection) {
-			return collection.isEmpty() ? "[]" : value.toString();
-		}
-		return value.toString();
+		return switch (value) {
+			case null -> "-";
+			case Map<?, ?> map -> map.isEmpty() ? "[:]" : value.toString();
+			case Collection<?> collection -> collection.isEmpty() ? "[]" : value.toString();
+			default -> value.toString();
+		};
 	}
 
 	public static String typeName(Field field) {

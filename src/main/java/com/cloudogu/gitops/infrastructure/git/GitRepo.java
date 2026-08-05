@@ -49,10 +49,9 @@ public class GitRepo implements AutoCloseable {
 
 	public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
 	private static final String GIT_REMOTE_ORIGIN = "origin";
+	private static final String DEFAULT_PUSH_REF_SPEC = "HEAD:refs/heads/main";
 	private static final Pattern REFS_HEADS_PREFIX = Pattern.compile("^refs/heads/");
 	private static final Pattern REFS_TAGS_PREFIX = Pattern.compile("^refs/tags/");
-
-	private final Config config;
 
 	@Getter
 	@Setter
@@ -78,7 +77,6 @@ public class GitRepo implements AutoCloseable {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to create temporary directory", e);
 		}
-		this.config = config;
 		this.gitProvider = gitProvider;
 		this.fileSystemUtils = fileSystemUtils;
 
@@ -96,10 +94,6 @@ public class GitRepo implements AutoCloseable {
 			gitProvider.setRepositoryPermission(repoTarget, gitOpsUsername, AccessRole.WRITE, Scope.USER);
 		}
 		return isNewRepo;
-	}
-
-	public boolean createRepositoryAndSetPermission(String description) {
-		return createRepositoryAndSetPermission(description, true);
 	}
 
 	public void cloneRepo() throws GitAPIException {
@@ -141,19 +135,11 @@ public class GitRepo implements AutoCloseable {
 		}
 	}
 
-	public void pullRebaseMain() throws GitAPIException {
-		log.debug("Pulling remote main with rebase for repo {}", repoTarget);
-
-		getGit().pull()
-		        .setRemote(GIT_REMOTE_ORIGIN)
-		        .setRemoteBranchName("main")
-		        .setRebase(true)
-		        .setCredentialsProvider(getCredentialProvider())
-		        .call();
-	}
-
+	/**
+	 * Commits and pushes to the default {@code main} branch.
+	 */
 	public void commitAndPush(String message, String tag) throws GitAPIException {
-		commitAndPush(message, tag, "HEAD:refs/heads/main");
+		commitAndPush(message, tag, DEFAULT_PUSH_REF_SPEC);
 	}
 
 	public void commitAndPush(String commitMessage, String tag, String refSpec) throws GitAPIException {
@@ -215,7 +201,7 @@ public class GitRepo implements AutoCloseable {
 	}
 
 	public void commitAndPush(String commitMessage) throws GitAPIException {
-		commitAndPush(commitMessage, null, "HEAD:refs/heads/main");
+		commitAndPush(commitMessage, null, DEFAULT_PUSH_REF_SPEC);
 	}
 
 	/**
@@ -241,7 +227,7 @@ public class GitRepo implements AutoCloseable {
 	}
 
 	public void copyDirectoryContents(String srcDir) {
-		copyDirectoryContents(srcDir, (FileFilter) null);
+		copyDirectoryContents(srcDir, null);
 	}
 
 	public void copyDirectoryContents(String srcDir, FileFilter fileFilter) {

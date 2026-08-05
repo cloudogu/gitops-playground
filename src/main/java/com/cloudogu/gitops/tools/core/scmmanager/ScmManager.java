@@ -53,7 +53,7 @@ public class ScmManager extends AbstractTool {
 
 		ScmManagerProvider scmManager = getTenantScmManager();
 
-		this.setup = new ScmManagerSetup(scmManager, deployer, context, repositoryWorkspace);
+		this.setup = new ScmManagerSetup(scmManager, deployer, context, repositoryWorkspace, fileSystemUtils);
 	}
 
 	@Override

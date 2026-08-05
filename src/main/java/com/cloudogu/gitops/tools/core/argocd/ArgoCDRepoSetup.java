@@ -190,13 +190,9 @@ public class ArgoCDRepoSetup {
 
 		values.put("config", getConfig());
 
-		try {
-			TemplateModel statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-			                                                                                                         .getStaticModels();
-			values.put("statics", statics);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to expose freemarker statics model", e);
-		}
+		TemplateModel statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
+		                                                                                                         .getStaticModels();
+		values.put("statics", statics);
 
 		return values;
 	}

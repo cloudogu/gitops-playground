@@ -9,7 +9,10 @@ import com.cloudogu.gitops.utils.NetworkingUtils;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
+import okhttp3.ResponseBody;
 import retrofit2.Response;
+
+import java.io.IOException;
 
 @Singleton
 @Order(200)
@@ -47,8 +50,8 @@ public class ScmmDestructionHandler implements DestructionHandler {
 			                                            .delete(namePrefix + namespace, repository)
 			                                            .execute();
 			if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
-				throw new IllegalStateException("Could not delete repository " + namespace + "/" + repository + " (" + response.code() + " " + response.message() + "): " + (response.errorBody() != null ? response.errorBody()
-				                                                                                                                                                                                                    .string() : ""));
+				throw new IllegalStateException("Could not delete repository " + namespace + "/" + repository + " (" + response.code() + " " + response.message() + "): " + readErrorBody(
+					response));
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to delete repository " + namespace + "/" + repository, e);
@@ -65,11 +68,17 @@ public class ScmmDestructionHandler implements DestructionHandler {
 			                                            .delete(config.getApplication().getNamePrefix() + name)
 			                                            .execute();
 			if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
-				throw new IllegalStateException("Could not delete user " + name + " (" + response.code() + " " + response.message() + "): " + (response.errorBody() != null ? response.errorBody()
-				                                                                                                                                                                      .string() : ""));
+				throw new IllegalStateException("Could not delete user " + name + " (" + response.code() + " " + response.message() + "): " + readErrorBody(
+					response));
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to delete user " + name, e);
+		}
+	}
+
+	private static String readErrorBody(Response<?> response) throws IOException {
+		try (ResponseBody errorBody = response.errorBody()) {
+			return errorBody != null ? errorBody.string() : "";
 		}
 	}
 

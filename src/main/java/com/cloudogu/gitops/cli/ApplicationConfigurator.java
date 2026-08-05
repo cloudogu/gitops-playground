@@ -132,11 +132,12 @@ public class ApplicationConfigurator {
 			// "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g.
 			// 172.x.y.z:9091)
 			// will not work on Windows and MacOS.
-			newConfig.getScm()
-			         .getScmManager()
-			         .setUrlForJenkins("http://scmm." + newConfig.getApplication().getNamePrefix() + newConfig.getScm()
-			                                                                                                  .getScmManager()
-			                                                                                                  .getNamespace() + ".svc.cluster.local/scm");
+			String urlForJenkins = new StringBuilder("http://scmm.")
+				.append(newConfig.getApplication().getNamePrefix())
+				.append(newConfig.getScm().getScmManager().getNamespace())
+				.append(".svc.cluster.local/scm")
+				.toString();
+			newConfig.getScm().getScmManager().setUrlForJenkins(urlForJenkins);
 		}
 
 		// We probably could get rid of some of the complexity by refactoring url, host and ingress into

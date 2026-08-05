@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class JsonSchemaValidator {
+public final class JsonSchemaValidator {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 	private static final SchemaRegistry schemaRegistry = SchemaRegistry.builder().build();

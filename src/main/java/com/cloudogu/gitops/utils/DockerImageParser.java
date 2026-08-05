@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 public class DockerImageParser {
@@ -7,7 +8,7 @@ public class DockerImageParser {
 	private static final int MIN_SEGMENTS_WITH_REGISTRY = 2;
 	private static final int REPOSITORY_SEGMENT_COUNT = 2;
 
-	@lombok.Getter
+	@Getter
 	@RequiredArgsConstructor
 	public static class Image {
 		private final String registry;

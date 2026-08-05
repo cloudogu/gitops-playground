@@ -40,6 +40,7 @@ public class ScmManagerSetup {
 	private final Deployer deployer;
 	private final DeploymentContext context;
 	private final RepositoryWorkspace repositoryWorkspace;
+	private final FileSystemUtils fileSystemUtils;
 
 	private Path tempValuesPath;
 
@@ -166,7 +167,7 @@ public class ScmManagerSetup {
 		                                                                                  .getValues() : new HashMap<>();
 
 		Map<String, Object> mergedMap = MapUtils.deepMerge(values, templatedMap);
-		tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap);
+		tempValuesPath = fileSystemUtils.writeTempFile(mergedMap);
 
 		return tempValuesPath;
 	}
@@ -196,6 +197,7 @@ public class ScmManagerSetup {
 				Thread.sleep(startDelay);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				throw new IllegalStateException("Interrupted while waiting for SCM-Manager", e);
 			}
 		}
 
@@ -216,6 +218,7 @@ public class ScmManagerSetup {
 				Thread.sleep(intervalMillis);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				throw new IllegalStateException("Interrupted while waiting for SCM-Manager", e);
 			}
 		}
 

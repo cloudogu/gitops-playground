@@ -35,7 +35,7 @@ public class RoleBinding {
 		this.roleName = roleName;
 		this.serviceAccounts = new ArrayList<>(serviceAccounts);
 
-		if ("cluster-admin".equals(roleName)) {
+		if (roleName.equals("cluster-admin")) {
 			this.kind = "ClusterRoleBinding";
 			this.roleKind = "ClusterRole";
 		} else {

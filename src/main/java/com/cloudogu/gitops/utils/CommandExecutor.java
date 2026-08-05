@@ -29,7 +29,6 @@ public class CommandExecutor {
 
 	private static final String FAILED_TO_EXECUTE_PREFIX = "Failed to execute command: ";
 	private static final String EXECUTING_FAILED_PREFIX = "Executing command failed: ";
-	private static final String STDERR_PREFIX = "Stderr: ";
 
 	public Output execute(String[] command) {
 		return execute(command, true);
@@ -117,13 +116,13 @@ public class CommandExecutor {
 			waitForOrKill(process1, String.join(" ", command1));
 
 			if (process1.exitValue() > 0) {
-				log.error("Pipefail! First process of command failed " + pipedCommand + ".");
+				log.error("Pipefail! First process of command failed {}.", pipedCommand);
 				logProcessStderr(process1);
 			}
 			if (process2.exitValue() > 0) {
-				log.error(EXECUTING_FAILED_PREFIX + pipedCommand);
-				log.error(STDERR_PREFIX + finalOutput.getStdErr());
-				log.error("StdOut: " + finalOutput.getStdOut());
+				log.error("Executing command failed: {}", pipedCommand);
+				log.error("Stderr: {}", finalOutput.getStdErr());
+				log.error("StdOut: {}", finalOutput.getStdOut());
 			}
 
 			boolean success = process1.exitValue() == 0 && process2.exitValue() == 0;
@@ -141,7 +140,7 @@ public class CommandExecutor {
 		try (InputStream is = process.getErrorStream()) {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			is.transferTo(bos);
-			log.error(STDERR_PREFIX + bos.toString(StandardCharsets.UTF_8).trim());
+			log.error("Stderr: {}", bos.toString(StandardCharsets.UTF_8).trim());
 		} catch (IOException e) {
 			log.debug("Failed to read stderr of process", e);
 		}
@@ -154,7 +153,7 @@ public class CommandExecutor {
 	}
 
 	protected Process doExecute(String command) throws IOException {
-		return doExecute(command, (List<String>) null);
+		return doExecute(command, null);
 	}
 
 	protected Process doExecute(String[] command) throws IOException {
@@ -232,9 +231,9 @@ public class CommandExecutor {
 		);
 
 		if (failOnError && proc.exitValue() > 0) {
-			log.error(EXECUTING_FAILED_PREFIX + command);
-			log.error(STDERR_PREFIX + output.getStdErr());
-			log.error("StdOut: " + output.getStdOut());
+			log.error("Executing command failed: {}", command);
+			log.error("Stderr: {}", output.getStdErr());
+			log.error("StdOut: {}", output.getStdOut());
 			throw new IllegalStateException(EXECUTING_FAILED_PREFIX + command);
 		}
 
@@ -245,12 +244,12 @@ public class CommandExecutor {
 		try {
 			boolean processFinished = proc.waitFor(PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES);
 			if (!processFinished) {
-				log.error("Timeout waiting for command " + command + ". Killing process.");
+				log.error("Timeout waiting for command {}. Killing process.", command);
 				proc.destroyForcibly();
 				proc.waitFor();
 			}
 		} catch (InterruptedException e) {
-			log.error("Interrupted while waiting for command " + command + ". Killing process.", e);
+			log.error("Interrupted while waiting for command {}. Killing process.", command, e);
 			proc.destroyForcibly();
 			Thread.currentThread().interrupt();
 		}

@@ -308,7 +308,7 @@ public class ContentLoader extends AbstractTool {
 	private void createRepoCoordinates(
 		ContentRepositorySchema repoConfig,
 		File mergedReposFolder,
-		List<RepoCoordinate> repoCoordinates) throws Exception {
+		List<RepoCoordinate> repoCoordinates) {
 		File repoTmpDir;
 		try {
 			repoTmpDir = Files.createTempDirectory("gitops-playground-content-repo-").toFile();
@@ -475,36 +475,38 @@ public class ContentLoader extends AbstractTool {
 	}
 
 	private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
-		if (repoConfig.getTemplating()) {
-			TemplatingEngine engine = getTemplatingEngine();
+		if (!repoConfig.getTemplating()) {
+			return;
+		}
 
-			try (GitRepo repo = this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant())) {
-				engine.replaceTemplates(
-					srcPath, Map.of(
-						"config", getConfig(), "scm", Map.of(
-							"baseUrl",
-							repo.getGitProvider()
-							    .getUrl(),
-							"host",
-							repo.getGitProvider()
-							    .getHost(),
-							"protocol",
-							repo.getGitProvider()
-							    .getProtocol(),
-							"repoUrl",
-							repo.getGitProvider()
-							    .repoPrefix()
-						), "statics", !getConfig().getContent()
-						                          .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-						                                                                                                            .getStaticModels() : new AllowListFreemarkerObjectWrapper(
-							Configuration.VERSION_2_3_32, getConfig().getContent()
-							                                         .getAllowedStaticsWhitelist()
-						).getStaticModels()
-					)
-				);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to replace templates in " + srcPath, e);
-			}
+		TemplatingEngine engine = getTemplatingEngine();
+
+		try (GitRepo repo = this.repoProvider.create(repoConfig.getTarget(), this.gitHandler.getTenant())) {
+			engine.replaceTemplates(
+				srcPath, Map.of(
+					"config", getConfig(), "scm", Map.of(
+						"baseUrl",
+						repo.getGitProvider()
+						    .getUrl(),
+						"host",
+						repo.getGitProvider()
+						    .getHost(),
+						"protocol",
+						repo.getGitProvider()
+						    .getProtocol(),
+						"repoUrl",
+						repo.getGitProvider()
+						    .repoPrefix()
+					), "statics", !getConfig().getContent()
+					                          .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+					                                                                                                            .getStaticModels() : new AllowListFreemarkerObjectWrapper(
+						Configuration.VERSION_2_3_32, getConfig().getContent()
+						                                         .getAllowedStaticsWhitelist()
+					).getStaticModels()
+				)
+			);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to replace templates in " + srcPath, e);
 		}
 	}
 
@@ -618,7 +620,7 @@ public class ContentLoader extends AbstractTool {
 			if (repoCoordinate.repoConfig.getType() == ContentRepoType.MIRROR) {
 				handleRepoMirroring(repoCoordinate, targetRepo);
 			} else {
-				handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo);
+				copyContentAndPushTargetRepo(repoCoordinate, targetRepo, isNewRepo);
 			}
 
 			createJenkinsJobIfApplicable(repoCoordinate, targetRepo);
@@ -644,7 +646,7 @@ public class ContentLoader extends AbstractTool {
 		}
 	}
 
-	private static void handleRepoCopyingOrFolderBased(
+	private static void copyContentAndPushTargetRepo(
 		RepoCoordinate repoCoordinate,
 		GitRepo targetRepo,
 		boolean isNewRepo) throws Exception {
@@ -706,10 +708,18 @@ public class ContentLoader extends AbstractTool {
 	private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
 		if (OverwriteMode.INIT != repoCoordinate.repoConfig.getOverwriteMode()) {
 			if (OverwriteMode.RESET == repoCoordinate.repoConfig.getOverwriteMode()) {
-				log.info(OVERWRITE_MODE_PREFIX + OverwriteMode.RESET + SET_FOR_REPO_SUFFIX + repoCoordinate.getFullRepoName() + "': " + "Deleting existing files in repo and replacing them with new content.");
+				log.info(
+					"OverwriteMode {} set for repo '{}': Deleting existing files in repo and replacing them with new content.",
+					OverwriteMode.RESET,
+					repoCoordinate.getFullRepoName()
+				);
 				targetRepo.clearRepo();
 			} else {
-				log.debug(OVERWRITE_MODE_PREFIX + OverwriteMode.UPGRADE + SET_FOR_REPO_SUFFIX + repoCoordinate.getFullRepoName() + "': " + "Merging new content into existing repo. ");
+				log.debug(
+					"OverwriteMode {} set for repo '{}': Merging new content into existing repo.",
+					OverwriteMode.UPGRADE,
+					repoCoordinate.getFullRepoName()
+				);
 			}
 		}
 	}

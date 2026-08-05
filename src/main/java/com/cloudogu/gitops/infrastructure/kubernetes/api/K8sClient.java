@@ -36,6 +36,8 @@ import io.fabric8.openshift.api.model.Project;
 import io.fabric8.openshift.api.model.ProjectBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.inject.Singleton;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -88,7 +90,27 @@ public class K8sClient {
 	protected int sleepTimeMillis = DEFAULT_SLEEP_TIME_MILLIS;
 	protected int defaultRetries = DEFAULT_RETRIES;
 
+	/**
+	 * -- GETTER --
+	 * Returns the underlying fabric8 client.
+	 * <p>
+	 * <p>
+	 * -- SETTER --
+	 * Replaces the underlying fabric8 client, mainly for tests.
+	 *
+	 * @return the fabric8 client
+	 * @param client the fabric8 client to use
+	 */
+	@Setter
+	@Getter
 	private KubernetesClient client;
+	/**
+	 * -- SETTER --
+	 * Sets the GitOps Playground config after construction.
+	 *
+	 * @param gopConfig the GitOps Playground config; may be null
+	 */
+	@Setter
 	private com.cloudogu.gitops.config.Config gopConfig;
 
 	/**
@@ -112,42 +134,6 @@ public class K8sClient {
 
 		this.client = new KubernetesClientBuilder().withConfig(config).build();
 		this.gopConfig = gopConfig;
-	}
-
-	/**
-	 * Replaces the underlying fabric8 client, mainly for tests.
-	 *
-	 * @param client the fabric8 client to use
-	 */
-	public void setClient(KubernetesClient client) {
-		this.client = client;
-	}
-
-	/**
-	 * Sets the GitOps Playground config after construction.
-	 *
-	 * @param gopConfig the GitOps Playground config; may be null
-	 */
-	public void setGopConfig(com.cloudogu.gitops.config.Config gopConfig) {
-		this.gopConfig = gopConfig;
-	}
-
-	/**
-	 * Returns the underlying fabric8 client.
-	 *
-	 * @return the fabric8 client
-	 */
-	public KubernetesClient getClient() {
-		return client;
-	}
-
-	/**
-	 * Returns the GitOps Playground config.
-	 *
-	 * @return the config; may be null
-	 */
-	public com.cloudogu.gitops.config.Config getGopConfig() {
-		return gopConfig;
 	}
 
 	/**
@@ -230,28 +216,6 @@ public class K8sClient {
 			return port != null ? port.toString() : null;
 		}
 		return null;
-	}
-
-	/**
-	 * Creates a NodePort service in the default namespace with an auto-assigned node port
-	 * (idempotent).
-	 *
-	 * @param name name of the service to create
-	 * @param tcp  port mapping in the form {@code port[:targetPort]}
-	 */
-	public void createServiceNodePort(String name, String tcp) {
-		createServiceNodePort(name, tcp, "", "");
-	}
-
-	/**
-	 * Creates a NodePort service in the default namespace (idempotent).
-	 *
-	 * @param name     name of the service to create
-	 * @param tcp      port mapping in the form {@code port[:targetPort]}
-	 * @param nodePort fixed node port to expose; empty for auto-assignment
-	 */
-	public void createServiceNodePort(String name, String tcp, String nodePort) {
-		createServiceNodePort(name, tcp, nodePort, "");
 	}
 
 	/**
@@ -481,13 +445,10 @@ public class K8sClient {
 
 		executeWithErrorHandling(
 			"create secret " + name, () -> {
-				// type is NonNamespaceOperation<Secret, SecretList, Resource<Secret>>; kept as `var`
-				// deliberately, spelling it out would hurt readability more than it helps.
-				var secretsClient = client.secrets().inNamespace(resolveNamespace(namespace));
-				if (secretsClient.withName(name).get() != null) {
-					secretsClient.withName(name).delete();
-				}
-				secretsClient.resource(secret).create();
+				client.secrets()
+				      .inNamespace(resolveNamespace(namespace))
+				      .resource(secret)
+				      .createOr(NonDeletingOperation::update);
 				return null;
 			}
 		);
@@ -520,7 +481,9 @@ public class K8sClient {
 		log.debug("Creating image pull secret {} in namespace {}", name, namespace);
 
 		String auth = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8));
-		String dockerConfig = "{\"auths\":{\"" + host + "\":{\"username\":\"" + user + "\",\"password\":\"" + password + "\",\"auth\":\"" + auth + "\"}}}";
+		String dockerConfig = Serialization.asJson(
+			Map.of("auths", Map.of(host, Map.of("username", user, "password", password, "auth", auth)))
+		);
 
 		Secret secret = new SecretBuilder().withNewMetadata()
 		                                   .withName(name)
@@ -541,16 +504,6 @@ public class K8sClient {
 		);
 
 		log.debug("Image pull secret {} created/updated successfully", name);
-	}
-
-	/**
-	 * Retrieves the {@code namespaces} data from an ArgoCD secret in the default namespace.
-	 *
-	 * @param name name of the secret
-	 * @return the base64-encoded {@code namespaces} value of the secret
-	 */
-	public String getArgoCDNamespacesSecret(String name) {
-		return getArgoCDNamespacesSecret(name, "");
 	}
 
 	/**
@@ -585,18 +538,6 @@ public class K8sClient {
 	 */
 	public Credentials getCredentialsFromSecret(String secretname, String namespace) {
 		return getCredentialsFromSecret(secretname, namespace, "username", "password");
-	}
-
-	/**
-	 * Extracts credentials from a secret using the default password key {@code password}.
-	 *
-	 * @param secretname  name of the secret
-	 * @param namespace   namespace of the secret
-	 * @param usernameKey data key holding the username
-	 * @return the decoded credentials
-	 */
-	public Credentials getCredentialsFromSecret(String secretname, String namespace, String usernameKey) {
-		return getCredentialsFromSecret(secretname, namespace, usernameKey, "password");
 	}
 
 	/**
@@ -673,16 +614,6 @@ public class K8sClient {
 		credentialsNew.setPassword(password);
 
 		return credentialsNew;
-	}
-
-	/**
-	 * Creates or updates a ConfigMap from a file in the default namespace (idempotent).
-	 *
-	 * @param name     name of the ConfigMap
-	 * @param filePath path of the file whose content becomes the ConfigMap data
-	 */
-	public void createConfigMapFromFile(String name, String filePath) {
-		createConfigMapFromFile(name, "", filePath);
 	}
 
 	/**
@@ -830,14 +761,10 @@ public class K8sClient {
 	}
 
 	private List<HasMetadata> loadYamlItems(InputStream stream, String sourceDescription) {
-		try {
+		try (stream) {
 			return client.load(stream).items();
-		} finally {
-			try {
-				stream.close();
-			} catch (IOException e) {
-				log.debug("Failed to close YAML input stream for {}", sourceDescription, e);
-			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to close YAML input stream for " + sourceDescription, e);
 		}
 	}
 
@@ -1043,15 +970,13 @@ public class K8sClient {
 	 * @param selectors label key-value pairs the resources must match
 	 */
 	public void delete(String resource, String namespace, Tuple<?, ?>... selectors) {
-		if (selectors == null || selectors.length == 0) {
-			throw new IllegalArgumentException("Missing selectors");
-		}
-
 		log.debug("Deleting {} in namespace {} with selectors", resource, namespace);
 
 		Map<String, String> labels = new HashMap<>();
-		for (Tuple<?, ?> tuple : selectors) {
-			labels.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
+		if (selectors != null) {
+			for (Tuple<?, ?> tuple : selectors) {
+				labels.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
+			}
 		}
 
 		try {
@@ -1212,9 +1137,6 @@ public class K8sClient {
 				resource.toLowerCase(Locale.ROOT),
 				resource
 			);
-			if (match == null) {
-				return Collections.emptyList();
-			}
 			ResourceDefinitionContext context = new ResourceDefinitionContext.Builder().withGroup((String) match.get(
 																						   "group"))
 			                                                                           .withVersion((String) match.get(
