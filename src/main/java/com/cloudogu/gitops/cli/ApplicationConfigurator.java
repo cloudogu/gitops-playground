@@ -121,7 +121,7 @@ public class ApplicationConfigurator {
 	private void addScmConfig(Config newConfig) {
 		log.debug("Adding additional config for SCM");
 
-		if (hasText(newConfig.getScm().getScmManager().getUrl())) {
+		if (newConfig.getScm().getScmManager() != null && hasText(newConfig.getScm().getScmManager().getUrl())) {
 			log.debug("Setting external scmm config");
 			newConfig.getScm().getScmManager().setInternal(false);
 			newConfig.getScm().getScmManager().setUrlForJenkins(newConfig.getScm().getScmManager().getUrl());
@@ -337,7 +337,7 @@ public class ApplicationConfigurator {
 				internalClusterUrl
 			);
 		} catch (MalformedURLException e) {
-			throw new UncheckedIOException(errorMessage, e);
+			throw new IllegalArgumentException(errorMessage, e);
 		}
 	}
 
