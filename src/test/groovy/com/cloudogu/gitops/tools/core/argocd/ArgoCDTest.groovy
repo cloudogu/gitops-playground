@@ -1174,7 +1174,7 @@ class ArgoCDTest {
         def host = rules[0]['host']
         assertThat(host)
                 .as('Ingress host should match configured ArgoCD hostname')
-                .isEqualTo(new URL(config.features.argocd.url).host)
+                .isEqualTo(new URI(config.features.argocd.url).host)
     }
 
     @Test

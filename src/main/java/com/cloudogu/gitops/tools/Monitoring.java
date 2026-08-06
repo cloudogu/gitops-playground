@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -130,9 +129,9 @@ public class Monitoring extends AbstractTool {
 		String host = "";
 		try {
 			if (grafanaUrl != null && !grafanaUrl.isEmpty()) {
-				host = new URL(grafanaUrl).getHost();
+				host = URI.create(grafanaUrl).toURL().getHost();
 			}
-		} catch (MalformedURLException e) {
+		} catch (IllegalArgumentException | MalformedURLException e) {
 			throw new IllegalArgumentException("Failed to parse Grafana URL: " + grafanaUrl, e);
 		}
 

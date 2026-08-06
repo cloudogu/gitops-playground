@@ -18,7 +18,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -165,18 +165,13 @@ public class ArgoCDRepoSetup {
 		values.put("tenantName", getConfig().getApplication().getTenantName());
 
 		Map<String, Object> argocd = new HashMap<>();
+		String url = getConfig().getFeatures().getArgocd().getUrl();
+
 		try {
-			argocd.put(
-				"host", getConfig().getFeatures().getArgocd().getUrl() != null && !getConfig().getFeatures()
-				                                                                              .getArgocd()
-				                                                                              .getUrl()
-				                                                                              .isEmpty() ? new URL(
-					getConfig().getFeatures()
-					           .getArgocd()
-					           .getUrl()).getHost() : ""
-			);
-		} catch (MalformedURLException e) {
-			throw new UncheckedIOException(e);
+			String host = (url != null && !url.isEmpty()) ? URI.create(url).toURL().getHost() : "";
+			argocd.put("host", host);
+		} catch (IllegalArgumentException | MalformedURLException e) {
+			throw new UncheckedIOException(new IOException("Malformed URL provided: " + url, e));
 		}
 		values.put("argocd", argocd);
 
@@ -187,12 +182,14 @@ public class ArgoCDRepoSetup {
 		scm.put("repoUrl", repo.getGitProvider().repoPrefix());
 		scm.put("centralScmUrl", gitHandler.getCentral() != null ? gitHandler.getCentral().repoPrefix() : "");
 		values.put("scm", scm);
-
 		values.put("config", getConfig());
 
-		TemplateModel statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-		                                                                                                         .getStaticModels();
-		values.put("statics", statics);
+		try {
+			TemplateModel statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels();
+			values.put("statics", statics);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to expose freemarker statics model", e);
+		}
 
 		return values;
 	}

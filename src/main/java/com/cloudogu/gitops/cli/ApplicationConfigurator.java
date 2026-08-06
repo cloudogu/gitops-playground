@@ -4,9 +4,10 @@ import com.cloudogu.gitops.config.Config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -144,15 +145,18 @@ public class ApplicationConfigurator {
 		// a single var
 		if (hasText(newConfig.getApplication().getBaseUrl())) {
 			try {
+				String scmUrl = injectSubdomain(
+					"scmm",
+					newConfig.getApplication().getBaseUrl(),
+					newConfig.getApplication().getUrlSeparatorHyphen()
+				);
+
 				newConfig.getScm()
 				         .getScmManager()
-				         .setIngress(new URL(injectSubdomain(
-							 "scmm", newConfig.getApplication()
-					                          .getBaseUrl(), newConfig.getApplication()
-					                                                  .getUrlSeparatorHyphen()
-						 )).getHost());
-			} catch (MalformedURLException e) {
-				throw new UncheckedIOException("Failed to evaluate SCM ingress URL", e);
+				         .setIngress(URI.create(scmUrl).toURL().getHost());
+
+			} catch (IllegalArgumentException | MalformedURLException e) {
+				throw new UncheckedIOException("Failed to evaluate SCM ingress URL", new IOException(e));
 			}
 		}
 
@@ -189,14 +193,16 @@ public class ApplicationConfigurator {
 
 		if (hasText(newConfig.getApplication().getBaseUrl())) {
 			try {
-				newConfig.getJenkins()
-				         .setIngress(new URL(injectSubdomain(
-							 "jenkins", newConfig.getApplication()
-					                             .getBaseUrl(), newConfig.getApplication()
-					                                                     .getUrlSeparatorHyphen()
-						 )).getHost());
-			} catch (MalformedURLException e) {
-				throw new UncheckedIOException("Failed to evaluate Jenkins ingress URL ", e);
+				String jenkinsUrl = injectSubdomain(
+					"jenkins",
+					newConfig.getApplication().getBaseUrl(),
+					newConfig.getApplication().getUrlSeparatorHyphen()
+				);
+
+				newConfig.getJenkins().setIngress(URI.create(jenkinsUrl).toURL().getHost());
+
+			} catch (IllegalArgumentException | MalformedURLException e) {
+				throw new UncheckedIOException("Failed to evaluate Jenkins ingress URL ", new IOException(e));
 			}
 		}
 
@@ -262,23 +268,31 @@ public class ApplicationConfigurator {
 
 	private static String injectSubdomain(String subdomain, String baseUrl, boolean urlSeparatorHyphen) {
 		try {
-			URL url = new URL(baseUrl);
-			String newUrl;
+			URI uri = URI.create(baseUrl);
 
-			if (urlSeparatorHyphen) {
-				newUrl = url.getProtocol() + "://" + subdomain + "-" + url.getHost();
-			} else {
-				newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost();
+			String separator = urlSeparatorHyphen ? "-" : ".";
+
+			StringBuilder newUrl = new StringBuilder(uri.getScheme())
+				.append("://")
+				.append(subdomain)
+				.append(separator)
+				.append(uri.getHost());
+
+			if (uri.getPort() != -1) {
+				newUrl.append(":").append(uri.getPort());
 			}
-			if (url.getPort() != -1) {
-				newUrl += ":" + url.getPort();
+
+			// getRawPath() preserves URL encoding (like %20), matching the old URL.getPath() behavior
+			if (uri.getRawPath() != null) {
+				newUrl.append(uri.getRawPath());
 			}
-			newUrl += url.getPath();
-			return newUrl;
-		} catch (MalformedURLException e) {
+
+			return newUrl.toString();
+
+		} catch (IllegalArgumentException e) {
 			throw new UncheckedIOException(
 				"Failed to inject subdomain '" + subdomain + "' into base URL: " + baseUrl,
-				e
+				new IOException(e)
 			);
 		}
 	}
@@ -302,10 +316,13 @@ public class ApplicationConfigurator {
 		if (hasText(url)) {
 			try {
 				log.debug("Validating user-provided features.argocd.resourceInclusionsCluster URL: {}", url);
-				new URL(url);
+
+				// Java 20+ compliant URL validation
+				URI.create(url).toURL();
+
 				log.info("Found valid URL in features.argocd.resourceInclusionsCluster: {}", url);
 				return true;
-			} catch (MalformedURLException e) {
+			} catch (IllegalArgumentException | MalformedURLException e) {
 				throw new IllegalArgumentException(
 					"Invalid URL for 'features.argocd.resourceInclusionsCluster': " + url + ".",
 					e
@@ -331,13 +348,13 @@ public class ApplicationConfigurator {
 		log.debug("Constructed internal Kubernetes API Server URL: {}", internalClusterUrl);
 
 		try {
-			new URL(internalClusterUrl);
+			URI.create(internalClusterUrl).toURL();
 			config.getFeatures().getArgocd().setResourceInclusionsCluster(internalClusterUrl);
 			log.info(
 				"Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}",
 				internalClusterUrl
 			);
-		} catch (MalformedURLException e) {
+		} catch (IllegalArgumentException | MalformedURLException e) {
 			throw new IllegalArgumentException(errorMessage, e);
 		}
 	}

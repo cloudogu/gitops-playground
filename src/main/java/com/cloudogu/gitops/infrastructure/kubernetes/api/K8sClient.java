@@ -44,7 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -696,10 +696,10 @@ public class K8sClient {
 
 		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
 			try {
-				int appliedResources = applyYamlStream(new URL(yamlLocation).openStream(), yamlLocation);
+				int appliedResources = applyYamlStream(URI.create(yamlLocation).toURL().openStream(), yamlLocation);
 				return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to apply YAML from URL: " + yamlLocation, e);
+			} catch (IOException | IllegalArgumentException e) {
+				throw new UncheckedIOException("Failed to apply YAML from URL: " + yamlLocation, new IOException(e));
 			}
 		}
 

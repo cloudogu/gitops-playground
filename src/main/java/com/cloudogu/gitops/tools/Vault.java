@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
@@ -106,8 +106,8 @@ public class Vault extends AbstractTool {
 	private void prepareVaultHelmValues() {
 		String url = getConfig().getFeatures().getSecrets().getVault().getUrl();
 		try {
-			addHelmValuesData("host", (url != null && !url.isEmpty()) ? new URL(url).getHost() : "");
-		} catch (MalformedURLException e) {
+			addHelmValuesData("host", (url != null && !url.isEmpty()) ? URI.create(url).toURL().getHost() : "");
+		} catch (IllegalArgumentException | MalformedURLException e) {
 			throw new IllegalArgumentException("Failed to parse Vault URL: " + url, e);
 		}
 	}
