@@ -14,7 +14,6 @@ import lombok.Setter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
-import java.net.URI;
 import java.util.HashMap;
 
 import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION;
@@ -147,16 +146,6 @@ public class ScmTenantSchema {
 			// renovate: depName=scm-manager registryUrl=https://packages.scm-manager.org/repository/helm-v2-releases/
 			helm.setVersion("3.11.10");
 			helm.setValues(new HashMap<>());
-		}
-
-		@JsonIgnore
-		public String getHost() {
-			return URI.create(url).getHost();
-		}
-
-		@JsonIgnore
-		public String getProtocol() {
-			return URI.create(url).getScheme();
 		}
 
 		@Override
