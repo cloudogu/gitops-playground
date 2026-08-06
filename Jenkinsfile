@@ -44,20 +44,24 @@ pipeline {
             parallel {
 
                 stage("Test & SonarScanner") {
-                    agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
-                        reuseNode true
-                    }}
-                    steps {
-                        withSonarQubeEnv('ces-sonar') {
-                            sh "mvn -B clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
+                    agent {
+                        docker {
+                            image "${env.MAVEN_IMAGE}"
+                            args "-e HOME=${env.WORKSPACE}/.maven-home"
+                            reuseNode true
                         }
                     }
-                    post {
-                        always {
-                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                            archiveArtifacts artifacts: "**/target/site/jacoco/**"
+                    steps {
+                        withSonarQubeEnv('ces-sonar') {
+                            sh '''
+                                mkdir -p "$WORKSPACE/.maven-home/.m2/repository"
+
+                                mvn -B \
+                                    -Dmaven.repo.local="$WORKSPACE/.maven-home/.m2/repository" \
+                                    clean verify sonar:sonar \
+                                    -Dsonar.projectKey=gitops-playground \
+                                    -Dsonar.branch.name="$BRANCH_NAME"
+                            '''
                         }
                     }
                 }
