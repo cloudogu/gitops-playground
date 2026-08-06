@@ -17,6 +17,7 @@ import okhttp3.Response;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.function.Supplier;
 
 @Singleton
 @Slf4j
@@ -32,8 +33,8 @@ public class JenkinsApiClient {
 	private final Config config;
 	private final OkHttpClient client;
 
-	// Number of retries is uncommonly high, because we might have to outlive an unexpected Jenkins
-	// restart
+	// Number of retries is uncommonly high, because we might have to outlive an unexpected Jenkins restart
+	// Here no constant is directly used because in uni tests we need to overwrite the maxRetries
 	@Setter(AccessLevel.PROTECTED)
 	private int maxRetries = DEFAULT_MAX_RETRIES;
 
@@ -76,7 +77,7 @@ public class JenkinsApiClient {
 			if (postData != null) {
 				request.method("POST", postData);
 			} else {
-				// Explicitly set empty body. Otherwise okhttp sends GET
+				// Explicitly set empty body, Otherwise okhttp sends GET
 				RequestBody emptyBody = RequestBody.create("", null);
 				request.method("POST", emptyBody);
 			}
@@ -88,8 +89,7 @@ public class JenkinsApiClient {
 	private String getCrumb() {
 		log.trace("Getting Crumb for Jenkins");
 		// Single attempt: this is called from within postRequestWithCrumb()'s own retry loop, which
-		// already
-		// waits and retries up to maxRetries times. Retrying here too would multiply into maxRetries^2
+		// already waits and retries up to maxRetries times. Retrying here too would multiply into maxRetries^2
 		// attempts.
 		try (Response response = sendRequestWithRetries(() -> buildRequest("crumbIssuer/api/json").build(), 1)) {
 			if (response.code() != HTTP_OK) {
@@ -112,26 +112,20 @@ public class JenkinsApiClient {
 		return new Request.Builder().url(config.getJenkins().getUrl() + "/" + url)
 		                            .header(
 										"Authorization", Credentials.basic(
-											config.getJenkins()
-				                                  .getUsername(), config.getJenkins()
-				                                                        .getPassword()
+											config.getJenkins().getUsername(),
+											config.getJenkins().getPassword()
 										)
 									);
-	}
-
-	@FunctionalInterface
-	interface RequestSupplier {
-		Request get();
 	}
 
 	// We pass a supplier, so that we actually refetch a new crumb for a failed request
 	// The Jenkins ApiClient has its own retry logic on top of RetryInterceptor, because of crumb
 	// lifetime and restarts
-	private Response sendRequestWithRetries(RequestSupplier requestSupplier) {
+	private Response sendRequestWithRetries(Supplier<Request> requestSupplier) {
 		return sendRequestWithRetries(requestSupplier, maxRetries);
 	}
 
-	private Response sendRequestWithRetries(RequestSupplier requestSupplier, int retries) {
+	private Response sendRequestWithRetries(Supplier<Request> requestSupplier, int retries) {
 		int retry = 0;
 		Response response = null;
 		do {
@@ -150,7 +144,7 @@ public class JenkinsApiClient {
 		return response;
 	}
 
-	private Response attemptRequest(RequestSupplier requestSupplier, int retry, int retries) {
+	private Response attemptRequest(Supplier<Request> requestSupplier, int retry, int retries) {
 		try {
 			Request request = requestSupplier.get();
 			return client.newCall(request).execute();
@@ -181,8 +175,7 @@ public class JenkinsApiClient {
 
 	private static boolean shouldRetryRequest(Response response) {
 		// We might run into a 403 due to an invalid crumb from a previous session before jenkins was
-		// restarted.
-		// Here in the ApiClient, we simply retry all 401 and 403 including fetching a new crumb
+		// restarted. Here in the ApiClient, we simply retry all 401 and 403 including fetching a new crumb
 		return response.code() == HTTP_UNAUTHORIZED || response.code() == HTTP_FORBIDDEN;
 	}
 }
