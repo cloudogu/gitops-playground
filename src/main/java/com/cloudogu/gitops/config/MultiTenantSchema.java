@@ -17,7 +17,7 @@ public class MultiTenantSchema {
 
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
 	public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
-	public static final String SCMM_CONFIG_DESCRIPTION = "Config for GITLAB";
+	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION = "Namespace for the centralized Argocd";
 	public static final String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode. See docs for more info";
 

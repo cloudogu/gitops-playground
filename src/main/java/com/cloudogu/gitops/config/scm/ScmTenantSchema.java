@@ -25,7 +25,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
 public class ScmTenantSchema {
 
 	public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
-	public static final String SCMM_CONFIG_DESCRIPTION = "Config for GITLAB";
+	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
 	public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
 
