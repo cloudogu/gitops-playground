@@ -232,7 +232,7 @@ public class Config {
 	private ContentSchema content = new ContentSchema();
 
 	private static String generatePassword() {
-		SecureRandom sr = new SecureRandom();
+		final SecureRandom sr = new SecureRandom();
 		String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%&";
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < GENERATED_PASSWORD_LENGTH; i++) {

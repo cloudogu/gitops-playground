@@ -50,11 +50,11 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
 		String toolPath = "apps/" + toolName;
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir();
-		Path.of(repoRoot, toolPath).toFile().mkdirs();
-		Path.of(repoRoot, "apps/argocd/applications").toFile().mkdirs();
 
 		String inlineValues;
 		try {
+			Files.createDirectories(Path.of(repoRoot, toolPath));
+			Files.createDirectories(Path.of(repoRoot, "apps/argocd/applications"));
 			inlineValues = Files.readString(helmValuesPath);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -229,9 +229,6 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		return switch (repoType) {
 			case HELM -> "chart";
 			case GIT -> "path";
-			default ->
-				throw new IllegalStateException("Repo type " + repoType + " not implemented for " + this.getClass()
-				                                                                                        .getSimpleName());
 		};
 	}
 
