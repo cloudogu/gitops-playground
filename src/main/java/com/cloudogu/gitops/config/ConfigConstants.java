@@ -46,6 +46,7 @@ public final class ConfigConstants {
 	public static final String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates.";
 	public static final String CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION = "Enables the whitelist for statics in content templating";
 	public static final String CONTENT_STATICSWHITELIST_DESCRIPTION = "Whitelist for Statics freemarker is allowing in user templates";
+	public static final String CONTENT_HELM_RELEASES_DESCRIPTION = "Additional Helm releases to deploy through Argo CD without requiring a content Git repository.";
 	public static final String CONTENT_HELM_RELEASE_NAME_DESCRIPTION = "Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set.";
 
 	public static final String CONTENT_HELM_RELEASE_REPO_URL_DESCRIPTION = "Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...).";

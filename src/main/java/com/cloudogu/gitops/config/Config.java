@@ -64,6 +64,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.CLUSTER_ADMIN_DESCRIPTI
 import static com.cloudogu.gitops.config.ConfigConstants.CONFIG_FILE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.CONFIG_MAP_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_HELM_RELEASES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_HELM_RELEASE_CHART_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_HELM_RELEASE_NAMESPACE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_HELM_RELEASE_NAME_DESCRIPTION;
@@ -186,6 +187,7 @@ public class Config {
 	public static final String K8S_VERSION = "1.36.2";
 	public static final String DEFAULT_ADMIN_USER = "admin";
 
+	// Generated once when Config is initialized and intentionally shared by all Config instances in the JVM.
 	public static final String DEFAULT_ADMIN_PW = generatePassword();
 
 	public static final int DEFAULT_REGISTRY_PORT = 30000;
@@ -253,7 +255,7 @@ public class Config {
 		@JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
 		private Map<String, Object> variables = new HashMap<>();
 
-		@JsonPropertyDescription()
+		@JsonPropertyDescription(CONTENT_HELM_RELEASES_DESCRIPTION)
 		private List<HelmReleaseSchema> helmReleases = new ArrayList<>();
 
 		@Option(names = {"--content-whitelist"}, description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)

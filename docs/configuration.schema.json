@@ -285,7 +285,7 @@
           }
         },
         "helmReleases": {
-          "description": "",
+          "description": "Additional Helm releases to deploy through Argo CD without requiring a content Git repository.",
           "type": [
             "array",
             "null"
