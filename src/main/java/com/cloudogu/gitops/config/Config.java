@@ -3,13 +3,10 @@ package com.cloudogu.gitops.config;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
@@ -193,17 +190,7 @@ public class Config {
 	public static final int DEFAULT_REGISTRY_PORT = 30000;
 	private static final int GENERATED_PASSWORD_LENGTH = 12;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(
-		groovy.lang.GString.class, new JsonSerializer<groovy.lang.GString>() {
-			@Override
-			public void serialize(
-				groovy.lang.GString value,
-				JsonGenerator jsonGenerator,
-				SerializerProvider serializerProvider) throws IOException {
-				jsonGenerator.writeString(value.toString());
-			}
-		}
-	));
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@JsonPropertyDescription(REGISTRY_DESCRIPTION)
 	@Mixin
