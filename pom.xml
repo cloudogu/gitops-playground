@@ -21,6 +21,7 @@
         <jdk.version>25</jdk.version>
         <release.version>25</release.version>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
+        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
 
         <!--suppress
         UnresolvedMavenProperty -->
@@ -645,6 +646,11 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
