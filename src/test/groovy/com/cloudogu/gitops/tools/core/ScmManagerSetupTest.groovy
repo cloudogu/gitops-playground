@@ -234,7 +234,7 @@ class ScmManagerSetupTest {
 
         verify(centralProvider).createRepository('argocd/cluster-resources',
                 'GitOps repo for basic cluster-resources',
-                true)
+                false)
 
         verify(clusterResourcesRepo).initLocalRepoIfNeeded()
         verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()
@@ -271,10 +271,10 @@ class ScmManagerSetupTest {
 
         verify(centralProvider).createRepository('argocd/cluster-resources',
                 'GitOps repo for basic cluster-resources',
-                true)
+                false)
         verify(tenantProvider).createRepository('argocd/cluster-resources',
                 'GitOps repo for tenant bootstrap resources',
-                true)
+                false)
 
         verify(clusterResourcesRepo).initLocalRepoIfNeeded()
         verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing()

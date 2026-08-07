@@ -17,6 +17,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -50,6 +51,9 @@ public class GitRepo implements AutoCloseable {
 	public static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = "3rd-party-dependencies";
 	private static final String GIT_REMOTE_ORIGIN = "origin";
 	private static final String DEFAULT_PUSH_REF_SPEC = "HEAD:refs/heads/main";
+	private static final String MAIN_BRANCH = "main";
+	private static final String REF_HEADS_MAIN = "refs/heads/main";
+	private static final String REF_REMOTES_ORIGIN_MAIN = "refs/remotes/origin/main";
 	private static final Pattern REFS_HEADS_PREFIX = Pattern.compile("^refs/heads/");
 	private static final Pattern REFS_TAGS_PREFIX = Pattern.compile("^refs/tags/");
 
@@ -100,10 +104,10 @@ public class GitRepo implements AutoCloseable {
 		String cloneUrl = getGitRepositoryUrl();
 		log.debug("Cloning {}, Origin: {}", repoTarget, cloneUrl);
 		try (Git git = Git.cloneRepository()
-		                  .setURI(cloneUrl)
-		                  .setDirectory(new File(absoluteLocalRepoTmpDir))
-		                  .setCredentialsProvider(getCredentialProvider())
-		                  .call()) {
+						  .setURI(cloneUrl)
+						  .setDirectory(new File(absoluteLocalRepoTmpDir))
+						  .setCredentialsProvider(getCredentialProvider())
+						  .call()) {
 			// Cloned successfully, try-with-resources closes the git reference
 		}
 	}
@@ -146,6 +150,7 @@ public class GitRepo implements AutoCloseable {
 		log.debug("Adding files to {}", repoTarget);
 
 		Git git = getGit();
+		ensureLocalMainBranchForInitialCommit(git);
 		git.add().addFilepattern(".").call();
 
 		if (git.status().call().hasUncommittedChanges()) {
@@ -179,6 +184,26 @@ public class GitRepo implements AutoCloseable {
 			validatePushResults(pushResults, repoTarget);
 		} else {
 			log.debug("No changes after add, nothing to commit or push on repo: {}", repoTarget);
+		}
+	}
+
+	private void ensureLocalMainBranchForInitialCommit(Git git) throws GitAPIException {
+		try {
+			Ref localMain = git.getRepository().findRef(REF_HEADS_MAIN);
+			Ref head = git.getRepository().exactRef(Constants.HEAD);
+
+			if (localMain != null) {
+				git.checkout()
+				   .setName(MAIN_BRANCH)
+				   .call();
+				return;
+			}
+
+			if (head == null || head.isSymbolic()) {
+				createUnbornMainBranch(git);
+			}
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to prepare local main branch for repo '" + repoTarget + "'", e);
 		}
 	}
 
@@ -241,7 +266,7 @@ public class GitRepo implements AutoCloseable {
 																						 fileSystemUtils.getRootDir(),
 																						 srcDir
 																					 )
-		                                                                             .toString();
+																					 .toString();
 		fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter);
 	}
 
@@ -272,24 +297,45 @@ public class GitRepo implements AutoCloseable {
 
 		Git git = getGit();
 
-		git.fetch().setRemote(GIT_REMOTE_ORIGIN).setCredentialsProvider(getCredentialProvider()).call();
+		git.fetch()
+		   .setRemote(GIT_REMOTE_ORIGIN)
+		   .setCredentialsProvider(getCredentialProvider())
+		   .call();
 
-		Ref localMain = git.getRepository().findRef("refs/heads/main");
+		Ref localMain = git.getRepository().findRef(REF_HEADS_MAIN);
 
 		if (localMain != null) {
-			git.checkout().setName("main").call();
+			git.checkout()
+			   .setName(MAIN_BRANCH)
+			   .call();
 			return;
 		}
 
-		Ref remoteMain = git.getRepository().findRef("refs/remotes/origin/main");
+		Ref remoteMain = git.getRepository().findRef(REF_REMOTES_ORIGIN_MAIN);
+
 		if (remoteMain != null) {
 			log.debug("Creating local main branch from origin/main for repo '{}'", repoTarget);
 
-			git.checkout().setCreateBranch(true).setName("main").setStartPoint("origin/main").call();
+			git.checkout()
+			   .setCreateBranch(true)
+			   .setName(MAIN_BRANCH)
+			   .setStartPoint("origin/main")
+			   .call();
 			return;
 		}
 
-		throw new IllegalStateException("Cannot bootstrap repository '" + repoTarget + "' because remote branch 'origin/main' does not exist. " + "The SCM-Manager repository must be created and initialized before GOP can push generated resources.");
+		log.debug(
+			"Remote branch origin/main does not exist for repo '{}'. Creating local main branch for initial GOP bootstrap.",
+			repoTarget
+		);
+
+		createUnbornMainBranch(git);
+	}
+
+	private void createUnbornMainBranch(Git git) throws IOException {
+		git.getRepository()
+		   .updateRef(Constants.HEAD, true)
+		   .link(REF_HEADS_MAIN);
 	}
 
 	public static boolean isCommit(File repoPath, String ref) {
@@ -425,9 +471,9 @@ public class GitRepo implements AutoCloseable {
 
 	private PushCommand createPushCommand(String refSpec) {
 		return getGit().push()
-		               .setRemote(getGitRepositoryUrl())
-		               .setRefSpecs(new RefSpec(refSpec))
-		               .setCredentialsProvider(getCredentialProvider());
+					   .setRemote(getGitRepositoryUrl())
+					   .setRefSpecs(new RefSpec(refSpec))
+					   .setCredentialsProvider(getCredentialProvider());
 	}
 
 	private Git getGit() {

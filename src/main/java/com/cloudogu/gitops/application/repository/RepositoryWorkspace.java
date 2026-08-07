@@ -221,7 +221,7 @@ public class RepositoryWorkspace implements AutoCloseable {
 	}
 
 	private static void ensureRepositoryExists(GitProvider gitProvider, String repoTarget, String description) {
-		gitProvider.createRepository(repoTarget, description, true);
+		gitProvider.createRepository(repoTarget, description, false);
 	}
 
 	@Override
