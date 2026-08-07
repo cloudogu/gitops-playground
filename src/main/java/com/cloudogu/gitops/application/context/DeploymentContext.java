@@ -45,7 +45,8 @@ public class DeploymentContext {
 
 	public enum ScmManagerDeploymentMode {
 		INTERNAL,
-		EXTERNAL
+		EXTERNAL,
+		DISABLED
 	}
 
 	public enum ClusterDistribution {
