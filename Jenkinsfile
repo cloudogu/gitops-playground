@@ -43,14 +43,16 @@ pipeline {
 
             parallel {
 
-                stage("Unit Test") {
+                stage("Test & SonarScanner") {
                     agent { docker {
                         image "${env.MAVEN_IMAGE}"
                         args "-v maven-cache:/root/.m2"
                         reuseNode true
                     }}
                     steps {
-                        sh 'mvn -B clean test'
+                        withSonarQubeEnv('ces-sonar') {
+                            sh "mvn -B clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
+                        }
                     }
                     post {
                         always {
@@ -63,25 +65,12 @@ pipeline {
                 stage("Build Image") {
                     steps {
                         script {
-                            def buildArgs = "--no-cache " +
+                            def buildArgs = (params.noCache ? "--no-cache " : "") +
                                             "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
                                             "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
                         }
                     }
-                }
-            }
-        }
-
-        stage("SonarScanner") {
-            agent { docker {
-                image "${env.MAVEN_IMAGE}"
-                args "-v maven-cache:/root/.m2"
-                reuseNode true
-            }}
-            steps {
-                withSonarQubeEnv('ces-sonar') {
-                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                 }
             }
         }
@@ -113,9 +102,8 @@ pipeline {
                     steps {
                         script {
                             def profiles = []
-                            def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
-                            if (isTriggeredByTimer || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
+                            if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
                                 profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
@@ -242,16 +230,37 @@ pipeline {
     }
 
     post {
+        always {
+            script {
+                if (isTriggeredByTimer()) {
+                    currentBuild.displayName = "#${env.BUILD_NUMBER} weekly"
+                    emailext(
+                        subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: '${SCRIPT, template="groovy-html.template"}',
+                        mimeType: 'text/html',
+                        to: env.GOP_DEVELOPERS
+                    )
+                }
+            }
+        }
         changed {
-            emailext(
-                subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: '${SCRIPT, template="groovy-html.template"}',
-                mimeType: 'text/html',
-                recipientProviders: [
-                    [$class: 'DevelopersRecipientProvider'],
-                    [$class: 'RequesterRecipientProvider']
-                ]
-            )
+            script {
+                if (!isTriggeredByTimer()) {
+                    emailext(
+                        subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: '${SCRIPT, template="groovy-html.template"}',
+                        mimeType: 'text/html',
+                        recipientProviders: [
+                            [$class: 'DevelopersRecipientProvider'],
+                            [$class: 'RequesterRecipientProvider']
+                        ]
+                    )
+                }
+            }
         }
     }
+}
+
+boolean isTriggeredByTimer() {
+    return !currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
 }
