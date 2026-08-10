@@ -2,12 +2,12 @@ package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser;
+import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
@@ -41,36 +41,30 @@ public class ScmManagerSetup {
 	private final DeploymentContext context;
 	private final RepositoryWorkspace repositoryWorkspace;
 	private final FileSystemUtils fileSystemUtils;
+	private final ScmManagerToolConfig config;
 
 	private Path tempValuesPath;
 
-	private Config getConfig() {
-		return context.getConfig();
-	}
-
 	public void setupHelm() {
 		Path valuesPath = prepareHelmValues();
-		Config.HelmConfigWithValues helmConfig = this.scmManager.getScmmConfig().getHelm();
+		HelmChartConfig helmConfig = config.helm();
 		String releaseName = scmmReleaseName();
 
 		log.info(
 			"Deploying SCM-Manager via Helm with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
-			this.scmManager.getScmmConfig()
-			               .getNamespace(),
-			getConfig().getApplication()
-			           .getNamePrefix(),
-			context.isMultiTenant()
+			config.namespace(),
+			config.namePrefix(),
+			config.multiTenant()
 		);
 
 		deployer.getHelmStrategy()
 		        .deployFeature(
-					helmConfig.getRepoURL(),
+					helmConfig.repoURL(),
 					"scm-manager",
-					helmConfig.getChart(),
-					helmConfig.getVersion(),
-					this.scmManager.getScmmConfig()
-			                       .getNamespace(),
+					helmConfig.chart(),
+					helmConfig.version(),
+					config.namespace(),
 					releaseName,
 					valuesPath,
 					DeploymentStrategy.RepoType.HELM
@@ -79,26 +73,23 @@ public class ScmManagerSetup {
 
 	public void createArgocdApplication() {
 		Path valuesPath = tempValuesPath != null ? tempValuesPath : prepareHelmValues();
-		Config.HelmConfigWithValues helmConfig = this.scmManager.getScmmConfig().getHelm();
+		HelmChartConfig helmConfig = config.helm();
 		String releaseName = scmmReleaseName();
 
 		log.info(
 			"Creating SCM-Manager ArgoCD application with releaseName='{}', namespace='{}', namePrefix='{}', dedicatedInstance={}",
 			releaseName,
-			this.scmManager.getScmmConfig()
-			               .getNamespace(),
-			getConfig().getApplication()
-			           .getNamePrefix(),
-			context.isMultiTenant()
+			config.namespace(),
+			config.namePrefix(),
+			config.multiTenant()
 		);
 
 		deployer.deployFeature(
-			helmConfig.getRepoURL(),
+			helmConfig.repoURL(),
 			"scm-manager",
-			helmConfig.getChart(),
-			helmConfig.getVersion(),
-			this.scmManager.getScmmConfig()
-			               .getNamespace(),
+			helmConfig.chart(),
+			helmConfig.version(),
+			config.namespace(),
 			releaseName,
 			valuesPath,
 			DeploymentStrategy.RepoType.HELM,
@@ -144,11 +135,11 @@ public class ScmManagerSetup {
 		);
 
 		Map<String, Object> templateVars = new HashMap<>();
-		templateVars.put("config", this.scmManager.getConfig());
-		templateVars.put("host", this.scmManager.getScmmConfig().getIngress());
-		templateVars.put("username", this.scmManager.getScmmConfig().getCredentials().getUsername());
-		templateVars.put("password", this.scmManager.getScmmConfig().getCredentials().getPassword());
-		templateVars.put("helm", this.scmManager.getScmmConfig().getHelm());
+		templateVars.put("config", config.templateConfig());
+		templateVars.put("host", config.ingress());
+		templateVars.put("username", config.username());
+		templateVars.put("password", config.password());
+		templateVars.put("helm", config.helm());
 		templateVars.put("releaseName", releaseName);
 
 		try {
@@ -160,11 +151,7 @@ public class ScmManagerSetup {
 		}
 
 		Map<String, Object> templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, templateVars);
-		Map<String, Object> values = this.scmManager.getScmmConfig()
-		                                            .getHelm()
-		                                            .getValues() != null ? this.scmManager.getScmmConfig()
-		                                                                                  .getHelm()
-		                                                                                  .getValues() : new HashMap<>();
+		Map<String, Object> values = config.helm().values();
 
 		Map<String, Object> mergedMap = MapUtils.deepMerge(values, templatedMap);
 		tempValuesPath = fileSystemUtils.writeTempFile(mergedMap);
@@ -173,15 +160,7 @@ public class ScmManagerSetup {
 	}
 
 	private String scmmReleaseName() {
-		String prefix = getConfig().getApplication().getNamePrefix() != null ? getConfig().getApplication()
-		                                                                                  .getNamePrefix()
-		                                                                                  .strip() : "";
-
-		if (!prefix.isEmpty()) {
-			return prefix + "scmm";
-		}
-
-		return "scmm";
+		return config.releaseName();
 	}
 
 	public void waitForScmmAvailable() {
@@ -229,7 +208,7 @@ public class ScmManagerSetup {
 		installScmmPlugins();
 		setSetupConfigs();
 
-		if (this.scmManager.getConfig().getJenkins().getActive()) {
+		if (config.jenkinsActive()) {
 			configureJenkinsPlugin();
 		}
 
@@ -239,7 +218,7 @@ public class ScmManagerSetup {
 	}
 
 	private void installScmmPlugins() {
-		if (this.scmManager.getConfig().getScm().getScmManager().getSkipPlugins()) {
+		if (config.skipPlugins()) {
 			log.debug("Skipping SCM plugin installation");
 			return;
 		}
@@ -257,7 +236,7 @@ public class ScmManagerSetup {
 			"scm-metrics-prometheus-plugin"
 		));
 
-		if (this.scmManager.getConfig().getJenkins().getActive()) {
+		if (config.jenkinsActive()) {
 			pluginNames.add("scm-jenkins-plugin");
 		}
 
@@ -267,10 +246,7 @@ public class ScmManagerSetup {
 			String pluginName = pluginNames.get(i);
 			log.debug("Installing Plugin {} ...", pluginName);
 
-			restartForThisPlugin = !this.scmManager.getConfig()
-			                                       .getScm()
-			                                       .getScmManager()
-			                                       .getSkipRestart() && i == pluginNames.size() - 1;
+			restartForThisPlugin = !config.skipRestart() && i == pluginNames.size() - 1;
 
 			ScmManagerApiClient.handleApiResponse(scmManager.getApiClient()
 			                                                .pluginApi()
@@ -329,7 +305,7 @@ public class ScmManagerSetup {
 		jenkinsPluginConfig.put("disableMercurialTrigger", false);
 		jenkinsPluginConfig.put("disableGitTrigger", false);
 		jenkinsPluginConfig.put("disableEventTrigger", false);
-		jenkinsPluginConfig.put("url", this.scmManager.getConfig().getJenkins().getUrlForScm());
+		jenkinsPluginConfig.put("url", config.jenkinsUrl());
 
 		ScmManagerApiClient.handleApiResponse(this.scmManager.getApiClient()
 		                                                     .pluginApi()
@@ -339,13 +315,12 @@ public class ScmManagerSetup {
 	}
 
 	private void addDefaultUsers() {
-		String metricsUsername = this.scmManager.getConfig().getApplication().getNamePrefix() + "metrics";
+		String metricsUsername = config.namePrefix() + "metrics";
 
 		addUser(
-			this.scmManager.getScmmConfig().getGitOpsUsername(), this.scmManager.getScmmConfig()
-			                                                                    .getPassword(), "changeme@test.local"
+			config.gitOpsUsername(), config.password(), "changeme@test.local"
 		);
-		addUser(metricsUsername, this.scmManager.getScmmConfig().getPassword(), "changeme@test.local");
+		addUser(metricsUsername, config.password(), "changeme@test.local");
 		grantUserPermissions(metricsUsername, List.of("metrics:read"));
 	}
 

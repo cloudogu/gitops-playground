@@ -16,6 +16,7 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.tools.common.CommonToolConfig
 import com.cloudogu.gitops.tools.core.Jenkins
 import com.cloudogu.gitops.tools.core.argocd.ArgoCD
+import com.cloudogu.gitops.tools.core.argocd.ArgoCDToolConfigMapper
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import org.junit.jupiter.api.BeforeEach
@@ -23,9 +24,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito
 
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
 
 class ApplicationConfiguratorTest {
 
@@ -93,7 +94,8 @@ class ApplicationConfiguratorTest {
                 helmClient,
                 fileSystemUtils,
                 gitHandler,
-                new DeploymentModeFactory()))
+                new DeploymentModeFactory(),
+                new ArgoCDToolConfigMapper()))
         featureArgoCd.isEnabled(context)
     }
 

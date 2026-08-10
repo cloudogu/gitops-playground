@@ -1,10 +1,9 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import io.micronaut.core.annotation.Order;
@@ -19,7 +18,7 @@ import java.util.Map;
 @Singleton
 @Order(30)
 @Slf4j
-public class Registry extends AbstractTool {
+public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 
 	/**
 	 * Local container port of the registry within the pod
@@ -38,7 +37,9 @@ public class Registry extends AbstractTool {
 	public Registry(
 		FileSystemUtils fileSystemUtils, K8sClient k8sClient, AirGappedUtils airGappedUtils,
 		// Bootstrap with Helm first, then create an ArgoCD Application for GitOps management.
-		Deployer deployer) {
+		Deployer deployer,
+		RegistryToolConfigMapper configMapper) {
+		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -46,8 +47,8 @@ public class Registry extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getRegistry().getActive();
+	protected boolean isEnabled(RegistryToolConfig config) {
+		return config.active();
 	}
 
 	@Override
@@ -56,7 +57,7 @@ public class Registry extends AbstractTool {
 			return;
 		}
 
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		prepareRegistryHelmValues();
 	}
@@ -81,16 +82,12 @@ public class Registry extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getRegistry().getInternal() ? (context.getConfig()
-		                                                                 .getApplication()
-		                                                                 .getNamePrefix() + context.getConfig()
-		                                                                                           .getRegistry()
-		                                                                                           .getNamespace()) : null;
+	protected String activeNamespace(RegistryToolConfig config) {
+		return config.namespace();
 	}
 
 	private boolean isInternalRegistry() {
-		return context.getConfig().getRegistry().getInternal();
+		return toolConfig().internal();
 	}
 
 	private void prepareRegistryHelmValues() {
@@ -102,14 +99,12 @@ public class Registry extends AbstractTool {
 
 	private void deployInternalRegistry() {
 		deployHelmChart(
-			TOOL_NAME, RELEASE_NAME, namespace, context.getConfig()
-			                                           .getRegistry()
-			                                           .getHelm(), "", context, true
+			TOOL_NAME, RELEASE_NAME, namespace, toolConfig().helm(), "", context, true
 		);
 	}
 
 	private void createInternalRegistryNodePortIfRequired() {
-		if (context.getConfig().getRegistry().getInternalPort() == Config.DEFAULT_REGISTRY_PORT) {
+		if (toolConfig().internalPort() == Config.DEFAULT_REGISTRY_PORT) {
 			return;
 		}
 
@@ -123,10 +118,8 @@ public class Registry extends AbstractTool {
 		 * e.g. 32769 is needed so the kubelet can access the image inside the server-0 container.
 		 */
 		k8sClient.createServiceNodePort(
-			"docker-registry-internal-port", CONTAINER_PORT + ":" + CONTAINER_PORT, context.getConfig()
-			                                                                               .getRegistry()
-			                                                                               .getInternalPort()
-			                                                                               .toString(), namespace
+			"docker-registry-internal-port", CONTAINER_PORT + ":" + CONTAINER_PORT,
+			toolConfig().internalPort().toString(), namespace
 		);
 	}
 }

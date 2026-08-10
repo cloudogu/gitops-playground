@@ -1,9 +1,7 @@
 package com.cloudogu.gitops.tools.core;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
-import com.cloudogu.gitops.config.Config.HelmConfigWithValues;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -12,7 +10,7 @@ import com.cloudogu.gitops.infrastructure.jenkins.JobManager;
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator;
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -42,7 +40,7 @@ import java.util.Random;
 @Singleton
 @Order(200)
 @Slf4j
-public class Jenkins extends AbstractTool {
+public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml";
 
@@ -75,6 +73,8 @@ public class Jenkins extends AbstractTool {
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
 	private final NetworkingUtils networkingUtils;
+	private final JenkinsConfigUpdater configUpdater;
+	private String runtimeUrl;
 
 	public Jenkins(
 		CommandExecutor commandExecutor,
@@ -88,7 +88,10 @@ public class Jenkins extends AbstractTool {
 		NetworkingUtils networkingUtils,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		JenkinsToolConfigMapper configMapper,
+		JenkinsConfigUpdater configUpdater) {
+		super(configMapper);
 		this.commandExecutor = commandExecutor;
 		this.fileSystemUtils = fileSystemUtils;
 		this.globalPropertyManager = globalPropertyManager;
@@ -101,20 +104,22 @@ public class Jenkins extends AbstractTool {
 		this.airGappedUtils = airGappedUtils;
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.configUpdater = configUpdater;
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getJenkins().getActive();
+	protected boolean isEnabled(JenkinsToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
+		this.runtimeUrl = toolConfig().server().url();
 		if (!isInternalJenkins()) {
 			return;
 		}
 
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
 		createJenkinsNamespace();
@@ -152,7 +157,7 @@ public class Jenkins extends AbstractTool {
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
 	private void createJenkinsNamespace() {
@@ -172,11 +177,9 @@ public class Jenkins extends AbstractTool {
 	private void createJenkinsCredentialsSecret() {
 		k8sClient.createSecret(
 			"generic", "jenkins-credentials", namespace, new Tuple<>(
-				"jenkins-admin-user", getConfig().getJenkins()
-				                                 .getUsername()
+				"jenkins-admin-user", toolConfig().server().username()
 			), new Tuple<>(
-				"jenkins-admin-password", getConfig().getJenkins()
-				                                     .getPassword()
+				"jenkins-admin-password", toolConfig().server().password()
 			)
 		);
 	}
@@ -190,22 +193,17 @@ public class Jenkins extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getJenkins().getInternal() ? (context.getConfig()
-		                                                                .getApplication()
-		                                                                .getNamePrefix() + context.getConfig()
-		                                                                                          .getJenkins()
-		                                                                                          .getNamespace()) : null;
+	protected String activeNamespace(JenkinsToolConfig config) {
+		return config.namespace();
 	}
 
 	private boolean isInternalJenkins() {
-		return getConfig().getJenkins().getInternal();
+		return toolConfig().internal();
 	}
 
 	private void deployInternalJenkins() {
-		HelmConfigWithValues helmConfig = getConfig().getJenkins().getHelm();
-
-		deployHelmChart(TOOL_NAME, TOOL_NAME, namespace, helmConfig, HELM_VALUES_PATH, context, true);
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, TOOL_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context, true);
 	}
 
 	private void updateJenkinsUrl() {
@@ -214,16 +212,17 @@ public class Jenkins extends AbstractTool {
 		String serviceName = TOOL_NAME;
 
 		// Update jenkins.url after it is deployed and ports are known.
-		if (getConfig().getApplication().getRunningInsideK8s()) {
+		if (toolConfig().application().runningInsideK8s()) {
 			log.debug("Setting jenkins url to k8s service, since installation is running inside k8s");
-			getConfig().getJenkins()
-			           .setUrl(networkingUtils.createUrl(serviceName + "." + namespace + ".svc.cluster.local", "80"));
+			runtimeUrl = networkingUtils.createUrl(serviceName + "." + namespace + ".svc.cluster.local", "80");
+			configUpdater.updateUrl(context, runtimeUrl);
 		} else {
 			log.debug(
 				"Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...");
 			String port = k8sClient.waitForNodePort(serviceName, namespace);
 			String clusterBindAddress = networkingUtils.findClusterBindAddress();
-			getConfig().getJenkins().setUrl(networkingUtils.createUrl(clusterBindAddress, port));
+			runtimeUrl = networkingUtils.createUrl(clusterBindAddress, port);
+			configUpdater.updateUrl(context, runtimeUrl);
 		}
 	}
 
@@ -238,21 +237,21 @@ public class Jenkins extends AbstractTool {
 
 	private void runSetupScript() {
 		Map<String, Object> scriptParams = new HashMap<>();
-		scriptParams.put("TRACE", getConfig().getApplication().getTrace());
-		scriptParams.put("INTERNAL_JENKINS", getConfig().getJenkins().getInternal());
-		scriptParams.put("JENKINS_HELM_CHART_VERSION", getConfig().getJenkins().getHelm().getVersion());
-		scriptParams.put("JENKINS_URL", getConfig().getJenkins().getUrl());
-		scriptParams.put("JENKINS_USERNAME", getConfig().getJenkins().getUsername());
-		scriptParams.put("JENKINS_PASSWORD", getConfig().getJenkins().getPassword());
+		scriptParams.put("TRACE", toolConfig().application().trace());
+		scriptParams.put("INTERNAL_JENKINS", toolConfig().internal());
+		scriptParams.put("JENKINS_HELM_CHART_VERSION", toolConfig().helm().version());
+		scriptParams.put("JENKINS_URL", runtimeUrl);
+		scriptParams.put("JENKINS_USERNAME", toolConfig().server().username());
+		scriptParams.put("JENKINS_PASSWORD", toolConfig().server().password());
 		scriptParams.put("SCM_URL", this.gitHandler.getTenant().getUrl());
 		scriptParams.put("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
 		scriptParams.put("SCM_PASSWORD", this.gitHandler.getTenant().getCredentials().getPassword());
-		scriptParams.put("SCM_PROVIDER", getConfig().getScm().getScmProviderType());
-		scriptParams.put("INSTALL_ARGOCD", getConfig().getFeatures().getArgocd().getActive());
-		scriptParams.put("NAME_PREFIX", getConfig().getApplication().getNamePrefix());
-		scriptParams.put("INSECURE", getConfig().getApplication().getInsecure());
-		scriptParams.put("SKIP_RESTART", getConfig().getJenkins().getSkipRestart());
-		scriptParams.put("SKIP_PLUGINS", getConfig().getJenkins().getSkipPlugins());
+		scriptParams.put("SCM_PROVIDER", toolConfig().scm().providerType());
+		scriptParams.put("INSTALL_ARGOCD", toolConfig().argocdActive());
+		scriptParams.put("NAME_PREFIX", toolConfig().application().namePrefix());
+		scriptParams.put("INSECURE", toolConfig().application().insecure());
+		scriptParams.put("SKIP_RESTART", toolConfig().server().skipRestart());
+		scriptParams.put("SKIP_PLUGINS", toolConfig().server().skipPlugins());
 
 		commandExecutor.execute(fileSystemUtils.getRootDir() + "/scripts/jenkins/init-jenkins.sh", scriptParams);
 
@@ -264,21 +263,21 @@ public class Jenkins extends AbstractTool {
 		setPrefixedGlobalProperty("SCM_URL", this.gitHandler.getTenant().getUrl());
 		setPrefixedGlobalProperty("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
 
-		if (getConfig().getJenkins().getAdditionalEnvs() != null) {
-			for (Map.Entry<String, String> entry : getConfig().getJenkins().getAdditionalEnvs().entrySet()) {
+		if (!toolConfig().server().additionalEnvironments().isEmpty()) {
+			for (Map.Entry<String, String> entry : toolConfig().server().additionalEnvironments().entrySet()) {
 				globalPropertyManager.setGlobalProperty(entry.getKey(), entry.getValue());
 			}
 		}
 
-		setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_URL", getConfig().getRegistry().getUrl());
-		setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_PATH", getConfig().getRegistry().getPath());
+		setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_URL", toolConfig().registry().url());
+		setPrefixedGlobalPropertyIfNotEmpty("REGISTRY_PATH", toolConfig().registry().path());
 
-		if (getConfig().getRegistry().getTwoRegistries()) {
-			setPrefixedGlobalProperty("REGISTRY_PROXY_URL", getConfig().getRegistry().getProxyUrl());
-			setPrefixedGlobalProperty("REGISTRY_PROXY_PATH", getConfig().getRegistry().getProxyPath());
+		if (toolConfig().registry().twoRegistries()) {
+			setPrefixedGlobalProperty("REGISTRY_PROXY_URL", toolConfig().registry().proxyUrl());
+			setPrefixedGlobalProperty("REGISTRY_PROXY_PATH", toolConfig().registry().proxyPath());
 		}
 
-		setPrefixedGlobalPropertyIfNotEmpty("MAVEN_CENTRAL_MIRROR", getConfig().getJenkins().getMavenCentralMirror());
+		setPrefixedGlobalPropertyIfNotEmpty("MAVEN_CENTRAL_MIRROR", toolConfig().server().mavenCentralMirror());
 
 		setPrefixedGlobalProperty("K8S_VERSION", Config.K8S_VERSION);
 	}
@@ -288,24 +287,22 @@ public class Jenkins extends AbstractTool {
 			log.trace("Using a security realm without local user creation. Must not create user.");
 		} else {
 			userManager.createUser(
-				getConfig().getJenkins().getMetricsUsername(), getConfig().getJenkins()
-				                                                          .getMetricsPassword()
+				toolConfig().server().metricsUsername(), toolConfig().server().metricsPassword()
 			);
 		}
 
 		userManager.grantPermission(
-			getConfig().getJenkins()
-			           .getMetricsUsername(), UserManager.Permissions.METRICS_VIEW
+			toolConfig().server().metricsUsername(), UserManager.Permissions.METRICS_VIEW
 		);
 
-		if (getConfig().getFeatures().getMonitoring().getActive() && getConfig().getJenkins().getInternal()) {
+		if (toolConfig().monitoringActive() && toolConfig().internal()) {
 			// An external Jenkins can likely not be monitored
 			prometheusConfigurator.enableAuthentication();
 		}
 	}
 
 	private void setPrefixedGlobalProperty(String name, String value) {
-		globalPropertyManager.setGlobalProperty(getConfig().getApplication().getNamePrefixForEnvVars() + name, value);
+		globalPropertyManager.setGlobalProperty(toolConfig().application().environmentPrefix() + name, value);
 	}
 
 	private void setPrefixedGlobalPropertyIfNotEmpty(String name, String value) {
@@ -316,34 +313,27 @@ public class Jenkins extends AbstractTool {
 
 	public void createJenkinsjob(String namespace, String repoName) {
 		String credentialId = "scm-user";
-		String prefixedNamespace = getConfig().getApplication().getNamePrefix() + namespace;
-		String jobName = getConfig().getApplication().getNamePrefix() + repoName;
+		String prefixedNamespace = toolConfig().application().namePrefix() + namespace;
+		String jobName = toolConfig().application().namePrefix() + repoName;
 
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
 
-		if (getConfig().getScm().getScmProviderType() == ScmProviderType.SCM_MANAGER) {
+		if (toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
 			jobManager.createCredential(
 				jobName,
 				credentialId,
-				getConfig().getApplication()
-				           .getNamePrefix() + "gitops",
-				getConfig().getScm()
-				           .getScmManager()
-				           .getPassword(),
+				toolConfig().application().namePrefix() + "gitops",
+				toolConfig().scm().scmManagerPassword(),
 				"credentials for accessing scm-manager"
 			);
 		}
 
-		if (getConfig().getScm().getScmProviderType() == ScmProviderType.GITLAB) {
+		if (toolConfig().scm().providerType() == ScmProviderType.GITLAB) {
 			jobManager.createCredential(
 				jobName,
 				credentialId,
-				getConfig().getScm()
-				           .getGitlab()
-				           .getUsername(),
-				getConfig().getScm()
-				           .getGitlab()
-				           .getPassword(),
+				toolConfig().scm().gitlabUsername(),
+				toolConfig().scm().gitlabPassword(),
 				"credentials for accessing gitlab"
 			);
 		}
@@ -351,21 +341,17 @@ public class Jenkins extends AbstractTool {
 		jobManager.createCredential(
 			jobName,
 			"registry-user",
-			getConfig().getRegistry()
-			           .getUsername(),
-			getConfig().getRegistry()
-			           .getPassword(),
+			toolConfig().registry().username(),
+			toolConfig().registry().password(),
 			"credentials for accessing the docker-registry for writing images built on jenkins"
 		);
 
-		if (getConfig().getRegistry().getTwoRegistries()) {
+		if (toolConfig().registry().twoRegistries()) {
 			jobManager.createCredential(
 				jobName,
 				"registry-proxy-user",
-				getConfig().getRegistry()
-				           .getProxyUsername(),
-				getConfig().getRegistry()
-				           .getProxyPassword(),
+				toolConfig().registry().proxyUsername(),
+				toolConfig().registry().proxyPassword(),
 				"credentials for accessing the docker-registry that contains 3rd party or base images"
 			);
 		}
@@ -374,7 +360,7 @@ public class Jenkins extends AbstractTool {
 	}
 
 	private boolean jenkinsOidcConfigured() {
-		return getConfig().getJenkins().getOidc() != null && getConfig().getJenkins().getOidc().isEnabled();
+		return toolConfig().server().oidcConfigured();
 	}
 
 	private List<String> getJenkinsOidcBootPlugins() {
@@ -461,8 +447,7 @@ public class Jenkins extends AbstractTool {
 					"name",
 					"tmp-docker-gid-grepper",
 					"image",
-					getConfig().getJenkins()
-					           .getInternalBashImage(),
+					toolConfig().server().internalBashImage(),
 					"args",
 					List.of("cat", ETC_GROUP_PATH),
 					"volumeMounts",
@@ -476,8 +461,4 @@ public class Jenkins extends AbstractTool {
 		);
 	}
 
-	@Override
-	public String getActiveNamespaceFromFeature(DeploymentContext context) {
-		return isEnabled(context) ? activeNamespace(context) : null;
-	}
 }

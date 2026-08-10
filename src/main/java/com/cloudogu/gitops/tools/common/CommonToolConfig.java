@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.tools.common;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.config.Config;
 
-public class CommonToolConfig extends AbstractTool {
+public class CommonToolConfig implements ConfigLifecycleHook {
 
 	@Override
 	public void preConfigInit(Config configToSet) {
@@ -26,10 +25,5 @@ public class CommonToolConfig extends AbstractTool {
 			// This should only happen when run outside the image, i.e. during development
 			throw new IllegalArgumentException("Missing config for localHelmChartFolder.\n" + "Either run inside the official container image or setting env var " + "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo");
 		}
-	}
-
-	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return false;
 	}
 }

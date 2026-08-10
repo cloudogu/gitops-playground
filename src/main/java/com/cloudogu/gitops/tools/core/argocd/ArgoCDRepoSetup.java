@@ -1,9 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -31,21 +29,17 @@ public class ArgoCDRepoSetup {
 	private static final String TENANT_BOOTSTRAP_SOURCE_DIR = "argocd/cluster-resources/apps/argocd/multiTenant/tenant";
 	private static final String ARGOCD_APP_PATH = ArgoCDRepoLayout.argocdSubdirRel();
 
-	private final DeploymentContext context;
 	private final FileSystemUtils fileSystemUtils;
 	private final GitHandler gitHandler;
 	private final RepositoryWorkspace repositoryWorkspace;
+	private final ArgoCDToolConfig config;
 
 	public static ArgoCDRepoSetup create(
-		DeploymentContext context,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
-		RepositoryWorkspace repositoryWorkspace) {
-		return new ArgoCDRepoSetup(context, fileSystemUtils, gitHandler, repositoryWorkspace);
-	}
-
-	private Config getConfig() {
-		return context.getConfig();
+		RepositoryWorkspace repositoryWorkspace,
+		ArgoCDToolConfig config) {
+		return new ArgoCDRepoSetup(fileSystemUtils, gitHandler, repositoryWorkspace, config);
 	}
 
 	public ArgoCDRepoLayout clusterRepoLayout() {
@@ -65,13 +59,13 @@ public class ArgoCDRepoSetup {
 
 		prepareClusterResourcesRepo();
 
-		if (context.isMultiTenant()) {
+		if (config.multiTenant()) {
 			prepareTenantBootstrapRepo();
 		}
 	}
 
 	private void validateRepositoryWorkspace() {
-		if (context.isSingleTenant()) {
+		if (!config.multiTenant()) {
 			return;
 		}
 
@@ -128,13 +122,13 @@ public class ArgoCDRepoSetup {
 	private void prepareClusterResourcesLayout() {
 		ArgoCDRepoLayout layout = clusterRepoLayout();
 
-		if (getConfig().getFeatures().getArgocd().getOperator()) {
+		if (config.operator()) {
 			FileSystemUtils.deleteDir(layout.helmDir());
 		} else {
 			FileSystemUtils.deleteDir(layout.operatorDir());
 		}
 
-		if (context.isMultiTenant()) {
+		if (config.multiTenant()) {
 			log.debug(
 				"Deleting unnecessary non dedicated instances folders from argocd repo: " + "applications={}, projects={}, tenant={}/tenant",
 				layout.applicationsDir(),
@@ -155,17 +149,17 @@ public class ArgoCDRepoSetup {
 			FileSystemUtils.deleteDir(layout.multiTenantDir());
 		}
 
-		if (!getConfig().getApplication().getNetpols()) {
+		if (!config.netpols()) {
 			FileSystemUtils.deleteFile(layout.netpolFile());
 		}
 	}
 
 	private Map<String, Object> buildTemplateValues(GitRepo repo) {
 		Map<String, Object> values = new HashMap<>();
-		values.put("tenantName", getConfig().getApplication().getTenantName());
+		values.put("tenantName", config.tenantName());
 
 		Map<String, Object> argocd = new HashMap<>();
-		String url = getConfig().getFeatures().getArgocd().getUrl();
+		String url = config.url();
 
 		try {
 			String host = (url != null && !url.isEmpty()) ? URI.create(url).toURL().getHost() : "";
@@ -182,7 +176,7 @@ public class ArgoCDRepoSetup {
 		scm.put("repoUrl", repo.getGitProvider().repoPrefix());
 		scm.put("centralScmUrl", gitHandler.getCentral() != null ? gitHandler.getCentral().repoPrefix() : "");
 		values.put("scm", scm);
-		values.put("config", getConfig());
+		values.put("config", config.templateConfig());
 
 		try {
 			TemplateModel statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels();

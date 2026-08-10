@@ -1,12 +1,11 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -28,7 +27,7 @@ import java.util.UUID;
 @Singleton
 @Order(500)
 @Slf4j
-public class Vault extends AbstractTool {
+public class Vault extends AbstractMappedTool<VaultToolConfig> {
 
 	public static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh";
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml";
@@ -51,7 +50,9 @@ public class Vault extends AbstractTool {
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		VaultToolConfigMapper configMapper) {
+		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -61,13 +62,13 @@ public class Vault extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getFeatures().getSecrets().getActive();
+	protected boolean isEnabled(VaultToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
 		prepareVaultApp(repositoryWorkspace.getClusterResourcesRepository());
@@ -78,12 +79,8 @@ public class Vault extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(
-			TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
-			                                               .getSecrets()
-			                                               .getVault()
-			                                               .getHelm(), HELM_VALUES_PATH, context
-		);
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context);
 	}
 
 	@Override
@@ -92,19 +89,16 @@ public class Vault extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-		                                                                     .getFeatures()
-		                                                                     .getSecrets()
-		                                                                     .getNamespace();
+	protected String activeNamespace(VaultToolConfig config) {
+		return config.namespace();
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
 	private void prepareVaultHelmValues() {
-		String url = getConfig().getFeatures().getSecrets().getVault().getUrl();
+		String url = toolConfig().url();
 		try {
 			addHelmValuesData("host", (url != null && !url.isEmpty()) ? URI.create(url).toURL().getHost() : "");
 		} catch (IllegalArgumentException | MalformedURLException e) {
@@ -113,7 +107,7 @@ public class Vault extends AbstractTool {
 	}
 
 	private void prepareDevModeIfRequired() {
-		Config.VaultMode vaultMode = getConfig().getFeatures().getSecrets().getVault().getMode();
+		Config.VaultMode vaultMode = toolConfig().mode();
 
 		if (vaultMode != Config.VaultMode.dev) {
 			return;
@@ -126,8 +120,7 @@ public class Vault extends AbstractTool {
 		try {
 			postStartScript = new TemplatingEngine().replaceTemplate(
 				templatedFile.toFile(), Map.of(
-					"namePrefix", getConfig().getApplication()
-					                         .getNamePrefix()
+					"namePrefix", toolConfig().namePrefix()
 				)
 			);
 		} catch (Exception e) {
@@ -168,6 +161,6 @@ public class Vault extends AbstractTool {
 	}
 
 	private void replaceVaultTemplates(GitRepo clusterResourcesRepo) {
-		clusterResourcesRepo.replaceTemplates(Map.of("config", getConfig()));
+		clusterResourcesRepo.replaceTemplates(Map.of("config", toolConfig().templateConfig()));
 	}
 }

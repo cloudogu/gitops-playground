@@ -1,11 +1,10 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentMode;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 @Singleton
 @Order(100)
 @Slf4j
-public class ArgoCD extends AbstractTool {
+public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> {
 
 	private static final int BCRYPT_LOG_ROUNDS = 4;
 	private static final String TOOL_NAME = "argocd";
@@ -47,7 +46,9 @@ public class ArgoCD extends AbstractTool {
 		HelmClient helmClient,
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
-		DeploymentModeFactory deploymentModeFactory) {
+		DeploymentModeFactory deploymentModeFactory,
+		ArgoCDToolConfigMapper configMapper) {
+		super(configMapper);
 		this.k8sClient = k8sClient;
 		this.helmClient = helmClient;
 		this.fileSystemUtils = fileSystemUtils;
@@ -56,22 +57,21 @@ public class ArgoCD extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getFeatures().getArgocd().getActive();
+	protected boolean isEnabled(ArgoCDToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context);
-		this.password = getConfig().getApplication().getPassword();
+		this.namespace = activeNamespace(toolConfig());
+		this.password = toolConfig().password();
 
-		this.repoSetup = ArgoCDRepoSetup.create(context, fileSystemUtils, gitHandler, repositoryWorkspace);
+		this.repoSetup = ArgoCDRepoSetup.create(fileSystemUtils, gitHandler, repositoryWorkspace, toolConfig());
 
 		this.clusterResourcesRepo = repoSetup.clusterRepoLayout();
 
 		this.deploymentMode = deploymentModeFactory.create(
-			context,
-			getConfig(),
+			toolConfig(),
 			k8sClient,
 			gitHandler,
 			repositoryWorkspace,
@@ -84,12 +84,12 @@ public class ArgoCD extends AbstractTool {
 		repoSetup.prepareRepositories();
 
 		log.debug("Creating namespaces");
-		k8sClient.createNamespaces(new ArrayList<>(getConfig().getApplication().getNamespaces().getActiveNamespaces()));
+		k8sClient.createNamespaces(new ArrayList<>(toolConfig().activeNamespaces()));
 
 		deploymentMode.createSCMCredentialsSecret();
 		createNotificationSecretIfRequired();
 
-		if (getConfig().getFeatures().getArgocd().getOperator()) {
+		if (toolConfig().operator()) {
 			deploymentMode.generateRBAC();
 		} else {
 			mergeHelmValuesIfConfigured();
@@ -100,7 +100,7 @@ public class ArgoCD extends AbstractTool {
 	protected void deploy() {
 		log.debug("Installing Argo CD");
 
-		if (getConfig().getFeatures().getArgocd().getOperator()) {
+		if (toolConfig().operator()) {
 			deployWithOperator();
 		} else {
 			deployWithHelm();
@@ -124,11 +124,8 @@ public class ArgoCD extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-		                                                                     .getFeatures()
-		                                                                     .getArgocd()
-		                                                                     .getNamespace();
+	protected String activeNamespace(ArgoCDToolConfig config) {
+		return config.namespace();
 	}
 
 	@Override
@@ -174,8 +171,8 @@ public class ArgoCD extends AbstractTool {
 	}
 
 	private void createNotificationSecretIfRequired() {
-		String smtpUser = getConfig().getFeatures().getMail().getSmtpUser();
-		String smtpPassword = getConfig().getFeatures().getMail().getSmtpPassword();
+		String smtpUser = toolConfig().smtpUser();
+		String smtpPassword = toolConfig().smtpPassword();
 		if ((smtpUser != null && !smtpUser.isEmpty()) || (smtpPassword != null && !smtpPassword.isEmpty())) {
 			k8sClient.createSecret(
 				"generic",
@@ -188,7 +185,7 @@ public class ArgoCD extends AbstractTool {
 	}
 
 	private void mergeHelmValuesIfConfigured() {
-		Map<String, Object> values = getConfig().getFeatures().getArgocd().getValues();
+		Map<String, Object> values = toolConfig().values();
 		if (values == null || values.isEmpty()) {
 			return;
 		}
@@ -216,7 +213,7 @@ public class ArgoCD extends AbstractTool {
 
 	private void deployWithOperator() {
 		String argocdConfigPath = clusterResourcesRepo.operatorConfigFile();
-		Map<String, Object> values = getConfig().getFeatures().getArgocd().getValues();
+		Map<String, Object> values = toolConfig().values();
 
 		if (values != null && !values.isEmpty()) {
 			mergeAndWriteYamlValues(argocdConfigPath, values, "argocd.yaml for operator");

@@ -13,8 +13,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator;
 import com.cloudogu.gitops.destroy.Destroyer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
+import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
 import com.cloudogu.gitops.utils.MapUtils;
 import groovy.yaml.YamlSlurper;
 import io.micronaut.context.ApplicationContext;
@@ -88,7 +88,7 @@ public class GitopsPlaygroundCli {
 		Application app = context.getBean(Application.class);
 
 		Config config = readConfigs(args);
-		runHook(app, "preConfigInit", AbstractTool::preConfigInit, config);
+		runHook(app, "preConfigInit", ConfigLifecycleHook::preConfigInit, config);
 
 		if (config.getApplication().getOutputConfigFile()) {
 			log.info(config.toYaml(false));
@@ -97,7 +97,7 @@ public class GitopsPlaygroundCli {
 
 		config = applicationConfigurator.initConfig(config);
 		log.debug("Actual config: {}", config.toYaml(true));
-		runHook(app, "postConfigInit", AbstractTool::postConfigInit, config);
+		runHook(app, "postConfigInit", ConfigLifecycleHook::postConfigInit, config);
 
 		context.close();
 		context = createApplicationContext();
@@ -314,19 +314,23 @@ public class GitopsPlaygroundCli {
 			""".formatted(password));
 	}
 
-	public static void runHook(Application app, String hookName, BiConsumer<AbstractTool, Config> hook, Config config) {
-		List<AbstractTool> allFeatures = new ArrayList<>();
-		allFeatures.add(new CommonToolConfig());
-		allFeatures.addAll(app.getTools());
+	public static void runHook(
+		Application app,
+		String hookName,
+		BiConsumer<ConfigLifecycleHook, Config> hook,
+		Config config) {
+		List<ConfigLifecycleHook> configLifecycleHooks = new ArrayList<>();
+		configLifecycleHooks.add(new CommonToolConfig());
+		configLifecycleHooks.addAll(app.getTools());
 
-		for (AbstractTool feature : allFeatures) {
+		for (ConfigLifecycleHook configLifecycleHook : configLifecycleHooks) {
 			try {
-				log.debug("Executing {} hook on feature {}", hookName, feature.getClass().getName());
-				hook.accept(feature, config);
+				log.debug("Executing {} hook on feature {}", hookName, configLifecycleHook.getClass().getName());
+				hook.accept(configLifecycleHook, config);
 			} catch (Exception e) {
 				throw new RuntimeException(
-					"Failed to execute hook " + hookName + " on " + feature.getClass()
-					                                                       .getName(), e
+					"Failed to execute hook " + hookName + " on " + configLifecycleHook.getClass()
+					                                                                   .getName(), e
 				);
 			}
 		}

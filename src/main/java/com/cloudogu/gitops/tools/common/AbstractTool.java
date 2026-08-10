@@ -28,7 +28,7 @@ import java.util.Map;
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 
 @Slf4j
-public abstract class AbstractTool {
+public abstract class AbstractTool implements ConfigLifecycleHook {
 
 	private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
@@ -128,8 +128,7 @@ public abstract class AbstractTool {
 	}
 
 	/**
-	 * @param context may be used by overriding implementations to resolve the namespace from the
-	 *                deployment context
+	 * @param context deployment context used to resolve the namespace
 	 */
 	protected String activeNamespace(DeploymentContext context) {
 		return null;
@@ -171,9 +170,36 @@ public abstract class AbstractTool {
 		String helmValuesTemplatePath,
 		DeploymentContext context,
 		boolean initByHelm) {
-		Config config = context.getConfig();
+		addHelmValuesData("config", context.getConfig());
+		deployHelmChart(
+			featureName,
+			releaseName,
+			namespace,
+			HelmChartConfig.from(helmConfig, context.getConfig().getApplication().getLocalHelmChartFolder()),
+			helmValuesTemplatePath,
+			context,
+			initByHelm
+		);
+	}
 
-		this.addHelmValuesData("config", config);
+	protected void deployHelmChart(
+		String featureName,
+		String releaseName,
+		String namespace,
+		HelmChartConfig helmConfig,
+		String helmValuesTemplatePath,
+		DeploymentContext context) {
+		deployHelmChart(featureName, releaseName, namespace, helmConfig, helmValuesTemplatePath, context, false);
+	}
+
+	protected void deployHelmChart(
+		String featureName,
+		String releaseName,
+		String namespace,
+		HelmChartConfig helmConfig,
+		String helmValuesTemplatePath,
+		DeploymentContext context,
+		boolean initByHelm) {
 		try {
 			this.addHelmValuesData(
 				"statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
@@ -199,25 +225,24 @@ public abstract class AbstractTool {
 			}
 		}
 
-		helmValuesData = MapUtils.deepMerge(helmConfig.getValues(), helmValuesData);
+		helmValuesData = MapUtils.deepMerge(helmConfig.values(), helmValuesData);
 
-		String repoURL = helmConfig.getRepoURL();
-		String chartOrPath = helmConfig.getChart();
-		String version = helmConfig.getVersion();
+		String repoURL = helmConfig.repoURL();
+		String chartOrPath = helmConfig.chart();
+		String version = helmConfig.version();
 		RepoType repoType = RepoType.HELM;
 
 		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature {}", featureName);
 
-			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig);
+			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig.source());
 			repoURL = this.gitHandler.getResourcesScm().repoUrl(repoNamespaceAndName);
 			chartOrPath = ".";
 			repoType = RepoType.GIT;
 			try {
 				Map<String, Object> chartYaml = yamlMapper.readValue(
 					Path.of(
-							config.getApplication()
-						          .getLocalHelmChartFolder(), helmConfig.getChart(), "Chart.yaml"
+							helmConfig.localHelmChartFolder(), helmConfig.chart(), "Chart.yaml"
 						)
 					    .toFile(), YAML_MAP_TYPE
 				);
@@ -254,15 +279,4 @@ public abstract class AbstractTool {
 		return context;
 	}
 
-	/**
-	 * Hook for preConfigInit. Optional.
-	 */
-	public void preConfigInit(Config configToSet) {
-	}
-
-	/**
-	 * Hook for postConfigInit. Optional.
-	 */
-	public void postConfigInit(Config configToSet) {
-	}
 }

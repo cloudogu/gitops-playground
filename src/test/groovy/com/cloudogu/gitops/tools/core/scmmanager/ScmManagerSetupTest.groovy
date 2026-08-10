@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.tools.core
+package com.cloudogu.gitops.tools.core.scmmanager
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
@@ -12,7 +12,6 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerPro
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient
-import com.cloudogu.gitops.tools.core.scmmanager.ScmManagerSetup
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
@@ -98,15 +97,16 @@ class ScmManagerSetupTest {
         when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
         when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
         config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
+        // Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
+        config.application.namePrefix = "${config.application.namePrefix}-"
 
         ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
                 deployer,
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
-        // Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
-        config.application.namePrefix = "${config.application.namePrefix}-"
         scmManagerSetup.setupHelm()
         verify(fileSystemUtils).writeTempFile(anyMap())
 
@@ -115,7 +115,7 @@ class ScmManagerSetupTest {
                 eq('scm-manager'),
                 eq('scm-manager'),
                 eq('3.11.2'),
-                eq('scm-manager'),
+                eq('test-scm-manager'),
                 eq('test-scmm'),
                 valuesPathCaptor.capture(),
                 eq(DeploymentStrategy.RepoType.HELM))
@@ -132,15 +132,16 @@ class ScmManagerSetupTest {
         when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
         config.features.certManager.active = true
         config.features.certManager.issuer = 'cluster-selfsigned'
+        // Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
+        config.application.namePrefix = "${config.application.namePrefix}-"
 
         ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
                 deployer,
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
-        // Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
-        config.application.namePrefix = "${config.application.namePrefix}-"
         scmManagerSetup.setupHelm()
 
         ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path)
@@ -148,7 +149,7 @@ class ScmManagerSetupTest {
                 eq('scm-manager'),
                 eq('scm-manager'),
                 eq('3.11.2'),
-                eq('scm-manager'),
+                eq('test-scm-manager'),
                 eq('test-scmm'),
                 valuesPathCaptor.capture(),
                 eq(DeploymentStrategy.RepoType.HELM))
@@ -183,7 +184,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         invokePrivateInstallScmmPlugins(scmManagerSetup)
 
@@ -205,7 +207,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         Thread.currentThread().interrupt()
         try {
@@ -228,7 +231,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 workspace,
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -249,7 +253,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 workspace,
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -265,7 +270,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 workspace,
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -294,7 +300,8 @@ class ScmManagerSetupTest {
                 deployer,
                 new ContextBuilder(config).build(),
                 workspace,
-                fileSystemUtils)
+                fileSystemUtils,
+                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
 
         scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
 
