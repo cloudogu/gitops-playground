@@ -101,7 +101,7 @@ class RegistryTest {
             }
         }
 
-        AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileUtil, helmClient, null)
+        AirGappedUtils airGappedUtils = new AirGappedUtils(null, fileUtil, helmClient, null)
 
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         return new Registry(fileUtil, k8sClient, airGappedUtils, deployer, new RegistryToolConfigMapper())

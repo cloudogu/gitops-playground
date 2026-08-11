@@ -175,7 +175,7 @@ public abstract class AbstractTool implements ConfigLifecycleHook {
 			featureName,
 			releaseName,
 			namespace,
-			HelmChartConfig.from(helmConfig, context.getConfig().getApplication().getLocalHelmChartFolder()),
+			ToolConfigMapperSupport.helmChart(helmConfig, context.getConfig().getApplication().getLocalHelmChartFolder()),
 			helmValuesTemplatePath,
 			context,
 			initByHelm
@@ -235,7 +235,7 @@ public abstract class AbstractTool implements ConfigLifecycleHook {
 		if (context.isAirgapped()) {
 			log.debug("Using a local, mirrored git repo as deployment source for feature {}", featureName);
 
-			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig.source());
+			String repoNamespaceAndName = this.airGappedUtils.mirrorHelmRepoToGit(helmConfig);
 			repoURL = this.gitHandler.getResourcesScm().repoUrl(repoNamespaceAndName);
 			chartOrPath = ".";
 			repoType = RepoType.GIT;

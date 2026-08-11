@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.HelmChartConfig
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -112,7 +113,7 @@ class CertManagerTest {
         when(gitProvider.repoUrl(any())).thenReturn('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b')
 
         config.application.mirrorRepos = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+        when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -125,12 +126,12 @@ class CertManagerTest {
 
         install(createCertManager())
 
-        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
+        ArgumentCaptor<HelmChartConfig> helmConfig = ArgumentCaptor.forClass(HelmChartConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('cert-manager')
+        assertThat(helmConfig.value.chart()).isEqualTo('cert-manager')
         // check existing value, but its not used in deploy.
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.jetstack.io')
-        assertThat(helmConfig.value.version).isEqualTo(chartVersion)
+        assertThat(helmConfig.value.repoURL()).isEqualTo('https://charts.jetstack.io')
+        assertThat(helmConfig.value.version()).isEqualTo(chartVersion)
         // important check: scmmRepoUrl is overridden with our values.
         verify(deploymentStrategy).deployFeature('http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'cert-manager',
@@ -159,7 +160,7 @@ class CertManagerTest {
         config.features.certManager.helm.acmeSolverImage = 'this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4'
         config.features.certManager.helm.startupAPICheckImage = 'this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5'
 
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+        when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()

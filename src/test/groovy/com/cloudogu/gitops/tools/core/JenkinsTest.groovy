@@ -454,7 +454,7 @@ me:x:1000:''')
         repositoryWorkspace = spy(new RepositoryWorkspace(clusterResourcesRepo))
         doNothing().when(repositoryWorkspace).commitAndPushClusterResourcesChanges(anyString())
 
-        AirGappedUtils airGappedUtils = new AirGappedUtils(config, null, fileSystemUtils, null, gitHandler)
+        AirGappedUtils airGappedUtils = new AirGappedUtils(null, fileSystemUtils, null, gitHandler)
 
         return new Jenkins(commandExecutor,
                 fileSystemUtils,

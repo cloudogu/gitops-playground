@@ -11,6 +11,7 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.HelmChartConfig
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -621,7 +622,7 @@ policies:
     @Test
     void 'helm releases are installed in air-gapped mode'() {
         config.application.mirrorRepos = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+        when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -635,11 +636,11 @@ policies:
         scmManagerMock.inClusterBase = new URI('http://scmm.foo-scm-manager.svc.cluster.local/scm')
         install(createStack(scmManagerMock))
 
-        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
+        ArgumentCaptor<HelmChartConfig> helmConfig = ArgumentCaptor.forClass(HelmChartConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
-        assertThat(helmConfig.value.version).isEqualTo('19.2.2')
+        assertThat(helmConfig.value.chart()).isEqualTo('kube-prometheus-stack')
+        assertThat(helmConfig.value.repoURL()).isEqualTo('https://prom')
+        assertThat(helmConfig.value.version()).isEqualTo('19.2.2')
 
         verify(deployer).deployFeature('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'monitoring',

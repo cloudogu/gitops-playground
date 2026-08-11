@@ -10,6 +10,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
+import com.cloudogu.gitops.tools.common.HelmChartConfig
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
@@ -148,7 +149,7 @@ class ExternalSecretsOperatorTest {
     void 'helm release is installed in air-gapped mode'() {
         when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
         when(gitProvider.repoUrl(any())).thenReturn('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b')
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+        when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig))).thenReturn('a/b')
 
         config.application.mirrorRepos = true
 
@@ -163,11 +164,11 @@ class ExternalSecretsOperatorTest {
 
         install(createExternalSecretsOperator())
 
-        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
+        ArgumentCaptor<HelmChartConfig> helmConfig = ArgumentCaptor.forClass(HelmChartConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
-        assertThat(helmConfig.value.version).isEqualTo('0.9.16')
+        assertThat(helmConfig.value.chart()).isEqualTo('external-secrets')
+        assertThat(helmConfig.value.repoURL()).isEqualTo('https://charts.external-secrets.io')
+        assertThat(helmConfig.value.version()).isEqualTo('0.9.16')
 
         verify(deployer).deployFeature(eq('http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b'),
                 eq('external-secrets'),
