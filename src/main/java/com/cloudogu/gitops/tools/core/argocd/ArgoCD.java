@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
+import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentMode;
 import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @Singleton
 @Order(100)
 @Slf4j
-public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> {
+public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements ConfigLifecycleHook {
 
 	private static final int BCRYPT_LOG_ROUNDS = 4;
 	private static final String TOOL_NAME = "argocd";
@@ -137,8 +138,8 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> {
 	public void postConfigInit(Config configToSet) {
 		// Exit early if not in operator mode or if env list is empty
 		if (!configToSet.getFeatures().getArgocd().getOperator() || configToSet.getFeatures()
-		                                                                       .getArgocd()
-		                                                                       .getEnv() == null) {
+																			   .getArgocd()
+																			   .getEnv() == null) {
 			log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.");
 			return;
 		}
@@ -165,9 +166,9 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> {
 			return "null";
 		}
 		return map.entrySet()
-		          .stream()
-		          .map(entry -> entry.getKey() + ":" + entry.getValue())
-		          .collect(Collectors.joining(", ", "[", "]"));
+				  .stream()
+				  .map(entry -> entry.getKey() + ":" + entry.getValue())
+				  .collect(Collectors.joining(", ", "[", "]"));
 	}
 
 	private void createNotificationSecretIfRequired() {

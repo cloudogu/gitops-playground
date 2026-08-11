@@ -28,7 +28,7 @@ import java.util.Map;
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 
 @Slf4j
-public abstract class AbstractTool implements ConfigLifecycleHook {
+public abstract class AbstractTool {
 
 	private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {

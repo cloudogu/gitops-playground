@@ -13,6 +13,7 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator;
 import com.cloudogu.gitops.destroy.Destroyer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
 import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
 import com.cloudogu.gitops.utils.MapUtils;
@@ -321,7 +322,11 @@ public class GitopsPlaygroundCli {
 		Config config) {
 		List<ConfigLifecycleHook> configLifecycleHooks = new ArrayList<>();
 		configLifecycleHooks.add(new CommonToolConfig());
-		configLifecycleHooks.addAll(app.getTools());
+		for (AbstractTool tool : app.getTools()) {
+			if (tool instanceof ConfigLifecycleHook configLifecycleHook) {
+				configLifecycleHooks.add(configLifecycleHook);
+			}
+		}
 
 		for (ConfigLifecycleHook configLifecycleHook : configLifecycleHooks) {
 			try {
