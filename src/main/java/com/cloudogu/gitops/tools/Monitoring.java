@@ -176,7 +176,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 			)
 		);
 
-		if (hasText(toolConfig().smtpUser()) || hasText(toolConfig().smtpPassword())) {
+		if (isNotEmpty(toolConfig().smtpUser()) || isNotEmpty(toolConfig().smtpPassword())) {
 			k8sClient.createSecret(
 				GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>(
 					"user", toolConfig().smtpUser()
@@ -328,6 +328,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		}
 
 		return hasText(uri.getScheme()) || hasText(uri.getAuthority()) || hasText(uri.getPath());
+	}
+
+	private static boolean isNotEmpty(String value) {
+		return value != null && !value.isEmpty();
 	}
 
 	private static boolean hasText(String value) {

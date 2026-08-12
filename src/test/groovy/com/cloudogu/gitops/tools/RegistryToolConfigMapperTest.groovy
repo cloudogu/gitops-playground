@@ -29,6 +29,7 @@ class RegistryToolConfigMapperTest {
 			.active(true)
 			.internal(true)
 			.namespace('test-images')
+			.bootstrapNodePort(Config.DEFAULT_REGISTRY_PORT)
 			.internalPort(32000)
 			.helm(HelmChartConfig.builder()
 				.repoURL('https://registry.example.org')

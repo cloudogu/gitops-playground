@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
+import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
 import java.util.Map;
@@ -13,12 +13,12 @@ public record VaultToolConfig(
 	String namespace,
 	String namePrefix,
 	String url,
-	Config.VaultMode mode,
+	boolean developmentMode,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
 	Map<String, Object> templateConfig) {
 
 	public VaultToolConfig {
-		templateConfig = templateConfig == null ? Map.of() : Map.copyOf(templateConfig);
+		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 }

@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
@@ -92,7 +91,7 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 
 	private void prepareRegistryHelmValues() {
 		Map<String, Object> service = new HashMap<>();
-		service.put("nodePort", Config.DEFAULT_REGISTRY_PORT);
+		service.put("nodePort", toolConfig().bootstrapNodePort());
 		service.put("type", "NodePort");
 		addHelmValuesData("service", service);
 	}
@@ -104,7 +103,7 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 	}
 
 	private void createInternalRegistryNodePortIfRequired() {
-		if (toolConfig().internalPort() == Config.DEFAULT_REGISTRY_PORT) {
+		if (toolConfig().internalPort() == toolConfig().bootstrapNodePort()) {
 			return;
 		}
 

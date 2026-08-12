@@ -8,7 +8,6 @@ import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @Singleton
@@ -23,7 +22,7 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.active(monitoring.getActive())
 			.namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
 			.namePrefix(config.getApplication().getNamePrefix())
-			.activeNamespaces(activeNamespaces == null ? List.of() : List.copyOf(activeNamespaces))
+			.activeNamespaces(activeNamespaces)
 			.namespaceIsolation(config.getApplication().getNamespaceIsolation())
 			.netpols(config.getApplication().getNetpols())
 			.skipCrds(config.getApplication().getSkipCrds())
@@ -70,7 +69,8 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("features.monitoring.grafanaEmailTo", config.getFeatures().getMonitoring().getGrafanaEmailTo())
 			.put("features.monitoring.grafanaUrl", config.getFeatures().getMonitoring().getGrafanaUrl())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
-			.put("features.monitoring.oidc", config.getFeatures().getMonitoring().getOidc())
+			.put("features.monitoring.oidc", ToolConfigMapperSupport.oidc(
+				config.getFeatures().getMonitoring().getOidc()))
 			.put("features.monitoring.helm.grafanaImage", helm.getGrafanaImage())
 			.put("features.monitoring.helm.grafanaSidecarImage", helm.getGrafanaSidecarImage())
 			.put("features.monitoring.helm.prometheusConfigReloaderImage", helm.getPrometheusConfigReloaderImage())

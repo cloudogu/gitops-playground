@@ -49,6 +49,7 @@ class ArgoCDToolConfigMapperTest {
 		Config.ContentSchema.HelmReleaseSchema helmRelease = new Config.ContentSchema.HelmReleaseSchema()
 		helmRelease.name = 'database'
 		helmRelease.chart = 'postgresql'
+		helmRelease.repoURL = 'https://charts.example.org'
 		config.content.helmReleases = [helmRelease]
 
 		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper().map(context(config))
@@ -80,14 +81,22 @@ class ArgoCDToolConfigMapperTest {
 					openshift   : true,
 					skipCrds    : true
 				],
-				content    : [helmReleases: [helmRelease]],
+				content    : [helmReleases: [[repoURL: 'https://charts.example.org']]],
 				features   : [
 					argocd     : [
 						emailFrom                 : 'argocd@example.org',
 						emailToAdmin              : 'admins@example.org',
 						env                       : [[name: 'FIRST', value: 'one']],
 						namespace                 : 'gitops',
-						oidc                      : config.features.argocd.oidc,
+						oidc                      : [
+							providerName  : 'Keycloak',
+							issuerUrl     : '',
+							clientId      : 'argocd-client',
+							clientSecret  : '',
+							scopes        : ['openid', 'profile', 'email'],
+							adminGroupName: '',
+							enabled       : false
+						],
 						operator                  : true,
 						resourceInclusionsCluster : 'https://cluster.example.org',
 						url                       : 'https://argocd.example.org'

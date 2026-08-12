@@ -27,9 +27,6 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 		String gitlabPassword = config.getScm() == null || config.getScm().getGitlab() == null
 			? null
 			: config.getScm().getGitlab().getPassword();
-		Map<String, String> additionalEnvironments = jenkins.getAdditionalEnvs() == null
-			? Map.of()
-			: Map.copyOf(jenkins.getAdditionalEnvs());
 
 		JenkinsToolConfig.Application applicationConfig = JenkinsToolConfig.Application.builder()
 			.namePrefix(config.getApplication().getNamePrefix())
@@ -49,7 +46,7 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 			.mavenCentralMirror(jenkins.getMavenCentralMirror())
 			.internalBashImage(jenkins.getInternalBashImage())
 			.oidcConfigured(jenkins.getOidc() != null && jenkins.getOidc().isEnabled())
-			.additionalEnvironments(additionalEnvironments)
+			.additionalEnvironments(jenkins.getAdditionalEnvs())
 			.build();
 		JenkinsToolConfig.Scm scmConfig = JenkinsToolConfig.Scm.builder()
 			.providerType(scmProviderType)
@@ -79,6 +76,7 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 			.registry(registryConfig)
 			.argocdActive(config.getFeatures().getArgocd().getActive())
 			.monitoringActive(config.getFeatures().getMonitoring().getActive())
+			.kubernetesVersion(Config.K8S_VERSION)
 			.helm(ToolConfigMapperSupport.helmChart(jenkins.getHelm(), config.getApplication().getLocalHelmChartFolder()))
 			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
 			.templateConfig(templateConfig(config))
@@ -95,7 +93,7 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 			.put("jenkins.internalBashImage", config.getJenkins().getInternalBashImage())
 			.put("jenkins.internalDockerClientVersion", config.getJenkins().getInternalDockerClientVersion())
 			.put("jenkins.jenkinsImage", config.getJenkins().getJenkinsImage())
-			.put("jenkins.oidc", config.getJenkins().getOidc())
+			.put("jenkins.oidc", ToolConfigMapperSupport.oidc(config.getJenkins().getOidc()))
 			.put("jenkins.password", config.getJenkins().getPassword())
 			.put("jenkins.url", config.getJenkins().getUrl())
 			.put("jenkins.username", config.getJenkins().getUsername())

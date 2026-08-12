@@ -13,6 +13,6 @@ public record HelmChartConfig(
 	String localHelmChartFolder) {
 
 	public HelmChartConfig {
-		values = values == null ? Map.of() : Map.copyOf(values);
+		values = ImmutableConfigData.copyMap(values);
 	}
 }

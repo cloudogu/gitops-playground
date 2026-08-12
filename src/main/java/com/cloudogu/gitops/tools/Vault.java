@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.orchestration.GitHandler;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -107,9 +106,7 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 	}
 
 	private void prepareDevModeIfRequired() {
-		Config.VaultMode vaultMode = toolConfig().mode();
-
-		if (vaultMode != Config.VaultMode.dev) {
+		if (!toolConfig().developmentMode()) {
 			return;
 		}
 

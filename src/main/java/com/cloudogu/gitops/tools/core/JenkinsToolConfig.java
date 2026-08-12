@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools.core;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
+import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
 import java.util.Map;
@@ -18,12 +19,13 @@ public record JenkinsToolConfig(
 	Registry registry,
 	boolean argocdActive,
 	boolean monitoringActive,
+	String kubernetesVersion,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
 	Map<String, Object> templateConfig) {
 
 	public JenkinsToolConfig {
-		templateConfig = templateConfig == null ? Map.of() : Map.copyOf(templateConfig);
+		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 
 	@Builder
@@ -50,9 +52,7 @@ public record JenkinsToolConfig(
 		Map<String, String> additionalEnvironments) {
 
 		public Server {
-			additionalEnvironments = additionalEnvironments == null
-				? Map.of()
-				: Map.copyOf(additionalEnvironments);
+			additionalEnvironments = ImmutableConfigData.copyMap(additionalEnvironments);
 		}
 	}
 

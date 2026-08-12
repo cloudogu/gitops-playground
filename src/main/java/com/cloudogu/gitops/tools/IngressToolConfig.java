@@ -2,6 +2,7 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
+import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
 import java.util.Map;
@@ -15,6 +16,6 @@ public record IngressToolConfig(
 	Map<String, Object> templateConfig) {
 
 	public IngressToolConfig {
-		templateConfig = templateConfig == null ? Map.of() : Map.copyOf(templateConfig);
+		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 }

@@ -130,8 +130,7 @@ public class ScmManagerSetup {
 		log.debug(
 			"Preparing SCM-Manager Helm values with releaseName='{}', namespace='{}'",
 			releaseName,
-			this.scmManager.getScmmConfig()
-			               .getNamespace()
+			config.namespace()
 		);
 
 		Map<String, Object> templateVars = new HashMap<>();

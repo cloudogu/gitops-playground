@@ -111,6 +111,7 @@ class JenkinsToolConfigMapperTest {
 				.build())
 			.argocdActive(true)
 			.monitoringActive(true)
+			.kubernetesVersion(Config.K8S_VERSION)
 			.helm(HelmChartConfig.builder()
 				.repoURL('https://jenkins-chart.example.org')
 				.chart('jenkins-chart')
@@ -138,7 +139,15 @@ class JenkinsToolConfigMapperTest {
 					internalBashImage           : 'bash:custom',
 					internalDockerClientVersion : '28.0.0',
 					jenkinsImage                : 'jenkins:custom',
-					oidc                        : config.jenkins.oidc,
+					oidc                        : [
+						providerName  : 'Keycloak',
+						issuerUrl     : 'https://id.example.org',
+						clientId      : 'jenkins-client',
+						clientSecret  : 'jenkins-client-secret',
+						scopes        : ['openid', 'profile', 'email'],
+						adminGroupName: '',
+						enabled       : true
+					],
 					password                    : 'jenkins-password',
 					url                         : 'https://jenkins.example.org',
 					username                    : 'jenkins-user'

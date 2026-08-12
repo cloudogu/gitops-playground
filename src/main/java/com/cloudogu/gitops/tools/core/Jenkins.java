@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.tools.core;
 
 import com.cloudogu.gitops.application.orchestration.GitHandler;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -279,7 +278,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 		setPrefixedGlobalPropertyIfNotEmpty("MAVEN_CENTRAL_MIRROR", toolConfig().server().mavenCentralMirror());
 
-		setPrefixedGlobalProperty("K8S_VERSION", Config.K8S_VERSION);
+		setPrefixedGlobalProperty("K8S_VERSION", toolConfig().kubernetesVersion());
 	}
 
 	private void configureMetricsUser() {

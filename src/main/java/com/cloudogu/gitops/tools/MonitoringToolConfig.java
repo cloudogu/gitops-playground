@@ -2,10 +2,10 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
+import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @Builder
@@ -35,7 +35,7 @@ public record MonitoringToolConfig(
 	Map<String, Object> templateConfig) {
 
 	public MonitoringToolConfig {
-		activeNamespaces = activeNamespaces == null ? List.of() : List.copyOf(activeNamespaces);
-		templateConfig = templateConfig == null ? Map.of() : Map.copyOf(templateConfig);
+		activeNamespaces = ImmutableConfigData.copyList(activeNamespaces);
+		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 }

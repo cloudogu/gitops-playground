@@ -17,17 +17,17 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 		Config config = context.getConfig();
 		Config.SecretsSchema secrets = config.getFeatures().getSecrets();
 		return VaultToolConfig.builder()
-			.active(secrets.getActive())
-			.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
-			.namePrefix(config.getApplication().getNamePrefix())
-			.url(secrets.getVault().getUrl())
-			.mode(secrets.getVault().getMode())
-			.helm(ToolConfigMapperSupport.helmChart(
-				secrets.getVault().getHelm(), config.getApplication().getLocalHelmChartFolder()
-			))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config))
-			.build();
+							  .active(secrets.getActive())
+							  .namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
+							  .namePrefix(config.getApplication().getNamePrefix())
+							  .url(secrets.getVault().getUrl())
+							  .developmentMode(isDevelopmentMode(secrets.getVault().getMode()))
+							  .helm(ToolConfigMapperSupport.helmChart(
+								  secrets.getVault().getHelm(), config.getApplication().getLocalHelmChartFolder()
+							  ))
+							  .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+							  .templateConfig(templateConfig(config))
+							  .build();
 	}
 
 	private static Map<String, Object> templateConfig(Config config) {
@@ -41,9 +41,23 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
-			.put("features.secrets.vault.oidc", config.getFeatures().getSecrets().getVault().getOidc())
+			.put(
+				"features.secrets.vault.oidc",
+				ToolConfigMapperSupport.oidc(config.getFeatures().getSecrets().getVault().getOidc())
+			)
 			.put("features.secrets.vault.helm.image", config.getFeatures().getSecrets().getVault().getHelm().getImage())
 			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
 			.values();
+	}
+
+	private static boolean isDevelopmentMode(Config.VaultMode mode) {
+		if (mode == null) {
+			return false;
+		}
+
+		return switch (mode) {
+			case dev -> true;
+			case prod -> false;
+		};
 	}
 }

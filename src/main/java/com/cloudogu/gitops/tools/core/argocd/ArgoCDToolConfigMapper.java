@@ -4,8 +4,10 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
+import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +18,8 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 	public ArgoCDToolConfig map(DeploymentContext context) {
 		Config config = context.getConfig();
 		Config.ArgoCDSchema argocd = config.getFeatures().getArgocd();
-		List<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces() == null
-			? List.of()
-			: List.copyOf(config.getApplication().getNamespaces().getActiveNamespaces());
-		List<String> tenantNamespaces = config.getApplication().getNamespaces().getTenantNamespaces() == null
-			? List.of()
-			: List.copyOf(config.getApplication().getNamespaces().getTenantNamespaces());
+		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
+		Collection<String> tenantNamespaces = config.getApplication().getNamespaces().getTenantNamespaces();
 		return ArgoCDToolConfig.builder()
 							   .active(argocd.getActive())
 							   .namespace(config.getApplication().getNamePrefix() + argocd.getNamespace())
@@ -30,7 +28,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
-							   .values(argocd.getValues() == null ? Map.of() : Map.copyOf(argocd.getValues()))
+							   .values(argocd.getValues())
 							   .multiTenant(context.isMultiTenant())
 							   .netpols(config.getApplication().getNetpols())
 							   .tenantName(config.getApplication().getTenantName())
@@ -66,13 +64,15 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(
 				"content.helmReleases",
-				config.getContent() == null ? List.of() : config.getContent().getHelmReleases()
+				config.getContent() == null
+					? List.of()
+					: ToolConfigMapperSupport.helmReleaseRepositories(config.getContent().getHelmReleases())
 			)
 			.put("features.argocd.emailFrom", config.getFeatures().getArgocd().getEmailFrom())
 			.put("features.argocd.emailToAdmin", config.getFeatures().getArgocd().getEmailToAdmin())
 			.put("features.argocd.env", config.getFeatures().getArgocd().getEnv())
 			.put("features.argocd.namespace", config.getFeatures().getArgocd().getNamespace())
-			.put("features.argocd.oidc", config.getFeatures().getArgocd().getOidc())
+			.put("features.argocd.oidc", ToolConfigMapperSupport.oidc(config.getFeatures().getArgocd().getOidc()))
 			.put("features.argocd.operator", config.getFeatures().getArgocd().getOperator())
 			.put(
 				"features.argocd.resourceInclusionsCluster",

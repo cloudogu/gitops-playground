@@ -15,6 +15,7 @@ import com.cloudogu.gitops.tools.common.HelmChartConfig
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.Tuple
 import groovy.transform.CompileStatic
 import groovy.yaml.YamlSlurper
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -187,6 +188,19 @@ policies:
         install(createStack(scmManagerMock))
 
         assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+    }
+
+    @Test
+    void 'When external Mailserver user contains only whitespace it is still treated as configured'() {
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpUser = '   '
+
+        install(createStack(scmManagerMock))
+
+        verify(k8sClient).createSecret('generic', 'grafana-email-secret', 'foo-monitoring',
+                new Tuple('user', '   '),
+                new Tuple('password', ''))
     }
 
     @Test

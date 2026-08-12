@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools.common;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,18 +19,6 @@ public final class TemplateConfig {
 	}
 
 	public Map<String, Object> values() {
-		return immutableCopy(values);
-	}
-
-	private static Map<String, Object> immutableCopy(Map<String, Object> source) {
-		Map<String, Object> copy = new HashMap<>();
-		for (Map.Entry<String, Object> entry : source.entrySet()) {
-			Object value = entry.getValue();
-			if (value instanceof Map<?, ?> nested) {
-				value = immutableCopy((Map<String, Object>) nested);
-			}
-			copy.put(entry.getKey(), value);
-		}
-		return Collections.unmodifiableMap(copy);
+		return ImmutableConfigData.copyMap(values);
 	}
 }

@@ -122,7 +122,15 @@ class MonitoringToolConfigMapperTest {
 						grafanaEmailTo  : 'team@example.org',
 						grafanaUrl      : 'https://grafana.example.org',
 						namespace       : 'observability',
-						oidc            : config.features.monitoring.oidc,
+						oidc            : [
+							providerName  : 'Keycloak',
+							issuerUrl     : '',
+							clientId      : 'grafana-client',
+							clientSecret  : '',
+							scopes        : ['openid', 'profile', 'email'],
+							adminGroupName: '',
+							enabled       : false
+						],
 						helm            : [
 							grafanaImage                  : 'grafana-image',
 							grafanaSidecarImage           : 'sidecar-image',
