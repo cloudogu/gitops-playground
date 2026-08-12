@@ -3,8 +3,6 @@ package com.cloudogu.gitops.tools.common;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
-import com.cloudogu.gitops.config.Config;
-import com.cloudogu.gitops.config.Config.HelmConfigWithValues;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -156,36 +154,6 @@ public abstract class AbstractTool {
 		String featureName,
 		String releaseName,
 		String namespace,
-		HelmConfigWithValues helmConfig,
-		String helmValuesTemplatePath,
-		DeploymentContext context) {
-		deployHelmChart(featureName, releaseName, namespace, helmConfig, helmValuesTemplatePath, context, false);
-	}
-
-	protected void deployHelmChart(
-		String featureName,
-		String releaseName,
-		String namespace,
-		HelmConfigWithValues helmConfig,
-		String helmValuesTemplatePath,
-		DeploymentContext context,
-		boolean initByHelm) {
-		addHelmValuesData("config", context.getConfig());
-		deployHelmChart(
-			featureName,
-			releaseName,
-			namespace,
-			ToolConfigMapperSupport.helmChart(helmConfig, context.getConfig().getApplication().getLocalHelmChartFolder()),
-			helmValuesTemplatePath,
-			context,
-			initByHelm
-		);
-	}
-
-	protected void deployHelmChart(
-		String featureName,
-		String releaseName,
-		String namespace,
 		HelmChartConfig helmConfig,
 		String helmValuesTemplatePath,
 		DeploymentContext context) {
@@ -269,10 +237,6 @@ public abstract class AbstractTool {
 			context,
 			repositoryWorkspace
 		);
-	}
-
-	public Config getConfig() {
-		return context.getConfig();
 	}
 
 	public DeploymentContext getContext() {

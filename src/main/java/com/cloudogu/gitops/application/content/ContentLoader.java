@@ -11,6 +11,7 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
+import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.core.Jenkins;
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -190,11 +191,13 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 			version = "*";
 		}
 
-		Config.HelmConfigWithValues helmConfig = new Config.HelmConfigWithValues();
-		helmConfig.setRepoURL(helmRelease.getRepoURL());
-		helmConfig.setChart(helmRelease.getChart());
-		helmConfig.setVersion(version);
-		helmConfig.setValues(new HashMap<>());
+		HelmChartConfig helmConfig = HelmChartConfig.builder()
+			.repoURL(helmRelease.getRepoURL())
+			.chart(helmRelease.getChart())
+			.version(version)
+			.values(new HashMap<>())
+			.localHelmChartFolder(getConfig().getApplication().getLocalHelmChartFolder())
+			.build();
 
 		Map<String, Object> fileValues = new HashMap<>();
 		if (helmRelease.getValuesPath() != null && !helmRelease.getValuesPath().trim().isEmpty()) {
@@ -815,6 +818,10 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 			return false;
 		}
 		return true;
+	}
+
+	private Config getConfig() {
+		return context.getConfig();
 	}
 
 	private void clearCache() {
