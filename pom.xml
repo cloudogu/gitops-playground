@@ -123,6 +123,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-aop</artifactId>
+        </dependency>
+
         <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
         <dependency>
             <groupId>io.micronaut.reactor</groupId>
