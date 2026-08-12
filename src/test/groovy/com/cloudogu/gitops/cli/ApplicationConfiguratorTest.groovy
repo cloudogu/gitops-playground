@@ -31,7 +31,7 @@ class ApplicationConfiguratorTest {
 
     static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
     static final int EXPECTED_REGISTRY_INTERNAL_PORT = 33333
-    static final Config.VaultMode EXPECTED_VAULT_MODE = Config.VaultMode.dev
+    static final Config.VaultMode EXPECTED_VAULT_MODE = Config.VaultMode.DEV
     public static final String EXPECTED_JENKINS_URL = 'http://my-jenkins'
     public static final String EXPECTED_SCMM_URL = 'http://my-scmm'
 

@@ -4,8 +4,10 @@ import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.utils.MapUtils
 
 import org.junit.jupiter.api.Test
+import picocli.CommandLine
 
 class ConfigTest {
 	Config testConfig = new Config(registry: new RegistrySchema(twoRegistries: true,
@@ -49,6 +51,28 @@ registry:
 		assertThat(actualValues.application.yes).isEqualTo(expectedValues.application.yes)
 		assertThat(actualValues.application.namePrefix).isEqualTo(expectedValues.application.namePrefix)
 		assertThat(actualValues.registry.internalPort).isEqualTo(expectedValues.registry.internalPort)
+	}
+
+	@Test
+	void 'parses lowercase vault mode from config and preserves external representation'() {
+		Config config = Config.fromMap([features: [secrets: [vault: [mode: 'dev']]]])
+
+		assertThat(config.features.secrets.vault.mode).isEqualTo(VaultMode.DEV)
+
+		Map<String, Object> configMap = config.toMap()
+		Map<String, Object> features = MapUtils.asStringObjectMap(configMap.get('features'))
+		Map<String, Object> secrets = MapUtils.asStringObjectMap(features.get('secrets'))
+		Map<String, Object> vault = MapUtils.asStringObjectMap(secrets.get('vault'))
+		assertThat(vault.get('mode')).isEqualTo('dev')
+	}
+
+	@Test
+	void 'parses lowercase vault mode from cli'() {
+		Config config = new Config()
+
+		new CommandLine(config).parseArgs('--vault=dev')
+
+		assertThat(config.features.secrets.vault.mode).isEqualTo(VaultMode.DEV)
 	}
 
 	@Test

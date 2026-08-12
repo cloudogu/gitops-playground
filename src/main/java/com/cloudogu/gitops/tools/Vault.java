@@ -115,7 +115,7 @@ public class Vault extends AbstractTool {
 	private void prepareDevModeIfRequired() {
 		Config.VaultMode vaultMode = getConfig().getFeatures().getSecrets().getVault().getMode();
 
-		if (vaultMode != Config.VaultMode.dev) {
+		if (vaultMode != Config.VaultMode.DEV) {
 			return;
 		}
 

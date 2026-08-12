@@ -39,8 +39,8 @@ public class InsecureCredentialProvider extends CredentialsProvider {
 			return false;
 		}
 		return Arrays.stream(items)
-		             .filter(it -> it instanceof CredentialItem.InformationalMessage)
-		             .map(it -> (CredentialItem.InformationalMessage) it)
+		             .filter(item -> item instanceof CredentialItem.InformationalMessage)
+		             .map(item -> (CredentialItem.InformationalMessage) item)
 		             .anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
 	}
 

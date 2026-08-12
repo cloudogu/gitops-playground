@@ -848,13 +848,13 @@ public class ContentLoader extends AbstractTool {
 		}
 
 		public List<RepoCoordinate> findSame(Collection<RepoCoordinate> repoCoordinates) {
-			return repoCoordinates.stream().filter(it -> it.getFullRepoName().equals(getFullRepoName())).toList();
+			return repoCoordinates.stream().filter(coordinate -> coordinate.getFullRepoName().equals(getFullRepoName())).toList();
 		}
 
 		public RepoCoordinate findSameNotMirror(Collection<RepoCoordinate> repoCoordinates) {
 			return repoCoordinates.stream()
-			                      .filter(it -> it.getFullRepoName()
-			                                      .equals(getFullRepoName()) && ContentRepoType.MIRROR != it.repoConfig.getType())
+			                      .filter(coordinate -> coordinate.getFullRepoName()
+			                                      .equals(getFullRepoName()) && ContentRepoType.MIRROR != coordinate.repoConfig.getType())
 			                      .findFirst()
 			                      .orElse(null);
 		}
