@@ -10,5 +10,7 @@ class GenerateJsonSchemaTest {
 	void 'generates documentation for enum fields without reflecting into Enum internals'() {
 		assertThat(GenerateJsonSchema.generateDocs())
 			.contains('| `scm.scmProviderType` | ScmProviderType | `SCM_MANAGER` |')
+			.contains('`{}`')
+			.doesNotContain('`[:]`')
 	}
 }

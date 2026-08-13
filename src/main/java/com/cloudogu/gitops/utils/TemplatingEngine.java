@@ -3,8 +3,6 @@ package com.cloudogu.gitops.utils;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.Version;
-import groovy.yaml.YamlSlurper;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -94,10 +92,9 @@ public class TemplatingEngine {
 		}
 
 		if (hydratedString == null || hydratedString.trim().isEmpty()) {
-			// Otherwise YamlSlurper returns an empty array, whereas we expect a Map
 			return Collections.emptyMap();
 		}
-		return MapUtils.asStringObjectMap(new YamlSlurper().parseText(hydratedString));
+		return YamlUtils.parseYamlMap(hydratedString);
 	}
 
 	/**

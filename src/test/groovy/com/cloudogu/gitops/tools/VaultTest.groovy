@@ -113,12 +113,12 @@ class VaultTest {
         assertThat(parseActualYaml()).doesNotContainKey('server')
     }
 
-    @Test
-    void 'Dev mode can be enabled via config'() {
-        config.features.secrets.vault.mode = 'dev'
-        config.application.username = 'abc'
-        config.application.password = '123'
-        config.features.argocd.active = true
+	@Test
+	void 'Dev mode can be enabled via config'() {
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
+		config.application.username = 'abc'
+		config.application.password = '123'
+		config.features.argocd.active = true
 
         def vault = createVault()
 
@@ -148,11 +148,11 @@ class VaultTest {
         assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
     }
 
-    @Test
-    void 'Dev mode can be enabled via config with argoCD disabled'() {
-        config.features.secrets.vault.mode = 'dev'
-        config.application.username = 'abc'
-        config.application.password = '123'
+	@Test
+	void 'Dev mode can be enabled via config with argoCD disabled'() {
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
+		config.application.username = 'abc'
+		config.application.password = '123'
 
         install(createVault())
 
@@ -162,15 +162,15 @@ class VaultTest {
                 .isEqualTo('USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
     }
 
-    @Test
-    void 'Dev mode enables OIDC only when configured'() {
-        config.features.secrets.vault.mode = 'dev'
-        config.features.secrets.vault.url = 'http://vault.localhost'
-        config.features.secrets.vault.oidc = new Config.OidcSchema(clientId: 'vault-client',
-                clientSecret: 'vault-secret',
-                issuerUrl: 'http://keycloak.local.gd/realms/gop',
-                adminGroupName: 'gop-admins')
-        config.application.password = 'admin'
+	@Test
+	void 'Dev mode enables OIDC only when configured'() {
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
+		config.features.secrets.vault.url = 'http://vault.localhost'
+		config.features.secrets.vault.oidc = new Config.OidcSchema(clientId: 'vault-client',
+			clientSecret: 'vault-secret',
+			issuerUrl: 'http://keycloak.local.gd/realms/gop',
+			adminGroupName: 'gop-admins')
+		config.application.password = 'admin'
 
         install(createVault())
 
@@ -180,12 +180,12 @@ class VaultTest {
                 .isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
     }
 
-    @Test
-    void 'Dev mode does not enable OIDC when OIDC config is incomplete'() {
-        config.features.secrets.vault.mode = 'dev'
-        config.features.secrets.vault.oidc = new Config.OidcSchema(clientSecret: 'vault-secret')
-        config.application.username = 'admin'
-        config.application.password = 'admin'
+	@Test
+	void 'Dev mode does not enable OIDC when OIDC config is incomplete'() {
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
+		config.features.secrets.vault.oidc = new Config.OidcSchema(clientSecret: 'vault-secret')
+		config.application.username = 'admin'
+		config.application.password = 'admin'
 
         install(createVault())
 
@@ -195,9 +195,9 @@ class VaultTest {
                 .isEqualTo('USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
     }
 
-    @Test
-    void 'Prod mode can be enabled'() {
-        config.features.secrets.vault.mode = 'prod'
+	@Test
+	void 'Prod mode can be enabled'() {
+		config.features.secrets.vault.mode = Config.VaultMode.PROD
 
         install(createVault())
 

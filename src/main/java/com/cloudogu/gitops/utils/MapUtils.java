@@ -45,8 +45,7 @@ public class MapUtils {
 	}
 
 	/**
-	 * Casts the result of parsing untyped YAML/JSON data (e.g. via Groovy's {@code YamlSlurper} or a
-	 * {@code Map<String, Object>} lookup) to {@code Map<String, Object>}.
+	 * Casts untyped YAML/JSON data or a nested map value to {@code Map<String, Object>}.
 	 *
 	 * <p>By convention, every map produced by our YAML/JSON parsing has {@code String} keys, but
 	 * generic type erasure means the JVM can only verify at runtime that {@code value} is a raw

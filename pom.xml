@@ -120,6 +120,12 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-aop</artifactId>
         </dependency>
 
         <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
@@ -134,6 +140,7 @@
             <artifactId>groovy-all</artifactId>
             <version>${groovy.version}</version>
             <type>pom</type>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.testng</groupId>
@@ -154,9 +161,11 @@
         <dependency>
             <groupId>org.apache.groovy</groupId>
             <artifactId>groovy-yaml</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
+        <!-- Used by production YAML parsing. The explicit version also avoids CVE-2022-1471 in
+        the transitive dependency of groovy-yaml used by tests. -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
@@ -171,6 +180,7 @@
         <dependency>
             <groupId>io.micronaut.groovy</groupId>
             <artifactId>micronaut-runtime-groovy</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -245,7 +255,7 @@
         </dependency>
 
         <dependency>
-            <!-- Converts HTTP body objects from groovy to JSON -->
+            <!-- Converts HTTP body objects to JSON -->
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>converter-jackson</artifactId>
             <version>${retrofitVersion}</version>

@@ -96,12 +96,7 @@ public class AirGappedUtils {
 
 		Path chartYamlPath = Path.of(gitRepo.getAbsoluteLocalRepoTmpDir(), "Chart.yaml");
 
-		Map<String, Object> chartYaml;
-		try {
-			chartYaml = MapUtils.asStringObjectMap(new YamlSlurper().parse(chartYamlPath.toFile()));
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to parse Chart.yaml: " + chartYamlPath, e);
-		}
+		Map<String, Object> chartYaml = fileSystemUtils.readYaml(chartYamlPath);
 		Map<String, Object> chartLock = parseChartLockIfExists(gitRepo);
 
 		List<Map<String, Object>> dependencies = MapUtils.asListOfStringObjectMaps(chartYaml.get("dependencies"));
@@ -118,16 +113,12 @@ public class AirGappedUtils {
 		return chartYaml;
 	}
 
-	private static Map<String, Object> parseChartLockIfExists(GitRepo scmmRepo) {
+	private Map<String, Object> parseChartLockIfExists(GitRepo scmmRepo) {
 		Path chartLock = Path.of(scmmRepo.getAbsoluteLocalRepoTmpDir(), "Chart.lock");
-		if (!chartLock.toFile().exists()) {
+		if (!Files.exists(chartLock)) {
 			return Collections.emptyMap();
 		}
-		try {
-			return MapUtils.asStringObjectMap(new YamlSlurper().parse(chartLock.toFile()));
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to parse Chart.lock: " + chartLock, e);
-		}
+		return fileSystemUtils.readYaml(chartLock);
 	}
 
 	/**

@@ -16,8 +16,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
 import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
-import com.cloudogu.gitops.utils.MapUtils;
-import groovy.yaml.YamlSlurper;
+import com.cloudogu.gitops.utils.YamlUtils;
 import io.micronaut.context.ApplicationContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -284,12 +283,9 @@ public class GitopsPlaygroundCli {
 	}
 
 	public static Map<String, Object> validateConfig(String configValues) {
-		Object map = new YamlSlurper().parseText(configValues);
-		if (!(map instanceof Map)) {
-			throw new IllegalArgumentException("Could not parse YAML as map: " + map);
-		}
-		JsonSchemaValidator.validate((Map<?, ?>) map);
-		return MapUtils.asStringObjectMap(map);
+		Map<String, Object> configMap = YamlUtils.parseYamlMap(configValues);
+		JsonSchemaValidator.validate(configMap);
+		return configMap;
 	}
 
 	public void printWelcomeScreen(String password) {

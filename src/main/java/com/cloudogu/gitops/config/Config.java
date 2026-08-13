@@ -1,8 +1,10 @@
 package com.cloudogu.gitops.config;
 
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
@@ -843,7 +846,7 @@ public class Config {
 		@Getter
 		@Setter
 		public static class VaultSchema {
-			@Option(names = {"--vault"}, description = VAULT_ENABLE_DESCRIPTION)
+			@Option(names = {"--vault"}, description = VAULT_ENABLE_DESCRIPTION, converter = VaultModeConverter.class)
 			@JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
 			private VaultMode mode;
 
@@ -1006,8 +1009,34 @@ public class Config {
 	}
 
 	public enum VaultMode {
-		dev,
-		prod
+		DEV("dev"),
+		PROD("prod");
+
+		private final String externalValue;
+
+		VaultMode(String externalValue) {
+			this.externalValue = externalValue;
+		}
+
+		@JsonCreator
+		public static VaultMode fromExternalValue(String value) {
+			return Arrays.stream(values())
+			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+			             .findFirst()
+			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+		}
+
+		@JsonValue
+		public String externalValue() {
+			return externalValue;
+		}
+	}
+
+	public static class VaultModeConverter implements ITypeConverter<VaultMode> {
+		@Override
+		public VaultMode convert(String value) {
+			return VaultMode.fromExternalValue(value);
+		}
 	}
 
 	public enum OverwriteMode {

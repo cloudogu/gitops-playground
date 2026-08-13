@@ -209,10 +209,7 @@ public class GenerateJsonSchema {
 		if (Modifier.isStatic(field.getModifiers())) {
 			return true;
 		}
-		if (field.isAnnotationPresent(JsonIgnore.class)) {
-			return true;
-		}
-		return Set.of("metaClass", "$staticClassInfo", "__$stMC").contains(field.getName());
+		return field.isAnnotationPresent(JsonIgnore.class);
 	}
 
 	public static boolean isSchemaType(Class<?> type) {
@@ -232,7 +229,7 @@ public class GenerateJsonSchema {
 	public static String formatDefault(Object value) {
 		return switch (value) {
 			case null -> "-";
-			case Map<?, ?> map -> map.isEmpty() ? "[:]" : value.toString();
+			case Map<?, ?> map -> map.isEmpty() ? "{}" : value.toString();
 			case Collection<?> collection -> collection.isEmpty() ? "[]" : value.toString();
 			default -> value.toString();
 		};
@@ -257,7 +254,7 @@ public class GenerateJsonSchema {
 		}
 		if (field.getGenericType() instanceof ParameterizedType pt) {
 			String args = Arrays.stream(pt.getActualTypeArguments())
-			                    .map(it -> it instanceof Class ? ((Class<?>) it).getSimpleName() : it.toString())
+			                    .map(typeArgument -> typeArgument instanceof Class<?> type ? type.getSimpleName() : typeArgument.toString())
 			                    .collect(Collectors.joining(", "));
 			return ((Class<?>) pt.getRawType()).getSimpleName() + "&lt;" + args + "&gt;";
 		}
