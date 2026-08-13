@@ -56,8 +56,8 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 		}
 
 		return switch (mode) {
-			case dev -> true;
-			case prod -> false;
+			case DEV -> true;
+			case PROD -> false;
 		};
 	}
 }

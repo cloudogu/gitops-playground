@@ -157,7 +157,6 @@ public class ArgoCDRepoSetup {
 	private Map<String, Object> buildTemplateValues(GitRepo repo) {
 		Map<String, Object> values = new HashMap<>();
 		values.put("tenantName", config.tenantName());
-		values.put("tenantName", getConfig().getApplication().getTenantName());
 
 		Map<String, Object> argocd = new HashMap<>();
 		String url = config.url();

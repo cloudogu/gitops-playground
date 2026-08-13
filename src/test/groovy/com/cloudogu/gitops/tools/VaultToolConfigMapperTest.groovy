@@ -15,7 +15,7 @@ class VaultToolConfigMapperTest {
     @Test
     void 'maps all relevant values from deployment context and config'() {
         Config config = config()
-        config.features.secrets.vault.mode = Config.VaultMode.prod
+        config.features.secrets.vault.mode = Config.VaultMode.PROD
 
         VaultToolConfig actual = new VaultToolConfigMapper().map(context(config))
 
@@ -76,8 +76,8 @@ class VaultToolConfigMapperTest {
 
     @ParameterizedTest
     @CsvSource([
-            'dev, true',
-            'prod, false'
+            'DEV, true',
+            'PROD, false'
     ])
     void 'maps vault mode to development mode'(Config.VaultMode mode, boolean expectedDevelopmentMode) {
         Config config = config()

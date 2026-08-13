@@ -5,13 +5,10 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
-import groovy.yaml.YamlSlurper;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
