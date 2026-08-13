@@ -285,7 +285,7 @@
           }
         },
         "helmReleases": {
-          "description": "",
+          "description": "Additional Helm releases to deploy through Argo CD without requiring a content Git repository.",
           "type": [
             "array",
             "null"
@@ -1296,7 +1296,7 @@
             }
           },
           "additionalProperties": false,
-          "description": "Config for GITLAB"
+          "description": "Config for SCM-Manager"
         },
         "scmProviderType": {
           "$ref": "#/$defs/ScmProviderType-nullable",
@@ -1548,7 +1548,7 @@
             }
           },
           "additionalProperties": false,
-          "description": "Config for GITLAB"
+          "description": "Config for SCM-Manager"
         },
         "scmProviderType": {
           "$ref": "#/$defs/ScmProviderType-nullable",

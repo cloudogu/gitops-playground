@@ -2,6 +2,7 @@ package com.cloudogu.gitops.dependencyinjection.okhttp
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 import javax.net.ssl.HostnameVerifier
@@ -129,9 +130,12 @@ class RetryInterceptorTest {
 			.willReturn(aResponse().withStatus(500)))
 
 		def client = createClient()
-		def response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
 
-		assertThat(response.code()).isEqualTo(500)
+		def exception = shouldFail(IOException) {
+			client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
+		}
+
+		assertThat(exception.message).contains("500")
 		wireMock.verify(4, getRequestedFor(urlEqualTo(path))) // Initial request + 3 retries
 	}
 
@@ -151,7 +155,7 @@ class RetryInterceptorTest {
 		sslContext.init(null, trustAllCerts, new SecureRandom())
 
 		new OkHttpClient.Builder()
-			.addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
+			.addInterceptor(new RetryInterceptor(3, 0))
 			.connectTimeout(timeout, TimeUnit.MILLISECONDS)
 			.readTimeout(timeout, TimeUnit.MILLISECONDS)
 			.sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)

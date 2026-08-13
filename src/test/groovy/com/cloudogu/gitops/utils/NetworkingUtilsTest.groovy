@@ -52,25 +52,4 @@ class NetworkingUtilsTest {
 		assertThat(exception.message).isEqualTo('Could not connect to kubernetes cluster: no cluster bind address')
 	}
 
-	@Test
-	void 'get hosts'() {
-		assertThat(NetworkingUtils.getHost("https://example.com")).isEqualTo("example.com")
-		assertThat(NetworkingUtils.getHost("http://example.com")).isEqualTo("example.com")
-		assertThat(NetworkingUtils.getHost("")).isEqualTo("")
-		assertThat(NetworkingUtils.getHost("example.com")).isEqualTo("example.com")
-
-		assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com/bla")
-		assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com:9090/bla")
-		assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com/bla")
-		assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com:9090/bla")
-	}
-
-	@Test
-	void 'get protocols'() {
-		assertThat(NetworkingUtils.getProtocol("https://example.com")).isEqualTo("https");
-		assertThat(NetworkingUtils.getProtocol("http://example.com")).isEqualTo("http");
-		assertThat(NetworkingUtils.getProtocol("ftp://example.com")).isEqualTo("");
-		assertThat(NetworkingUtils.getProtocol("example.com")).isEqualTo("");
-		assertThat(NetworkingUtils.getProtocol("")).isEqualTo("")
-	}
 }

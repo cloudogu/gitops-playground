@@ -1,22 +1,19 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.junit.jupiter.api.Assertions.assertThrows
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
-
 import groovy.yaml.YamlSlurper
-
 import org.junit.jupiter.api.Test
+
+import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertThrows
 
 class RbacDefinitionTest {
 
 	private final Config config = Config.fromMap([scm        : [scmManager: [username: 'user',
 	                                                                         password: 'pass',
-	                                                                         protocol: 'http',
-	                                                                         host    : 'localhost',],],
+	                                                                         url     : 'http://localhost',],],
 	                                              application: [namePrefix: '',
 	                                                            insecure  : false,
 	                                                            gitName   : 'Test User',

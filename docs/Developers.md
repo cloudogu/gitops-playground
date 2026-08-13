@@ -8,12 +8,12 @@ It provides workarounds or solutions for the given issues.
 
 The versions listed in this README may not always reflect the most current release. 
 Please be aware that newer versions may exist. 
-The versions are also specified in the `Config.groovy` file, so it is recommended to consult that file for the latest version information.
+The versions are also specified in the `Config.java` file, so it is recommended to consult that file for the latest version information.
 
 
 ## Table of contents
 
-<!-- Update with `doctoc --notitle docs/developers.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle docs/Developers.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -50,7 +50,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 ## Prerequisites
 
-- Java 17
+- Java 25
 - Groovy
 - Maven
 - Docker

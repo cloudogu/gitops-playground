@@ -2,8 +2,8 @@
 #execute from root folder
 set -o errexit -o nounset -o pipefail
 charts=( 'kube-prometheus-stack' 'external-secrets' 'vault' 'traefik' 'cert-manager' 'jenkins' 'scm-manager')
-CONFIG="${1:-src/main/groovy/com/cloudogu/gitops/config/Config.groovy}"
-SCM_MANAGER_CONFIG="${2:-src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy}"
+CONFIG="${1:-src/main/java/com/cloudogu/gitops/config/Config.java}"
+SCM_MANAGER_CONFIG="${2:-src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema.java}"
 CONFIG_FILES=("${CONFIG}")
 
 if [[ "${CONFIG}" != "${SCM_MANAGER_CONFIG}" ]]; then
@@ -18,7 +18,7 @@ function extractChartProperty() {
   local chartDetails="$1"
   local property="$2"
 
-  echo "$chartDetails" | sed -nE "s/.*${property}[[:space:]]*:[[:space:]]*'([^']+)'.*/\1/p" | head -n1
+  echo "$chartDetails" | sed -nE "s/.*set${property}\(\"([^\"]+)\"\).*/\1/p" | head -n1
 }
 
 for chart in "${charts[@]}"; do
@@ -28,7 +28,7 @@ for chart in "${charts[@]}"; do
     if [[ ! -f "${configFile}" ]]; then
       continue
     fi
-    chartDetails=$(grep -m1 -EA5 "chart[[:space:]]*:[[:space:]]*'${chart}'" "${configFile}" || true)
+    chartDetails=$(grep -m1 -EA5 "setChart\(\"${chart}\"\)" "${configFile}" || true)
     if [[ -n "$chartDetails" ]]; then
       chartConfig="${configFile}"
       break
@@ -39,9 +39,9 @@ for chart in "${charts[@]}"; do
     echo "Did not find chart details for chart $chart in files: ${CONFIG_FILES[*]}" >&2
     exit 1
   fi
-  repo=$(extractChartProperty "$chartDetails" "repoURL")
-  chart=$(extractChartProperty "$chartDetails" "chart")
-  version=$(extractChartProperty "$chartDetails" "version")
+  repo=$(extractChartProperty "$chartDetails" "RepoURL")
+  chart=$(extractChartProperty "$chartDetails" "Chart")
+  version=$(extractChartProperty "$chartDetails" "Version")
 
   if [[ -z "$repo" || -z "$chart" || -z "$version" ]]; then
     echo "Could not extract chart details from ${chartConfig}: repoURL='${repo}', chart='${chart}', version='${version}'" >&2

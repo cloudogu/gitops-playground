@@ -1,43 +1,37 @@
 package com.cloudogu.gitops.cli
 
-import static org.assertj.core.api.Assertions.assertThat
-
-import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.junit.jupiter.api.Test
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+
+import static org.assertj.core.api.Assertions.assertThat
 
 class GitopsPlaygroundCliMainTest {
 
 	@Test
 	void 'application returns exit code 0 on success'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
-		})
+		ReturnCode returnCode = gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
 
-		assertThat(status).isZero()
+		assertThat(returnCode.ordinal()).isZero()
 	}
 
 	@Test
 	void 'application returns exit code 1 on exception'() {
 		def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-		int status = SystemLambda.catchSystemExit(() -> {
-			gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
-		})
+		ReturnCode returnCode = gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
 
-		assertThat(status).isNotZero()
+		assertThat(returnCode.ordinal()).isNotZero()
 	}
 
 	@Test
 	void 'application returns exit code != 0 on invalid param'() {
-		int status = SystemLambda.catchSystemExit(() -> {
-			GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
-			                              '--debug' // avoids changing default log pattern
-			] as String[])
-		})
+		ReturnCode returnCode = new GitopsPlaygroundCliMain().exec([
+				'--parameter-that-doesnt-exist ',
+				'--debug' // avoids changing default log pattern
+		] as String[], GitopsPlaygroundCli.class)
 
-		assertThat(status).isNotZero()
+		assertThat(returnCode.ordinal()).isNotZero()
 	}
 
 	static class ThrowingCommand extends MockedCommand {

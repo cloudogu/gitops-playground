@@ -2,7 +2,7 @@
 # BUILD ARGUMENTS
 # ============================================================================
 # Keep in sync with the versions in pom.xml
-ARG JDK_VERSION='17'
+ARG JDK_VERSION='25'
 
 # ============================================================================
 # STAGE 1: Maven Dependency Cache
@@ -58,7 +58,8 @@ RUN apk add curl grep
 # 3.1: Version Configuration
 # -----------------------------------------------------------------------------
 
-# When updating Helm, also upgrade helm image in Config.groovy
+# When updating Helm, also upgrade the helm chart version in Config.java
+# renovate: depName=helm/helm datasource=github-releases
 ARG HELM_VERSION=4.2.1
 
 # Install additional tools required for downloads
@@ -133,10 +134,10 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 # -----------------------------------------------------------------------------
 # 3.7: Download Helm Charts
 # -----------------------------------------------------------------------------
-COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
-COPY src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy /tmp/
+COPY src/main/java/com/cloudogu/gitops/config/Config.java /tmp/
+COPY src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema.java /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy /tmp/ScmTenantSchema.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.java /tmp/ScmTenantSchema.java
 
 # -----------------------------------------------------------------------------
 # 3.8: Prepare Application Files

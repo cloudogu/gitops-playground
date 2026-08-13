@@ -115,7 +115,7 @@ class VaultTest {
 
 	@Test
 	void 'Dev mode can be enabled via config'() {
-		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
 		config.application.username = 'abc'
 		config.application.password = '123'
 		config.features.argocd.active = true
@@ -150,7 +150,7 @@ class VaultTest {
 
 	@Test
 	void 'Dev mode can be enabled via config with argoCD disabled'() {
-		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
 		config.application.username = 'abc'
 		config.application.password = '123'
 
@@ -164,7 +164,7 @@ class VaultTest {
 
 	@Test
 	void 'Dev mode enables OIDC only when configured'() {
-		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
 		config.features.secrets.vault.url = 'http://vault.localhost'
 		config.features.secrets.vault.oidc = new Config.OidcSchema(clientId: 'vault-client',
 			clientSecret: 'vault-secret',
@@ -182,7 +182,7 @@ class VaultTest {
 
 	@Test
 	void 'Dev mode does not enable OIDC when OIDC config is incomplete'() {
-		config.features.secrets.vault.mode = 'dev'
+		config.features.secrets.vault.mode = Config.VaultMode.DEV
 		config.features.secrets.vault.oidc = new Config.OidcSchema(clientSecret: 'vault-secret')
 		config.application.username = 'admin'
 		config.application.password = 'admin'
@@ -197,7 +197,7 @@ class VaultTest {
 
 	@Test
 	void 'Prod mode can be enabled'() {
-		config.features.secrets.vault.mode = 'prod'
+		config.features.secrets.vault.mode = Config.VaultMode.PROD
 
 		install(createVault())
 

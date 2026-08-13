@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.infrastructure.jenkins
 
+import org.junit.jupiter.api.Test
+
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.*
-
-import org.junit.jupiter.api.Test
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class UserManagerTest {
 	@Test
@@ -23,12 +25,11 @@ class UserManagerTest {
 		when(client.runScript(anyString())).thenReturn("the-'user")
 
 		new UserManager(client).createUser("the-'user", "code''injection")
-		verify(client).runScript("""
-            def realm = Jenkins.getInstance().getSecurityRealm()
-            def user = realm.createAccount('the-\\'user', 'code\\'\\'injection')
+		verify(client).runScript("""def realm = Jenkins.getInstance().getSecurityRealm()
+def user = realm.createAccount('the-\\'user', 'code\\'\\'injection')
 
-            print(user)
-        """)
+print(user)
+""")
 	}
 
 	@Test
@@ -58,16 +59,15 @@ class UserManagerTest {
 		new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
 
 		verify(client).runScript("""print(Jenkins.getInstance().getAuthorizationStrategy().class)""")
-		verify(client).runScript("""
-            import org.jenkinsci.plugins.matrixauth.PermissionEntry
-            import org.jenkinsci.plugins.matrixauth.AuthorizationType
+		verify(client).runScript("""import org.jenkinsci.plugins.matrixauth.PermissionEntry
+import org.jenkinsci.plugins.matrixauth.AuthorizationType
 
-            def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
-            permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
-              new HashSet<>()
-            }
-            print(permissions[jenkins.metrics.api.Metrics.VIEW].add(new PermissionEntry(AuthorizationType.USER, 'the-\\'user')))
-        """)
+def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
+permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
+new HashSet<>()
+}
+print(permissions[jenkins.metrics.api.Metrics.VIEW].add(new PermissionEntry(AuthorizationType.USER, 'the-\\'user')))
+""")
 	}
 
 	@Test
