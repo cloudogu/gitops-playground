@@ -34,6 +34,7 @@ class ApplicationTest {
         when(repositoryProvisioning.provideWorkspace(context)).thenReturn(workspace)
 
         def application = new Application(
+                config,
                 contextBuilder,
                 k8sClient,
                 gitHandler,

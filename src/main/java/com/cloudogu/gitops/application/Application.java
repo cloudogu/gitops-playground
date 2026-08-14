@@ -6,6 +6,7 @@ import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
+import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.utils.TemplatingEngine;
@@ -29,6 +30,7 @@ public class Application {
 
 	@Getter
 	private final List<AbstractTool> tools;
+	private final Config config;
 	private final ContextBuilder contextBuilder;
 	private final K8sClient k8sClient;
 	private final GitHandler gitHandler;
@@ -36,11 +38,13 @@ public class Application {
 	private final DeploymentOrchestrator deploymentOrchestrator;
 
 	public Application(
+		Config config,
 		ContextBuilder contextBuilder,
 		K8sClient k8sClient,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning,
 		DeploymentOrchestrator deploymentOrchestrator) {
+		this.config = config;
 		this.contextBuilder = contextBuilder;
 		this.k8sClient = k8sClient;
 		this.gitHandler = gitHandler;
@@ -57,7 +61,7 @@ public class Application {
 		DeploymentContext context = contextBuilder.build();
 
 		setNamespaceListToConfig(context);
-		storeGopInformationInSecret(context);
+		storeGopInformationInSecret();
 		gitHandler.prepareProviders(context);
 		repositoryProvisioning.prepare(context);
 		try (RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)) {
@@ -67,15 +71,10 @@ public class Application {
 		log.debug("Application finished");
 	}
 
-	private void storeGopInformationInSecret(DeploymentContext context) {
+	private void storeGopInformationInSecret() {
 		String namespace = DEFAULT_GOP_NAMESPACE;
-		if (context.getConfig().getApplication().getGopNamespace() != null && !context.getConfig()
-		                                                                              .getApplication()
-		                                                                              .getGopNamespace()
-		                                                                              .isEmpty()) {
-			namespace = context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-			                                                                          .getApplication()
-			                                                                          .getGopNamespace();
+		if (config.getApplication().getGopNamespace() != null && !config.getApplication().getGopNamespace().isEmpty()) {
+			namespace = config.getApplication().getNamePrefix() + config.getApplication().getGopNamespace();
 		} else if (this.k8sClient.getCurrentNamespace() != null) {
 			namespace = this.k8sClient.getCurrentNamespace();
 		} else {
@@ -87,15 +86,8 @@ public class Application {
 			"generic",
 			"gop-configuration",
 			namespace,
-			new Tuple<>(
-				"gop-initial-password", context.getConfig()
-				                               .getApplication()
-				                               .getPassword()
-			),
-			new Tuple<>(
-				"gop-config", context.getConfig()
-				                     .toYaml(true)
-			)
+			new Tuple<>("gop-initial-password", config.getApplication().getPassword()),
+			new Tuple<>("gop-config", config.toYaml(true))
 		);
 	}
 
@@ -103,13 +95,13 @@ public class Application {
 		LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>();
 		TemplatingEngine engine = new TemplatingEngine();
 
-		if (context.getConfig().getContent() != null && context.getConfig().getContent().getNamespaces() != null) {
-			for (String ns : context.getConfig().getContent().getNamespaces()) {
+		if (config.getContent() != null && config.getContent().getNamespaces() != null) {
+			for (String ns : config.getContent().getNamespaces()) {
 				try {
 					tenantNamespaces.add(engine.template(
 						ns, Map.of(
 							"config",
-							context.getConfig(),
+							config,
 							"statics",
 							new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
 							                                                             .getStaticModels()
@@ -119,7 +111,7 @@ public class Application {
 					throw new RuntimeException("Failed to render namespace template: " + ns, e);
 				}
 			}
-			context.getConfig().getContent().setNamespaces(new ArrayList<>(tenantNamespaces));
+			config.getContent().setNamespaces(new ArrayList<>(tenantNamespaces));
 		}
 
 		LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>();
@@ -130,13 +122,8 @@ public class Application {
 			}
 		}
 
-		context.getConfig().getApplication().getNamespaces().setDedicatedNamespaces(dedicatedNamespaces);
-		context.getConfig().getApplication().getNamespaces().setTenantNamespaces(tenantNamespaces);
-		log.debug(
-			"Active namespaces retrieved: {}", context.getConfig()
-			                                          .getApplication()
-			                                          .getNamespaces()
-			                                          .getActiveNamespaces()
-		);
+		config.getApplication().getNamespaces().setDedicatedNamespaces(dedicatedNamespaces);
+		config.getApplication().getNamespaces().setTenantNamespaces(tenantNamespaces);
+		log.debug("Active namespaces retrieved: {}", config.getApplication().getNamespaces().getActiveNamespaces());
 	}
 }
