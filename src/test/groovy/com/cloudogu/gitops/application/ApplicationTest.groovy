@@ -2,16 +2,50 @@ package com.cloudogu.gitops.application
 
 import com.cloudogu.gitops.application.context.ContextBuilder
 import com.cloudogu.gitops.application.context.DeploymentContext
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator
+import com.cloudogu.gitops.application.orchestration.GitHandler
+import com.cloudogu.gitops.application.repository.RepositoryProvisioning
+import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.scm.ScmTenantSchema
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.*
 
 class ApplicationTest {
 
     private Config config = new Config()
+
+    @Test
+    void 'validates git configuration before building deployment context'() {
+        def contextBuilder = mock(ContextBuilder)
+        def k8sClient = mock(K8sClient)
+        def gitHandler = mock(GitHandler)
+        def repositoryProvisioning = mock(RepositoryProvisioning)
+        def deploymentOrchestrator = mock(DeploymentOrchestrator)
+        def context = buildContext()
+        def workspace = mock(RepositoryWorkspace)
+
+        when(contextBuilder.build()).thenReturn(context)
+        when(deploymentOrchestrator.getTools()).thenReturn([])
+        when(repositoryProvisioning.provideWorkspace(context)).thenReturn(workspace)
+
+        def application = new Application(
+                contextBuilder,
+                k8sClient,
+                gitHandler,
+                repositoryProvisioning,
+                deploymentOrchestrator)
+
+        application.start()
+
+        def order = inOrder(gitHandler, contextBuilder)
+        order.verify(gitHandler).validate()
+        order.verify(contextBuilder).build()
+    }
 
     @Test
     void 'feature\'s ordering is correct'() {

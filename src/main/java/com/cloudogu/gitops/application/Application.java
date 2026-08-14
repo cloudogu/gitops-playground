@@ -52,12 +52,12 @@ public class Application {
 	public void start() {
 		log.debug("Starting Application");
 
+		gitHandler.validate();
+
 		DeploymentContext context = contextBuilder.build();
 
 		setNamespaceListToConfig(context);
 		storeGopInformationInSecret(context);
-
-		gitHandler.validate();
 		gitHandler.prepareProviders(context);
 		repositoryProvisioning.prepare(context);
 		try (RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)) {
