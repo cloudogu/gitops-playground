@@ -3,9 +3,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^src/main/java/com/cloudogu/gitops/config/Config\\.java$",
-        "^src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema\\.java$"
+      "managerFilePatterns": [
+        "/^src/main/java/com/cloudogu/gitops/config/Config\\.java$/",
+        "/^src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema\\.java$/"
       ],
       "matchStrings": [
         "// renovate: depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\s+.*setVersion\\(\"(?<currentValue>[^\"]+)\"\\);"
@@ -14,8 +14,8 @@
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "^Dockerfile$"
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
       ],
       "matchStrings": [
         "# renovate: depName=(?<depName>[^\\s]+) datasource=(?<datasource>[^\\s]+)\\s+.*ARG HELM_VERSION=(?<currentValue>[^\\s]+)"
