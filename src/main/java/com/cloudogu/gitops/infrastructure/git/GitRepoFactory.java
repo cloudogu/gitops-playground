@@ -13,6 +13,8 @@ public class GitRepoFactory {
 	protected final FileSystemUtils fileSystemUtils;
 
 	public GitRepo create(String repoTarget, GitProvider gitProvider) {
-		return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils);
+		// GitRepo receives the final repository target and does not apply naming rules itself.
+		String prefixedRepoTarget = config.getApplication().getNamePrefix() + repoTarget;
+		return new GitRepo(config, gitProvider, prefixedRepoTarget, fileSystemUtils);
 	}
 }
