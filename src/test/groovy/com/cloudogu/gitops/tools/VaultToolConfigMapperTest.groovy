@@ -94,7 +94,8 @@ class VaultToolConfigMapperTest {
         config.application.namePrefix = 'test-'
         config.application.localHelmChartFolder = '/charts'
         config.application.namespaceIsolation = true
-        config.application.openshift = true
+        // Intentionally differs from the DeploymentContext to verify derived values come from the context.
+        config.application.openshift = false
         config.application.password = 'application-password'
         config.application.podResources = true
         config.application.username = 'application-user'

@@ -20,8 +20,9 @@ class ArgoCDToolConfigMapperTest {
 		config.application.netpols = true
 		config.application.clusterAdmin = true
 		config.application.insecure = true
-		config.application.mirrorRepos = true
-		config.application.openshift = true
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.application.mirrorRepos = false
+		config.application.openshift = false
 		config.application.skipCrds = true
 		config.features.argocd.active = true
 		config.features.argocd.namespace = 'gitops'

@@ -41,11 +41,11 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.jenkinsActive(config.getJenkins().getActive())
 			.helm(ToolConfigMapperSupport.helmChart(monitoring.getHelm(), config.getApplication().getLocalHelmChartFolder()))
 			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config))
+			.templateConfig(templateConfig(config, context))
 			.build();
 	}
 
-	private static Map<String, Object> templateConfig(Config config) {
+	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
 		Config.MonitoringSchema.MonitoringHelmSchema helm = config.getFeatures().getMonitoring().getHelm();
 		String scmManagerNamespace = config.getScm() == null || config.getScm().getScmManager() == null
 			? "scm-manager"
@@ -53,7 +53,7 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
-			.put("application.openshift", config.getApplication().getOpenshift())
+			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put("application.password", config.getApplication().getPassword())

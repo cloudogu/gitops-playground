@@ -37,30 +37,30 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .centralNamespace(config.getMultiTenant().getCentralArgocdNamespace())
 							   .clusterAdmin(config.getApplication().getClusterAdmin())
 							   .scmProviderType(config.getScm().getScmProviderType())
-							   .templateConfig(templateConfig(config))
-							   .rbacTemplateConfig(rbacTemplateConfig(config))
+							   .templateConfig(templateConfig(config, context))
+							   .rbacTemplateConfig(rbacTemplateConfig(config, context))
 							   .build();
 	}
 
-	private static Map<String, Object> rbacTemplateConfig(Config config) {
+	private static Map<String, Object> rbacTemplateConfig(Config config, DeploymentContext context) {
 		return new TemplateConfig()
-			.put("application.openshift", config.getApplication().getOpenshift())
+			.put("application.openshift", context.isOpenshift())
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
 			.put("features.secrets.active", config.getFeatures().getSecrets().getActive())
 			.values();
 	}
 
-	private static Map<String, Object> templateConfig(Config config) {
+	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
 		String scmManagerNamespace = config.getScm() == null || config.getScm().getScmManager() == null
 			? "scm-manager"
 			: config.getScm().getScmManager().getNamespace();
 		return new TemplateConfig()
 			.put("application.clusterAdmin", config.getApplication().getClusterAdmin())
 			.put("application.insecure", config.getApplication().getInsecure())
-			.put("application.mirrorRepos", config.getApplication().getMirrorRepos())
+			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.netpols", config.getApplication().getNetpols())
-			.put("application.openshift", config.getApplication().getOpenshift())
+			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(
 				"content.helmReleases",

@@ -26,15 +26,15 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 								  secrets.getVault().getHelm(), config.getApplication().getLocalHelmChartFolder()
 							  ))
 							  .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-							  .templateConfig(templateConfig(config))
+							  .templateConfig(templateConfig(config, context))
 							  .build();
 	}
 
-	private static Map<String, Object> templateConfig(Config config) {
+	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
-			.put("application.openshift", config.getApplication().getOpenshift())
+			.put("application.openshift", context.isOpenshift())
 			.put("application.password", config.getApplication().getPassword())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.username", config.getApplication().getUsername())

@@ -22,7 +22,8 @@ class MonitoringToolConfigMapperTest {
 		config.application.namespaceIsolation = true
 		config.application.netpols = true
 		config.application.skipCrds = true
-		config.application.openshift = true
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.application.openshift = false
 		config.application.podResources = true
 		config.application.password = 'application-password'
 		config.application.username = 'application-user'
