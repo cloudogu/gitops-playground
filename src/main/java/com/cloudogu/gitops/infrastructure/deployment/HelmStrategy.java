@@ -2,7 +2,6 @@ package com.cloudogu.gitops.infrastructure.deployment;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import java.util.Map;
 @Slf4j
 public class HelmStrategy implements DeploymentStrategy {
 
-	private final Config config;
 	private final HelmClient helmClient;
 
 	@Override
