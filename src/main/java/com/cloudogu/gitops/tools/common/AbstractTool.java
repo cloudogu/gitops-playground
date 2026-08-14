@@ -171,7 +171,7 @@ public abstract class AbstractTool {
 		try {
 			this.addHelmValuesData(
 				"statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-				                                                                        .getStaticModels()
+																						.getStaticModels()
 			);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to retrieve Freemarker static models for template mapping", e);
@@ -212,7 +212,7 @@ public abstract class AbstractTool {
 					Path.of(
 							helmConfig.localHelmChartFolder(), helmConfig.chart(), "Chart.yaml"
 						)
-					    .toFile(), YAML_MAP_TYPE
+						.toFile(), YAML_MAP_TYPE
 				);
 				version = String.valueOf(chartYaml.get("version"));
 			} catch (IOException e) {
@@ -238,9 +238,4 @@ public abstract class AbstractTool {
 			repositoryWorkspace
 		);
 	}
-
-	public DeploymentContext getContext() {
-		return context;
-	}
-
 }
