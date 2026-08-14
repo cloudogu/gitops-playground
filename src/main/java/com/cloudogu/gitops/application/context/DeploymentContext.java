@@ -30,10 +30,6 @@ public class DeploymentContext {
 		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
 	}
 
-	public boolean isAirgapped() {
-		return airgapped;
-	}
-
 	public boolean isOpenshift() {
 		return clusterDistribution == ClusterDistribution.OPENSHIFT;
 	}
