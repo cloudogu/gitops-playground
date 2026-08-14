@@ -26,6 +26,8 @@ public class GitHandler {
 	@Getter
 	private final NetworkingUtils networkingUtils;
 
+	private final Config config;
+
 	@Getter
 	@Setter
 	private GitProvider tenant;
@@ -34,9 +36,7 @@ public class GitHandler {
 	@Setter
 	private GitProvider central;
 
-	public void validate(DeploymentContext context) {
-		Config config = context.getConfig();
-
+	public void validate() {
 		boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
 		boolean gitlabUrlConfigured = config.getScm().getGitlab() != null && !StringUtils.isEmpty(config.getScm()
 		                                                                                                .getGitlab()
@@ -90,8 +90,6 @@ public class GitHandler {
 	}
 
 	private GitProvider createTenantScmProvider(DeploymentContext context) {
-		Config config = context.getConfig();
-
 		return switch (config.getScm().getScmProviderType()) {
 			case GITLAB -> new GitlabProvider(context, config.getScm().getGitlab());
 			case SCM_MANAGER -> {
@@ -111,8 +109,6 @@ public class GitHandler {
 	}
 
 	private GitProvider createCentralScmProvider(DeploymentContext context) {
-		Config config = context.getConfig();
-
 		return switch (config.getMultiTenant().getScmProviderType()) {
 			case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
 			case SCM_MANAGER -> new ScmManagerProvider(

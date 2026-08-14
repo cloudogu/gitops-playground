@@ -57,7 +57,7 @@ public class Application {
 		setNamespaceListToConfig(context);
 		storeGopInformationInSecret(context);
 
-		gitHandler.validate(context);
+		gitHandler.validate();
 		gitHandler.prepareProviders(context);
 		repositoryProvisioning.prepare(context);
 		try (RepositoryWorkspace workspace = repositoryProvisioning.provideWorkspace(context)) {
