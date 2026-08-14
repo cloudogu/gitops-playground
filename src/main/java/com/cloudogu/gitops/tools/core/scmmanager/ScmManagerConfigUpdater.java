@@ -1,12 +1,16 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.config.Config;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class ScmManagerConfigUpdater {
 
-	public void updateNamespace(DeploymentContext context, String namespace) {
-		context.getConfig().getScm().getScmManager().setNamespace(namespace);
+	private final Config config;
+
+	public void updateNamespace(String namespace) {
+		config.getScm().getScmManager().setNamespace(namespace);
 	}
 }

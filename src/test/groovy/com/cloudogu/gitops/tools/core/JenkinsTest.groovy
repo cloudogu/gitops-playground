@@ -469,7 +469,7 @@ me:x:1000:''')
                 gitHandler,
                 imagePullSecretCreator,
                 new JenkinsToolConfigMapper(config),
-                new JenkinsConfigUpdater())
+                new JenkinsConfigUpdater(config))
     }
 
     private boolean install(Jenkins jenkins) {

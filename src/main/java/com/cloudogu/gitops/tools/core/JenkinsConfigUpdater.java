@@ -1,12 +1,16 @@
 package com.cloudogu.gitops.tools.core;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.config.Config;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class JenkinsConfigUpdater {
 
-	public void updateUrl(DeploymentContext context, String url) {
-		context.getConfig().getJenkins().setUrl(url);
+	private final Config config;
+
+	public void updateUrl(String url) {
+		config.getJenkins().setUrl(url);
 	}
 }
