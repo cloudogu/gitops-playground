@@ -468,7 +468,7 @@ me:x:1000:''')
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new JenkinsToolConfigMapper(),
+                new JenkinsToolConfigMapper(config),
                 new JenkinsConfigUpdater())
     }
 

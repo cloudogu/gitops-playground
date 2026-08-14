@@ -46,7 +46,7 @@ class ScmManagerToolConfigMapperTest {
 		config.scm.scmManager.helm.version = '8.9.10'
 		config.scm.scmManager.helm.values = [replicas: 2]
 
-		ScmManagerToolConfig actual = new ScmManagerToolConfigMapper().map(context(config))
+		ScmManagerToolConfig actual = new ScmManagerToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(ScmManagerToolConfig.builder()
 			.active(true)
@@ -95,7 +95,7 @@ class ScmManagerToolConfigMapperTest {
 		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
 		config.scm.scmManager = new ScmTenantSchema.ScmManagerTenantConfig(namespace: 'test-source-control')
 
-		ScmManagerToolConfig actual = new ScmManagerToolConfigMapper().map(context(config))
+		ScmManagerToolConfig actual = new ScmManagerToolConfigMapper(config).map(context(config))
 
 		assertThat(actual.namespace()).isEqualTo('test-source-control')
 	}

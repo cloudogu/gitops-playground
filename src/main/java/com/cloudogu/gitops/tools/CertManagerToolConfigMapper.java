@@ -6,15 +6,18 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class CertManagerToolConfigMapper implements ToolConfigMapper<CertManagerToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public CertManagerToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.CertManagerSchema certManager = config.getFeatures().getCertManager();
 		return CertManagerToolConfig.builder()
 			.active(certManager.getActive())

@@ -6,15 +6,18 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public VaultToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.SecretsSchema secrets = config.getFeatures().getSecrets();
 		return VaultToolConfig.builder()
 							  .active(secrets.getActive())

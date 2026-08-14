@@ -1682,7 +1682,7 @@ class ArgoCDTest {
 					new FileSystemUtils(),
 					testContext.gitHandler,
 					new DeploymentModeFactory(),
-					new ArgoCDToolConfigMapper())
+					new ArgoCDToolConfigMapper(cfg))
 
             this.cfg = cfg
             this.tenantProvider = tenantProvider

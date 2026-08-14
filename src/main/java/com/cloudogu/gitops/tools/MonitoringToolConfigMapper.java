@@ -6,16 +6,19 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public MonitoringToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		return MonitoringToolConfig.builder()

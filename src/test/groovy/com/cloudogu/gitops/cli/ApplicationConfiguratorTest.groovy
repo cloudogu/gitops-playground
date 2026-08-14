@@ -95,7 +95,7 @@ class ApplicationConfiguratorTest {
                 fileSystemUtils,
                 gitHandler,
                 new DeploymentModeFactory(),
-                new ArgoCDToolConfigMapper()))
+                new ArgoCDToolConfigMapper(testConfig)))
         featureArgoCd.isEnabled(context)
     }
 

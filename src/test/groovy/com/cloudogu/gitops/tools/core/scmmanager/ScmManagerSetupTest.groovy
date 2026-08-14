@@ -105,7 +105,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.setupHelm()
         verify(fileSystemUtils).writeTempFile(anyMap())
@@ -140,7 +140,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.setupHelm()
 
@@ -185,7 +185,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         invokePrivateInstallScmmPlugins(scmManagerSetup)
 
@@ -208,7 +208,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 new RepositoryWorkspace(clusterResourcesRepo),
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         Thread.currentThread().interrupt()
         try {
@@ -232,7 +232,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 workspace,
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -254,7 +254,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 workspace,
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -271,7 +271,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 workspace,
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment()
 
@@ -301,7 +301,7 @@ class ScmManagerSetupTest {
                 new ContextBuilder(config).build(),
                 workspace,
                 fileSystemUtils,
-                new ScmManagerToolConfigMapper().map(new ContextBuilder(config).build()))
+                new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()))
 
         scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment()
 

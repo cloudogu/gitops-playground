@@ -35,7 +35,7 @@ class IngressToolConfigMapperTest {
 		config.features.monitoring.active = true
 		config.features.monitoring.namespace = 'observability'
 
-		IngressToolConfig actual = new IngressToolConfigMapper().map(context(config))
+		IngressToolConfig actual = new IngressToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(IngressToolConfig.builder()
 			.active(true)

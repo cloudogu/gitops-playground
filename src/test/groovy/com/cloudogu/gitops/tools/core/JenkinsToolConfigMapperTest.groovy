@@ -66,7 +66,7 @@ class JenkinsToolConfigMapperTest {
 		config.scm.gitlab = new ScmTenantSchema.GitlabTenantConfig(
 			username: 'gitlab-user', password: 'gitlab-password')
 
-		JenkinsToolConfig actual = new JenkinsToolConfigMapper().map(context(config))
+		JenkinsToolConfig actual = new JenkinsToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(JenkinsToolConfig.builder()
 			.active(true)
@@ -162,7 +162,7 @@ class JenkinsToolConfigMapperTest {
 		Config config = new Config()
 		config.jenkins.internal = false
 
-		JenkinsToolConfig actual = new JenkinsToolConfigMapper().map(context(config))
+		JenkinsToolConfig actual = new JenkinsToolConfigMapper(config).map(context(config))
 
 		assertThat(actual.namespace()).isNull()
 	}

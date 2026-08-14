@@ -258,7 +258,7 @@ class IngressTest {
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new IngressToolConfigMapper())
+                new IngressToolConfigMapper(config))
     }
 
     private boolean install(Ingress ingress) {

@@ -39,7 +39,7 @@ class CertManagerToolConfigMapperTest {
 		config.features.certManager.helm.acmeSolverImage = 'solver-image'
 		config.features.certManager.helm.startupAPICheckImage = 'startup-image'
 
-		CertManagerToolConfig actual = new CertManagerToolConfigMapper().map(context(config))
+		CertManagerToolConfig actual = new CertManagerToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(CertManagerToolConfig.builder()
 			.active(true)

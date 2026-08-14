@@ -222,7 +222,7 @@ class CertManagerTest {
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new CertManagerToolConfigMapper())
+                new CertManagerToolConfigMapper(config))
     }
 
     private boolean install(CertManager certManager) {

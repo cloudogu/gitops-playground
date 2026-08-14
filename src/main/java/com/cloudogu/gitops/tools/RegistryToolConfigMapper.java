@@ -5,13 +5,16 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 @Singleton
+@RequiredArgsConstructor
 public class RegistryToolConfigMapper implements ToolConfigMapper<RegistryToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public RegistryToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.RegistrySchema registry = config.getRegistry();
 		String namespace = registry.getInternal()
 			? config.getApplication().getNamePrefix() + registry.getNamespace()

@@ -68,7 +68,7 @@ class MonitoringToolConfigMapperTest {
 		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
 		config.scm.scmManager = new ScmTenantSchema.ScmManagerTenantConfig(namespace: 'source-control')
 
-		MonitoringToolConfig actual = new MonitoringToolConfigMapper().map(context(config))
+		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(MonitoringToolConfig.builder()
 			.active(true)

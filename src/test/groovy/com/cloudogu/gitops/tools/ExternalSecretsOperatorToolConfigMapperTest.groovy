@@ -36,7 +36,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		config.features.secrets.externalSecrets.helm.certControllerImage = 'cert-controller-image'
 		config.features.secrets.externalSecrets.helm.webhookImage = 'webhook-image'
 
-		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper().map(context(config))
+		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context(config))
 
 		assertThat(actual).isEqualTo(ExternalSecretsOperatorToolConfig.builder()
 			.active(true)

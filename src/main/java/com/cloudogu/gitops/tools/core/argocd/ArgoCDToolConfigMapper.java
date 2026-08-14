@@ -6,17 +6,20 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public ArgoCDToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.ArgoCDSchema argocd = config.getFeatures().getArgocd();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		Collection<String> tenantNamespaces = config.getApplication().getNamespaces().getTenantNamespaces();
