@@ -61,7 +61,6 @@ class IngressToolConfigMapperTest {
 
 	private static DeploymentContext context(Config config) {
 		return new DeploymentContext(
-			config,
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,

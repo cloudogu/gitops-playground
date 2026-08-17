@@ -102,7 +102,6 @@ class ScmManagerToolConfigMapperTest {
 
 	private static DeploymentContext context(Config config) {
 		return new DeploymentContext(
-			config,
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
 			false,

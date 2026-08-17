@@ -280,7 +280,7 @@ class RepositoryProvisioningTest {
     }
 
     private DeploymentContext createDeploymentContext() {
-        return new DeploymentContext(config,
+        return new DeploymentContext(
                 config.multiTenant.useDedicatedInstance ? DeploymentContext.TenantMode.MULTI_TENANT : DeploymentContext.TenantMode.SINGLE_TENANT,
                 config.scm.scmManager?.internal ? DeploymentContext.ScmManagerDeploymentMode.INTERNAL : DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
                 config.application.mirrorRepos,

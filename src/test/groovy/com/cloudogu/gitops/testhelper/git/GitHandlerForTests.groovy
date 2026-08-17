@@ -25,10 +25,6 @@ class GitHandlerForTests extends GitHandler {
 		this.tenant = tenantProvider
 		this.central = context.isMultiTenant() ? centralProvider : null
 
-		// Mirror the production side effect: set namespace for internal SCMM
-		if (context.config?.scm?.scmManager != null) {
-			context.config.scm.scmManager.namespace = "${context.config.application.namePrefix}scm-manager".toString()
-		}
 	}
 
 	@Override
