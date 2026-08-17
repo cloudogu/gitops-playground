@@ -70,10 +70,10 @@ public class GitHandler {
 	}
 
 	public void prepareProviders(DeploymentContext context) {
-		this.tenant = createTenantScmProvider(context);
+		this.tenant = createTenantScmProvider();
 
 		if (context.isMultiTenant()) {
-			this.central = createCentralScmProvider(context);
+			this.central = createCentralScmProvider();
 		}
 	}
 
@@ -89,7 +89,7 @@ public class GitHandler {
 		throw new IllegalStateException("No SCM provider found.");
 	}
 
-	private GitProvider createTenantScmProvider(DeploymentContext context) {
+	private GitProvider createTenantScmProvider() {
 		return switch (config.getScm().getScmProviderType()) {
 			case GITLAB -> new GitlabProvider(
 				config.getScm().getGitlab(), config.getApplication().getNamePrefix()
@@ -100,8 +100,13 @@ public class GitHandler {
 					prefix = "";
 				}
 				yield new ScmManagerProvider(
-					context, config.getScm()
-					               .getScmManager(), k8sClient, networkingUtils, prefix
+					config.getScm().getScmManager(),
+					k8sClient,
+					networkingUtils,
+					config.getApplication().getNamePrefix(),
+					config.getApplication().getRunningInsideK8s(),
+					config.getApplication().getInsecure(),
+					prefix
 				);
 			}
 			default ->
@@ -110,14 +115,19 @@ public class GitHandler {
 		};
 	}
 
-	private GitProvider createCentralScmProvider(DeploymentContext context) {
+	private GitProvider createCentralScmProvider() {
 		return switch (config.getMultiTenant().getScmProviderType()) {
 			case GITLAB -> new GitlabProvider(
 				config.getMultiTenant().getGitlab(), config.getApplication().getNamePrefix()
 			);
 			case SCM_MANAGER -> new ScmManagerProvider(
-				context, config.getMultiTenant()
-				               .getScmManager(), k8sClient, networkingUtils, centralScmManagerServicePrefix(config)
+				config.getMultiTenant().getScmManager(),
+				k8sClient,
+				networkingUtils,
+				config.getApplication().getNamePrefix(),
+				config.getApplication().getRunningInsideK8s(),
+				config.getApplication().getInsecure(),
+				centralScmManagerServicePrefix(config)
 			);
 			default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant()
 			                                                                                           .getScmProviderType());

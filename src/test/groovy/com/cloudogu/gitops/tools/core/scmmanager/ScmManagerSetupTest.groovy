@@ -93,7 +93,6 @@ class ScmManagerSetupTest {
 
     @Test
     void 'Helm chart is installed correctly'() {
-        when(scmManager.getConfig()).thenReturn(config)
         when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
         when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
         config.scm.scmManager.scmmImage = 'localhost:5000/proxy/scm-manager:custom'
@@ -127,7 +126,6 @@ class ScmManagerSetupTest {
 
     @Test
     void 'Helm values contain cert manager ingress configuration'() {
-        when(scmManager.getConfig()).thenReturn(config)
         when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
         when(deployer.getHelmStrategy()).thenReturn(helmStrategy)
         config.features.certManager.active = true
@@ -166,7 +164,6 @@ class ScmManagerSetupTest {
 
     @Test
     void 'ScmManager plugins are installed correctly'() {
-        when(scmManager.getConfig()).thenReturn(config)
         when(scmManager.getScmmConfig()).thenReturn(config.scm.scmManager)
         when(scmManager.getApiClient()).thenReturn(apiClient)
 
