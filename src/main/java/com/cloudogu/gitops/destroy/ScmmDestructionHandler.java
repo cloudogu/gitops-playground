@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.destroy;
 
-import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerUrlResolver;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
@@ -25,7 +24,6 @@ public class ScmmDestructionHandler implements DestructionHandler {
 	private static final int HTTP_NOT_FOUND = 404;
 
 	private final Config config;
-	private final ContextBuilder contextBuilder;
 	private final K8sClient k8sClient;
 	private final NetworkingUtils networkingUtils;
 
@@ -85,8 +83,11 @@ public class ScmmDestructionHandler implements DestructionHandler {
 	private ScmManagerApiClient getScmmApiClient() {
 		if (scmmApiClient == null) {
 			ScmManagerUrlResolver urls = new ScmManagerUrlResolver(
-				contextBuilder.build(), config.getScm()
-				                              .getScmManager(), k8sClient, networkingUtils
+				config.getScm().getScmManager(),
+				k8sClient,
+				networkingUtils,
+				config.getApplication().getNamePrefix(),
+				config.getApplication().getRunningInsideK8s()
 			);
 
 			scmmApiClient = new ScmManagerApiClient(

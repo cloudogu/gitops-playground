@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
@@ -17,33 +15,37 @@ public class ScmManagerUrlResolver {
 	private static final String RELEASE_NAME = "scmm";
 	private static final String REPO_ROOT = "repo";
 
-	private final DeploymentContext context;
 	private final ScmManagerConfig scmm;
 	private final K8sClient k8s;
 	private final NetworkingUtils net;
+	private final String repositoryNamePrefix;
+	private final boolean runningInsideK8s;
 	private final String servicePrefix;
 
 	private URI cachedClusterBind;
 
-	public ScmManagerUrlResolver(DeploymentContext context, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
-		this(context, scmm, k8s, net, "");
-	}
-
 	public ScmManagerUrlResolver(
-		DeploymentContext context,
 		ScmManagerConfig scmm,
 		K8sClient k8s,
 		NetworkingUtils net,
+		String repositoryNamePrefix,
+		boolean runningInsideK8s) {
+		this(scmm, k8s, net, repositoryNamePrefix, runningInsideK8s, "");
+	}
+
+	public ScmManagerUrlResolver(
+		ScmManagerConfig scmm,
+		K8sClient k8s,
+		NetworkingUtils net,
+		String repositoryNamePrefix,
+		boolean runningInsideK8s,
 		String servicePrefix) {
-		this.context = context;
 		this.scmm = scmm;
 		this.k8s = k8s;
 		this.net = net;
+		this.repositoryNamePrefix = repositoryNamePrefix != null ? repositoryNamePrefix : "";
+		this.runningInsideK8s = runningInsideK8s;
 		this.servicePrefix = servicePrefix != null ? servicePrefix : "";
-	}
-
-	private Config getConfig() {
-		return context.getConfig();
 	}
 
 	// ---------- Public API used by ScmManager ----------
@@ -80,9 +82,7 @@ public class ScmManagerUrlResolver {
 	 * In-cluster repo prefix …/scm/repo/[<namePrefix>]
 	 */
 	public String inClusterRepoPrefix() {
-		String prefix = getConfig().getApplication().getNamePrefix() != null ? getConfig().getApplication()
-		                                                                                  .getNamePrefix()
-		                                                                                  .trim() : "";
+		String prefix = repositoryNamePrefix.trim();
 		URI base = withSlash(inClusterBase());
 		URI url = withSlash(base.resolve(REPO_ROOT));
 
@@ -116,7 +116,7 @@ public class ScmManagerUrlResolver {
 
 	private URI clientBaseRaw() {
 		if (scmm.getInternal()) {
-			return getConfig().getApplication().getRunningInsideK8s() ? serviceDnsBase() : nodePortBase();
+			return runningInsideK8s ? serviceDnsBase() : nodePortBase();
 		}
 		return externalBase();
 	}

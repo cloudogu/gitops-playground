@@ -53,11 +53,13 @@ public class ScmManagerProvider implements GitProvider {
 		this.k8sClient = k8sClient;
 		this.networkingUtils = networkingUtils;
 
+		Config config = this.context.getConfig();
 		this.urls = new ScmManagerUrlResolver(
-			this.context,
 			this.scmmConfig,
 			this.k8sClient,
 			this.networkingUtils,
+			config.getApplication().getNamePrefix(),
+			config.getApplication().getRunningInsideK8s(),
 			servicePrefix
 		);
 	}
