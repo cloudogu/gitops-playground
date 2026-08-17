@@ -91,7 +91,9 @@ public class GitHandler {
 
 	private GitProvider createTenantScmProvider(DeploymentContext context) {
 		return switch (config.getScm().getScmProviderType()) {
-			case GITLAB -> new GitlabProvider(context, config.getScm().getGitlab());
+			case GITLAB -> new GitlabProvider(
+				config.getScm().getGitlab(), config.getApplication().getNamePrefix()
+			);
 			case SCM_MANAGER -> {
 				String prefix = config.getApplication().getNamePrefix();
 				if (prefix == null) {
@@ -110,7 +112,9 @@ public class GitHandler {
 
 	private GitProvider createCentralScmProvider(DeploymentContext context) {
 		return switch (config.getMultiTenant().getScmProviderType()) {
-			case GITLAB -> new GitlabProvider(context, config.getMultiTenant().getGitlab());
+			case GITLAB -> new GitlabProvider(
+				config.getMultiTenant().getGitlab(), config.getApplication().getNamePrefix()
+			);
 			case SCM_MANAGER -> new ScmManagerProvider(
 				context, config.getMultiTenant()
 				               .getScmManager(), k8sClient, networkingUtils, centralScmManagerServicePrefix(config)

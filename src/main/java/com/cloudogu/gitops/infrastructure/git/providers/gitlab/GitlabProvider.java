@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git.providers.gitlab;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole;
@@ -39,14 +37,14 @@ public class GitlabProvider implements GitProvider {
 	private static final int HTTP_CONFLICT = 409;
 	private static final int HTTP_NOT_FOUND = 404;
 
-	private final DeploymentContext context;
+	private final String namePrefix;
 	private final GitLabApi api;
 	private final GitlabConfig gitlabConfig;
 	private Group parentGroupCache;
 
-	public GitlabProvider(DeploymentContext context, GitlabConfig gitlabConfig) {
-		this.context = context;
+	public GitlabProvider(GitlabConfig gitlabConfig, String namePrefix) {
 		this.gitlabConfig = gitlabConfig;
+		this.namePrefix = namePrefix;
 
 		String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url")
 		                    .trim();
@@ -60,10 +58,6 @@ public class GitlabProvider implements GitProvider {
 
 		this.api = new GitLabApi(url, pat);
 		this.api.enableRequestResponseLogging(Level.ALL);
-	}
-
-	private Config getConfig() {
-		return context.getConfig();
 	}
 
 	@Override
@@ -143,8 +137,7 @@ public class GitlabProvider implements GitProvider {
 	@Override
 	public String repoPrefix() {
 		String base = gitlabConfig.getUrl().strip();
-		String prefix = (getConfig().getApplication().getNamePrefix() != null ? getConfig().getApplication()
-		                                                                                   .getNamePrefix() : "").strip();
+		String prefix = (namePrefix != null ? namePrefix : "").strip();
 		return base + "/" + parentFullPath() + "/" + prefix;
 	}
 
