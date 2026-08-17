@@ -9,13 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationTargetResolverTest {
 
-	private final ArgoCdApplicationTargetResolver resolver = new ArgoCdApplicationTargetResolver()
-
 	@Test
 	void 'resolves target for single tenant deployment'() {
 		Config config = createConfig()
 
-		def target = resolver.resolve(new ContextBuilder(config).build(), 'repo-name')
+		def target = new ArgoCdApplicationTargetResolver(config)
+			.resolve(new ContextBuilder(config).build(), 'repo-name')
 
 		assertThat(target.applicationName).isEqualTo('foo-repo-name')
 		assertThat(target.namespace).isEqualTo('foo-argocd')
@@ -29,7 +28,8 @@ class ArgoCdApplicationTargetResolverTest {
 		config.multiTenant.useDedicatedInstance = true
 		config.multiTenant.centralArgocdNamespace = 'central-argocd'
 
-		def target = resolver.resolve(new ContextBuilder(config).build(), 'repo-name')
+		def target = new ArgoCdApplicationTargetResolver(config)
+			.resolve(new ContextBuilder(config).build(), 'repo-name')
 
 		assertThat(target.applicationName).isEqualTo('foo-repo-name')
 		assertThat(target.namespace).isEqualTo('central-argocd')
@@ -42,7 +42,8 @@ class ArgoCdApplicationTargetResolverTest {
 		Config config = createConfig()
 		config.features.argocd.operator = true
 
-		def target = resolver.resolve(new ContextBuilder(config).build(), 'repo-name')
+		def target = new ArgoCdApplicationTargetResolver(config)
+			.resolve(new ContextBuilder(config).build(), 'repo-name')
 
 		assertThat(target.createDestinationNamespace).isFalse()
 	}
