@@ -36,16 +36,6 @@ public class ScmManagerProvider implements GitProvider {
 		NetworkingUtils networkingUtils,
 		String repositoryNamePrefix,
 		boolean runningInsideK8s,
-		boolean insecure) {
-		this(scmmConfig, k8sClient, networkingUtils, repositoryNamePrefix, runningInsideK8s, insecure, "");
-	}
-
-	public ScmManagerProvider(
-		ScmManagerConfig scmmConfig,
-		K8sClient k8sClient,
-		NetworkingUtils networkingUtils,
-		String repositoryNamePrefix,
-		boolean runningInsideK8s,
 		boolean insecure,
 		String servicePrefix) {
 		this.scmmConfig = scmmConfig;
@@ -103,8 +93,8 @@ public class ScmManagerProvider implements GitProvider {
 
 		try {
 			Response<Void> response = getApiClient().repositoryApi()
-			                                        .createPermission(repoNamespace, repoName, permission)
-			                                        .execute();
+													.createPermission(repoNamespace, repoName, permission)
+													.execute();
 
 			handle201or409(response, "Permission on " + repoNamespace + "/" + repoName);
 		} catch (IOException e) {
