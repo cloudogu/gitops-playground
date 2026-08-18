@@ -1,52 +1,53 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "customManagers": [
-        {
-            "customType": "regex",
-            "fileMatch": [
-                "^src/main/java/com/cloudogu/gitops/config/Config\\.java$",
-                "^src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema\\.java$"
-            ],
-            "matchStrings": [
-                "// renovate: depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\s+.*setVersion\\(\"(?<currentValue>[^\"]+)\"\\);"
-            ],
-            "datasourceTemplate": "helm"
-        },
-        {
-            "customType": "regex",
-            "fileMatch": ["^Dockerfile$"],
-            "matchStrings": [
-                "# renovate: depName=(?<depName>[^\\s]+) datasource=(?<datasource>[^\\s]+)\\s+.*ARG HELM_VERSION=(?<currentValue>[^\\s]+)"
-            ]
-        }
-    ],
-    "baseBranchPatterns": [
-        "develop"
-    ],
-    "assignees": [
-        "avetgit",
-        "DerDaehne",
-        "mdroll",
-        "ThomasMichael1811"
-    ],
-    "dependencyDashboard": true,
-    "minimumReleaseAge": "7 days",
-    "extends": [
-        ":automergeMinor",
-        ":combinePatchMinorReleases",
-        ":configMigration",
-        ":automergeDigest"
-    ],
-    "packageRules": [
-        {
-            "matchManagers": [
-                "jenkins"
-            ],
-            "automerge": false,
-            "registryUrls": [
-                "http://updates.jenkins-ci.org/stable/update-center.json"
-            ],
-            "groupName": "Jenkins Updates"
-        }
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^src/main/java/com/cloudogu/gitops/config/Config\\.java$/",
+        "/^src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema\\.java$/"
+      ],
+      "matchStrings": [
+        "// renovate: depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\s+.*setVersion\\(\"(?<currentValue>[^\"]+)\"\\);"
+      ],
+      "datasourceTemplate": "helm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: depName=(?<depName>[^\\s]+) datasource=(?<datasource>[^\\s]+)\\s+.*ARG HELM_VERSION=(?<currentValue>[^\\s]+)"
+      ]
+    }
+  ],
+  "baseBranchPatterns": [
+    "develop"
+  ],
+  "assignees": [
+    "avetgit",
+    "mdroll",
+    "ThomasMichael1811"
+  ],
+  "dependencyDashboard": true,
+  "minimumReleaseAge": "7 days",
+  "extends": [
+    ":automergeMinor",
+    ":combinePatchMinorReleases",
+    ":configMigration",
+    ":automergeDigest"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "jenkins"
+      ],
+      "automerge": false,
+      "registryUrls": [
+        "http://updates.jenkins-ci.org/stable/update-center.json"
+      ],
+      "groupName": "Jenkins Updates"
+    }
+  ]
 }

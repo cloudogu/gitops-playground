@@ -64,6 +64,11 @@ pipeline {
                             '''
                         }
                     }
+                    post {
+                    	always {
+                    		junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                    	}
+                    }
                 }
 
                 stage("Build Image") {
