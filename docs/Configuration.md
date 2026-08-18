@@ -205,7 +205,7 @@ Configuration of optional tools supported by gitops-playground.
 | - | `features.secrets.vault.helm.values` | Map | `[:]` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `features.secrets.vault.helm.chart` | String | `vault` | Name of the Helm chart |
 | - | `features.secrets.vault.helm.repoURL` | String | `https://helm.releases.hashicorp.com` | Repository url from which the Helm chart should be obtained |
-| - | `features.secrets.vault.helm.version` | String | `0.25.0` | The version of the Helm chart to be installed |
+| - | `features.secrets.vault.helm.version` | String | `0.34.1` | The version of the Helm chart to be installed |
 | `--secrets-namespace` | `features.secrets.namespace` | String | `secrets` | Optional defines the kubernetes namespace for secrets. |
 
 ### Tool: Ingress

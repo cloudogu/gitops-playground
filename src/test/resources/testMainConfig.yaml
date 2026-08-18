@@ -92,7 +92,7 @@ features:
       helm:
         chart: "vault"
         repoURL: "https://helm.releases.hashicorp.com"
-        version: "0.25.0"
+        version: "0.34.1"
         image: ""
   ingress:
     active: false

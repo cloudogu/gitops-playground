@@ -284,7 +284,7 @@ class GitopsPlaygroundCliTest {
 
 		assertThat(cli.lastSchema.features.secrets.vault.helm.chart).isEqualTo('vault')
 		assertThat(cli.lastSchema.features.secrets.vault.helm.repoURL).isEqualTo('localhost:3000/proxy/vault:latest')
-		assertThat(cli.lastSchema.features.secrets.vault.helm.version).isEqualTo('0.25.0')
+		assertThat(cli.lastSchema.features.secrets.vault.helm.version).isEqualTo('0.34.1')
 
 		assertThat(cli.lastSchema.features.certManager.helm.chart).isEqualTo('cert-manager')
 		assertThat(cli.lastSchema.features.certManager.helm.repoURL).isEqualTo('https://charts.jetstack.io')

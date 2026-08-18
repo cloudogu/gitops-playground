@@ -683,7 +683,7 @@ class Config {
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
 				repoURL: 'https://helm.releases.hashicorp.com',
-				version: '0.25.0')
+				version: '0.34.1')
 			static class VaultHelmSchema extends HelmConfigWithValues {
 				@Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
 				@JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
