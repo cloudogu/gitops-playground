@@ -39,6 +39,7 @@
         <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
         <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
+        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
     </properties>
 
     <scm>
@@ -642,6 +643,11 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
