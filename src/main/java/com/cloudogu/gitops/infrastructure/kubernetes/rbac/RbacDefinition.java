@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +9,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -21,7 +21,7 @@ public class RbacDefinition {
 	private List<ServiceAccountRef> serviceAccounts = new ArrayList<>();
 	private String subfolder = "rbac";
 	private GitRepo repo;
-	private Config config;
+	private Map<String, Object> config;
 
 	private final TemplatingEngine templater = new TemplatingEngine();
 
@@ -54,8 +54,8 @@ public class RbacDefinition {
 		return this;
 	}
 
-	public RbacDefinition withConfig(Config config) {
-		this.config = config;
+	public RbacDefinition withTemplateConfig(Map<String, Object> templateConfig) {
+		this.config = templateConfig;
 		return this;
 	}
 

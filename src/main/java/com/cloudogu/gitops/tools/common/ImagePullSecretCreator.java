@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools.common;
 
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +20,8 @@ public class ImagePullSecretCreator {
 
 	private final K8sClient k8sClient;
 
-	public void createIfRequired(Config config, String namespace) {
-		if (!config.getRegistry().getCreateImagePullSecrets()) {
+	public void createIfRequired(ImagePullSecretConfig config, String namespace) {
+		if (!config.create()) {
 			return;
 		}
 
@@ -32,19 +31,15 @@ public class ImagePullSecretCreator {
 
 		log.trace("Creating image pull secret '{}' in namespace {}", IMAGE_PULL_SECRET_NAME, namespace);
 
-		String url = firstNonBlank(config.getRegistry().getProxyUrl(), config.getRegistry().getUrl());
+		String url = firstNonBlank(config.proxyUrl(), config.url());
 		String user = firstNonBlank(
-			config.getRegistry().getProxyUsername(), firstNonBlank(
-				config.getRegistry()
-				      .getReadOnlyUsername(), config.getRegistry()
-				                                    .getUsername()
+			config.proxyUsername(), firstNonBlank(
+				config.readOnlyUsername(), config.username()
 			)
 		);
 		String password = firstNonBlank(
-			config.getRegistry().getProxyPassword(), firstNonBlank(
-				config.getRegistry()
-				      .getReadOnlyPassword(), config.getRegistry()
-				                                    .getPassword()
+			config.proxyPassword(), firstNonBlank(
+				config.readOnlyPassword(), config.password()
 			)
 		);
 

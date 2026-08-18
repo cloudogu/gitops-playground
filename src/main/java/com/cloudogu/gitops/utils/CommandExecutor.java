@@ -20,10 +20,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CommandExecutor {
 
-	/*
-	 * Prevent external initialization scripts from blocking the apply process indefinitely.
-	 * SCM-Manager and Jenkins initialization can take several minutes, especially with slow network connections.
-	 */
+	/* This timeout is mainly here to not freeze forever the apply process in the worst case scenario.
+
+	Calls to init-scmm.sh and init-jenkins.sh take several minutes at best and might be slower with poor connections
+	to the internet.
+	Once they are migrated to groovy we can reduce this timeout.*/
 	public static final int PROCESS_TIMEOUT_MINUTES = 15;
 
 	private static final String FAILED_TO_EXECUTE_PREFIX = "Failed to execute command: ";

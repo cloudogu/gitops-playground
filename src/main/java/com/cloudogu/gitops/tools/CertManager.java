@@ -1,10 +1,9 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -18,7 +17,7 @@ import java.util.Map;
 @Singleton
 @Order(160)
 @Slf4j
-public class CertManager extends AbstractTool {
+public class CertManager extends AbstractMappedTool<CertManagerToolConfig> {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/values.ftl.yaml";
 
@@ -34,7 +33,9 @@ public class CertManager extends AbstractTool {
 		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		CertManagerToolConfigMapper configMapper) {
+		super(configMapper);
 		this.fileSystemUtils = fileSystemUtils;
 		this.deployer = deployer;
 		this.airGappedUtils = airGappedUtils;
@@ -43,13 +44,13 @@ public class CertManager extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getFeatures().getCertManager().getActive();
+	protected boolean isEnabled(CertManagerToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
 		prepareCertManagerApp(repositoryWorkspace.getClusterResourcesRepository());
@@ -58,11 +59,8 @@ public class CertManager extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(
-			TOOL_NAME, TOOL_NAME, namespace, getConfig().getFeatures()
-			                                            .getCertManager()
-			                                            .getHelm(), HELM_VALUES_PATH, context
-		);
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, TOOL_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context);
 	}
 
 	@Override
@@ -71,11 +69,8 @@ public class CertManager extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-		                                                                     .getFeatures()
-		                                                                     .getCertManager()
-		                                                                     .getNamespace();
+	protected String activeNamespace(CertManagerToolConfig config) {
+		return config.namespace();
 	}
 
 	@Override
@@ -84,7 +79,7 @@ public class CertManager extends AbstractTool {
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
 	private void prepareCertManagerApp(GitRepo clusterResourcesRepo) {
@@ -97,6 +92,6 @@ public class CertManager extends AbstractTool {
 	}
 
 	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {
-		clusterResourcesRepo.replaceTemplates(Map.of("config", getConfig()));
+		clusterResourcesRepo.replaceTemplates(Map.of("config", toolConfig().templateConfig()));
 	}
 }

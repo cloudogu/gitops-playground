@@ -1,11 +1,10 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -18,12 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(10)
 @Slf4j
-public class ScmManager extends AbstractTool {
+public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 
 	@Getter
 	@Setter
 	private String namespace;
 	private final ImagePullSecretCreator imagePullSecretCreator;
+	private final ScmManagerConfigUpdater configUpdater;
 	private ScmManagerSetup setup;
 
 	public ScmManager(
@@ -31,17 +31,21 @@ public class ScmManager extends AbstractTool {
 		Deployer deployer,
 		FileSystemUtils fileSystemUtils,
 		AirGappedUtils airGappedUtils,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		ScmManagerToolConfigMapper configMapper,
+		ScmManagerConfigUpdater configUpdater) {
+		super(configMapper);
 		this.gitHandler = gitHandler;
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.airGappedUtils = airGappedUtils;
 		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.configUpdater = configUpdater;
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.isInternalScmManager();
+	protected boolean isEnabled(ScmManagerToolConfig config) {
+		return config.active();
 	}
 
 	@Override
@@ -49,11 +53,13 @@ public class ScmManager extends AbstractTool {
 		log.info("Preparing internal SCM-Manager deployment.");
 
 		prepareNamespace();
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 
 		ScmManagerProvider scmManager = getTenantScmManager();
 
-		this.setup = new ScmManagerSetup(scmManager, deployer, context, repositoryWorkspace, fileSystemUtils);
+		this.setup = new ScmManagerSetup(
+			scmManager, deployer, context, repositoryWorkspace, fileSystemUtils, toolConfig()
+		);
 	}
 
 	@Override
@@ -95,30 +101,13 @@ public class ScmManager extends AbstractTool {
 	}
 
 	private void prepareNamespace() {
-		this.namespace = activeNamespace(context);
-		getConfig().getScm().getScmManager().setNamespace(this.namespace);
+		this.namespace = activeNamespace(toolConfig());
+		configUpdater.updateNamespace(context, namespace);
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return prefixedNamespace(context);
-	}
-
-	private static String prefixedNamespace(DeploymentContext context) {
-		String prefix = context.getConfig().getApplication().getNamePrefix();
-		if (prefix == null) {
-			prefix = "";
-		}
-		String baseNamespace = context.getConfig().getScm().getScmManager().getNamespace();
-		if (baseNamespace == null) {
-			baseNamespace = "scm-manager";
-		}
-
-		if (!prefix.isEmpty() && baseNamespace.startsWith(prefix)) {
-			return baseNamespace;
-		}
-
-		return prefix + baseNamespace;
+	protected String activeNamespace(ScmManagerToolConfig config) {
+		return config.namespace();
 	}
 
 	private ScmManagerProvider getTenantScmManager() {

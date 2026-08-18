@@ -1,11 +1,9 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -19,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Order(400)
 @Slf4j
-public class ExternalSecretsOperator extends AbstractTool {
+public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsOperatorToolConfig> {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml";
 
@@ -39,7 +37,9 @@ public class ExternalSecretsOperator extends AbstractTool {
 		Deployer deployer,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		ExternalSecretsOperatorToolConfigMapper configMapper) {
+		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.airGappedUtils = airGappedUtils;
@@ -48,13 +48,13 @@ public class ExternalSecretsOperator extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getFeatures().getSecrets().getActive();
+	protected boolean isEnabled(ExternalSecretsOperatorToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
 		prepareExternalSecretsApp(repositoryWorkspace.getClusterResourcesRepository());
@@ -62,12 +62,8 @@ public class ExternalSecretsOperator extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		Config.SecretsSchema.ESOSchema.ESOHelmSchema helmConfig = getConfig().getFeatures()
-		                                                                     .getSecrets()
-		                                                                     .getExternalSecrets()
-		                                                                     .getHelm();
-
-		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, helmConfig, HELM_VALUES_PATH, context);
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context);
 	}
 
 	@Override
@@ -76,15 +72,12 @@ public class ExternalSecretsOperator extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-		                                                                     .getFeatures()
-		                                                                     .getSecrets()
-		                                                                     .getNamespace();
+	protected String activeNamespace(ExternalSecretsOperatorToolConfig config) {
+		return config.namespace();
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
 	private void prepareExternalSecretsApp(GitRepo clusterResourcesRepo) {

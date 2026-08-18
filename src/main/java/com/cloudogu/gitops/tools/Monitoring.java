@@ -1,12 +1,10 @@
 package com.cloudogu.gitops.tools;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
-import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -23,7 +21,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +28,7 @@ import java.util.Objects;
 @Singleton
 @Order(300)
 @Slf4j
-public class Monitoring extends AbstractTool {
+public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml";
 	public static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml";
@@ -61,7 +58,9 @@ public class Monitoring extends AbstractTool {
 		K8sClient k8sClient,
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
-		ImagePullSecretCreator imagePullSecretCreator) {
+		ImagePullSecretCreator imagePullSecretCreator,
+		MonitoringToolConfigMapper configMapper) {
+		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.k8sClient = k8sClient;
@@ -71,13 +70,13 @@ public class Monitoring extends AbstractTool {
 	}
 
 	@Override
-	public boolean isEnabled(DeploymentContext context) {
-		return context.getConfig().getFeatures().getMonitoring().getActive();
+	protected boolean isEnabled(MonitoringToolConfig config) {
+		return config.active();
 	}
 
 	@Override
 	protected void preDeploy() {
-		this.namespace = activeNamespace(context);
+		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
 		prepareMonitoringHelmValues();
@@ -94,11 +93,8 @@ public class Monitoring extends AbstractTool {
 
 	@Override
 	protected void deploy() {
-		deployHelmChart(
-			TOOL_NAME, RELEASE_NAME, namespace, getConfig().getFeatures()
-			                                               .getMonitoring()
-			                                               .getHelm(), HELM_VALUES_PATH, context
-		);
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context);
 	}
 
 	@Override
@@ -108,24 +104,21 @@ public class Monitoring extends AbstractTool {
 	}
 
 	@Override
-	protected String activeNamespace(DeploymentContext context) {
-		return context.getConfig().getApplication().getNamePrefix() + context.getConfig()
-		                                                                     .getFeatures()
-		                                                                     .getMonitoring()
-		                                                                     .getNamespace();
+	protected String activeNamespace(MonitoringToolConfig config) {
+		return config.namespace();
 	}
 
 	private void createImagePullSecret() {
-		imagePullSecretCreator.createIfRequired(getConfig(), namespace);
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
 	private void prepareMonitoringHelmValues() {
 		String uid = "";
-		if (context.isOpenshift()) {
+		if (toolConfig().openshift()) {
 			uid = findValidOpenShiftUid();
 		}
 
-		String grafanaUrl = getConfig().getFeatures().getMonitoring().getGrafanaUrl();
+		String grafanaUrl = toolConfig().grafanaUrl();
 		String host = "";
 		try {
 			if (grafanaUrl != null && !grafanaUrl.isEmpty()) {
@@ -137,11 +130,7 @@ public class Monitoring extends AbstractTool {
 
 		addHelmValuesData(TOOL_NAME, Map.of("grafana", Map.of("host", host)));
 		addHelmValuesData(
-			"namespaces", getConfig().getApplication()
-			                         .getNamespaces()
-			                         .getActiveNamespaces() != null ? getConfig().getApplication()
-			                                                                     .getNamespaces()
-			                                                                     .getActiveNamespaces() : Collections.emptySet()
+			"namespaces", toolConfig().activeNamespaces()
 		);
 		addHelmValuesData("scm", scmConfigurationMetrics());
 		addHelmValuesData("jenkins", jenkinsConfigurationMetrics());
@@ -158,15 +147,15 @@ public class Monitoring extends AbstractTool {
 	}
 
 	private void replaceMonitoringTemplates(GitRepo clusterResourcesRepo) {
-		clusterResourcesRepo.replaceTemplates(Map.of("config", getConfig()));
+		clusterResourcesRepo.replaceTemplates(Map.of("config", toolConfig().templateConfig()));
 	}
 
 	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
-		if (getConfig().getApplication().getNamespaceIsolation()) {
+		if (toolConfig().namespaceIsolation()) {
 			generateNamespaceIsolationRBAC(clusterResourcesRepo);
 		}
 
-		if (getConfig().getApplication().getNetpols()) {
+		if (toolConfig().netpols()) {
 			generateNetpols(clusterResourcesRepo);
 		}
 
@@ -177,53 +166,38 @@ public class Monitoring extends AbstractTool {
 	private void setupMonitoringSecrets() {
 		k8sClient.createSecret(
 			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(
-				PASSWORD_KEY, getConfig().getApplication()
-				                         .getPassword()
+				PASSWORD_KEY, toolConfig().applicationPassword()
 			)
 		);
 
 		k8sClient.createSecret(
 			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-jenkins", namespace, new Tuple<>(
-				PASSWORD_KEY, getConfig().getJenkins()
-				                         .getMetricsPassword()
+				PASSWORD_KEY, toolConfig().jenkinsMetricsPassword()
 			)
 		);
 
-		if ((getConfig().getFeatures().getMail().getSmtpUser() != null && !getConfig().getFeatures()
-		                                                                              .getMail()
-		                                                                              .getSmtpUser()
-		                                                                              .isEmpty()) || (getConfig().getFeatures()
-		                                                                                                         .getMail()
-		                                                                                                         .getSmtpPassword() != null && !getConfig().getFeatures()
-		                                                                                                                                                   .getMail()
-		                                                                                                                                                   .getSmtpPassword()
-		                                                                                                                                                   .isEmpty())) {
+		if (isNotEmpty(toolConfig().smtpUser()) || isNotEmpty(toolConfig().smtpPassword())) {
 			k8sClient.createSecret(
 				GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>(
-					"user", getConfig().getFeatures()
-					                   .getMail()
-					                   .getSmtpUser()
+					"user", toolConfig().smtpUser()
 				), new Tuple<>(
-					PASSWORD_KEY, getConfig().getFeatures()
-					                         .getMail()
-					                         .getSmtpPassword()
+					PASSWORD_KEY, toolConfig().smtpPassword()
 				)
 			);
 		}
 	}
 
 	private void generateNamespaceIsolationRBAC(GitRepo clusterResourcesRepo) {
-		for (String currentNamespace : getConfig().getApplication().getNamespaces().getActiveNamespaces()) {
+		for (String currentNamespace : toolConfig().activeNamespaces()) {
 			try {
 				String rbacYaml = new TemplatingEngine().template(
 					new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE), Map.of(
 						NAMESPACE_KEY,
 						currentNamespace,
 						"namePrefix",
-						getConfig().getApplication()
-						           .getNamePrefix(),
+						toolConfig().namePrefix(),
 						"config",
-						getConfig()
+						toolConfig().templateConfig()
 					)
 				);
 
@@ -235,12 +209,11 @@ public class Monitoring extends AbstractTool {
 	}
 
 	private void generateNetpols(GitRepo clusterResourcesRepo) {
-		for (String currentNamespace : getConfig().getApplication().getNamespaces().getActiveNamespaces()) {
+		for (String currentNamespace : toolConfig().activeNamespaces()) {
 			try {
 				String netpolsYaml = new TemplatingEngine().template(
 					new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE), Map.of(
-						NAMESPACE_KEY, currentNamespace, "namePrefix", getConfig().getApplication()
-						                                                          .getNamePrefix()
+						NAMESPACE_KEY, currentNamespace, "namePrefix", toolConfig().namePrefix()
 					)
 				);
 
@@ -271,23 +244,16 @@ public class Monitoring extends AbstractTool {
 	}
 
 	protected void createMonitoringCrd() {
-		if (!getConfig().getApplication().getSkipCrds()) {
+		if (!toolConfig().skipCrds()) {
 			String serviceMonitorCrdYaml;
-			if (context.isAirgapped()) {
+			if (toolConfig().airgapped()) {
 				serviceMonitorCrdYaml = Path.of(
-												getConfig().getApplication()
-					                                       .getLocalHelmChartFolder() + "/" + getConfig().getFeatures()
-					                                                                                     .getMonitoring()
-					                                                                                     .getHelm()
-					                                                                                     .getChart(),
+												toolConfig().helm().localHelmChartFolder() + "/" + toolConfig().helm().chart(),
 												"charts/crds/crds/crd-servicemonitors.yaml"
 											)
-				                            .toString();
+											.toString();
 			} else {
-				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-" + getConfig().getFeatures()
-				                                                                                                                                      .getMonitoring()
-				                                                                                                                                      .getHelm()
-				                                                                                                                                      .getVersion() + "/" + "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml";
+				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-" + toolConfig().helm().version() + "/" + "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml";
 			}
 
 			log.debug(
@@ -299,23 +265,22 @@ public class Monitoring extends AbstractTool {
 	}
 
 	private Map<String, String> jenkinsConfigurationMetrics() {
-		URI uri = baseUriJenkins(getConfig()).resolve("prometheus");
+		URI uri = baseUriJenkins(toolConfig()).resolve("prometheus");
 		Map<String, String> components = new HashMap<>(uriComponents(uri));
 		components.put(
-			"metricsUsername", (getConfig().getJenkins()
-			                               .getMetricsUsername() != null) ? getConfig().getJenkins()
-			                                                                           .getMetricsUsername() : ""
+			"metricsUsername", toolConfig().jenkinsMetricsUsername() != null
+				? toolConfig().jenkinsMetricsUsername()
+				: ""
 		);
 		return components;
 	}
 
-	private static URI baseUriJenkins(Config config) {
+	private static URI baseUriJenkins(MonitoringToolConfig config) {
 		try {
-			if (config.getJenkins().getInternal()) {
-				return new URI("http://jenkins." + config.getApplication().getNamePrefix() + config.getJenkins()
-				                                                                                   .getNamespace() + ".svc.cluster.local/");
+			if (config.jenkinsInternal()) {
+				return new URI("http://jenkins." + config.namePrefix() + config.jenkinsNamespace() + ".svc.cluster.local/");
 			}
-			String urlString = config.getJenkins().getUrl() != null ? config.getJenkins().getUrl().trim() : "";
+			String urlString = config.jenkinsUrl() != null ? config.jenkinsUrl().trim() : "";
 			if (urlString.isEmpty()) {
 				throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false");
 			}
@@ -341,12 +306,12 @@ public class Monitoring extends AbstractTool {
 		String repoRoot = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir();
 		String dashboardRoot = repoRoot + "/" + MONITORING_DASHBOARD_PATH;
 
-		if (!getConfig().getFeatures().getIngress().getActive()) {
+		if (!toolConfig().ingressActive()) {
 			FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard.yaml");
 			FileSystemUtils.deleteFile(dashboardRoot + "/traefik-dashboard-requests-handling.yaml");
 		}
 
-		if (!getConfig().getJenkins().getActive()) {
+		if (!toolConfig().jenkinsActive()) {
 			FileSystemUtils.deleteFile(dashboardRoot + "/jenkins-dashboard.yaml");
 		}
 
@@ -365,12 +330,12 @@ public class Monitoring extends AbstractTool {
 		return hasText(uri.getScheme()) || hasText(uri.getAuthority()) || hasText(uri.getPath());
 	}
 
+	private static boolean isNotEmpty(String value) {
+		return value != null && !value.isEmpty();
+	}
+
 	private static boolean hasText(String value) {
 		return value != null && !value.trim().isEmpty();
 	}
 
-	@Override
-	public String getActiveNamespaceFromFeature(DeploymentContext context) {
-		return isEnabled(context) ? activeNamespace(context) : null;
-	}
 }

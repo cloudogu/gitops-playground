@@ -28,7 +28,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -46,7 +46,7 @@ class RbacDefinitionTest {
 				.withNamespace("testing")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withConfig(config)
+				.withTemplateConfig(rbacConfig())
 				.generate()
 		}
 
@@ -60,7 +60,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withServiceAccountsFrom("testing", ["reader"])
 				.withRepo(repo)
-				.withConfig(config)
+				.withTemplateConfig(rbacConfig())
 				.generate()
 		}
 
@@ -74,7 +74,7 @@ class RbacDefinitionTest {
 				.withName("access")
 				.withNamespace("testing")
 				.withRepo(repo)
-				.withConfig(config)
+				.withTemplateConfig(rbacConfig())
 				.withServiceAccounts([]) // leer übergeben
 				.generate()
 		}
@@ -90,7 +90,7 @@ class RbacDefinitionTest {
 			.withNamespace("myns")
 			.withServiceAccounts([sa])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File f = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac/rolebinding-direct-myns.yaml")
@@ -106,7 +106,7 @@ class RbacDefinitionTest {
 			.withSubfolder(custom)
 			.withServiceAccountsFrom("testing", ["reader"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File out = new File(repo.getAbsoluteLocalRepoTmpDir(), custom)
@@ -124,7 +124,7 @@ class RbacDefinitionTest {
 			.withNamespace("testing")
 			.withServiceAccountsFrom("testing", ["reader", "writer", "admin"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File[] files = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac").listFiles()
@@ -139,7 +139,7 @@ class RbacDefinitionTest {
 			.withNamespace("custom-ns")
 			.withServiceAccountsFrom("custom-ns", ["sa1"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -157,7 +157,7 @@ class RbacDefinitionTest {
 			.withServiceAccountsFrom("ns", ["sa1"])
 			.withSubfolder(nested)
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), nested)
@@ -173,7 +173,7 @@ class RbacDefinitionTest {
 				.withName("failtest")
 				.withNamespace("ns")
 				.withServiceAccountsFrom("ns", ["sa1"])
-				.withConfig(config)
+				.withTemplateConfig(rbacConfig())
 				.generate()
 		}
 
@@ -190,7 +190,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, saList)
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		String path = "rbac/rolebinding-test-${ns}.yaml".toString()
@@ -220,7 +220,7 @@ class RbacDefinitionTest {
 			.withNamespace(ns)
 			.withServiceAccountsFrom(ns, ["sa1"])
 			.withRepo(repo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		String path = "rbac/role-${name}-${ns}.yaml".toString()
@@ -242,7 +242,7 @@ class RbacDefinitionTest {
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -267,7 +267,7 @@ class RbacDefinitionTest {
 			.withNamespace("monitoring")
 			.withServiceAccountsFrom("monitoring", ["sa1"])
 			.withRepo(tempRepo)
-			.withConfig(config)
+			.withTemplateConfig(rbacConfig())
 			.generate()
 
 		File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
@@ -292,6 +292,16 @@ class RbacDefinitionTest {
 		}
 
 		assertThat(ex.message).contains("Config must not be null")
+	}
+
+	private Map<String, Object> rbacConfig() {
+		return [
+			application: [openshift: config.application.openshift],
+			features   : [
+				monitoring: [active: config.features.monitoring.active],
+				secrets   : [active: config.features.secrets.active]
+			]
+		]
 	}
 
 }

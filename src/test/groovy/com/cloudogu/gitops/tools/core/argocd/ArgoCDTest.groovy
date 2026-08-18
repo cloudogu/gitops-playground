@@ -1679,9 +1679,10 @@ class ArgoCDTest {
                       ArgoCDTestContext testContext) {
             super(k8sClient,
                     new HelmClient(helmCommands),
-                    new FileSystemUtils(),
-                    testContext.gitHandler,
-                    new DeploymentModeFactory())
+					new FileSystemUtils(),
+					testContext.gitHandler,
+					new DeploymentModeFactory(),
+					new ArgoCDToolConfigMapper())
 
             this.cfg = cfg
             this.tenantProvider = tenantProvider

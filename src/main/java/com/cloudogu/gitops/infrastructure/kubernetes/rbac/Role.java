@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 
-import com.cloudogu.gitops.config.Config;
-
 import java.io.File;
 import java.util.Map;
 
@@ -12,7 +10,7 @@ public record Role(
 
 	Variant variant,
 
-	Config config
+	Map<String, Object> config
 ) {
 
 	public Role {

@@ -2,11 +2,11 @@ package com.cloudogu.gitops.tools.core.argocd.mode;
 
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.RbacDefinition;
 import com.cloudogu.gitops.infrastructure.kubernetes.rbac.Role;
 import com.cloudogu.gitops.tools.core.argocd.ArgoCDRepoLayout;
+import com.cloudogu.gitops.tools.core.argocd.ArgoCDToolConfig;
 import com.cloudogu.gitops.utils.Tuple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import java.util.Map;
 @Slf4j
 public class SingleTenantMode implements DeploymentMode {
 
-	private final Config config;
+	private final ArgoCDToolConfig config;
 	private final K8sClient k8sClient;
 	private final GitHandler gitHandler;
 	private final RepositoryWorkspace repositoryWorkspace;
@@ -28,8 +28,7 @@ public class SingleTenantMode implements DeploymentMode {
 	@Override
 	public void createSCMCredentialsSecret() {
 		log.debug(
-			"Creating repo credential secret that is used by ArgoCD to access repos in {}", config.getScm()
-			                                                                                      .getScmProviderType()
+			"Creating repo credential secret that is used by ArgoCD to access repos in {}", config.scmProviderType()
 		);
 
 		createRepoCredentialsSecret(
@@ -46,21 +45,21 @@ public class SingleTenantMode implements DeploymentMode {
 	public void generateRBAC() {
 		log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces");
 
-		for (String ns : config.getApplication().getNamespaces().getActiveNamespaces()) {
+		for (String ns : config.activeNamespaces()) {
 			new RbacDefinition(Role.Variant.ARGOCD).withName("argocd")
 			                                       .withNamespace(ns)
 			                                       .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
-			                                       .withConfig(config)
+			                                       .withTemplateConfig(config.rbacTemplateConfig())
 			                                       .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 			                                       .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
 			                                       .generate();
 		}
 
-		if (config.getApplication().getClusterAdmin()) {
+		if (config.clusterAdmin()) {
 			new RbacDefinition(Role.Variant.CLUSTER_ADMIN).withName("argocd-cluster-admin")
 			                                              .withNamespace(namespace)
 			                                              .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
-			                                              .withConfig(config)
+			                                              .withTemplateConfig(config.rbacTemplateConfig())
 			                                              .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 			                                              .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
 			                                              .generate();
@@ -75,9 +74,7 @@ public class SingleTenantMode implements DeploymentMode {
 			"secret", "argocd-default-cluster-config", namespace, Map.of(
 				"stringData", Map.of(
 					"namespaces", String.join(
-						",", config.getApplication()
-						           .getNamespaces()
-						           .getActiveNamespaces()
+						",", config.activeNamespaces()
 					)
 				)
 			)

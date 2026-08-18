@@ -1,11 +1,10 @@
 package com.cloudogu.gitops.utils;
 
 import com.cloudogu.gitops.application.orchestration.GitHandler;
-import com.cloudogu.gitops.config.Config;
-import com.cloudogu.gitops.config.Config.HelmConfig;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
+import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,6 @@ public class AirGappedUtils {
 
 	private static final String VERSION_KEY = "version";
 
-	private final Config config;
 	private final GitRepoFactory repoProvider;
 	private final FileSystemUtils fileSystemUtils;
 	private final HelmClient helmClient;
@@ -36,11 +34,11 @@ public class AirGappedUtils {
 	 *
 	 * @return the repo namespace and name
 	 */
-	public String mirrorHelmRepoToGit(HelmConfig helmConfig) {
-		String repoName = helmConfig.getChart();
+	public String mirrorHelmRepoToGit(HelmChartConfig helmConfig) {
+		String repoName = helmConfig.chart();
 		String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES;
 		String repoNamespaceAndName = namespace + "/" + repoName;
-		String localHelmChartFolder = config.getApplication().getLocalHelmChartFolder() + "/" + repoName;
+		String localHelmChartFolder = helmConfig.localHelmChartFolder() + "/" + repoName;
 
 		validateChart(repoNamespaceAndName, localHelmChartFolder, repoName);
 
@@ -48,7 +46,7 @@ public class AirGappedUtils {
 
 		try {
 			repo.createRepositoryAndSetPermission(
-				"Mirror of Helm chart " + repoName + " from " + helmConfig.getRepoURL(),
+				"Mirror of Helm chart " + repoName + " from " + helmConfig.repoURL(),
 				false
 			);
 
@@ -63,7 +61,7 @@ public class AirGappedUtils {
 			Files.deleteIfExists(Path.of(repo.getAbsoluteLocalRepoTmpDir(), "Chart.lock"));
 
 			repo.commitAndPush(
-				"Chart " + chartYaml.get("name") + ", version: " + chartYaml.get(VERSION_KEY) + "\n\n" + "Source: " + helmConfig.getRepoURL() + "\n" + "Dependencies localized to run in air-gapped environments",
+				"Chart " + chartYaml.get("name") + ", version: " + chartYaml.get(VERSION_KEY) + "\n\n" + "Source: " + helmConfig.repoURL() + "\n" + "Dependencies localized to run in air-gapped environments",
 				String.valueOf(chartYaml.get(VERSION_KEY))
 			);
 		} catch (RuntimeException e) {
