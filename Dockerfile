@@ -188,7 +188,7 @@ RUN apk add --no-cache \
       gnupg
 
 ARG JAVA_VERSION=17.0.19_10
-ARG JAVA_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.19%2B10/OpenJDK17U-jre_x64_alpine-linux_hotspot_17.0.19_10.tar.gz"
+ARG JAVA_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.19%2B10/OpenJDK17U-jre_x64_alpine-linux_hotspot_${JAVA_VERSION}.tar.gz"
 ARG JAVA_SHA256="22d4d5579902d134dede626d0fdfb95891abc7578e13dea9cb23775498c4cf51"
 
 RUN wget -O /tmp/openjdk.tar.gz "${JAVA_URL}" \
