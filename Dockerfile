@@ -170,7 +170,36 @@ RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 # - JRE base (smaller than JDK)
 # - No source code (security & size optimization)
 # - Only compiled JAR with runtime dependencies
-FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS runtime
+FROM alpine:3.24 AS runtime
+
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+RUN apk add --no-cache \
+      ca-certificates \
+      fontconfig \
+      ttf-dejavu \
+      p11-kit-trust \
+      musl-locales \
+      musl-locales-lang \
+      tzdata \
+      coreutils \
+      openssl \
+      gnupg
+
+ARG JAVA_VERSION=17.0.19_10
+ARG JAVA_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.19%2B10/OpenJDK17U-jre_x64_alpine-linux_hotspot_17.0.19_10.tar.gz"
+ARG JAVA_SHA256="22d4d5579902d134dede626d0fdfb95891abc7578e13dea9cb23775498c4cf51"
+
+RUN wget -O /tmp/openjdk.tar.gz "${JAVA_URL}" \
+ && echo "${JAVA_SHA256}  /tmp/openjdk.tar.gz" | sha256sum -c - \
+ && mkdir -p "${JAVA_HOME}" \
+ && tar -xzf /tmp/openjdk.tar.gz \
+      -C "${JAVA_HOME}" \
+      --strip-components=1 \
+      --no-same-owner \
+ && rm /tmp/openjdk.tar.gz \
+ && java --version
 
 # -----------------------------------------------------------------------------
 # 4.1: Environment Variables
