@@ -19,7 +19,23 @@ public abstract class AbstractMappedTool<T> extends AbstractTool {
 	private T toolConfig;
 
 	protected AbstractMappedTool(ToolConfigMapper<T> toolConfigMapper) {
-		this.toolConfigMapper = Objects.requireNonNull(toolConfigMapper, "Tool config mapper must not be null");
+		this.toolConfigMapper = Objects.requireNonNull(
+			toolConfigMapper,
+			"Tool config mapper must not be null"
+		);
+	}
+
+	protected abstract boolean isEnabled(T config);
+
+	protected String activeNamespace(T config) {
+		return null;
+	}
+
+	protected final T toolConfig() {
+		return Objects.requireNonNull(
+			toolConfig,
+			"Tool config is only available during and after execution preparation"
+		);
 	}
 
 	@Override
@@ -27,17 +43,11 @@ public abstract class AbstractMappedTool<T> extends AbstractTool {
 		return isEnabled(mapConfig(context));
 	}
 
-	protected abstract boolean isEnabled(T config);
-
 	@Override
 	protected void prepareExecution(DeploymentContext context, RepositoryWorkspace workspace) {
 		this.toolConfig = null;
 		super.prepareExecution(context, workspace);
 		this.toolConfig = mapConfig(context);
-	}
-
-	protected String activeNamespace(T config) {
-		return null;
 	}
 
 	@Override
@@ -48,13 +58,10 @@ public abstract class AbstractMappedTool<T> extends AbstractTool {
 
 	private T mapConfig(DeploymentContext context) {
 		Objects.requireNonNull(context, "Deployment context must not be null");
+
 		return Objects.requireNonNull(
 			toolConfigMapper.map(context),
 			() -> "Tool config mapper returned null for " + getClass().getName()
 		);
-	}
-
-	protected final T toolConfig() {
-		return Objects.requireNonNull(toolConfig, "Tool config is only available during and after execution preparation");
 	}
 }
