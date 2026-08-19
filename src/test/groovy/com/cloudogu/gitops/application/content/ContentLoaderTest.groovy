@@ -1033,12 +1033,14 @@ class ContentLoaderTest {
     }
 
     class ContentLoaderForTest extends ContentLoader {
+        private final Config contentConfig
         List<DeployCall> deployCalls = []
         CloneCommand cloneSpy
 
         ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler, FileSystemUtils fileSystemUtils,
                              Deployer deployer) {
-            super(k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+            super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer)
+            this.contentConfig = config
         }
 
         List<RepoCoordinate> cloneContentRepos(DeploymentContext context) {
@@ -1059,7 +1061,7 @@ class ContentLoaderTest {
                     namespace: namespace,
                     helmConfig: helmConfig,
                     valuesPath: helmValuesTemplatePath,
-                    config: context.config,
+                    config: contentConfig,
                     initByHelm: initByHelm)
         }
 

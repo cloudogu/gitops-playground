@@ -214,14 +214,14 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		if (toolConfig().application().runningInsideK8s()) {
 			log.debug("Setting jenkins url to k8s service, since installation is running inside k8s");
 			runtimeUrl = networkingUtils.createUrl(serviceName + "." + namespace + ".svc.cluster.local", "80");
-			configUpdater.updateUrl(context, runtimeUrl);
+			configUpdater.updateUrl(runtimeUrl);
 		} else {
 			log.debug(
 				"Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...");
 			String port = k8sClient.waitForNodePort(serviceName, namespace);
 			String clusterBindAddress = networkingUtils.findClusterBindAddress();
 			runtimeUrl = networkingUtils.createUrl(clusterBindAddress, port);
-			configUpdater.updateUrl(context, runtimeUrl);
+			configUpdater.updateUrl(runtimeUrl);
 		}
 	}
 

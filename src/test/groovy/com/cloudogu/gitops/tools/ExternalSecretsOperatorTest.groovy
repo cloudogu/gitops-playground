@@ -230,7 +230,7 @@ class ExternalSecretsOperatorTest {
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new ExternalSecretsOperatorToolConfigMapper())
+                new ExternalSecretsOperatorToolConfigMapper(config))
     }
 
     private boolean install(ExternalSecretsOperator operator) {

@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.NetworkingUtils;
@@ -17,33 +15,37 @@ public class ScmManagerUrlResolver {
 	private static final String RELEASE_NAME = "scmm";
 	private static final String REPO_ROOT = "repo";
 
-	private final DeploymentContext context;
-	private final ScmManagerConfig scmm;
+	private final ScmManagerConfig scmmConfig;
 	private final K8sClient k8s;
 	private final NetworkingUtils net;
+	private final String repositoryNamePrefix;
+	private final boolean runningInsideK8s;
 	private final String servicePrefix;
 
 	private URI cachedClusterBind;
 
-	public ScmManagerUrlResolver(DeploymentContext context, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
-		this(context, scmm, k8s, net, "");
+	public ScmManagerUrlResolver(
+		ScmManagerConfig scmmConfig,
+		K8sClient k8s,
+		NetworkingUtils net,
+		String repositoryNamePrefix,
+		boolean runningInsideK8s) {
+		this(scmmConfig, k8s, net, repositoryNamePrefix, runningInsideK8s, "");
 	}
 
 	public ScmManagerUrlResolver(
-		DeploymentContext context,
-		ScmManagerConfig scmm,
+		ScmManagerConfig scmmConfig,
 		K8sClient k8s,
 		NetworkingUtils net,
+		String repositoryNamePrefix,
+		boolean runningInsideK8s,
 		String servicePrefix) {
-		this.context = context;
-		this.scmm = scmm;
+		this.scmmConfig = scmmConfig;
 		this.k8s = k8s;
 		this.net = net;
+		this.repositoryNamePrefix = repositoryNamePrefix != null ? repositoryNamePrefix : "";
+		this.runningInsideK8s = runningInsideK8s;
 		this.servicePrefix = servicePrefix != null ? servicePrefix : "";
-	}
-
-	private Config getConfig() {
-		return context.getConfig();
 	}
 
 	// ---------- Public API used by ScmManager ----------
@@ -80,9 +82,7 @@ public class ScmManagerUrlResolver {
 	 * In-cluster repo prefix …/scm/repo/[<namePrefix>]
 	 */
 	public String inClusterRepoPrefix() {
-		String prefix = getConfig().getApplication().getNamePrefix() != null ? getConfig().getApplication()
-		                                                                                  .getNamePrefix()
-		                                                                                  .trim() : "";
+		String prefix = repositoryNamePrefix.trim();
 		URI base = withSlash(inClusterBase());
 		URI url = withSlash(base.resolve(REPO_ROOT));
 
@@ -115,14 +115,14 @@ public class ScmManagerUrlResolver {
 	// ---------- Base resolution ----------
 
 	private URI clientBaseRaw() {
-		if (scmm.getInternal()) {
-			return getConfig().getApplication().getRunningInsideK8s() ? serviceDnsBase() : nodePortBase();
+		if (scmmConfig.getInternal()) {
+			return runningInsideK8s ? serviceDnsBase() : nodePortBase();
 		}
 		return externalBase();
 	}
 
 	private URI inClusterBaseRaw() {
-		return scmm.getInternal() ? serviceDnsBase() : externalBase();
+		return scmmConfig.getInternal() ? serviceDnsBase() : externalBase();
 	}
 
 	private URI serviceDnsBase() {
@@ -130,12 +130,12 @@ public class ScmManagerUrlResolver {
 	}
 
 	private URI externalBase() {
-		String url = scmm.getUrl() != null ? scmm.getUrl().trim() : "";
+		String url = scmmConfig.getUrl() != null ? scmmConfig.getUrl().trim() : "";
 		if (!url.isEmpty()) {
 			return URI.create(url);
 		}
 
-		String ingress = scmm.getIngress() != null ? scmm.getIngress().trim() : "";
+		String ingress = scmmConfig.getIngress() != null ? scmmConfig.getIngress().trim() : "";
 		if (!ingress.isEmpty()) {
 			return URI.create(HTTP_PREFIX + ingress);
 		}
@@ -168,7 +168,7 @@ public class ScmManagerUrlResolver {
 	}
 
 	private String serviceNamespace() {
-		String namespace = scmm.getNamespace() != null ? scmm.getNamespace().trim() : "scm-manager";
+		String namespace = scmmConfig.getNamespace() != null ? scmmConfig.getNamespace().trim() : "scm-manager";
 		String prefix = servicePrefix.trim();
 
 		if (!prefix.isEmpty() && !namespace.startsWith(prefix)) {

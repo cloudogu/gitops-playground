@@ -82,7 +82,8 @@ class ApplicationConfiguratorTest {
         GitHandler gitHandler = new GitHandlerForTests(scmManagerMock)
         def context = new ContextBuilder(testConfig).build()
 
-        featureContent = Mockito.spy(new ContentLoader(k8sClient,
+        featureContent = Mockito.spy(new ContentLoader(testConfig,
+                k8sClient,
                 gitRepoFactory,
                 Mockito.mock(Jenkins),
                 gitHandler,
@@ -95,7 +96,7 @@ class ApplicationConfiguratorTest {
                 fileSystemUtils,
                 gitHandler,
                 new DeploymentModeFactory(),
-                new ArgoCDToolConfigMapper()))
+                new ArgoCDToolConfigMapper(testConfig)))
         featureArgoCd.isEnabled(context)
     }
 

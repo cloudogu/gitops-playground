@@ -468,8 +468,8 @@ me:x:1000:''')
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new JenkinsToolConfigMapper(),
-                new JenkinsConfigUpdater())
+                new JenkinsToolConfigMapper(config),
+                new JenkinsConfigUpdater(config))
     }
 
     private boolean install(Jenkins jenkins) {

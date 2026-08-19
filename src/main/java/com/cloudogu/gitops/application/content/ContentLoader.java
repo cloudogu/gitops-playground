@@ -63,6 +63,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	private static final String OVERWRITE_MODE_PREFIX = "OverwriteMode ";
 	private static final String SET_FOR_REPO_SUFFIX = " set for repo '";
 
+	private final Config config;
 	private final K8sClient k8sClient;
 	private final GitRepoFactory repoProvider;
 	private final Jenkins jenkins;
@@ -72,12 +73,14 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	protected File mergedReposFolder;
 
 	public ContentLoader(
+		Config config,
 		K8sClient k8sClient,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
 		GitHandler gitHandler,
 		FileSystemUtils fileSystemUtils,
 		Deployer deployer) {
+		this.config = config;
 		this.k8sClient = k8sClient;
 		this.repoProvider = repoProvider;
 		this.jenkins = jenkins;
@@ -821,7 +824,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	}
 
 	private Config getConfig() {
-		return context.getConfig();
+		return config;
 	}
 
 	private void clearCache() {

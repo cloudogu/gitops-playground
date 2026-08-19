@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.application.context;
 
-import com.cloudogu.gitops.config.Config;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -8,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DeploymentContext {
 
-	private final Config config;
 	private final TenantMode tenantMode;
 	private final ScmManagerDeploymentMode scmManagerDeploymentMode;
 	private final boolean airgapped;
@@ -28,10 +26,6 @@ public class DeploymentContext {
 
 	public boolean isExternalScmManager() {
 		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
-	}
-
-	public boolean isAirgapped() {
-		return airgapped;
 	}
 
 	public boolean isOpenshift() {

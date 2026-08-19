@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.git.providers.scmmanager;
 
-import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole;
@@ -30,34 +28,24 @@ public class ScmManagerProvider implements GitProvider {
 	private ScmManagerApiClient apiClient;
 	private final ScmManagerConfig scmmConfig;
 
-	private final NetworkingUtils networkingUtils;
-	private final K8sClient k8sClient;
-	private final DeploymentContext context;
+	private final boolean insecure;
 
 	public ScmManagerProvider(
-		DeploymentContext context,
-		ScmManagerConfig scmmConfig,
-		K8sClient k8sClient,
-		NetworkingUtils networkingUtils) {
-		this(context, scmmConfig, k8sClient, networkingUtils, "");
-	}
-
-	public ScmManagerProvider(
-		DeploymentContext context,
 		ScmManagerConfig scmmConfig,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
+		String repositoryNamePrefix,
+		boolean runningInsideK8s,
+		boolean insecure,
 		String servicePrefix) {
 		this.scmmConfig = scmmConfig;
-		this.context = context;
-		this.k8sClient = k8sClient;
-		this.networkingUtils = networkingUtils;
-
+		this.insecure = insecure;
 		this.urls = new ScmManagerUrlResolver(
-			this.context,
-			this.scmmConfig,
-			this.k8sClient,
-			this.networkingUtils,
+			scmmConfig,
+			k8sClient,
+			networkingUtils,
+			repositoryNamePrefix,
+			runningInsideK8s,
 			servicePrefix
 		);
 	}
@@ -66,17 +54,12 @@ public class ScmManagerProvider implements GitProvider {
 		return scmmConfig;
 	}
 
-	public Config getConfig() {
-		return context.getConfig();
-	}
-
 	public ScmManagerApiClient getApiClient() {
 		if (this.apiClient == null) {
 			this.apiClient = new ScmManagerApiClient(
-				this.urls.clientApiBase()
-				         .toString(), this.scmmConfig.getCredentials(), this.getConfig()
-				                                                            .getApplication()
-				                                                            .getInsecure()
+				this.urls.clientApiBase().toString(),
+				this.scmmConfig.getCredentials(),
+				insecure
 			);
 		}
 
@@ -110,8 +93,8 @@ public class ScmManagerProvider implements GitProvider {
 
 		try {
 			Response<Void> response = getApiClient().repositoryApi()
-			                                        .createPermission(repoNamespace, repoName, permission)
-			                                        .execute();
+													.createPermission(repoNamespace, repoName, permission)
+													.execute();
 
 			handle201or409(response, "Permission on " + repoNamespace + "/" + repoName);
 		} catch (IOException e) {

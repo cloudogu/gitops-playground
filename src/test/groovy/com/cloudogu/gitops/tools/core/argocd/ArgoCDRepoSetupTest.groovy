@@ -87,7 +87,7 @@ class ArgoCDRepoSetupTest {
         return new ArgoCDRepoSetupTestContext(setup: ArgoCDRepoSetup.create(fs,
                 gitHandler,
                 repositoryWorkspace,
-                new ArgoCDToolConfigMapper().map(context)),
+                new ArgoCDToolConfigMapper(config).map(context)),
                 repositoryWorkspace: repositoryWorkspace)
     }
 

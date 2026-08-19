@@ -7,15 +7,18 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public JenkinsToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.JenkinsSchema jenkins = config.getJenkins();
 		ScmProviderType scmProviderType = config.getScm() == null ? null : config.getScm().getScmProviderType();
 		String scmManagerPassword = config.getScm() == null || config.getScm().getScmManager() == null

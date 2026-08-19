@@ -13,7 +13,6 @@ public class ContextBuilder {
 
 	public DeploymentContext build() {
 		return new DeploymentContext(
-			config,
 			tenantMode(),
 			scmManagerDeploymentMode(),
 			config.getApplication().getMirrorRepos(),

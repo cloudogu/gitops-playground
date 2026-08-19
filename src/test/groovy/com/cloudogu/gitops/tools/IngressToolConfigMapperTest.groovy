@@ -35,7 +35,7 @@ class IngressToolConfigMapperTest {
 		config.features.monitoring.active = true
 		config.features.monitoring.namespace = 'observability'
 
-		IngressToolConfig actual = new IngressToolConfigMapper().map(context(config))
+		IngressToolConfig actual = new IngressToolConfigMapper(config).map(context())
 
 		assertThat(actual).isEqualTo(IngressToolConfig.builder()
 			.active(true)
@@ -59,9 +59,8 @@ class IngressToolConfigMapperTest {
 			.build())
 	}
 
-	private static DeploymentContext context(Config config) {
+	private static DeploymentContext context() {
 		return new DeploymentContext(
-			config,
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,

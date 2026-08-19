@@ -332,7 +332,7 @@ class VaultTest {
                 airGappedUtils,
                 gitHandler,
                 imagePullSecretCreator,
-                new VaultToolConfigMapper())
+                new VaultToolConfigMapper(config))
     }
 
     private boolean install(Vault vault) {

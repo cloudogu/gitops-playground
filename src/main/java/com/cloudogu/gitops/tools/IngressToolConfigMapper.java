@@ -6,15 +6,18 @@ import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
 import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
 @Singleton
+@RequiredArgsConstructor
 public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConfig> {
+
+	private final Config config;
 
 	@Override
 	public IngressToolConfig map(DeploymentContext context) {
-		Config config = context.getConfig();
 		Config.IngressSchema ingress = config.getFeatures().getIngress();
 
 		return IngressToolConfig.builder()

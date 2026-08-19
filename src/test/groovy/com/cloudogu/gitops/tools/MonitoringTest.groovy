@@ -745,7 +745,7 @@ matchExpressions:
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace('.ftl', ''))
                 return ret
             }
-        }, deployer, k8sClient, airGappedUtils, gitHandler, imagePullSecretCreator, new MonitoringToolConfigMapper())
+        }, deployer, k8sClient, airGappedUtils, gitHandler, imagePullSecretCreator, new MonitoringToolConfigMapper(config))
     }
 
     private boolean install(Monitoring monitoring) {

@@ -102,7 +102,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 
 	private void prepareNamespace() {
 		this.namespace = activeNamespace(toolConfig());
-		configUpdater.updateNamespace(context, namespace);
+		configUpdater.updateNamespace(namespace);
 	}
 
 	@Override

@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.destroy;
 
-import com.cloudogu.gitops.application.context.ContextBuilder;
-import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -27,19 +25,16 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 
 	private static final String ARGOCD = "argocd";
 
-	private final ContextBuilder contextBuilder;
+	private final Config config;
 	private final K8sClient k8sClient;
 	private final HelmClient helmClient;
 	private final GitRepoFactory repoProvider;
 	private final FileSystemUtils fileSystemUtils;
 	private final GitHandler gitHandler;
-	private DeploymentContext context;
 
 	@Override
 	public void destroy() {
-		this.context = contextBuilder.build();
-
-		String namePrefix = getConfig().getApplication().getNamePrefix();
+		String namePrefix = config.getApplication().getNamePrefix();
 
 		GitRepo repo = repoProvider.create("argocd/cluster-resources", gitHandler.getResourcesScm());
 		try {
@@ -62,7 +57,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 			);
 		}
 
-		String argocdNamespace = namePrefix + getConfig().getFeatures().getArgocd().getNamespace();
+		String argocdNamespace = namePrefix + config.getFeatures().getArgocd().getNamespace();
 		List<Tuple<String, String>> appsToBeDeleted = List.of(
 			new Tuple<>(argocdNamespace, "bootstrap"),
 			new Tuple<>(argocdNamespace, "cluster-resources"),
@@ -82,7 +77,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 		k8sClient.delete("app", argocdNamespace, "projects");
 		k8sClient.delete("app", argocdNamespace, ARGOCD);
 
-		String jenkinsNamespace = getConfig().getJenkins().getInternal() ? (namePrefix + getConfig().getJenkins()
+		String jenkinsNamespace = config.getJenkins().getInternal() ? (namePrefix + config.getJenkins()
 		                                                                                            .getNamespace()) : null;
 		if (jenkinsNamespace != null) {
 			k8sClient.delete("secret", jenkinsNamespace, "jenkins-credentials");
@@ -104,7 +99,4 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 		helmClient.upgrade(ARGOCD, umbrellaChartPath, Map.of("namespace", argocdNamespace));
 	}
 
-	private Config getConfig() {
-		return context.getConfig();
-	}
 }

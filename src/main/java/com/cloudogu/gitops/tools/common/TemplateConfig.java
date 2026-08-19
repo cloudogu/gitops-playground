@@ -3,6 +3,10 @@ package com.cloudogu.gitops.tools.common;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Builds a focused template configuration so FreeMarker receives only
+ * the values required by a template instead of the complete application Config.
+ */
 public final class TemplateConfig {
 
 	private final Map<String, Object> values = new HashMap<>();
