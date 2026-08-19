@@ -68,7 +68,7 @@ class MonitoringToolConfigMapperTest {
 		config.scm.scmProviderType = ScmProviderType.SCM_MANAGER
 		config.scm.scmManager = new ScmTenantSchema.ScmManagerTenantConfig(namespace: 'source-control')
 
-		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context(config))
+		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context())
 
 		assertThat(actual).isEqualTo(MonitoringToolConfig.builder()
 			.active(true)
@@ -148,7 +148,7 @@ class MonitoringToolConfigMapperTest {
 			.build())
 	}
 
-	private static DeploymentContext context(Config config) {
+	private static DeploymentContext context() {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,

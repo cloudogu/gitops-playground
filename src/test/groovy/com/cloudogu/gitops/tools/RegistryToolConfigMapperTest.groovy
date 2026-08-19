@@ -23,7 +23,7 @@ class RegistryToolConfigMapperTest {
 		config.registry.helm.version = '4.5.6'
 		config.registry.helm.values = [storage: 'memory']
 
-		RegistryToolConfig actual = new RegistryToolConfigMapper(config).map(context(config))
+		RegistryToolConfig actual = new RegistryToolConfigMapper(config).map(context())
 
 		assertThat(actual).isEqualTo(RegistryToolConfig.builder()
 			.active(true)
@@ -46,12 +46,12 @@ class RegistryToolConfigMapperTest {
 		Config config = new Config()
 		config.registry.internal = false
 
-		RegistryToolConfig actual = new RegistryToolConfigMapper(config).map(context(config))
+		RegistryToolConfig actual = new RegistryToolConfigMapper(config).map(context())
 
 		assertThat(actual.namespace()).isNull()
 	}
 
-	private static DeploymentContext context(Config config) {
+	private static DeploymentContext context() {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,

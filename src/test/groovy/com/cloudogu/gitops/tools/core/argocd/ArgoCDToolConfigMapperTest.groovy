@@ -53,7 +53,7 @@ class ArgoCDToolConfigMapperTest {
 		helmRelease.repoURL = 'https://charts.example.org'
 		config.content.helmReleases = [helmRelease]
 
-		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper(config).map(context(config))
+		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper(config).map(context())
 
 		assertThat(actual).isEqualTo(ArgoCDToolConfig.builder()
 			.active(true)
@@ -123,7 +123,7 @@ class ArgoCDToolConfigMapperTest {
 			.build())
 	}
 
-	private static DeploymentContext context(Config config) {
+	private static DeploymentContext context() {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,

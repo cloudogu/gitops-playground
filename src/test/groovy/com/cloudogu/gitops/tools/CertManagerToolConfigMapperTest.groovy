@@ -39,7 +39,7 @@ class CertManagerToolConfigMapperTest {
 		config.features.certManager.helm.acmeSolverImage = 'solver-image'
 		config.features.certManager.helm.startupAPICheckImage = 'startup-image'
 
-		CertManagerToolConfig actual = new CertManagerToolConfigMapper(config).map(context(config))
+		CertManagerToolConfig actual = new CertManagerToolConfigMapper(config).map(context())
 
 		assertThat(actual).isEqualTo(CertManagerToolConfig.builder()
 			.active(true)
@@ -69,7 +69,7 @@ class CertManagerToolConfigMapperTest {
 			.build())
 	}
 
-	private static DeploymentContext context(Config config) {
+	private static DeploymentContext context() {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,

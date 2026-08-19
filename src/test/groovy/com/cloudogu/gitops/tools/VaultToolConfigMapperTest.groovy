@@ -17,7 +17,7 @@ class VaultToolConfigMapperTest {
         Config config = config()
         config.features.secrets.vault.mode = Config.VaultMode.PROD
 
-        VaultToolConfig actual = new VaultToolConfigMapper(config).map(context(config))
+        VaultToolConfig actual = new VaultToolConfigMapper(config).map(context())
 
         assertThat(actual).isEqualTo(VaultToolConfig.builder()
                 .active(true)
@@ -83,7 +83,7 @@ class VaultToolConfigMapperTest {
         Config config = config()
         config.features.secrets.vault.mode = mode
 
-        VaultToolConfig actual = new VaultToolConfigMapper(config).map(context(config))
+        VaultToolConfig actual = new VaultToolConfigMapper(config).map(context())
 
         assertThat(actual.developmentMode()).isEqualTo(expectedDevelopmentMode)
     }
@@ -129,7 +129,7 @@ class VaultToolConfigMapperTest {
         return config
     }
 
-    private static DeploymentContext context(Config config) {
+    private static DeploymentContext context() {
         return new DeploymentContext(
                 DeploymentContext.TenantMode.SINGLE_TENANT,
                 DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
