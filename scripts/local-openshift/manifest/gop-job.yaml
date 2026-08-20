@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gop-installer-job
+  namespace: gop
+spec:
+  # Retain job after completion to preserve logs
+  backoffLimit: 0
+  template:
+    metadata:
+      name: gop-installer
+      labels:
+        app: gop-installer
+    spec:
+      serviceAccountName: gop-sa
+      containers:
+      - name: gop-container
+        image: image-registry.openshift-image-registry.svc:5000/gop/gop:latest
+        imagePullPolicy: Always
+        args:
+        - "--yes=true"
+        - "--profile=full"
+        - "-x"
+        - "--openshift"
+        - "--base-url=http://apps-crc.testing"
+        # Optional: Uncomment if all tools should run in a single shared namespace:
+        # - "--namespace=gop"
+      restartPolicy: Never

@@ -1,0 +1,29 @@
+# gop-values.yaml - Configuration for GOP Helm Chart on OpenShift Local (CRC)
+
+# Container image from the internal OpenShift Image Registry
+image:
+  repository: image-registry.openshift-image-registry.svc:5000/gop/gop
+  tag: latest
+  pullPolicy: Always
+
+# Use pre-created ServiceAccount with assigned permissions (cluster-admin + SCC)
+serviceAccount:
+  create: false
+  name: gop-sa
+
+logLevel: trace
+
+# Direct CLI flags passed to the GOP container (takes highest precedence)
+extraArgs:
+  - "--profile=full"
+  - "--openshift"
+  - "--base-url=http://apps-crc.testing"
+  # Optional: Uncomment if all tools should run in a single shared namespace:
+  # - "--namespace=gop"
+
+config:
+  # yaml-language-server: $schema=https://raw.githubusercontent.com/cloudogu/gitops-playground/refs/heads/main/docs/configuration.schema.json
+  application:
+    "yes": false # strange, but toggle issue with picocli
+    password: "admin"
+    insecure: true
