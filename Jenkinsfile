@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -65,9 +65,9 @@ pipeline {
                         }
                     }
                     post {
-                    	always {
-                    		junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                    	}
+                        always {
+                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                        }
                     }
                 }
 
@@ -75,8 +75,8 @@ pipeline {
                     steps {
                         script {
                             def buildArgs = (params.noCache ? "--no-cache " : "") +
-                                            "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                            "--build-arg VCS_REF='${env.GIT_COMMIT}' "
+                                    "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
+                                    "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
                         }
                     }
@@ -87,27 +87,50 @@ pipeline {
         stage('Security & Integration') {
 
             parallel {
-
-/* tmp excluded because anyOf CVE problems. TODO: do not build break, make it yellow!
                 stage('SBOM & Vulnerability Scan') {
                     steps {
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
-                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
-                                         -u :$BUILD_GROUP \
-                                         -e NO_COLOR=1 \
-                                         $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
-                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
-                                         -u :$BUILD_GROUP \
-                                         -e NO_COLOR=1 \
-                                         $GRYPE_IMAGE sbom:/workspace/sbom.json \
-                                             --output table=/workspace/vulnerabilities.txt \
-                                             --output sarif=/workspace/vulnerabilities.sarif \
-                                             --quiet --sort-by severity --fail-on critical'''
-                        archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
+                        sh '''docker run --rm \
+                                -v "$WORKSPACE:/workspace" \
+                                -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                                -u ":$BUILD_GROUP" \
+                                -e NO_COLOR=1 \
+                                "$SYFT_IMAGE" \
+                                   --output table=/workspace/sbom.txt \
+                                   --output json=/workspace/sbom.syft.json \
+                                   --output cyclonedx-json@1.6=/workspace/sbom.cdx.json \
+                                   --quiet \
+                                   "$FULL_IMAGE_TAG"
+                        '''
+
+                        script {
+                            /* returnStatus prevents Jenkins from aborting immediately upon an exit code of 2 before the reports have been archived. */
+                            int grypeStatus = sh(
+                                    returnStatus: true,
+                                    script: '''docker run --rm \
+                                    -v "$WORKSPACE:/workspace" \
+                                    -u ":$BUILD_GROUP" \
+                                    -e NO_COLOR=1 \
+                                    "$GRYPE_IMAGE" sbom:/workspace/sbom.syft.json \
+                                        --output table=/workspace/vulnerabilities.txt \
+                                        --output sarif=/workspace/vulnerabilities.sarif \
+                                        --quiet \
+                                        --sort-by severity \
+                                        --fail-on critical
+                                '''
+                            )
+
+                            archiveArtifacts(artifacts: 'sbom.*, vulnerabilities.*', allowEmptyArchive: false)
+
+                            if (grypeStatus == 2) {
+                                error('Grype found one or more critical vulnerabilities.')
+                            }
+
+                            if (grypeStatus != 0) {
+                                error("Grype exited with exit-code ${grypeStatus} fehlgeschlagen.")
+                            }
+                        }
                     }
                 }
- */
 
                 stage('Integration tests') {
                     steps {
@@ -115,7 +138,7 @@ pipeline {
                             def profiles = []
 
                             if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
-                                profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                                profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -158,19 +181,20 @@ pipeline {
                                     """, returnStatus: true)
                                 }
 
-                                  archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
-                              }
+                                archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
+                            }
 
                             def withK3dCluster = { profile, body ->
                                 try {
                                     sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
                                     body()
-                                } catch(Throwable t) {
+                                } catch (Throwable t) {
                                     dumpKubernetesDebugInfo(profile)
                                     throw t
                                 } finally {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
-                                }}
+                                }
+                            }
 
                             profiles.each { profile ->
                                 withK3dCluster(profile) {
@@ -246,10 +270,10 @@ pipeline {
                 if (isTriggeredByTimer()) {
                     currentBuild.displayName = "#${env.BUILD_NUMBER} weekly"
                     emailext(
-                        subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: '${SCRIPT, template="groovy-html.template"}',
-                        mimeType: 'text/html',
-                        to: env.GOP_DEVELOPERS
+                            subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            to: env.GOP_DEVELOPERS
                     )
                 }
             }
@@ -258,13 +282,13 @@ pipeline {
             script {
                 if (!isTriggeredByTimer()) {
                     emailext(
-                        subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: '${SCRIPT, template="groovy-html.template"}',
-                        mimeType: 'text/html',
-                        recipientProviders: [
-                            [$class: 'DevelopersRecipientProvider'],
-                            [$class: 'RequesterRecipientProvider']
-                        ]
+                            subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            recipientProviders: [
+                                    [$class: 'DevelopersRecipientProvider'],
+                                    [$class: 'RequesterRecipientProvider']
+                            ]
                     )
                 }
             }
