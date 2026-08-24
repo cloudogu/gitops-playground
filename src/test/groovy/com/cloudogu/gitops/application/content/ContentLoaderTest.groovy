@@ -933,7 +933,7 @@ class ContentLoaderTest {
         bareRepoDir.deleteOnExit()
         foldersToDelete << bareRepoDir
         // init with bare repo
-        FileUtils.copyDirectory(new File(System.getProperty('user.dir') + "/src/test/groovy/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
+        FileUtils.copyDirectory(new File(System.getProperty('user.dir') + "/src/test/resources/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
         def bareRepoUri = 'file://' + bareRepoDir.absolutePath
         log.debug("Repo $initPath: bare repo $bareRepoUri")
 
@@ -949,7 +949,7 @@ class ContentLoaderTest {
                     .setDirectory(tempRepo)
                     .call()) {
 
-                FileUtils.copyDirectory(new File(System.getProperty('user.dir') + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
+                FileUtils.copyDirectory(new File(System.getProperty('user.dir') + '/src/test/resources/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
 
                 git.add().addFilepattern('.').call()
 
