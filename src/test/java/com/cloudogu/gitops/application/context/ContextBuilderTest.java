@@ -21,7 +21,6 @@ class ContextBuilderTest {
 		assertThat(context.isInternalScmManager()).isFalse();
 		assertThat(context.isExternalScmManager()).isTrue();
 		assertThat(context.isAirgapped()).isFalse();
-		assertThat(context.isAirgapped()).isFalse();
 		assertThat(context.getClusterDistribution()).isEqualTo(DeploymentContext.ClusterDistribution.KUBERNETES);
 		assertThat(context.isOpenshift()).isFalse();
 	}
