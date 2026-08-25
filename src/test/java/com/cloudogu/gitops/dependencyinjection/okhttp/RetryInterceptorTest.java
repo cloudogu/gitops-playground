@@ -65,9 +65,8 @@ class RetryInterceptorTest {
 				.withBody("Successful Result")));
 
 		OkHttpClient client = createClient();
-		try (Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()) {
-			assertThat(response.body().string()).isEqualTo("Successful Result");
-		}
+		Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute();
+		assertThat(response.body().string()).isEqualTo("Successful Result");
 		wireMock.verify(3, getRequestedFor(urlEqualTo(path)));
 	}
 
@@ -95,9 +94,8 @@ class RetryInterceptorTest {
 				.withBody("Successful Result")));
 
 		OkHttpClient client = createClient();
-		try (Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()) {
-			assertThat(response.body().string()).isEqualTo("Successful Result");
-		}
+		Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute();
+		assertThat(response.body().string()).isEqualTo("Successful Result");
 		wireMock.verify(3, getRequestedFor(urlEqualTo(path)));
 	}
 
@@ -121,9 +119,8 @@ class RetryInterceptorTest {
 				.withBody("Successful Result")));
 
 		OkHttpClient client = createClient(100);
-		try (Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()) {
-			assertThat(response.body().string()).isEqualTo("Successful Result");
-		}
+		Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute();
+		assertThat(response.body().string()).isEqualTo("Successful Result");
 		wireMock.verify(2, getRequestedFor(urlEqualTo(path)));
 	}
 
