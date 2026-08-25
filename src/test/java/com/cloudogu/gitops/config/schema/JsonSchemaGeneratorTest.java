@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.config.schema;
 
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
@@ -14,9 +13,11 @@ class JsonSchemaGeneratorTest {
 	@Test
 	void configurationSchemaIsNotOutOfDate() throws IOException {
 		ObjectMapper objectMapper = new ObjectMapper();
-		JsonNode expected = new JsonSchemaGenerator().createSchema();
-		JsonNode actual = objectMapper.readTree(
-			new File(System.getProperty("user.dir"), "docs/configuration.schema.json")
+		String expected = objectMapper.writeValueAsString(
+			objectMapper.readTree(new JsonSchemaGenerator().createSchema().toString())
+		);
+		String actual = objectMapper.writeValueAsString(
+			objectMapper.readTree(new File(System.getProperty("user.dir"), "docs/configuration.schema.json"))
 		);
 
 		assertThat(actual)

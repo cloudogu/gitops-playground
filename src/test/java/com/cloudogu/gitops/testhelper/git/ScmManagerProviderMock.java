@@ -85,7 +85,7 @@ public class ScmManagerProviderMock implements GitProvider {
 			return createCalls.merge(repoTarget, 1, Integer::sum) == 1;
 		}
 
-		return nextCreateResults.isEmpty() ? true : nextCreateResults.remove(0);
+		return nextCreateResults == null || nextCreateResults.isEmpty() ? true : nextCreateResults.remove(0);
 	}
 
 	@Override

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TestLogger {
 
@@ -58,13 +59,13 @@ public class TestLogger {
 		public List<ILoggingEvent> search(String string) {
 			return list.stream()
 					   .filter(event -> event.toString().contains(string))
-					   .toList();
+					   .collect(Collectors.toList());
 		}
 
 		public List<ILoggingEvent> search(String string, Level level) {
 			return list.stream()
 					   .filter(event -> event.toString().contains(string) && event.getLevel().equals(level))
-					   .toList();
+					   .collect(Collectors.toList());
 		}
 
 		public int getSize() {
