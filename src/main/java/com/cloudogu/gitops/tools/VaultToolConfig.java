@@ -16,7 +16,8 @@ public record VaultToolConfig(
 	boolean developmentMode,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public VaultToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);

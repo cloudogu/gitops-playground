@@ -108,7 +108,7 @@ public class ScmManagerApiClient {
 
 	protected Retrofit retrofit() {
 		return new Retrofit.Builder().baseUrl(this.url).client(okHttpClient)
-		                             // Converts HTTP body objects to JSON
-		                             .addConverterFactory(JacksonConverterFactory.create()).build();
+									 // Converts HTTP body objects to JSON
+									 .addConverterFactory(JacksonConverterFactory.create()).build();
 	}
 }

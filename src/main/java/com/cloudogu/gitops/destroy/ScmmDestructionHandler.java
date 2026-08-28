@@ -45,8 +45,8 @@ public class ScmmDestructionHandler implements DestructionHandler {
 		String namePrefix = prefixNamespace ? config.getApplication().getNamePrefix() : "";
 		try {
 			Response<Void> response = getScmmApiClient().repositoryApi()
-			                                            .delete(namePrefix + namespace, repository)
-			                                            .execute();
+														.delete(namePrefix + namespace, repository)
+														.execute();
 			if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
 				throw new IllegalStateException("Could not delete repository " + namespace + "/" + repository + " (" + response.code() + " " + response.message() + "): " + readErrorBody(
 					response));
@@ -63,8 +63,8 @@ public class ScmmDestructionHandler implements DestructionHandler {
 	private void deleteUser(String name) {
 		try {
 			Response<Void> response = getScmmApiClient().usersApi()
-			                                            .delete(config.getApplication().getNamePrefix() + name)
-			                                            .execute();
+														.delete(config.getApplication().getNamePrefix() + name)
+														.execute();
 			if (response.code() != HTTP_NO_CONTENT && response.code() != HTTP_NOT_FOUND) {
 				throw new IllegalStateException("Could not delete user " + name + " (" + response.code() + " " + response.message() + "): " + readErrorBody(
 					response));
@@ -92,9 +92,9 @@ public class ScmmDestructionHandler implements DestructionHandler {
 
 			scmmApiClient = new ScmManagerApiClient(
 				urls.clientApiBase().toString(), config.getScm()
-				                                       .getScmManager()
-				                                       .getCredentials(), config.getApplication()
-				                                                                .getInsecure()
+													   .getScmManager()
+													   .getCredentials(), config.getApplication()
+																				.getInsecure()
 			);
 		}
 		return scmmApiClient;

@@ -264,11 +264,11 @@ class K8sClientHelper {
 
 	private static ResourceDefinitionContext toResourceDefinitionContext(Map<String, Object> match) {
 		return new ResourceDefinitionContext.Builder().withGroup((String) match.get(GROUP_KEY))
-		                                              .withVersion((String) match.get(VERSION_KEY))
-		                                              .withKind((String) match.get(KIND_KEY))
-		                                              .withPlural((String) match.get(PLURAL_KEY))
-		                                              .withNamespaced(Boolean.TRUE.equals(match.get(NAMESPACED_KEY)))
-		                                              .build();
+													  .withVersion((String) match.get(VERSION_KEY))
+													  .withKind((String) match.get(KIND_KEY))
+													  .withPlural((String) match.get(PLURAL_KEY))
+													  .withNamespaced(Boolean.TRUE.equals(match.get(NAMESPACED_KEY)))
+													  .build();
 	}
 
 	static Map<String, Object> findApiResourceViaDiscovery(
@@ -353,8 +353,8 @@ class K8sClientHelper {
 
 	private static boolean matchesResource(APIResource res, String normalized, String original) {
 		boolean match = res.getKind().equalsIgnoreCase(original) || res.getName()
-		                                                               .equalsIgnoreCase(normalized) || (res.getSingularName() != null && res.getSingularName()
-		                                                                                                                                     .equalsIgnoreCase(
+																	   .equalsIgnoreCase(normalized) || (res.getSingularName() != null && res.getSingularName()
+																																			 .equalsIgnoreCase(
 																																				 normalized));
 		if (match || res.getShortNames() == null) {
 			return match;

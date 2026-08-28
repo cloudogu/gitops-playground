@@ -1021,9 +1021,9 @@ public class Config {
 		@JsonCreator
 		public static VaultMode fromExternalValue(String value) {
 			return Arrays.stream(values())
-			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
-			             .findFirst()
-			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+						 .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+						 .findFirst()
+						 .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
 		}
 
 		@JsonValue
@@ -1074,8 +1074,8 @@ public class Config {
 					BeanDescription beanDesc,
 					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
-					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-					                     .toList();
+										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+										 .toList();
 				}
 			}));
 			return mapper;

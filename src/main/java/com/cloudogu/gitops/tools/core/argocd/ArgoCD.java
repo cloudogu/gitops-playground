@@ -166,9 +166,9 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 			return "null";
 		}
 		return map.entrySet()
-		          .stream()
-		          .map(entry -> entry.getKey() + ":" + entry.getValue())
-		          .collect(Collectors.joining(", ", "[", "]"));
+				  .stream()
+				  .map(entry -> entry.getKey() + ":" + entry.getValue())
+				  .collect(Collectors.joining(", ", "[", "]"));
 	}
 
 	private void createNotificationSecretIfRequired() {

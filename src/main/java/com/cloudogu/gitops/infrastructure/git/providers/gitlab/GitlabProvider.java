@@ -47,7 +47,7 @@ public class GitlabProvider implements GitProvider {
 		this.namePrefix = namePrefix;
 
 		String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url")
-		                    .trim();
+							.trim();
 		Credentials creds = gitlabConfig.getCredentials();
 		String pat = null;
 		if (creds != null) {
@@ -79,14 +79,14 @@ public class GitlabProvider implements GitProvider {
 
 		long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath);
 		Project project = new Project().withName(repoName)
-		                               .withPath(projectPath)
-		                               .withDescription(description != null ? description : "")
-		                               .withIssuesEnabled(false)
-		                               .withMergeRequestsEnabled(false)
-		                               .withWikiEnabled(false)
-		                               .withSnippetsEnabled(false)
-		                               .withNamespaceId(subgroupId)
-		                               .withInitializeWithReadme(initialize);
+									   .withPath(projectPath)
+									   .withDescription(description != null ? description : "")
+									   .withIssuesEnabled(false)
+									   .withMergeRequestsEnabled(false)
+									   .withWikiEnabled(false)
+									   .withSnippetsEnabled(false)
+									   .withNamespaceId(subgroupId)
+									   .withInitializeWithReadme(initialize);
 		project.setVisibility(toVisibility(gitlabConfig.getDefaultVisibility()));
 
 		try {
@@ -106,21 +106,21 @@ public class GitlabProvider implements GitProvider {
 		try {
 			if (scope == Scope.GROUP) {
 				Group group = api.getGroupApi()
-				                 .getGroups(principal)
-				                 .stream()
-				                 .filter(candidateGroup -> principal.equals(candidateGroup.getFullPath()) || principal.equals(
+								 .getGroups(principal)
+								 .stream()
+								 .filter(candidateGroup -> principal.equals(candidateGroup.getFullPath()) || principal.equals(
 									 candidateGroup.getPath()) || principal.equals(candidateGroup.getName()))
-				                 .findFirst()
-				                 .orElseThrow(() -> new IllegalArgumentException("Group '" + principal + NOT_FOUND_SUFFIX));
+								 .findFirst()
+								 .orElseThrow(() -> new IllegalArgumentException("Group '" + principal + NOT_FOUND_SUFFIX));
 				api.getProjectApi().shareProject(project.getId(), group.getId(), level, null);
 			} else {
 				org.gitlab4j.api.models.User user = api.getUserApi()
-				                                       .findUsers(principal)
-				                                       .stream()
-				                                       .filter(candidateUser -> principal.equals(candidateUser.getUsername()) || principal.equals(
+													   .findUsers(principal)
+													   .stream()
+													   .filter(candidateUser -> principal.equals(candidateUser.getUsername()) || principal.equals(
 														   candidateUser.getEmail()))
-				                                       .findFirst()
-				                                       .orElseThrow(() -> new IllegalArgumentException("User '" + principal + NOT_FOUND_SUFFIX));
+													   .findFirst()
+													   .orElseThrow(() -> new IllegalArgumentException("User '" + principal + NOT_FOUND_SUFFIX));
 				api.getProjectApi().addMember(project.getId(), user.getId(), level);
 			}
 		} catch (GitLabApiException e) {
@@ -194,7 +194,7 @@ public class GitlabProvider implements GitProvider {
 			GroupApi groupApi = api.getGroupApi();
 			parentGroupCache = isNumeric ? groupApi.getGroup(Long.parseLong(raw)) : groupApi.getGroup(LEADING_SLASHES.matcher(
 																														 raw)
-			                                                                                                         .replaceFirst(
+																													 .replaceFirst(
 																														 ""));
 			return parentGroupCache;
 		} catch (GitLabApiException e) {
@@ -298,7 +298,7 @@ public class GitlabProvider implements GitProvider {
 		}
 		Tuple<String, String> target = GitProvider.splitRepoTarget(repoTarget);
 		return parentGroup().getFullPath() + "/" + target.getFirst().toLowerCase(Locale.ROOT) + "/" + target.getSecond()
-		                                                                                                    .toLowerCase(
+																											.toLowerCase(
 																												Locale.ROOT);
 	}
 

@@ -33,11 +33,11 @@ public class SingleTenantMode implements DeploymentMode {
 
 		createRepoCredentialsSecret(
 			"argocd-repo-creds-scm", namespace, gitHandler.getTenant()
-			                                              .getUrl(), gitHandler.getTenant()
-			                                                                   .getCredentials()
-			                                                                   .getUsername(), gitHandler.getTenant()
-			                                                                                             .getCredentials()
-			                                                                                             .getPassword()
+														  .getUrl(), gitHandler.getTenant()
+																			   .getCredentials()
+																			   .getUsername(), gitHandler.getTenant()
+																										 .getCredentials()
+																										 .getPassword()
 		);
 	}
 
@@ -47,22 +47,22 @@ public class SingleTenantMode implements DeploymentMode {
 
 		for (String ns : config.activeNamespaces()) {
 			new RbacDefinition(Role.Variant.ARGOCD).withName("argocd")
-			                                       .withNamespace(ns)
-			                                       .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
-			                                       .withTemplateConfig(config.rbacTemplateConfig())
-			                                       .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-			                                       .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
-			                                       .generate();
+												   .withNamespace(ns)
+												   .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
+												   .withTemplateConfig(config.rbacTemplateConfig())
+												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
+												   .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
+												   .generate();
 		}
 
 		if (config.clusterAdmin()) {
 			new RbacDefinition(Role.Variant.CLUSTER_ADMIN).withName("argocd-cluster-admin")
-			                                              .withNamespace(namespace)
-			                                              .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
-			                                              .withTemplateConfig(config.rbacTemplateConfig())
-			                                              .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-			                                              .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
-			                                              .generate();
+														  .withNamespace(namespace)
+														  .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
+														  .withTemplateConfig(config.rbacTemplateConfig())
+														  .withRepo(repositoryWorkspace.getClusterResourcesRepository())
+														  .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
+														  .generate();
 		}
 	}
 

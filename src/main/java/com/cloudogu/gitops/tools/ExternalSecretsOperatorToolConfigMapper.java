@@ -20,21 +20,22 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 	public ExternalSecretsOperatorToolConfig map(DeploymentContext context) {
 		Config.SecretsSchema secrets = config.getFeatures().getSecrets();
 		return ExternalSecretsOperatorToolConfig.builder()
-			.active(secrets.getActive())
-			.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
-			.helm(ToolConfigMapperSupport.helmChart(
-				secrets.getExternalSecrets().getHelm(), config.getApplication().getLocalHelmChartFolder()
-			))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config))
-			.build();
+												.active(secrets.getActive())
+												.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
+												.helm(ToolConfigMapperSupport.helmChart(
+													secrets.getExternalSecrets().getHelm(),
+													config.getApplication().getLocalHelmChartFolder()
+												))
+												.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+												.templateConfig(templateConfig(config))
+												.build();
 	}
 
 	private static Map<String, Object> templateConfig(Config config) {
 		Config.SecretsSchema.ESOSchema.ESOHelmSchema helm = config.getFeatures()
-			.getSecrets()
-			.getExternalSecrets()
-			.getHelm();
+																  .getSecrets()
+																  .getExternalSecrets()
+																  .getHelm();
 		return new TemplateConfig()
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())

@@ -32,7 +32,8 @@ public record MonitoringToolConfig(
 	boolean jenkinsActive,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public MonitoringToolConfig {
 		activeNamespaces = ImmutableConfigData.copyList(activeNamespaces);

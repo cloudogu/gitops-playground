@@ -128,9 +128,9 @@ public class K8sClient {
 	public K8sClient(com.cloudogu.gitops.config.Config gopConfig) {
 		io.fabric8.kubernetes.client.Config config = new ConfigBuilder().withRequestTimeout(
 																			FABRIC8_REQUEST_TIMEOUT_MILLIS)
-		                                                                .withConnectionTimeout(
+																		.withConnectionTimeout(
 																			FABRIC8_CONNECTION_TIMEOUT_MILLIS)
-		                                                                .build();
+																		.build();
 
 		this.client = new KubernetesClientBuilder().withConfig(config).build();
 		this.gopConfig = gopConfig;
@@ -210,8 +210,8 @@ public class K8sClient {
 	private String findServiceNodePort(String serviceName, String namespace) {
 		Service service = client.services().inNamespace(namespace).withName(serviceName).get();
 		if (service != null && service.getSpec() != null && service.getSpec().getPorts() != null && !service.getSpec()
-		                                                                                                    .getPorts()
-		                                                                                                    .isEmpty()) {
+																											.getPorts()
+																											.isEmpty()) {
 			Integer port = service.getSpec().getPorts().get(0).getNodePort();
 			return port != null ? port.toString() : null;
 		}
@@ -234,28 +234,28 @@ public class K8sClient {
 		int targetPort = ports.length > 1 ? Integer.parseInt(ports[1]) : port;
 
 		ServicePort servicePort = new ServicePortBuilder().withPort(port)
-		                                                  .withTargetPort(new IntOrString(targetPort))
-		                                                  .build();
+														  .withTargetPort(new IntOrString(targetPort))
+														  .build();
 		if (nodePort != null && !nodePort.isEmpty()) {
 			servicePort.setNodePort(Integer.parseInt(nodePort));
 		}
 
 		Service service = new ServiceBuilder().withNewMetadata()
-		                                      .withName(name)
-		                                      .withNamespace(resolveNamespace(namespace))
-		                                      .endMetadata()
-		                                      .withNewSpec()
-		                                      .withType("NodePort")
-		                                      .withPorts(servicePort)
-		                                      .endSpec()
-		                                      .build();
+											  .withName(name)
+											  .withNamespace(resolveNamespace(namespace))
+											  .endMetadata()
+											  .withNewSpec()
+											  .withType("NodePort")
+											  .withPorts(servicePort)
+											  .endSpec()
+											  .build();
 
 		executeWithErrorHandling(
 			"create NodePort service " + name, () -> {
 				client.services()
-				      .inNamespace(resolveNamespace(namespace))
-				      .resource(service)
-				      .createOr(NonDeletingOperation::update);
+					  .inNamespace(resolveNamespace(namespace))
+					  .resource(service)
+					  .createOr(NonDeletingOperation::update);
 				return null;
 			}
 		);
@@ -307,7 +307,7 @@ public class K8sClient {
 
 		String patchJson = Serialization.asJson(patch);
 		PatchContext patchContext = new PatchContext.Builder().withPatchType(io.fabric8.kubernetes.client.dsl.base.PatchType.JSON)
-		                                                      .build();
+															  .build();
 
 		executeWithErrorHandling(
 			"patch service " + serviceName, () -> {
@@ -436,19 +436,19 @@ public class K8sClient {
 
 		String resolvedType = "generic".equals(type) ? "Opaque" : type;
 		Secret secret = new SecretBuilder().withNewMetadata()
-		                                   .withName(name)
-		                                   .withNamespace(resolveNamespace(namespace))
-		                                   .endMetadata()
-		                                   .withType(resolvedType)
-		                                   .withStringData(data)
-		                                   .build();
+										   .withName(name)
+										   .withNamespace(resolveNamespace(namespace))
+										   .endMetadata()
+										   .withType(resolvedType)
+										   .withStringData(data)
+										   .build();
 
 		executeWithErrorHandling(
 			"create secret " + name, () -> {
 				client.secrets()
-				      .inNamespace(resolveNamespace(namespace))
-				      .resource(secret)
-				      .createOr(NonDeletingOperation::update);
+					  .inNamespace(resolveNamespace(namespace))
+					  .resource(secret)
+					  .createOr(NonDeletingOperation::update);
 				return null;
 			}
 		);
@@ -486,19 +486,19 @@ public class K8sClient {
 		);
 
 		Secret secret = new SecretBuilder().withNewMetadata()
-		                                   .withName(name)
-		                                   .withNamespace(resolveNamespace(namespace))
-		                                   .endMetadata()
-		                                   .withType(DOCKER_CONFIG_JSON_TYPE)
-		                                   .addToStringData(DOCKER_CONFIG_JSON_KEY, dockerConfig)
-		                                   .build();
+										   .withName(name)
+										   .withNamespace(resolveNamespace(namespace))
+										   .endMetadata()
+										   .withType(DOCKER_CONFIG_JSON_TYPE)
+										   .addToStringData(DOCKER_CONFIG_JSON_KEY, dockerConfig)
+										   .build();
 
 		executeWithErrorHandling(
 			"create image pull secret " + name, () -> {
 				client.secrets()
-				      .inNamespace(resolveNamespace(namespace))
-				      .resource(secret)
-				      .createOr(NonDeletingOperation::update);
+					  .inNamespace(resolveNamespace(namespace))
+					  .resource(secret)
+					  .createOr(NonDeletingOperation::update);
 				return null;
 			}
 		);
@@ -521,8 +521,8 @@ public class K8sClient {
 				Secret secret = client.secrets().inNamespace(resolveNamespace(namespace)).withName(name).get();
 
 				return (secret != null && secret.getData() != null && secret.getData()
-				                                                            .containsKey("namespaces")) ? secret.getData()
-				                                                                                                .get(
+																			.containsKey("namespaces")) ? secret.getData()
+																												.get(
 																													"namespaces") : null;
 			}
 		);
@@ -591,9 +591,9 @@ public class K8sClient {
 
 	private Credentials resolveCredentialsFromSecret(Credentials credentials) {
 		Secret secret = client.secrets()
-		                      .inNamespace(credentials.getSecretNamespace())
-		                      .withName(credentials.getSecretName())
-		                      .get();
+							  .inNamespace(credentials.getSecretNamespace())
+							  .withName(credentials.getSecretName())
+							  .get();
 		if (secret == null || secret.getData() == null) {
 			throw new IllegalStateException("Secret " + credentials.getSecretName() + NOT_FOUND_IN_NAMESPACE + credentials.getSecretNamespace());
 		}
@@ -602,11 +602,11 @@ public class K8sClient {
 		String usernameEncoded = secretData.get(credentials.getUsernameKey());
 		String username = usernameEncoded != null ? new String(
 			Base64.getDecoder()
-			      .decode(usernameEncoded), StandardCharsets.UTF_8
+				  .decode(usernameEncoded), StandardCharsets.UTF_8
 		) : credentials.getUsername();
 		String password = new String(
 			Base64.getDecoder()
-			      .decode(secretData.get(credentials.getPasswordKey())), StandardCharsets.UTF_8
+				  .decode(secretData.get(credentials.getPasswordKey())), StandardCharsets.UTF_8
 		);
 
 		Credentials credentialsNew = new Credentials(credentials);
@@ -641,18 +641,18 @@ public class K8sClient {
 		Map<String, String> data = Map.of(file.getName(), fileContent);
 
 		ConfigMap configMap = new ConfigMapBuilder().withNewMetadata()
-		                                            .withName(name)
-		                                            .withNamespace(resolveNamespace(namespace))
-		                                            .endMetadata()
-		                                            .withData(data)
-		                                            .build();
+													.withName(name)
+													.withNamespace(resolveNamespace(namespace))
+													.endMetadata()
+													.withData(data)
+													.build();
 
 		executeWithErrorHandling(
 			"create ConfigMap " + name + " from file", () -> {
 				client.configMaps()
-				      .inNamespace(resolveNamespace(namespace))
-				      .resource(configMap)
-				      .createOr(NonDeletingOperation::update);
+					  .inNamespace(resolveNamespace(namespace))
+					  .resource(configMap)
+					  .createOr(NonDeletingOperation::update);
 				return null;
 			}
 		);
@@ -713,9 +713,9 @@ public class K8sClient {
 			List<File> yamlFiles;
 			try (Stream<Path> stream = Files.walk(location.toPath())) {
 				yamlFiles = stream.filter(Files::isRegularFile)
-				                  .map(Path::toFile)
-				                  .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
-				                  .collect(Collectors.toCollection(ArrayList::new));
+								  .map(Path::toFile)
+								  .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
+								  .collect(Collectors.toCollection(ArrayList::new));
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to list YAML files in directory: " + yamlLocation, e);
 			}
@@ -1078,16 +1078,16 @@ public class K8sClient {
 		List<String> runParams = params != null ? Arrays.asList(params) : Collections.emptyList();
 
 		Pod pod = new PodBuilder().withNewMetadata()
-		                          .withName(name)
-		                          .withNamespace(resolvedNamespace)
-		                          .endMetadata()
-		                          .withNewSpec()
-		                          .addNewContainer()
-		                          .withName(name)
-		                          .withImage(image)
-		                          .endContainer()
-		                          .endSpec()
-		                          .build();
+								  .withName(name)
+								  .withNamespace(resolvedNamespace)
+								  .endMetadata()
+								  .withNewSpec()
+								  .addNewContainer()
+								  .withName(name)
+								  .withImage(image)
+								  .endContainer()
+								  .endSpec()
+								  .build();
 
 		K8sClientHelper.applyRunParams(pod, runParams);
 
@@ -1099,9 +1099,9 @@ public class K8sClient {
 		final Pod finalPod = pod;
 		Pod createdPod = executeWithErrorHandling(
 			"run pod " + name, () -> client.pods()
-			                               .inNamespace(resolvedNamespace)
-			                               .resource(finalPod)
-			                               .create()
+										   .inNamespace(resolvedNamespace)
+										   .resource(finalPod)
+										   .create()
 		);
 
 		log.debug("Pod {} created successfully", name);
@@ -1109,7 +1109,7 @@ public class K8sClient {
 			return K8sClientHelper.collectPodRunOutput(
 				client,
 				createdPod.getMetadata()
-				          .getName(),
+						  .getName(),
 				resolvedNamespace,
 				K8sClientHelper.shouldRemovePod(runParams),
 				defaultRetries,
@@ -1139,15 +1139,15 @@ public class K8sClient {
 			);
 			ResourceDefinitionContext context = new ResourceDefinitionContext.Builder().withGroup((String) match.get(
 																						   "group"))
-			                                                                           .withVersion((String) match.get(
+																					   .withVersion((String) match.get(
 																						   "version"))
-			                                                                           .withKind((String) match.get(
+																					   .withKind((String) match.get(
 																						   "kind"))
-			                                                                           .withPlural((String) match.get(
+																					   .withPlural((String) match.get(
 																						   "plural"))
-			                                                                           .withNamespaced((Boolean) match.get(
+																					   .withNamespaced((Boolean) match.get(
 																						   "namespaced"))
-			                                                                           .build();
+																					   .build();
 
 			// `apiClient`'s type is a long nested generic (MixedOperation<GenericKubernetesResource,
 			// GenericKubernetesResourceList, Resource<GenericKubernetesResource>>); spelling it out
@@ -1401,7 +1401,7 @@ public class K8sClient {
 
 	private boolean runInOpenshift() {
 		return this.gopConfig != null && this.gopConfig.getApplication() != null && this.gopConfig.getApplication()
-		                                                                                          .getOpenshift();
+																								  .getOpenshift();
 	}
 
 	/**

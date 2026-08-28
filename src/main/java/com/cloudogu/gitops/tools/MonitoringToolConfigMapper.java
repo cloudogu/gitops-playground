@@ -22,30 +22,33 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		return MonitoringToolConfig.builder()
-			.active(monitoring.getActive())
-			.namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
-			.namePrefix(config.getApplication().getNamePrefix())
-			.activeNamespaces(activeNamespaces)
-			.namespaceIsolation(config.getApplication().getNamespaceIsolation())
-			.netpols(config.getApplication().getNetpols())
-			.skipCrds(config.getApplication().getSkipCrds())
-			.openshift(context.isOpenshift())
-			.airgapped(context.isAirgapped())
-			.applicationPassword(config.getApplication().getPassword())
-			.jenkinsMetricsPassword(config.getJenkins().getMetricsPassword())
-			.smtpUser(config.getFeatures().getMail().getSmtpUser())
-			.smtpPassword(config.getFeatures().getMail().getSmtpPassword())
-			.grafanaUrl(monitoring.getGrafanaUrl())
-			.jenkinsInternal(config.getJenkins().getInternal())
-			.jenkinsNamespace(config.getJenkins().getNamespace())
-			.jenkinsUrl(config.getJenkins().getUrl())
-			.jenkinsMetricsUsername(config.getJenkins().getMetricsUsername())
-			.ingressActive(config.getFeatures().getIngress().getActive())
-			.jenkinsActive(config.getJenkins().getActive())
-			.helm(ToolConfigMapperSupport.helmChart(monitoring.getHelm(), config.getApplication().getLocalHelmChartFolder()))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config, context))
-			.build();
+								   .active(monitoring.getActive())
+								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
+								   .namePrefix(config.getApplication().getNamePrefix())
+								   .activeNamespaces(activeNamespaces)
+								   .namespaceIsolation(config.getApplication().getNamespaceIsolation())
+								   .netpols(config.getApplication().getNetpols())
+								   .skipCrds(config.getApplication().getSkipCrds())
+								   .openshift(context.isOpenshift())
+								   .airgapped(context.isAirgapped())
+								   .applicationPassword(config.getApplication().getPassword())
+								   .jenkinsMetricsPassword(config.getJenkins().getMetricsPassword())
+								   .smtpUser(config.getFeatures().getMail().getSmtpUser())
+								   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
+								   .grafanaUrl(monitoring.getGrafanaUrl())
+								   .jenkinsInternal(config.getJenkins().getInternal())
+								   .jenkinsNamespace(config.getJenkins().getNamespace())
+								   .jenkinsUrl(config.getJenkins().getUrl())
+								   .jenkinsMetricsUsername(config.getJenkins().getMetricsUsername())
+								   .ingressActive(config.getFeatures().getIngress().getActive())
+								   .jenkinsActive(config.getJenkins().getActive())
+								   .helm(ToolConfigMapperSupport.helmChart(
+									   monitoring.getHelm(),
+									   config.getApplication().getLocalHelmChartFolder()
+								   ))
+								   .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								   .templateConfig(templateConfig(config, context))
+								   .build();
 	}
 
 	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
@@ -72,8 +75,10 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("features.monitoring.grafanaEmailTo", config.getFeatures().getMonitoring().getGrafanaEmailTo())
 			.put("features.monitoring.grafanaUrl", config.getFeatures().getMonitoring().getGrafanaUrl())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
-			.put("features.monitoring.oidc", ToolConfigMapperSupport.oidc(
-				config.getFeatures().getMonitoring().getOidc()))
+			.put(
+				"features.monitoring.oidc", ToolConfigMapperSupport.oidc(
+					config.getFeatures().getMonitoring().getOidc())
+			)
 			.put("features.monitoring.helm.grafanaImage", helm.getGrafanaImage())
 			.put("features.monitoring.helm.grafanaSidecarImage", helm.getGrafanaSidecarImage())
 			.put("features.monitoring.helm.prometheusConfigReloaderImage", helm.getPrometheusConfigReloaderImage())

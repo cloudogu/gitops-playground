@@ -80,7 +80,7 @@ public class ClusterResourcesCopyFilter {
 
 		if (isDir) {
 			return prefixes.stream()
-			               .anyMatch(prefix -> relDir.equals(prefix) || relDir.startsWith(prefix) || prefix.startsWith(
+						   .anyMatch(prefix -> relDir.equals(prefix) || relDir.startsWith(prefix) || prefix.startsWith(
 							   relDir));
 		}
 

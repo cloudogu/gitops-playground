@@ -31,23 +31,26 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 		String releaseName = namePrefix.strip().isEmpty() ? "scmm" : namePrefix.strip() + "scmm";
 
 		return ScmManagerToolConfig.builder()
-			.active(context.isInternalScmManager())
-			.multiTenant(context.isMultiTenant())
-			.namePrefix(namePrefix)
-			.namespace(namespace)
-			.releaseName(releaseName)
-			.ingress(scmManager.getIngress())
-			.username(scmManager.getCredentials().getUsername())
-			.password(scmManager.getCredentials().getPassword())
-			.gitOpsUsername(scmManager.getGitOpsUsername())
-			.skipPlugins(scmManager.getSkipPlugins())
-			.skipRestart(scmManager.getSkipRestart())
-			.jenkinsActive(config.getJenkins().getActive())
-			.jenkinsUrl(config.getJenkins().getUrlForScm())
-			.helm(ToolConfigMapperSupport.helmChart(scmManager.getHelm(), config.getApplication().getLocalHelmChartFolder()))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config, scmManager))
-			.build();
+								   .active(context.isInternalScmManager())
+								   .multiTenant(context.isMultiTenant())
+								   .namePrefix(namePrefix)
+								   .namespace(namespace)
+								   .releaseName(releaseName)
+								   .ingress(scmManager.getIngress())
+								   .username(scmManager.getCredentials().getUsername())
+								   .password(scmManager.getCredentials().getPassword())
+								   .gitOpsUsername(scmManager.getGitOpsUsername())
+								   .skipPlugins(scmManager.getSkipPlugins())
+								   .skipRestart(scmManager.getSkipRestart())
+								   .jenkinsActive(config.getJenkins().getActive())
+								   .jenkinsUrl(config.getJenkins().getUrlForScm())
+								   .helm(ToolConfigMapperSupport.helmChart(
+									   scmManager.getHelm(),
+									   config.getApplication().getLocalHelmChartFolder()
+								   ))
+								   .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								   .templateConfig(templateConfig(config, scmManager))
+								   .build();
 	}
 
 	private static Map<String, Object> templateConfig(

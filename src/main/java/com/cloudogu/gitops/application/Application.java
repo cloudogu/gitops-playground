@@ -104,7 +104,7 @@ public class Application {
 							config,
 							"statics",
 							new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-							                                                             .getStaticModels()
+																						 .getStaticModels()
 						)
 					));
 				} catch (Exception e) {

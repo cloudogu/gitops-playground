@@ -84,9 +84,9 @@ public class CommandExecutor {
 				));
 			}
 			List<String> envp = env.entrySet()
-			                       .stream()
-			                       .map(entry -> entry.getKey() + "=" + (entry.getValue() != null ? entry.getValue() : ""))
-			                       .toList();
+								   .stream()
+								   .map(entry -> entry.getKey() + "=" + (entry.getValue() != null ? entry.getValue() : ""))
+								   .toList();
 
 			Process proc = doExecute(command, envp);
 			return getOutput(proc, command, failOnError);
@@ -227,7 +227,7 @@ public class CommandExecutor {
 
 		Output output = new Output(
 			stdErr.toString(StandardCharsets.UTF_8)
-			      .trim(), stdOut.toString(StandardCharsets.UTF_8).trim(), proc.exitValue()
+				  .trim(), stdOut.toString(StandardCharsets.UTF_8).trim(), proc.exitValue()
 		);
 
 		if (failOnError && proc.exitValue() > 0) {

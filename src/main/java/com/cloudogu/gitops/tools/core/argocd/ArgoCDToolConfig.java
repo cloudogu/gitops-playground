@@ -26,7 +26,8 @@ public record ArgoCDToolConfig(
 	boolean clusterAdmin,
 	ScmProviderType scmProviderType,
 	Map<String, Object> templateConfig,
-	Map<String, Object> rbacTemplateConfig) {
+	Map<String, Object> rbacTemplateConfig
+) {
 
 	public ArgoCDToolConfig {
 		activeNamespaces = ImmutableConfigData.copyList(activeNamespaces);
