@@ -584,10 +584,11 @@ class ApplicationConfiguratorTest {
 
 	@Test
 	void multiTenantModeCentralScmUrl() {
-		testConfig.getMultiTenant().getScmManager().setUrl("scmm.localhost/scm");
+		testConfig.getMultiTenant().setUseDedicatedInstance(true);
+		testConfig.getMultiTenant().getScmManager().setUrl("scmm.localhost/scm/");
 		testConfig.getApplication().setNamePrefix("foo");
 		applicationConfigurator.initConfig(testConfig);
-		assertThat(testConfig.getMultiTenant().getScmManager().getUrl()).toString().equals("scmm.localhost/scm/");
+		assertThat(testConfig.getMultiTenant().getScmManager().getUrl()).isEqualTo("scmm.localhost/scm");
 	}
 
 	@Test
