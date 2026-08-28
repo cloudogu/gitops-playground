@@ -13,7 +13,8 @@ public record ExternalSecretsOperatorToolConfig(
 	String namespace,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public ExternalSecretsOperatorToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);

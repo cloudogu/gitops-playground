@@ -13,7 +13,8 @@ public record IngressToolConfig(
 	String namespace,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public IngressToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);

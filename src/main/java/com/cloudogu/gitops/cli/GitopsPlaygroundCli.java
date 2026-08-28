@@ -149,9 +149,9 @@ public class GitopsPlaygroundCli {
 			"Calling confirm for message: {} | yes = {} | System.in class: {}",
 			message,
 			config.getApplication()
-			      .getYes(),
+				  .getYes(),
 			System.in.getClass()
-			         .getName()
+					 .getName()
 		);
 		if (config.getApplication().getYes()) {
 			return true;
@@ -207,7 +207,7 @@ public class GitopsPlaygroundCli {
 		rootLogger(loggerContext).detachAppender(STDOUT_APPENDER_NAME);
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
 		encoder.setPattern(LOGGER_PATTERN_TOKEN.matcher(THREAD_PATTERN_TOKEN.matcher(defaultPattern).replaceAll(" "))
-		                                       .replaceAll(" "));
+											   .replaceAll(" "));
 		encoder.setContext(loggerContext);
 		encoder.start();
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
@@ -270,13 +270,13 @@ public class GitopsPlaygroundCli {
 		log.debug(
 			"mergedConfig yes before parseArgs: {}",
 			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-			                                                    .getYes() : "null"
+																.getYes() : "null"
 		);
 		new CommandLine(mergedConfig).parseArgs(args);
 		log.debug(
 			"mergedConfig yes after parseArgs: {}",
 			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-			                                                    .getYes() : "null"
+																.getYes() : "null"
 		);
 
 		return mergedConfig;
@@ -331,7 +331,7 @@ public class GitopsPlaygroundCli {
 			} catch (Exception e) {
 				throw new RuntimeException(
 					"Failed to execute hook " + hookName + " on " + configLifecycleHook.getClass()
-					                                                                   .getName(), e
+																					   .getName(), e
 				);
 			}
 		}

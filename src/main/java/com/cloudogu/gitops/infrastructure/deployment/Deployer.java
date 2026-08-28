@@ -47,7 +47,7 @@ public class Deployer {
 		}
 
 		argoCdStrategyProvider.get()
-		                      .deployFeature(
+							  .deployFeature(
 								  repoURL,
 								  repoName,
 								  chartOrPath,

@@ -20,9 +20,9 @@ public class AuthorizationInterceptor implements Interceptor {
 	@Override
 	public Response intercept(@NotNull Chain chain) throws IOException {
 		Request newRequest = chain.request()
-		                          .newBuilder()
-		                          .header("Authorization", Credentials.basic(username, password))
-		                          .build();
+								  .newBuilder()
+								  .header("Authorization", Credentials.basic(username, password))
+								  .build();
 
 		return chain.proceed(newRequest);
 	}

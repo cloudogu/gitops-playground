@@ -20,12 +20,15 @@ public class CertManagerToolConfigMapper implements ToolConfigMapper<CertManager
 	public CertManagerToolConfig map(DeploymentContext context) {
 		Config.CertManagerSchema certManager = config.getFeatures().getCertManager();
 		return CertManagerToolConfig.builder()
-			.active(certManager.getActive())
-			.namespace(config.getApplication().getNamePrefix() + certManager.getNamespace())
-			.helm(ToolConfigMapperSupport.helmChart(certManager.getHelm(), config.getApplication().getLocalHelmChartFolder()))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config))
-			.build();
+									.active(certManager.getActive())
+									.namespace(config.getApplication().getNamePrefix() + certManager.getNamespace())
+									.helm(ToolConfigMapperSupport.helmChart(
+										certManager.getHelm(),
+										config.getApplication().getLocalHelmChartFolder()
+									))
+									.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+									.templateConfig(templateConfig(config))
+									.build();
 	}
 
 	private static Map<String, Object> templateConfig(Config config) {

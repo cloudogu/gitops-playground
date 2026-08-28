@@ -210,9 +210,9 @@ public class FileSystemUtils {
 
 	private static String normalizeClasspathResource(Path path) {
 		String resourceName = path.toString()
-		                          .replace('\\', '/')
-		                          .replace("/src/main/resources", "")
-		                          .replace("src/main/resources", "");
+								  .replace('\\', '/')
+								  .replace("/src/main/resources", "")
+								  .replace("src/main/resources", "");
 
 		if (!resourceName.startsWith("/")) {
 			resourceName = "/" + resourceName;

@@ -58,8 +58,8 @@ public class RoleBinding {
 			roleKind,
 			"serviceAccounts",
 			serviceAccounts.stream()
-			               .map(ServiceAccountRef::toMap)
-			               .toList()
+						   .map(ServiceAccountRef::toMap)
+						   .toList()
 		);
 	}
 

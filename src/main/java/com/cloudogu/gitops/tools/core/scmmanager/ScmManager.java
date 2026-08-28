@@ -115,7 +115,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 
 		if (!(tenantScm instanceof ScmManagerProvider)) {
 			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: " + (tenantScm != null ? tenantScm.getClass()
-			                                                                                                                               .getSimpleName() : "null"));
+																																		   .getSimpleName() : "null"));
 		}
 
 		return (ScmManagerProvider) tenantScm;

@@ -22,7 +22,8 @@ public record JenkinsToolConfig(
 	String kubernetesVersion,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public JenkinsToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);
@@ -34,7 +35,8 @@ public record JenkinsToolConfig(
 		String environmentPrefix,
 		boolean runningInsideK8s,
 		boolean trace,
-		boolean insecure) {
+		boolean insecure
+	) {
 	}
 
 	@Builder
@@ -49,7 +51,8 @@ public record JenkinsToolConfig(
 		String mavenCentralMirror,
 		String internalBashImage,
 		boolean oidcConfigured,
-		Map<String, String> additionalEnvironments) {
+		Map<String, String> additionalEnvironments
+	) {
 
 		public Server {
 			additionalEnvironments = ImmutableConfigData.copyMap(additionalEnvironments);
@@ -61,7 +64,8 @@ public record JenkinsToolConfig(
 		ScmProviderType providerType,
 		String scmManagerPassword,
 		String gitlabUsername,
-		String gitlabPassword) {
+		String gitlabPassword
+	) {
 	}
 
 	@Builder
@@ -74,6 +78,7 @@ public record JenkinsToolConfig(
 		String proxyUrl,
 		String proxyPath,
 		String proxyUsername,
-		String proxyPassword) {
+		String proxyPassword
+	) {
 	}
 }

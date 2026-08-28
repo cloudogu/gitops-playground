@@ -31,8 +31,8 @@ public class HttpClientFactory {
 																	 credentials.getUsername(),
 																	 credentials.getPassword()
 																 ))
-		                                                         .addInterceptor(createLoggingInterceptor())
-		                                                         .addInterceptor(new RetryInterceptor());
+																 .addInterceptor(createLoggingInterceptor())
+																 .addInterceptor(new RetryInterceptor());
 
 		if (Boolean.TRUE.equals(isInsecure)) {
 			InsecureSslContext context = insecureSslContext();
@@ -47,8 +47,8 @@ public class HttpClientFactory {
 	@Named("jenkins")
 	public OkHttpClient okHttpClientJenkins(Config config) {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(new CookieManager()))
-		                                                         .addInterceptor(createLoggingInterceptor())
-		                                                         .addInterceptor(new RetryInterceptor());
+																 .addInterceptor(createLoggingInterceptor())
+																 .addInterceptor(new RetryInterceptor());
 
 		if (config.getApplication().getInsecure()) {
 			InsecureSslContext sslContext = insecureSslContext();

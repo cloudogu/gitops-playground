@@ -39,9 +39,9 @@ public class InsecureCredentialProvider extends CredentialsProvider {
 			return false;
 		}
 		return Arrays.stream(items)
-		             .filter(item -> item instanceof CredentialItem.InformationalMessage)
-		             .map(item -> (CredentialItem.InformationalMessage) item)
-		             .anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
+					 .filter(item -> item instanceof CredentialItem.InformationalMessage)
+					 .map(item -> (CredentialItem.InformationalMessage) item)
+					 .anyMatch(message -> INSECURE_CONNECTION_PATTERN.matcher(message.getPromptText()).find());
 	}
 
 	// JGit's CredentialsProvider contract: true means "these items were handled", regardless of
@@ -57,7 +57,7 @@ public class InsecureCredentialProvider extends CredentialsProvider {
 				String prompt = yesNo.getPromptText();
 				if ("Skip SSL verification for this single git operation".equals(prompt) || SKIP_SSL_PATTERN.matcher(
 																												prompt)
-				                                                                                            .find()) {
+																											.find()) {
 					yesNo.setValue(true);
 				} else if ("Always skip SSL verification for this server from now on".equals(prompt)) {
 					// otherwise we would persistently overwrite our $HOME/.gitconfig

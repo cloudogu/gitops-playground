@@ -27,9 +27,9 @@ public class RegistryToolConfigMapper implements ToolConfigMapper<RegistryToolCo
 								 .bootstrapNodePort(Config.DEFAULT_REGISTRY_PORT)
 								 .internalPort(registry.getInternalPort())
 								 .helm(ToolConfigMapperSupport.helmChart(
-			                         registry.getHelm(),
-			                         config.getApplication().getLocalHelmChartFolder()
-		                         ))
+									 registry.getHelm(),
+									 config.getApplication().getLocalHelmChartFolder()
+								 ))
 								 .build();
 	}
 }

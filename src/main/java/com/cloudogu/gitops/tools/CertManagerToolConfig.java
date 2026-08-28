@@ -13,7 +13,8 @@ public record CertManagerToolConfig(
 	String namespace,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public CertManagerToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);

@@ -10,5 +10,6 @@ public record RegistryToolConfig(
 	String namespace,
 	int bootstrapNodePort,
 	Integer internalPort,
-	HelmChartConfig helm) {
+	HelmChartConfig helm
+) {
 }

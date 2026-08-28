@@ -57,7 +57,7 @@ public class RetryInterceptor implements Interceptor {
 				lastException = e;
 				log.trace(
 					"Retry HTTP Request to {} due to SocketTimeoutException: {}", chain.request()
-					                                                                   .url(), e.getMessage()
+																					   .url(), e.getMessage()
 				);
 			}
 
@@ -79,6 +79,6 @@ public class RetryInterceptor implements Interceptor {
 			throw lastException;
 		}
 		throw new IOException("Request to " + chain.request()
-		                                           .url() + " failed after " + retries + " retries, last status code " + lastStatusCode);
+												   .url() + " failed after " + retries + " retries, last status code " + lastStatusCode);
 	}
 }

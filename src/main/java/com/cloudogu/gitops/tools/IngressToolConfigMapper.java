@@ -21,12 +21,15 @@ public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConf
 		Config.IngressSchema ingress = config.getFeatures().getIngress();
 
 		return IngressToolConfig.builder()
-			.active(ingress.getActive())
-			.namespace(config.getApplication().getNamePrefix() + ingress.getIngressNamespace())
-			.helm(ToolConfigMapperSupport.helmChart(ingress.getHelm(), config.getApplication().getLocalHelmChartFolder()))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.templateConfig(templateConfig(config))
-			.build();
+								.active(ingress.getActive())
+								.namespace(config.getApplication().getNamePrefix() + ingress.getIngressNamespace())
+								.helm(ToolConfigMapperSupport.helmChart(
+									ingress.getHelm(),
+									config.getApplication().getLocalHelmChartFolder()
+								))
+								.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								.templateConfig(templateConfig(config))
+								.build();
 	}
 
 	private static Map<String, Object> templateConfig(Config config) {

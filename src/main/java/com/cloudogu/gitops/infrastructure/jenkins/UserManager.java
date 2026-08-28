@@ -52,7 +52,7 @@ public class UserManager {
 			""";
 
 		script = script.replace("%PERMISSION%", permission.toJenkinsPermissionEnum())
-		               .replace("%USERNAME%", escapeString(username));
+					   .replace("%USERNAME%", escapeString(username));
 
 		String result = apiClient.runScript(script);
 
@@ -85,7 +85,7 @@ public class UserManager {
 					   "class org.jenkinsci.plugins.cas.CasSecurityRealm",
 					   "class org.jenkinsci.plugins.oic.OicSecurityRealm"
 				   )
-		           .contains(result);
+				   .contains(result);
 	}
 
 	private static String escapeString(String str) {

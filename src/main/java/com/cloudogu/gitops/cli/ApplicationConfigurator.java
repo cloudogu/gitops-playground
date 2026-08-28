@@ -61,10 +61,10 @@ public class ApplicationConfigurator {
 				newConfig.getApplication().setNamePrefix(namePrefix + "-");
 			}
 			newConfig.getApplication()
-			         .setNamePrefixForEnvVars(newConfig.getApplication()
-			                                           .getNamePrefix()
-			                                           .toUpperCase()
-			                                           .replace('-', '_'));
+					 .setNamePrefixForEnvVars(newConfig.getApplication()
+													   .getNamePrefix()
+													   .toUpperCase()
+													   .replace('-', '_'));
 		}
 	}
 
@@ -73,11 +73,11 @@ public class ApplicationConfigurator {
 		if (newConfig.getRegistry().getCreateImagePullSecrets()) {
 			String username = firstNonBlank(
 				newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry()
-				                                                        .getUsername()
+																		.getUsername()
 			);
 			String password = firstNonBlank(
 				newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry()
-				                                                        .getPassword()
+																		.getPassword()
 			);
 
 			if (!hasText(username) || !hasText(password)) {
@@ -106,7 +106,7 @@ public class ApplicationConfigurator {
 		if (hasText(newConfig.getRegistry().getProxyUrl())) {
 			newConfig.getRegistry().setTwoRegistries(true);
 			if (!hasText(newConfig.getRegistry().getProxyUsername()) || !hasText(newConfig.getRegistry()
-			                                                                              .getProxyPassword())) {
+																						  .getProxyPassword())) {
 				throw new IllegalArgumentException("Proxy URL needs to be used with proxy-username and proxy-password");
 			}
 		}
@@ -152,8 +152,8 @@ public class ApplicationConfigurator {
 				);
 
 				newConfig.getScm()
-				         .getScmManager()
-				         .setIngress(URI.create(scmUrl).toURL().getHost());
+						 .getScmManager()
+						 .setIngress(URI.create(scmUrl).toURL().getHost());
 
 			} catch (IllegalArgumentException | MalformedURLException e) {
 				throw new UncheckedIOException("Failed to evaluate SCM ingress URL", new IOException(e));
@@ -184,8 +184,8 @@ public class ApplicationConfigurator {
 			// will not work on Windows and MacOS.
 			String defaultNamespace = newConfig.getJenkins().getNamespace();
 			newConfig.getJenkins()
-			         .setUrlForScm("http://jenkins." + newConfig.getApplication()
-			                                                    .getNamePrefix() + defaultNamespace + ".svc.cluster.local");
+					 .setUrlForScm("http://jenkins." + newConfig.getApplication()
+																.getNamePrefix() + defaultNamespace + ".svc.cluster.local");
 		} else {
 			// Jenkins not active, no need to set the following values
 			return;

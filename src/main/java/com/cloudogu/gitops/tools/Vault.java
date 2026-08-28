@@ -137,7 +137,7 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 			"dev", Map.of(
 				"rootToken",
 				UUID.randomUUID()
-				    .toString(),
+					.toString(),
 				"vaultPostStartConfigMap",
 				vaultPostStartConfigMap,
 				"vaultPostStartVolume",

@@ -45,11 +45,11 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 
 		createRepoCredentialsSecret(
 			"argocd-repo-creds-scm", namespace, gitHandler.getTenant()
-			                                              .getUrl(), gitHandler.getTenant()
-			                                                                   .getCredentials()
-			                                                                   .getUsername(), gitHandler.getTenant()
-			                                                                                             .getCredentials()
-			                                                                                             .getPassword()
+														  .getUrl(), gitHandler.getTenant()
+																			   .getCredentials()
+																			   .getUsername(), gitHandler.getTenant()
+																										 .getCredentials()
+																										 .getPassword()
 		);
 
 		log.debug(
@@ -61,13 +61,13 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 			"argocd-repo-creds-central-scm",
 			config.centralNamespace(),
 			gitHandler.getCentral()
-			          .getUrl(),
+					  .getUrl(),
 			gitHandler.getCentral()
-			          .getCredentials()
-			          .getUsername(),
+					  .getCredentials()
+					  .getUsername(),
 			gitHandler.getCentral()
-			          .getCredentials()
-			          .getPassword()
+					  .getCredentials()
+					  .getPassword()
 		);
 	}
 
@@ -109,12 +109,12 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 	private void generateTenantArgoCDRBAC() {
 		for (String ns : config.tenantNamespaces()) {
 			new RbacDefinition(Role.Variant.ARGOCD).withName("argocd")
-			                                       .withNamespace(ns)
-			                                       .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
-			                                       .withTemplateConfig(config.rbacTemplateConfig())
-			                                       .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-			                                       .withSubfolder(ArgoCDRepoLayout.operatorRbacTenantSubfolder())
-			                                       .generate();
+												   .withNamespace(ns)
+												   .withServiceAccountsFrom(namespace, ARGOCD_SERVICE_ACCOUNTS)
+												   .withTemplateConfig(config.rbacTemplateConfig())
+												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
+												   .withSubfolder(ArgoCDRepoLayout.operatorRbacTenantSubfolder())
+												   .generate();
 		}
 	}
 
@@ -123,14 +123,14 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 			log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs");
 
 			new RbacDefinition(Role.Variant.ARGOCD).withName("argocd-central")
-			                                       .withNamespace(ns)
-			                                       .withServiceAccountsFrom(
-												   config.centralNamespace(), ARGOCD_SERVICE_ACCOUNTS
+												   .withNamespace(ns)
+												   .withServiceAccountsFrom(
+													   config.centralNamespace(), ARGOCD_SERVICE_ACCOUNTS
 												   )
-			                                       .withTemplateConfig(config.rbacTemplateConfig())
-			                                       .withRepo(repositoryWorkspace.getClusterResourcesRepository())
-			                                       .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
-			                                       .generate();
+												   .withTemplateConfig(config.rbacTemplateConfig())
+												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
+												   .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
+												   .generate();
 		}
 	}
 
