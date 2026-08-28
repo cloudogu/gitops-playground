@@ -23,11 +23,12 @@ class YamlUtilsTest {
 
 	@Test
 	void rejectsYamlWithNonMapRoot() {
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-			YamlUtils.parseYamlMap("""
-				- one
-				- two
-				""")
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class, () ->
+				YamlUtils.parseYamlMap("""
+					- one
+					- two
+					""")
 		);
 
 		assertThat(exception.getMessage()).isEqualTo("Could not parse YAML as map: [one, two]");

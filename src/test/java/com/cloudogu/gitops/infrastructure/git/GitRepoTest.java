@@ -129,7 +129,7 @@ class GitRepoTest {
 
 		List<RevCommit> commits = new ArrayList<>();
 		Git.open(new File(repo.getAbsoluteLocalRepoTmpDir()))
-			.log().setMaxCount(1).all().call().forEach(commits::add);
+		   .log().setMaxCount(1).all().call().forEach(commits::add);
 		assertThat(commits.size()).isEqualTo(1);
 		assertThat(commits.get(0).getFullMessage()).isEqualTo("The commit message");
 		assertThat(commits.get(0).getAuthorIdent().getEmailAddress()).isEqualTo("hello@cloudogu.com");

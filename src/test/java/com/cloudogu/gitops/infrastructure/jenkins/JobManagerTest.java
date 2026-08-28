@@ -48,14 +48,16 @@ class JobManagerTest {
 
 			jobManager.createCredential("the-jobname", "the-id", "the-username", "the-password", "some description");
 
-			wireMockServer.verify(postRequestedFor(urlPathEqualTo("/jenkins/job/the-jobname/credentials/store/folder/domain/_/createCredentials")));
+			wireMockServer.verify(postRequestedFor(urlPathEqualTo(
+				"/jenkins/job/the-jobname/credentials/store/folder/domain/_/createCredentials")));
 
 			var requests = wireMockServer.findAll(postRequestedFor(urlPathMatching(".*createCredentials.*")));
 			assertThat(requests).hasSize(1);
 
 			String requestBody = requests.get(0).getBodyAsString();
 			assertThat(URLDecoder.decode(requestBody, StandardCharsets.UTF_8))
-				.isEqualTo("json={\"credentials\":{\"scope\":\"GLOBAL\",\"id\":\"the-id\",\"username\":\"the-username\",\"password\":\"the-password\",\"description\":\"some description\",\"$class\":\"com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl\"}}");
+				.isEqualTo(
+					"json={\"credentials\":{\"scope\":\"GLOBAL\",\"id\":\"the-id\",\"username\":\"the-username\",\"password\":\"the-password\",\"description\":\"some description\",\"$class\":\"com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl\"}}");
 
 		} finally {
 			wireMockServer.stop();
@@ -80,9 +82,18 @@ class JobManagerTest {
 			config.setJenkins(jenkins);
 			JobManager jobManager = new JobManager(new JenkinsApiClient(config, new OkHttpClient()));
 
-			RuntimeException exception = assertThrows(RuntimeException.class,
-				() -> jobManager.createCredential("the-jobname", "the-id", "the-username", "the-password", "some description"));
-			assertThat(exception.getMessage()).isEqualTo("Could not create credential id=the-id,job=the-jobname. StatusCode: 404");
+			RuntimeException exception = assertThrows(
+				RuntimeException.class,
+				() -> jobManager.createCredential(
+					"the-jobname",
+					"the-id",
+					"the-username",
+					"the-password",
+					"some description"
+				)
+			);
+			assertThat(exception.getMessage()).isEqualTo(
+				"Could not create credential id=the-id,job=the-jobname. StatusCode: 404");
 		} finally {
 			wireMockServer.stop();
 		}
@@ -134,9 +145,12 @@ class JobManagerTest {
 			config.setJenkins(jenkins);
 			JobManager jobManager = new JobManager(new JenkinsApiClient(config, new OkHttpClient()));
 
-			RuntimeException exception = assertThrows(RuntimeException.class,
-				() -> jobManager.startJob("the-jobname"));
-			assertThat(exception.getMessage()).isEqualTo("Could not trigger build of Jenkins job: the-jobname. StatusCode: 400");
+			RuntimeException exception = assertThrows(
+				RuntimeException.class,
+				() -> jobManager.startJob("the-jobname")
+			);
+			assertThat(exception.getMessage()).isEqualTo(
+				"Could not trigger build of Jenkins job: the-jobname. StatusCode: 400");
 		} finally {
 			wireMockServer.stop();
 		}

@@ -269,9 +269,9 @@ class ContentLoaderTest {
 			.build();
 
 		k8sClient.getClient().secrets()
-			.inNamespace("default")
-			.resource(secret)
-			.create();
+				 .inNamespace("default")
+				 .resource(secret)
+				 .create();
 
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));
@@ -323,7 +323,8 @@ class ContentLoaderTest {
 		assertThat(new File(findRoot(repos), "common/ref/README.md")).exists().isFile();
 		assertThat(Files.readString(new File(findRoot(repos), "common/ref/README.md").toPath())).contains("main");
 		assertThat(new File(findRoot(repos), "common/branch/README.md")).exists().isFile();
-		assertThat(Files.readString(new File(findRoot(repos), "common/branch/README.md").toPath())).contains("someBranch");
+		assertThat(Files.readString(new File(findRoot(repos), "common/branch/README.md").toPath())).contains(
+			"someBranch");
 	}
 
 	@Test
@@ -337,7 +338,8 @@ class ContentLoaderTest {
 		List<ContentLoader.RepoCoordinate> repos = cloneContentRepos(createContent(config), config);
 
 		assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile();
-		assertThat(Files.readString(new File(findRoot(repos), "common/default/README.md").toPath())).contains("different");
+		assertThat(Files.readString(new File(findRoot(repos), "common/default/README.md").toPath())).contains(
+			"different");
 	}
 
 	@Test
@@ -653,9 +655,10 @@ class ContentLoaderTest {
 
 		for (ContentLoader.RepoCoordinate expected : expectedTargetRepos) {
 			List<ContentLoader.RepoCoordinate> actual = actualTargetRepos.stream()
-				.filter(candidate -> candidate.getNamespace().equals(expected.getNamespace())
-					&& candidate.getRepoName().equals(expected.getRepoName()))
-				.toList();
+																		 .filter(candidate -> candidate.getNamespace().equals(
+																			 expected.getNamespace())
+																			 && candidate.getRepoName().equals(expected.getRepoName()))
+																		 .toList();
 
 			assertThat(actual)
 				.withFailMessage(
@@ -738,7 +741,8 @@ class ContentLoaderTest {
 
 		RuntimeException exception = assertThrows(RuntimeException.class, () -> install(createContent(config), config));
 		assertThat(exception.getMessage())
-			.startsWith("Mirroring commit references is not supported for content repos at the moment. content repository");
+			.startsWith(
+				"Mirroring commit references is not supported for content repos at the moment. content repository");
 		assertThat(exception.getMessage())
 			.endsWith("ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8");
 
@@ -751,7 +755,8 @@ class ContentLoaderTest {
 
 		exception = assertThrows(RuntimeException.class, () -> install(createContent(config), config));
 		assertThat(exception.getMessage())
-			.startsWith("Mirroring commit references is not supported for content repos at the moment. content repository");
+			.startsWith(
+				"Mirroring commit references is not supported for content repos at the moment. content repository");
 		assertThat(exception.getMessage()).endsWith("ref: 8bc1d11");
 	}
 
@@ -965,10 +970,12 @@ class ContentLoaderTest {
 	@Test
 	void deployHelmReleasesFromContentCallsDeployHelmChartWithValuesPathAndHelmConfig() throws IOException {
 		Path valuesFile = Files.createTempFile("harbor-values-", ".yaml");
-		Files.writeString(valuesFile, """
-			expose:
-			  type: ingress
-			""");
+		Files.writeString(
+			valuesFile, """
+				expose:
+				  type: ingress
+				"""
+		);
 
 		Config cfg = Config.fromMap(Map.of(
 			"content", Map.of(
@@ -1005,11 +1012,13 @@ class ContentLoaderTest {
 	void deployHelmReleasesFromContentReadsValuesFileAndInlineValuesOverrideFileValues(@TempDir Path tempDir)
 		throws IOException {
 		Path valuesFile = tempDir.resolve("harbor-values.yaml");
-		Files.writeString(valuesFile, """
-			replicas: 1
-			service:
-			  type: ClusterIP
-			""");
+		Files.writeString(
+			valuesFile, """
+				replicas: 1
+				service:
+				  type: ClusterIP
+				"""
+		);
 
 		Config cfg = Config.fromMap(Map.of(
 			"content", Map.of(
@@ -1021,10 +1030,12 @@ class ContentLoaderTest {
 					Map.entry("namespace", "my-prefix-harbor"),
 					Map.entry("releaseName", "harbor"),
 					Map.entry("valuesPath", valuesFile.toString()),
-					Map.entry("values", Map.of(
-						"replicas", 2,
-						"service", Map.of("type", "NodePort")
-					))
+					Map.entry(
+						"values", Map.of(
+							"replicas", 2,
+							"service", Map.of("type", "NodePort")
+						)
+					)
 				))
 			)
 		));
@@ -1046,9 +1057,11 @@ class ContentLoaderTest {
 	void deployHelmReleasesFromContentUsesValuesFileWhenInlineValuesAreEmpty(@TempDir Path tempDir)
 		throws IOException {
 		Path valuesFile = tempDir.resolve("values.yaml");
-		Files.writeString(valuesFile, """
-			replicas: 1
-			""");
+		Files.writeString(
+			valuesFile, """
+				replicas: 1
+				"""
+		);
 
 		Config cfg = Config.fromMap(Map.of(
 			"content", Map.of(
@@ -1155,10 +1168,10 @@ class ContentLoaderTest {
 				log.debug("Repo {}: cloned bare repo to {}", initPath, tempRepo);
 
 				try (Git git = Git.cloneRepository()
-					.setURI(bareRepoUri)
-					.setBranch("main")
-					.setDirectory(tempRepo)
-					.call()) {
+								  .setURI(bareRepoUri)
+								  .setBranch("main")
+								  .setDirectory(tempRepo)
+								  .call()) {
 
 					FileUtils.copyDirectory(
 						new File(System.getProperty("user.dir")
@@ -1226,10 +1239,10 @@ class ContentLoaderTest {
 		String url = repo.getGitRepositoryUrl();
 
 		Git git = Git.cloneRepository()
-			.setURI(url)
-			.setBranch("main")
-			.setDirectory(repoFolder)
-			.call();
+					 .setURI(url)
+					 .setBranch("main")
+					 .setDirectory(repoFolder)
+					 .call();
 		git.getRepository().getConfig().setBoolean("gc", null, "autoDetach", false);
 		return git;
 	}
@@ -1274,8 +1287,8 @@ class ContentLoaderTest {
 	private static void assertOnlyBranch(Git git, String branch) throws GitAPIException {
 		List<Ref> branches = assertBranch(git, branch);
 		List<Ref> otherBranches = branches.stream()
-			.filter(ref -> !ref.getName().contains(branch))
-			.toList();
+										  .filter(ref -> !ref.getName().contains(branch))
+										  .toList();
 
 		assertThat(otherBranches)
 			.withFailMessage(
@@ -1298,8 +1311,8 @@ class ContentLoaderTest {
 	private static List<Ref> assertBranch(Git git, String someBranch) throws GitAPIException {
 		List<Ref> branches = git.branchList().call();
 		assertThat(branches.stream()
-			.filter(ref -> ref.getName().equals("refs/heads/" + someBranch))
-			.toList())
+						   .filter(ref -> ref.getName().equals("refs/heads/" + someBranch))
+						   .toList())
 			.withFailMessage(
 				"Branch '%s' not found in git repository. Available branches: %s",
 				someBranch,
@@ -1312,8 +1325,8 @@ class ContentLoaderTest {
 	private static void assertTag(Git git, String expectedTag) throws GitAPIException {
 		List<Ref> tags = git.tagList().call();
 		assertThat(tags.stream()
-			.filter(ref -> ref.getName().equals("refs/tags/" + expectedTag))
-			.toList())
+					   .filter(ref -> ref.getName().equals("refs/tags/" + expectedTag))
+					   .toList())
 			.withFailMessage(
 				"Tag '%s' not found in git repository. Available tags: %s",
 				expectedTag,

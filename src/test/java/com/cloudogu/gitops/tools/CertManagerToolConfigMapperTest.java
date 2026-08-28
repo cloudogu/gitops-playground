@@ -44,28 +44,36 @@ class CertManagerToolConfigMapperTest {
 		CertManagerToolConfig actual = new CertManagerToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(CertManagerToolConfig.builder()
-			.active(true)
-			.namespace("test-certificates")
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://cert.example.org")
-				.chart("cert-chart")
-				.version("1.2.3")
-				.values(Map.of("replicas", 2))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(imagePullSecret())
-			.templateConfig(Map.of(
-				"application", Map.of("podResources", true, "skipCrds", true),
-				"features", Map.of("certManager", Map.of(
-					"issuer", "production-issuer",
-					"helm", Map.of(
-						"image", "cert-image",
-						"webhookImage", "webhook-image",
-						"cainjectorImage", "cainjector-image",
-						"acmeSolverImage", "solver-image",
-						"startupAPICheckImage", "startup-image"))),
-				"registry", Map.of("createImagePullSecrets", true)))
-			.build());
+														  .active(true)
+														  .namespace("test-certificates")
+														  .helm(HelmChartConfig.builder()
+																			   .repoURL("https://cert.example.org")
+																			   .chart("cert-chart")
+																			   .version("1.2.3")
+																			   .values(Map.of("replicas", 2))
+																			   .localHelmChartFolder("/charts")
+																			   .build())
+														  .imagePullSecret(imagePullSecret())
+														  .templateConfig(Map.of(
+															  "application",
+															  Map.of("podResources", true, "skipCrds", true),
+															  "features",
+															  Map.of(
+																  "certManager", Map.of(
+																	  "issuer", "production-issuer",
+																	  "helm", Map.of(
+																		  "image", "cert-image",
+																		  "webhookImage", "webhook-image",
+																		  "cainjectorImage", "cainjector-image",
+																		  "acmeSolverImage", "solver-image",
+																		  "startupAPICheckImage", "startup-image"
+																	  )
+																  )
+															  ),
+															  "registry",
+															  Map.of("createImagePullSecrets", true)
+														  ))
+														  .build());
 	}
 
 	private static DeploymentContext context() {
@@ -73,20 +81,21 @@ class CertManagerToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 
 	private static ImagePullSecretConfig imagePullSecret() {
 		return ImagePullSecretConfig.builder()
-			.create(true)
-			.proxyUrl("proxy.example.org")
-			.url("registry.example.org")
-			.proxyUsername("proxy-user")
-			.readOnlyUsername("read-only-user")
-			.username("registry-user")
-			.proxyPassword("proxy-password")
-			.readOnlyPassword("read-only-password")
-			.password("registry-password")
-			.build();
+									.create(true)
+									.proxyUrl("proxy.example.org")
+									.url("registry.example.org")
+									.proxyUsername("proxy-user")
+									.readOnlyUsername("read-only-user")
+									.username("registry-user")
+									.proxyPassword("proxy-password")
+									.readOnlyPassword("read-only-password")
+									.password("registry-password")
+									.build();
 	}
 }

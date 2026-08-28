@@ -285,16 +285,19 @@ class ArgoCDRepoSetupTest {
 		List<Map<String, Object>> tenantBootstrapDocuments = tenantBootstrapYaml;
 
 		List<String> tenantApplicationNames = tenantBootstrapDocuments.stream()
-			.map(document -> (String) ((Map<String, Object>) document.get("metadata")).get("name"))
-			.collect(Collectors.toList());
+																	  .map(document -> (String) ((Map<String, Object>) document.get(
+																		  "metadata")).get("name"))
+																	  .collect(Collectors.toList());
 
 		List<String> tenantApplicationNamespaces = tenantBootstrapDocuments.stream()
-			.map(document -> (String) ((Map<String, Object>) document.get("metadata")).get("namespace"))
-			.collect(Collectors.toList());
+																		   .map(document -> (String) ((Map<String, Object>) document.get(
+																			   "metadata")).get("namespace"))
+																		   .collect(Collectors.toList());
 
 		List<String> tenantApplicationProjects = tenantBootstrapDocuments.stream()
-			.map(document -> (String) ((Map<String, Object>) document.get("spec")).get("project"))
-			.collect(Collectors.toList());
+																		 .map(document -> (String) ((Map<String, Object>) document.get(
+																			 "spec")).get("project"))
+																		 .collect(Collectors.toList());
 
 		assertThat(tenantApplicationNames).containsExactly("bootstrap", "projects");
 		assertThat(tenantApplicationNamespaces).containsOnly("testPrefix-argocd");

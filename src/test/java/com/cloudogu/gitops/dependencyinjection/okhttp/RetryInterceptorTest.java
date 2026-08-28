@@ -31,10 +31,10 @@ class RetryInterceptorTest {
 
 	@RegisterExtension
 	static final WireMockExtension wireMock = WireMockExtension.newInstance()
-		.options(wireMockConfig()
-			.dynamicPort()
-			.dynamicHttpsPort())
-		.build();
+															   .options(wireMockConfig()
+																   .dynamicPort()
+																   .dynamicHttpsPort())
+															   .build();
 
 	@BeforeEach
 	void resetWireMock() {
@@ -133,8 +133,9 @@ class RetryInterceptorTest {
 
 		OkHttpClient client = createClient();
 
-		IOException exception = assertThrows(IOException.class, () ->
-			client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
+		IOException exception = assertThrows(
+			IOException.class, () ->
+				client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute()
 		);
 
 		assertThat(exception.getMessage()).contains("500");

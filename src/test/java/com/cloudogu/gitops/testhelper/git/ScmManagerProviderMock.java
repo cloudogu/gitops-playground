@@ -19,7 +19,7 @@ import java.util.Set;
 
 /**
  * Lightweight test double for SCM-Manager via the GitProvider interface.
- *
+ * <p>
  * Models the SCM-Manager specific GitProvider behavior that is relevant for tests:
  * - configurable in-cluster and client base URLs
  * - optional namePrefix to model tenant behavior
@@ -61,7 +61,7 @@ public class ScmManagerProviderMock implements GitProvider {
 
 	/**
 	 * Optional sequence to control createRepository() return values per call.
-	 *
+	 * <p>
 	 * Empty list means: return true by default.
 	 */
 	@Getter

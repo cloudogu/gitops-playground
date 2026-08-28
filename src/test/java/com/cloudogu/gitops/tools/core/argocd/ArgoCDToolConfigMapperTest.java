@@ -19,7 +19,10 @@ class ArgoCDToolConfigMapperTest {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("tenant-a-");
 		config.getApplication().setPassword("application-password");
-		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("argocd", "monitoring")));
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
+			"argocd",
+			"monitoring"
+		)));
 		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of("team-a", "team-b")));
 		config.getApplication().setNetpols(true);
 		config.getApplication().setClusterAdmin(true);
@@ -62,68 +65,103 @@ class ArgoCDToolConfigMapperTest {
 		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(ArgoCDToolConfig.builder()
-			.active(true)
-			.namespace("tenant-a-gitops")
-			.password("application-password")
-			.operator(true)
-			.activeNamespaces(List.of("argocd", "monitoring", "team-a", "team-b"))
-			.smtpUser("smtp-user")
-			.smtpPassword("smtp-password")
-			.values(Map.of("server", Map.of("replicas", 2)))
-			.multiTenant(true)
-			.netpols(true)
-			.tenantName("tenant-a")
-			.url("https://argocd.example.org")
-			.tenantNamespaces(List.of("team-a", "team-b"))
-			.centralNamespace("central-gitops")
-			.clusterAdmin(true)
-			.scmProviderType(ScmProviderType.SCM_MANAGER)
-			.templateConfig(Map.of(
-				"application", Map.of(
-					"clusterAdmin", true,
-					"insecure", true,
-					"mirrorRepos", true,
-					"namePrefix", "tenant-a-",
-					"netpols", true,
-					"openshift", true,
-					"skipCrds", true),
-				"content", Map.of("helmReleases", List.of(Map.of("repoURL", "https://charts.example.org"))),
-				"features", Map.of(
-					"argocd", Map.of(
-						"emailFrom", "argocd@example.org",
-						"emailToAdmin", "admins@example.org",
-						"env", List.of(Map.of("name", "FIRST", "value", "one")),
-						"namespace", "gitops",
-						"oidc", Map.of(
-							"providerName", "Keycloak",
-							"issuerUrl", "",
-							"clientId", "argocd-client",
-							"clientSecret", "",
-							"scopes", List.of("openid", "profile", "email"),
-							"adminGroupName", "",
-							"enabled", false),
-						"operator", true,
-						"resourceInclusionsCluster", "https://cluster.example.org",
-						"url", "https://argocd.example.org"),
-					"certManager", Map.of("active", true, "issuer", "production-issuer"),
-					"mail", Map.of(
-						"active", true,
-						"smtpAddress", "smtp.example.org",
-						"smtpPassword", "smtp-password",
-						"smtpPort", 2525,
-						"smtpUser", "smtp-user"),
-					"monitoring", Map.of("active", true, "namespace", "observability"),
-					"secrets", Map.of("active", true)),
-				"multiTenant", Map.of("centralArgocdNamespace", "central-gitops"),
-				"scm", Map.of(
-					"scmManager", Map.of("namespace", "source-control"),
-					"scmProviderType", ScmProviderType.SCM_MANAGER)))
-			.rbacTemplateConfig(Map.of(
-				"application", Map.of("openshift", true),
-				"features", Map.of(
-					"monitoring", Map.of("active", true),
-					"secrets", Map.of("active", true))))
-			.build());
+													 .active(true)
+													 .namespace("tenant-a-gitops")
+													 .password("application-password")
+													 .operator(true)
+													 .activeNamespaces(List.of(
+														 "argocd",
+														 "monitoring",
+														 "team-a",
+														 "team-b"
+													 ))
+													 .smtpUser("smtp-user")
+													 .smtpPassword("smtp-password")
+													 .values(Map.of("server", Map.of("replicas", 2)))
+													 .multiTenant(true)
+													 .netpols(true)
+													 .tenantName("tenant-a")
+													 .url("https://argocd.example.org")
+													 .tenantNamespaces(List.of("team-a", "team-b"))
+													 .centralNamespace("central-gitops")
+													 .clusterAdmin(true)
+													 .scmProviderType(ScmProviderType.SCM_MANAGER)
+													 .templateConfig(Map.of(
+														 "application",
+														 Map.of(
+															 "clusterAdmin", true,
+															 "insecure", true,
+															 "mirrorRepos", true,
+															 "namePrefix", "tenant-a-",
+															 "netpols", true,
+															 "openshift", true,
+															 "skipCrds", true
+														 ),
+														 "content",
+														 Map.of(
+															 "helmReleases",
+															 List.of(Map.of("repoURL", "https://charts.example.org"))
+														 ),
+														 "features",
+														 Map.of(
+															 "argocd",
+															 Map.of(
+																 "emailFrom",
+																 "argocd@example.org",
+																 "emailToAdmin",
+																 "admins@example.org",
+																 "env",
+																 List.of(Map.of("name", "FIRST", "value", "one")),
+																 "namespace",
+																 "gitops",
+																 "oidc",
+																 Map.of(
+																	 "providerName", "Keycloak",
+																	 "issuerUrl", "",
+																	 "clientId", "argocd-client",
+																	 "clientSecret", "",
+																	 "scopes", List.of("openid", "profile", "email"),
+																	 "adminGroupName", "",
+																	 "enabled", false
+																 ),
+																 "operator",
+																 true,
+																 "resourceInclusionsCluster",
+																 "https://cluster.example.org",
+																 "url",
+																 "https://argocd.example.org"
+															 ),
+															 "certManager",
+															 Map.of("active", true, "issuer", "production-issuer"),
+															 "mail",
+															 Map.of(
+																 "active", true,
+																 "smtpAddress", "smtp.example.org",
+																 "smtpPassword", "smtp-password",
+																 "smtpPort", 2525,
+																 "smtpUser", "smtp-user"
+															 ),
+															 "monitoring",
+															 Map.of("active", true, "namespace", "observability"),
+															 "secrets",
+															 Map.of("active", true)
+														 ),
+														 "multiTenant",
+														 Map.of("centralArgocdNamespace", "central-gitops"),
+														 "scm",
+														 Map.of(
+															 "scmManager", Map.of("namespace", "source-control"),
+															 "scmProviderType", ScmProviderType.SCM_MANAGER
+														 )
+													 ))
+													 .rbacTemplateConfig(Map.of(
+														 "application", Map.of("openshift", true),
+														 "features", Map.of(
+															 "monitoring", Map.of("active", true),
+															 "secrets", Map.of("active", true)
+														 )
+													 ))
+													 .build());
 	}
 
 	private static DeploymentContext context() {
@@ -131,6 +169,7 @@ class ArgoCDToolConfigMapperTest {
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
 			true,
-			DeploymentContext.ClusterDistribution.OPENSHIFT);
+			DeploymentContext.ClusterDistribution.OPENSHIFT
+		);
 	}
 }

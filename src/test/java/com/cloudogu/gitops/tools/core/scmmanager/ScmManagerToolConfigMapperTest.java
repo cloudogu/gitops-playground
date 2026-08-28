@@ -52,44 +52,61 @@ class ScmManagerToolConfigMapperTest {
 		ScmManagerToolConfig actual = new ScmManagerToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(ScmManagerToolConfig.builder()
-			.active(true)
-			.multiTenant(true)
-			.namePrefix("test-")
-			.namespace("test-source-control")
-			.releaseName("test-scmm")
-			.ingress("scm.example.org")
-			.username("scm-user")
-			.password("scm-password")
-			.gitOpsUsername("gitops-user")
-			.skipPlugins(true)
-			.skipRestart(true)
-			.jenkinsActive(true)
-			.jenkinsUrl("http://jenkins.automation.svc")
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://scm-chart.example.org")
-				.chart("scm-chart")
-				.version("8.9.10")
-				.values(Map.of("replicas", 2))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(ImagePullSecretConfig.builder()
-				.create(true)
-				.proxyUrl("proxy.example.org")
-				.url("registry.example.org")
-				.proxyUsername("proxy-user")
-				.readOnlyUsername("read-only-user")
-				.username("registry-user")
-				.proxyPassword("proxy-password")
-				.readOnlyPassword("read-only-password")
-				.password("registry-password")
-				.build())
-			.templateConfig(Map.of(
-				"features", Map.of("certManager", Map.of(
-					"active", true,
-					"issuer", "production-issuer")),
-				"registry", Map.of("createImagePullSecrets", true),
-				"scm", Map.of("scmManager", Map.of("scmmImage", "scm-manager:custom"))))
-			.build());
+														 .active(true)
+														 .multiTenant(true)
+														 .namePrefix("test-")
+														 .namespace("test-source-control")
+														 .releaseName("test-scmm")
+														 .ingress("scm.example.org")
+														 .username("scm-user")
+														 .password("scm-password")
+														 .gitOpsUsername("gitops-user")
+														 .skipPlugins(true)
+														 .skipRestart(true)
+														 .jenkinsActive(true)
+														 .jenkinsUrl("http://jenkins.automation.svc")
+														 .helm(HelmChartConfig.builder()
+																			  .repoURL("https://scm-chart.example.org")
+																			  .chart("scm-chart")
+																			  .version("8.9.10")
+																			  .values(Map.of("replicas", 2))
+																			  .localHelmChartFolder("/charts")
+																			  .build())
+														 .imagePullSecret(ImagePullSecretConfig.builder()
+																							   .create(true)
+																							   .proxyUrl(
+																								   "proxy.example.org")
+																							   .url(
+																								   "registry.example.org")
+																							   .proxyUsername(
+																								   "proxy-user")
+																							   .readOnlyUsername(
+																								   "read-only-user")
+																							   .username("registry-user")
+																							   .proxyPassword(
+																								   "proxy-password")
+																							   .readOnlyPassword(
+																								   "read-only-password")
+																							   .password(
+																								   "registry-password")
+																							   .build())
+														 .templateConfig(Map.of(
+															 "features",
+															 Map.of(
+																 "certManager", Map.of(
+																	 "active", true,
+																	 "issuer", "production-issuer"
+																 )
+															 ),
+															 "registry",
+															 Map.of("createImagePullSecrets", true),
+															 "scm",
+															 Map.of(
+																 "scmManager",
+																 Map.of("scmmImage", "scm-manager:custom")
+															 )
+														 ))
+														 .build());
 	}
 
 	@Test
@@ -111,6 +128,7 @@ class ScmManagerToolConfigMapperTest {
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 }

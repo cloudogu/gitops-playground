@@ -61,13 +61,14 @@ class RbacDefinitionTest {
 
 	@Test
 	void failsIfNameIsMissing() {
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-			new RbacDefinition(Role.Variant.ARGOCD)
-				.withNamespace("testing")
-				.withServiceAccountsFrom("testing", List.of("reader"))
-				.withRepo(repo)
-				.withTemplateConfig(rbacConfig())
-				.generate()
+		IllegalArgumentException ex = assertThrows(
+			IllegalArgumentException.class, () ->
+				new RbacDefinition(Role.Variant.ARGOCD)
+					.withNamespace("testing")
+					.withServiceAccountsFrom("testing", List.of("reader"))
+					.withRepo(repo)
+					.withTemplateConfig(rbacConfig())
+					.generate()
 		);
 
 		assertThat(ex.getMessage()).contains("name must not be blank");
@@ -75,13 +76,14 @@ class RbacDefinitionTest {
 
 	@Test
 	void failsIfNamespaceIsMissing() {
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-			new RbacDefinition(Role.Variant.ARGOCD)
-				.withName("access")
-				.withServiceAccountsFrom("testing", List.of("reader"))
-				.withRepo(repo)
-				.withTemplateConfig(rbacConfig())
-				.generate()
+		IllegalArgumentException ex = assertThrows(
+			IllegalArgumentException.class, () ->
+				new RbacDefinition(Role.Variant.ARGOCD)
+					.withName("access")
+					.withServiceAccountsFrom("testing", List.of("reader"))
+					.withRepo(repo)
+					.withTemplateConfig(rbacConfig())
+					.generate()
 		);
 
 		assertThat(ex.getMessage()).contains("namespace must not be blank");
@@ -89,14 +91,15 @@ class RbacDefinitionTest {
 
 	@Test
 	void failsIfServiceAccountsAreEmpty() {
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-			new RbacDefinition(Role.Variant.ARGOCD)
-				.withName("access")
-				.withNamespace("testing")
-				.withRepo(repo)
-				.withTemplateConfig(rbacConfig())
-				.withServiceAccounts(List.of())
-				.generate()
+		IllegalArgumentException ex = assertThrows(
+			IllegalArgumentException.class, () ->
+				new RbacDefinition(Role.Variant.ARGOCD)
+					.withName("access")
+					.withNamespace("testing")
+					.withRepo(repo)
+					.withTemplateConfig(rbacConfig())
+					.withServiceAccounts(List.of())
+					.generate()
 		);
 
 		assertThat(ex.getMessage()).contains("At least one service account");
@@ -189,13 +192,14 @@ class RbacDefinitionTest {
 
 	@Test
 	void failsIfRepoIsNotSet() {
-		IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
-			new RbacDefinition(Role.Variant.ARGOCD)
-				.withName("failtest")
-				.withNamespace("ns")
-				.withServiceAccountsFrom("ns", List.of("sa1"))
-				.withTemplateConfig(rbacConfig())
-				.generate()
+		IllegalStateException ex = assertThrows(
+			IllegalStateException.class, () ->
+				new RbacDefinition(Role.Variant.ARGOCD)
+					.withName("failtest")
+					.withNamespace("ns")
+					.withServiceAccountsFrom("ns", List.of("sa1"))
+					.withTemplateConfig(rbacConfig())
+					.generate()
 		);
 
 		assertThat(ex.getMessage()).contains("SCMM repo must be set using withRepo() before calling generate()");
@@ -312,13 +316,14 @@ class RbacDefinitionTest {
 
 	@Test
 	void failsIfConfigIsNotSet() {
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-			new RbacDefinition(Role.Variant.ARGOCD)
-				.withName("failtest")
-				.withNamespace("ns")
-				.withServiceAccountsFrom("ns", List.of("sa"))
-				.withRepo(repo)
-				.generate()
+		IllegalArgumentException ex = assertThrows(
+			IllegalArgumentException.class, () ->
+				new RbacDefinition(Role.Variant.ARGOCD)
+					.withName("failtest")
+					.withNamespace("ns")
+					.withServiceAccountsFrom("ns", List.of("sa"))
+					.withRepo(repo)
+					.generate()
 		);
 
 		assertThat(ex.getMessage()).contains("Config must not be null");

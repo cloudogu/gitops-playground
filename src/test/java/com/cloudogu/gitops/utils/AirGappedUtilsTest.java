@@ -61,21 +61,25 @@ class AirGappedUtilsTest {
 		rootChartsFolder = Files.createTempDirectory(getClass().getSimpleName());
 
 		Map<String, Object> configMap = new LinkedHashMap<>();
-		configMap.put("application", Map.of(
-			"gitName", "Cloudogu",
-			"gitEmail", "hello@cloudogu.com"
-		));
-		configMap.put("scm", Map.of(
-			"scmManager", Map.of("url", "")
-		));
+		configMap.put(
+			"application", Map.of(
+				"gitName", "Cloudogu",
+				"gitEmail", "hello@cloudogu.com"
+			)
+		);
+		configMap.put(
+			"scm", Map.of(
+				"scmManager", Map.of("url", "")
+			)
+		);
 		config = Config.fromMap(configMap);
 
 		helmConfig = HelmChartConfig.builder()
-			.chart("kube-prometheus-stack")
-			.repoURL("https://kube-prometheus-stack-repo-url")
-			.version("58.2.1")
-			.localHelmChartFolder(rootChartsFolder.toString())
-			.build();
+									.chart("kube-prometheus-stack")
+									.repoURL("https://kube-prometheus-stack-repo-url")
+									.version("58.2.1")
+									.localHelmChartFolder(rootChartsFolder.toString())
+									.build();
 
 		fileSystemUtils = new FileSystemUtils();
 		gitRepoFactory = new TestGitRepoFactory(config, fileSystemUtils);
@@ -166,20 +170,22 @@ class AirGappedUtilsTest {
 		Map<String, Object> prometheusChartYaml = new LinkedHashMap<>();
 		prometheusChartYaml.put("version", "1.2.3");
 		prometheusChartYaml.put("name", "kube-prometheus-stack-chart");
-		prometheusChartYaml.put("dependencies", List.of(
-			Map.of(
-				"condition", "crds.enabled",
-				"name", "crds",
-				"repository", "",
-				"version", "0.0.0"
-			),
-			Map.of(
-				"condition", "grafana.enabled",
-				"name", "grafana",
-				"repository", "https://grafana-repo-url",
-				"version", "7.3.*"
+		prometheusChartYaml.put(
+			"dependencies", List.of(
+				Map.of(
+					"condition", "crds.enabled",
+					"name", "crds",
+					"repository", "",
+					"version", "0.0.0"
+				),
+				Map.of(
+					"condition", "grafana.enabled",
+					"name", "grafana",
+					"repository", "https://grafana-repo-url",
+					"version", "7.3.*"
+				)
 			)
-		));
+		);
 
 		if (dependencies != null) {
 			if (dependencies.isEmpty()) {
@@ -249,10 +255,10 @@ class AirGappedUtilsTest {
 	void assertHelmRepoCommits(GitRepo repo, String expectedTag, String expectedCommitMessage)
 		throws IOException, GitAPIException {
 		Iterable<RevCommit> commitIterable = Git.open(new File(repo.getAbsoluteLocalRepoTmpDir()))
-			.log()
-			.setMaxCount(1)
-			.all()
-			.call();
+												.log()
+												.setMaxCount(1)
+												.all()
+												.call();
 		List<RevCommit> commits = new ArrayList<>();
 		commitIterable.forEach(commits::add);
 

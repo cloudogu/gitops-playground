@@ -156,7 +156,8 @@ class VaultTest {
 		assertThat(actualPostStart.get(1)).isEqualTo("-c");
 
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
-			.isEqualTo("USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+			.isEqualTo(
+				"USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 
 		List<Map<String, Object>> actualVolumes = (List<Map<String, Object>>) server.get("volumes");
 		List<Map<String, Object>> actualVolumeMounts = (List<Map<String, Object>>) server.get("volumeMounts");
@@ -182,7 +183,8 @@ class VaultTest {
 		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
-			.isEqualTo("USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+			.isEqualTo(
+				"USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 	}
 
 	@Test
@@ -202,7 +204,8 @@ class VaultTest {
 		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
-			.isEqualTo("USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+			.isEqualTo(
+				"USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 	}
 
 	@Test
@@ -219,7 +222,8 @@ class VaultTest {
 		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
-			.isEqualTo("USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+			.isEqualTo(
+				"USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 	}
 
 	@Test

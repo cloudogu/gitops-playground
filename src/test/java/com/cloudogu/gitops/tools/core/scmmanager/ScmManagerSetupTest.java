@@ -82,21 +82,25 @@ class ScmManagerSetupTest {
 				Map.entry("namespace", "scm-manager"),
 				Map.entry("username", "admin"),
 				Map.entry("password", "admin"),
-				Map.entry("helm", Map.of(
-					"chart", "scm-manager",
-					"repoURL", "https://packages.scm-manager.org/repository/helm-v2-releases/",
-					"version", "3.11.2",
-					"values", Map.of()
-				)),
+				Map.entry(
+					"helm", Map.of(
+						"chart", "scm-manager",
+						"repoURL", "https://packages.scm-manager.org/repository/helm-v2-releases/",
+						"version", "3.11.2",
+						"values", Map.of()
+					)
+				),
 				Map.entry("urlForJenkins", "http://scmm.scm-manager.svc.cluster.local/scm"),
 				Map.entry("ingress", "scmm.master.localhost"),
 				Map.entry("skipRestart", false),
 				Map.entry("skipPlugins", false),
 				Map.entry("gitOpsUsername", "gitops"),
-				Map.entry("credentials", Map.of(
-					"username", "admin",
-					"password", "admin"
-				))
+				Map.entry(
+					"credentials", Map.of(
+						"username", "admin",
+						"password", "admin"
+					)
+				)
 			)
 		)
 	));
@@ -135,25 +139,29 @@ class ScmManagerSetupTest {
 		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
 		config.getApplication().setNamePrefix(config.getApplication().getNamePrefix() + "-");
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.setupHelm();
 		verify(fileSystemUtils).writeTempFile(anyMap());
 
 		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class);
-		verify(helmStrategy).deployFeature(eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
+		verify(helmStrategy).deployFeature(
+			eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
 			eq("scm-manager"),
 			eq("scm-manager"),
 			eq("3.11.2"),
 			eq("test-scm-manager"),
 			eq("test-scmm"),
 			valuesPathCaptor.capture(),
-			eq(DeploymentStrategy.RepoType.HELM));
+			eq(DeploymentStrategy.RepoType.HELM)
+		);
 
 		Map<String, Object> values = YAML_MAPPER.readValue(valuesPathCaptor.getValue().toFile(), YAML_MAP_TYPE);
 		Map<String, Object> image = (Map<String, Object>) values.get("image");
@@ -171,24 +179,28 @@ class ScmManagerSetupTest {
 		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
 		config.getApplication().setNamePrefix(config.getApplication().getNamePrefix() + "-");
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.setupHelm();
 
 		ArgumentCaptor<Path> valuesPathCaptor = ArgumentCaptor.forClass(Path.class);
-		verify(helmStrategy).deployFeature(eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
+		verify(helmStrategy).deployFeature(
+			eq("https://packages.scm-manager.org/repository/helm-v2-releases/"),
 			eq("scm-manager"),
 			eq("scm-manager"),
 			eq("3.11.2"),
 			eq("test-scm-manager"),
 			eq("test-scmm"),
 			valuesPathCaptor.capture(),
-			eq(DeploymentStrategy.RepoType.HELM));
+			eq(DeploymentStrategy.RepoType.HELM)
+		);
 
 		Map<String, Object> values = YAML_MAPPER.readValue(valuesPathCaptor.getValue().toFile(), YAML_MAP_TYPE);
 		Map<String, Object> ingress = (Map<String, Object>) values.get("ingress");
@@ -217,12 +229,14 @@ class ScmManagerSetupTest {
 
 		when(apiCall.execute()).thenReturn(Response.success(null));
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup);
 
@@ -242,12 +256,14 @@ class ScmManagerSetupTest {
 		when(apiCall.execute()).thenReturn(response);
 		when(response.isSuccessful()).thenReturn(false);
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		Thread.currentThread().interrupt();
 		try {
@@ -266,18 +282,22 @@ class ScmManagerSetupTest {
 		throws GitAPIException, IOException {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo);
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
 
-		verify(centralProvider).createRepository("argocd/cluster-resources",
+		verify(centralProvider).createRepository(
+			"argocd/cluster-resources",
 			"GitOps repo for basic cluster-resources",
-			false);
+			false
+		);
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded();
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing();
@@ -289,12 +309,14 @@ class ScmManagerSetupTest {
 		throws GitAPIException {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo);
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();
 
@@ -304,24 +326,32 @@ class ScmManagerSetupTest {
 	@Test
 	void prepareBootstrapRepositoriesAfterScmManagerDeploymentInitializesBothRepositoriesInDedicatedMode()
 		throws GitAPIException, IOException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
-			tenantBootstrapRepo);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepo,
+			tenantBootstrapRepo
+		);
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
 
-		verify(centralProvider).createRepository("argocd/cluster-resources",
+		verify(centralProvider).createRepository(
+			"argocd/cluster-resources",
 			"GitOps repo for basic cluster-resources",
-			false);
-		verify(tenantProvider).createRepository("argocd/cluster-resources",
+			false
+		);
+		verify(tenantProvider).createRepository(
+			"argocd/cluster-resources",
 			"GitOps repo for tenant bootstrap resources",
-			false);
+			false
+		);
 
 		verify(clusterResourcesRepo).initLocalRepoIfNeeded();
 		verify(clusterResourcesRepo).checkoutRemoteMainIfLocalMainMissing();
@@ -335,15 +365,19 @@ class ScmManagerSetupTest {
 	@Test
 	void pushBootstrapRepositoriesAfterScmManagerDeploymentPushesBothRepositoriesInDedicatedMode()
 		throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo,
-			tenantBootstrapRepo);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepo,
+			tenantBootstrapRepo
+		);
 
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager,
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
 			deployer,
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()));
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();
 

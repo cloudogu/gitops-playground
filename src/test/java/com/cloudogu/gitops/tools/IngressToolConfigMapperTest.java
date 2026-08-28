@@ -40,23 +40,27 @@ class IngressToolConfigMapperTest {
 		IngressToolConfig actual = new IngressToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(IngressToolConfig.builder()
-			.active(true)
-			.namespace("test-gateway")
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://ingress.example.org")
-				.chart("ingress-chart")
-				.version("3.4.5")
-				.values(Map.of("replicas", 4))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(imagePullSecret())
-			.templateConfig(Map.of(
-				"application", Map.of("namePrefix", "test-", "netpols", true),
-				"features", Map.of(
-					"ingress", Map.of("helm", Map.of("image", "ingress-image")),
-					"monitoring", Map.of("active", true, "namespace", "observability")),
-				"registry", Map.of("createImagePullSecrets", true)))
-			.build());
+													  .active(true)
+													  .namespace("test-gateway")
+													  .helm(HelmChartConfig.builder()
+																		   .repoURL("https://ingress.example.org")
+																		   .chart("ingress-chart")
+																		   .version("3.4.5")
+																		   .values(Map.of("replicas", 4))
+																		   .localHelmChartFolder("/charts")
+																		   .build())
+													  .imagePullSecret(imagePullSecret())
+													  .templateConfig(Map.of(
+														  "application", Map.of("namePrefix", "test-", "netpols", true),
+														  "features", Map.of(
+															  "ingress",
+															  Map.of("helm", Map.of("image", "ingress-image")),
+															  "monitoring",
+															  Map.of("active", true, "namespace", "observability")
+														  ),
+														  "registry", Map.of("createImagePullSecrets", true)
+													  ))
+													  .build());
 	}
 
 	private static DeploymentContext context() {
@@ -64,20 +68,21 @@ class IngressToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 
 	private static ImagePullSecretConfig imagePullSecret() {
 		return ImagePullSecretConfig.builder()
-			.create(true)
-			.proxyUrl("proxy.example.org")
-			.url("registry.example.org")
-			.proxyUsername("proxy-user")
-			.readOnlyUsername("read-only-user")
-			.username("registry-user")
-			.proxyPassword("proxy-password")
-			.readOnlyPassword("read-only-password")
-			.password("registry-password")
-			.build();
+									.create(true)
+									.proxyUrl("proxy.example.org")
+									.url("registry.example.org")
+									.proxyUsername("proxy-user")
+									.readOnlyUsername("read-only-user")
+									.username("registry-user")
+									.proxyPassword("proxy-password")
+									.readOnlyPassword("read-only-password")
+									.password("registry-password")
+									.build();
 	}
 }

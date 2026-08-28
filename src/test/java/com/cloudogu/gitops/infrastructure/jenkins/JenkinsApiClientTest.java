@@ -33,10 +33,10 @@ class JenkinsApiClientTest {
 
 	@RegisterExtension
 	static WireMockExtension wireMock = WireMockExtension.newInstance()
-		.options(wireMockConfig()
-			.dynamicPort()
-			.dynamicHttpsPort())
-		.build();
+														 .options(wireMockConfig()
+															 .dynamicPort()
+															 .dynamicHttpsPort())
+														 .build();
 
 	@Test
 	void runsScriptWithCrumb() {
@@ -51,8 +51,8 @@ class JenkinsApiClientTest {
 				.withBody("ok")));
 
 		OkHttpClient httpClient = getUnsafeOkHttpClient().newBuilder()
-			.cookieJar(new JavaNetCookieJar(new CookieManager()))
-			.build();
+														 .cookieJar(new JavaNetCookieJar(new CookieManager()))
+														 .build();
 		Config config = new Config();
 		Config.JenkinsSchema jenkins = new Config.JenkinsSchema();
 		jenkins.setUrl(wireMock.baseUrl() + "/jenkins");
@@ -62,12 +62,16 @@ class JenkinsApiClientTest {
 		String result = apiClient.runScript("println('ok')");
 		assertThat(result).isEqualTo("ok");
 
-		wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-			.withHeader("Authorization", matching("Basic .*")));
+		wireMock.verify(
+			1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+				.withHeader("Authorization", matching("Basic .*"))
+		);
 
-		wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
-			.withHeader("Authorization", matching("Basic .*"))
-			.withHeader("Jenkins-Crumb", equalTo("the-crumb")));
+		wireMock.verify(
+			1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
+				.withHeader("Authorization", matching("Basic .*"))
+				.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+		);
 	}
 
 	@Test
@@ -88,8 +92,10 @@ class JenkinsApiClientTest {
 		client.postRequestWithCrumb("foobar");
 
 		wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")));
-		wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
-			.withHeader("Jenkins-Crumb", equalTo("the-crumb")));
+		wireMock.verify(
+			1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
+				.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+		);
 	}
 
 	@Test
@@ -110,9 +116,11 @@ class JenkinsApiClientTest {
 		client.postRequestWithCrumb("foobar", new FormBody.Builder().add("key", "value with spaces").build());
 
 		wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")));
-		wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
-			.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
-			.withFormParam("key", equalTo("value with spaces")));
+		wireMock.verify(
+			1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
+				.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+				.withFormParam("key", equalTo("value with spaces"))
+		);
 	}
 
 	@Test
@@ -136,18 +144,22 @@ class JenkinsApiClientTest {
 		config.setJenkins(jenkins);
 
 		JenkinsApiClient apiClient = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(JenkinsApiClient.class);
+													   .registerSingleton(config)
+													   .getBean(JenkinsApiClient.class);
 
 		String result = apiClient.runScript("println('ok')");
 		assertThat(result).isEqualTo("ok");
 
-		wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
-			.withHeader("Authorization", matching("Basic .*")));
+		wireMock.verify(
+			1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+				.withHeader("Authorization", matching("Basic .*"))
+		);
 
-		wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
-			.withHeader("Authorization", matching("Basic .*"))
-			.withHeader("Jenkins-Crumb", equalTo("the-crumb")));
+		wireMock.verify(
+			1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
+				.withHeader("Authorization", matching("Basic .*"))
+				.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+		);
 	}
 
 	@Test
@@ -166,7 +178,8 @@ class JenkinsApiClientTest {
 			.withHeader("Jenkins-Crumb", equalTo("the-invalid-crumb"))
 			.willReturn(aResponse()
 				.withStatus(403)
-				.withBody("{\"servlet\":\"Stapler\", \"message\":\"No valid crumb was included in the request\", \"url\":\"/scriptText\", \"status\":\"403\"}"))
+				.withBody(
+					"{\"servlet\":\"Stapler\", \"message\":\"No valid crumb was included in the request\", \"url\":\"/scriptText\", \"status\":\"403\"}"))
 			.willSetStateTo("Invalid Crumb Response"));
 
 		wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
@@ -211,7 +224,8 @@ class JenkinsApiClientTest {
 		wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
 			.willReturn(aResponse()
 				.withStatus(403)
-				.withBody("{\"servlet\":\"Stapler\", \"message\":\"No valid crumb was included in the request\", \"url\":\"/scriptText\", \"status\":\"403\"}")));
+				.withBody(
+					"{\"servlet\":\"Stapler\", \"message\":\"No valid crumb was included in the request\", \"url\":\"/scriptText\", \"status\":\"403\"}")));
 
 		OkHttpClient httpClient = getUnsafeOkHttpClient();
 		Config config = new Config();
@@ -281,7 +295,8 @@ class JenkinsApiClientTest {
 				public X509Certificate[] getAcceptedIssuers() {
 					return new X509Certificate[0];
 				}
-			}};
+			}
+			};
 
 			SSLContext sslContext = SSLContext.getInstance("SSL");
 			sslContext.init(null, trustAllCerts, new SecureRandom());

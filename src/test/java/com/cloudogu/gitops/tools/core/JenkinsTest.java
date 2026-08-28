@@ -163,7 +163,8 @@ class JenkinsTest {
 
 		assertThat(controller.get("ingress")).isNull();
 
-		List<Map<String, Object>> customInitContainers = (List<Map<String, Object>>) controller.get("customInitContainers");
+		List<Map<String, Object>> customInitContainers = (List<Map<String, Object>>) controller.get(
+			"customInitContainers");
 		assertThat(customInitContainers.get(0).get("image")).isEqualTo("bash:42");
 
 		Map<String, Object> agent = (Map<String, Object>) actual.get("agent");
@@ -225,8 +226,8 @@ class JenkinsTest {
 		Map<String, Object> controller = (Map<String, Object>) parseActualYaml().get("controller");
 		List<?> installedPlugins = (List<?>) controller.get("installPlugins");
 		List<String> installedPluginNames = installedPlugins.stream()
-			.map(plugin -> plugin.toString().split(":")[0])
-			.collect(Collectors.toList());
+															.map(plugin -> plugin.toString().split(":")[0])
+															.collect(Collectors.toList());
 		assertThat(installedPluginNames).containsExactly("oic-auth", "json-path-api", "matrix-auth");
 
 		Map<String, Object> jCasC = (Map<String, Object>) controller.get("JCasC");
@@ -287,7 +288,13 @@ class JenkinsTest {
 		verify(repositoryWorkspace, never()).commitAndPushClusterResourcesChanges(anyString());
 
 		verify(k8sClient, never()).createNamespace(any());
-		verify(k8sClient, never()).createImagePullSecret(anyString(), anyString(), anyString(), anyString(), anyString());
+		verify(k8sClient, never()).createImagePullSecret(
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString(),
+			anyString()
+		);
 
 		assertThat(temporaryYamlFile).isNull();
 	}

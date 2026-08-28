@@ -28,19 +28,19 @@ class RegistryToolConfigMapperTest {
 		RegistryToolConfig actual = new RegistryToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(RegistryToolConfig.builder()
-			.active(true)
-			.internal(true)
-			.namespace("test-images")
-			.bootstrapNodePort(Config.DEFAULT_REGISTRY_PORT)
-			.internalPort(32000)
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://registry.example.org")
-				.chart("registry-chart")
-				.version("4.5.6")
-				.values(Map.of("storage", "memory"))
-				.localHelmChartFolder("/charts")
-				.build())
-			.build());
+													   .active(true)
+													   .internal(true)
+													   .namespace("test-images")
+													   .bootstrapNodePort(Config.DEFAULT_REGISTRY_PORT)
+													   .internalPort(32000)
+													   .helm(HelmChartConfig.builder()
+																			.repoURL("https://registry.example.org")
+																			.chart("registry-chart")
+																			.version("4.5.6")
+																			.values(Map.of("storage", "memory"))
+																			.localHelmChartFolder("/charts")
+																			.build())
+													   .build());
 	}
 
 	@Test
@@ -58,6 +58,7 @@ class RegistryToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 }

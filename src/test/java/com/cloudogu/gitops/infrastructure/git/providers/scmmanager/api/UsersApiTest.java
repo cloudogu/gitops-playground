@@ -20,10 +20,10 @@ class UsersApiTest {
 
 	@RegisterExtension
 	static final WireMockExtension wireMock = WireMockExtension.newInstance()
-		.options(wireMockConfig()
-			.dynamicPort()
-			.dynamicHttpsPort())
-		.build();
+															   .options(wireMockConfig()
+																   .dynamicPort()
+																   .dynamicHttpsPort())
+															   .build();
 
 	private final Credentials credentials = new Credentials("user", "pass");
 

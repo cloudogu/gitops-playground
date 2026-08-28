@@ -29,7 +29,7 @@ class UserManagerTest {
 		verify(client).runScript("""
 			def realm = Jenkins.getInstance().getSecurityRealm()
 			def user = realm.createAccount('the-\\'user', 'code\\'\\'injection')
-
+			
 			print(user)
 			""");
 	}
@@ -38,8 +38,10 @@ class UserManagerTest {
 	void throwsWhenBackslashesArePassed() {
 		JenkinsApiClient client = mock(JenkinsApiClient.class);
 
-		assertThrows(IllegalArgumentException.class,
-			() -> new UserManager(client).createUser("the-\\'user", "hunter2"));
+		assertThrows(
+			IllegalArgumentException.class,
+			() -> new UserManager(client).createUser("the-\\'user", "hunter2")
+		);
 	}
 
 	@Test
@@ -48,8 +50,10 @@ class UserManagerTest {
 		when(client.runScript(anyString()))
 			.thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]");
 
-		assertThrows(RuntimeException.class,
-			() -> new UserManager(client).createUser("the-user", "hunter2"));
+		assertThrows(
+			RuntimeException.class,
+			() -> new UserManager(client).createUser("the-user", "hunter2")
+		);
 	}
 
 	@Test
@@ -65,7 +69,7 @@ class UserManagerTest {
 		verify(client).runScript("""
 			import org.jenkinsci.plugins.matrixauth.PermissionEntry
 			import org.jenkinsci.plugins.matrixauth.AuthorizationType
-
+			
 			def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
 			permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
 			new HashSet<>()
@@ -80,8 +84,10 @@ class UserManagerTest {
 		when(client.runScript(anyString()))
 			.thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]");
 
-		assertThrows(RuntimeException.class,
-			() -> new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW));
+		assertThrows(
+			RuntimeException.class,
+			() -> new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
+		);
 	}
 
 	@Test
@@ -95,7 +101,8 @@ class UserManagerTest {
 	@Test
 	void checksWhetherMatrixBasedAuthorizationIsDisabled() {
 		JenkinsApiClient client = mock(JenkinsApiClient.class);
-		when(client.runScript(anyString())).thenReturn("class hudson.security.FullControlOnceLoggedInAuthorizationStrategy");
+		when(client.runScript(anyString())).thenReturn(
+			"class hudson.security.FullControlOnceLoggedInAuthorizationStrategy");
 
 		assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isFalse();
 	}
@@ -130,7 +137,9 @@ class UserManagerTest {
 		when(client.runScript(anyString()))
 			.thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]");
 
-		assertThrows(RuntimeException.class,
-			() -> new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation());
+		assertThrows(
+			RuntimeException.class,
+			() -> new UserManager(client).isUsingSecurityRealmWithoutLocalUserCreation()
+		);
 	}
 }

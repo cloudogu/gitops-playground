@@ -21,7 +21,10 @@ class MonitoringToolConfigMapperTest {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("test-");
 		config.getApplication().setLocalHelmChartFolder("/charts");
-		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("jenkins", "monitoring")));
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
+			"jenkins",
+			"monitoring"
+		)));
 		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of("team-a", "team-b")));
 		config.getApplication().setNamespaceIsolation(true);
 		config.getApplication().setNetpols(true);
@@ -77,76 +80,104 @@ class MonitoringToolConfigMapperTest {
 		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(MonitoringToolConfig.builder()
-			.active(true)
-			.namespace("test-observability")
-			.namePrefix("test-")
-			.activeNamespaces(List.of("jenkins", "monitoring", "team-a", "team-b"))
-			.namespaceIsolation(true)
-			.netpols(true)
-			.skipCrds(true)
-			.openshift(true)
-			.airgapped(true)
-			.applicationPassword("application-password")
-			.jenkinsMetricsPassword("jenkins-metrics-password")
-			.smtpUser("smtp-user")
-			.smtpPassword("smtp-password")
-			.grafanaUrl("https://grafana.example.org")
-			.jenkinsInternal(false)
-			.jenkinsNamespace("jenkins-system")
-			.jenkinsUrl("https://jenkins.example.org")
-			.jenkinsMetricsUsername("jenkins-metrics-user")
-			.ingressActive(true)
-			.jenkinsActive(true)
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://monitoring.example.org")
-				.chart("monitoring-chart")
-				.version("6.7.8")
-				.values(Map.of("retention", "30d"))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(imagePullSecret())
-			.templateConfig(Map.of(
-				"application", Map.of(
-					"namePrefix", "test-",
-					"namespaceIsolation", true,
-					"openshift", true,
-					"podResources", true,
-					"skipCrds", true,
-					"password", "application-password",
-					"username", "application-user"),
-				"features", Map.of(
-					"certManager", Map.of("active", true, "issuer", "production-issuer"),
-					"mail", Map.of(
-						"active", true,
-						"smtpAddress", "smtp.example.org",
-						"smtpPassword", "smtp-password",
-						"smtpPort", 2525,
-						"smtpUser", "smtp-user"),
-					"monitoring", Map.of(
-						"grafanaEmailFrom", "grafana@example.org",
-						"grafanaEmailTo", "team@example.org",
-						"grafanaUrl", "https://grafana.example.org",
-						"namespace", "observability",
-						"oidc", Map.of(
-							"providerName", "Keycloak",
-							"issuerUrl", "",
-							"clientId", "grafana-client",
-							"clientSecret", "",
-							"scopes", List.of("openid", "profile", "email"),
-							"adminGroupName", "",
-							"enabled", false),
-						"helm", Map.of(
-							"grafanaImage", "grafana-image",
-							"grafanaSidecarImage", "sidecar-image",
-							"prometheusConfigReloaderImage", "reloader-image",
-							"prometheusImage", "prometheus-image",
-							"prometheusOperatorImage", "operator-image"))),
-				"jenkins", Map.of("active", true),
-				"registry", Map.of("createImagePullSecrets", true),
-				"scm", Map.of(
-					"scmManager", Map.of("namespace", "source-control"),
-					"scmProviderType", ScmProviderType.SCM_MANAGER)))
-			.build());
+														 .active(true)
+														 .namespace("test-observability")
+														 .namePrefix("test-")
+														 .activeNamespaces(List.of(
+															 "jenkins",
+															 "monitoring",
+															 "team-a",
+															 "team-b"
+														 ))
+														 .namespaceIsolation(true)
+														 .netpols(true)
+														 .skipCrds(true)
+														 .openshift(true)
+														 .airgapped(true)
+														 .applicationPassword("application-password")
+														 .jenkinsMetricsPassword("jenkins-metrics-password")
+														 .smtpUser("smtp-user")
+														 .smtpPassword("smtp-password")
+														 .grafanaUrl("https://grafana.example.org")
+														 .jenkinsInternal(false)
+														 .jenkinsNamespace("jenkins-system")
+														 .jenkinsUrl("https://jenkins.example.org")
+														 .jenkinsMetricsUsername("jenkins-metrics-user")
+														 .ingressActive(true)
+														 .jenkinsActive(true)
+														 .helm(HelmChartConfig.builder()
+																			  .repoURL("https://monitoring.example.org")
+																			  .chart("monitoring-chart")
+																			  .version("6.7.8")
+																			  .values(Map.of("retention", "30d"))
+																			  .localHelmChartFolder("/charts")
+																			  .build())
+														 .imagePullSecret(imagePullSecret())
+														 .templateConfig(Map.of(
+															 "application", Map.of(
+																 "namePrefix", "test-",
+																 "namespaceIsolation", true,
+																 "openshift", true,
+																 "podResources", true,
+																 "skipCrds", true,
+																 "password", "application-password",
+																 "username", "application-user"
+															 ),
+															 "features", Map.of(
+																 "certManager",
+																 Map.of("active", true, "issuer", "production-issuer"),
+																 "mail",
+																 Map.of(
+																	 "active", true,
+																	 "smtpAddress", "smtp.example.org",
+																	 "smtpPassword", "smtp-password",
+																	 "smtpPort", 2525,
+																	 "smtpUser", "smtp-user"
+																 ),
+																 "monitoring",
+																 Map.of(
+																	 "grafanaEmailFrom", "grafana@example.org",
+																	 "grafanaEmailTo", "team@example.org",
+																	 "grafanaUrl", "https://grafana.example.org",
+																	 "namespace", "observability",
+																	 "oidc", Map.of(
+																		 "providerName",
+																		 "Keycloak",
+																		 "issuerUrl",
+																		 "",
+																		 "clientId",
+																		 "grafana-client",
+																		 "clientSecret",
+																		 "",
+																		 "scopes",
+																		 List.of("openid", "profile", "email"),
+																		 "adminGroupName",
+																		 "",
+																		 "enabled",
+																		 false
+																	 ),
+																	 "helm", Map.of(
+																		 "grafanaImage",
+																		 "grafana-image",
+																		 "grafanaSidecarImage",
+																		 "sidecar-image",
+																		 "prometheusConfigReloaderImage",
+																		 "reloader-image",
+																		 "prometheusImage",
+																		 "prometheus-image",
+																		 "prometheusOperatorImage",
+																		 "operator-image"
+																	 )
+																 )
+															 ),
+															 "jenkins", Map.of("active", true),
+															 "registry", Map.of("createImagePullSecrets", true),
+															 "scm", Map.of(
+																 "scmManager", Map.of("namespace", "source-control"),
+																 "scmProviderType", ScmProviderType.SCM_MANAGER
+															 )
+														 ))
+														 .build());
 	}
 
 	private static DeploymentContext context() {
@@ -154,20 +185,21 @@ class MonitoringToolConfigMapperTest {
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
 			true,
-			DeploymentContext.ClusterDistribution.OPENSHIFT);
+			DeploymentContext.ClusterDistribution.OPENSHIFT
+		);
 	}
 
 	private static ImagePullSecretConfig imagePullSecret() {
 		return ImagePullSecretConfig.builder()
-			.create(true)
-			.proxyUrl("proxy.example.org")
-			.url("registry.example.org")
-			.proxyUsername("proxy-user")
-			.readOnlyUsername("read-only-user")
-			.username("registry-user")
-			.proxyPassword("proxy-password")
-			.readOnlyPassword("read-only-password")
-			.password("registry-password")
-			.build();
+									.create(true)
+									.proxyUrl("proxy.example.org")
+									.url("registry.example.org")
+									.proxyUsername("proxy-user")
+									.readOnlyUsername("read-only-user")
+									.username("registry-user")
+									.proxyPassword("proxy-password")
+									.readOnlyPassword("read-only-password")
+									.password("registry-password")
+									.build();
 	}
 }

@@ -150,8 +150,10 @@ class ApplicationConfiguratorTest {
 		testConfig.getApplication().setMirrorRepos(true);
 		testConfig.getApplication().setLocalHelmChartFolder("");
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> commonFeatureConfig.validateConfig(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> commonFeatureConfig.validateConfig(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(
 			"Missing config for localHelmChartFolder.\n" +
 				"Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER='charts' " +
@@ -163,8 +165,10 @@ class ApplicationConfiguratorTest {
 	void failsIfCreateImagePullSecretsIsUsedWithoutSecrets() {
 		testConfig.getRegistry().setCreateImagePullSecrets(true);
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> applicationConfigurator.initConfig(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(
 			"createImagePullSecrets needs to be used with either registry username and password or the readOnly variants"
 		);
@@ -176,8 +180,10 @@ class ApplicationConfiguratorTest {
 		repo.setUrl("");
 		testConfig.getContent().setRepos(List.of(repo));
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> featureContent.preConfigInit(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> featureContent.preConfigInit(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo("content.repos requires a url parameter.");
 
 		repo = new Config.ContentSchema.ContentRepositorySchema();
@@ -199,8 +205,10 @@ class ApplicationConfiguratorTest {
 		repo.setType(Config.ContentRepoType.COPY);
 		testConfig.getContent().setRepos(List.of(repo));
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> featureContent.preConfigInit(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> featureContent.preConfigInit(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(
 			"content.repos.type COPY requires content.repos.target to be set. Repo: abc"
 		);
@@ -232,8 +240,10 @@ class ApplicationConfiguratorTest {
 		repo.setTarget("namespace/repo");
 		testConfig.getContent().setRepos(List.of(repo));
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> featureContent.preConfigInit(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> featureContent.preConfigInit(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(
 			"content.repos.type FOLDER_BASED does not support target parameter. Repo: abc"
 		);
@@ -257,8 +267,10 @@ class ApplicationConfiguratorTest {
 		repo.setType(Config.ContentRepoType.MIRROR);
 		testConfig.getContent().setRepos(List.of(repo));
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> featureContent.preConfigInit(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> featureContent.preConfigInit(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(
 			"content.repos.type MIRROR requires content.repos.target to be set. Repo: abc"
 		);
@@ -416,8 +428,10 @@ class ApplicationConfiguratorTest {
 		String expectedException = "Proxy URL needs to be used with proxy-username and proxy-password";
 
 		testConfig.getRegistry().setProxyUsername(null);
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> applicationConfigurator.initConfig(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 		assertThat(exception.getMessage()).isEqualTo(expectedException);
 
 		testConfig.getRegistry().setProxyUsername("something");
@@ -452,10 +466,12 @@ class ApplicationConfiguratorTest {
 			Map.of("value", "value2")
 		));
 
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			applicationConfigurator.initConfig(testConfig);
-			featureArgoCd.postConfigInit(testConfig);
-		});
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class, () -> {
+				applicationConfigurator.initConfig(testConfig);
+				featureArgoCd.postConfigInit(testConfig);
+			}
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [value:value2]"
@@ -471,10 +487,12 @@ class ApplicationConfiguratorTest {
 			Map.of("name", "ENV_VAR_2")
 		));
 
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			applicationConfigurator.initConfig(testConfig);
-			featureArgoCd.postConfigInit(testConfig);
-		});
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class, () -> {
+				applicationConfigurator.initConfig(testConfig);
+				featureArgoCd.postConfigInit(testConfig);
+			}
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [name:ENV_VAR_2]"
@@ -491,10 +509,12 @@ class ApplicationConfiguratorTest {
 			"invalid_entry"
 		));
 
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			applicationConfigurator.initConfig(testConfig);
-			featureArgoCd.postConfigInit(testConfig);
-		});
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class, () -> {
+				applicationConfigurator.initConfig(testConfig);
+				featureArgoCd.postConfigInit(testConfig);
+			}
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: invalid_entry"
@@ -542,7 +562,8 @@ class ApplicationConfiguratorTest {
 
 		applicationConfigurator.initConfig(testConfig);
 
-		assertThat(testConfig.getFeatures().getArgocd().getResourceInclusionsCluster()).isEqualTo("https://valid-url.com");
+		assertThat(testConfig.getFeatures().getArgocd().getResourceInclusionsCluster()).isEqualTo(
+			"https://valid-url.com");
 		assertThat(testLogger.getLogs().search(
 			"Validating user-provided features.argocd.resourceInclusionsCluster URL: https://valid-url.com"
 		)).isNotEmpty();
@@ -556,8 +577,10 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster("invalid-url");
 
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-			() -> applicationConfigurator.initConfig(testConfig));
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Invalid URL for 'features.argocd.resourceInclusionsCluster': invalid-url."
@@ -596,8 +619,10 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster(null);
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> applicationConfigurator.initConfig(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " +
@@ -610,8 +635,10 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster("");
 
-		RuntimeException exception = assertThrows(RuntimeException.class,
-			() -> applicationConfigurator.initConfig(testConfig));
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 
 		assertThat(exception.getMessage()).contains(
 			"Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " +
@@ -627,8 +654,10 @@ class ApplicationConfiguratorTest {
 		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "invalid_host")
 			.and("KUBERNETES_SERVICE_PORT", "not_a_port")
 			.execute(() -> {
-				RuntimeException exception = assertThrows(RuntimeException.class,
-					() -> applicationConfigurator.initConfig(testConfig));
+				RuntimeException exception = assertThrows(
+					RuntimeException.class,
+					() -> applicationConfigurator.initConfig(testConfig)
+				);
 
 				assertThat(exception.getMessage()).contains(
 					"Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true."
