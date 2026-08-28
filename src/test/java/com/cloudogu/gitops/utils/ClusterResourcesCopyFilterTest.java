@@ -24,7 +24,10 @@ class ClusterResourcesCopyFilterTest {
 
 		assertThat(filter.accept(new File(root, "apps"))).isTrue();
 		assertThat(filter.accept(new File(root, "apps/monitoring"))).isTrue();
-		assertThat(filter.accept(new File(root, "apps/monitoring/misc/dashboard/prometheus-dashboard.ftl.yaml"))).isTrue();
+		assertThat(filter.accept(new File(
+			root,
+			"apps/monitoring/misc/dashboard/prometheus-dashboard.ftl.yaml"
+		))).isTrue();
 		assertThat(filter.accept(new File(root, "apps/ingress/values.yaml"))).isFalse();
 	}
 
@@ -37,7 +40,10 @@ class ClusterResourcesCopyFilterTest {
 			List.of("apps/monitoring", "apps/argocd")
 		);
 
-		assertThat(filter.accept(new File(root, "apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml"))).isFalse();
+		assertThat(filter.accept(new File(
+			root,
+			"apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml"
+		))).isFalse();
 		assertThat(filter.accept(new File(root, "apps/argocd/templates/project.ftl.yaml"))).isFalse();
 		assertThat(filter.accept(new File(root, "apps/argocd/argocd/templates/allow-namespaces.ftl.yaml"))).isTrue();
 	}
@@ -48,7 +54,10 @@ class ClusterResourcesCopyFilterTest {
 
 		FileFilter filter = ClusterResourcesCopyFilter.forSubDirs(root.getPath(), List.of());
 
-		assertThat(filter.accept(new File(root, "apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml"))).isTrue();
+		assertThat(filter.accept(new File(
+			root,
+			"apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml"
+		))).isTrue();
 		assertThat(filter.accept(new File(root, "apps/ingress/values.yaml"))).isTrue();
 	}
 

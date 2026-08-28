@@ -26,7 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ArgoCdApplicationStrategyTest {
 
 	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
-	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {};
+	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
+	};
 
 	private File localTempDir;
 	private DeploymentContext context;
@@ -122,10 +123,12 @@ class ArgoCdApplicationStrategyTest {
 	void deploysFeatureWithArgoCdOperatorTrueSettingCreateNamespaceToFalse() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy(true);
 		File valuesYaml = File.createTempFile("values", "yaml");
-		Files.writeString(valuesYaml.toPath(), """
-			param1: value1
-			param2: value2
-			""");
+		Files.writeString(
+			valuesYaml.toPath(), """
+				param1: value1
+				param2: value2
+				"""
+		);
 
 		strategy.deployFeature(
 			"repoURL",
@@ -149,10 +152,12 @@ class ArgoCdApplicationStrategyTest {
 	void deploysFeatureWithArgoCdOperatorFalseSettingCreateNamespaceToTrue() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy(false);
 		File valuesYaml = File.createTempFile("values", "yaml");
-		Files.writeString(valuesYaml.toPath(), """
-			param1: value1
-			param2: value2
-			""");
+		Files.writeString(
+			valuesYaml.toPath(), """
+				param1: value1
+				param2: value2
+				"""
+		);
 
 		strategy.deployFeature(
 			"repoURL",
@@ -177,11 +182,13 @@ class ArgoCdApplicationStrategyTest {
 	void deploysScmManagerAsBootstrapApplicationWithoutValuesSource() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy();
 		File valuesYaml = File.createTempFile("values", "yaml");
-		Files.writeString(valuesYaml.toPath(), """
-			fullnameOverride: tenant1-scmm
-			service:
-			  type: NodePort
-			""");
+		Files.writeString(
+			valuesYaml.toPath(), """
+				fullnameOverride: tenant1-scmm
+				service:
+				  type: NodePort
+				"""
+		);
 
 		strategy.deployFeature(
 			"repoURL",
@@ -213,9 +220,11 @@ class ArgoCdApplicationStrategyTest {
 	void deploysScmManagerAsBootstrapApplicationWithoutWritingExternalValueFiles() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy();
 		File valuesYaml = File.createTempFile("values", "yaml");
-		Files.writeString(valuesYaml.toPath(), """
-			fullnameOverride: tenant1-scmm
-			""");
+		Files.writeString(
+			valuesYaml.toPath(), """
+				fullnameOverride: tenant1-scmm
+				"""
+		);
 
 		strategy.deployFeature(
 			"repoURL",
@@ -238,9 +247,11 @@ class ArgoCdApplicationStrategyTest {
 	void deploysNormalFeatureWithGopAndUserValuesFiles() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy();
 		File valuesYaml = File.createTempFile("values", "yaml");
-		Files.writeString(valuesYaml.toPath(), """
-			param1: value1
-			""");
+		Files.writeString(
+			valuesYaml.toPath(), """
+				param1: value1
+				"""
+		);
 
 		strategy.deployFeature(
 			"repoURL",

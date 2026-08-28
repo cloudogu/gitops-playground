@@ -35,7 +35,10 @@ class ImagePullSecretCreatorTest {
 		Config config = new Config();
 		config.getRegistry().setCreateImagePullSecrets(false);
 
-		imagePullSecretCreator.createIfRequired(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()), NAMESPACE);
+		imagePullSecretCreator.createIfRequired(
+			ToolConfigMapperSupport.imagePullSecret(config.getRegistry()),
+			NAMESPACE
+		);
 
 		assertThat(secret()).isNull();
 	}
@@ -53,7 +56,10 @@ class ImagePullSecretCreatorTest {
 		config.getRegistry().setUsername("user");
 		config.getRegistry().setPassword("pw");
 
-		imagePullSecretCreator.createIfRequired(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()), NAMESPACE);
+		imagePullSecretCreator.createIfRequired(
+			ToolConfigMapperSupport.imagePullSecret(config.getRegistry()),
+			NAMESPACE
+		);
 
 		Secret secret = secret();
 
@@ -72,7 +78,10 @@ class ImagePullSecretCreatorTest {
 		config.getRegistry().setUsername("user");
 		config.getRegistry().setPassword("pw");
 
-		imagePullSecretCreator.createIfRequired(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()), NAMESPACE);
+		imagePullSecretCreator.createIfRequired(
+			ToolConfigMapperSupport.imagePullSecret(config.getRegistry()),
+			NAMESPACE
+		);
 
 		Secret secret = secret();
 
@@ -89,7 +98,10 @@ class ImagePullSecretCreatorTest {
 		config.getRegistry().setUsername("user");
 		config.getRegistry().setPassword("pw");
 
-		imagePullSecretCreator.createIfRequired(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()), NAMESPACE);
+		imagePullSecretCreator.createIfRequired(
+			ToolConfigMapperSupport.imagePullSecret(config.getRegistry()),
+			NAMESPACE
+		);
 
 		Secret secret = secret();
 
@@ -106,7 +118,10 @@ class ImagePullSecretCreatorTest {
 		config.getRegistry().setUsername("user");
 		config.getRegistry().setPassword("pw");
 
-		imagePullSecretCreator.createIfRequired(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()), NAMESPACE);
+		imagePullSecretCreator.createIfRequired(
+			ToolConfigMapperSupport.imagePullSecret(config.getRegistry()),
+			NAMESPACE
+		);
 
 		assertThat(client.namespaces().withName(NAMESPACE).get()).isNotNull();
 		assertThat(secret()).isNotNull();
@@ -114,9 +129,9 @@ class ImagePullSecretCreatorTest {
 
 	private Secret secret() {
 		return client.secrets()
-			.inNamespace(NAMESPACE)
-			.withName(SECRET_NAME)
-			.get();
+					 .inNamespace(NAMESPACE)
+					 .withName(SECRET_NAME)
+					 .get();
 	}
 
 	private static void assertDockerConfigContains(

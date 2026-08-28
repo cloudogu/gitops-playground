@@ -29,8 +29,8 @@ class DestroyerDependencyInjectionTest {
 		));
 
 		Destroyer destroyer = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Destroyer.class);
+												.registerSingleton(config)
+												.getBean(Destroyer.class);
 
 		assertThat(destroyer.getDestructionHandlers()).hasSize(3);
 	}

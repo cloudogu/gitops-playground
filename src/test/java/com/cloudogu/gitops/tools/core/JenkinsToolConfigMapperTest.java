@@ -76,91 +76,114 @@ class JenkinsToolConfigMapperTest {
 		JenkinsToolConfig actual = new JenkinsToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(JenkinsToolConfig.builder()
-			.active(true)
-			.internal(true)
-			.namespace("test-automation")
-			.application(JenkinsToolConfig.Application.builder()
-				.namePrefix("test-")
-				.environmentPrefix("TEST_")
-				.runningInsideK8s(true)
-				.trace(true)
-				.insecure(true)
-				.build())
-			.server(JenkinsToolConfig.Server.builder()
-				.url("https://jenkins.example.org")
-				.username("jenkins-user")
-				.password("jenkins-password")
-				.metricsUsername("metrics-user")
-				.metricsPassword("metrics-password")
-				.skipRestart(true)
-				.skipPlugins(true)
-				.mavenCentralMirror("https://maven.example.org")
-				.internalBashImage("bash:custom")
-				.oidcConfigured(true)
-				.additionalEnvironments(Map.of("FIRST", "one", "SECOND", "two"))
-				.build())
-			.scm(JenkinsToolConfig.Scm.builder()
-				.providerType(ScmProviderType.SCM_MANAGER)
-				.scmManagerPassword("scmm-password")
-				.gitlabUsername("gitlab-user")
-				.gitlabPassword("gitlab-password")
-				.build())
-			.registry(JenkinsToolConfig.Registry.builder()
-				.url("registry.example.org")
-				.path("images")
-				.username("registry-user")
-				.password("registry-password")
-				.twoRegistries(true)
-				.proxyUrl("proxy.example.org")
-				.proxyPath("proxy-images")
-				.proxyUsername("proxy-user")
-				.proxyPassword("proxy-password")
-				.build())
-			.argocdActive(true)
-			.monitoringActive(true)
-			.kubernetesVersion(Config.K8S_VERSION)
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://jenkins-chart.example.org")
-				.chart("jenkins-chart")
-				.version("7.8.9")
-				.values(Map.of("controller", Map.of("replicas", 2)))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(ImagePullSecretConfig.builder()
-				.create(true)
-				.proxyUrl("proxy.example.org")
-				.url("registry.example.org")
-				.proxyUsername("proxy-user")
-				.readOnlyUsername("read-only-user")
-				.username("registry-user")
-				.proxyPassword("proxy-password")
-				.readOnlyPassword("read-only-password")
-				.password("registry-password")
-				.build())
-			.templateConfig(Map.of(
-				"application", Map.of("baseUrl", "example.org"),
-				"features", Map.of("certManager", Map.of(
-					"active", true,
-					"issuer", "production-issuer")),
-				"jenkins", Map.of(
-					"helm", Map.of("version", "7.8.9"),
-					"ingress", "jenkins-ingress.example.org",
-					"internalBashImage", "bash:custom",
-					"internalDockerClientVersion", "28.0.0",
-					"jenkinsImage", "jenkins:custom",
-					"oidc", Map.of(
-						"providerName", "Keycloak",
-						"issuerUrl", "https://id.example.org",
-						"clientId", "jenkins-client",
-						"clientSecret", "jenkins-client-secret",
-						"scopes", List.of("openid", "profile", "email"),
-						"adminGroupName", "",
-						"enabled", true),
-					"password", "jenkins-password",
-					"url", "https://jenkins.example.org",
-					"username", "jenkins-user"),
-				"registry", Map.of("createImagePullSecrets", true)))
-			.build());
+													  .active(true)
+													  .internal(true)
+													  .namespace("test-automation")
+													  .application(JenkinsToolConfig.Application.builder()
+																								.namePrefix("test-")
+																								.environmentPrefix(
+																									"TEST_")
+																								.runningInsideK8s(true)
+																								.trace(true)
+																								.insecure(true)
+																								.build())
+													  .server(JenkinsToolConfig.Server.builder()
+																					  .url("https://jenkins.example.org")
+																					  .username("jenkins-user")
+																					  .password("jenkins-password")
+																					  .metricsUsername("metrics-user")
+																					  .metricsPassword(
+																						  "metrics-password")
+																					  .skipRestart(true)
+																					  .skipPlugins(true)
+																					  .mavenCentralMirror(
+																						  "https://maven.example.org")
+																					  .internalBashImage("bash:custom")
+																					  .oidcConfigured(true)
+																					  .additionalEnvironments(Map.of(
+																						  "FIRST",
+																						  "one",
+																						  "SECOND",
+																						  "two"
+																					  ))
+																					  .build())
+													  .scm(JenkinsToolConfig.Scm.builder()
+																				.providerType(ScmProviderType.SCM_MANAGER)
+																				.scmManagerPassword("scmm-password")
+																				.gitlabUsername("gitlab-user")
+																				.gitlabPassword("gitlab-password")
+																				.build())
+													  .registry(JenkinsToolConfig.Registry.builder()
+																						  .url("registry.example.org")
+																						  .path("images")
+																						  .username("registry-user")
+																						  .password("registry-password")
+																						  .twoRegistries(true)
+																						  .proxyUrl("proxy.example.org")
+																						  .proxyPath("proxy-images")
+																						  .proxyUsername("proxy-user")
+																						  .proxyPassword(
+																							  "proxy-password")
+																						  .build())
+													  .argocdActive(true)
+													  .monitoringActive(true)
+													  .kubernetesVersion(Config.K8S_VERSION)
+													  .helm(HelmChartConfig.builder()
+																		   .repoURL("https://jenkins-chart.example.org")
+																		   .chart("jenkins-chart")
+																		   .version("7.8.9")
+																		   .values(Map.of(
+																			   "controller",
+																			   Map.of("replicas", 2)
+																		   ))
+																		   .localHelmChartFolder("/charts")
+																		   .build())
+													  .imagePullSecret(ImagePullSecretConfig.builder()
+																							.create(true)
+																							.proxyUrl(
+																								"proxy.example.org")
+																							.url("registry.example.org")
+																							.proxyUsername("proxy-user")
+																							.readOnlyUsername(
+																								"read-only-user")
+																							.username("registry-user")
+																							.proxyPassword(
+																								"proxy-password")
+																							.readOnlyPassword(
+																								"read-only-password")
+																							.password(
+																								"registry-password")
+																							.build())
+													  .templateConfig(Map.of(
+														  "application", Map.of("baseUrl", "example.org"),
+														  "features", Map.of(
+															  "certManager", Map.of(
+																  "active", true,
+																  "issuer", "production-issuer"
+															  )
+														  ),
+														  "jenkins", Map.of(
+															  "helm", Map.of("version", "7.8.9"),
+															  "ingress", "jenkins-ingress.example.org",
+															  "internalBashImage", "bash:custom",
+															  "internalDockerClientVersion", "28.0.0",
+															  "jenkinsImage", "jenkins:custom",
+															  "oidc", Map.of(
+																  "providerName", "Keycloak",
+																  "issuerUrl", "https://id.example.org",
+																  "clientId", "jenkins-client",
+																  "clientSecret", "jenkins-client-secret",
+																  "scopes", List.of("openid", "profile", "email"),
+																  "adminGroupName", "",
+																  "enabled", true
+															  ),
+															  "password", "jenkins-password",
+															  "url", "https://jenkins.example.org",
+															  "username", "jenkins-user"
+														  ),
+														  "registry", Map.of("createImagePullSecrets", true)
+													  ))
+													  .build());
 	}
 
 	@Test
@@ -178,6 +201,7 @@ class JenkinsToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 }

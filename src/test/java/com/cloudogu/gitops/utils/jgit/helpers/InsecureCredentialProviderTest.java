@@ -18,7 +18,8 @@ class InsecureCredentialProviderTest {
 		assertThat(provider.supports(new CredentialItem.Username(), new CredentialItem.Password())).isFalse();
 		assertThat(provider.supports(
 			new CredentialItem.InformationalMessage("This is not a relevant message"),
-			new CredentialItem.YesNoType("This prompt is irrelevant as well")))
+			new CredentialItem.YesNoType("This prompt is irrelevant as well")
+		))
 			.isFalse();
 	}
 
@@ -44,7 +45,8 @@ class InsecureCredentialProviderTest {
 			message,
 			skipSingle,
 			skipRepository,
-			skipAlways))
+			skipAlways
+		))
 			.isTrue();
 
 		assertThat(skipSingle.getValue()).isTrue();

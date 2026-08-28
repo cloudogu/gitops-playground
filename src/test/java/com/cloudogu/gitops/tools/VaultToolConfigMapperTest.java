@@ -22,44 +22,59 @@ class VaultToolConfigMapperTest {
 		VaultToolConfig actual = new VaultToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(VaultToolConfig.builder()
-			.active(true)
-			.namespace("test-secrets")
-			.namePrefix("test-")
-			.url("https://vault.example.org")
-			.developmentMode(false)
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://vault-chart.example.org")
-				.chart("vault-chart")
-				.version("5.6.7")
-				.values(Map.of("ha", true))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(imagePullSecret())
-			.templateConfig(Map.of(
-				"application", Map.of(
-					"namePrefix", "test-",
-					"namespaceIsolation", true,
-					"openshift", true,
-					"password", "application-password",
-					"podResources", true,
-					"username", "application-user"),
-				"features", Map.of(
-					"argocd", Map.of("active", true),
-					"certManager", Map.of(
-						"active", true,
-						"issuer", "production-issuer"),
-					"secrets", Map.of("vault", Map.of(
-						"oidc", Map.of(
-							"providerName", "Keycloak",
-							"issuerUrl", "",
-							"clientId", "vault-client",
-							"clientSecret", "",
-							"scopes", java.util.List.of("openid", "profile", "email"),
-							"adminGroupName", "",
-							"enabled", false),
-						"helm", Map.of("image", "vault-image")))),
-				"registry", Map.of("createImagePullSecrets", true)))
-			.build());
+													.active(true)
+													.namespace("test-secrets")
+													.namePrefix("test-")
+													.url("https://vault.example.org")
+													.developmentMode(false)
+													.helm(HelmChartConfig.builder()
+																		 .repoURL("https://vault-chart.example.org")
+																		 .chart("vault-chart")
+																		 .version("5.6.7")
+																		 .values(Map.of("ha", true))
+																		 .localHelmChartFolder("/charts")
+																		 .build())
+													.imagePullSecret(imagePullSecret())
+													.templateConfig(Map.of(
+														"application", Map.of(
+															"namePrefix", "test-",
+															"namespaceIsolation", true,
+															"openshift", true,
+															"password", "application-password",
+															"podResources", true,
+															"username", "application-user"
+														),
+														"features", Map.of(
+															"argocd", Map.of("active", true),
+															"certManager", Map.of(
+																"active", true,
+																"issuer", "production-issuer"
+															),
+															"secrets", Map.of(
+																"vault", Map.of(
+																	"oidc", Map.of(
+																		"providerName",
+																		"Keycloak",
+																		"issuerUrl",
+																		"",
+																		"clientId",
+																		"vault-client",
+																		"clientSecret",
+																		"",
+																		"scopes",
+																		java.util.List.of("openid", "profile", "email"),
+																		"adminGroupName",
+																		"",
+																		"enabled",
+																		false
+																	),
+																	"helm", Map.of("image", "vault-image")
+																)
+															)
+														),
+														"registry", Map.of("createImagePullSecrets", true)
+													))
+													.build());
 	}
 
 	@ParameterizedTest
@@ -122,20 +137,21 @@ class VaultToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.OPENSHIFT);
+			DeploymentContext.ClusterDistribution.OPENSHIFT
+		);
 	}
 
 	private static ImagePullSecretConfig imagePullSecret() {
 		return ImagePullSecretConfig.builder()
-			.create(true)
-			.proxyUrl("proxy.example.org")
-			.url("registry.example.org")
-			.proxyUsername("proxy-user")
-			.readOnlyUsername("read-only-user")
-			.username("registry-user")
-			.proxyPassword("proxy-password")
-			.readOnlyPassword("read-only-password")
-			.password("registry-password")
-			.build();
+									.create(true)
+									.proxyUrl("proxy.example.org")
+									.url("registry.example.org")
+									.proxyUsername("proxy-user")
+									.readOnlyUsername("read-only-user")
+									.username("registry-user")
+									.proxyPassword("proxy-password")
+									.readOnlyPassword("read-only-password")
+									.password("registry-password")
+									.build();
 	}
 }

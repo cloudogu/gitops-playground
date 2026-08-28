@@ -41,24 +41,48 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context());
 
 		assertThat(actual).isEqualTo(ExternalSecretsOperatorToolConfig.builder()
-			.active(true)
-			.namespace("test-external-secrets")
-			.helm(HelmChartConfig.builder()
-				.repoURL("https://eso.example.org")
-				.chart("eso-chart")
-				.version("2.3.4")
-				.values(Map.of("replicas", 3))
-				.localHelmChartFolder("/charts")
-				.build())
-			.imagePullSecret(imagePullSecret())
-			.templateConfig(Map.of(
-				"application", Map.of("podResources", true, "skipCrds", true),
-				"features", Map.of("secrets", Map.of("externalSecrets", Map.of("helm", Map.of(
-					"image", "eso-image",
-					"certControllerImage", "cert-controller-image",
-					"webhookImage", "webhook-image")))),
-				"registry", Map.of("createImagePullSecrets", true)))
-			.build());
+																	  .active(true)
+																	  .namespace("test-external-secrets")
+																	  .helm(HelmChartConfig.builder()
+																						   .repoURL(
+																							   "https://eso.example.org")
+																						   .chart("eso-chart")
+																						   .version("2.3.4")
+																						   .values(Map.of(
+																							   "replicas",
+																							   3
+																						   ))
+																						   .localHelmChartFolder(
+																							   "/charts")
+																						   .build())
+																	  .imagePullSecret(imagePullSecret())
+																	  .templateConfig(Map.of(
+																		  "application",
+																		  Map.of(
+																			  "podResources",
+																			  true,
+																			  "skipCrds",
+																			  true
+																		  ),
+																		  "features",
+																		  Map.of(
+																			  "secrets", Map.of(
+																				  "externalSecrets", Map.of(
+																					  "helm", Map.of(
+																						  "image",
+																						  "eso-image",
+																						  "certControllerImage",
+																						  "cert-controller-image",
+																						  "webhookImage",
+																						  "webhook-image"
+																					  )
+																				  )
+																			  )
+																		  ),
+																		  "registry",
+																		  Map.of("createImagePullSecrets", true)
+																	  ))
+																	  .build());
 	}
 
 	private static DeploymentContext context() {
@@ -66,20 +90,21 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
 			false,
-			DeploymentContext.ClusterDistribution.KUBERNETES);
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
 	}
 
 	private static ImagePullSecretConfig imagePullSecret() {
 		return ImagePullSecretConfig.builder()
-			.create(true)
-			.proxyUrl("proxy.example.org")
-			.url("registry.example.org")
-			.proxyUsername("proxy-user")
-			.readOnlyUsername("read-only-user")
-			.username("registry-user")
-			.proxyPassword("proxy-password")
-			.readOnlyPassword("read-only-password")
-			.password("registry-password")
-			.build();
+									.create(true)
+									.proxyUrl("proxy.example.org")
+									.url("registry.example.org")
+									.proxyUsername("proxy-user")
+									.readOnlyUsername("read-only-user")
+									.username("registry-user")
+									.proxyPassword("proxy-password")
+									.readOnlyPassword("read-only-password")
+									.password("registry-password")
+									.build();
 	}
 }

@@ -49,16 +49,20 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void hasTenantBootstrapRepositoryReturnsTrueInDedicatedMode() {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		assertThat(workspace.hasTenantBootstrapRepository()).isTrue();
 	}
 
 	@Test
 	void tenantBootstrapRepositoryOrFailReturnsTenantBootstrapRepositoryWhenAvailable() {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		assertThat(workspace.tenantBootstrapRepositoryOrFail()).isSameAs(tenantBootstrapRepository);
 	}
@@ -89,8 +93,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void createLocalDirectoriesCreatesClusterResourcesAndTenantBootstrapDirectoryStructuresInDedicatedMode() {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.createLocalDirectories();
 
@@ -119,8 +125,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void cloneRepositoriesClonesClusterResourcesAndTenantBootstrapRepositoriesInDedicatedMode() throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.cloneRepositories();
 
@@ -140,8 +148,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void initLocalRepositoriesIfNeededInitializesClusterResourcesAndTenantBootstrapRepositoriesInDedicatedMode() throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.initLocalRepositoriesIfNeeded();
 
@@ -155,21 +165,51 @@ class RepositoryWorkspaceTest {
 
 		assertThat(workspace.clusterResourcesRootDir()).isEqualTo(clusterResourcesRootDir);
 		assertThat(workspace.clusterResourcesAppsDir()).isEqualTo(Path.of(clusterResourcesRootDir, "apps").toString());
-		assertThat(workspace.clusterResourcesArgoCdDir()).isEqualTo(Path.of(clusterResourcesRootDir, "apps", "argocd").toString());
-		assertThat(workspace.clusterResourcesApplicationsDir()).isEqualTo(Path.of(clusterResourcesRootDir, "apps", "argocd", "applications").toString());
-		assertThat(workspace.clusterResourcesProjectsDir()).isEqualTo(Path.of(clusterResourcesRootDir, "apps", "argocd", "projects").toString());
+		assertThat(workspace.clusterResourcesArgoCdDir()).isEqualTo(Path.of(
+			clusterResourcesRootDir,
+			"apps",
+			"argocd"
+		).toString());
+		assertThat(workspace.clusterResourcesApplicationsDir()).isEqualTo(Path.of(
+			clusterResourcesRootDir,
+			"apps",
+			"argocd",
+			"applications"
+		).toString());
+		assertThat(workspace.clusterResourcesProjectsDir()).isEqualTo(Path.of(
+			clusterResourcesRootDir,
+			"apps",
+			"argocd",
+			"projects"
+		).toString());
 	}
 
 	@Test
 	void tenantBootstrapPathMethodsReturnExpectedPathsInDedicatedMode() {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		assertThat(workspace.tenantBootstrapRootDir()).isEqualTo(tenantBootstrapRootDir);
 		assertThat(workspace.tenantBootstrapAppsDir()).isEqualTo(Path.of(tenantBootstrapRootDir, "apps").toString());
-		assertThat(workspace.tenantBootstrapArgoCdDir()).isEqualTo(Path.of(tenantBootstrapRootDir, "apps", "argocd").toString());
-		assertThat(workspace.tenantBootstrapApplicationsDir()).isEqualTo(Path.of(tenantBootstrapRootDir, "apps", "argocd", "applications").toString());
-		assertThat(workspace.tenantBootstrapProjectsDir()).isEqualTo(Path.of(tenantBootstrapRootDir, "apps", "argocd", "projects").toString());
+		assertThat(workspace.tenantBootstrapArgoCdDir()).isEqualTo(Path.of(
+			tenantBootstrapRootDir,
+			"apps",
+			"argocd"
+		).toString());
+		assertThat(workspace.tenantBootstrapApplicationsDir()).isEqualTo(Path.of(
+			tenantBootstrapRootDir,
+			"apps",
+			"argocd",
+			"applications"
+		).toString());
+		assertThat(workspace.tenantBootstrapProjectsDir()).isEqualTo(Path.of(
+			tenantBootstrapRootDir,
+			"apps",
+			"argocd",
+			"projects"
+		).toString());
 	}
 
 	@Test
@@ -195,8 +235,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void commitAndPushClusterResourcesChangesCommitsOnlyClusterResourcesRepository() throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.commitAndPushClusterResourcesChanges("Update cluster resources");
 
@@ -206,8 +248,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void commitAndPushTenantBootstrapChangesCommitsTenantBootstrapRepositoryWhenAvailable() throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.commitAndPushTenantBootstrapChanges("Update tenant bootstrap");
 
@@ -238,8 +282,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void commitAndPushClusterResourcesAndTenantBootstrapChangesCommitsBothRepositoriesInDedicatedMode() throws GitAPIException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.commitAndPushClusterResourcesAndTenantBootstrapChanges("Update resources");
 
@@ -259,8 +305,10 @@ class RepositoryWorkspaceTest {
 
 	@Test
 	void alignWithRemoteMainIfPresentChecksOutBothRepositoriesInDedicatedMode() throws GitAPIException, IOException {
-		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepository,
-			tenantBootstrapRepository);
+		RepositoryWorkspace workspace = new RepositoryWorkspace(
+			clusterResourcesRepository,
+			tenantBootstrapRepository
+		);
 
 		workspace.alignWithRemoteMainIfPresent();
 

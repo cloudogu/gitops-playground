@@ -33,16 +33,20 @@ class GitHandlerTest {
 	private static Config config(Map<String, ?> overrides) {
 		Map<String, Object> base = new LinkedHashMap<>();
 		base.put("application", Map.of("namePrefix", ""));
-		base.put("scm", Map.of(
-			"scmProviderType", ScmProviderType.SCM_MANAGER,
-			"scmManager", Map.of("internal", true),
-			"gitlab", Map.of("url", "")
-		));
-		base.put("multiTenant", Map.of(
-			"scmManager", Map.of("url", ""),
-			"gitlab", Map.of("url", ""),
-			"useDedicatedInstance", false
-		));
+		base.put(
+			"scm", Map.of(
+				"scmProviderType", ScmProviderType.SCM_MANAGER,
+				"scmManager", Map.of("internal", true),
+				"gitlab", Map.of("url", "")
+			)
+		);
+		base.put(
+			"multiTenant", Map.of(
+				"scmManager", Map.of("url", ""),
+				"gitlab", Map.of("url", ""),
+				"useDedicatedInstance", false
+			)
+		);
 
 		Map<String, Object> merged = deepMerge(base, overrides);
 		return Config.fromMap(merged);
@@ -85,10 +89,12 @@ class GitHandlerTest {
 	void validateScmManagerSelectedAndGitopsUsernameReceivesNamePrefix() {
 		Config config = config(Map.of(
 			"application", Map.of("namePrefix", "fv40-"),
-			"scm", Map.of("scmManager", Map.of(
-				"url", "https://scmm.example.com/scm",
-				"internal", true
-			))
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"url", "https://scmm.example.com/scm",
+					"internal", true
+				)
+			)
 		));
 
 		GitHandler gitHandler = handler(config);

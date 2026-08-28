@@ -59,12 +59,12 @@ class ApplicationTest {
 	@Test
 	void featuresOrderingIsCorrect() {
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		List<String> features = application.getTools().stream()
-			.map(tool -> tool.getClass().getSimpleName())
-			.collect(Collectors.toList());
+										   .map(tool -> tool.getClass().getSimpleName())
+										   .collect(Collectors.toList());
 
 		assertThat(features).isEqualTo(List.of(
 			"ScmManager",
@@ -104,8 +104,8 @@ class ApplicationTest {
 		));
 
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		application.setNamespaceListToConfig(buildContext());
 
@@ -138,8 +138,8 @@ class ApplicationTest {
 		));
 
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		application.setNamespaceListToConfig(buildContext());
 
@@ -155,8 +155,8 @@ class ApplicationTest {
 		));
 
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		application.setNamespaceListToConfig(buildContext());
 
@@ -169,8 +169,8 @@ class ApplicationTest {
 	@Test
 	void handlesEmptyContentNamespaces() {
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		application.setNamespaceListToConfig(buildContext());
 
@@ -204,8 +204,8 @@ class ApplicationTest {
 		));
 
 		Application application = ApplicationContext.run()
-			.registerSingleton(config)
-			.getBean(Application.class);
+													.registerSingleton(config)
+													.getBean(Application.class);
 
 		application.setNamespaceListToConfig(buildContext());
 

@@ -24,15 +24,17 @@ class TemplatingEngineTest {
 	@Test
 	void replacesTwoTemplatesInDifferentFolders() throws IOException, TemplateException {
 		File fooTemplate = new File(tmpDir.getAbsolutePath(), "foo.ftl.txt");
-		Files.writeString(fooTemplate.toPath(), """
-			this is the template
-			I can embed ${string}
-			<#if display>
-			and use ifs
-			<#else>
-			and use elses
-			</#if>
-			""");
+		Files.writeString(
+			fooTemplate.toPath(), """
+				this is the template
+				I can embed ${string}
+				<#if display>
+				and use ifs
+				<#else>
+				and use elses
+				</#if>
+				"""
+		);
 
 		File tmpDir2 = Files.createTempDirectory("gitops-playground-tests-templatingengine").toFile();
 		tmpDir2.deleteOnExit();
@@ -42,7 +44,8 @@ class TemplatingEngineTest {
 		TemplatingEngine engine = new TemplatingEngine();
 		engine.replaceTemplate(barTemplate, Map.of("name", "Playground"));
 
-		assertThat(Files.readString(new File(tmpDir2.getAbsolutePath(), "bar.txt").toPath())).isEqualTo("Hello Playground");
+		assertThat(Files.readString(new File(tmpDir2.getAbsolutePath(), "bar.txt").toPath())).isEqualTo(
+			"Hello Playground");
 		assertThat(barTemplate).doesNotExist();
 	}
 
@@ -101,7 +104,8 @@ class TemplatingEngineTest {
 		TemplatingEngine engine = new TemplatingEngine();
 		engine.replaceTemplates(tmpDir, Map.of("prefix", "myteam-"));
 
-		assertThat(Files.readString(new File(tmpDir, "subdirectory/result.yaml").toPath())).isEqualTo("foo: myteam-suffix");
+		assertThat(Files.readString(new File(tmpDir, "subdirectory/result.yaml").toPath())).isEqualTo(
+			"foo: myteam-suffix");
 		assertThat(Files.readString(new File(tmpDir, "subdirectory/keep-this-way.yaml").toPath()))
 			.isEqualTo("thiswont: ${prefix}-be-replaced");
 		assertThat(new File(tmpDir, "subdirectory/result.ftl.yaml")).doesNotExist();

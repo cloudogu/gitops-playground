@@ -62,9 +62,9 @@ public class CommandExecutorForTest extends CommandExecutor {
 
 	public String assertExecuted(String commandStartsWith) {
 		String actualCommand = actualCommands.stream()
-			.filter(command -> command.startsWith(commandStartsWith))
-			.findFirst()
-			.orElse(null);
+											 .filter(command -> command.startsWith(commandStartsWith))
+											 .findFirst()
+											 .orElse(null);
 
 		assertThat(actualCommand)
 			.as(
@@ -78,9 +78,9 @@ public class CommandExecutorForTest extends CommandExecutor {
 
 	public void assertNotExecuted(String commandStartsWith) {
 		String actualCommand = actualCommands.stream()
-			.filter(command -> command.startsWith(commandStartsWith))
-			.findFirst()
-			.orElse(null);
+											 .filter(command -> command.startsWith(commandStartsWith))
+											 .findFirst()
+											 .orElse(null);
 
 		assertThat(actualCommand)
 			.as("Expected command to have been executed, but was not: %s", commandStartsWith)

@@ -180,15 +180,15 @@ class CertManagerTest {
 		config.getApplication().setMirrorRepos(true);
 		// test values
 		config.getFeatures().getCertManager().getHelm()
-			.setImage("this.is.my.registry:30000/this.is.my.repository/myImage:1");
+			  .setImage("this.is.my.registry:30000/this.is.my.repository/myImage:1");
 		config.getFeatures().getCertManager().getHelm()
-			.setWebhookImage("this.is.my.registry:30000/this.is.my.repository/myWebhook:2");
+			  .setWebhookImage("this.is.my.registry:30000/this.is.my.repository/myWebhook:2");
 		config.getFeatures().getCertManager().getHelm()
-			.setCainjectorImage("this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3");
+			  .setCainjectorImage("this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3");
 		config.getFeatures().getCertManager().getHelm()
-			.setAcmeSolverImage("this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4");
+			  .setAcmeSolverImage("this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4");
 		config.getFeatures().getCertManager().getHelm()
-			.setStartupAPICheckImage("this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5");
+			  .setStartupAPICheckImage("this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5");
 
 		when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig.class))).thenReturn("a/b");
 
@@ -209,22 +209,26 @@ class CertManagerTest {
 			.isEqualTo("this.is.my.registry:30000/this.is.my.repository/myImage");
 		assertThat(Objects.toString(image.get("tag"), null)).isEqualTo("1");
 		// webhook
-		Map<String, Object> webhookImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get("webhook")).get("image");
+		Map<String, Object> webhookImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get("webhook")).get(
+			"image");
 		assertThat(Objects.toString(webhookImage.get("repository"), null))
 			.isEqualTo("this.is.my.registry:30000/this.is.my.repository/myWebhook");
 		assertThat(Objects.toString(webhookImage.get("tag"), null)).isEqualTo("2");
 		// cainjector
-		Map<String, Object> cainjectorImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get("cainjector")).get("image");
+		Map<String, Object> cainjectorImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get(
+			"cainjector")).get("image");
 		assertThat(Objects.toString(cainjectorImage.get("repository"), null))
 			.isEqualTo("this.is.my.registry:30000/this.is.my.repository/myCainjectorImage");
 		assertThat(Objects.toString(cainjectorImage.get("tag"), null)).isEqualTo("3");
 		// acmesolver
-		Map<String, Object> acmeSolverImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get("acmesolver")).get("image");
+		Map<String, Object> acmeSolverImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get(
+			"acmesolver")).get("image");
 		assertThat(Objects.toString(acmeSolverImage.get("repository"), null))
 			.isEqualTo("this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage");
 		assertThat(Objects.toString(acmeSolverImage.get("tag"), null)).isEqualTo("4");
 		// startupapicheck
-		Map<String, Object> startupApiCheckImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get("startupapicheck")).get("image");
+		Map<String, Object> startupApiCheckImage = (Map<String, Object>) ((Map<String, Object>) parseActualYaml().get(
+			"startupapicheck")).get("image");
 		assertThat(Objects.toString(startupApiCheckImage.get("repository"), null))
 			.isEqualTo("this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage");
 		assertThat(Objects.toString(startupApiCheckImage.get("tag"), null)).isEqualTo("5");
