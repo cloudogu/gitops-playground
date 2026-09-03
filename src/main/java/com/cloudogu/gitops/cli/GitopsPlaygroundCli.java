@@ -88,7 +88,7 @@ public class GitopsPlaygroundCli {
 		Application app = context.getBean(Application.class);
 
 		Config config = readConfigs(args);
-		runHook(app, "preConfigInit", ConfigLifecycleHook::preConfigInit, config);
+		runHook(app, "preConfigInit", ConfigLifecycleHook::preConfigInit, config, k8sClient);
 
 		if (config.getApplication().getOutputConfigFile()) {
 			log.info(config.toYaml(false));
@@ -97,7 +97,7 @@ public class GitopsPlaygroundCli {
 
 		config = applicationConfigurator.initConfig(config);
 		log.debug("Actual config: {}", config.toYaml(true));
-		runHook(app, "postConfigInit", ConfigLifecycleHook::postConfigInit, config);
+		runHook(app, "postConfigInit", ConfigLifecycleHook::postConfigInit, config, k8sClient);
 
 		context.close();
 		context = createApplicationContext();
@@ -149,9 +149,9 @@ public class GitopsPlaygroundCli {
 			"Calling confirm for message: {} | yes = {} | System.in class: {}",
 			message,
 			config.getApplication()
-			      .getYes(),
+				  .getYes(),
 			System.in.getClass()
-			         .getName()
+					 .getName()
 		);
 		if (config.getApplication().getYes()) {
 			return true;
@@ -207,7 +207,7 @@ public class GitopsPlaygroundCli {
 		rootLogger(loggerContext).detachAppender(STDOUT_APPENDER_NAME);
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
 		encoder.setPattern(LOGGER_PATTERN_TOKEN.matcher(THREAD_PATTERN_TOKEN.matcher(defaultPattern).replaceAll(" "))
-		                                       .replaceAll(" "));
+											   .replaceAll(" "));
 		encoder.setContext(loggerContext);
 		encoder.start();
 		ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
@@ -270,13 +270,13 @@ public class GitopsPlaygroundCli {
 		log.debug(
 			"mergedConfig yes before parseArgs: {}",
 			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-			                                                    .getYes() : "null"
+																.getYes() : "null"
 		);
 		new CommandLine(mergedConfig).parseArgs(args);
 		log.debug(
 			"mergedConfig yes after parseArgs: {}",
 			mergedConfig.getApplication() != null ? mergedConfig.getApplication()
-			                                                    .getYes() : "null"
+																.getYes() : "null"
 		);
 
 		return mergedConfig;
@@ -315,9 +315,10 @@ public class GitopsPlaygroundCli {
 		Application app,
 		String hookName,
 		BiConsumer<ConfigLifecycleHook, Config> hook,
-		Config config) {
+		Config config,
+		K8sClient k8sClient) {
 		List<ConfigLifecycleHook> configLifecycleHooks = new ArrayList<>();
-		configLifecycleHooks.add(new CommonToolConfig());
+		configLifecycleHooks.add(new CommonToolConfig(k8sClient));
 		for (AbstractTool tool : app.getTools()) {
 			if (tool instanceof ConfigLifecycleHook configLifecycleHook) {
 				configLifecycleHooks.add(configLifecycleHook);
@@ -331,7 +332,7 @@ public class GitopsPlaygroundCli {
 			} catch (Exception e) {
 				throw new RuntimeException(
 					"Failed to execute hook " + hookName + " on " + configLifecycleHook.getClass()
-					                                                                   .getName(), e
+																					   .getName(), e
 				);
 			}
 		}

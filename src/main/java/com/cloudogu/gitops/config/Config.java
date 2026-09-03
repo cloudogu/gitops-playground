@@ -382,6 +382,9 @@ public class Config {
 		@JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(REGISTRY_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--registry-proxy-url"}, description = REGISTRY_PROXY_URL_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
 		private String proxyUrl = "";
@@ -397,6 +400,9 @@ public class Config {
 		@Option(names = {"--registry-proxy-password"}, description = "Optional when --registry-proxy-url is set")
 		@JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
 		private String proxyPassword = "";
+
+		@JsonPropertyDescription(REGISTRY_DESCRIPTION)
+		private Credentials proxyCredentials;
 
 		@Option(names = {"--registry-username-read-only"}, description = REGISTRY_USERNAME_RO_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_USERNAME_RO_DESCRIPTION)
@@ -459,6 +465,9 @@ public class Config {
 		@JsonPropertyDescription(JENKINS_PASSWORD_DESCRIPTION)
 		private String password = DEFAULT_ADMIN_PW;
 
+		@JsonPropertyDescription(JENKINS_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--jenkins-metrics-username"}, description = JENKINS_METRICS_USERNAME_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
 		private String metricsUsername = "metrics";
@@ -466,6 +475,9 @@ public class Config {
 		@Option(names = {"--jenkins-metrics-password"}, description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		private String metricsPassword = "metrics";
+
+		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
+		private Credentials metricsCredentials;
 
 		@Option(names = {"--jenkins-image"}, description = JENKINS_IMAGE_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
@@ -547,6 +559,9 @@ public class Config {
 		@Option(names = {"--password"}, description = PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(PASSWORD_DESCRIPTION)
 		private String password = DEFAULT_ADMIN_PW;
+
+		@JsonPropertyDescription(APPLICATION_DESCRIPTION)
+		private Credentials credentials;
 
 		@Option(names = {"-y", "--yes"}, description = PIPE_YES_DESCRIPTION)
 		@JsonPropertyDescription(PIPE_YES_DESCRIPTION)
@@ -1021,9 +1036,9 @@ public class Config {
 		@JsonCreator
 		public static VaultMode fromExternalValue(String value) {
 			return Arrays.stream(values())
-			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
-			             .findFirst()
-			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+						 .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+						 .findFirst()
+						 .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
 		}
 
 		@JsonValue
@@ -1074,8 +1089,8 @@ public class Config {
 					BeanDescription beanDesc,
 					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
-					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-					                     .toList();
+										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+										 .toList();
 				}
 			}));
 			return mapper;

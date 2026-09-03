@@ -62,9 +62,7 @@ class ScmManagerSetupTest {
                                                                ingress       : 'scmm.master.localhost',
                                                                skipRestart   : false,
                                                                skipPlugins   : false,
-                                                               gitOpsUsername: 'gitops',
-                                                               credentials   : [username: 'admin',
-                                                                                password: 'admin']]]])
+                                                               gitOpsUsername: 'gitops']]])
 
     @BeforeEach
     void setUp() {

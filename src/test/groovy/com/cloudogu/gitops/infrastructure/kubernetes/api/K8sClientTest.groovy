@@ -710,7 +710,7 @@ class K8sClientTest {
                 .once()
 
         // When
-        Credentials creds = k8sApiClient.getCredentialsFromSecret("my-secret", "test-ns")
+        Credentials creds = k8sApiClient.getCredentialsFromSecret(new Credentials(null, null, "my-secret", "test-ns"))
 
         // Then
         assertThat(creds.username).isEqualTo("admin")

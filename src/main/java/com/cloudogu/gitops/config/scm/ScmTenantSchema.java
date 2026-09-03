@@ -71,6 +71,9 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
 		private String password;
 
+		@JsonPropertyDescription(GITLAB_URL_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--gitlab-group-id"}, description = GITLAB_PARENT_GROUP_ID)
 		@JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
 		private String parentGroupId = "";
@@ -81,10 +84,10 @@ public class ScmTenantSchema {
 		private String defaultVisibility = "";
 
 		@Override
-		@JsonIgnore
 		public Credentials getCredentials() {
-			return new Credentials(username, password);
+			return credentials != null ? credentials : new Credentials(username, password);
 		}
+
 	}
 
 	@Getter
@@ -116,6 +119,9 @@ public class ScmTenantSchema {
 		@Option(names = {"--scmm-password"}, description = SCMM_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
 		private String password = Config.DEFAULT_ADMIN_PW;
+
+		@JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+		private Credentials credentials;
 
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
@@ -149,9 +155,8 @@ public class ScmTenantSchema {
 		}
 
 		@Override
-		@JsonIgnore
 		public Credentials getCredentials() {
-			return new Credentials(username, password);
+			return credentials != null ? credentials : new Credentials(username, password);
 		}
 	}
 }

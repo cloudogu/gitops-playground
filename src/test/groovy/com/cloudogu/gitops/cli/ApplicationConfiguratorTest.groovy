@@ -30,11 +30,11 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
 
 class ApplicationConfiguratorTest {
 
-	static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
-	static final int EXPECTED_REGISTRY_INTERNAL_PORT = 33333
+    static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
+    static final int EXPECTED_REGISTRY_INTERNAL_PORT = 33333
     static final Config.VaultMode EXPECTED_VAULT_MODE = Config.VaultMode.DEV
-	public static final String EXPECTED_JENKINS_URL = 'http://my-jenkins'
-	public static final String EXPECTED_SCMM_URL = 'http://my-scmm'
+    public static final String EXPECTED_JENKINS_URL = 'http://my-jenkins'
+    public static final String EXPECTED_SCMM_URL = 'http://my-scmm'
 
     private ApplicationConfigurator applicationConfigurator
     private FileSystemUtils fileSystemUtils
@@ -71,9 +71,8 @@ class ApplicationConfiguratorTest {
         fileSystemUtils = new FileSystemUtils()
         applicationConfigurator = new ApplicationConfigurator()
         testLogger = new TestLogger(applicationConfigurator.getClass())
-        commonFeatureConfig = new CommonToolConfig()
-
         K8sClient k8sClient = Mockito.mock(K8sClient)
+        commonFeatureConfig = new CommonToolConfig(k8sClient)
         HelmClient helmClient = Mockito.mock(HelmClient)
         GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
         Deployer deployer = Mockito.mock(Deployer)
