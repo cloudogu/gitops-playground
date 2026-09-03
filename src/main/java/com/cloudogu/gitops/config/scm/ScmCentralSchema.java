@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,6 +36,10 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_GITLAB_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
+		private Credentials credentials;
+
+
 		@Option(names = {"--central-gitlab-group-id"}, description = CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
 		private String parentGroupId = "";
@@ -42,10 +47,16 @@ public final class ScmCentralSchema {
 		private String gitOpsUsername = "";
 		private String defaultVisibility = "";
 
-		@Override
-		public Credentials getCredentials() {
-			return new Credentials(username, password);
+
+		public void setCredentials(Credentials credentials) {
+			if (credentials != null && credentials.isUsed()) {
+
+				this.credentials = new K8sClient().getCredentialsFromSecret(credentials);
+				this.username = credentials.getUsername();
+				this.password = credentials.getPassword();
+			}
 		}
+
 	}
 
 	@Getter
@@ -74,11 +85,22 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--central-scmm-namespace"}, description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		private String namespace = "scm-manager";
 
 		private String gitOpsUsername = "";
+
+		public void setCredentials(Credentials credentials) {
+			if (credentials != null && credentials.isUsed()) {
+				this.credentials = new K8sClient().getCredentialsFromSecret(credentials);
+				this.username = credentials.getUsername();
+				this.password = credentials.getPassword();
+			}
+		}
 
 		@Override
 		public String getIngress() {
@@ -88,11 +110,6 @@ public final class ScmCentralSchema {
 		@Override
 		public Config.HelmConfigWithValues getHelm() {
 			return null; // Needed for setup
-		}
-
-		@Override
-		public Credentials getCredentials() {
-			return new Credentials(username, password);
 		}
 	}
 }

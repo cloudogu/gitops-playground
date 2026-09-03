@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -71,6 +72,9 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
 		private String password;
 
+		@JsonPropertyDescription(GITLAB_URL_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--gitlab-group-id"}, description = GITLAB_PARENT_GROUP_ID)
 		@JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
 		private String parentGroupId = "";
@@ -85,6 +89,15 @@ public class ScmTenantSchema {
 		public Credentials getCredentials() {
 			return new Credentials(username, password);
 		}
+
+		public void setCredentials(Credentials credentials) {
+			if (credentials != null && credentials.isUsed()) {
+				this.credentials = new K8sClient().getCredentialsFromSecret(credentials);
+				this.username = credentials.getUsername();
+				this.password = credentials.getPassword();
+			}
+		}
+
 	}
 
 	@Getter
@@ -117,6 +130,9 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
 		private String password = Config.DEFAULT_ADMIN_PW;
 
+		@JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+		private Credentials credentials;
+
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
 		private Config.HelmConfigWithValues helm;
@@ -146,6 +162,14 @@ public class ScmTenantSchema {
 			// renovate: depName=scm-manager registryUrl=https://packages.scm-manager.org/repository/helm-v2-releases/
 			helm.setVersion("3.11.10");
 			helm.setValues(new HashMap<>());
+		}
+
+		public void setCredentials(Credentials credentials) {
+			if (credentials != null && credentials.isUsed()) {
+				this.credentials = new K8sClient().getCredentialsFromSecret(credentials);
+				this.username = credentials.getUsername();
+				this.password = credentials.getPassword();
+			}
 		}
 
 		@Override

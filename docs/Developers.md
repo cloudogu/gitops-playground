@@ -355,7 +355,7 @@ Afer that, deploy GOP with the generated config file:
 ```bash
 # Create a docker container or use an available image from a registry
 # docker build -t gop:dev .
-GOP_IMAGE=ghcr.io/cloudogu/gitops-playground
+GOP_IMAGE=local/gop
 PATH_TWO_REGISTRIES=./scripts/local/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \

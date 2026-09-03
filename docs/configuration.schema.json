@@ -1,6 +1,50 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "Credentials-nullable": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "passwordKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+        },
+        "secretName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+        },
+        "secretNamespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+        },
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+        },
+        "usernameKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+        }
+      },
+      "additionalProperties": false
+    },
     "HelmConfigWithValues-nullable": {
       "type": [
         "object",
@@ -137,6 +181,10 @@
             "null"
           ],
           "description": "Binds ArgoCD controllers to cluster-admin ClusterRole"
+        },
+        "credentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Application configuration parameter for GOP"
         },
         "destroy": {
           "type": [
@@ -377,48 +425,7 @@
                 "description": "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
               },
               "credentials": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "properties": {
-                  "passwordKey": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-                  },
-                  "secretName": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-                  },
-                  "secretNamespace": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-                  },
-                  "username": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-                  },
-                  "usernameKey": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
-                  }
-                },
-                "additionalProperties": false,
+                "$ref": "#/$defs/Credentials-nullable",
                 "description": "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
               },
               "overwriteMode": {
@@ -780,6 +787,10 @@
             "null"
           ],
           "properties": {
+            "credentials": {
+              "$ref": "#/$defs/Credentials-nullable",
+              "description": "Config parameters for mail servers"
+            },
             "smtpAddress": {
               "type": [
                 "string",
@@ -1123,13 +1134,20 @@
             "type": "string"
           }
         },
+        "credentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Config parameters for Jenkins CI/CD Pipeline Server"
+        },
         "helm": {
           "$ref": "#/$defs/HelmConfigWithValues-nullable",
           "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
-        "jenkinsImage" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for Jenkins"
+        "jenkinsImage": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Sets image for Jenkins"
         },
         "mavenCentralMirror": {
           "type": [
@@ -1137,6 +1155,10 @@
             "null"
           ],
           "description": "URL for maven mirror, used by applications built in Jenkins"
+        },
+        "metricsCredentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Mandatory when jenkins-url is set and monitoring enabled"
         },
         "metricsPassword": {
           "type": [
@@ -1221,6 +1243,10 @@
             "null"
           ],
           "properties": {
+            "credentials": {
+              "$ref": "#/$defs/Credentials-nullable",
+              "description": "URL for external Gitlab"
+            },
             "parentGroupId": {
               "type": [
                 "string",
@@ -1259,6 +1285,10 @@
             "null"
           ],
           "properties": {
+            "credentials": {
+              "$ref": "#/$defs/Credentials-nullable",
+              "description": "CENTRAL SCMM username"
+            },
             "internal": {
               "type": [
                 "boolean",
@@ -1333,6 +1363,10 @@
           ],
           "description": "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
         },
+        "credentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Config parameters for Registry"
+        },
         "helm": {
           "$ref": "#/$defs/HelmConfigWithValues-nullable",
           "description": "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
@@ -1365,6 +1399,10 @@
           ],
           "description": "Optional when registry-url is set"
         },
+        "proxyCredentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Config parameters for Registry"
+        },
         "proxyPassword": {
           "type": [
             "string",
@@ -1392,6 +1430,10 @@
             "null"
           ],
           "description": "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
+        },
+        "readOnlyCredentials": {
+          "$ref": "#/$defs/Credentials-nullable",
+          "description": "Config parameters for Registry"
         },
         "readOnlyPassword": {
           "type": [
@@ -1489,6 +1531,10 @@
             "null"
           ],
           "properties": {
+            "credentials": {
+              "$ref": "#/$defs/Credentials-nullable",
+              "description": "Mandatory when scmm-url is set"
+            },
             "gitOpsUsername": {
               "type": [
                 "string",
@@ -1514,9 +1560,12 @@
               ],
               "description": "Mandatory when scmm-url is set"
             },
-            "scmmImage" : {
-              "type" : [ "string", "null" ],
-              "description" : "Sets image for SCM-Manager"
+            "scmmImage": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sets image for SCM-Manager"
             },
             "skipPlugins": {
               "type": [

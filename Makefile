@@ -34,5 +34,13 @@ image: ## builds the docker image for local testing
 	docker buildx prune -f && docker build . -t local/gop
 	echo "created docker image local/gop"
 
+.PHONY: gop-config-in-secrets
+gop-config-in-secrets: ## installs cluster and add secrets for gop-tools for easy testing
+	./scripts/init-cluster.sh
+	kubectl create namespace gop-job
+	kubectl apply -f ./scripts/dev/gop-secrets.yaml
+	echo "cluster with credentials in secrets"
+
+
 %:
 	@:

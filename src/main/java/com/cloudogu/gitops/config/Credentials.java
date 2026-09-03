@@ -75,10 +75,22 @@ public class Credentials {
 
 	public Credentials(Credentials unsafeCredentials) {
 		if (unsafeCredentials != null) {
+			this.username = unsafeCredentials.username;
+			this.password = unsafeCredentials.password;
 			this.secretNamespace = unsafeCredentials.secretNamespace;
 			this.secretName = unsafeCredentials.secretName;
 			this.usernameKey = unsafeCredentials.usernameKey;
 			this.passwordKey = unsafeCredentials.passwordKey;
 		}
+	}
+
+	/**
+	 * ensures that secretName and secretNamespace are not null
+	 *
+	 * @return true, if User sets credentials with secretName and secretNamespace otherwise false.
+	 */
+	@JsonIgnore
+	public boolean isUsed() {
+		return secretName != null && secretNamespace != null;
 	}
 }
