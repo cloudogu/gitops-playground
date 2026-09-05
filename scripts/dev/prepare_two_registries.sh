@@ -52,7 +52,7 @@ content:
       kubeval: "localhost:30000/proxy/helm:latest"
       helmKubeval: "localhost:30000/proxy/helm:latest"
       yamllint: "localhost:30000/proxy/cytopia/yamllint:latest"
-      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre"
       maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
 registry:
   internalPort: 30000
