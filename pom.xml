@@ -227,7 +227,7 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read
             the developers.md#JGit docs -->
-            <version>7.6.0.202603022253-r</version>
+            <version>7.7.1.202607240634-r</version>
         </dependency>
 
         <dependency>
