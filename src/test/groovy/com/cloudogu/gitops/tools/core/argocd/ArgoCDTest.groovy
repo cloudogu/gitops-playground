@@ -97,7 +97,7 @@ class ArgoCDTest {
                                                kubeval    : 'ghcr.io/cloudogu/helm:4.2.1-1',
                                                helmKubeval: 'ghcr.io/cloudogu/helm:4.2.1-1',
                                                yamllint   : 'cytopia/yamllint:1.25-0.7',
-                                               petclinic  : 'eclipse-temurin:17-jre-alpine',
+                                               petclinic  : 'eclipse-temurin:17-jre',
                                                maven      : '']]],
             features: [argocd    : [operator                 : false,
                                     active                   : true,
@@ -1679,10 +1679,10 @@ class ArgoCDTest {
                       ArgoCDTestContext testContext) {
             super(k8sClient,
                     new HelmClient(helmCommands),
-					new FileSystemUtils(),
-					testContext.gitHandler,
-					new DeploymentModeFactory(),
-					new ArgoCDToolConfigMapper(cfg))
+                    new FileSystemUtils(),
+                    testContext.gitHandler,
+                    new DeploymentModeFactory(),
+                    new ArgoCDToolConfigMapper(cfg))
 
             this.cfg = cfg
             this.tenantProvider = tenantProvider
