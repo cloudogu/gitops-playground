@@ -18,12 +18,11 @@
 !.curlrc
 !LICENSE
 
-# groovy cli
+# CLI build
 !src
 !pom.xml
 !mvnw
 !.mvn
-!compiler.groovy
 
 # Including .git is risky, but required so maven can read the build number. At least keep it to a minium.
 !.git/HEAD
