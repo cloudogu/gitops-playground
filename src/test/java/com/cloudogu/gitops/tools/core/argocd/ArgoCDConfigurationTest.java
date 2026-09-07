@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.CommandExecutorForTest;
 import com.cloudogu.gitops.utils.K8sClientForTest;
@@ -18,14 +19,18 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
@@ -403,6 +408,180 @@ class ArgoCDConfigurationTest {
 		assertThat(serviceEmail).doesNotHaveToString("password");
 	}
 
+	@Test
+	void rejectsNonStringArgoCdOperatorEnvironmentValues() throws NoSuchFieldException, IllegalAccessException {
+		config.getFeatures().getArgocd().setOperator(true);
+		Field envField = config.getFeatures().getArgocd().getClass().getDeclaredField("env");
+		envField.setAccessible(true);
+		envField.set(config.getFeatures().getArgocd(), List.of(map("name", "REPLICAS", "value", 2)));
+
+		assertThatThrownBy(() -> createArgoCD().postConfigInit(config))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Invalid entry found: [name:REPLICAS, value:2]");
+	}
+
+	@Test
+	void installsArgoCdWithCustomValues() throws IOException {
+		config.getFeatures().getArgocd().setValues(map("argo-cd", map("key", "value")));
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+
+		assertThat(value(valuesYaml, "argo-cd", "key")).isEqualTo("value");
+	}
+
+	@Test
+	void preparesRepositoriesForAirGappedMode() throws IOException {
+		config.getFeatures().getMonitoring().setActive(false);
+		config.getApplication().setMirrorRepos(true);
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+		assertThat(sourceRepos)
+			.contains("http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/"
+				+ "kube-prometheus-stack")
+			.doesNotContain("https://prometheus-community.github.io/helm-charts");
+	}
+
+	@Test
+	void generatesArgoCdYamlWithEmptyNamePrefix() throws IOException {
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+		execute(argocd);
+
+		GitRepo clusterResourcesRepo = argocd.clusterResourcesRepo;
+		assertArgoCdYamlPrefixes(
+			clusterResourcesRepo.getGitProvider().getUrl(),
+			"",
+			argocd.getClusterRepoLayout()
+		);
+	}
+
+	@Test
+	void generatesArgoCdYamlWithNamePrefix() throws IOException {
+		config.getApplication().setNamePrefix("abc-");
+
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+		execute(argocd);
+
+		GitRepo clusterResourcesRepo = argocd.clusterResourcesRepo;
+		assertArgoCdYamlPrefixes(
+			clusterResourcesRepo.getGitProvider().getUrl(),
+			config.getApplication().getNamePrefix(),
+			argocd.getClusterRepoLayout()
+		);
+	}
+
+	@Test
+	void skipsCrdsForArgoCd() throws IOException {
+		config.getApplication().setSkipCrds(true);
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+
+		assertThat(value(valuesYaml, "argo-cd", "crds", "install")).isEqualTo(false);
+	}
+
+	@Test
+	void configuresArgoCdWithActiveNetworkPolicies() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().setNamePrefix("my-prefix-");
+		config.getScm().getScmManager().setNamespace("my-prefix-scm-manager");
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+		String argocdValues = Files.readString(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "values.yaml")
+		);
+		String allowNamespaces = Files.readString(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
+		);
+
+		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(argocdValues).contains("namespace: my-prefix-monitoring");
+		assertThat(allowNamespaces)
+			.contains("namespace: my-prefix-scm-manager")
+			.doesNotContain("namespace: my-prefix-my-prefix-scm-manager")
+			.contains("kubernetes.io/metadata.name: my-prefix-argocd");
+	}
+
+	private void assertArgoCdYamlPrefixes(
+		String scmmUrl,
+		String expectedPrefix,
+		ArgoCDRepoLayout repoLayout) throws IOException {
+		assertAllYamlFiles(new File(repoLayout.argocdRoot()), "projects", 3, file -> {
+			Map<String, Object> yaml = parseActualYaml(file.toString());
+			List<String> sourceRepos = listValue(yaml, "spec", "sourceRepos");
+
+			if (sourceRepos != null) {
+				for (String sourceRepo : sourceRepos) {
+					if (sourceRepo.startsWith(scmmUrl)) {
+						assertThat(sourceRepo)
+							.as(file + " sourceRepos have name prefix")
+							.startsWith(scmmUrl + "/repo/" + expectedPrefix + "argocd");
+					}
+				}
+			}
+
+			String metadataNamespace = (String) value(yaml, "metadata", "namespace");
+			if (metadataNamespace != null && !metadataNamespace.isEmpty()) {
+				assertThat(metadataNamespace)
+					.as(file + " metadata.namespace has name prefix")
+					.isEqualTo(expectedPrefix + "argocd");
+			}
+
+			List<String> sourceNamespaces = listValue(yaml, "spec", "sourceNamespaces");
+			if (sourceNamespaces != null) {
+				for (String sourceNamespace : sourceNamespaces) {
+					if (!"*".equals(sourceNamespace)) {
+						assertThat(sourceNamespace)
+							.as(file + " spec.sourceNamespace has name prefix")
+							.startsWith(expectedPrefix);
+					}
+				}
+			}
+		});
+
+		assertAllYamlFiles(new File(repoLayout.argocdRoot()), "applications", 3, file -> {
+			Map<String, Object> yaml = parseActualYaml(file.toString());
+			assertThat((String) value(yaml, "spec", "source", "repoURL"))
+				.as(file + " repoURL have name prefix")
+				.startsWith(scmmUrl + "/repo/" + expectedPrefix + "argocd");
+			assertThat(value(yaml, "metadata", "namespace"))
+				.as(file + " metadata.namespace has name prefix")
+				.isEqualTo(expectedPrefix + "argocd");
+			assertThat(value(yaml, "spec", "destination", "namespace"))
+				.as(file + " spec.destination.namespace has name prefix")
+				.isEqualTo(expectedPrefix + "argocd");
+		});
+	}
+
+	private static void assertAllYamlFiles(
+		File rootDir,
+		String childDir,
+		int numberOfFiles,
+		PathAssertion assertion) throws IOException {
+		Path rootPath = Path.of(rootDir.getAbsolutePath(), childDir);
+		List<Path> yamlFiles;
+		try (Stream<Path> files = Files.walk(rootPath)) {
+			yamlFiles = files
+				.filter(Files::isRegularFile)
+				.filter(path -> {
+					String normalizedPath = path.toString().replace('\\', '/');
+					return normalizedPath.endsWith(".yaml") || normalizedPath.endsWith(".yml");
+				})
+				.toList();
+		}
+
+		for (Path yamlFile : yamlFiles) {
+			assertion.accept(yamlFile);
+		}
+
+		assertThat(yamlFiles).hasSize(numberOfFiles);
+	}
+
 	private Map<String, Object> executeAndReadHelmValues() throws IOException {
 		ArgoCD argocd = createArgoCD();
 		execute(argocd);
@@ -604,6 +783,11 @@ class ArgoCDConfigurationTest {
 		return (Map<String, Object>) value(yaml, path);
 	}
 
+	@SuppressWarnings("unchecked")
+	private static List<String> listValue(Map<String, Object> yaml, String... path) {
+		return (List<String>) value(yaml, path);
+	}
+
 	private static Map<String, Object> map(Object... keyValues) {
 		Map<String, Object> result = new LinkedHashMap<>();
 		for (int index = 0; index < keyValues.length; index += 2) {
@@ -619,5 +803,11 @@ class ArgoCDConfigurationTest {
 			sleepTimeMillis = 1;
 			defaultRetries = 1;
 		}
+	}
+
+	@FunctionalInterface
+	private interface PathAssertion {
+
+		void accept(Path path) throws IOException;
 	}
 }

@@ -19,12 +19,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
 
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThatThrownBy
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable
@@ -129,18 +126,6 @@ class ArgoCDTest {
                 any(String))
     }
 
-    @Test
-    void 'rejects non-string ArgoCD operator environment values'() {
-        config.features.argocd.operator = true
-        def envField = config.features.argocd.class.getDeclaredField('env')
-        envField.accessible = true
-        envField.set(config.features.argocd, [[name: 'REPLICAS', value: 2]])
-
-        assertThatThrownBy {
-            createArgoCD().postConfigInit(config)
-        }.isInstanceOf(IllegalArgumentException)
-                .hasMessageContaining("Invalid entry found: [name:REPLICAS, value:2]")
-    }
 
     @Test
     void 'Installs argoCD'() {
@@ -245,57 +230,6 @@ class ArgoCDTest {
                 .isEqualTo(new File(argoCDForTest.clusterResourcesRepo.absoluteLocalRepoTmpDir).canonicalFile)
     }
 
-    @Test
-    void 'Installs Argo CD with custom values'() {
-        config.features.argocd.values = ['argo-cd': [key: 'value']]
-
-        def argocd = createArgoCD()
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-        this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
-        def valuesYaml = parseActualYaml(actualHelmValuesFile)
-        assertThat(valuesYaml['argo-cd']['key']).isEqualTo('value')
-    }
-
-
-    @Test
-    void 'Prepares repos for air-gapped mode'() {
-        config.features.monitoring.active = false
-        config.application.mirrorRepos = true
-
-        def argocd = createArgoCD()
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-        this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
-
-        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of(clusterResourcesRepoLayout.projectsDir(), 'cluster-resources.yaml'))
-
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
-    }
-
-    @Test
-    void 'Generates ArgoCD YAML with empty name-prefix'() {
-        def argocd = createArgoCD()
-        execute(argocd)
-        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-        assertArgoCdYamlPrefixes(clusterResourcesRepo.gitProvider.url, '', clusterResourcesRepoLayout)
-    }
-
-    @Test
-    void 'Generates ArgoCD YAML with name-prefix'() {
-        config.application.namePrefix = 'abc-'
-
-        def argocd = createArgoCD()
-        execute(argocd)
-        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-        assertArgoCdYamlPrefixes(clusterResourcesRepo.gitProvider.url, config.application.namePrefix, clusterResourcesRepoLayout)
-    }
 
     @Test
     void 'SecurityContext null in Openshift'() {
@@ -314,111 +248,6 @@ class ArgoCDTest {
         }
     }
 
-    @Test
-    void 'Skips CRDs for argo cd'() {
-        config.application.skipCrds = true
-
-        def argocd = createArgoCD()
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-        this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
-
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
-    }
-
-    @Test
-    void 'ArgoCD with active network policies'() {
-        config.application.netpols = true
-        config.application.namePrefix = 'my-prefix-'
-        config.scm.scmManager.namespace = 'my-prefix-scm-manager'
-
-        def argocd = createArgoCD()
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-        this.actualHelmValuesFile = "${clusterResourcesRepoLayout.helmDir()}/values.yaml"
-
-        String valuesYaml = new File(clusterResourcesRepoLayout.argocdRoot(), '/argocd/values.yaml').text
-        String allowNamespacesYaml = new File(clusterResourcesRepoLayout.argocdRoot(),
-                '/argocd/templates/allow-namespaces.yaml').text
-
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
-
-        assertThat(valuesYaml).contains('namespace: my-prefix-monitoring')
-
-        assertThat(allowNamespacesYaml).contains('namespace: my-prefix-scm-manager')
-        assertThat(allowNamespacesYaml).doesNotContain('namespace: my-prefix-my-prefix-scm-manager')
-        assertThat(allowNamespacesYaml).contains('kubernetes.io/metadata.name: my-prefix-argocd')
-    }
-
-    private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, ArgoCDRepoLayout repoLayout) {
-        assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
-            def yaml = parseActualYaml(file.toString())
-            List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
-
-            if (sourceRepos) {
-                sourceRepos.each {
-                    if (it.startsWith(scmmUrl)) {
-                        assertThat(it)
-                                .as("$file sourceRepos have name prefix")
-                                .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
-                    }
-                }
-            }
-
-            String metadataNamespace = yaml['metadata']['namespace'] as String
-            if (metadataNamespace) {
-                assertThat(metadataNamespace)
-                        .as("$file metadata.namespace has name prefix")
-                        .isEqualTo("${expectedPrefix}argocd".toString())
-            }
-
-            List<String> sourceNamespaces = yaml['spec']['sourceNamespaces'] as List<String>
-            if (sourceNamespaces) {
-                sourceNamespaces.each {
-                    if (it != '*') {
-                        assertThat(it)
-                                .as("$file spec.sourceNamespace has name prefix")
-                                .startsWith("${expectedPrefix}")
-                    }
-                }
-            }
-        }
-
-        assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'applications', 3) { Path file ->
-            def yaml = parseActualYaml(file.toString())
-            assertThat(yaml['spec']['source']['repoURL'] as String)
-                    .as("$file repoURL have name prefix")
-                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
-
-            assertThat(yaml['metadata']['namespace'])
-                    .as("$file metadata.namespace has name prefix")
-                    .isEqualTo("${expectedPrefix}argocd".toString())
-
-            assertThat(yaml['spec']['destination']['namespace'])
-                    .as("$file spec.destination.namespace has name prefix")
-                    .isEqualTo("${expectedPrefix}argocd".toString())
-        }
-    }
-
-    private static void assertAllYamlFiles(File rootDir,
-                                           String childDir,
-                                           Integer numberOfFiles,
-                                           List<String> excludeContains = [],
-                                           Closure cl) {
-        def rootPath = Path.of(rootDir.absolutePath, childDir)
-
-        def yamlFiles = Files.walk(rootPath)
-                .filter { Files.isRegularFile(it) }
-                .filter { Path p ->
-                    def s = p.toString().replace('\\', '/')
-                    (s.endsWith('.yaml') || s.endsWith('.yml')) && !excludeContains.any { ex -> s.contains(ex) }
-                }
-                .collect(Collectors.toList())
-
-        yamlFiles.each(cl)
-
-        assertThat(yamlFiles.size()).isEqualTo(numberOfFiles)
-    }
 
     private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
