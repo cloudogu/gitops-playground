@@ -35,11 +35,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDConfigurationTest {
 
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
+	};
+	private static final TypeReference<List<Map<String, Object>>> YAML_MAP_LIST_TYPE = new TypeReference<>() {
 	};
 	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
 
@@ -613,6 +616,148 @@ class ArgoCDConfigurationTest {
 			.doesNotExist();
 	}
 
+	@Test
+	void includesMonitoringAndExternalSecretsResourceInclusionsWhenFeaturesAreActive() throws IOException {
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getSecrets().setActive(true);
+
+		String expectedMonitoring = "monitoring.coreos.com";
+		String expectedExternalSecret = "external-secrets.io";
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
+
+		assertThat(resourceInclusions).contains(expectedMonitoring, expectedExternalSecret);
+	}
+
+	@Test
+	void excludesMonitoringAndExternalSecretsResourceInclusionsWhenFeaturesAreInactive() throws IOException {
+		config.getFeatures().getMonitoring().setActive(false);
+		config.getFeatures().getSecrets().setActive(false);
+
+		String expectedMonitoring = "monitoring.coreos.com";
+		String expectedExternalSecret = "external-secrets.io";
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
+
+		assertThat(resourceInclusions).doesNotContain(expectedMonitoring, expectedExternalSecret);
+	}
+
+	@Test
+	void configuresResourceInclusionsCluster() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		String expectedClusterUrl = "https://192.168.0.1:6443";
+		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
+		List<Map<String, Object>> parsedResourceInclusions = parseYamlList(resourceInclusions);
+
+		for (Map<String, Object> resource : parsedResourceInclusions) {
+			assertThat(resource).containsKey("clusters");
+			assertThat(listValue(resource, "clusters")).contains(expectedClusterUrl);
+		}
+	}
+
+	@Test
+	void resourceInclusionsClusterFromConfigTrumpsEnvironmentVariables() throws Exception {
+		ArgoCD argocd = setupOperatorTest(false);
+		config.getApplication().setInternalKubernetesApiUrl("https://192.168.0.1:6443");
+
+		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
+			.and("KUBERNETES_SERVICE_PORT", "443")
+			.execute(() -> execute(argocd));
+
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		String expectedClusterUrlFromConfig = "https://192.168.0.1:6443";
+		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
+		List<Map<String, Object>> parsedResourceInclusions = parseYamlList(resourceInclusions);
+
+		for (Map<String, Object> resource : parsedResourceInclusions) {
+			assertThat(resource).containsKey("clusters");
+			assertThat(listValue(resource, "clusters"))
+				.contains(expectedClusterUrlFromConfig)
+				.doesNotContain("https://100.125.0.1:443");
+		}
+	}
+
+	@Test
+	void setsEnvironmentVariablesInArgoCdComponentsWhenProvided() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+		config.getFeatures().getArgocd().setEnv(List.of(
+			Map.of("name", "ENV_VAR_1", "value", "value1"),
+			Map.of("name", "ENV_VAR_2", "value", "value2")
+		));
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		List<Map<String, Object>> expectedEnv = List.of(
+			map("name", "ENV_VAR_1", "value", "value1"),
+			map("name", "ENV_VAR_2", "value", "value2")
+		);
+
+		assertThat(value(yaml, "spec", "applicationSet", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "notifications", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "controller", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "repo", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "server", "env")).isEqualTo(expectedEnv);
+	}
+
+	@Test
+	void doesNotSetEnvironmentVariablesWhenNoneAreProvided() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+		config.getFeatures().getArgocd().setEnv(List.of());
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+
+		assertThat(mapValue(yaml, "spec", "applicationSet")).doesNotContainKey("env");
+		assertThat(mapValue(yaml, "spec", "notifications")).doesNotContainKey("env");
+		assertThat(mapValue(yaml, "spec", "controller")).doesNotContainKey("env");
+		assertThat(mapValue(yaml, "spec", "redis")).doesNotContainKey("env");
+		assertThat(mapValue(yaml, "spec", "repo")).doesNotContainKey("env");
+		assertThat(mapValue(yaml, "spec", "server")).doesNotContainKey("env");
+	}
+
+	@Test
+	void setsSingleEnvironmentVariableInArgoCdComponentsWhenProvided() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+		config.getFeatures().getArgocd().setEnv(List.of(
+			Map.of("name", "ENV_VAR_SINGLE", "value", "singleValue")
+		));
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		List<Map<String, Object>> expectedEnv = List.of(
+			map("name", "ENV_VAR_SINGLE", "value", "singleValue")
+		);
+
+		assertThat(value(yaml, "spec", "applicationSet", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "notifications", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "controller", "env")).isEqualTo(expectedEnv);
+		assertThat(value(yaml, "spec", "server", "env")).isEqualTo(expectedEnv);
+	}
+
 	private ArgoCD setupOperatorTest(boolean openshift) {
 		config.getFeatures().getArgocd().setOperator(true);
 		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
@@ -878,6 +1023,10 @@ class ArgoCDConfigurationTest {
 
 	private static Map<String, Object> parseYaml(String yaml) throws IOException {
 		return YAML_MAPPER.readValue(yaml, YAML_MAP_TYPE);
+	}
+
+	private static List<Map<String, Object>> parseYamlList(String yaml) throws IOException {
+		return YAML_MAPPER.readValue(yaml, YAML_MAP_LIST_TYPE);
 	}
 
 	private static Object value(Map<String, Object> yaml, String... path) {
