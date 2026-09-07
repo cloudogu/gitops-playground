@@ -397,48 +397,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'Operator RBAC includes node access rules when not on OpenShift'() {
-        config.application.namePrefix = 'testprefix-'
-
-        def argocd = setupOperatorTest(openshift: false)
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-        print config.toMap()
-
-        File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()
-        File roleFile = new File(rbacDir, 'role-argocd-testprefix-monitoring.yaml')
-
-        Map yaml = new YamlSlurper().parse(roleFile) as Map
-        List<Map<String, Object>> rules = yaml['rules'] as List<Map<String, Object>>
-
-        assertThat(rules).anyMatch { rule ->
-            List<String> resources = rule['resources'] as List<String>
-            resources.contains('nodes') && resources.contains('nodes/metrics')
-        }
-    }
-
-    @Test
-    void 'Operator RBAC does not include node access rules when on OpenShift'() {
-        config.application.namePrefix = 'testprefix-'
-
-        def argocd = setupOperatorTest(openshift: true)
-        execute(argocd)
-        clusterResourcesRepoLayout = (argocd as ArgoCDForTest).getClusterRepoLayout()
-
-        File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile()
-        File roleFile = new File(rbacDir, 'role-argocd-testprefix-monitoring.yaml')
-
-        Map yaml = new YamlSlurper().parse(roleFile) as Map
-        List<Map<String, Object>> rules = yaml['rules'] as List<Map<String, Object>>
-
-        assertThat(rules).noneMatch { rule ->
-            List<String> resources = rule['resources'] as List<String>
-            resources.contains('nodes') && resources.contains('nodes/metrics')
-        }
-    }
-
-    @Test
     void 'If not using mirror, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = false
 

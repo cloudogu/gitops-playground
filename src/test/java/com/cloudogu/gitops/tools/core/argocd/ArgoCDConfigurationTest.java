@@ -879,6 +879,46 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void includesNodeAccessRulesInOperatorRbacWhenNotOnOpenShift() throws IOException {
+		config.getApplication().setNamePrefix("testprefix-");
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile();
+		File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml");
+
+		Map<String, Object> yaml = parseActualYaml(roleFile.toString());
+		List<Map<String, Object>> rules = mapListValue(yaml, "rules");
+
+		assertThat(rules).anyMatch(rule -> {
+			List<String> resources = listValue(rule, "resources");
+			return resources.contains("nodes") && resources.contains("nodes/metrics");
+		});
+	}
+
+	@Test
+	void doesNotIncludeNodeAccessRulesInOperatorRbacWhenOnOpenShift() throws IOException {
+		config.getApplication().setNamePrefix("testprefix-");
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile();
+		File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml");
+
+		Map<String, Object> yaml = parseActualYaml(roleFile.toString());
+		List<Map<String, Object>> rules = mapListValue(yaml, "rules");
+
+		assertThat(rules).noneMatch(rule -> {
+			List<String> resources = listValue(rule, "resources");
+			return resources.contains("nodes") && resources.contains("nodes/metrics");
+		});
+	}
+
+	@Test
 	void deploysWithOperatorWithOpenShiftConfiguration() throws IOException {
 		ArgoCD argocd = setupOperatorTest(true);
 
