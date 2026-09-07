@@ -23,10 +23,12 @@ pipeline {
         BUILD_USER = sh(script: 'id -u', returnStdout: true).trim()
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
-        DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
+        GITHUB_REPOSITORY = sh(script: "git remote get-url origin | sed -E 's#^(git@github.com:|https://github.com/)##; s#[.]git\$##'", returnStdout: true).trim()
+        DOCKER_IMAGE_NAME = "${env.GITHUB_REPOSITORY}"
         MAVEN_IMAGE = 'maven:3-eclipse-temurin-25'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
+        ORAS_IMAGE = 'ghcr.io/oras-project/oras:v1.3.4'
         GOLANG_IMAGE = 'golang:1.25-alpine'
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
@@ -101,6 +103,7 @@ pipeline {
                                    --quiet \
                                    "$FULL_IMAGE_TAG"
                         '''
+                        sh 'sha256sum sbom.cdx.json > sbom.cdx.json.sha256'
 
                         script {
                             /* returnStatus prevents Jenkins from aborting immediately upon an exit code of 2 before the reports have been archived. */
@@ -236,6 +239,7 @@ pipeline {
                     branch 'main'
                     branch 'develop'
                     buildingTag()
+                    expression { return env.TAG_NAME }
                     expression { return params.forcePushImage }
                 }
                 not {
@@ -258,6 +262,43 @@ pipeline {
                             currentBuild.description += "\nRelease: ${env.TAG_NAME}"
                         }
                     }
+                }
+            }
+        }
+
+        stage('Publish SBOM') {
+            when {
+                expression { return env.TAG_NAME }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                        credentialsId: 'cesmarvin-ghcr',
+                        usernameVariable: 'GH_USERNAME',
+                        passwordVariable: 'GH_TOKEN'
+                )]) {
+                    docker.image(env.GOLANG_IMAGE).inside("--entrypoint ''") {
+                        sh '''
+                            apk add --no-cache github-cli
+                            asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
+                            cp sbom.cdx.json "$asset"
+                            sha256sum "$asset" > "${asset}.sha256"
+                            gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
+                                --repo "$GITHUB_REPOSITORY" \
+                                --clobber
+                        '''
+                    }
+                    sh '''
+                        printf '%s' "$GH_TOKEN" | docker run --rm -i \
+                            -v "$WORKSPACE:/workspace" \
+                            -w /workspace \
+                            "$ORAS_IMAGE" attach \
+                                --username "$GH_USERNAME" \
+                                --password-stdin \
+                                --artifact-type application/vnd.cyclonedx+json \
+                                "$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME:$TAG_NAME" \
+                                "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
+                                "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
+                    '''
                 }
             }
         }
