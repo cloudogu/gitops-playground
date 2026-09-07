@@ -82,7 +82,7 @@ prometheusOperator:
   namespaces:
     releaseNamespace: false
     additional:
-    <#-- Note that the quotes in the final YAML here are created by groovy, not Freemarker-->
+    <#-- Note that the quotes in the final YAML here are added during YAML processing, not by Freemarker-->
     <#if namespaces?has_content>
     <#list namespaces as namespace>
     - ${namespace}
