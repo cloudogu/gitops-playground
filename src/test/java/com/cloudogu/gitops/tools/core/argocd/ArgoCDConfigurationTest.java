@@ -35,7 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @EnableKubernetesMockClient(crud = true)
@@ -892,6 +894,243 @@ class ArgoCDConfigurationTest {
 		assertThat(value(yaml, "spec", "sso", "provider")).isEqualTo("dex");
 		assertThat(value(yaml, "spec", "rbac")).isNotNull();
 		assertThat(value(yaml, "spec", "server", "route", "enabled")).isEqualTo(true);
+	}
+
+	@Test
+	void createsAllNecessaryNamespaces() {
+		ArgoCD argocd = createArgoCD();
+
+		execute(argocd);
+
+		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
+			assertThat(client.namespaces().withName(namespace).get()).isNotNull();
+		}
+	}
+
+	@Test
+	void doesNotGenerateCentralBootstrapIngressWhenInsecureIsFalseInDedicatedMode() {
+		setupDedicatedInstanceMode();
+
+		assertThat(clusterResourcesRepoLayout).isNotNull();
+
+		File ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml");
+		assertThat(ingressFile)
+			.as("Ingress file should not be generated when insecure is false")
+			.doesNotExist();
+	}
+
+	@Test
+	void dedicatedModeAppliesCentralAndTenantBootstrapResources() {
+		config.getApplication().setNamePrefix("testPrefix-");
+		config.getMultiTenant().getScmManager().setUrl("scmm.testhost/scm");
+		config.getMultiTenant().getScmManager().setUsername("testUserName");
+		config.getMultiTenant().getScmManager().setPassword("testPassword");
+		config.getMultiTenant().setUseDedicatedInstance(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
+
+		doReturn("Applied").when(k8sClient).applyYaml(any(String.class));
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+
+		ArgoCDForTest argoCDForTest = (ArgoCDForTest) argocd;
+		ArgoCDRepoLayout clusterLayout = argoCDForTest.getClusterRepoLayout();
+		ArgoCDRepoLayout tenantLayout = argoCDForTest.getTenantRepoLayout();
+
+		verify(k8sClient).applyYaml(Path.of(clusterLayout.projectsDir(), "tenant.yaml").toString());
+		verify(k8sClient).applyYaml(Path.of(clusterLayout.applicationsDir(), "bootstrap.yaml").toString());
+		verify(k8sClient).applyYaml(Path.of(tenantLayout.projectsDir(), "argocd.yaml").toString());
+		verify(k8sClient).applyYaml(Path.of(tenantLayout.applicationsDir(), "bootstrap.yaml").toString());
+	}
+
+	@Test
+	void dedicatedModeCreatesCentralRepoCredentialsSecret() {
+		config.getApplication().setNamePrefix("testPrefix-");
+		config.getMultiTenant().getScmManager().setUrl("scmm.testhost/scm");
+		config.getMultiTenant().getScmManager().setUsername("testUserName");
+		config.getMultiTenant().getScmManager().setPassword("testPassword");
+		config.getMultiTenant().setUseDedicatedInstance(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
+
+		doReturn("Applied").when(k8sClient).applyYaml(any(String.class));
+
+		execute(createArgoCD());
+
+		Secret centralRepoCredentialsSecret = client.secrets()
+			.inNamespace(config.getMultiTenant().getCentralArgocdNamespace())
+			.withName("argocd-repo-creds-central-scm")
+			.get();
+
+		assertThat(centralRepoCredentialsSecret).isNotNull();
+		assertThat(centralRepoCredentialsSecret.getMetadata().getLabels().get("argocd.argoproj.io/secret-type"))
+			.isEqualTo("repo-creds");
+	}
+
+	@Test
+	void generatesCentralTemplatesForDedicatedInstances() throws IOException {
+		setupDedicatedInstanceMode();
+
+		assertThat(clusterResourcesRepoLayout).isNotNull();
+
+		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/argocd.yaml")).exists();
+		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/bootstrap.yaml")).exists();
+		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/projects.yaml")).exists();
+		assertThat(new File(clusterResourcesRepoLayout.argocdRoot() + "/applications/example-apps.yaml")).doesNotExist();
+
+		Map<String, Object> argocdYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "applications/argocd.yaml").toString()
+		);
+		Map<String, Object> bootstrapYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "applications/bootstrap.yaml").toString()
+		);
+		Map<String, Object> projectsYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "applications/projects.yaml").toString()
+		);
+
+		assertThat(value(argocdYaml, "metadata", "name")).isEqualTo("testPrefix-argocd");
+		assertThat(value(argocdYaml, "metadata", "namespace")).isEqualTo("argocd");
+		assertThat(value(argocdYaml, "spec", "project")).isEqualTo("testPrefix");
+		assertThat(value(argocdYaml, "spec", "source", "path")).isEqualTo("apps/argocd/operator/");
+
+		assertThat(value(bootstrapYaml, "metadata", "name")).isEqualTo("testPrefix-bootstrap");
+		assertThat(value(bootstrapYaml, "metadata", "namespace")).isEqualTo("argocd");
+		assertThat(value(bootstrapYaml, "spec", "project")).isEqualTo("testPrefix");
+		assertThat(value(bootstrapYaml, "spec", "source", "repoURL"))
+			.isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git");
+
+		assertThat(value(projectsYaml, "metadata", "name")).isEqualTo("testPrefix-projects");
+		assertThat(value(projectsYaml, "metadata", "namespace")).isEqualTo("argocd");
+		assertThat(value(projectsYaml, "spec", "project")).isEqualTo("testPrefix");
+
+		File tenantProjectFile = new File(clusterResourcesRepoLayout.argocdRoot() + "/projects/tenant.yaml");
+		assertThat(tenantProjectFile).exists();
+
+		Map<String, Object> tenantProject = parseActualYaml(tenantProjectFile.toString());
+		assertThat(value(tenantProject, "metadata", "name")).isEqualTo("testPrefix");
+		assertThat(value(tenantProject, "metadata", "namespace")).isEqualTo("argocd");
+		assertThat(listValue(tenantProject, "spec", "sourceRepos"))
+			.first()
+			.isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git");
+	}
+
+	@Test
+	void appendsNamespacesToDefaultClusterConfigSecret() {
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
+			"dedi-test1",
+			"dedi-test2",
+			"dedi-test3"
+		)));
+		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of(
+			"tenant-test1",
+			"tenant-test2",
+			"tenant-test3"
+		)));
+
+		setupDedicatedInstanceMode();
+
+		Secret defaultClusterConfig = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-default-cluster-config")
+			.get();
+
+		assertThat(defaultClusterConfig).isNotNull();
+
+		String namespaces = decodedSecretValue(defaultClusterConfig, "namespaces");
+		assertThat(namespaces)
+			.contains("testnamespace1")
+			.contains("testnamespace2")
+			.contains("testPrefix-dedi-test1")
+			.contains("testPrefix-dedi-test2")
+			.contains("testPrefix-dedi-test3")
+			.contains("testPrefix-tenant-test1")
+			.contains("testPrefix-tenant-test2")
+			.contains("testPrefix-tenant-test3");
+	}
+
+	@Test
+	void removesMultiTenantFolderWhenDedicatedModeIsDisabled() {
+		config.getMultiTenant().setUseDedicatedInstance(false);
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "multiTenant/")).doesNotExist();
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "applications/")).exists();
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "projects/")).exists();
+	}
+
+	@Test
+	void removesUnusedMultiTenantFolderInDedicatedMode() {
+		setupDedicatedInstanceMode();
+
+		assertThat(clusterResourcesRepoLayout).isNotNull();
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "multiTenant/")).doesNotExist();
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "applications/")).exists();
+		assertThat(Path.of(clusterResourcesRepoLayout.argocdRoot(), "projects/")).exists();
+	}
+
+	@Test
+	void generatesDedicatedModeRbacs() throws IOException {
+		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of(
+			"testprefix-tenant-test1",
+			"testprefix-tenant-test2",
+			"testprefix-tenant-test3"
+		)));
+		setupDedicatedInstanceMode();
+
+		File rbacFolder = new File(clusterResourcesRepoLayout.operatorRbacDir());
+		File rbacTenantFolder = new File(clusterResourcesRepoLayout.operatorRbacDir(), "tenant");
+		assertThat(rbacFolder).exists();
+		assertThat(rbacTenantFolder).exists();
+
+		assertThat(rbacFolder.listFiles(File::isFile)).hasSize(14);
+		assertThat(rbacTenantFolder.listFiles(File::isFile)).hasSize(6);
+
+		for (File file : rbacFolder.listFiles()) {
+			if (file.getName().startsWith("role-") && file.getName().contains("dedi")) {
+				Map<String, Object> rbacFile = parseActualYaml(file.toString());
+				assertThat(value(rbacFile, "metadata", "namespace"))
+					.isIn(config.getApplication().getNamespaces().getActiveNamespaces());
+			}
+			if (file.getName().startsWith("rolebinding-") && file.getName().contains("dedi")) {
+				Map<String, Object> rbacFile = parseActualYaml(file.toString());
+				List<Map<String, Object>> subjects = mapListValue(rbacFile, "subjects");
+				assertThat(subjects.stream().map(subject -> subject.get("namespace")).toList())
+					.containsExactly("argocd", "argocd", "argocd");
+			}
+		}
+
+		for (File file : rbacTenantFolder.listFiles()) {
+			if (file.getName().startsWith("role-")) {
+				Map<String, Object> rbacFile = parseActualYaml(file.toString());
+				assertThat(value(rbacFile, "metadata", "namespace"))
+					.isIn(config.getApplication().getNamespaces().getTenantNamespaces());
+			}
+
+			if (file.getName().startsWith("rolebinding-")) {
+				Map<String, Object> rbacFile = parseActualYaml(file.toString());
+				List<Map<String, Object>> subjects = mapListValue(rbacFile, "subjects");
+				assertThat(subjects.stream().map(subject -> subject.get("namespace")).toList())
+					.containsExactly("testPrefix-argocd", "testPrefix-argocd", "testPrefix-argocd");
+			}
+		}
+	}
+
+	private void setupDedicatedInstanceMode() {
+		config.getApplication().setNamePrefix("testPrefix-");
+		config.getMultiTenant().getScmManager().setUrl("scmm.testhost/scm");
+		config.getMultiTenant().getScmManager().setUsername("testUserName");
+		config.getMultiTenant().getScmManager().setPassword("testPassword");
+		config.getMultiTenant().setUseDedicatedInstance(true);
+		ArgoCD argocd = setupOperatorTest(false);
+
+		doReturn("Applied").when(k8sClient).applyYaml(any(String.class));
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
 	}
 
 	private ArgoCD setupOperatorTest(boolean openshift) {
