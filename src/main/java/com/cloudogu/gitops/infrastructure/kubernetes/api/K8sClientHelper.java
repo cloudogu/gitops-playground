@@ -284,6 +284,83 @@ class K8sClientHelper {
 		return Collections.emptyMap();
 	}
 
+	static ResourceDefinitionContext resolveResourceDefinitionContext(
+		KubernetesClient client,
+		String resourceType) {
+		Map<String, Object> match = findApiResourceViaDiscovery(
+			client,
+			resourceType.toLowerCase(Locale.ROOT),
+			resourceType
+		);
+
+		if (!match.isEmpty()) {
+			return toResourceDefinitionContext(match);
+		}
+
+		ResourceDefinitionContext context = resolveResourceDefinitionContextViaCrd(client, resourceType);
+		if (context != null) {
+			return context;
+		}
+
+		throw new K8sClient.KubernetesApiResourceNotFoundException(resourceType);
+	}
+
+	private static ResourceDefinitionContext resolveResourceDefinitionContextViaCrd(
+		KubernetesClient client,
+		String resourceType) {
+		try {
+			var crdList = client.apiextensions().v1().customResourceDefinitions().list();
+			if (crdList == null || crdList.getItems() == null) {
+				return null;
+			}
+
+			for (var crd : crdList.getItems()) {
+				var spec = crd.getSpec();
+				if (spec == null || spec.getNames() == null || spec.getVersions() == null) {
+					continue;
+				}
+
+				var names = spec.getNames();
+				boolean matches = resourceType.equalsIgnoreCase(names.getKind())
+					|| resourceType.equalsIgnoreCase(names.getPlural())
+					|| resourceType.equalsIgnoreCase(names.getSingular());
+				if (!matches) {
+					continue;
+				}
+
+				String version = null;
+				for (var candidate : spec.getVersions()) {
+					if (Boolean.TRUE.equals(candidate.getServed()) && version == null) {
+						version = candidate.getName();
+					}
+					if (Boolean.TRUE.equals(candidate.getServed()) && Boolean.TRUE.equals(candidate.getStorage())) {
+						version = candidate.getName();
+						break;
+					}
+				}
+
+				if (version == null) {
+					continue;
+				}
+
+				log.debug(
+					"Resolved '{}' from CRD because API discovery did not return it",
+					resourceType
+				);
+				return new ResourceDefinitionContext.Builder().withGroup(spec.getGroup())
+													 .withVersion(version)
+													 .withKind(names.getKind())
+													 .withPlural(names.getPlural())
+													 .withNamespaced("Namespaced".equalsIgnoreCase(spec.getScope()))
+													 .build();
+			}
+		} catch (Exception e) {
+			log.trace("Failed to resolve resource '{}' from CRDs: {}", resourceType, e.getMessage());
+		}
+
+		return null;
+	}
+
 	private static List<APIGroup> fetchApiGroups(KubernetesClient client) {
 		try {
 			APIGroupList groupList = client.getApiGroups();

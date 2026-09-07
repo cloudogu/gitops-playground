@@ -751,13 +751,41 @@ public class K8sClient {
 		for (HasMetadata resource : resources) {
 			executeWithErrorHandling(
 				"apply resource from " + sourceDescription, () -> {
-					client.resource(resource).createOr(NonDeletingOperation::update);
+					applyResource(resource);
 					return null;
 				}
 			);
 		}
 
 		return resources.size();
+	}
+
+	private void applyResource(HasMetadata resource) {
+		if (resource instanceof GenericKubernetesResource genericResource) {
+			applyGenericResource(genericResource);
+			return;
+		}
+
+		String namespace = resource.getMetadata() != null ? resource.getMetadata().getNamespace() : null;
+		if (namespace != null && !namespace.isBlank()) {
+			client.resource(resource).inNamespace(namespace).createOr(NonDeletingOperation::update);
+			return;
+		}
+
+		client.resource(resource).createOr(NonDeletingOperation::update);
+	}
+
+	private void applyGenericResource(GenericKubernetesResource resource) {
+		ResourceDefinitionContext context = K8sClientHelper.resolveResourceDefinitionContext(client, resource.getKind());
+		var resourceClient = client.genericKubernetesResources(context);
+		String namespace = resource.getMetadata() != null ? resource.getMetadata().getNamespace() : null;
+
+		if (namespace != null && !namespace.isBlank()) {
+			resourceClient.inNamespace(namespace).resource(resource).createOr(NonDeletingOperation::update);
+			return;
+		}
+
+		resourceClient.resource(resource).createOr(NonDeletingOperation::update);
 	}
 
 	private List<HasMetadata> loadYamlItems(InputStream stream, String sourceDescription) {

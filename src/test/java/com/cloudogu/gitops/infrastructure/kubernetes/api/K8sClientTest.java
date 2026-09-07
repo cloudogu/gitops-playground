@@ -982,6 +982,168 @@ class K8sClientTest {
 	}
 
 	@Test
+	void applyYamlAppliesGenericKubernetesResourceViaDiscovery() throws IOException {
+		// Given
+		Path yamlFile = tempDir.resolve("app-project.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: argoproj.io/v1alpha1
+				kind: AppProject
+				metadata:
+				  name: argocd
+				  namespace: argocd
+				spec:
+				  description: AppProject for ArgoCD-specific applications.
+				"""
+		);
+
+		server.expect()
+			  .get()
+			  .withPath("/apis")
+			  .andReturn(
+				  200, Map.of(
+					  "groups", List.of(Map.of(
+						  "name", "argoproj.io",
+						  "preferredVersion", Map.of("version", "v1alpha1"),
+						  "versions", List.of(Map.of("version", "v1alpha1"))
+					  ))
+				  )
+			  )
+			  .once();
+
+		server.expect()
+			  .get()
+			  .withPath("/apis/argoproj.io/v1alpha1")
+			  .andReturn(
+				  200, Map.of(
+					  "resources", List.of(Map.of(
+						  "name", "appprojects",
+						  "singularName", "appproject",
+						  "namespaced", true,
+						  "kind", "AppProject",
+						  "shortNames", List.of()
+					  ))
+				  )
+			  )
+			  .once();
+
+		GenericKubernetesResource appProject = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1alpha1")
+			.withKind("AppProject")
+			.withNewMetadata()
+			.withName("argocd")
+			.withNamespace("argocd")
+			.endMetadata()
+			.addToAdditionalProperties(
+				"spec", Map.of("description", "AppProject for ArgoCD-specific applications.")
+			)
+			.build();
+
+		AtomicBoolean appProjectWasApplied = new AtomicBoolean(false);
+		server.expect()
+			  .post()
+			  .withPath("/apis/argoproj.io/v1alpha1/namespaces/argocd/appprojects")
+			  .andReply(
+				  201, request -> {
+					  appProjectWasApplied.set(true);
+					  return appProject;
+				  }
+			  )
+			  .once();
+
+		// When
+		String result = k8sApiClient.applyYaml(yamlFile.toString());
+
+		// Then
+		assertThat(result).contains("Applied 1 resource(s)");
+		assertThat(appProjectWasApplied.get()).isTrue();
+	}
+
+	@Test
+	void applyYamlFallsBackToCrdWhenDiscoveryDoesNotExposeGenericResource() throws IOException {
+		// Given
+		Path yamlFile = tempDir.resolve("app-project-crd-fallback.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: argoproj.io/v1alpha1
+				kind: AppProject
+				metadata:
+				  name: argocd
+				  namespace: argocd
+				spec:
+				  description: AppProject for ArgoCD-specific applications.
+				"""
+		);
+
+		server.expect()
+			  .get()
+			  .withPath("/apis")
+			  .andReturn(200, Map.of("groups", List.of()))
+			  .once();
+
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(
+				  200, Map.of(
+					  "apiVersion", "apiextensions.k8s.io/v1",
+					  "kind", "CustomResourceDefinitionList",
+					  "items", List.of(Map.of(
+						  "apiVersion", "apiextensions.k8s.io/v1",
+						  "kind", "CustomResourceDefinition",
+						  "metadata", Map.of("name", "appprojects.argoproj.io"),
+						  "spec", Map.of(
+							  "group", "argoproj.io",
+							  "scope", "Namespaced",
+							  "names", Map.of(
+								  "kind", "AppProject",
+								  "plural", "appprojects",
+								  "singular", "appproject"
+							  ),
+							  "versions", List.of(Map.of(
+								  "name", "v1alpha1",
+								  "served", true,
+								  "storage", true
+							  ))
+						  )
+					  ))
+				  )
+			  )
+			  .once();
+
+		GenericKubernetesResource appProject = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1alpha1")
+			.withKind("AppProject")
+			.withNewMetadata()
+			.withName("argocd")
+			.withNamespace("argocd")
+			.endMetadata()
+			.addToAdditionalProperties(
+				"spec", Map.of("description", "AppProject for ArgoCD-specific applications.")
+			)
+			.build();
+
+		AtomicBoolean appProjectWasApplied = new AtomicBoolean(false);
+		server.expect()
+			  .post()
+			  .withPath("/apis/argoproj.io/v1alpha1/namespaces/argocd/appprojects")
+			  .andReply(
+				  201, request -> {
+					  appProjectWasApplied.set(true);
+					  return appProject;
+				  }
+			  )
+			  .once();
+
+		// When
+		String result = k8sApiClient.applyYaml(yamlFile.toString());
+
+		// Then
+		assertThat(result).contains("Applied 1 resource(s)");
+		assertThat(appProjectWasApplied.get()).isTrue();
+	}
+
+	@Test
 	void applyYamlThrowsExceptionForNonExistingFileOrDirectory() {
 		// When/Then
 		var exception = assertThrows(RuntimeException.class, () -> k8sApiClient.applyYaml("/non/existing/file.yaml"));
