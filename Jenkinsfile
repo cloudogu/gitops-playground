@@ -271,34 +271,36 @@ pipeline {
                 expression { return env.TAG_NAME }
             }
             steps {
-                withCredentials([usernamePassword(
-                        credentialsId: 'cesmarvin-ghcr',
-                        usernameVariable: 'GH_USERNAME',
-                        passwordVariable: 'GH_TOKEN'
-                )]) {
-                    docker.image(env.GOLANG_IMAGE).inside("--entrypoint ''") {
+                script {
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin-ghcr',
+                            usernameVariable: 'GH_USERNAME',
+                            passwordVariable: 'GH_TOKEN'
+                    )]) {
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint ''") {
+                            sh '''
+                                apk add --no-cache github-cli
+                                asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
+                                cp sbom.cdx.json "$asset"
+                                sha256sum "$asset" > "${asset}.sha256"
+                                gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
+                                    --repo "$GITHUB_REPOSITORY" \
+                                    --clobber
+                            '''
+                        }
                         sh '''
-                            apk add --no-cache github-cli
-                            asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
-                            cp sbom.cdx.json "$asset"
-                            sha256sum "$asset" > "${asset}.sha256"
-                            gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
-                                --repo "$GITHUB_REPOSITORY" \
-                                --clobber
+                            printf '%s' "$GH_TOKEN" | docker run --rm -i \
+                                -v "$WORKSPACE:/workspace" \
+                                -w /workspace \
+                                "$ORAS_IMAGE" attach \
+                                    --username "$GH_USERNAME" \
+                                    --password-stdin \
+                                    --artifact-type application/vnd.cyclonedx+json \
+                                    "$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME:$TAG_NAME" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
                         '''
                     }
-                    sh '''
-                        printf '%s' "$GH_TOKEN" | docker run --rm -i \
-                            -v "$WORKSPACE:/workspace" \
-                            -w /workspace \
-                            "$ORAS_IMAGE" attach \
-                                --username "$GH_USERNAME" \
-                                --password-stdin \
-                                --artifact-type application/vnd.cyclonedx+json \
-                                "$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME:$TAG_NAME" \
-                                "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
-                                "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
-                    '''
                 }
             }
         }
