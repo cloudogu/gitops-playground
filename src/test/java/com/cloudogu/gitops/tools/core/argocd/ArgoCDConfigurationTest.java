@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -507,6 +508,118 @@ class ArgoCDConfigurationTest {
 			.contains("kubernetes.io/metadata.name: my-prefix-argocd");
 	}
 
+	@Test
+	void setsOperatorServerInsecureToTrueWhenInsecureIsSet() throws IOException {
+		config.getApplication().setInsecure(true);
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		assertThat(value(yaml, "spec", "server", "insecure")).isEqualTo(true);
+	}
+
+	@Test
+	void setsOperatorCustomValues() throws IOException {
+		config.getFeatures().getArgocd().setValues(map("spec", map("key", "value")));
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		assertThat(value(yaml, "spec", "key")).isEqualTo("value");
+	}
+
+	@Test
+	void setsOperatorArgoCdUrlAndAdditionalRedirectUrls() throws IOException {
+		config.getFeatures().getArgocd().setUrl("https://argocd.localhost");
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		Map<String, Object> extraConfig = mapValue(yaml, "spec", "extraConfig");
+		assertThat(extraConfig.get("url")).isEqualTo("https://argocd.localhost");
+		assertThat((String) extraConfig.get("additionalUrls"))
+			.contains("http://argocd.localhost", "https://argocd.localhost");
+	}
+
+	@Test
+	void setsOperatorServerInsecureToFalseWhenInsecureIsNotSet() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		assertThat(value(yaml, "spec", "server", "insecure")).isEqualTo(false);
+	}
+
+	@Test
+	void generatesIngressWithExpectedHostWhenInsecureAndNotOnOpenShift() throws IOException {
+		config.getApplication().setInsecure(true);
+		config.getFeatures().getArgocd().setUrl("http://argocd.localhost");
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml");
+		assertThat(ingressFile)
+			.as("Ingress file should be generated for insecure mode on non-OpenShift")
+			.exists();
+
+		Map<String, Object> ingressYaml = parseActualYaml(ingressFile.toString());
+		List<Map<String, Object>> rules = mapListValue(ingressYaml, "spec", "rules");
+		assertThat((String) rules.get(0).get("host"))
+			.as("Ingress host should match configured ArgoCD hostname")
+			.isEqualTo(URI.create(config.getFeatures().getArgocd().getUrl()).getHost());
+	}
+
+	@Test
+	void doesNotGenerateIngressWhenInsecureIsFalse() {
+		config.getApplication().setInsecure(false);
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml");
+		assertThat(ingressFile)
+			.as("Ingress file should not be generated when insecure is false")
+			.doesNotExist();
+	}
+
+	@Test
+	void doesNotGenerateIngressOnOpenShift() {
+		config.getApplication().setInsecure(true);
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml");
+		assertThat(ingressFile)
+			.as("Ingress file should not be generated on OpenShift")
+			.doesNotExist();
+	}
+
+	@Test
+	void doesNotGenerateIngressWhenInsecureIsFalseAndOpenShiftIsTrue() {
+		config.getApplication().setInsecure(false);
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File ingressFile = new File(clusterResourcesRepoLayout.operatorDir(), "ingress.yaml");
+		assertThat(ingressFile)
+			.as("Ingress file should not be generated when both flags are false")
+			.doesNotExist();
+	}
+
+	private ArgoCD setupOperatorTest(boolean openshift) {
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
+		config.getApplication().setOpenshift(openshift);
+		return createArgoCD();
+	}
+
 	private void assertArgoCdYamlPrefixes(
 		String scmmUrl,
 		String expectedPrefix,
@@ -781,6 +894,11 @@ class ArgoCDConfigurationTest {
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> mapValue(Map<String, Object> yaml, String... path) {
 		return (Map<String, Object>) value(yaml, path);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Map<String, Object>> mapListValue(Map<String, Object> yaml, String... path) {
+		return (List<Map<String, Object>>) value(yaml, path);
 	}
 
 	@SuppressWarnings("unchecked")
