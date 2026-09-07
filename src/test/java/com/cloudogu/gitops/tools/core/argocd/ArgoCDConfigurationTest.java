@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -756,6 +757,141 @@ class ArgoCDConfigurationTest {
 		assertThat(value(yaml, "spec", "notifications", "env")).isEqualTo(expectedEnv);
 		assertThat(value(yaml, "spec", "controller", "env")).isEqualTo(expectedEnv);
 		assertThat(value(yaml, "spec", "server", "env")).isEqualTo(expectedEnv);
+	}
+
+	@Test
+	void preparesArgoCdRepoWithOperatorConfigurationFile() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Path argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile());
+		Path rbacConfigPath = Path.of(clusterResourcesRepoLayout.operatorRbacDir());
+
+		assertThat(argocdConfigPath.toFile()).exists();
+		assertThat(rbacConfigPath.toFile()).exists();
+
+		Map<String, Object> yaml = parseActualYaml(argocdConfigPath.toString());
+		assertThat(yaml.get("apiVersion")).isEqualTo("argoproj.io/v1beta1");
+		assertThat(yaml.get("kind")).isEqualTo("ArgoCD");
+	}
+
+	@Test
+	void doesNotCreateOperatorFilesWhenOperatorIsDisabled() {
+		ArgoCD argocd = createArgoCD();
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Path argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile());
+		Path rbacConfigPath = Path.of(clusterResourcesRepoLayout.operatorRbacDir());
+
+		assertThat(argocdConfigPath.toFile()).doesNotExist();
+		assertThat(rbacConfigPath.toFile()).doesNotExist();
+	}
+
+	@Test
+	void deploysWithOperatorWithoutOpenShiftConfiguration() throws IOException {
+		ArgoCD argocd = setupOperatorTest(false);
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+		Path argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile());
+
+		assertThat(argocdConfigPath.toFile()).exists();
+
+		Map<String, Object> yaml = parseActualYaml(argocdConfigPath.toString());
+		assertThat(value(yaml, "spec", "rbac")).isNull();
+		assertThat(value(yaml, "spec", "sso")).isNull();
+
+		Map<String, Object> argocdYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.applicationsDir(), "argocd.yaml").toString()
+		);
+		assertThat(value(argocdYaml, "spec", "source", "directory", "recurse")).isEqualTo(true);
+		assertThat(value(argocdYaml, "spec", "source", "path")).isEqualTo("apps/argocd/operator/");
+	}
+
+	@Test
+	void generatesOperatorRbacsFromRbacDefinitions() throws IOException {
+		config.getApplication().setNamePrefix("testPrefix-");
+
+		List<String> expectedNamespaces = List.of(
+			"testPrefix-monitoring",
+			"testPrefix-secrets",
+			"testPrefix-traefik",
+			"testPrefix-example-apps-staging",
+			"testPrefix-example-apps-production"
+		);
+
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
+			"monitoring",
+			"secrets",
+			"traefik",
+			"example-apps-staging",
+			"example-apps-production"
+		)));
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File rbacPath = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile();
+
+		for (String namespace : expectedNamespaces) {
+			File roleFile = new File(rbacPath, "role-argocd-" + namespace + ".yaml");
+			File bindingFile = new File(rbacPath, "rolebinding-argocd-" + namespace + ".yaml");
+
+			assertThat(roleFile).exists();
+			assertThat(bindingFile).exists();
+
+			Map<String, Object> roleYaml = parseActualYaml(roleFile.toString());
+			Map<String, Object> bindingYaml = parseActualYaml(bindingFile.toString());
+
+			assertThat(roleYaml.get("kind")).isEqualTo("Role");
+			assertThat(value(roleYaml, "metadata", "name")).isEqualTo("argocd");
+			assertThat(value(roleYaml, "metadata", "namespace")).isEqualTo(namespace);
+
+			assertThat(bindingYaml.get("kind")).isEqualTo("RoleBinding");
+			assertThat(value(bindingYaml, "metadata", "name")).isEqualTo("argocd");
+			assertThat(value(bindingYaml, "metadata", "namespace")).isEqualTo(namespace);
+
+			List<Map<String, Object>> subjects = mapListValue(bindingYaml, "subjects");
+			assertThat(subjects).isNotEmpty();
+			assertThat(subjects.stream().map(subject -> subject.get("kind")).toList())
+				.containsOnly("ServiceAccount");
+			assertThat(subjects.stream().map(subject -> subject.get("namespace")).toList())
+				.containsOnly("testPrefix-argocd");
+			assertThat(subjects.stream().map(subject -> subject.get("name")).toList())
+				.containsExactlyInAnyOrder(
+					"argocd-argocd-server",
+					"argocd-argocd-application-controller",
+					"argocd-applicationset-controller"
+				);
+
+			Map<String, Object> roleRef = mapValue(bindingYaml, "roleRef");
+			assertThat(roleRef).isNotNull();
+			assertThat(roleRef.get("name")).isEqualTo("argocd");
+			assertThat(roleRef.get("kind")).isEqualTo("Role");
+		}
+	}
+
+	@Test
+	void deploysWithOperatorWithOpenShiftConfiguration() throws IOException {
+		ArgoCD argocd = setupOperatorTest(true);
+
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Path argocdConfigPath = Path.of(clusterResourcesRepoLayout.operatorConfigFile());
+		assertThat(argocdConfigPath.toFile()).exists();
+
+		Map<String, Object> yaml = parseActualYaml(argocdConfigPath.toString());
+		assertThat(value(yaml, "spec", "sso")).isNotNull();
+		assertThat(value(yaml, "spec", "sso", "dex", "openShiftOAuth")).isEqualTo(true);
+		assertThat(value(yaml, "spec", "sso", "provider")).isEqualTo("dex");
+		assertThat(value(yaml, "spec", "rbac")).isNotNull();
+		assertThat(value(yaml, "spec", "server", "route", "enabled")).isEqualTo(true);
 	}
 
 	private ArgoCD setupOperatorTest(boolean openshift) {
