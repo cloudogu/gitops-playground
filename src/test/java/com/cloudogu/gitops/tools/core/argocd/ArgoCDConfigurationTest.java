@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -169,6 +171,86 @@ class ArgoCDConfigurationTest {
 			any(String.class),
 			any(String.class)
 		);
+	}
+
+	@Test
+	void installsArgoCd() throws IOException {
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+
+		execute(argocd);
+
+		GitRepo clusterResourcesRepo = argocd.getClusterResourcesRepo();
+		clusterResourcesRepoLayout = argocd.getClusterRepoLayout();
+
+		assertThat(client.namespaces().withName("argocd").get()).isNotNull();
+
+		List<Path> filesWithInternalScmManager = findFilesContaining(
+			new File(clusterResourcesRepoLayout.rootDir()),
+			clusterResourcesRepo.getGitProvider().getUrl()
+		);
+		assertThat(filesWithInternalScmManager).isNotEmpty();
+
+		Map<String, Object> valuesYaml = parseActualYaml(actualHelmValuesFile());
+		assertThat(value(valuesYaml, "argo-cd", "server", "service", "type")).isEqualTo("ClusterIP");
+		assertThat(value(valuesYaml, "argo-cd", "notifications", "argocdUrl")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "crds")).isNull();
+		assertThat(valuesYaml.get("global")).isNull();
+
+		Secret repoCredentialsSecret = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-repo-creds-scm")
+			.get();
+
+		assertThat(repoCredentialsSecret).isNotNull();
+		assertThat(repoCredentialsSecret.getMetadata().getLabels().get("argocd.argoproj.io/secret-type"))
+			.isEqualTo("repo-creds");
+
+		assertThat(helmCommands.getActualCommands().get(0).trim())
+			.isEqualTo("helm repo add argo https://argoproj.github.io/argo-helm");
+		assertThat(helmCommands.getActualCommands().get(1).trim())
+			.isEqualTo("helm dependency build " + clusterResourcesRepoLayout.helmDir());
+		assertThat(helmCommands.getActualCommands().get(2).trim())
+			.isEqualTo("helm upgrade -i argocd " + clusterResourcesRepoLayout.helmDir()
+				+ " --create-namespace --namespace argocd");
+
+		Secret argocdSecret = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-secret")
+			.get();
+
+		assertThat(argocdSecret).isNotNull();
+
+		String patchedPasswordHash = decodedSecretValue(argocdSecret, "admin.password");
+		assertThat(BCrypt.checkpw(config.getApplication().getPassword(), patchedPasswordHash))
+			.as("Password hash mismatch")
+			.isTrue();
+
+		assertThat(client.secrets()
+			.inNamespace("argocd")
+			.withLabels(Map.of("owner", "helm", "name", "argocd"))
+			.list()
+			.getItems()).isEmpty();
+
+		assertThat(Path.of(clusterResourcesRepoLayout.operatorConfigFile())).doesNotExist();
+		assertThat(Path.of(clusterResourcesRepoLayout.operatorRbacDir())).doesNotExist();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+		assertThat(sourceRepos)
+			.contains("https://prometheus-community.github.io/helm-charts")
+			.doesNotContain(
+				"http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/"
+					+ "kube-prometheus-stack"
+			);
+
+		Map<String, Object> argocdYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.applicationsDir(), "argocd.yaml").toString()
+		);
+		assertThat(value(argocdYaml, "spec", "source", "directory")).isNull();
+		assertThat((String) value(argocdYaml, "spec", "source", "path"))
+			.isIn("apps/argocd/argocd", "apps/argocd/argocd/");
 	}
 
 	@Test
@@ -1408,6 +1490,18 @@ class ArgoCDConfigurationTest {
 				.as(file + " spec.destination.namespace has name prefix")
 				.isEqualTo(expectedPrefix + "argocd");
 		});
+	}
+
+	private static List<Path> findFilesContaining(File folder, String stringToSearch) throws IOException {
+		List<Path> result = new ArrayList<>();
+		try (Stream<Path> files = Files.walk(folder.toPath())) {
+			for (Path file : files.filter(Files::isRegularFile).toList()) {
+				if (new String(Files.readAllBytes(file), StandardCharsets.UTF_8).contains(stringToSearch)) {
+					result.add(file);
+				}
+			}
+		}
+		return result;
 	}
 
 	private static void assertAllYamlFiles(
