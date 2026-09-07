@@ -15,6 +15,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -168,6 +169,31 @@ class ArgoCDConfigurationTest {
 			any(String.class),
 			any(String.class)
 		);
+	}
+
+	@Test
+	void publishesArgoCdRepositoryContentThroughRepositoryWorkspace() throws GitAPIException {
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+
+		execute(argocd);
+
+		verify(argocd.repositoryWorkspace.getClusterResourcesRepository())
+			.commitAndPush("Update ArgoCD repository content");
+	}
+
+	@Test
+	void usesRepositoryWorkspaceForClusterResourcesRepositoryContent() throws IOException {
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+
+		execute(argocd);
+
+		assertThat(argocd.repositoryWorkspace.getClusterResourcesRepository())
+			.isSameAs(argocd.clusterResourcesRepo);
+
+		clusterResourcesRepoLayout = argocd.getClusterRepoLayout();
+
+		assertThat(new File(clusterResourcesRepoLayout.rootDir()).getCanonicalFile())
+			.isEqualTo(new File(argocd.clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()).getCanonicalFile());
 	}
 
 	@Test

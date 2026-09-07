@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.tools.core.argocd
 
-import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
@@ -23,7 +22,8 @@ import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.doNothing
+import static org.mockito.Mockito.spy
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDTest {
@@ -109,7 +109,6 @@ class ArgoCDTest {
     List<GitRepo> petClinicRepos = []
     ArgoCD argocd
     ArgoCDRepoLayout clusterResourcesRepoLayout
-    RepositoryWorkspace repositoryWorkspace
 
     @BeforeEach
     void setupKubernetesClient() {
@@ -204,33 +203,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'publishes argocd repository content through repository workspace'() {
-        def argocd = createArgoCD()
-
-        execute(argocd)
-
-        verify(repositoryWorkspace.clusterResourcesRepository).commitAndPush('Update ArgoCD repository content')
-    }
-
-    @Test
-    void 'uses repository workspace for cluster resources repository content'() {
-        def argocd = createArgoCD()
-
-        execute(argocd)
-
-        def argoCDForTest = argocd as ArgoCDForTest
-
-        assertThat(argoCDForTest.repositoryWorkspace.clusterResourcesRepository)
-                .isSameAs(argoCDForTest.clusterResourcesRepo)
-
-        clusterResourcesRepoLayout = argoCDForTest.getClusterRepoLayout()
-
-        assertThat(new File(clusterResourcesRepoLayout.rootDir()).canonicalFile)
-                .isEqualTo(new File(argoCDForTest.clusterResourcesRepo.absoluteLocalRepoTmpDir).canonicalFile)
-    }
-
-
-    @Test
     void 'SecurityContext null in Openshift'() {
         config.application.openshift = true
         execute(createArgoCD())
@@ -264,8 +236,6 @@ class ArgoCDTest {
         def argoCD = ArgoCDForTest.newWithAutoProviders(config,
                 k8sClient,
                 helmCommands)
-
-        this.repositoryWorkspace = (argoCD as ArgoCDForTest).repositoryWorkspace
 
         return argoCD
     }
