@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.CommandExecutorForTest;
@@ -1157,6 +1158,158 @@ class ArgoCDConfigurationTest {
 					.containsExactly("testPrefix-argocd", "testPrefix-argocd", "testPrefix-argocd");
 			}
 		}
+	}
+
+	@Test
+	void usesExternalSourceRepoUrlsWhenMirroringIsDisabled() throws IOException {
+		config.getApplication().setMirrorRepos(false);
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+
+		assertThat(sourceRepos).contains(
+			"https://charts.external-secrets.io",
+			"https://codecentric.github.io/helm-charts",
+			"https://prometheus-community.github.io/helm-charts",
+			"https://traefik.github.io/charts",
+			"https://helm.releases.hashicorp.com",
+			"https://charts.jetstack.io"
+		);
+		assertThat(sourceRepos).doesNotContain(
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager"
+		);
+		assertThat(sourceRepos).doesNotContain(
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git"
+		);
+	}
+
+	@Test
+	void usesScmManagerMirrorSourceRepoUrlsWhenMirroringIsEnabled() throws IOException {
+		config.getApplication().setMirrorRepos(true);
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+
+		assertThat(sourceRepos).contains(
+			"http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack",
+			"http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik",
+			"http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets",
+			"http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault",
+			"http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager"
+		);
+		assertThat(sourceRepos).doesNotContain(
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git",
+			"http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git"
+		);
+	}
+
+	@Test
+	void usesGitLabMirrorSourceRepoUrlsWhenMirroringIsEnabled() throws IOException {
+		config.getApplication().setMirrorRepos(true);
+		config.getScm().setScmProviderType(ScmProviderType.GITLAB);
+		config.getScm().getGitlab().setUrl("https://testGitLab.com/testgroup");
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+
+		assertThat(sourceRepos).contains(
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git"
+		);
+	}
+
+	@Test
+	void usesGitLabMirrorSourceRepoUrlsWithNamePrefix() throws IOException {
+		config.getApplication().setMirrorRepos(true);
+		config.getScm().setScmProviderType(ScmProviderType.GITLAB);
+		config.getScm().getGitlab().setUrl("https://testGitLab.com/testgroup");
+		config.getApplication().setNamePrefix("test1-");
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+
+		assertThat(sourceRepos).contains(
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/traefik.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git",
+			"https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git"
+		);
+		assertThat(sourceRepos).doesNotContain(
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager"
+		);
+	}
+
+	@Test
+	void usesScmManagerMirrorSourceRepoUrlsWithNamePrefix() throws IOException {
+		config.getApplication().setMirrorRepos(true);
+		config.getApplication().setNamePrefix("test1-");
+
+		ArgoCD argocd = createArgoCD();
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> clusterResourcesYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.projectsDir(), "cluster-resources.yaml").toString()
+		);
+		List<String> sourceRepos = listValue(clusterResourcesYaml, "spec", "sourceRepos");
+
+		assertThat(sourceRepos).contains(
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/traefik",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager"
+		);
+		assertThat(sourceRepos).doesNotContain(
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/traefik.git",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git",
+			"http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git"
+		);
 	}
 
 	private void setupDedicatedInstanceMode() {
