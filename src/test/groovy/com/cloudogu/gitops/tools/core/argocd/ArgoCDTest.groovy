@@ -1,19 +1,10 @@
 package com.cloudogu.gitops.tools.core.argocd
 
-import com.cloudogu.gitops.application.context.ContextBuilder
-import com.cloudogu.gitops.application.orchestration.GitHandler
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.infrastructure.git.GitRepo
-import com.cloudogu.gitops.infrastructure.git.providers.GitProvider
-import com.cloudogu.gitops.infrastructure.helm.HelmClient
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient
-import com.cloudogu.gitops.testhelper.git.GitHandlerForTests
-import com.cloudogu.gitops.testhelper.git.TestGitProvider
-import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory
-import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory
 import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
@@ -97,7 +88,7 @@ class ArgoCDTest {
                                                kubeval    : 'ghcr.io/cloudogu/helm:4.2.1-1',
                                                helmKubeval: 'ghcr.io/cloudogu/helm:4.2.1-1',
                                                yamllint   : 'cytopia/yamllint:1.25-0.7',
-                                               petclinic  : 'eclipse-temurin:17-jre',
+                                               petclinic  : 'eclipse-temurin:17-jre-alpine',
                                                maven      : '']]],
             features: [argocd    : [operator                 : false,
                                     active                   : true,
@@ -1585,138 +1576,6 @@ class ArgoCDTest {
         config.application.openshift = options.openshift ?: false
 
         return createArgoCD()
-    }
-
-    private static void mockPrefixActiveNamespaces(Config config) {
-        def prefix = config.application.namePrefix ?: ''
-
-        config.application.namespaces.with {
-            dedicatedNamespaces = new LinkedHashSet<>(dedicatedNamespaces.collect { (prefix + it).toString() })
-            tenantNamespaces = new LinkedHashSet<>(tenantNamespaces.collect { (prefix + it).toString() })
-        }
-    }
-
-    static class ArgoCDForTest extends ArgoCD {
-        final Config cfg
-        final GitProvider tenantProvider
-        final GitProvider centralProvider
-        final GitHandler gitHandler
-        final RepositoryWorkspace repositoryWorkspace
-
-        GitRepo clusterResourcesRepo
-        GitRepo tenantBootstrapRepo
-
-        static ArgoCDForTest newWithAutoProviders(Config cfg,
-                                                  K8sClient k8sClient,
-                                                  CommandExecutorForTest helmCommands) {
-            def provider = TestGitProvider.buildProviders(cfg)
-
-            GitProvider tenantProvider = provider.tenant as GitProvider
-            GitProvider centralProvider = provider.central as GitProvider
-
-            ArgoCDTestContext testContext = createTestContext(cfg,
-                    tenantProvider,
-                    centralProvider)
-
-            return new ArgoCDForTest(cfg,
-                    k8sClient,
-                    helmCommands,
-                    tenantProvider,
-                    centralProvider,
-                    testContext)
-        }
-
-        private static ArgoCDTestContext createTestContext(Config cfg,
-                                                           GitProvider tenantProvider,
-                                                           GitProvider centralProvider) {
-            def repoFactory = new TestGitRepoFactory(cfg, new FileSystemUtils())
-
-            GitProvider clusterResourcesProvider = cfg.multiTenant.useDedicatedInstance ? centralProvider : tenantProvider
-
-            GitRepo clusterResourcesRepo = repoFactory.create('argocd/cluster-resources',
-                    clusterResourcesProvider)
-            doNothing().when(clusterResourcesRepo).commitAndPush(any(String))
-
-            RepositoryWorkspace repositoryWorkspace
-            GitRepo tenantBootstrapRepo = null
-
-            if (cfg.multiTenant.useDedicatedInstance) {
-                /*
-                 * Test-only workspace separation:
-                 *
-                 * In the real dedicated multi-tenant setup, the central cluster-resources repo
-                 * and the tenant bootstrap repo use the same logical repo target in different
-                 * SCM-Manager instances.
-                 *
-                 * TestGitRepoFactory derives the local workspace from the repo target only.
-                 * Therefore both GitRepo objects would otherwise point to the same local directory
-                 * and tenant bootstrap templates would overwrite central bootstrap templates.
-                 */
-                tenantBootstrapRepo = repoFactory.create('argocd/tenant-bootstrap-cluster-resources',
-                        tenantProvider)
-                doNothing().when(tenantBootstrapRepo).commitAndPush(any(String))
-
-                repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo,
-                        tenantBootstrapRepo)
-            } else {
-                repositoryWorkspace = new RepositoryWorkspace(clusterResourcesRepo)
-            }
-
-            GitHandler gitHandler = new GitHandlerForTests(tenantProvider,
-                    centralProvider)
-
-            return new ArgoCDTestContext(gitHandler: gitHandler,
-                    repositoryWorkspace: repositoryWorkspace,
-                    clusterResourcesRepo: clusterResourcesRepo,
-                    tenantBootstrapRepo: tenantBootstrapRepo)
-        }
-
-        ArgoCDForTest(Config cfg,
-                      K8sClient k8sClient,
-                      CommandExecutorForTest helmCommands,
-                      GitProvider tenantProvider,
-                      GitProvider centralProvider,
-                      ArgoCDTestContext testContext) {
-            super(k8sClient,
-                    new HelmClient(helmCommands),
-                    new FileSystemUtils(),
-                    testContext.gitHandler,
-                    new DeploymentModeFactory(),
-                    new ArgoCDToolConfigMapper(cfg))
-
-            this.cfg = cfg
-            this.tenantProvider = tenantProvider
-            this.centralProvider = centralProvider
-            this.gitHandler = testContext.gitHandler
-            this.repositoryWorkspace = testContext.repositoryWorkspace
-            this.clusterResourcesRepo = testContext.clusterResourcesRepo
-            this.tenantBootstrapRepo = testContext.tenantBootstrapRepo
-
-            mockPrefixActiveNamespaces(cfg)
-        }
-
-        boolean execute() {
-            return super.execute(new ContextBuilder(cfg).build(), repositoryWorkspace)
-        }
-
-        GitRepo getClusterResourcesRepo() {
-            return clusterResourcesRepo
-        }
-
-        ArgoCDRepoLayout getClusterRepoLayout() {
-            return getRepoSetup().clusterRepoLayout()
-        }
-
-        ArgoCDRepoLayout getTenantRepoLayout() {
-            return getRepoSetup().tenantRepoLayout()
-        }
-
-        static class ArgoCDTestContext {
-            GitHandler gitHandler
-            RepositoryWorkspace repositoryWorkspace
-            GitRepo clusterResourcesRepo
-            GitRepo tenantBootstrapRepo
-        }
     }
 
     private Map parseActualYaml(String pathToYamlFile) {
