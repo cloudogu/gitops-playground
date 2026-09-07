@@ -106,7 +106,6 @@ class ArgoCDTest {
 
     String actualHelmValuesFile
     GitRepo clusterResourcesRepo
-    List<GitRepo> petClinicRepos = []
     ArgoCD argocd
     ArgoCDRepoLayout clusterResourcesRepoLayout
 
@@ -201,24 +200,6 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['path'] as String)
                 .isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
     }
-
-    @Test
-    void 'SecurityContext null in Openshift'() {
-        config.application.openshift = true
-        execute(createArgoCD())
-
-        for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsUser: null')
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsGroup: null')
-            }
-            if (petclinicRepo.repoTarget.contains('argocd/petclinic-helm')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsUser: null')
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
-            }
-        }
-    }
-
 
     private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
