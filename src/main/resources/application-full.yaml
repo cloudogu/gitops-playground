@@ -61,5 +61,5 @@ content:
       kubeval: "ghcr.io/cloudogu/helm:latest"
       helmKubeval: "ghcr.io/cloudogu/helm:latest"
       yamllint: "cytopia/yamllint:1.25-0.7"
-      petclinic: "eclipse-temurin:17-jre-alpine"
+      petclinic: "eclipse-temurin:17-jre"
       maven: ""

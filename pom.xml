@@ -154,6 +154,18 @@
                     <groupId>org.apache.groovy</groupId>
                     <artifactId>groovy-test</artifactId>
                 </exclusion>
+                <!-- jline 2.14.6 (via groovy-groovysh) bundles Jansi 1.x with an x86-only macOS
+                native lib. On Apple Silicon (arm64) picocli's reflective AnsiConsole check then
+                dies with UnsatisfiedLinkError (picocli only catches Exception, not Error).
+                groovysh/jline are unused in tests, so exclude them. -->
+                <exclusion>
+                    <groupId>org.apache.groovy</groupId>
+                    <artifactId>groovy-groovysh</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jline</groupId>
+                    <artifactId>jline</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

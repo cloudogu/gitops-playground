@@ -29,7 +29,7 @@ CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.1
 CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
 
 KUBECTL_IMAGE="docker://alpine/kubectl:latest"
-TEMURIN_IMAGE="docker://eclipse-temurin:17-jre-alpine"
+TEMURIN_IMAGE="docker://eclipse-temurin:17-jre"
 HELM_IMAGE="docker://ghcr.io/cloudogu/helm:latest"
 MVN_IMAGE="docker://maven:3-eclipse-temurin-17-alpine"
 YAMLLINT_IMAGE="docker://cytopia/yamllint:latest"
@@ -98,7 +98,7 @@ if [[ -n $HARBOR ]]; then
 
     # Needed for the builds to work with proxy-registry
     skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/alpine/kubectl:latest
-    skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre-alpine
+    skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre
     skopeo copy $HELM_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/helm:latest
     skopeo copy $MVN_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/maven:3-eclipse-temurin-17-alpine
     skopeo copy $YAMLLINT_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/yamllint:latest
@@ -129,7 +129,7 @@ skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds admin:Harbor12345 --dest-tls-veri
 
 # Needed for the builds to work with proxy-registry
 skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/alpine/kubectl:latest
-skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre-alpine
+skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre
 skopeo copy $HELM_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/helm:latest
 skopeo copy $MVN_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/maven:3-eclipse-temurin-17-alpine
 skopeo copy $YAMLLINT_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/yamllint:latest
