@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
@@ -31,15 +32,19 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 								   .skipCrds(config.getApplication().getSkipCrds())
 								   .openshift(context.isOpenshift())
 								   .airgapped(context.isAirgapped())
+								   .applicationUsername(config.getApplication().getUsername())
 								   .applicationPassword(config.getApplication().getPassword())
+								   .applicationCredentials(CredentialsReference.from(config.getApplication().getCredentials()))
+								   .jenkinsMetricsUsername(config.getJenkins().getMetricsUsername())
 								   .jenkinsMetricsPassword(config.getJenkins().getMetricsPassword())
+								   .jenkinsMetricsCredentials(CredentialsReference.from(config.getJenkins().getMetricsCredentials()))
 								   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 								   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
 								   .grafanaUrl(monitoring.getGrafanaUrl())
 								   .jenkinsInternal(config.getJenkins().getInternal())
 								   .jenkinsNamespace(config.getJenkins().getNamespace())
 								   .jenkinsUrl(config.getJenkins().getUrl())
-								   .jenkinsMetricsUsername(config.getJenkins().getMetricsUsername())
+								   .scmProviderType(config.getScm() == null ? null : config.getScm().getScmProviderType())
 								   .ingressActive(config.getFeatures().getIngress().getActive())
 								   .jenkinsActive(config.getJenkins().getActive())
 								   .helm(ToolConfigMapperSupport.helmChart(
@@ -62,8 +67,6 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
-			.put("application.password", config.getApplication().getPassword())
-			.put("application.username", config.getApplication().getUsername())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())

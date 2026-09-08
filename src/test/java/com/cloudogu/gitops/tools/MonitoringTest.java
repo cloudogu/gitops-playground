@@ -2,9 +2,11 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -42,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -336,9 +339,93 @@ class MonitoringTest {
 		config.getApplication().setPassword("hunter2");
 		install(createStack(scmManagerMock));
 
+		verify(k8sClient).createSecret(
+			"generic",
+			"grafana-admin-credentials",
+			"foo-monitoring",
+			new Tuple<>("admin-user", "my-user"),
+			new Tuple<>("admin-password", "hunter2")
+		);
+
 		Map<String, Object> grafana = (Map<String, Object>) parseActualYaml().get("grafana");
-		assertThat(grafana.get("adminUser")).isEqualTo("my-user");
-		assertThat(grafana.get("adminPassword")).isEqualTo("hunter2");
+		Map<String, Object> admin = (Map<String, Object>) grafana.get("admin");
+		assertThat(admin.get("existingSecret")).isEqualTo("grafana-admin-credentials");
+		assertThat(admin.get("userKey")).isEqualTo("admin-user");
+		assertThat(admin.get("passwordKey")).isEqualTo("admin-password");
+		assertThat(grafana).doesNotContainKeys("adminUser", "adminPassword");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("hunter2");
+	}
+
+	@Test
+	void resolvesApplicationCredentialsForGrafanaAdminSecretWithoutMutatingConfig() throws GitAPIException, IOException {
+		config.getApplication().setUsername("fallback-user");
+		config.getApplication().setPassword("fallback-password");
+		config.getApplication().setCredentials(
+			new Credentials(null, null, "application-credentials", "gop-job")
+		);
+		when(k8sClient.getCredentialsFromSecret(argThat(credentials ->
+			"application-credentials".equals(credentials.getSecretName())
+				&& "gop-job".equals(credentials.getSecretNamespace())
+				&& "fallback-user".equals(credentials.getUsername())
+		))).thenReturn(new Credentials("secret-admin", "grafana-secret-password"));
+
+		install(createStack(scmManagerMock));
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"grafana-admin-credentials",
+			"foo-monitoring",
+			new Tuple<>("admin-user", "secret-admin"),
+			new Tuple<>("admin-password", "grafana-secret-password")
+		);
+		assertThat(config.getApplication().getUsername()).isEqualTo("fallback-user");
+		assertThat(config.getApplication().getPassword()).isEqualTo("fallback-password");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("grafana-secret-password");
+	}
+
+	@Test
+	void resolvesJenkinsMetricsCredentialsForPrometheus() throws GitAPIException, IOException {
+		config.getJenkins().setMetricsUsername("fallback-metrics-user");
+		config.getJenkins().setMetricsPassword("fallback-metrics-password");
+		config.getJenkins().setMetricsCredentials(
+			new Credentials(null, null, "jenkins-metrics-credentials", "gop-job")
+		);
+		when(k8sClient.getCredentialsFromSecret(argThat(credentials ->
+			"jenkins-metrics-credentials".equals(credentials.getSecretName())
+				&& "gop-job".equals(credentials.getSecretNamespace())
+				&& "fallback-metrics-user".equals(credentials.getUsername())
+		))).thenReturn(new Credentials("secret-metrics-user", "secret-metrics-password"));
+
+		install(createStack(scmManagerMock));
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"prometheus-metrics-creds-jenkins",
+			"foo-monitoring",
+			new Tuple<>("password", "secret-metrics-password")
+		);
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		Map<String, Object> prometheusSpec = (Map<String, Object>) prometheus.get("prometheusSpec");
+		List<Map<String, Object>> additionalScrapeConfigs =
+			(List<Map<String, Object>>) prometheusSpec.get("additionalScrapeConfigs");
+		Map<String, Object> basicAuth = (Map<String, Object>) additionalScrapeConfigs.get(1).get("basic_auth");
+		assertThat(basicAuth.get("username")).isEqualTo("secret-metrics-user");
+		assertThat(config.getJenkins().getMetricsPassword()).isEqualTo("fallback-metrics-password");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("secret-metrics-password");
+	}
+
+	@Test
+	void usesRuntimeScmCredentialsForPrometheusSecret() throws GitAPIException {
+		scmManagerMock.setCredentials(new Credentials("scm-admin", "scm-runtime-password"));
+
+		install(createStack(scmManagerMock));
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"prometheus-metrics-creds-scmm",
+			"foo-monitoring",
+			new Tuple<>("password", "scm-runtime-password")
+		);
 	}
 
 	@Test
@@ -654,8 +741,9 @@ class MonitoringTest {
 
 		Map<String, Object> yaml = parseActualYaml();
 		Map<String, Object> grafana = (Map<String, Object>) yaml.get("grafana");
-		assertThat(grafana.get("adminUser")).isEqualTo("abc");
-		assertThat(grafana.get("adminPassword")).isEqualTo(123);
+		Map<String, Object> admin = (Map<String, Object>) grafana.get("admin");
+		assertThat(admin.get("existingSecret")).isEqualTo("grafana-admin-credentials");
+		assertThat(grafana).doesNotContainKeys("adminUser", "adminPassword");
 
 		Map<String, Object> prometheusOperator = (Map<String, Object>) yaml.get("prometheusOperator");
 		Map<String, Object> sidecar = (Map<String, Object>) grafana.get("sidecar");
@@ -964,7 +1052,8 @@ class MonitoringTest {
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator,
-			new MonitoringToolConfigMapper(config)
+			new MonitoringToolConfigMapper(config),
+			new CredentialsResolver(k8sClient)
 		);
 	}
 

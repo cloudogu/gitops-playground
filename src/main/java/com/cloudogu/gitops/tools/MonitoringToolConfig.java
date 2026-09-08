@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
+import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import com.cloudogu.gitops.tools.common.ImmutableConfigData;
@@ -19,15 +21,19 @@ public record MonitoringToolConfig(
 	boolean skipCrds,
 	boolean openshift,
 	boolean airgapped,
+	String applicationUsername,
 	String applicationPassword,
+	CredentialsReference applicationCredentials,
+	String jenkinsMetricsUsername,
 	String jenkinsMetricsPassword,
+	CredentialsReference jenkinsMetricsCredentials,
 	String smtpUser,
 	String smtpPassword,
 	String grafanaUrl,
 	boolean jenkinsInternal,
 	String jenkinsNamespace,
 	String jenkinsUrl,
-	String jenkinsMetricsUsername,
+	ScmProviderType scmProviderType,
 	boolean ingressActive,
 	boolean jenkinsActive,
 	HelmChartConfig helm,
