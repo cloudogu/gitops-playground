@@ -104,7 +104,7 @@ class ApplicationTest {
 			argThat(tuple -> "gop-initial-password".equals(tuple.getFirst())
 				&& "secret-password".equals(tuple.getSecond())),
 			argThat(tuple -> "gop-config".equals(tuple.getFirst())
-				&& tuple.getSecond().toString().contains("secretName: argocd-credentials")
+				&& tuple.getSecond().toString().contains("secretName: \"argocd-credentials\"")
 				&& !tuple.getSecond().toString().contains("secret-password"))
 		);
 		assertThat(config.getApplication().getUsername()).isEqualTo("fallback-user");
