@@ -55,7 +55,7 @@ public class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 			Namespace argocdNamespace = client.namespaces().withName(namespaceOperator).get();
 
 			assertThat(argocdNamespace).isNotNull();
-			assertThat(namespaceOperator.startsWith(argocdNamespace.getMetadata().getName())).isTrue();
+			assertThat(argocdNamespace.getMetadata().getName()).isEqualTo(namespaceOperator);
 		} catch (KubernetesClientException ex) {
 			// Handle exception
 			fail("not expected exception was thrown. ", ex);
