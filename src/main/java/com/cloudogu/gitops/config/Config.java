@@ -413,6 +413,9 @@ public class Config {
 		@JsonPropertyDescription(REGISTRY_PASSWORD_RO_DESCRIPTION)
 		private String readOnlyPassword = "";
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials readOnlyCredentials;
+
 		@Option(names = {"--create-image-pull-secrets"}, description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
 		private Boolean createImagePullSecrets = false;

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.common;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import lombok.Builder;
 
 @Builder
@@ -12,6 +13,9 @@ public record ImagePullSecretConfig(
 	String username,
 	String proxyPassword,
 	String readOnlyPassword,
-	String password
+	String password,
+	CredentialsReference proxyCredentials,
+	CredentialsReference readOnlyCredentials,
+	CredentialsReference credentials
 ) {
 }

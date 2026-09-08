@@ -47,6 +47,8 @@ class CredentialsReferenceConfigTest {
 		config.getRegistry().setUsername("registry-user");
 		config.getRegistry().setPassword("registry-password");
 		config.getRegistry().setCredentials(reference);
+		config.getRegistry().setProxyCredentials(reference);
+		config.getRegistry().setReadOnlyCredentials(reference);
 
 		assertThat(config.getApplication().getCredentials()).isSameAs(reference);
 		assertThat(config.getApplication().getUsername()).isEqualTo("application-user");
@@ -55,6 +57,8 @@ class CredentialsReferenceConfigTest {
 		assertThat(config.getJenkins().getUsername()).isEqualTo("jenkins-user");
 		assertThat(config.getJenkins().getPassword()).isEqualTo("jenkins-password");
 		assertThat(config.getRegistry().getCredentials()).isSameAs(reference);
+		assertThat(config.getRegistry().getProxyCredentials()).isSameAs(reference);
+		assertThat(config.getRegistry().getReadOnlyCredentials()).isSameAs(reference);
 		assertThat(config.getRegistry().getUsername()).isEqualTo("registry-user");
 		assertThat(config.getRegistry().getPassword()).isEqualTo("registry-password");
 	}

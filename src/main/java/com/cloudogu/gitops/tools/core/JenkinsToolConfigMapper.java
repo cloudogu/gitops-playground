@@ -53,11 +53,13 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 																			  .path(config.getRegistry().getPath())
 																			  .username(config.getRegistry().getUsername())
 																			  .password(config.getRegistry().getPassword())
+																			  .credentials(CredentialsReference.from(config.getRegistry().getCredentials()))
 																			  .twoRegistries(config.getRegistry().getTwoRegistries())
 																			  .proxyUrl(config.getRegistry().getProxyUrl())
 																			  .proxyPath(config.getRegistry().getProxyPath())
 																			  .proxyUsername(config.getRegistry().getProxyUsername())
 																			  .proxyPassword(config.getRegistry().getProxyPassword())
+																			  .proxyCredentials(CredentialsReference.from(config.getRegistry().getProxyCredentials()))
 																			  .build();
 
 		return JenkinsToolConfig.builder()

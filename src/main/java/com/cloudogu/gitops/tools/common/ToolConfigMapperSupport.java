@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.common;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 
 import java.util.ArrayList;
@@ -35,6 +36,9 @@ public final class ToolConfigMapperSupport {
 									.proxyPassword(registry.getProxyPassword())
 									.readOnlyPassword(registry.getReadOnlyPassword())
 									.password(registry.getPassword())
+									.proxyCredentials(CredentialsReference.from(registry.getProxyCredentials()))
+									.readOnlyCredentials(CredentialsReference.from(registry.getReadOnlyCredentials()))
+									.credentials(CredentialsReference.from(registry.getCredentials()))
 									.build();
 	}
 

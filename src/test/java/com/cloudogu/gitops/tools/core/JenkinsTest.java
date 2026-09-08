@@ -478,6 +478,50 @@ class JenkinsTest {
 	}
 
 	@Test
+	void usesRuntimeRegistryCredentialsForJenkinsJob() throws GitAPIException {
+		config.getApplication().setNamePrefix("test-");
+		config.getRegistry().setUsername("fallback-registry-user");
+		config.getRegistry().setPassword("fallback-registry-password");
+		config.getRegistry().setCredentials(
+			new Credentials(null, null, "registry-credentials", "gop-job")
+		);
+		config.getRegistry().setTwoRegistries(true);
+		config.getRegistry().setProxyUsername("fallback-proxy-user");
+		config.getRegistry().setProxyPassword("fallback-proxy-password");
+		config.getRegistry().setProxyCredentials(
+			new Credentials(null, null, "registry-proxy-credentials", "gop-job")
+		);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class))).thenAnswer(invocation -> {
+			Credentials reference = invocation.getArgument(0);
+			if ("registry-credentials".equals(reference.getSecretName())) {
+				return new Credentials("runtime-registry-user", "runtime-registry-password");
+			}
+			return new Credentials("runtime-proxy-user", "runtime-proxy-password");
+		});
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		verify(jobManger).createCredential(
+			"test-repo",
+			"registry-user",
+			"runtime-registry-user",
+			"runtime-registry-password",
+			"credentials for accessing the docker-registry for writing images built on jenkins"
+		);
+		verify(jobManger).createCredential(
+			"test-repo",
+			"registry-proxy-user",
+			"runtime-proxy-user",
+			"runtime-proxy-password",
+			"credentials for accessing the docker-registry that contains 3rd party or base images"
+		);
+		assertThat(config.getRegistry().getPassword()).isEqualTo("fallback-registry-password");
+		assertThat(config.getRegistry().getProxyPassword()).isEqualTo("fallback-proxy-password");
+	}
+
+	@Test
 	void doesNotConfigurePrometheusWhenExternalJenkins() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getJenkins().setInternal(false);

@@ -1,5 +1,8 @@
 package com.cloudogu.gitops.tools.common;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ public class ImagePullSecretCreator {
 	private static final String IMAGE_PULL_SECRET_NAME = "proxy-registry";
 
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 
 	public void createIfRequired(ImagePullSecretConfig config, String namespace) {
 		if (!config.create()) {
@@ -32,22 +36,56 @@ public class ImagePullSecretCreator {
 		log.trace("Creating image pull secret '{}' in namespace {}", IMAGE_PULL_SECRET_NAME, namespace);
 
 		String url = firstNonBlank(config.proxyUrl(), config.url());
-		String user = firstNonBlank(
-			config.proxyUsername(), firstNonBlank(
-				config.readOnlyUsername(), config.username()
-			)
-		);
-		String password = firstNonBlank(
-			config.proxyPassword(), firstNonBlank(
-				config.readOnlyPassword(), config.password()
-			)
-		);
+		ResolvedCredentials credentials = resolveCredentials(config);
 
 		k8sClient.createNamespace(namespace);
-		k8sClient.createImagePullSecret(IMAGE_PULL_SECRET_NAME, namespace, url, user, password);
+		k8sClient.createImagePullSecret(
+			IMAGE_PULL_SECRET_NAME,
+			namespace,
+			url,
+			credentials.username(),
+			credentials.password()
+		);
+	}
+
+	private ResolvedCredentials resolveCredentials(ImagePullSecretConfig config) {
+		if (hasConfiguredReference(config.proxyCredentials())
+			|| hasCompletePlainCredentials(config.proxyUsername(), config.proxyPassword())) {
+			return credentialsResolver.resolveReference(
+				config.proxyCredentials(), config.proxyUsername(), config.proxyPassword()
+			);
+		}
+		if (hasConfiguredReference(config.readOnlyCredentials())
+			|| hasCompletePlainCredentials(config.readOnlyUsername(), config.readOnlyPassword())) {
+			return credentialsResolver.resolveReference(
+				config.readOnlyCredentials(), config.readOnlyUsername(), config.readOnlyPassword()
+			);
+		}
+		if (hasConfiguredReference(config.credentials())
+			|| hasCompletePlainCredentials(config.username(), config.password())) {
+			return credentialsResolver.resolveReference(config.credentials(), config.username(), config.password());
+		}
+
+		return new ResolvedCredentials(
+			firstNonBlank(config.proxyUsername(), firstNonBlank(config.readOnlyUsername(), config.username())),
+			firstNonBlank(config.proxyPassword(), firstNonBlank(config.readOnlyPassword(), config.password()))
+		);
+	}
+
+	private static boolean hasCompletePlainCredentials(String username, String password) {
+		return hasText(username) && hasText(password);
+	}
+
+	private static boolean hasConfiguredReference(CredentialsReference reference) {
+		return reference != null
+			&& (hasText(reference.secretName()) || hasText(reference.secretNamespace()));
+	}
+
+	private static boolean hasText(String value) {
+		return value != null && !value.isEmpty();
 	}
 
 	private static String firstNonBlank(String preferred, String fallback) {
-		return (preferred != null && !preferred.isEmpty()) ? preferred : fallback;
+		return hasText(preferred) ? preferred : fallback;
 	}
 }

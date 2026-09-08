@@ -81,6 +81,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private String runtimeUrl;
 	private ResolvedCredentials runtimeCredentials;
 	private ResolvedCredentials runtimeMetricsCredentials;
+	private ResolvedCredentials runtimeRegistryCredentials;
+	private ResolvedCredentials runtimeProxyRegistryCredentials;
 
 	public Jenkins(
 		CommandExecutor commandExecutor,
@@ -168,6 +170,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	}
 
 	private void resolveRuntimeCredentials() {
+		runtimeRegistryCredentials = null;
+		runtimeProxyRegistryCredentials = null;
 		runtimeCredentials = credentialsResolver.resolveReference(
 			toolConfig().server().credentials(),
 			toolConfig().server().username(),
@@ -364,25 +368,49 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 				"credentials for accessing gitlab"
 			);
 		}
+		ResolvedCredentials registryCredentials = registryCredentials();
 		jobManager.createCredential(
 			jobName,
 			"registry-user",
-			toolConfig().registry().username(),
-			toolConfig().registry().password(),
+			registryCredentials.username(),
+			registryCredentials.password(),
 			"credentials for accessing the docker-registry for writing images built on jenkins"
 		);
 
 		if (toolConfig().registry().twoRegistries()) {
+			ResolvedCredentials proxyRegistryCredentials = proxyRegistryCredentials();
 			jobManager.createCredential(
 				jobName,
 				"registry-proxy-user",
-				toolConfig().registry().proxyUsername(),
-				toolConfig().registry().proxyPassword(),
+				proxyRegistryCredentials.username(),
+				proxyRegistryCredentials.password(),
 				"credentials for accessing the docker-registry that contains 3rd party or base images"
 			);
 		}
 
 		jobManager.startJob(jobName);
+	}
+
+	private ResolvedCredentials registryCredentials() {
+		if (runtimeRegistryCredentials == null) {
+			runtimeRegistryCredentials = credentialsResolver.resolveReference(
+				toolConfig().registry().credentials(),
+				toolConfig().registry().username(),
+				toolConfig().registry().password()
+			);
+		}
+		return runtimeRegistryCredentials;
+	}
+
+	private ResolvedCredentials proxyRegistryCredentials() {
+		if (runtimeProxyRegistryCredentials == null) {
+			runtimeProxyRegistryCredentials = credentialsResolver.resolveReference(
+				toolConfig().registry().proxyCredentials(),
+				toolConfig().registry().proxyUsername(),
+				toolConfig().registry().proxyPassword()
+			);
+		}
+		return runtimeProxyRegistryCredentials;
 	}
 
 	private boolean jenkinsOidcConfigured() {

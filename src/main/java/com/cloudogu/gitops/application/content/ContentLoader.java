@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.application.content;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Config.OverwriteMode;
@@ -65,6 +67,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 	private final Config config;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 	private final GitRepoFactory repoProvider;
 	private final Jenkins jenkins;
 
@@ -75,6 +78,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	public ContentLoader(
 		Config config,
 		K8sClient k8sClient,
+		CredentialsResolver credentialsResolver,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
 		GitHandler gitHandler,
@@ -82,6 +86,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		Deployer deployer) {
 		this.config = config;
 		this.k8sClient = k8sClient;
+		this.credentialsResolver = credentialsResolver;
 		this.repoProvider = repoProvider;
 		this.jenkins = jenkins;
 		this.gitHandler = gitHandler;
@@ -234,52 +239,81 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	}
 
 	void createImagePullSecrets() {
-		if (getConfig().getRegistry().getCreateImagePullSecrets()) {
-			String registryUsername = (getConfig().getRegistry()
-												  .getReadOnlyUsername() != null && !getConfig().getRegistry()
-																								.getReadOnlyUsername()
-																								.isEmpty()) ? getConfig().getRegistry()
-																														 .getReadOnlyUsername() : getConfig().getRegistry()
-																																							 .getUsername();
+		if (!getConfig().getRegistry().getCreateImagePullSecrets()) {
+			return;
+		}
 
-			String registryPassword = (getConfig().getRegistry()
-												  .getReadOnlyPassword() != null && !getConfig().getRegistry()
-																								.getReadOnlyPassword()
-																								.isEmpty()) ? getConfig().getRegistry()
-																														 .getReadOnlyPassword() : getConfig().getRegistry()
-																																							 .getPassword();
+		ResolvedCredentials registryCredentials = resolveRegistryPullCredentials();
+		ResolvedCredentials proxyCredentials = null;
+		if (getConfig().getRegistry().getTwoRegistries()) {
+			proxyCredentials = credentialsResolver.resolve(
+				getConfig().getRegistry().getProxyCredentials(),
+				getConfig().getRegistry().getProxyUsername(),
+				getConfig().getRegistry().getProxyPassword()
+			);
+		}
 
-			for (String namespace : getConfig().getContent().getNamespaces()) {
-				String registrySecretName = "registry";
+		for (String namespace : getConfig().getContent().getNamespaces()) {
+			k8sClient.createNamespace(namespace);
 
-				k8sClient.createNamespace(namespace);
+			k8sClient.createImagePullSecret(
+				"registry",
+				namespace,
+				getConfig().getRegistry().getUrl(),
+				registryCredentials.username(),
+				registryCredentials.password()
+			);
 
+			k8sClient.patch(
+				"serviceaccount",
+				"default",
+				namespace,
+				Map.of("imagePullSecrets", List.of(Map.of("name", "registry")))
+			);
+
+			if (proxyCredentials != null) {
 				k8sClient.createImagePullSecret(
-					registrySecretName, namespace, getConfig().getRegistry()
-															  .getUrl(), registryUsername, registryPassword
-				);
-
-				k8sClient.patch(
-					"serviceaccount",
-					"default",
+					"proxy-registry",
 					namespace,
-					Map.of("imagePullSecrets", List.of(Map.of("name", registrySecretName)))
+					getConfig().getRegistry().getProxyUrl(),
+					proxyCredentials.username(),
+					proxyCredentials.password()
 				);
-
-				if (getConfig().getRegistry().getTwoRegistries()) {
-					k8sClient.createImagePullSecret(
-						"proxy-registry",
-						namespace,
-						getConfig().getRegistry()
-								   .getProxyUrl(),
-						getConfig().getRegistry()
-								   .getProxyUsername(),
-						getConfig().getRegistry()
-								   .getProxyPassword()
-					);
-				}
 			}
 		}
+	}
+
+	private ResolvedCredentials resolveRegistryPullCredentials() {
+		Config.RegistrySchema registry = getConfig().getRegistry();
+		if (referenceHasSecretLocation(registry.getReadOnlyCredentials())) {
+			return credentialsResolver.resolve(
+				registry.getReadOnlyCredentials(),
+				registry.getReadOnlyUsername(),
+				registry.getReadOnlyPassword()
+			);
+		}
+		if (referenceHasSecretLocation(registry.getCredentials())) {
+			return credentialsResolver.resolve(
+				registry.getCredentials(),
+				registry.getUsername(),
+				registry.getPassword()
+			);
+		}
+
+		return new ResolvedCredentials(
+			firstNonBlank(registry.getReadOnlyUsername(), registry.getUsername()),
+			firstNonBlank(registry.getReadOnlyPassword(), registry.getPassword())
+		);
+	}
+
+	private static String firstNonBlank(String preferred, String fallback) {
+		return preferred != null && !preferred.isEmpty() ? preferred : fallback;
+	}
+
+	private static boolean referenceHasSecretLocation(Credentials reference) {
+		return reference != null
+			&& ((reference.getSecretName() != null && !reference.getSecretName().isEmpty())
+				|| (reference.getSecretNamespace() != null && !reference.getSecretNamespace().isEmpty()));
 	}
 
 	void createContentRepos() throws Exception {

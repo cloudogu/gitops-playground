@@ -2,6 +2,7 @@ package com.cloudogu.gitops.application.content;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -74,6 +75,7 @@ class ContentLoaderTest {
 
 	private final Config config = createConfig();
 	private final K8sClient k8sClient = new K8sClient();
+	private final CredentialsResolver credentialsResolver = new CredentialsResolver(k8sClient);
 	private final TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils());
 	private final TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config);
 	private final Jenkins jenkins = mock(Jenkins.class);
@@ -182,6 +184,59 @@ class ContentLoaderTest {
 		install(createContent(config), config);
 
 		assertRegistrySecrets("reg-user", "reg-pw");
+	}
+
+	@Test
+	void resolvesRegistrySecretsForContentImagePullSecrets() {
+		Config contentConfig = createConfig();
+		contentConfig.getRegistry().setCreateImagePullSecrets(true);
+		contentConfig.getRegistry().setTwoRegistries(true);
+		contentConfig.getRegistry().setProxyUrl("proxy-url");
+		contentConfig.getRegistry().setReadOnlyCredentials(
+			new Credentials(null, null, "registry-read-only-credentials", "gop-job")
+		);
+		contentConfig.getRegistry().setProxyCredentials(
+			new Credentials(null, null, "registry-proxy-credentials", "gop-job")
+		);
+		contentConfig.getContent().setNamespaces(List.of("example-apps-staging"));
+
+		K8sClient runtimeK8sClient = mock(K8sClient.class);
+		when(runtimeK8sClient.getCredentialsFromSecret(any(Credentials.class))).thenAnswer(invocation -> {
+			Credentials reference = invocation.getArgument(0);
+			if ("registry-read-only-credentials".equals(reference.getSecretName())) {
+				return new Credentials("runtime-read-only-user", "runtime-read-only-password");
+			}
+			return new Credentials("runtime-proxy-user", "runtime-proxy-password");
+		});
+		ContentLoaderForTest contentLoader = new ContentLoaderForTest(
+			contentConfig,
+			runtimeK8sClient,
+			new CredentialsResolver(runtimeK8sClient),
+			scmmRepoProvider,
+			jenkins,
+			gitHandler,
+			fileSystemUtils,
+			deployer
+		);
+
+		contentLoader.createImagePullSecrets();
+
+		verify(runtimeK8sClient).createImagePullSecret(
+			"registry",
+			"example-apps-staging",
+			"reg-url",
+			"runtime-read-only-user",
+			"runtime-read-only-password"
+		);
+		verify(runtimeK8sClient).createImagePullSecret(
+			"proxy-registry",
+			"example-apps-staging",
+			"proxy-url",
+			"runtime-proxy-user",
+			"runtime-proxy-password"
+		);
+		assertThat(contentConfig.getRegistry().getReadOnlyPassword()).isEmpty();
+		assertThat(contentConfig.getRegistry().getProxyPassword()).isEmpty();
 	}
 
 	@Test
@@ -1204,6 +1259,7 @@ class ContentLoaderTest {
 		return new ContentLoaderForTest(
 			contentConfig,
 			k8sClient,
+			credentialsResolver,
 			scmmRepoProvider,
 			jenkins,
 			gitHandler,
@@ -1381,12 +1437,13 @@ class ContentLoaderTest {
 		ContentLoaderForTest(
 			Config config,
 			K8sClient k8sClient,
+			CredentialsResolver credentialsResolver,
 			GitRepoFactory repoProvider,
 			Jenkins jenkins,
 			GitHandler gitHandler,
 			FileSystemUtils fileSystemUtils,
 			Deployer deployer) {
-			super(config, k8sClient, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer);
+			super(config, k8sClient, credentialsResolver, repoProvider, jenkins, gitHandler, fileSystemUtils, deployer);
 			this.contentConfig = config;
 		}
 

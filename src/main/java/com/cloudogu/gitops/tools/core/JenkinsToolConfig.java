@@ -74,11 +74,13 @@ public record JenkinsToolConfig(
 		String path,
 		String username,
 		String password,
+		CredentialsReference credentials,
 		boolean twoRegistries,
 		String proxyUrl,
 		String proxyPath,
 		String proxyUsername,
-		String proxyPassword
+		String proxyPassword,
+		CredentialsReference proxyCredentials
 	) {
 	}
 }
