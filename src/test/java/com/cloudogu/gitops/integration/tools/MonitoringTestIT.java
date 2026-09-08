@@ -16,12 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * This class checks if Prometheus is started well.
  * Prometheus contains own namespace ('monitoring') which owns and 3 Pods:
- *  - Grafana
- *  - Operator
- *  - prometheus-stack
+ * - Grafana
+ * - Operator
+ * - prometheus-stack
  */
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
-public class MonitoringTestIT extends KubenetesApiTestSetup {
+public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	String namespace = "monitoring";
 	String grafanaPod = "kube-prometheus-stack-grafana";
