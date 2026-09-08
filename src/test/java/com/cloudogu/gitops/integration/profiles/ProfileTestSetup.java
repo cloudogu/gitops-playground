@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 /**
- * Common setup to dump K88s content after failing tests.
+ * Common setup to dump K8s content after failing tests.
  */
 @Slf4j
 public class ProfileTestSetup implements TestWatcher {
