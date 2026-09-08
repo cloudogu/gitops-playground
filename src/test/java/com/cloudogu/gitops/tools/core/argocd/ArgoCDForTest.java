@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -125,7 +126,8 @@ class ArgoCDForTest extends ArgoCD {
 			new FileSystemUtils(),
 			testContext.gitHandler(),
 			new DeploymentModeFactory(),
-			new ArgoCDToolConfigMapper(cfg)
+			new ArgoCDToolConfigMapper(cfg),
+			new CredentialsResolver(k8sClient)
 		);
 
 		this.cfg = cfg;

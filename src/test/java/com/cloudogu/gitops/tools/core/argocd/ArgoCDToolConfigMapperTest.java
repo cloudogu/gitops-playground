@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,14 @@ class ArgoCDToolConfigMapperTest {
 	void mapsAllRelevantValuesFromDeploymentContextAndConfig() {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("tenant-a-");
+		config.getApplication().setUsername("application-user");
 		config.getApplication().setPassword("application-password");
+		Credentials applicationCredentials = new Credentials();
+		applicationCredentials.setSecretName("argocd-credentials");
+		applicationCredentials.setSecretNamespace("gop-job");
+		applicationCredentials.setUsernameKey("admin-user");
+		applicationCredentials.setPasswordKey("admin-password");
+		config.getApplication().setCredentials(applicationCredentials);
 		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
 			"argocd",
 			"monitoring"
@@ -67,7 +76,14 @@ class ArgoCDToolConfigMapperTest {
 		assertThat(actual).isEqualTo(ArgoCDToolConfig.builder()
 													 .active(true)
 													 .namespace("tenant-a-gitops")
+													 .username("application-user")
 													 .password("application-password")
+													 .credentials(new CredentialsReference(
+														 "argocd-credentials",
+														 "gop-job",
+														 "admin-user",
+														 "admin-password"
+													 ))
 													 .operator(true)
 													 .activeNamespaces(List.of(
 														 "argocd",

@@ -3,6 +3,7 @@ package com.cloudogu.gitops.cli;
 import com.cloudogu.gitops.application.content.ContentLoader;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
 import com.cloudogu.gitops.config.Config;
@@ -104,7 +105,8 @@ class ApplicationConfiguratorTest {
 			fileSystemUtils,
 			gitHandler,
 			new DeploymentModeFactory(),
-			new ArgoCDToolConfigMapper(testConfig)
+			new ArgoCDToolConfigMapper(testConfig),
+			new CredentialsResolver(k8sClient)
 		));
 		featureArgoCd.isEnabled(context);
 	}

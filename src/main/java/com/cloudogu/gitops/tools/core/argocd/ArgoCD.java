@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
@@ -35,6 +37,7 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	private final K8sClient k8sClient;
 	private final HelmClient helmClient;
 	private final DeploymentModeFactory deploymentModeFactory;
+	private final CredentialsResolver credentialsResolver;
 
 	private String password;
 	private String namespace;
@@ -48,13 +51,15 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 		FileSystemUtils fileSystemUtils,
 		GitHandler gitHandler,
 		DeploymentModeFactory deploymentModeFactory,
-		ArgoCDToolConfigMapper configMapper) {
+		ArgoCDToolConfigMapper configMapper,
+		CredentialsResolver credentialsResolver) {
 		super(configMapper);
 		this.k8sClient = k8sClient;
 		this.helmClient = helmClient;
 		this.fileSystemUtils = fileSystemUtils;
 		this.gitHandler = gitHandler;
 		this.deploymentModeFactory = deploymentModeFactory;
+		this.credentialsResolver = credentialsResolver;
 	}
 
 	@Override
@@ -65,7 +70,12 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	@Override
 	protected void preDeploy() {
 		this.namespace = activeNamespace(toolConfig());
-		this.password = toolConfig().password();
+		ResolvedCredentials applicationCredentials = credentialsResolver.resolveReference(
+			toolConfig().credentials(),
+			toolConfig().username(),
+			toolConfig().password()
+		);
+		this.password = applicationCredentials.password();
 
 		this.repoSetup = ArgoCDRepoSetup.create(fileSystemUtils, gitHandler, repositoryWorkspace, toolConfig());
 

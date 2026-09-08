@@ -2,11 +2,13 @@ package com.cloudogu.gitops.application;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import io.micronaut.context.ApplicationContext;
@@ -18,8 +20,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ApplicationTest {
@@ -44,6 +50,7 @@ class ApplicationTest {
 			config,
 			contextBuilder,
 			k8sClient,
+			new CredentialsResolver(k8sClient),
 			gitHandler,
 			repositoryProvisioning,
 			deploymentOrchestrator
@@ -54,6 +61,56 @@ class ApplicationTest {
 		var order = inOrder(gitHandler, contextBuilder);
 		order.verify(gitHandler).validate();
 		order.verify(contextBuilder).build();
+	}
+
+	@Test
+	void storesResolvedApplicationPasswordWithoutMutatingConfig() {
+		ContextBuilder contextBuilder = mock(ContextBuilder.class);
+		K8sClient k8sClient = mock(K8sClient.class);
+		GitHandler gitHandler = mock(GitHandler.class);
+		RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning.class);
+		DeploymentOrchestrator deploymentOrchestrator = mock(DeploymentOrchestrator.class);
+		DeploymentContext context = buildContext();
+		RepositoryWorkspace workspace = mock(RepositoryWorkspace.class);
+		Credentials reference = new Credentials();
+		reference.setSecretName("argocd-credentials");
+		reference.setSecretNamespace("gop-job");
+		config.getApplication().setCredentials(reference);
+		config.getApplication().setUsername("fallback-user");
+		config.getApplication().setPassword("fallback-password");
+
+		when(contextBuilder.build()).thenReturn(context);
+		when(deploymentOrchestrator.getTools()).thenReturn(List.of());
+		when(repositoryProvisioning.provideWorkspace(context)).thenReturn(workspace);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
+			.thenReturn(new Credentials("secret-user", "secret-password"));
+
+		Application application = new Application(
+			config,
+			contextBuilder,
+			k8sClient,
+			new CredentialsResolver(k8sClient),
+			gitHandler,
+			repositoryProvisioning,
+			deploymentOrchestrator
+		);
+
+		application.start();
+
+		verify(k8sClient).createSecret(
+			eq("generic"),
+			eq("gop-configuration"),
+			eq("gop-job"),
+			argThat(tuple -> "gop-initial-password".equals(tuple.getFirst())
+				&& "secret-password".equals(tuple.getSecond())),
+			argThat(tuple -> "gop-config".equals(tuple.getFirst())
+				&& tuple.getSecond().toString().contains("secretName: argocd-credentials")
+				&& !tuple.getSecond().toString().contains("secret-password"))
+		);
+		assertThat(config.getApplication().getUsername()).isEqualTo("fallback-user");
+		assertThat(config.getApplication().getPassword()).isEqualTo("fallback-password");
+		assertThat(reference.getUsername()).isNull();
+		assertThat(reference.getPassword()).isNull();
 	}
 
 	@Test

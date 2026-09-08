@@ -18,12 +18,19 @@ public class CredentialsResolver {
 		Credentials reference,
 		String fallbackUsername,
 		String fallbackPassword) {
+		return resolveReference(CredentialsReference.from(reference), fallbackUsername, fallbackPassword);
+	}
+
+	public ResolvedCredentials resolveReference(
+		CredentialsReference reference,
+		String fallbackUsername,
+		String fallbackPassword) {
 		if (reference == null) {
 			return new ResolvedCredentials(fallbackUsername, fallbackPassword);
 		}
 
-		boolean secretNameConfigured = hasText(reference.getSecretName());
-		boolean secretNamespaceConfigured = hasText(reference.getSecretNamespace());
+		boolean secretNameConfigured = hasText(reference.secretName());
+		boolean secretNamespaceConfigured = hasText(reference.secretNamespace());
 
 		if (!secretNameConfigured && !secretNamespaceConfigured) {
 			return new ResolvedCredentials(fallbackUsername, fallbackPassword);
@@ -32,8 +39,14 @@ public class CredentialsResolver {
 			throw new IllegalArgumentException(INCOMPLETE_SECRET_REFERENCE);
 		}
 
-		Credentials referenceWithFallback = new Credentials(reference);
-		referenceWithFallback.setUsername(fallbackUsername);
+		Credentials referenceWithFallback = new Credentials(
+			fallbackUsername,
+			null,
+			reference.secretName(),
+			reference.secretNamespace(),
+			reference.usernameKey(),
+			reference.passwordKey()
+		);
 
 		Credentials resolved = k8sClient.getCredentialsFromSecret(referenceWithFallback);
 		return new ResolvedCredentials(resolved.getUsername(), resolved.getPassword());

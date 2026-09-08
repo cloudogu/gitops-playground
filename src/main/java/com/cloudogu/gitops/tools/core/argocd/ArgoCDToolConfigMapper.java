@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
@@ -26,7 +27,9 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 		return ArgoCDToolConfig.builder()
 							   .active(argocd.getActive())
 							   .namespace(config.getApplication().getNamePrefix() + argocd.getNamespace())
+							   .username(config.getApplication().getUsername())
 							   .password(config.getApplication().getPassword())
+							   .credentials(CredentialsReference.from(config.getApplication().getCredentials()))
 							   .operator(argocd.getOperator())
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())

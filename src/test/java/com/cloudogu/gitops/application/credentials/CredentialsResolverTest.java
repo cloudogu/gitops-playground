@@ -62,6 +62,23 @@ class CredentialsResolverTest {
 	}
 
 	@Test
+	void resolvesImmutableSecretReference() {
+		CredentialsReference reference = new CredentialsReference(
+			"tool-credentials",
+			"gop-job",
+			"custom-user",
+			"custom-password"
+		);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
+			.thenReturn(new Credentials("secret-user", "secret-password"));
+
+		ResolvedCredentials resolved = resolver.resolveReference(reference, "plain-user", "plain-password");
+
+		assertThat(resolved.username()).isEqualTo("secret-user");
+		assertThat(resolved.password()).isEqualTo("secret-password");
+	}
+
+	@Test
 	void usesFallbackUsernameWhenSecretDoesNotProvideOne() {
 		Credentials reference = secretReference();
 		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
