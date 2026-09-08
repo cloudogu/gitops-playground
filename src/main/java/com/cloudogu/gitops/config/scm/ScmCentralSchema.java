@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import picocli.CommandLine.Option;
 
+import static com.cloudogu.gitops.config.ConfigConstants.KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION;
+
 public final class ScmCentralSchema {
 
 	private ScmCentralSchema() {
@@ -35,6 +37,9 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_GITLAB_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--central-gitlab-group-id"}, description = CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
 		private String parentGroupId = "";
@@ -44,7 +49,7 @@ public final class ScmCentralSchema {
 
 		@Override
 		public Credentials getCredentials() {
-			return new Credentials(username, password);
+			return credentials != null ? credentials : new Credentials(username, password);
 		}
 	}
 
@@ -74,6 +79,9 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--central-scmm-namespace"}, description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		private String namespace = "scm-manager";
@@ -92,7 +100,7 @@ public final class ScmCentralSchema {
 
 		@Override
 		public Credentials getCredentials() {
-			return new Credentials(username, password);
+			return credentials != null ? credentials : new Credentials(username, password);
 		}
 	}
 }

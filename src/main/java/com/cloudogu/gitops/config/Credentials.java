@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_REPO_CREDENTIALS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION;
 
 @Getter
 @Setter
@@ -18,23 +18,23 @@ public class Credentials {
 	private static final String DEFAULT_USERNAME_KEY = "username";
 	private static final String DEFAULT_PASSWORD_KEY = "password";
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	private String username;
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	@JsonIgnore
 	private String password;
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	private String secretNamespace;
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	private String secretName;
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	private String usernameKey = DEFAULT_USERNAME_KEY;
 
-	@JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+	@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 	private String passwordKey = DEFAULT_PASSWORD_KEY;
 
 	public Credentials(String username, String password) {
