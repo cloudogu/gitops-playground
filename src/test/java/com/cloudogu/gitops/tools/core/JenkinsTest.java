@@ -2,14 +2,19 @@ package com.cloudogu.gitops.tools.core;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
+import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager;
+import com.cloudogu.gitops.infrastructure.jenkins.JenkinsApiClient;
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager;
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator;
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager;
@@ -32,6 +37,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,6 +76,8 @@ class JenkinsTest {
 	private Path temporaryYamlFile;
 	private final NetworkingUtils networkingUtils = mock(NetworkingUtils.class);
 	private final K8sClient k8sClient = mock(K8sClient.class);
+	private final CredentialsResolver credentialsResolver = new CredentialsResolver(k8sClient);
+	private final JenkinsApiClient jenkinsApiClient = mock(JenkinsApiClient.class);
 	private final ImagePullSecretCreator imagePullSecretCreator = mock(ImagePullSecretCreator.class);
 
 	private final ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock();
@@ -188,6 +196,63 @@ class JenkinsTest {
 	}
 
 	@Test
+	void resolvesJenkinsCredentialsAtRuntimeWithoutMutatingConfig() throws GitAPIException, IOException {
+		config.getJenkins().setUsername("fallback-admin");
+		config.getJenkins().setPassword("fallback-password");
+		config.getJenkins().setCredentials(
+			new Credentials(null, null, "jenkins-source", "gop-job")
+		);
+		config.getJenkins().setMetricsUsername("fallback-metrics");
+		config.getJenkins().setMetricsPassword("fallback-metrics-password");
+		config.getJenkins().setMetricsCredentials(
+			new Credentials(null, null, "jenkins-metrics-source", "gop-job")
+		);
+		config.getJenkins().getOidc().setIssuerUrl("https://id.example.org");
+		config.getJenkins().getOidc().setClientSecret("oidc-secret");
+
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class))).thenAnswer(invocation -> {
+			Credentials reference = invocation.getArgument(0);
+			if ("jenkins-source".equals(reference.getSecretName())) {
+				return new Credentials("secret-admin", "secret-password");
+			}
+			if ("jenkins-metrics-source".equals(reference.getSecretName())) {
+				return new Credentials("secret-metrics", "secret-metrics-password");
+			}
+			throw new IllegalArgumentException("Unexpected Secret reference " + reference.getSecretName());
+		});
+
+		install(createJenkins());
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"jenkins-credentials",
+			"jenkins",
+			new Tuple<>("jenkins-admin-user", "secret-admin"),
+			new Tuple<>("jenkins-admin-password", "secret-password")
+		);
+		verify(jenkinsApiClient).setRuntimeCredentials(
+			new ResolvedCredentials("secret-admin", "secret-password")
+		);
+		verify(userManager).createUser("secret-metrics", "secret-metrics-password");
+		verify(userManager).grantPermission("secret-metrics", UserManager.Permissions.METRICS_VIEW);
+
+		Map<String, String> env = getEnvAsMap();
+		assertThat(env.get("JENKINS_USERNAME")).isEqualTo("secret-admin");
+		assertThat(env.get("JENKINS_PASSWORD")).isEqualTo("secret-password");
+
+		assertThat(config.getJenkins().getUsername()).isEqualTo("fallback-admin");
+		assertThat(config.getJenkins().getPassword()).isEqualTo("fallback-password");
+		assertThat(config.getJenkins().getMetricsUsername()).isEqualTo("fallback-metrics");
+		assertThat(config.getJenkins().getMetricsPassword()).isEqualTo("fallback-metrics-password");
+		assertThat(config.getJenkins().getCredentials().getSecretName()).isEqualTo("jenkins-source");
+
+		String renderedValues = Files.readString(temporaryYamlFile);
+		assertThat(renderedValues).contains("${GOP_JENKINS_ADMIN_USER}");
+		assertThat(renderedValues).contains("${GOP_JENKINS_ADMIN_PASSWORD}");
+		assertThat(renderedValues).doesNotContain("secret-password", "secret-metrics-password");
+	}
+
+	@Test
 	void preparesJenkinsAppContentInClusterResourcesWorkspace() throws GitAPIException {
 		install(createJenkins());
 
@@ -239,7 +304,8 @@ class JenkinsTest {
 			"wellKnownOpenIDConfigurationUrl: \"http://keycloak.local.gd/realms/gop/.well-known/openid-configuration\""
 		);
 		assertThat(casc).contains("escapeHatch:");
-		assertThat(casc).contains("username: \"admin\"");
+		assertThat(casc).contains("username: \"${GOP_JENKINS_ADMIN_USER}\"");
+		assertThat(casc).contains("secret: \"${GOP_JENKINS_ADMIN_PASSWORD}\"");
 		assertThat(casc).contains("group: \"gop-admins\"");
 		assertThat(casc).contains("globalMatrix:");
 		assertThat(casc).contains("name: \"gop-admins\"");
@@ -389,6 +455,26 @@ class JenkinsTest {
 
 		verify(userManager).createUser("metrics-usr", "metrics-pw");
 		verify(userManager).grantPermission("metrics-usr", UserManager.Permissions.METRICS_VIEW);
+	}
+
+	@Test
+	void usesRuntimeScmCredentialsForJenkinsJob() throws GitAPIException {
+		config.getApplication().setNamePrefix("test-");
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().getScmManager().setPassword("config-scm-password");
+		scmManagerMock.setCredentials(new Credentials("runtime-scm-user", "runtime-scm-password"));
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		verify(jobManger).createCredential(
+			"test-repo",
+			"scm-user",
+			"test-gitops",
+			"runtime-scm-password",
+			"credentials for accessing scm-manager"
+		);
 	}
 
 	@Test
@@ -574,7 +660,9 @@ class JenkinsTest {
 			gitHandler,
 			imagePullSecretCreator,
 			new JenkinsToolConfigMapper(config),
-			new JenkinsConfigUpdater(config)
+			new JenkinsConfigUpdater(config),
+			credentialsResolver,
+			jenkinsApiClient
 		);
 	}
 

@@ -70,6 +70,16 @@ controller:
     existingSecret: jenkins-credentials
 
   containerEnv:
+    - name: GOP_JENKINS_ADMIN_USER
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-credentials
+          key: jenkins-admin-user
+    - name: GOP_JENKINS_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-credentials
+          key: jenkins-admin-password
     - name: PATH
       # We already mounted this PATH on the controller-agent. Still, "docker.inside {}" fails in pipeline?
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
@@ -130,16 +140,16 @@ controller:
               postLogoutRedirectUrl: "${jenkinsOidcExternalUrl}"
               properties:
                 - escapeHatch:
-                    username: "${config.jenkins.username}"
+                    username: "${r"${GOP_JENKINS_ADMIN_USER}"}"
                     <#if jenkinsOidc.adminGroupName?has_content>
                     group: "${jenkinsOidc.adminGroupName}"
                     </#if>
-                    secret: "${config.jenkins.password}"
+                    secret: "${r"${GOP_JENKINS_ADMIN_PASSWORD}"}"
           authorizationStrategy:
             globalMatrix:
               entries:
                 - user:
-                    name: "${config.jenkins.username}"
+                    name: "${r"${GOP_JENKINS_ADMIN_USER}"}"
                     permissions:
                       - "Overall/Administer"
                 <#if jenkinsOidc.adminGroupName?has_content>

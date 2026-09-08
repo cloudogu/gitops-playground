@@ -1,10 +1,13 @@
 package com.cloudogu.gitops.tools.core;
 
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.jenkins.GlobalPropertyManager;
+import com.cloudogu.gitops.infrastructure.jenkins.JenkinsApiClient;
 import com.cloudogu.gitops.infrastructure.jenkins.JobManager;
 import com.cloudogu.gitops.infrastructure.jenkins.PrometheusConfigurator;
 import com.cloudogu.gitops.infrastructure.jenkins.UserManager;
@@ -73,7 +76,11 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private final K8sClient k8sClient;
 	private final NetworkingUtils networkingUtils;
 	private final JenkinsConfigUpdater configUpdater;
+	private final CredentialsResolver credentialsResolver;
+	private final JenkinsApiClient jenkinsApiClient;
 	private String runtimeUrl;
+	private ResolvedCredentials runtimeCredentials;
+	private ResolvedCredentials runtimeMetricsCredentials;
 
 	public Jenkins(
 		CommandExecutor commandExecutor,
@@ -89,7 +96,9 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
 		JenkinsToolConfigMapper configMapper,
-		JenkinsConfigUpdater configUpdater) {
+		JenkinsConfigUpdater configUpdater,
+		CredentialsResolver credentialsResolver,
+		JenkinsApiClient jenkinsApiClient) {
 		super(configMapper);
 		this.commandExecutor = commandExecutor;
 		this.fileSystemUtils = fileSystemUtils;
@@ -104,6 +113,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
 		this.configUpdater = configUpdater;
+		this.credentialsResolver = credentialsResolver;
+		this.jenkinsApiClient = jenkinsApiClient;
 	}
 
 	@Override
@@ -113,6 +124,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 	@Override
 	protected void preDeploy() {
+		resolveRuntimeCredentials();
 		this.runtimeUrl = toolConfig().server().url();
 		if (!isInternalJenkins()) {
 			return;
@@ -155,6 +167,20 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		publishClusterResourcesChanges(TOOL_NAME);
 	}
 
+	private void resolveRuntimeCredentials() {
+		runtimeCredentials = credentialsResolver.resolveReference(
+			toolConfig().server().credentials(),
+			toolConfig().server().username(),
+			toolConfig().server().password()
+		);
+		runtimeMetricsCredentials = credentialsResolver.resolveReference(
+			toolConfig().server().metricsCredentials(),
+			toolConfig().server().metricsUsername(),
+			toolConfig().server().metricsPassword()
+		);
+		jenkinsApiClient.setRuntimeCredentials(runtimeCredentials);
+	}
+
 	private void createImagePullSecret() {
 		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
@@ -176,9 +202,9 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private void createJenkinsCredentialsSecret() {
 		k8sClient.createSecret(
 			"generic", "jenkins-credentials", namespace, new Tuple<>(
-				"jenkins-admin-user", toolConfig().server().username()
+				"jenkins-admin-user", runtimeCredentials.username()
 			), new Tuple<>(
-				"jenkins-admin-password", toolConfig().server().password()
+				"jenkins-admin-password", runtimeCredentials.password()
 			)
 		);
 	}
@@ -240,8 +266,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		scriptParams.put("INTERNAL_JENKINS", toolConfig().internal());
 		scriptParams.put("JENKINS_HELM_CHART_VERSION", toolConfig().helm().version());
 		scriptParams.put("JENKINS_URL", runtimeUrl);
-		scriptParams.put("JENKINS_USERNAME", toolConfig().server().username());
-		scriptParams.put("JENKINS_PASSWORD", toolConfig().server().password());
+		scriptParams.put("JENKINS_USERNAME", runtimeCredentials.username());
+		scriptParams.put("JENKINS_PASSWORD", runtimeCredentials.password());
 		scriptParams.put("SCM_URL", this.gitHandler.getTenant().getUrl());
 		scriptParams.put("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
 		scriptParams.put("SCM_PASSWORD", this.gitHandler.getTenant().getCredentials().getPassword());
@@ -286,12 +312,12 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			log.trace("Using a security realm without local user creation. Must not create user.");
 		} else {
 			userManager.createUser(
-				toolConfig().server().metricsUsername(), toolConfig().server().metricsPassword()
+				runtimeMetricsCredentials.username(), runtimeMetricsCredentials.password()
 			);
 		}
 
 		userManager.grantPermission(
-			toolConfig().server().metricsUsername(), UserManager.Permissions.METRICS_VIEW
+			runtimeMetricsCredentials.username(), UserManager.Permissions.METRICS_VIEW
 		);
 
 		if (toolConfig().monitoringActive() && toolConfig().internal()) {
@@ -317,12 +343,14 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
 
+		var scmCredentials = gitHandler.getTenant().getCredentials();
+
 		if (toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
 			jobManager.createCredential(
 				jobName,
 				credentialId,
 				toolConfig().application().namePrefix() + "gitops",
-				toolConfig().scm().scmManagerPassword(),
+				scmCredentials.getPassword(),
 				"credentials for accessing scm-manager"
 			);
 		}
@@ -331,12 +359,11 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			jobManager.createCredential(
 				jobName,
 				credentialId,
-				toolConfig().scm().gitlabUsername(),
-				toolConfig().scm().gitlabPassword(),
+				scmCredentials.getUsername(),
+				scmCredentials.getPassword(),
 				"credentials for accessing gitlab"
 			);
 		}
-
 		jobManager.createCredential(
 			jobName,
 			"registry-user",

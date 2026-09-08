@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools.core;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -43,8 +45,14 @@ class JenkinsToolConfigMapperTest {
 		config.getJenkins().setUrl("https://jenkins.example.org");
 		config.getJenkins().setUsername("jenkins-user");
 		config.getJenkins().setPassword("jenkins-password");
+		config.getJenkins().setCredentials(
+			new Credentials(null, null, "jenkins-secret", "gop-job", "admin-user", "admin-password")
+		);
 		config.getJenkins().setMetricsUsername("metrics-user");
 		config.getJenkins().setMetricsPassword("metrics-password");
+		config.getJenkins().setMetricsCredentials(
+			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
+		);
 		config.getJenkins().setSkipRestart(true);
 		config.getJenkins().setSkipPlugins(true);
 		config.getJenkins().setMavenCentralMirror("https://maven.example.org");
@@ -91,9 +99,21 @@ class JenkinsToolConfigMapperTest {
 																					  .url("https://jenkins.example.org")
 																					  .username("jenkins-user")
 																					  .password("jenkins-password")
+																					  .credentials(new CredentialsReference(
+																					      "jenkins-secret",
+																					      "gop-job",
+																					      "admin-user",
+																					      "admin-password"
+																					  ))
 																					  .metricsUsername("metrics-user")
 																					  .metricsPassword(
 																						  "metrics-password")
+																					  .metricsCredentials(new CredentialsReference(
+																					      "jenkins-metrics-secret",
+																					      "gop-job",
+																					      "metrics-user",
+																					      "metrics-password"
+																					  ))
 																					  .skipRestart(true)
 																					  .skipPlugins(true)
 																					  .mavenCentralMirror(
@@ -109,9 +129,6 @@ class JenkinsToolConfigMapperTest {
 																					  .build())
 													  .scm(JenkinsToolConfig.Scm.builder()
 																				.providerType(ScmProviderType.SCM_MANAGER)
-																				.scmManagerPassword("scmm-password")
-																				.gitlabUsername("gitlab-user")
-																				.gitlabPassword("gitlab-password")
 																				.build())
 													  .registry(JenkinsToolConfig.Registry.builder()
 																						  .url("registry.example.org")
@@ -177,9 +194,7 @@ class JenkinsToolConfigMapperTest {
 																  "adminGroupName", "",
 																  "enabled", true
 															  ),
-															  "password", "jenkins-password",
-															  "url", "https://jenkins.example.org",
-															  "username", "jenkins-user"
+															  "url", "https://jenkins.example.org"
 														  ),
 														  "registry", Map.of("createImagePullSecrets", true)
 													  ))
