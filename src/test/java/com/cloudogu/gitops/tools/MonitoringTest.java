@@ -922,7 +922,7 @@ class MonitoringTest {
 
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
 			@Override
-			public GitRepo create(String repoTarget, GitProvider scm) {
+			public GitRepo create(String repoTarget, GitProvider gitProvider) {
 				GitRepo repo = super.create(repoTarget, scmManagerMock);
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir());
 

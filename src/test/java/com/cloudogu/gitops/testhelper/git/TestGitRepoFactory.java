@@ -6,7 +6,6 @@ import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -25,21 +24,15 @@ public class TestGitRepoFactory extends GitRepoFactory {
 	@Getter
 	private final Map<String, GitRepo> repos = new HashMap<>();
 
-	@Getter
-	@Setter
-	private GitProvider defaultProvider;
-
 	public TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
 		super(config, fileSystemUtils);
 	}
 
 	@Override
-	public GitRepo create(String repoTarget, GitProvider scm) {
-		GitProvider effectiveProvider = scm != null ? scm : defaultProvider;
-
-		if (effectiveProvider == null) {
+	public GitRepo create(String repoTarget, GitProvider gitProvider) {
+		if (gitProvider == null) {
 			throw new IllegalStateException(
-				"No GitProvider provided for repo '" + repoTarget + "' and defaultProvider is null."
+				"No GitProvider provided for repo '" + repoTarget + "'."
 			);
 		}
 
@@ -49,7 +42,7 @@ public class TestGitRepoFactory extends GitRepoFactory {
 		}
 
 		String prefixedRepoTarget = config.getApplication().getNamePrefix() + repoTarget;
-		GitRepo repoNew = new GitRepo(config, scm, prefixedRepoTarget, fileSystemUtils) {
+		GitRepo repoNew = new GitRepo(config, gitProvider, prefixedRepoTarget, fileSystemUtils) {
 			private String remoteGitRepoUrl = "";
 
 			@Override

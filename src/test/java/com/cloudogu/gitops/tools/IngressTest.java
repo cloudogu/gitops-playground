@@ -274,8 +274,8 @@ class IngressTest {
 
 		TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, testFileSystemUtils) {
 			@Override
-			public GitRepo create(String repoTarget, GitProvider provider) {
-				GitRepo repo = super.create(repoTarget, provider);
+			public GitRepo create(String repoTarget, GitProvider gitProvider) {
+				GitRepo repo = super.create(repoTarget, gitProvider);
 				clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir());
 				return repo;
 			}
