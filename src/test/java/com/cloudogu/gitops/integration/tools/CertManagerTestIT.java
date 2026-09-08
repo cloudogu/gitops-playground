@@ -17,7 +17,7 @@ import java.util.function.Predicate;
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
-// TODO: why not in ArgoCD Operator? Clearify
+// TODO: why not in ArgoCD Operator? Clarify
 public class CertManagerTestIT extends KubenetesApiTestSetup {
 
 	String namespace = "cert-manager";
