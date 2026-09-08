@@ -13,9 +13,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
- * This tests can only be successfull, if one of theses profiles used.
+ * These tests can only be successful if one of these profiles is used.
  *
- * <p>To run locally: add -Dmicronaut.environments=full-prefix to your execute configuration
+ * <p>To run locally: add -Dmicronaut.environments=full-prefix to your execution configuration
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-prefix")
