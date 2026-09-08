@@ -7,11 +7,9 @@ livenessProbe:
 
 fullnameOverride: ${releaseName}
 
-extraEnv: |
-  - name: SCM_WEBAPP_INITIALUSER
-    value: "${username}"
-  - name: SCM_WEBAPP_INITIALPASSWORD
-    value: "${password}"
+extraEnvFrom: |
+  - secretRef:
+      name: ${credentialsSecretName}
 
 service:
   type: NodePort

@@ -58,8 +58,6 @@ class ScmManagerToolConfigMapperTest {
 														 .namespace("test-source-control")
 														 .releaseName("test-scmm")
 														 .ingress("scm.example.org")
-														 .username("scm-user")
-														 .password("scm-password")
 														 .gitOpsUsername("gitops-user")
 														 .skipPlugins(true)
 														 .skipRestart(true)

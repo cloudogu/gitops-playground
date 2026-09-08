@@ -37,8 +37,6 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .namespace(namespace)
 								   .releaseName(releaseName)
 								   .ingress(scmManager.getIngress())
-								   .username(scmManager.getCredentials().getUsername())
-								   .password(scmManager.getCredentials().getPassword())
 								   .gitOpsUsername(scmManager.getGitOpsUsername())
 								   .skipPlugins(scmManager.getSkipPlugins())
 								   .skipRestart(scmManager.getSkipRestart())
