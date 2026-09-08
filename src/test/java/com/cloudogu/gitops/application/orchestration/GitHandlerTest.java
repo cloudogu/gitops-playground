@@ -2,7 +2,9 @@ package com.cloudogu.gitops.application.orchestration;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -17,12 +19,17 @@ import java.net.URISyntaxException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class GitHandlerTest {
 
@@ -72,10 +79,15 @@ class GitHandlerTest {
 	}
 
 	private static GitHandler handler(Config config) {
+		return handler(config, mock(K8sClient.class));
+	}
+
+	private static GitHandler handler(Config config, K8sClient k8sClient) {
 		return new GitHandler(
-			mock(K8sClient.class),
+			k8sClient,
 			mock(NetworkingUtils.class),
-			config
+			config,
+			new CredentialsResolver(k8sClient)
 		);
 	}
 
@@ -103,6 +115,31 @@ class GitHandlerTest {
 
 		assertEquals(ScmProviderType.SCM_MANAGER, config.getScm().getScmProviderType());
 		assertEquals("fv40-gitops", config.getScm().getScmManager().getGitOpsUsername());
+	}
+
+	@Test
+	void validateGitLabAcceptsKubernetesSecretCredentials() {
+		Config config = config(Map.of(
+			"scm", Map.of(
+				"scmProviderType", ScmProviderType.GITLAB,
+				"gitlab", Map.of(
+					"url", "https://gitlab.example.com",
+					"parentGroupId", "123",
+					"credentials", Map.of(
+						"secretName", "gitlab-credentials",
+						"secretNamespace", "gop-job"
+					)
+				)
+			)
+		));
+		K8sClient k8sClient = mock(K8sClient.class);
+		GitHandler gitHandler = handler(config, k8sClient);
+
+		assertDoesNotThrow(gitHandler::validate);
+
+		assertEquals(ScmProviderType.GITLAB, config.getScm().getScmProviderType());
+		assertNull(config.getScm().getScmManager());
+		verifyNoInteractions(k8sClient);
 	}
 
 	@Test
@@ -334,4 +371,72 @@ class GitHandlerTest {
 		assertTrue(tenant.getCreatedRepos().isEmpty());
 		assertTrue(central.getCreatedRepos().isEmpty());
 	}
+
+	@Test
+	void prepareProvidersResolvesScmManagerCredentialsWithoutMutatingConfig() {
+		Config config = config(Map.of(
+			"scm", Map.of(
+				"scmProviderType", ScmProviderType.SCM_MANAGER,
+				"scmManager", Map.of(
+					"internal", true,
+					"username", "fallback-user",
+					"password", "fallback-password",
+					"credentials", Map.of(
+						"secretName", "scmm-credentials",
+						"secretNamespace", "gop-job"
+					)
+				)
+			)
+		));
+		K8sClient k8sClient = mock(K8sClient.class);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
+			.thenReturn(new Credentials("secret-user", "secret-password"));
+		GitHandler gitHandler = handler(config, k8sClient);
+
+		gitHandler.validate();
+		gitHandler.prepareProviders(context(config));
+
+		assertEquals("secret-user", gitHandler.getTenant().getCredentials().getUsername());
+		assertEquals("secret-password", gitHandler.getTenant().getCredentials().getPassword());
+		assertEquals("fallback-user", config.getScm().getScmManager().getUsername());
+		assertEquals("fallback-password", config.getScm().getScmManager().getPassword());
+		assertEquals("scmm-credentials", config.getScm().getScmManager().getCredentials().getSecretName());
+		assertNull(config.getScm().getScmManager().getCredentials().getUsername());
+		assertNull(config.getScm().getScmManager().getCredentials().getPassword());
+		verify(k8sClient).getCredentialsFromSecret(any(Credentials.class));
+	}
+
+	@Test
+	void prepareProvidersUsesGitLabUsernameFallbackWhenSecretContainsOnlyToken() {
+		Config config = config(Map.of(
+			"scm", Map.of(
+				"scmProviderType", ScmProviderType.GITLAB,
+				"gitlab", Map.of(
+					"url", "https://gitlab.example.com",
+					"parentGroupId", "123",
+					"credentials", Map.of(
+						"secretName", "gitlab-credentials",
+						"secretNamespace", "gop-job"
+					)
+				)
+			)
+		));
+		K8sClient k8sClient = mock(K8sClient.class);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
+			.thenAnswer(invocation -> {
+				Credentials reference = invocation.getArgument(0);
+				return new Credentials(reference.getUsername(), "secret-token");
+			});
+		GitHandler gitHandler = handler(config, k8sClient);
+
+		gitHandler.validate();
+		gitHandler.prepareProviders(context(config));
+
+		assertEquals("oauth2.0", gitHandler.getTenant().getCredentials().getUsername());
+		assertEquals("secret-token", gitHandler.getTenant().getCredentials().getPassword());
+		assertNull(config.getScm().getGitlab().getPassword());
+		assertEquals("gitlab-credentials", config.getScm().getGitlab().getCredentials().getSecretName());
+		assertNull(config.getScm().getGitlab().getCredentials().getPassword());
+	}
+
 }

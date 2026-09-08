@@ -27,11 +27,13 @@ public class ScmManagerProvider implements GitProvider {
 	private ScmManagerUrlResolver urls;
 	private ScmManagerApiClient apiClient;
 	private final ScmManagerConfig scmmConfig;
+	private final Credentials runtimeCredentials;
 
 	private final boolean insecure;
 
 	public ScmManagerProvider(
 		ScmManagerConfig scmmConfig,
+		Credentials runtimeCredentials,
 		K8sClient k8sClient,
 		NetworkingUtils networkingUtils,
 		String repositoryNamePrefix,
@@ -39,6 +41,7 @@ public class ScmManagerProvider implements GitProvider {
 		boolean insecure,
 		String servicePrefix) {
 		this.scmmConfig = scmmConfig;
+		this.runtimeCredentials = runtimeCredentials;
 		this.insecure = insecure;
 		this.urls = new ScmManagerUrlResolver(
 			scmmConfig,
@@ -58,7 +61,7 @@ public class ScmManagerProvider implements GitProvider {
 		if (this.apiClient == null) {
 			this.apiClient = new ScmManagerApiClient(
 				this.urls.clientApiBase().toString(),
-				this.scmmConfig.getCredentials(),
+				this.runtimeCredentials,
 				insecure
 			);
 		}
@@ -104,7 +107,7 @@ public class ScmManagerProvider implements GitProvider {
 
 	@Override
 	public Credentials getCredentials() {
-		return this.scmmConfig.getCredentials();
+		return this.runtimeCredentials;
 	}
 
 	@Override
