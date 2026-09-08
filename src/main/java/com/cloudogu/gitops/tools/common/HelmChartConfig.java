@@ -10,7 +10,8 @@ public record HelmChartConfig(
 	String chart,
 	String version,
 	Map<String, Object> values,
-	String localHelmChartFolder) {
+	String localHelmChartFolder
+) {
 
 	public HelmChartConfig {
 		values = ImmutableConfigData.copyMap(values);

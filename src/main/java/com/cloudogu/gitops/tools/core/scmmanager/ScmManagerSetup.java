@@ -59,7 +59,7 @@ public class ScmManagerSetup {
 		);
 
 		deployer.getHelmStrategy()
-		        .deployFeature(
+				.deployFeature(
 					helmConfig.repoURL(),
 					"scm-manager",
 					helmConfig.chart(),
@@ -143,7 +143,7 @@ public class ScmManagerSetup {
 
 		try {
 			TemplateModel statics = new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-			                                                                                     .getStaticModels();
+																								 .getStaticModels();
 			templateVars.put("statics", statics);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to expose freemarker statics model", e);
@@ -248,8 +248,8 @@ public class ScmManagerSetup {
 			restartForThisPlugin = !config.skipRestart() && i == pluginNames.size() - 1;
 
 			ScmManagerApiClient.handleApiResponse(scmManager.getApiClient()
-			                                                .pluginApi()
-			                                                .install(pluginName, restartForThisPlugin));
+															.pluginApi()
+															.install(pluginName, restartForThisPlugin));
 		}
 
 		log.debug("SCM-Manager plugin installation finished successfully!");
@@ -307,8 +307,8 @@ public class ScmManagerSetup {
 		jenkinsPluginConfig.put("url", config.jenkinsUrl());
 
 		ScmManagerApiClient.handleApiResponse(this.scmManager.getApiClient()
-		                                                     .pluginApi()
-		                                                     .configureJenkinsPlugin(jenkinsPluginConfig));
+															 .pluginApi()
+															 .configureJenkinsPlugin(jenkinsPluginConfig));
 
 		log.debug("Successfully configured JenkinsPlugin in SCM-Manager.");
 	}
@@ -343,8 +343,8 @@ public class ScmManagerSetup {
 		permissionBody.put("permissions", permissions);
 
 		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient()
-		                                                .usersApi()
-		                                                .setPermissionForUser(username, permissionBody));
+														.usersApi()
+														.setPermissionForUser(username, permissionBody));
 
 		log.debug("Granted permissions {} to user {}.", permissions, username);
 	}

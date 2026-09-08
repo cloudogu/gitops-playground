@@ -383,8 +383,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 
 		List<String> missingPlugins = OIDC_BOOT_PLUGIN_NAMES.stream()
-		                                                    .filter(name -> !pinnedPlugins.containsKey(name))
-		                                                    .toList();
+															.filter(name -> !pinnedPlugins.containsKey(name))
+															.toList();
 
 		if (!missingPlugins.isEmpty()) {
 			throw new IllegalStateException("Required Jenkins OIDC boot plugins missing from " + pluginsFile + ": " + String.join(

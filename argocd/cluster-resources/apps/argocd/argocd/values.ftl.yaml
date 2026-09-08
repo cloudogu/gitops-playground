@@ -62,7 +62,7 @@ argo-cd:
       application.namespaces: "${config.application.namePrefix}${config.features.argocd.namespace}"
       server.insecure: true # tls terminated in ingress
 
-    # Repo credential templates are created dynamically in groovy, so they are not stored in git
+    # Repo credential templates are created dynamically by GOP, so they are not stored in git
     #credentialTemplates:
     #  scmm:
     #    url: http://scmm.scm-manager.svc.cluster.local
@@ -95,7 +95,7 @@ argo-cd:
     </#if>
 
   notifications:
-    # secrets are created dynamically in groovy, so they are not stored in git
+    # secrets are created dynamically by GOP, so they are not stored in git
     secret:
       create: false
     enabled: <#if config.features.mail.active == true>true<#else>false</#if>

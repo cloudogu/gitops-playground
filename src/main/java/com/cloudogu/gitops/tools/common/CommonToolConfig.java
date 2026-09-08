@@ -19,9 +19,9 @@ public class CommonToolConfig implements ConfigLifecycleHook {
 
 	private static void validateMirrorReposHelmChartFolderSet(Config configToSet) {
 		if (configToSet.getApplication().getMirrorRepos() && (configToSet.getApplication()
-		                                                                 .getLocalHelmChartFolder() == null || configToSet.getApplication()
-		                                                                                                                  .getLocalHelmChartFolder()
-		                                                                                                                  .isEmpty())) {
+																		 .getLocalHelmChartFolder() == null || configToSet.getApplication()
+																														  .getLocalHelmChartFolder()
+																														  .isEmpty())) {
 			// This should only happen when run outside the image, i.e. during development
 			throw new IllegalArgumentException("Missing config for localHelmChartFolder.\n" + "Either run inside the official container image or setting env var " + "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo");
 		}

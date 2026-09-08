@@ -3,6 +3,7 @@ package com.cloudogu.gitops.utils;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.Version;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +77,7 @@ public class TemplatingEngine {
 		Pattern filepathMatches) throws IOException, freemarker.template.TemplateException {
 		try (Stream<Path> stream = Files.walk(path.toPath())) {
 			List<Path> files = stream.filter(candidatePath -> filepathMatches.matcher(candidatePath.toString()).find())
-			                         .toList();
+									 .toList();
 			for (Path file : files) {
 				replaceTemplate(file.toFile(), parameters);
 			}

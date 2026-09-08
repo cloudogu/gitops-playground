@@ -39,20 +39,20 @@ public class GitHandler {
 	public void validate() {
 		boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
 		boolean gitlabUrlConfigured = config.getScm().getGitlab() != null && !StringUtils.isEmpty(config.getScm()
-		                                                                                                .getGitlab()
-		                                                                                                .getUrl());
+																										.getGitlab()
+																										.getUrl());
 		if (gitlabRequested || gitlabUrlConfigured) {
 			config.getScm().setScmProviderType(ScmProviderType.GITLAB);
 			config.getScm().setScmManager(null);
 
 			if (config.getScm().getGitlab() == null || StringUtils.isEmpty(config.getScm()
-			                                                                     .getGitlab()
-			                                                                     .getUrl()) || StringUtils.isEmpty(
+																				 .getGitlab()
+																				 .getUrl()) || StringUtils.isEmpty(
 				config.getScm()
-				      .getGitlab()
-				      .getPassword()) || StringUtils.isEmpty(config.getScm()
-			                                                       .getGitlab()
-			                                                       .getParentGroupId())) {
+					  .getGitlab()
+					  .getPassword()) || StringUtils.isEmpty(config.getScm()
+																   .getGitlab()
+																   .getParentGroupId())) {
 				throw new IllegalArgumentException(
 					"GitLab configuration incomplete: please provide url, password (PAT) and parentGroupId");
 			}
@@ -111,7 +111,7 @@ public class GitHandler {
 			}
 			default ->
 				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm()
-				                                                                                           .getScmProviderType());
+																										   .getScmProviderType());
 		};
 	}
 
@@ -130,7 +130,7 @@ public class GitHandler {
 				centralScmManagerServicePrefix(config)
 			);
 			default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant()
-			                                                                                           .getScmProviderType());
+																									   .getScmProviderType());
 		};
 	}
 

@@ -12,5 +12,6 @@ public record ImagePullSecretConfig(
 	String username,
 	String proxyPassword,
 	String readOnlyPassword,
-	String password) {
+	String password
+) {
 }

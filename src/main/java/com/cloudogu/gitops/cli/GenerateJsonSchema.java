@@ -67,9 +67,9 @@ public class GenerateJsonSchema {
 		md.append("Most options are also available as CLI parameters.\n\n");
 
 		List<Field> topFields = schemaFields(Config.class).stream()
-		                                                  .filter(field -> !Set.of("features", "stages")
-		                                                                       .contains(field.getName()))
-		                                                  .toList();
+														  .filter(field -> !Set.of("features", "stages")
+																			   .contains(field.getName()))
+														  .toList();
 
 		// Table of contents and top-level sections are built from the same fields in one pass.
 		StringBuilder toc = new StringBuilder();
@@ -182,8 +182,8 @@ public class GenerateJsonSchema {
 		r.put("default", formatDefault(safeGet(field, instance)));
 		r.put(
 			"desc", WHITESPACE_AROUND_NEWLINE.matcher(jsonDesc != null ? jsonDesc.value() : "-")
-			                                 .replaceAll(" ")
-			                                 .trim()
+											 .replaceAll(" ")
+											 .trim()
 		);
 		rows.add(r);
 	}
@@ -198,8 +198,8 @@ public class GenerateJsonSchema {
 
 	public static List<Field> schemaFields(Class<?> clazz) {
 		return Arrays.stream(clazz.getDeclaredFields())
-		             .filter(field -> !isInternalField(field) && isSchemaType(field.getType()))
-		             .toList();
+					 .filter(field -> !isInternalField(field) && isSchemaType(field.getType()))
+					 .toList();
 	}
 
 	public static boolean isInternalField(Field field) {
@@ -254,8 +254,8 @@ public class GenerateJsonSchema {
 		}
 		if (field.getGenericType() instanceof ParameterizedType pt) {
 			String args = Arrays.stream(pt.getActualTypeArguments())
-			                    .map(typeArgument -> typeArgument instanceof Class<?> type ? type.getSimpleName() : typeArgument.toString())
-			                    .collect(Collectors.joining(", "));
+								.map(typeArgument -> typeArgument instanceof Class<?> type ? type.getSimpleName() : typeArgument.toString())
+								.collect(Collectors.joining(", "));
 			return ((Class<?>) pt.getRawType()).getSimpleName() + "&lt;" + args + "&gt;";
 		}
 		return t.getSimpleName();
