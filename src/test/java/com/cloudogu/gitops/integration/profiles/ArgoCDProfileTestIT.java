@@ -8,9 +8,9 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import java.util.List;
 
 /**
- * This tests can only be successfull, if one of theses profiles used.
+ * These tests can only be successful if one of these profiles is used.
  *
- * <p>To run locally: add -Dmicronaut.environments=full to your execute configuration
+ * <p>To run locally: add -Dmicronaut.environments=full to your execution configuration
  */
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
 public class ArgoCDProfileTestIT extends ProfileTestSetup {
