@@ -25,11 +25,6 @@
   "baseBranchPatterns": [
     "develop"
   ],
-  "assignees": [
-    "avetgit",
-    "mdroll",
-    "ThomasMichael1811"
-  ],
   "dependencyDashboard": true,
   "minimumReleaseAge": "7 days",
   "extends": [
