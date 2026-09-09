@@ -182,10 +182,8 @@ import static picocli.CommandLine.ScopeType;
 @Setter
 public class Config {
 
-	// When updating please also update in Dockerfile
-	public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:4.2.1-1";
 	// When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-	public static final String K8S_VERSION = "1.36.2";
+	public static final String K8S_VERSION = "1.36.4";
 	public static final String DEFAULT_ADMIN_USER = "admin";
 
 	// Generated once when Config is initialized and intentionally shared by all Config instances in the JVM.
@@ -1043,9 +1041,9 @@ public class Config {
 		@JsonCreator
 		public static VaultMode fromExternalValue(String value) {
 			return Arrays.stream(values())
-						 .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
-						 .findFirst()
-						 .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+			             .findFirst()
+			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
 		}
 
 		@JsonValue
@@ -1073,7 +1071,7 @@ public class Config {
 
 	public Map<String, Object> toMap() {
 		return objectMapper.convertValue(
-			this, new TypeReference<Map<String, Object>>() {
+			this, new TypeReference<>() {
 			}
 		);
 	}
@@ -1096,8 +1094,8 @@ public class Config {
 					BeanDescription beanDesc,
 					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
-										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-										 .toList();
+					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+					                     .toList();
 				}
 			}));
 			return mapper;
