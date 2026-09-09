@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,8 @@ class VaultToolConfigMapperTest {
 	void mapsAllRelevantValuesFromDeploymentContextAndConfig() {
 		Config config = config();
 		config.getFeatures().getSecrets().getVault().setMode(Config.VaultMode.PROD);
+		config.getApplication().getCredentials().setSecretName("application-credentials");
+		config.getApplication().getCredentials().setSecretNamespace("gop-job");
 
 		VaultToolConfig actual = new VaultToolConfigMapper(config).map(context());
 
@@ -26,6 +30,11 @@ class VaultToolConfigMapperTest {
 													.namespace("test-secrets")
 													.namePrefix("test-")
 													.url("https://vault.example.org")
+													.applicationUsername("application-user")
+													.applicationPassword("application-password")
+													.applicationCredentials(new CredentialsReference(
+														"application-credentials", "gop-job", "username", "password"
+													))
 													.developmentMode(false)
 													.helm(HelmChartConfig.builder()
 																		 .repoURL("https://vault-chart.example.org")
@@ -40,9 +49,7 @@ class VaultToolConfigMapperTest {
 															"namePrefix", "test-",
 															"namespaceIsolation", true,
 															"openshift", true,
-															"password", "application-password",
-															"podResources", true,
-															"username", "application-user"
+															"podResources", true
 														),
 														"features", Map.of(
 															"argocd", Map.of("active", true),
@@ -102,6 +109,7 @@ class VaultToolConfigMapperTest {
 		config.getApplication().setPassword("application-password");
 		config.getApplication().setPodResources(true);
 		config.getApplication().setUsername("application-user");
+		config.getApplication().setCredentials(new Credentials());
 
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getRegistry().setProxyUrl("proxy.example.org");

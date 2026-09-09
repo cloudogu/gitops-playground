@@ -51,12 +51,17 @@ server:
   - mountPath: /var/opt/scripts
     name: ${dev.vaultPostStartVolume}
     readOnly : true
+  extraSecretEnvironmentVars:
+    - envName: USERNAME
+      secretName: ${dev.userCredentialsSecret}
+      secretKey: username
+    - envName: PASSWORD
+      secretName: ${dev.userCredentialsSecret}
+      secretKey: password
   postStart:
         - /bin/sh
         - -c
         - | 
-          USERNAME=${config.application.username} \
-          PASSWORD=${config.application.password} \
           ARGOCD=${config.features.argocd.active?c} \
 <#if vaultOidc?has_content && vaultOidc.enabled>
           OIDC_ENABLED=true \

@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
@@ -24,6 +25,9 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 							  .namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
 							  .namePrefix(config.getApplication().getNamePrefix())
 							  .url(secrets.getVault().getUrl())
+							  .applicationUsername(config.getApplication().getUsername())
+							  .applicationPassword(config.getApplication().getPassword())
+							  .applicationCredentials(CredentialsReference.from(config.getApplication().getCredentials()))
 							  .developmentMode(isDevelopmentMode(secrets.getVault().getMode()))
 							  .helm(ToolConfigMapperSupport.helmChart(
 								  secrets.getVault().getHelm(), config.getApplication().getLocalHelmChartFolder()
@@ -38,9 +42,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
 			.put("application.openshift", context.isOpenshift())
-			.put("application.password", config.getApplication().getPassword())
 			.put("application.podResources", config.getApplication().getPodResources())
-			.put("application.username", config.getApplication().getUsername())
 			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
