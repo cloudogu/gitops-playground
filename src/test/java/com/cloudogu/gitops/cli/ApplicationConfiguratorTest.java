@@ -3,9 +3,11 @@ package com.cloudogu.gitops.cli;
 import com.cloudogu.gitops.application.content.ContentLoader;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepoFactory;
@@ -90,6 +92,7 @@ class ApplicationConfiguratorTest {
 		featureContent = Mockito.spy(new ContentLoader(
 			testConfig,
 			k8sClient,
+			new CredentialsResolver(k8sClient),
 			gitRepoFactory,
 			Mockito.mock(Jenkins.class),
 			gitHandler,
@@ -104,7 +107,8 @@ class ApplicationConfiguratorTest {
 			fileSystemUtils,
 			gitHandler,
 			new DeploymentModeFactory(),
-			new ArgoCDToolConfigMapper(testConfig)
+			new ArgoCDToolConfigMapper(testConfig),
+			new CredentialsResolver(k8sClient)
 		));
 		featureArgoCd.isEnabled(context);
 	}
@@ -172,6 +176,33 @@ class ApplicationConfiguratorTest {
 		assertThat(exception.getMessage()).isEqualTo(
 			"createImagePullSecrets needs to be used with either registry username and password or the readOnly variants"
 		);
+	}
+
+	@Test
+	void acceptsReadOnlySecretCredentialsForImagePullSecrets() {
+		testConfig.getRegistry().setCreateImagePullSecrets(true);
+		testConfig.getRegistry().setReadOnlyCredentials(
+			new Credentials(null, null, "registry-read-only-credentials", "gop-job")
+		);
+
+		Config actualConfig = applicationConfigurator.initConfig(testConfig);
+
+		assertThat(actualConfig.getRegistry().getReadOnlyCredentials().getSecretName())
+			.isEqualTo("registry-read-only-credentials");
+	}
+
+	@Test
+	void acceptsProxySecretCredentials() {
+		testConfig.getRegistry().setProxyUsername("");
+		testConfig.getRegistry().setProxyPassword("");
+		testConfig.getRegistry().setProxyCredentials(
+			new Credentials(null, null, "registry-proxy-credentials", "gop-job")
+		);
+
+		Config actualConfig = applicationConfigurator.initConfig(testConfig);
+
+		assertThat(actualConfig.getRegistry().getProxyCredentials().getSecretName())
+			.isEqualTo("registry-proxy-credentials");
 	}
 
 	@Test

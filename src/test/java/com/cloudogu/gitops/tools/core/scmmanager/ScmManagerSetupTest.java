@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools.core.scmmanager;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
 import com.cloudogu.gitops.infrastructure.deployment.HelmStrategy;
@@ -12,7 +13,11 @@ import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerPro
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.PluginApi;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApi;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser;
+import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.UsersApi;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.Tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -64,6 +69,7 @@ class ScmManagerSetupTest {
 	private final ScmManagerApiClient apiClient = mock(ScmManagerApiClient.class);
 	private final PluginApi pluginApi = mock(PluginApi.class);
 	private final ScmManagerApi generalApi = mock(ScmManagerApi.class);
+	private final K8sClient k8sClient = mock(K8sClient.class);
 	private final FileSystemUtils fileSystemUtils = spy(new FileSystemUtils());
 
 	private final Config config = Config.fromMap(Map.of(
@@ -107,6 +113,7 @@ class ScmManagerSetupTest {
 
 	@BeforeEach
 	void setUp() throws IOException {
+		when(scmManager.getCredentials()).thenReturn(new Credentials("admin", "admin"));
 		clusterResourcesRepo.setGitProvider(centralProvider);
 		tenantBootstrapRepo.setGitProvider(tenantProvider);
 
@@ -134,6 +141,7 @@ class ScmManagerSetupTest {
 	@SuppressWarnings("unchecked")
 	void helmChartIsInstalledCorrectly() throws IOException {
 		when(scmManager.getScmmConfig()).thenReturn(config.getScm().getScmManager());
+		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "SCMM_SECRET_SENTINEL"));
 		when(deployer.getHelmStrategy()).thenReturn(helmStrategy);
 		config.getScm().getScmManager().setScmmImage("localhost:5000/proxy/scm-manager:custom");
 		// Usually ApplicationConfigurator modifies the namePrefix and sets it to "namePrefix-"
@@ -145,7 +153,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.setupHelm();
@@ -167,6 +176,56 @@ class ScmManagerSetupTest {
 		Map<String, Object> image = (Map<String, Object>) values.get("image");
 		assertThat(image.get("repository")).isEqualTo("localhost:5000/proxy/scm-manager");
 		assertThat(image.get("tag")).isEqualTo("custom");
+
+		verify(k8sClient).createNamespace("test-scm-manager");
+		verify(k8sClient).createSecret(
+			"generic",
+			ScmManagerSetup.CREDENTIALS_SECRET_NAME,
+			"test-scm-manager",
+			new Tuple<>("SCM_WEBAPP_INITIALUSER", "resolved-admin"),
+			new Tuple<>("SCM_WEBAPP_INITIALPASSWORD", "SCMM_SECRET_SENTINEL")
+		);
+
+		String extraEnvFrom = (String) values.get("extraEnvFrom");
+		assertThat(extraEnvFrom)
+			.contains("name: scm-manager-credentials")
+			.doesNotContain("resolved-admin")
+			.doesNotContain("SCMM_SECRET_SENTINEL");
+	}
+
+	@Test
+	void defaultUsersUseRuntimePassword() throws ReflectiveOperationException, IOException {
+		UsersApi usersApi = mock(UsersApi.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> addUserCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> permissionCall = mock(Call.class);
+
+		when(scmManager.getApiClient()).thenReturn(apiClient);
+		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-password"));
+		when(apiClient.usersApi()).thenReturn(usersApi);
+		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(addUserCall);
+		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
+		when(addUserCall.execute()).thenReturn(Response.success(null));
+		when(permissionCall.execute()).thenReturn(Response.success(null));
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
+		);
+
+		invokePrivateAddDefaultUsers(scmManagerSetup);
+
+		ArgumentCaptor<ScmManagerUser> userCaptor = ArgumentCaptor.forClass(ScmManagerUser.class);
+		verify(usersApi, times(2)).addUser(userCaptor.capture());
+		assertThat(userCaptor.getAllValues())
+			.extracting(ScmManagerUser::getPassword)
+			.containsOnly("runtime-password");
 	}
 
 	@Test
@@ -185,7 +244,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.setupHelm();
@@ -235,7 +295,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup);
@@ -262,7 +323,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		Thread.currentThread().interrupt();
@@ -288,7 +350,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
@@ -315,7 +378,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();
@@ -337,7 +401,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
@@ -376,7 +441,8 @@ class ScmManagerSetupTest {
 			new ContextBuilder(config).build(),
 			workspace,
 			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build())
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
 		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();
@@ -388,6 +454,13 @@ class ScmManagerSetupTest {
 	private static void invokePrivateInstallScmmPlugins(ScmManagerSetup scmManagerSetup)
 		throws ReflectiveOperationException {
 		Method method = ScmManagerSetup.class.getDeclaredMethod("installScmmPlugins");
+		method.setAccessible(true);
+		method.invoke(scmManagerSetup);
+	}
+
+	private static void invokePrivateAddDefaultUsers(ScmManagerSetup scmManagerSetup)
+		throws ReflectiveOperationException {
+		Method method = ScmManagerSetup.class.getDeclaredMethod("addDefaultUsers");
 		method.setAccessible(true);
 		method.invoke(scmManagerSetup);
 	}

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.config.Config;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.micronaut.context.ApplicationContext;
@@ -71,6 +72,36 @@ class JenkinsApiClientTest {
 			1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
 				.withHeader("Authorization", matching("Basic .*"))
 				.withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+		);
+	}
+
+	@Test
+	void usesRuntimeCredentialsWhenConfigured() {
+		wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+			.willReturn(aResponse()
+				.withStatus(200)
+				.withBody("{\"crumb\": \"the-crumb\", \"crumbRequestField\": \"Jenkins-Crumb\"}")));
+
+		wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+			.willReturn(aResponse().withStatus(200).withBody("ok")));
+
+		Config config = new Config();
+		config.getJenkins().setUrl(wireMock.baseUrl() + "/jenkins");
+		config.getJenkins().setUsername("fallback-user");
+		config.getJenkins().setPassword("fallback-password");
+		JenkinsApiClient apiClient = new JenkinsApiClient(config, getUnsafeOkHttpClient());
+		apiClient.setRuntimeCredentials(new ResolvedCredentials("secret-user", "secret-password"));
+
+		apiClient.runScript("println('ok')");
+
+		String authorization = okhttp3.Credentials.basic("secret-user", "secret-password");
+		wireMock.verify(
+			1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+				.withHeader("Authorization", equalTo(authorization))
+		);
+		wireMock.verify(
+			1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
+				.withHeader("Authorization", equalTo(authorization))
 		);
 	}
 

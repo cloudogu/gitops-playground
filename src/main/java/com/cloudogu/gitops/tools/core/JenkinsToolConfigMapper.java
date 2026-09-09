@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
@@ -21,15 +22,6 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 	public JenkinsToolConfig map(DeploymentContext context) {
 		Config.JenkinsSchema jenkins = config.getJenkins();
 		ScmProviderType scmProviderType = config.getScm() == null ? null : config.getScm().getScmProviderType();
-		String scmManagerPassword = config.getScm() == null || config.getScm().getScmManager() == null
-			? null
-			: config.getScm().getScmManager().getPassword();
-		String gitlabUsername = config.getScm() == null || config.getScm().getGitlab() == null
-			? null
-			: config.getScm().getGitlab().getUsername();
-		String gitlabPassword = config.getScm() == null || config.getScm().getGitlab() == null
-			? null
-			: config.getScm().getGitlab().getPassword();
 
 		JenkinsToolConfig.Application applicationConfig = JenkinsToolConfig.Application.builder()
 																					   .namePrefix(config.getApplication().getNamePrefix())
@@ -42,8 +34,10 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 																		.url(jenkins.getUrl())
 																		.username(jenkins.getUsername())
 																		.password(jenkins.getPassword())
+																		.credentials(CredentialsReference.from(jenkins.getCredentials()))
 																		.metricsUsername(jenkins.getMetricsUsername())
 																		.metricsPassword(jenkins.getMetricsPassword())
+																		.metricsCredentials(CredentialsReference.from(jenkins.getMetricsCredentials()))
 																		.skipRestart(jenkins.getSkipRestart())
 																		.skipPlugins(jenkins.getSkipPlugins())
 																		.mavenCentralMirror(jenkins.getMavenCentralMirror())
@@ -52,21 +46,20 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 																		.additionalEnvironments(jenkins.getAdditionalEnvs())
 																		.build();
 		JenkinsToolConfig.Scm scmConfig = JenkinsToolConfig.Scm.builder()
-															   .providerType(scmProviderType)
-															   .scmManagerPassword(scmManagerPassword)
-															   .gitlabUsername(gitlabUsername)
-															   .gitlabPassword(gitlabPassword)
-															   .build();
+															.providerType(scmProviderType)
+															.build();
 		JenkinsToolConfig.Registry registryConfig = JenkinsToolConfig.Registry.builder()
 																			  .url(config.getRegistry().getUrl())
 																			  .path(config.getRegistry().getPath())
 																			  .username(config.getRegistry().getUsername())
 																			  .password(config.getRegistry().getPassword())
+																			  .credentials(CredentialsReference.from(config.getRegistry().getCredentials()))
 																			  .twoRegistries(config.getRegistry().getTwoRegistries())
 																			  .proxyUrl(config.getRegistry().getProxyUrl())
 																			  .proxyPath(config.getRegistry().getProxyPath())
 																			  .proxyUsername(config.getRegistry().getProxyUsername())
 																			  .proxyPassword(config.getRegistry().getProxyPassword())
+																			  .proxyCredentials(CredentialsReference.from(config.getRegistry().getProxyCredentials()))
 																			  .build();
 
 		return JenkinsToolConfig.builder()
@@ -100,9 +93,7 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 			.put("jenkins.internalDockerClientVersion", config.getJenkins().getInternalDockerClientVersion())
 			.put("jenkins.jenkinsImage", config.getJenkins().getJenkinsImage())
 			.put("jenkins.oidc", ToolConfigMapperSupport.oidc(config.getJenkins().getOidc()))
-			.put("jenkins.password", config.getJenkins().getPassword())
 			.put("jenkins.url", config.getJenkins().getUrl())
-			.put("jenkins.username", config.getJenkins().getUsername())
 			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
 			.values();
 	}

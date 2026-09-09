@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.cli;
 
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +20,16 @@ public class ApplicationConfigurator {
 
 	private static String firstNonBlank(String preferred, String fallback) {
 		return hasText(preferred) ? preferred : fallback;
+	}
+
+	private static boolean hasCredentials(Credentials reference, String username, String password) {
+		return hasCompleteSecretReference(reference) || (hasText(username) && hasText(password));
+	}
+
+	private static boolean hasCompleteSecretReference(Credentials reference) {
+		return reference != null
+			&& hasText(reference.getSecretName())
+			&& hasText(reference.getSecretNamespace());
 	}
 
 	/**
@@ -71,20 +82,21 @@ public class ApplicationConfigurator {
 	private static void addRegistryConfig(Config newConfig) {
 		// Process image pull secrets first, they might even be relevant if no registry is set
 		if (newConfig.getRegistry().getCreateImagePullSecrets()) {
+			boolean hasSecretCredentials = hasCompleteSecretReference(newConfig.getRegistry().getCredentials())
+				|| hasCompleteSecretReference(newConfig.getRegistry().getReadOnlyCredentials());
 			String username = firstNonBlank(
-				newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry()
-																		.getUsername()
+				newConfig.getRegistry().getReadOnlyUsername(), newConfig.getRegistry().getUsername()
 			);
 			String password = firstNonBlank(
-				newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry()
-																		.getPassword()
+				newConfig.getRegistry().getReadOnlyPassword(), newConfig.getRegistry().getPassword()
 			);
 
-			if (!hasText(username) || !hasText(password)) {
+			if (!hasSecretCredentials && (!hasText(username) || !hasText(password))) {
 				throw new IllegalArgumentException(
 					"createImagePullSecrets needs to be used with either registry username and password or the readOnly variants");
 			}
 		}
+
 
 		if (hasText(newConfig.getRegistry().getUrl())) {
 			newConfig.getRegistry().setInternal(false);
@@ -105,8 +117,11 @@ public class ApplicationConfigurator {
 
 		if (hasText(newConfig.getRegistry().getProxyUrl())) {
 			newConfig.getRegistry().setTwoRegistries(true);
-			if (!hasText(newConfig.getRegistry().getProxyUsername()) || !hasText(newConfig.getRegistry()
-																						  .getProxyPassword())) {
+			if (!hasCredentials(
+				newConfig.getRegistry().getProxyCredentials(),
+				newConfig.getRegistry().getProxyUsername(),
+				newConfig.getRegistry().getProxyPassword()
+			)) {
 				throw new IllegalArgumentException("Proxy URL needs to be used with proxy-username and proxy-password");
 			}
 		}

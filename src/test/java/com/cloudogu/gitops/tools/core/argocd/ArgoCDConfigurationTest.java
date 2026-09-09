@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -171,6 +172,37 @@ class ArgoCDConfigurationTest {
 			any(String.class),
 			any(String.class)
 		);
+	}
+
+	@Test
+	void resolvesAdminPasswordFromApplicationSecretWithoutMutatingConfig() {
+		Credentials reference = new Credentials();
+		reference.setSecretName("argocd-credentials");
+		reference.setSecretNamespace("gop-job");
+		config.getApplication().setCredentials(reference);
+		config.getApplication().setUsername("fallback-user");
+		config.getApplication().setPassword("fallback-password");
+		createSecretIfMissing(
+			"argocd-credentials",
+			"gop-job",
+			Map.of("username", encode("secret-user"), "password", encode("secret-password"))
+		);
+
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+
+		execute(argocd);
+
+		Secret argocdSecret = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-secret")
+			.get();
+		String patchedPasswordHash = decodedSecretValue(argocdSecret, "admin.password");
+
+		assertThat(BCrypt.checkpw("secret-password", patchedPasswordHash)).isTrue();
+		assertThat(config.getApplication().getUsername()).isEqualTo("fallback-user");
+		assertThat(config.getApplication().getPassword()).isEqualTo("fallback-password");
+		assertThat(reference.getUsername()).isNull();
+		assertThat(reference.getPassword()).isNull();
 	}
 
 	@Test
@@ -457,6 +489,43 @@ class ArgoCDConfigurationTest {
 			.isEqualTo(config.getFeatures().getMail().getSmtpUser());
 		assertThat(decodedSecretValue(mailSecret, "email-password"))
 			.isEqualTo(config.getFeatures().getMail().getSmtpPassword());
+	}
+
+	@Test
+	void resolvesExternalMailServerCredentialsFromSecretWithoutMutatingConfig() throws IOException {
+		config.getFeatures().getMail().setActive(true);
+		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");
+		config.getFeatures().getMail().setSmtpUser("fallback-user");
+		config.getFeatures().getMail().setSmtpPassword("fallback-password");
+		Credentials reference = new Credentials();
+		reference.setSecretName("smtp-credentials");
+		reference.setSecretNamespace("gop-job");
+		config.getFeatures().getMail().setCredentials(reference);
+		createSecretIfMissing(
+			"smtp-credentials",
+			"gop-job",
+			Map.of("username", encode("secret-smtp-user"), "password", encode("secret-smtp-password"))
+		);
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+		Map<String, Object> serviceEmail = parseYaml(
+			(String) value(valuesYaml, "argo-cd", "notifications", "notifiers", "service.email")
+		);
+
+		assertThat(serviceEmail.get("username")).isEqualTo("$email-username");
+		assertThat(serviceEmail.get("password")).isEqualTo("$email-password");
+		Secret mailSecret = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-notifications-secret")
+			.get();
+		assertThat(decodedSecretValue(mailSecret, "email-username")).isEqualTo("secret-smtp-user");
+		assertThat(decodedSecretValue(mailSecret, "email-password")).isEqualTo("secret-smtp-password");
+		assertThat(config.getFeatures().getMail().getSmtpUser()).isEqualTo("fallback-user");
+		assertThat(config.getFeatures().getMail().getSmtpPassword()).isEqualTo("fallback-password");
+		assertThat(reference.getUsername()).isNull();
+		assertThat(reference.getPassword()).isNull();
+		assertThat(Files.readString(Path.of(actualHelmValuesFile())))
+			.doesNotContain("secret-smtp-user", "secret-smtp-password");
 	}
 
 	@Test

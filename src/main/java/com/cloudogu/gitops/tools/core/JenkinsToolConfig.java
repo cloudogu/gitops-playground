@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
@@ -44,8 +45,10 @@ public record JenkinsToolConfig(
 		String url,
 		String username,
 		String password,
+		CredentialsReference credentials,
 		String metricsUsername,
 		String metricsPassword,
+		CredentialsReference metricsCredentials,
 		boolean skipRestart,
 		boolean skipPlugins,
 		String mavenCentralMirror,
@@ -61,10 +64,7 @@ public record JenkinsToolConfig(
 
 	@Builder
 	public record Scm(
-		ScmProviderType providerType,
-		String scmManagerPassword,
-		String gitlabUsername,
-		String gitlabPassword
+		ScmProviderType providerType
 	) {
 	}
 
@@ -74,11 +74,13 @@ public record JenkinsToolConfig(
 		String path,
 		String username,
 		String password,
+		CredentialsReference credentials,
 		boolean twoRegistries,
 		String proxyUrl,
 		String proxyPath,
 		String proxyUsername,
-		String proxyPassword
+		String proxyPassword,
+		CredentialsReference proxyCredentials
 	) {
 	}
 }

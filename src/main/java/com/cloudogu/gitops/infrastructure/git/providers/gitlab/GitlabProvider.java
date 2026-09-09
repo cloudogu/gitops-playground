@@ -40,21 +40,17 @@ public class GitlabProvider implements GitProvider {
 	private final String namePrefix;
 	private final GitLabApi api;
 	private final GitlabConfig gitlabConfig;
+	private final Credentials runtimeCredentials;
 	private Group parentGroupCache;
 
-	public GitlabProvider(GitlabConfig gitlabConfig, String namePrefix) {
+	public GitlabProvider(GitlabConfig gitlabConfig, Credentials runtimeCredentials, String namePrefix) {
 		this.gitlabConfig = gitlabConfig;
+		this.runtimeCredentials = Objects.requireNonNull(runtimeCredentials, "Missing gitlab credentials");
 		this.namePrefix = namePrefix;
 
 		String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url")
 							.trim();
-		Credentials creds = gitlabConfig.getCredentials();
-		String pat = null;
-		if (creds != null) {
-			pat = creds.getPassword();
-		}
-		Objects.requireNonNull(pat, "Missing gitlab token");
-		pat = pat.trim();
+		String pat = Objects.requireNonNull(runtimeCredentials.getPassword(), "Missing gitlab token").trim();
 
 		this.api = new GitLabApi(url, pat);
 		this.api.enableRequestResponseLogging(Level.ALL);
@@ -143,7 +139,7 @@ public class GitlabProvider implements GitProvider {
 
 	@Override
 	public Credentials getCredentials() {
-		return this.gitlabConfig.getCredentials();
+		return this.runtimeCredentials;
 	}
 
 	@Override

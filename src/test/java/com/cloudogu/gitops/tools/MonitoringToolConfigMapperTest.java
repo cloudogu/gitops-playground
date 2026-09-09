@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -34,6 +36,9 @@ class MonitoringToolConfigMapperTest {
 		config.getApplication().setPodResources(true);
 		config.getApplication().setPassword("application-password");
 		config.getApplication().setUsername("application-user");
+		config.getApplication().setCredentials(
+			new Credentials(null, null, "application-secret", "gop-job", "app-user", "app-password")
+		);
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getRegistry().setProxyUrl("proxy.example.org");
 		config.getRegistry().setUrl("registry.example.org");
@@ -49,6 +54,9 @@ class MonitoringToolConfigMapperTest {
 		config.getJenkins().setUrl("https://jenkins.example.org");
 		config.getJenkins().setMetricsUsername("jenkins-metrics-user");
 		config.getJenkins().setMetricsPassword("jenkins-metrics-password");
+		config.getJenkins().setMetricsCredentials(
+			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
+		);
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
@@ -57,6 +65,9 @@ class MonitoringToolConfigMapperTest {
 		config.getFeatures().getMail().setSmtpPort(2525);
 		config.getFeatures().getMail().setSmtpUser("smtp-user");
 		config.getFeatures().getMail().setSmtpPassword("smtp-password");
+		config.getFeatures().getMail().setCredentials(
+			new Credentials(null, null, "smtp-credentials", "gop-job", "smtp-user", "smtp-password")
+		);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getMonitoring().setGrafanaUrl("https://grafana.example.org");
@@ -94,15 +105,35 @@ class MonitoringToolConfigMapperTest {
 														 .skipCrds(true)
 														 .openshift(true)
 														 .airgapped(true)
+														 .applicationUsername("application-user")
 														 .applicationPassword("application-password")
+														 .applicationCredentials(new CredentialsReference(
+															 "application-secret",
+															 "gop-job",
+															 "app-user",
+															 "app-password"
+														 ))
+														 .jenkinsMetricsUsername("jenkins-metrics-user")
 														 .jenkinsMetricsPassword("jenkins-metrics-password")
+														 .jenkinsMetricsCredentials(new CredentialsReference(
+															 "jenkins-metrics-secret",
+															 "gop-job",
+															 "metrics-user",
+															 "metrics-password"
+														 ))
 														 .smtpUser("smtp-user")
 														 .smtpPassword("smtp-password")
+														 .smtpCredentials(new CredentialsReference(
+															 "smtp-credentials",
+															 "gop-job",
+															 "smtp-user",
+															 "smtp-password"
+														 ))
 														 .grafanaUrl("https://grafana.example.org")
 														 .jenkinsInternal(false)
 														 .jenkinsNamespace("jenkins-system")
 														 .jenkinsUrl("https://jenkins.example.org")
-														 .jenkinsMetricsUsername("jenkins-metrics-user")
+														 .scmProviderType(ScmProviderType.SCM_MANAGER)
 														 .ingressActive(true)
 														 .jenkinsActive(true)
 														 .helm(HelmChartConfig.builder()
@@ -119,9 +150,7 @@ class MonitoringToolConfigMapperTest {
 																 "namespaceIsolation", true,
 																 "openshift", true,
 																 "podResources", true,
-																 "skipCrds", true,
-																 "password", "application-password",
-																 "username", "application-user"
+																 "skipCrds", true
 															 ),
 															 "features", Map.of(
 																 "certManager",
@@ -130,9 +159,8 @@ class MonitoringToolConfigMapperTest {
 																 Map.of(
 																	 "active", true,
 																	 "smtpAddress", "smtp.example.org",
-																	 "smtpPassword", "smtp-password",
-																	 "smtpPort", 2525,
-																	 "smtpUser", "smtp-user"
+																	 "smtpCredentialsConfigured", true,
+																	 "smtpPort", 2525
 																 ),
 																 "monitoring",
 																 Map.of(

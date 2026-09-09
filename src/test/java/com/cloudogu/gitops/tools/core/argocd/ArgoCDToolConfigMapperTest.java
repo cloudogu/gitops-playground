@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,14 @@ class ArgoCDToolConfigMapperTest {
 	void mapsAllRelevantValuesFromDeploymentContextAndConfig() {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("tenant-a-");
+		config.getApplication().setUsername("application-user");
 		config.getApplication().setPassword("application-password");
+		Credentials applicationCredentials = new Credentials();
+		applicationCredentials.setSecretName("argocd-credentials");
+		applicationCredentials.setSecretNamespace("gop-job");
+		applicationCredentials.setUsernameKey("admin-user");
+		applicationCredentials.setPasswordKey("admin-password");
+		config.getApplication().setCredentials(applicationCredentials);
 		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of(
 			"argocd",
 			"monitoring"
@@ -48,6 +57,9 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getMail().setSmtpPort(2525);
 		config.getFeatures().getMail().setSmtpUser("smtp-user");
 		config.getFeatures().getMail().setSmtpPassword("smtp-password");
+		config.getFeatures().getMail().setCredentials(
+			new Credentials(null, null, "smtp-credentials", "gop-job", "smtp-user", "smtp-password")
+		);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getSecrets().setActive(true);
@@ -67,7 +79,14 @@ class ArgoCDToolConfigMapperTest {
 		assertThat(actual).isEqualTo(ArgoCDToolConfig.builder()
 													 .active(true)
 													 .namespace("tenant-a-gitops")
+													 .username("application-user")
 													 .password("application-password")
+													 .credentials(new CredentialsReference(
+														 "argocd-credentials",
+														 "gop-job",
+														 "admin-user",
+														 "admin-password"
+													 ))
 													 .operator(true)
 													 .activeNamespaces(List.of(
 														 "argocd",
@@ -77,6 +96,12 @@ class ArgoCDToolConfigMapperTest {
 													 ))
 													 .smtpUser("smtp-user")
 													 .smtpPassword("smtp-password")
+													 .smtpCredentials(new CredentialsReference(
+														 "smtp-credentials",
+														 "gop-job",
+														 "smtp-user",
+														 "smtp-password"
+													 ))
 													 .values(Map.of("server", Map.of("replicas", 2)))
 													 .multiTenant(true)
 													 .netpols(true)
@@ -137,9 +162,9 @@ class ArgoCDToolConfigMapperTest {
 															 Map.of(
 																 "active", true,
 																 "smtpAddress", "smtp.example.org",
-																 "smtpPassword", "smtp-password",
+																 "smtpPasswordConfigured", true,
 																 "smtpPort", 2525,
-																 "smtpUser", "smtp-user"
+																 "smtpUserConfigured", true
 															 ),
 															 "monitoring",
 															 Map.of("active", true, "namespace", "observability"),

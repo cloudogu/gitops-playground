@@ -15,8 +15,6 @@ public record ScmManagerToolConfig(
 	String namespace,
 	String releaseName,
 	String ingress,
-	String username,
-	String password,
 	String gitOpsUsername,
 	boolean skipPlugins,
 	boolean skipRestart,

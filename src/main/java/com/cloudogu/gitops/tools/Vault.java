@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -10,6 +12,7 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.Getter;
@@ -35,9 +38,11 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 	private static final String TOOL_NAME = "vault";
 	private static final String RELEASE_NAME = "vault";
 	private static final String VAULT_APP_PATH = "apps/vault";
+	private static final String VAULT_USER_CREDENTIALS_SECRET = "vault-user-credentials";
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 
 	@Getter
 	@Setter
@@ -50,7 +55,8 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
-		VaultToolConfigMapper configMapper) {
+		VaultToolConfigMapper configMapper,
+		CredentialsResolver credentialsResolver) {
 		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
@@ -58,6 +64,7 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 		this.airGappedUtils = airGappedUtils;
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.credentialsResolver = credentialsResolver;
 	}
 
 	@Override
@@ -127,6 +134,19 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 		log.debug("Creating namespace for vault, so it can add its secrets there");
 		k8sClient.createNamespace(namespace);
 
+		ResolvedCredentials applicationCredentials = credentialsResolver.resolveReference(
+			toolConfig().applicationCredentials(),
+			toolConfig().applicationUsername(),
+			toolConfig().applicationPassword()
+		);
+		k8sClient.createSecret(
+			"generic",
+			VAULT_USER_CREDENTIALS_SECRET,
+			namespace,
+			new Tuple<>("username", applicationCredentials.username()),
+			new Tuple<>("password", applicationCredentials.password())
+		);
+
 		// Create config map from init script.
 		// Init script creates/authorizes secrets, users, service accounts, etc.
 		String vaultPostStartConfigMap = "vault-dev-post-start";
@@ -142,6 +162,8 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 				vaultPostStartConfigMap,
 				"vaultPostStartVolume",
 				vaultPostStartVolume,
+				"userCredentialsSecret",
+				VAULT_USER_CREDENTIALS_SECRET,
 				"postStartScriptName",
 				postStartScript.getName()
 			)

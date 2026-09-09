@@ -2,9 +2,11 @@ package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
@@ -20,6 +22,8 @@ import com.cloudogu.gitops.utils.CommandExecutorForTest;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -31,8 +35,10 @@ import org.mockito.quality.Strictness;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -157,7 +163,7 @@ class VaultTest {
 
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
 			.isEqualTo(
-				"USERNAME=abc PASSWORD=123 ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+				"ARGOCD=true OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 
 		List<Map<String, Object>> actualVolumes = (List<Map<String, Object>>) server.get("volumes");
 		List<Map<String, Object>> actualVolumeMounts = (List<Map<String, Object>>) server.get("volumeMounts");
@@ -184,7 +190,7 @@ class VaultTest {
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
 			.isEqualTo(
-				"USERNAME=abc PASSWORD=123 ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+				"ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 	}
 
 	@Test
@@ -205,7 +211,7 @@ class VaultTest {
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
 			.isEqualTo(
-				"USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+				"ARGOCD=false OIDC_ENABLED=true OIDC_CLIENT_ID=vault-client OIDC_CLIENT_SECRET=vault-secret OIDC_DISCOVERY_URL=http://keycloak.local.gd/realms/gop OIDC_ADMIN_GROUP=gop-admins VAULT_EXTERNAL_URL=http://vault.localhost /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
 	}
 
 	@Test
@@ -223,7 +229,63 @@ class VaultTest {
 		List<Object> actualPostStart = (List<Object>) server.get("postStart");
 		assertThat(normalizeShellCommand((String) actualPostStart.get(2)))
 			.isEqualTo(
-				"USERNAME=admin PASSWORD=admin ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+				"ARGOCD=false OIDC_ENABLED=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log");
+	}
+
+	@Test
+	void devModeResolvesApplicationCredentialsWithoutRenderingThem() throws GitAPIException, IOException {
+		config.getFeatures().getSecrets().getVault().setMode(Config.VaultMode.DEV);
+		config.getApplication().setUsername("fallback-user");
+		config.getApplication().setPassword("fallback-password");
+
+		Credentials reference = new Credentials();
+		reference.setSecretName("application-credentials");
+		reference.setSecretNamespace("gop-job");
+		config.getApplication().setCredentials(reference);
+
+		Secret sourceSecret = new SecretBuilder()
+			.withNewMetadata()
+			.withName("application-credentials")
+			.withNamespace("gop-job")
+			.endMetadata()
+			.withType("Opaque")
+			.withData(Map.of(
+				"username", Base64.getEncoder().encodeToString("secret-user".getBytes(StandardCharsets.UTF_8)),
+				"password", Base64.getEncoder().encodeToString("secret-password".getBytes(StandardCharsets.UTF_8))
+			))
+			.build();
+
+		client.secrets().inNamespace("gop-job").resource(sourceSecret).create();
+
+		install(createVault());
+
+		var targetSecret = client.secrets()
+								 .inNamespace("foo-secrets")
+								 .withName("vault-user-credentials")
+								 .get();
+		assertThat(secretValue(targetSecret, "username")).isEqualTo("secret-user");
+		assertThat(secretValue(targetSecret, "password")).isEqualTo("secret-password");
+
+		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
+		List<Map<String, Object>> secretEnv = (List<Map<String, Object>>) server.get("extraSecretEnvironmentVars");
+		assertThat(secretEnv).containsExactly(
+			Map.of(
+				"envName", "USERNAME",
+				"secretName", "vault-user-credentials",
+				"secretKey", "username"
+			),
+			Map.of(
+				"envName", "PASSWORD",
+				"secretName", "vault-user-credentials",
+				"secretKey", "password"
+			)
+		);
+
+		String renderedValues = Files.readString(temporaryYamlFile);
+		assertThat(renderedValues).doesNotContain("secret-user", "secret-password");
+		assertThat(config.getApplication().getUsername()).isEqualTo("fallback-user");
+		assertThat(config.getApplication().getPassword()).isEqualTo("fallback-password");
+		assertThat(config.getApplication().getCredentials().getSecretName()).isEqualTo("application-credentials");
 	}
 
 	@Test
@@ -373,7 +435,8 @@ class VaultTest {
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator,
-			new VaultToolConfigMapper(config)
+			new VaultToolConfigMapper(config),
+			new CredentialsResolver(k8sClient)
 		);
 	}
 
@@ -384,6 +447,18 @@ class VaultTest {
 
 	private Map<String, Object> parseActualYaml() throws IOException {
 		return YAML_MAPPER.readValue(temporaryYamlFile.toFile(), YAML_MAP_TYPE);
+	}
+
+	private static String secretValue(Secret secret, String key) {
+		if (secret.getStringData() != null && secret.getStringData().get(key) != null) {
+			return secret.getStringData().get(key);
+		}
+
+		return decodeSecretValue(secret.getData().get(key));
+	}
+
+	private static String decodeSecretValue(String value) {
+		return new String(Base64.getDecoder().decode(value), StandardCharsets.UTF_8);
 	}
 
 	private static String normalizeShellCommand(String command) {
