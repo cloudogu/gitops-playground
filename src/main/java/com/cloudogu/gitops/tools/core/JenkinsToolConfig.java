@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
@@ -22,7 +23,8 @@ public record JenkinsToolConfig(
 	String kubernetesVersion,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public JenkinsToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);
@@ -34,7 +36,8 @@ public record JenkinsToolConfig(
 		String environmentPrefix,
 		boolean runningInsideK8s,
 		boolean trace,
-		boolean insecure) {
+		boolean insecure
+	) {
 	}
 
 	@Builder
@@ -42,14 +45,17 @@ public record JenkinsToolConfig(
 		String url,
 		String username,
 		String password,
+		CredentialsReference credentials,
 		String metricsUsername,
 		String metricsPassword,
+		CredentialsReference metricsCredentials,
 		boolean skipRestart,
 		boolean skipPlugins,
 		String mavenCentralMirror,
 		String internalBashImage,
 		boolean oidcConfigured,
-		Map<String, String> additionalEnvironments) {
+		Map<String, String> additionalEnvironments
+	) {
 
 		public Server {
 			additionalEnvironments = ImmutableConfigData.copyMap(additionalEnvironments);
@@ -58,10 +64,8 @@ public record JenkinsToolConfig(
 
 	@Builder
 	public record Scm(
-		ScmProviderType providerType,
-		String scmManagerPassword,
-		String gitlabUsername,
-		String gitlabPassword) {
+		ScmProviderType providerType
+	) {
 	}
 
 	@Builder
@@ -70,10 +74,13 @@ public record JenkinsToolConfig(
 		String path,
 		String username,
 		String password,
+		CredentialsReference credentials,
 		boolean twoRegistries,
 		String proxyUrl,
 		String proxyPath,
 		String proxyUsername,
-		String proxyPassword) {
+		String proxyPassword,
+		CredentialsReference proxyCredentials
+	) {
 	}
 }

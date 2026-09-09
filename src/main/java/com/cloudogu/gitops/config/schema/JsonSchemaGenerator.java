@@ -32,7 +32,7 @@ public class JsonSchemaGenerator {
 		// Apply the rule to include only fields with @JsonProperty annotation (or here,
 		// @JsonPropertyDescription)
 		configBuilder.forFields()
-		             .withIgnoreCheck((FieldScope field) -> field.getAnnotation(JsonPropertyDescription.class) == null);
+					 .withIgnoreCheck((FieldScope field) -> field.getAnnotation(JsonPropertyDescription.class) == null);
 
 		SchemaGenerator generator = new SchemaGenerator(configBuilder.build());
 

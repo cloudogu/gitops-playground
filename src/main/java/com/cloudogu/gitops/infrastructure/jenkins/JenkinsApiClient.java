@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.config.Config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ public class JenkinsApiClient {
 
 	private final Config config;
 	private final OkHttpClient client;
+	private ResolvedCredentials runtimeCredentials;
 
 	// Number of retries is uncommonly high, because we might have to outlive an unexpected Jenkins restart
 	// Here no constant is directly used because in uni tests we need to overwrite the maxRetries
@@ -51,11 +53,15 @@ public class JenkinsApiClient {
 		}
 	}
 
+	public void setRuntimeCredentials(ResolvedCredentials runtimeCredentials) {
+		this.runtimeCredentials = runtimeCredentials;
+	}
+
 	public String runScript(String code) {
 		log.trace("Running groovy script in Jenkins: {}", code);
 		try (Response response = postRequestWithCrumb(
 			"scriptText", new FormBody.Builder().add("script", code)
-			                                    .build()
+												.build()
 		)) {
 			if (response.code() != HTTP_OK) {
 				throw new IllegalStateException("Could not run script. Status code " + response.code());
@@ -109,13 +115,15 @@ public class JenkinsApiClient {
 	}
 
 	private Request.Builder buildRequest(String url) {
+		String username = runtimeCredentials == null
+			? config.getJenkins().getUsername()
+			: runtimeCredentials.username();
+		String password = runtimeCredentials == null
+			? config.getJenkins().getPassword()
+			: runtimeCredentials.password();
+
 		return new Request.Builder().url(config.getJenkins().getUrl() + "/" + url)
-		                            .header(
-										"Authorization", Credentials.basic(
-											config.getJenkins().getUsername(),
-											config.getJenkins().getPassword()
-										)
-									);
+											.header("Authorization", Credentials.basic(username, password));
 	}
 
 	// We pass a supplier, so that we actually refetch a new crumb for a failed request

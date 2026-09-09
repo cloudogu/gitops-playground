@@ -30,10 +30,10 @@ public class ServiceAccountRef {
 		}
 
 		return names.stream()
-		            .filter(name -> name != null && !name.trim().isEmpty())
-		            .distinct()
-		            .map(name -> new ServiceAccountRef(name, namespace))
-		            .toList();
+					.filter(name -> name != null && !name.trim().isEmpty())
+					.distinct()
+					.map(name -> new ServiceAccountRef(name, namespace))
+					.toList();
 	}
 
 	public Map<String, String> toMap() {

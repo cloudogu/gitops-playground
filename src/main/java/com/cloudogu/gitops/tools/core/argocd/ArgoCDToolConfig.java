@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
@@ -11,11 +12,14 @@ import java.util.Map;
 public record ArgoCDToolConfig(
 	boolean active,
 	String namespace,
+	String username,
 	String password,
+	CredentialsReference credentials,
 	boolean operator,
 	Collection<String> activeNamespaces,
 	String smtpUser,
 	String smtpPassword,
+	CredentialsReference smtpCredentials,
 	Map<String, Object> values,
 	boolean multiTenant,
 	boolean netpols,
@@ -26,7 +30,8 @@ public record ArgoCDToolConfig(
 	boolean clusterAdmin,
 	ScmProviderType scmProviderType,
 	Map<String, Object> templateConfig,
-	Map<String, Object> rbacTemplateConfig) {
+	Map<String, Object> rbacTemplateConfig
+) {
 
 	public ArgoCDToolConfig {
 		activeNamespaces = ImmutableConfigData.copyList(activeNamespaces);

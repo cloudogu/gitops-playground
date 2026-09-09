@@ -1,6 +1,9 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
+import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
@@ -39,6 +42,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	private static final String RELEASE_NAME = "kube-prometheus-stack";
 	private static final String MONITORING_APP_PATH = "apps/monitoring";
 	private static final String PASSWORD_KEY = "password";
+	private static final String GRAFANA_ADMIN_SECRET = "grafana-admin-credentials";
 	private static final String GENERIC_SECRET_TYPE = "generic";
 	private static final String NAMESPACE_KEY = "namespace";
 	private static final String MONITORING_RBAC_PATH = MONITORING_APP_PATH + "/misc/rbac";
@@ -47,6 +51,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
+	private ResolvedCredentials runtimeApplicationCredentials;
+	private ResolvedCredentials runtimeJenkinsMetricsCredentials;
+	private ResolvedCredentials runtimeSmtpCredentials;
 
 	@Getter
 	@Setter
@@ -59,7 +67,8 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
-		MonitoringToolConfigMapper configMapper) {
+		MonitoringToolConfigMapper configMapper,
+		CredentialsResolver credentialsResolver) {
 		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
@@ -67,6 +76,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		this.airGappedUtils = airGappedUtils;
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.credentialsResolver = credentialsResolver;
 	}
 
 	@Override
@@ -77,6 +87,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	@Override
 	protected void preDeploy() {
 		this.namespace = activeNamespace(toolConfig());
+		resolveRuntimeCredentials();
 
 		createImagePullSecret();
 		prepareMonitoringHelmValues();
@@ -163,25 +174,57 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		cleanupUnusedDashboards(clusterResourcesRepo);
 	}
 
+	private void resolveRuntimeCredentials() {
+		runtimeApplicationCredentials = credentialsResolver.resolveReference(
+			toolConfig().applicationCredentials(),
+			toolConfig().applicationUsername(),
+			toolConfig().applicationPassword()
+		);
+
+		if (toolConfig().jenkinsActive()) {
+			runtimeJenkinsMetricsCredentials = credentialsResolver.resolveReference(
+				toolConfig().jenkinsMetricsCredentials(),
+				toolConfig().jenkinsMetricsUsername(),
+				toolConfig().jenkinsMetricsPassword()
+			);
+		}
+
+		runtimeSmtpCredentials = credentialsResolver.resolveReference(
+			toolConfig().smtpCredentials(),
+			toolConfig().smtpUser(),
+			toolConfig().smtpPassword()
+		);
+	}
+
 	private void setupMonitoringSecrets() {
 		k8sClient.createSecret(
-			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(
-				PASSWORD_KEY, toolConfig().applicationPassword()
-			)
+			GENERIC_SECRET_TYPE, GRAFANA_ADMIN_SECRET, namespace,
+			new Tuple<>("admin-user", runtimeApplicationCredentials.username()),
+			new Tuple<>("admin-password", runtimeApplicationCredentials.password())
 		);
 
-		k8sClient.createSecret(
-			GENERIC_SECRET_TYPE, "prometheus-metrics-creds-jenkins", namespace, new Tuple<>(
-				PASSWORD_KEY, toolConfig().jenkinsMetricsPassword()
-			)
-		);
+		if (hasScmManagerMetricsEndpoint()) {
+			k8sClient.createSecret(
+				GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(
+					PASSWORD_KEY, gitHandler.getResourcesScm().getCredentials().getPassword()
+				)
+			);
+		}
 
-		if (isNotEmpty(toolConfig().smtpUser()) || isNotEmpty(toolConfig().smtpPassword())) {
+		if (toolConfig().jenkinsActive()) {
+			k8sClient.createSecret(
+				GENERIC_SECRET_TYPE, "prometheus-metrics-creds-jenkins", namespace, new Tuple<>(
+					PASSWORD_KEY, runtimeJenkinsMetricsCredentials.password()
+				)
+			);
+		}
+
+		if (isNotEmpty(runtimeSmtpCredentials.username()) || isNotEmpty(runtimeSmtpCredentials.password())) {
 			k8sClient.createSecret(
 				GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>(
-					"user", toolConfig().smtpUser()
+					"user", runtimeSmtpCredentials.username()
 				), new Tuple<>(
-					PASSWORD_KEY, toolConfig().smtpPassword()
+					PASSWORD_KEY, runtimeSmtpCredentials.password()
 				)
 			);
 		}
@@ -268,8 +311,9 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		URI uri = baseUriJenkins(toolConfig()).resolve("prometheus");
 		Map<String, String> components = new HashMap<>(uriComponents(uri));
 		components.put(
-			"metricsUsername", toolConfig().jenkinsMetricsUsername() != null
-				? toolConfig().jenkinsMetricsUsername()
+			"metricsUsername", runtimeJenkinsMetricsCredentials != null
+				&& runtimeJenkinsMetricsCredentials.username() != null
+				? runtimeJenkinsMetricsCredentials.username()
 				: ""
 		);
 		return components;
@@ -321,6 +365,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	}
 
 	private boolean hasScmManagerMetricsEndpoint() {
+		if (toolConfig().scmProviderType() != ScmProviderType.SCM_MANAGER) {
+			return false;
+		}
+
 		URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
 
 		if (uri == null) {

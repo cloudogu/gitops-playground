@@ -5,6 +5,7 @@ public final class ConfigConstants {
 	public static final String BINARY_NAME = "apply-ng";
 	public static final String APP_NAME = "gitops-playground (GOP)";
 	public static final String APP_DESCRIPTION = "CLI-tool to deploy gitops-playground.";
+	public static final String KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION = "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys.";
 
 	// group registry
 	public static final String REGISTRY_ENABLE_DESCRIPTION = "Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!";

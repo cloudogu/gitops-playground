@@ -33,7 +33,6 @@ COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
 
 COPY src/main /app/src/main
-COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app

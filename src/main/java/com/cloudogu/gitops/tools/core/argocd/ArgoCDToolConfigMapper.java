@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.argocd;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
@@ -26,11 +27,14 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 		return ArgoCDToolConfig.builder()
 							   .active(argocd.getActive())
 							   .namespace(config.getApplication().getNamePrefix() + argocd.getNamespace())
+							   .username(config.getApplication().getUsername())
 							   .password(config.getApplication().getPassword())
+							   .credentials(CredentialsReference.from(config.getApplication().getCredentials()))
 							   .operator(argocd.getOperator())
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
+							   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
 							   .values(argocd.getValues())
 							   .multiTenant(context.isMultiTenant())
 							   .netpols(config.getApplication().getNetpols())
@@ -86,9 +90,9 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())
 			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
-			.put("features.mail.smtpPassword", config.getFeatures().getMail().getSmtpPassword())
+			.put("features.mail.smtpPasswordConfigured", smtpPasswordConfigured(config))
 			.put("features.mail.smtpPort", config.getFeatures().getMail().getSmtpPort())
-			.put("features.mail.smtpUser", config.getFeatures().getMail().getSmtpUser())
+			.put("features.mail.smtpUserConfigured", smtpUserConfigured(config))
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
 			.put("features.secrets.active", config.getFeatures().getSecrets().getActive())
@@ -96,5 +100,23 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("scm.scmManager.namespace", scmManagerNamespace)
 			.put("scm.scmProviderType", config.getScm().getScmProviderType())
 			.values();
+	}
+
+	private static boolean smtpUserConfigured(Config config) {
+		return hasText(config.getFeatures().getMail().getSmtpUser()) || hasMailSecretReference(config);
+	}
+
+	private static boolean smtpPasswordConfigured(Config config) {
+		return hasText(config.getFeatures().getMail().getSmtpPassword()) || hasMailSecretReference(config);
+	}
+
+	private static boolean hasMailSecretReference(Config config) {
+		var credentials = config.getFeatures().getMail().getCredentials();
+		return credentials != null
+			&& (hasText(credentials.getSecretName()) || hasText(credentials.getSecretNamespace()));
+	}
+
+	private static boolean hasText(String value) {
+		return value != null && !value.isEmpty();
 	}
 }

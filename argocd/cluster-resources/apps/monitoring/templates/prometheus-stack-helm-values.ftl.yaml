@@ -82,7 +82,7 @@ prometheusOperator:
   namespaces:
     releaseNamespace: false
     additional:
-    <#-- Note that the quotes in the final YAML here are created by groovy, not Freemarker-->
+    <#-- Note that the quotes in the final YAML here are added during YAML processing, not by Freemarker-->
     <#if namespaces?has_content>
     <#list namespaces as namespace>
     - ${namespace}
@@ -180,8 +180,10 @@ grafana:
     create: false
 </#if>
   defaultDashboardsEnabled: false
-  adminUser: ${config.application["username"]}
-  adminPassword: ${config.application["password"]}
+  admin:
+    existingSecret: "grafana-admin-credentials"
+    userKey: "admin-user"
+    passwordKey: "admin-password"
   service:
     type: ClusterIP
 <#if monitoring?? && monitoring?is_hash && monitoring.grafana?? && monitoring.grafana.host?has_content>
@@ -263,7 +265,7 @@ grafana:
           routes:
           - receiver: email
           group_by: ["grafana_folder", "alertname"]
-  <#if config.features.mail.smtpUser?has_content || config.features.mail.smtpPassword?has_content>
+  <#if config.features.mail.smtpCredentialsConfigured>
   smtp:
     # `existingSecret` is a reference to an existing secret containing the smtp configuration
     # for Grafana.
@@ -363,14 +365,23 @@ prometheus:
       repository: ${prometheusImageObject.repository}
       tag       : ${prometheusImageObject.tag}
   </#if>
-    secrets:
-      - prometheus-metrics-creds-scmm
-      - prometheus-metrics-creds-jenkins
-    additionalScrapeConfigs:
-<#if config.scm.scmProviderType?lower_case == "scm_manager"
+<#assign hasScmMetrics = config.scm.scmProviderType?has_content
+  && config.scm.scmProviderType?lower_case == "scm_manager"
   && scm.host?has_content
   && scm.protocol?has_content
   && scm.path?has_content>
+<#assign hasJenkinsMetrics = config.jenkins.active == true>
+<#if hasScmMetrics || hasJenkinsMetrics>
+    secrets:
+<#if hasScmMetrics>
+      - prometheus-metrics-creds-scmm
+</#if>
+<#if hasJenkinsMetrics>
+      - prometheus-metrics-creds-jenkins
+</#if>
+</#if>
+    additionalScrapeConfigs:
+<#if hasScmMetrics>
       - job_name: 'scm-manager'
         static_configs:
           - targets: [ '${scm.host}' ]
@@ -380,7 +391,7 @@ prometheus:
           username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
 </#if>
-<#if config.jenkins.active == true>
+<#if hasJenkinsMetrics>
       - job_name: 'jenkins'
         static_configs:
           - targets: [ '${jenkins.host}' ]

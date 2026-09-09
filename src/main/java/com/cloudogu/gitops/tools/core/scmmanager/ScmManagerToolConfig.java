@@ -15,8 +15,6 @@ public record ScmManagerToolConfig(
 	String namespace,
 	String releaseName,
 	String ingress,
-	String username,
-	String password,
 	String gitOpsUsername,
 	boolean skipPlugins,
 	boolean skipRestart,
@@ -24,7 +22,8 @@ public record ScmManagerToolConfig(
 	String jenkinsUrl,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
-	Map<String, Object> templateConfig) {
+	Map<String, Object> templateConfig
+) {
 
 	public ScmManagerToolConfig {
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);

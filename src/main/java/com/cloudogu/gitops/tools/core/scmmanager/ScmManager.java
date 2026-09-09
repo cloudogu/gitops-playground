@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
@@ -24,6 +25,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 	private String namespace;
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final ScmManagerConfigUpdater configUpdater;
+	private final K8sClient k8sClient;
 	private ScmManagerSetup setup;
 
 	public ScmManager(
@@ -33,7 +35,8 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		AirGappedUtils airGappedUtils,
 		ImagePullSecretCreator imagePullSecretCreator,
 		ScmManagerToolConfigMapper configMapper,
-		ScmManagerConfigUpdater configUpdater) {
+		ScmManagerConfigUpdater configUpdater,
+		K8sClient k8sClient) {
 		super(configMapper);
 		this.gitHandler = gitHandler;
 		this.deployer = deployer;
@@ -41,6 +44,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		this.airGappedUtils = airGappedUtils;
 		this.imagePullSecretCreator = imagePullSecretCreator;
 		this.configUpdater = configUpdater;
+		this.k8sClient = k8sClient;
 	}
 
 	@Override
@@ -58,7 +62,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		ScmManagerProvider scmManager = getTenantScmManager();
 
 		this.setup = new ScmManagerSetup(
-			scmManager, deployer, context, repositoryWorkspace, fileSystemUtils, toolConfig()
+			scmManager, deployer, context, repositoryWorkspace, fileSystemUtils, toolConfig(), k8sClient
 		);
 	}
 
@@ -115,7 +119,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 
 		if (!(tenantScm instanceof ScmManagerProvider)) {
 			throw new IllegalStateException("Tenant SCM provider is not an SCM-Manager. Actual provider: " + (tenantScm != null ? tenantScm.getClass()
-			                                                                                                                               .getSimpleName() : "null"));
+																																		   .getSimpleName() : "null"));
 		}
 
 		return (ScmManagerProvider) tenantScm;

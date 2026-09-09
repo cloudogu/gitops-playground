@@ -18,7 +18,7 @@ public class ArgoCdApplicationTargetResolver {
 	public ArgoCdApplicationTarget resolve(DeploymentContext context, String repoName) {
 
 		String namePrefix = config.getApplication().getNamePrefix() != null ? config.getApplication()
-		                                                                            .getNamePrefix() : "";
+																					.getNamePrefix() : "";
 		String prefix = namePrefix.strip();
 
 		String applicationName = !prefix.isEmpty() ? (prefix + repoName) : repoName;

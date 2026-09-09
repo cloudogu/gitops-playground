@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.application.content;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Config.OverwriteMode;
@@ -65,6 +67,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 	private final Config config;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 	private final GitRepoFactory repoProvider;
 	private final Jenkins jenkins;
 
@@ -75,6 +78,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	public ContentLoader(
 		Config config,
 		K8sClient k8sClient,
+		CredentialsResolver credentialsResolver,
 		GitRepoFactory repoProvider,
 		Jenkins jenkins,
 		GitHandler gitHandler,
@@ -82,6 +86,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		Deployer deployer) {
 		this.config = config;
 		this.k8sClient = k8sClient;
+		this.credentialsResolver = credentialsResolver;
 		this.repoProvider = repoProvider;
 		this.jenkins = jenkins;
 		this.gitHandler = gitHandler;
@@ -176,9 +181,9 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 	protected void deployHelmReleasesFromContent() throws GitAPIException {
 		if (getConfig().getContent() == null || getConfig().getContent()
-		                                                   .getHelmReleases() == null || getConfig().getContent()
-		                                                                                            .getHelmReleases()
-		                                                                                            .isEmpty()) {
+														   .getHelmReleases() == null || getConfig().getContent()
+																									.getHelmReleases()
+																									.isEmpty()) {
 			log.debug("No content.helmReleases configured - skipping.");
 			return;
 		}
@@ -195,12 +200,12 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		}
 
 		HelmChartConfig helmConfig = HelmChartConfig.builder()
-			.repoURL(helmRelease.getRepoURL())
-			.chart(helmRelease.getChart())
-			.version(version)
-			.values(new HashMap<>())
-			.localHelmChartFolder(getConfig().getApplication().getLocalHelmChartFolder())
-			.build();
+													.repoURL(helmRelease.getRepoURL())
+													.chart(helmRelease.getChart())
+													.version(version)
+													.values(new HashMap<>())
+													.localHelmChartFolder(getConfig().getApplication().getLocalHelmChartFolder())
+													.build();
 
 		Map<String, Object> fileValues = new HashMap<>();
 		if (helmRelease.getValuesPath() != null && !helmRelease.getValuesPath().trim().isEmpty()) {
@@ -218,7 +223,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		String mergedValuesFilePath = mergedValuesFile.toString();
 
 		String releaseName = (helmRelease.getReleaseName() != null && !helmRelease.getReleaseName()
-		                                                                          .isEmpty()) ? helmRelease.getReleaseName() : helmRelease.getName();
+																				  .isEmpty()) ? helmRelease.getReleaseName() : helmRelease.getName();
 
 		deployHelmChart(
 			helmRelease.getName(),
@@ -234,52 +239,81 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	}
 
 	void createImagePullSecrets() {
-		if (getConfig().getRegistry().getCreateImagePullSecrets()) {
-			String registryUsername = (getConfig().getRegistry()
-			                                      .getReadOnlyUsername() != null && !getConfig().getRegistry()
-			                                                                                    .getReadOnlyUsername()
-			                                                                                    .isEmpty()) ? getConfig().getRegistry()
-			                                                                                                             .getReadOnlyUsername() : getConfig().getRegistry()
-			                                                                                                                                                 .getUsername();
+		if (!getConfig().getRegistry().getCreateImagePullSecrets()) {
+			return;
+		}
 
-			String registryPassword = (getConfig().getRegistry()
-			                                      .getReadOnlyPassword() != null && !getConfig().getRegistry()
-			                                                                                    .getReadOnlyPassword()
-			                                                                                    .isEmpty()) ? getConfig().getRegistry()
-			                                                                                                             .getReadOnlyPassword() : getConfig().getRegistry()
-			                                                                                                                                                 .getPassword();
+		ResolvedCredentials registryCredentials = resolveRegistryPullCredentials();
+		ResolvedCredentials proxyCredentials = null;
+		if (getConfig().getRegistry().getTwoRegistries()) {
+			proxyCredentials = credentialsResolver.resolve(
+				getConfig().getRegistry().getProxyCredentials(),
+				getConfig().getRegistry().getProxyUsername(),
+				getConfig().getRegistry().getProxyPassword()
+			);
+		}
 
-			for (String namespace : getConfig().getContent().getNamespaces()) {
-				String registrySecretName = "registry";
+		for (String namespace : getConfig().getContent().getNamespaces()) {
+			k8sClient.createNamespace(namespace);
 
-				k8sClient.createNamespace(namespace);
+			k8sClient.createImagePullSecret(
+				"registry",
+				namespace,
+				getConfig().getRegistry().getUrl(),
+				registryCredentials.username(),
+				registryCredentials.password()
+			);
 
+			k8sClient.patch(
+				"serviceaccount",
+				"default",
+				namespace,
+				Map.of("imagePullSecrets", List.of(Map.of("name", "registry")))
+			);
+
+			if (proxyCredentials != null) {
 				k8sClient.createImagePullSecret(
-					registrySecretName, namespace, getConfig().getRegistry()
-					                                          .getUrl(), registryUsername, registryPassword
-				);
-
-				k8sClient.patch(
-					"serviceaccount",
-					"default",
+					"proxy-registry",
 					namespace,
-					Map.of("imagePullSecrets", List.of(Map.of("name", registrySecretName)))
+					getConfig().getRegistry().getProxyUrl(),
+					proxyCredentials.username(),
+					proxyCredentials.password()
 				);
-
-				if (getConfig().getRegistry().getTwoRegistries()) {
-					k8sClient.createImagePullSecret(
-						"proxy-registry",
-						namespace,
-						getConfig().getRegistry()
-						           .getProxyUrl(),
-						getConfig().getRegistry()
-						           .getProxyUsername(),
-						getConfig().getRegistry()
-						           .getProxyPassword()
-					);
-				}
 			}
 		}
+	}
+
+	private ResolvedCredentials resolveRegistryPullCredentials() {
+		Config.RegistrySchema registry = getConfig().getRegistry();
+		if (referenceHasSecretLocation(registry.getReadOnlyCredentials())) {
+			return credentialsResolver.resolve(
+				registry.getReadOnlyCredentials(),
+				registry.getReadOnlyUsername(),
+				registry.getReadOnlyPassword()
+			);
+		}
+		if (referenceHasSecretLocation(registry.getCredentials())) {
+			return credentialsResolver.resolve(
+				registry.getCredentials(),
+				registry.getUsername(),
+				registry.getPassword()
+			);
+		}
+
+		return new ResolvedCredentials(
+			firstNonBlank(registry.getReadOnlyUsername(), registry.getUsername()),
+			firstNonBlank(registry.getReadOnlyPassword(), registry.getPassword())
+		);
+	}
+
+	private static String firstNonBlank(String preferred, String fallback) {
+		return preferred != null && !preferred.isEmpty() ? preferred : fallback;
+	}
+
+	private static boolean referenceHasSecretLocation(Credentials reference) {
+		return reference != null
+			&& ((reference.getSecretName() != null && !reference.getSecretName().isEmpty())
+				|| (reference.getSecretNamespace() != null && !reference.getSecretNamespace().isEmpty()));
 	}
 
 	void createContentRepos() throws Exception {
@@ -332,16 +366,16 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 		UsernamePasswordCredentialsProvider credentialsProvider = null;
 		if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
-		                                                     .getUsername() != null && repoConfig.getCredentials()
-		                                                                                         .getPassword() != null) {
+															 .getUsername() != null && repoConfig.getCredentials()
+																								 .getPassword() != null) {
 			credentialsProvider = new UsernamePasswordCredentialsProvider(
 				repoConfig.getCredentials()
-				          .getUsername(), repoConfig.getCredentials()
-				                                    .getPassword()
+						  .getUsername(), repoConfig.getCredentials()
+													.getPassword()
 			);
 		} else if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
-		                                                            .getSecretName() != null && repoConfig.getCredentials()
-		                                                                                                  .getSecretNamespace() != null) {
+																	.getSecretName() != null && repoConfig.getCredentials()
+																										  .getSecretNamespace() != null) {
 			Credentials credentials = this.k8sClient.getCredentialsFromSecret(repoConfig.getCredentials());
 			credentialsProvider = new UsernamePasswordCredentialsProvider(
 				credentials.getUsername(),
@@ -494,21 +528,21 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 					"config", getConfig(), "scm", Map.of(
 						"baseUrl",
 						repo.getGitProvider()
-						    .getUrl(),
+							.getUrl(),
 						"host",
 						repo.getGitProvider()
-						    .getHost(),
+							.getHost(),
 						"protocol",
 						repo.getGitProvider()
-						    .getProtocol(),
+							.getProtocol(),
 						"repoUrl",
 						repo.getGitProvider()
-						    .repoPrefix()
+							.repoPrefix()
 					), "statics", !getConfig().getContent()
-					                          .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-					                                                                                                            .getStaticModels() : new AllowListFreemarkerObjectWrapper(
+											  .getUseWhitelist() ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+																																.getStaticModels() : new AllowListFreemarkerObjectWrapper(
 						Configuration.VERSION_2_3_32, getConfig().getContent()
-						                                         .getAllowedStaticsWhitelist()
+																 .getAllowedStaticsWhitelist()
 					).getStaticModels()
 				)
 			);
@@ -522,8 +556,8 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		File repoTmpDir,
 		UsernamePasswordCredentialsProvider credentialsProvider) {
 		CloneCommand cloneCommand = gitClone().setURI(repoConfig.getUrl())
-		                                      .setDirectory(repoTmpDir)
-		                                      .setNoCheckout(false);
+											  .setDirectory(repoTmpDir)
+											  .setNoCheckout(false);
 
 		if (credentialsProvider != null) {
 			cloneCommand.setCredentialsProvider(credentialsProvider);
@@ -557,15 +591,15 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 			}
 
 			LsRemoteCommand remoteCommand = Git.lsRemoteRepository()
-			                                   .setRemote(repoConfig.getUrl())
-			                                   .setHeads(true)
-			                                   .setTags(true);
+											   .setRemote(repoConfig.getUrl())
+											   .setHeads(true)
+											   .setTags(true);
 
 			Collection<Ref> refs = remoteCommand.call();
 			String potentialRef = null;
 			for (Ref ref : refs) {
 				if (ref.getName().equals(REFS_HEADS_PREFIX + repoConfig.getRef()) || ref.getName()
-				                                                                        .equals(REFS_TAGS_PREFIX + repoConfig.getRef())) {
+																						.equals(REFS_TAGS_PREFIX + repoConfig.getRef())) {
 					potentialRef = ref.getName();
 					break;
 				}
@@ -681,8 +715,8 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 		String commitMessage = "Initialize content repo " + repoCoordinate.namespace + "/" + repoCoordinate.repoName;
 		String targetRefShort = repoCoordinate.repoConfig.getTargetRef()
-		                                                 .replace(REFS_HEADS_PREFIX, "")
-		                                                 .replace(REFS_TAGS_PREFIX, "");
+														 .replace(REFS_HEADS_PREFIX, "")
+														 .replace(REFS_TAGS_PREFIX, "");
 
 		if (!targetRefShort.isEmpty()) {
 			String refSpec = setRefSpec(repoCoordinate, targetRefShort);
@@ -702,8 +736,8 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	private static String setRefSpec(RepoCoordinate repoCoordinate, String targetRefShort) {
 		String refSpec;
 		if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.getTargetRef()
-		                                                          .startsWith(REFS_HEADS_PREFIX)) || repoCoordinate.repoConfig.getTargetRef()
-		                                                                                                                      .startsWith(
+																  .startsWith(REFS_HEADS_PREFIX)) || repoCoordinate.repoConfig.getTargetRef()
+																															  .startsWith(
 																																  REFS_TAGS_PREFIX)) {
 			refSpec = REFS_TAGS_PREFIX + targetRefShort + ":" + REFS_TAGS_PREFIX + targetRefShort;
 		} else {
@@ -748,7 +782,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		if (repoCoordinate.repoConfig.getRef() != null && !repoCoordinate.repoConfig.getRef().isEmpty()) {
 			validateCommitReferences(repoCoordinate);
 			if (repoCoordinate.repoConfig.getTargetRef() != null && !repoCoordinate.repoConfig.getTargetRef()
-			                                                                                  .isEmpty()) {
+																							  .isEmpty()) {
 				log.debug(
 					"Mirroring repo '{}' ref '{}' to target repo {}, targetRef: '{}'",
 					repoCoordinate.repoConfig.getUrl(),
@@ -864,10 +898,10 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 		public RepoCoordinate findSameNotMirror(Collection<RepoCoordinate> repoCoordinates) {
 			return repoCoordinates.stream()
-			                      .filter(coordinate -> coordinate.getFullRepoName()
-			                                      .equals(getFullRepoName()) && ContentRepoType.MIRROR != coordinate.repoConfig.getType())
-			                      .findFirst()
-			                      .orElse(null);
+								  .filter(coordinate -> coordinate.getFullRepoName()
+																  .equals(getFullRepoName()) && ContentRepoType.MIRROR != coordinate.repoConfig.getType())
+								  .findFirst()
+								  .orElse(null);
 		}
 	}
 }

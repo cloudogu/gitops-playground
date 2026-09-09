@@ -5,6 +5,7 @@
 K3D_VERSION=5.9.0
 # When updating please also adapt in Dockerfile, vars.tf and Config.groovy
 K8S_VERSION=1.36.4
+
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
 set -o errexit

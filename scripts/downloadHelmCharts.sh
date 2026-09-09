@@ -54,7 +54,7 @@ for chart in "${charts[@]}"; do
   helm repo add "$chart" "$repo" --repository-config="${tmpRepoFile}"
   helm pull --untar --untardir ./charts "$chart/$chart" --version "$version" --repository-config="${tmpRepoFile}"
   # Note that keeping charts as tgx would need only 1/10 of storage
-  # But untaring them in groovy would need additional libraries.
+  # But untarring them in application code would need additional libraries.
   # As layers of the image are compressed anyway, we'll do the untar process here, pragmatically
 
   # Do a simple verification

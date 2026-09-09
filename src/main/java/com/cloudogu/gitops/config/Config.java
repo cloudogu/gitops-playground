@@ -124,6 +124,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.JENKINS_SKIP_PLUGINS_DE
 import static com.cloudogu.gitops.config.ConfigConstants.JENKINS_SKIP_RESTART_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.JENKINS_URL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.JENKINS_USERNAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.MAIL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.MAVEN_CENTRAL_MIRROR_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.MIRROR_REPOS_DESCRIPTION;
@@ -382,6 +383,9 @@ public class Config {
 		@JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
 		private String password = "";
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--registry-proxy-url"}, description = REGISTRY_PROXY_URL_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
 		private String proxyUrl = "";
@@ -398,6 +402,9 @@ public class Config {
 		@JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
 		private String proxyPassword = "";
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials proxyCredentials;
+
 		@Option(names = {"--registry-username-read-only"}, description = REGISTRY_USERNAME_RO_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_USERNAME_RO_DESCRIPTION)
 		private String readOnlyUsername = "";
@@ -405,6 +412,9 @@ public class Config {
 		@Option(names = {"--registry-password-read-only"}, description = REGISTRY_PASSWORD_RO_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_PASSWORD_RO_DESCRIPTION)
 		private String readOnlyPassword = "";
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials readOnlyCredentials;
 
 		@Option(names = {"--create-image-pull-secrets"}, description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
 		@JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
@@ -459,6 +469,9 @@ public class Config {
 		@JsonPropertyDescription(JENKINS_PASSWORD_DESCRIPTION)
 		private String password = DEFAULT_ADMIN_PW;
 
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
+
 		@Option(names = {"--jenkins-metrics-username"}, description = JENKINS_METRICS_USERNAME_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
 		private String metricsUsername = "metrics";
@@ -466,6 +479,9 @@ public class Config {
 		@Option(names = {"--jenkins-metrics-password"}, description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
 		private String metricsPassword = "metrics";
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials metricsCredentials;
 
 		@Option(names = {"--jenkins-image"}, description = JENKINS_IMAGE_DESCRIPTION)
 		@JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
@@ -547,6 +563,9 @@ public class Config {
 		@Option(names = {"--password"}, description = PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(PASSWORD_DESCRIPTION)
 		private String password = DEFAULT_ADMIN_PW;
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
 
 		@Option(names = {"-y", "--yes"}, description = PIPE_YES_DESCRIPTION)
 		@JsonPropertyDescription(PIPE_YES_DESCRIPTION)
@@ -728,6 +747,9 @@ public class Config {
 		@Option(names = {"--smtp-password"}, description = SMTP_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
 		private String smtpPassword = "";
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
 	}
 
 	@Getter
@@ -1021,9 +1043,9 @@ public class Config {
 		@JsonCreator
 		public static VaultMode fromExternalValue(String value) {
 			return Arrays.stream(values())
-			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
-			             .findFirst()
-			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+						 .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+						 .findFirst()
+						 .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
 		}
 
 		@JsonValue
@@ -1074,8 +1096,8 @@ public class Config {
 					BeanDescription beanDesc,
 					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
-					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-					                     .toList();
+										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+										 .toList();
 				}
 			}));
 			return mapper;

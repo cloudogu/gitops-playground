@@ -51,7 +51,6 @@ The versions are also specified in the `Config.java` file, so it is recommended 
 ## Prerequisites
 
 - Java 25
-- Groovy
 - Maven
 - Docker
 - [k3d](https://k3d.io/)
@@ -537,24 +536,26 @@ The `base-domain` parameters lead to URLs in the following schema:
 
 ## Generate schema.json
 
-Run `GenerateJsonSchema.groovy` from your IDE.
+Run `GenerateJsonSchema.java` from your IDE.
 
-Or run build and run via maven and java:
+Or build the application and run the generator directly:
 
 ````shell
-mvn package -DskipTests
-java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
-  --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy
+./mvnw package -DskipTests
+java -classpath target/gitops-playground-cli-0.1.jar com.cloudogu.gitops.cli.GenerateJsonSchema
 ````
 
-Or build and run the via docker:
+Or build and run it via Docker while mounting the local `docs` directory:
 
 ```shell
-docker build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
-docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-playground.jar \
- org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
- --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy - \
- > docs/configuration.schema.json
+docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain .
+docker run --rm \
+  -v "$PWD/docs:/work/docs" \
+  -w /work \
+  --entrypoint java \
+  gitops-playground:dev \
+  -classpath /app/gitops-playground.jar \
+  com.cloudogu.gitops.cli.GenerateJsonSchema
 ```
 
 ## Releasing

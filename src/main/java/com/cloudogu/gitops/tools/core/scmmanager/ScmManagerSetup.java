@@ -7,10 +7,12 @@ import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import com.cloudogu.gitops.utils.Tuple;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.TemplateModel;
@@ -35,6 +37,7 @@ public class ScmManagerSetup {
 	private static final int SCMM_RESTART_START_DELAY_MILLIS = 100;
 	private static final int DEFAULT_PROXY_PORT = 8080;
 	private static final int DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS = 300;
+	static final String CREDENTIALS_SECRET_NAME = "scm-manager-credentials";
 
 	private final ScmManagerProvider scmManager;
 	private final Deployer deployer;
@@ -42,10 +45,12 @@ public class ScmManagerSetup {
 	private final RepositoryWorkspace repositoryWorkspace;
 	private final FileSystemUtils fileSystemUtils;
 	private final ScmManagerToolConfig config;
+	private final K8sClient k8sClient;
 
 	private Path tempValuesPath;
 
 	public void setupHelm() {
+		createCredentialsSecret();
 		Path valuesPath = prepareHelmValues();
 		HelmChartConfig helmConfig = config.helm();
 		String releaseName = scmmReleaseName();
@@ -59,7 +64,7 @@ public class ScmManagerSetup {
 		);
 
 		deployer.getHelmStrategy()
-		        .deployFeature(
+				.deployFeature(
 					helmConfig.repoURL(),
 					"scm-manager",
 					helmConfig.chart(),
@@ -136,14 +141,13 @@ public class ScmManagerSetup {
 		Map<String, Object> templateVars = new HashMap<>();
 		templateVars.put("config", config.templateConfig());
 		templateVars.put("host", config.ingress());
-		templateVars.put("username", config.username());
-		templateVars.put("password", config.password());
+		templateVars.put("credentialsSecretName", CREDENTIALS_SECRET_NAME);
 		templateVars.put("helm", config.helm());
 		templateVars.put("releaseName", releaseName);
 
 		try {
 			TemplateModel statics = new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-			                                                                                     .getStaticModels();
+																								 .getStaticModels();
 			templateVars.put("statics", statics);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to expose freemarker statics model", e);
@@ -156,6 +160,18 @@ public class ScmManagerSetup {
 		tempValuesPath = fileSystemUtils.writeTempFile(mergedMap);
 
 		return tempValuesPath;
+	}
+
+	private void createCredentialsSecret() {
+		var runtimeCredentials = scmManager.getCredentials();
+		k8sClient.createNamespace(config.namespace());
+		k8sClient.createSecret(
+			"generic",
+			CREDENTIALS_SECRET_NAME,
+			config.namespace(),
+			new Tuple<>("SCM_WEBAPP_INITIALUSER", runtimeCredentials.getUsername()),
+			new Tuple<>("SCM_WEBAPP_INITIALPASSWORD", runtimeCredentials.getPassword())
+		);
 	}
 
 	private String scmmReleaseName() {
@@ -248,8 +264,8 @@ public class ScmManagerSetup {
 			restartForThisPlugin = !config.skipRestart() && i == pluginNames.size() - 1;
 
 			ScmManagerApiClient.handleApiResponse(scmManager.getApiClient()
-			                                                .pluginApi()
-			                                                .install(pluginName, restartForThisPlugin));
+															.pluginApi()
+															.install(pluginName, restartForThisPlugin));
 		}
 
 		log.debug("SCM-Manager plugin installation finished successfully!");
@@ -307,19 +323,20 @@ public class ScmManagerSetup {
 		jenkinsPluginConfig.put("url", config.jenkinsUrl());
 
 		ScmManagerApiClient.handleApiResponse(this.scmManager.getApiClient()
-		                                                     .pluginApi()
-		                                                     .configureJenkinsPlugin(jenkinsPluginConfig));
+															 .pluginApi()
+															 .configureJenkinsPlugin(jenkinsPluginConfig));
 
 		log.debug("Successfully configured JenkinsPlugin in SCM-Manager.");
 	}
 
 	private void addDefaultUsers() {
 		String metricsUsername = config.namePrefix() + "metrics";
+		String runtimePassword = scmManager.getCredentials().getPassword();
 
 		addUser(
-			config.gitOpsUsername(), config.password(), "changeme@test.local"
+			config.gitOpsUsername(), runtimePassword, "changeme@test.local"
 		);
-		addUser(metricsUsername, config.password(), "changeme@test.local");
+		addUser(metricsUsername, runtimePassword, "changeme@test.local");
 		grantUserPermissions(metricsUsername, List.of("metrics:read"));
 	}
 
@@ -343,8 +360,8 @@ public class ScmManagerSetup {
 		permissionBody.put("permissions", permissions);
 
 		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient()
-		                                                .usersApi()
-		                                                .setPermissionForUser(username, permissionBody));
+														.usersApi()
+														.setPermissionForUser(username, permissionBody));
 
 		log.debug("Granted permissions {} to user {}.", permissions, username);
 	}

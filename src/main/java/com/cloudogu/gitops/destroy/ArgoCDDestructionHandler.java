@@ -78,7 +78,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 		k8sClient.delete("app", argocdNamespace, ARGOCD);
 
 		String jenkinsNamespace = config.getJenkins().getInternal() ? (namePrefix + config.getJenkins()
-		                                                                                            .getNamespace()) : null;
+																						  .getNamespace()) : null;
 		if (jenkinsNamespace != null) {
 			k8sClient.delete("secret", jenkinsNamespace, "jenkins-credentials");
 		}
@@ -92,7 +92,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 																										  umbrellaChartPath,
 																										  "Chart.yaml"
 																									  ))
-		                                                                                              .get(
+																									  .get(
 																										  "dependencies"));
 		helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
 		helmClient.dependencyBuild(umbrellaChartPath);

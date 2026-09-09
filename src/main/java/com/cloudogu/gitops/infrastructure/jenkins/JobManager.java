@@ -45,7 +45,7 @@ public class JobManager {
 			try (Response response = apiClient.postRequestWithCrumb(
 				"job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
 				new FormBody.Builder().add("json", jsonPayload)
-				                      .build()
+									  .build()
 			)) {
 				if (response.code() != HTTP_OK) {
 					throw new IllegalStateException("Could not create credential id=" + id + ",job=" + jobName + ". StatusCode: " + response.code());

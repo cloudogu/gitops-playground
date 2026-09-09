@@ -2,6 +2,8 @@ package com.cloudogu.gitops.application;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryProvisioning;
@@ -33,6 +35,7 @@ public class Application {
 	private final Config config;
 	private final ContextBuilder contextBuilder;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 	private final GitHandler gitHandler;
 	private final RepositoryProvisioning repositoryProvisioning;
 	private final DeploymentOrchestrator deploymentOrchestrator;
@@ -41,12 +44,14 @@ public class Application {
 		Config config,
 		ContextBuilder contextBuilder,
 		K8sClient k8sClient,
+		CredentialsResolver credentialsResolver,
 		GitHandler gitHandler,
 		RepositoryProvisioning repositoryProvisioning,
 		DeploymentOrchestrator deploymentOrchestrator) {
 		this.config = config;
 		this.contextBuilder = contextBuilder;
 		this.k8sClient = k8sClient;
+		this.credentialsResolver = credentialsResolver;
 		this.gitHandler = gitHandler;
 		this.repositoryProvisioning = repositoryProvisioning;
 		this.deploymentOrchestrator = deploymentOrchestrator;
@@ -80,13 +85,19 @@ public class Application {
 		} else {
 			// keep default namespace
 		}
+		ResolvedCredentials applicationCredentials = credentialsResolver.resolve(
+			config.getApplication().getCredentials(),
+			config.getApplication().getUsername(),
+			config.getApplication().getPassword()
+		);
+
 		log.debug("Storing GOP configuration in secret 'gop-configuration' in namespace '{}'", namespace);
 		k8sClient.createNamespace(namespace);
 		k8sClient.createSecret(
 			"generic",
 			"gop-configuration",
 			namespace,
-			new Tuple<>("gop-initial-password", config.getApplication().getPassword()),
+			new Tuple<>("gop-initial-password", applicationCredentials.password()),
 			new Tuple<>("gop-config", config.toYaml(true))
 		);
 	}
@@ -104,7 +115,7 @@ public class Application {
 							config,
 							"statics",
 							new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-							                                                             .getStaticModels()
+																						 .getStaticModels()
 						)
 					));
 				} catch (Exception e) {
