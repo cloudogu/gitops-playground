@@ -747,6 +747,9 @@ public class Config {
 		@Option(names = {"--smtp-password"}, description = SMTP_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
 		private String smtpPassword = "";
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
 	}
 
 	@Getter

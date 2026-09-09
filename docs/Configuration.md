@@ -235,6 +235,11 @@ Configuration of optional tools supported by gitops-playground.
 | `--smtp-port` | `features.mail.smtpPort` | Integer | `-` | Sets smtp port of external Mailserver |
 | `--smtp-user` | `features.mail.smtpUser` | String | `` | Sets smtp username for external Mailserver |
 | `--smtp-password` | `features.mail.smtpPassword` | String | `` | Sets smtp password of external Mailserver |
+| - | `features.mail.credentials.username` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `features.mail.credentials.secretNamespace` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `features.mail.credentials.secretName` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `features.mail.credentials.usernameKey` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `features.mail.credentials.passwordKey` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
 
 ### Tool: Monitoring
 

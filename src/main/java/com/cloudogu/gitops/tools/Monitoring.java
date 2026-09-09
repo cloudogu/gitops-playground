@@ -54,6 +54,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	private final CredentialsResolver credentialsResolver;
 	private ResolvedCredentials runtimeApplicationCredentials;
 	private ResolvedCredentials runtimeJenkinsMetricsCredentials;
+	private ResolvedCredentials runtimeSmtpCredentials;
 
 	@Getter
 	@Setter
@@ -187,6 +188,12 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 				toolConfig().jenkinsMetricsPassword()
 			);
 		}
+
+		runtimeSmtpCredentials = credentialsResolver.resolveReference(
+			toolConfig().smtpCredentials(),
+			toolConfig().smtpUser(),
+			toolConfig().smtpPassword()
+		);
 	}
 
 	private void setupMonitoringSecrets() {
@@ -212,12 +219,12 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 			);
 		}
 
-		if (isNotEmpty(toolConfig().smtpUser()) || isNotEmpty(toolConfig().smtpPassword())) {
+		if (isNotEmpty(runtimeSmtpCredentials.username()) || isNotEmpty(runtimeSmtpCredentials.password())) {
 			k8sClient.createSecret(
 				GENERIC_SECRET_TYPE, "grafana-email-secret", namespace, new Tuple<>(
-					"user", toolConfig().smtpUser()
+					"user", runtimeSmtpCredentials.username()
 				), new Tuple<>(
-					PASSWORD_KEY, toolConfig().smtpPassword()
+					PASSWORD_KEY, runtimeSmtpCredentials.password()
 				)
 			);
 		}

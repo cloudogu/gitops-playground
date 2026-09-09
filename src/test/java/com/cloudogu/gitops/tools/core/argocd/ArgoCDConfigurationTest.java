@@ -492,6 +492,43 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void resolvesExternalMailServerCredentialsFromSecretWithoutMutatingConfig() throws IOException {
+		config.getFeatures().getMail().setActive(true);
+		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");
+		config.getFeatures().getMail().setSmtpUser("fallback-user");
+		config.getFeatures().getMail().setSmtpPassword("fallback-password");
+		Credentials reference = new Credentials();
+		reference.setSecretName("smtp-credentials");
+		reference.setSecretNamespace("gop-job");
+		config.getFeatures().getMail().setCredentials(reference);
+		createSecretIfMissing(
+			"smtp-credentials",
+			"gop-job",
+			Map.of("username", encode("secret-smtp-user"), "password", encode("secret-smtp-password"))
+		);
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+		Map<String, Object> serviceEmail = parseYaml(
+			(String) value(valuesYaml, "argo-cd", "notifications", "notifiers", "service.email")
+		);
+
+		assertThat(serviceEmail.get("username")).isEqualTo("$email-username");
+		assertThat(serviceEmail.get("password")).isEqualTo("$email-password");
+		Secret mailSecret = client.secrets()
+			.inNamespace("argocd")
+			.withName("argocd-notifications-secret")
+			.get();
+		assertThat(decodedSecretValue(mailSecret, "email-username")).isEqualTo("secret-smtp-user");
+		assertThat(decodedSecretValue(mailSecret, "email-password")).isEqualTo("secret-smtp-password");
+		assertThat(config.getFeatures().getMail().getSmtpUser()).isEqualTo("fallback-user");
+		assertThat(config.getFeatures().getMail().getSmtpPassword()).isEqualTo("fallback-password");
+		assertThat(reference.getUsername()).isNull();
+		assertThat(reference.getPassword()).isNull();
+		assertThat(Files.readString(Path.of(actualHelmValuesFile())))
+			.doesNotContain("secret-smtp-user", "secret-smtp-password");
+	}
+
+	@Test
 	void createsKubernetesSecretWhenExternalMailServerUsernameIsSet() {
 		config.getFeatures().getMail().setActive(true);
 		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");

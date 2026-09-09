@@ -57,6 +57,9 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getMail().setSmtpPort(2525);
 		config.getFeatures().getMail().setSmtpUser("smtp-user");
 		config.getFeatures().getMail().setSmtpPassword("smtp-password");
+		config.getFeatures().getMail().setCredentials(
+			new Credentials(null, null, "smtp-credentials", "gop-job", "smtp-user", "smtp-password")
+		);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getSecrets().setActive(true);
@@ -93,6 +96,12 @@ class ArgoCDToolConfigMapperTest {
 													 ))
 													 .smtpUser("smtp-user")
 													 .smtpPassword("smtp-password")
+													 .smtpCredentials(new CredentialsReference(
+														 "smtp-credentials",
+														 "gop-job",
+														 "smtp-user",
+														 "smtp-password"
+													 ))
 													 .values(Map.of("server", Map.of("replicas", 2)))
 													 .multiTenant(true)
 													 .netpols(true)
@@ -153,9 +162,9 @@ class ArgoCDToolConfigMapperTest {
 															 Map.of(
 																 "active", true,
 																 "smtpAddress", "smtp.example.org",
-																 "smtpPassword", "smtp-password",
+																 "smtpPasswordConfigured", true,
 																 "smtpPort", 2525,
-																 "smtpUser", "smtp-user"
+																 "smtpUserConfigured", true
 															 ),
 															 "monitoring",
 															 Map.of("active", true, "namespace", "observability"),

@@ -40,6 +40,7 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 								   .jenkinsMetricsCredentials(CredentialsReference.from(config.getJenkins().getMetricsCredentials()))
 								   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 								   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
+								   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
 								   .grafanaUrl(monitoring.getGrafanaUrl())
 								   .jenkinsInternal(config.getJenkins().getInternal())
 								   .jenkinsNamespace(config.getJenkins().getNamespace())
@@ -71,9 +72,8 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())
 			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
-			.put("features.mail.smtpPassword", config.getFeatures().getMail().getSmtpPassword())
+			.put("features.mail.smtpCredentialsConfigured", smtpCredentialsConfigured(config))
 			.put("features.mail.smtpPort", config.getFeatures().getMail().getSmtpPort())
-			.put("features.mail.smtpUser", config.getFeatures().getMail().getSmtpUser())
 			.put("features.monitoring.grafanaEmailFrom", config.getFeatures().getMonitoring().getGrafanaEmailFrom())
 			.put("features.monitoring.grafanaEmailTo", config.getFeatures().getMonitoring().getGrafanaEmailTo())
 			.put("features.monitoring.grafanaUrl", config.getFeatures().getMonitoring().getGrafanaUrl())
@@ -92,5 +92,21 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("scm.scmManager.namespace", scmManagerNamespace)
 			.put("scm.scmProviderType", config.getScm() == null ? null : config.getScm().getScmProviderType())
 			.values();
+	}
+
+	private static boolean smtpCredentialsConfigured(Config config) {
+		return hasText(config.getFeatures().getMail().getSmtpUser())
+			|| hasText(config.getFeatures().getMail().getSmtpPassword())
+			|| hasMailSecretReference(config);
+	}
+
+	private static boolean hasMailSecretReference(Config config) {
+		var credentials = config.getFeatures().getMail().getCredentials();
+		return credentials != null
+			&& (hasText(credentials.getSecretName()) || hasText(credentials.getSecretNamespace()));
+	}
+
+	private static boolean hasText(String value) {
+		return value != null && !value.isEmpty();
 	}
 }

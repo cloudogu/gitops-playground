@@ -182,8 +182,13 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	}
 
 	private void createNotificationSecretIfRequired() {
-		String smtpUser = toolConfig().smtpUser();
-		String smtpPassword = toolConfig().smtpPassword();
+		ResolvedCredentials smtpCredentials = credentialsResolver.resolveReference(
+			toolConfig().smtpCredentials(),
+			toolConfig().smtpUser(),
+			toolConfig().smtpPassword()
+		);
+		String smtpUser = smtpCredentials.username();
+		String smtpPassword = smtpCredentials.password();
 		if ((smtpUser != null && !smtpUser.isEmpty()) || (smtpPassword != null && !smtpPassword.isEmpty())) {
 			k8sClient.createSecret(
 				"generic",

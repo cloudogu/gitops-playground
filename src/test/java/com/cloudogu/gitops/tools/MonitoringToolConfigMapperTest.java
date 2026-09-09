@@ -65,6 +65,9 @@ class MonitoringToolConfigMapperTest {
 		config.getFeatures().getMail().setSmtpPort(2525);
 		config.getFeatures().getMail().setSmtpUser("smtp-user");
 		config.getFeatures().getMail().setSmtpPassword("smtp-password");
+		config.getFeatures().getMail().setCredentials(
+			new Credentials(null, null, "smtp-credentials", "gop-job", "smtp-user", "smtp-password")
+		);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getMonitoring().setGrafanaUrl("https://grafana.example.org");
@@ -120,6 +123,12 @@ class MonitoringToolConfigMapperTest {
 														 ))
 														 .smtpUser("smtp-user")
 														 .smtpPassword("smtp-password")
+														 .smtpCredentials(new CredentialsReference(
+															 "smtp-credentials",
+															 "gop-job",
+															 "smtp-user",
+															 "smtp-password"
+														 ))
 														 .grafanaUrl("https://grafana.example.org")
 														 .jenkinsInternal(false)
 														 .jenkinsNamespace("jenkins-system")
@@ -150,9 +159,8 @@ class MonitoringToolConfigMapperTest {
 																 Map.of(
 																	 "active", true,
 																	 "smtpAddress", "smtp.example.org",
-																	 "smtpPassword", "smtp-password",
-																	 "smtpPort", 2525,
-																	 "smtpUser", "smtp-user"
+																	 "smtpCredentialsConfigured", true,
+																	 "smtpPort", 2525
 																 ),
 																 "monitoring",
 																 Map.of(

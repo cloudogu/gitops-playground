@@ -19,6 +19,7 @@ public record ArgoCDToolConfig(
 	Collection<String> activeNamespaces,
 	String smtpUser,
 	String smtpPassword,
+	CredentialsReference smtpCredentials,
 	Map<String, Object> values,
 	boolean multiTenant,
 	boolean netpols,

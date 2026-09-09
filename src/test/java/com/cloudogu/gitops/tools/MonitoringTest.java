@@ -313,6 +313,38 @@ class MonitoringTest {
 	}
 
 	@Test
+	void resolvesExternalMailserverCredentialsFromSecretWithoutRenderingThem() throws GitAPIException, IOException {
+		config.getFeatures().getMail().setActive(true);
+		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");
+		config.getFeatures().getMail().setSmtpUser("fallback-user");
+		config.getFeatures().getMail().setSmtpPassword("fallback-password");
+		config.getFeatures().getMail().setCredentials(
+			new Credentials(null, null, "smtp-credentials", "gop-job", "username", "password")
+		);
+		when(k8sClient.getCredentialsFromSecret(argThat((Credentials credentials) ->
+			"smtp-credentials".equals(credentials.getSecretName())
+				&& "gop-job".equals(credentials.getSecretNamespace())
+		))).thenReturn(new Credentials("secret-smtp-user", "secret-smtp-password"));
+
+		install(createStack(scmManagerMock));
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"grafana-email-secret",
+			"foo-monitoring",
+			new Tuple<>("user", "secret-smtp-user"),
+			new Tuple<>("password", "secret-smtp-password")
+		);
+		Map<String, Object> grafana = (Map<String, Object>) parseActualYaml().get("grafana");
+		Map<String, Object> smtp = (Map<String, Object>) grafana.get("smtp");
+		assertThat(smtp.get("existingSecret")).isEqualTo("grafana-email-secret");
+		assertThat(Files.readString(temporaryYamlFilePrometheus))
+			.doesNotContain("secret-smtp-user", "secret-smtp-password");
+		assertThat(config.getFeatures().getMail().getSmtpUser()).isEqualTo("fallback-user");
+		assertThat(config.getFeatures().getMail().getSmtpPassword()).isEqualTo("fallback-password");
+	}
+
+	@Test
 	void whenExternalMailserverIsSetWithoutPort() throws GitAPIException, IOException {
 		config.getFeatures().getMail().setActive(true);
 		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");

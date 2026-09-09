@@ -491,6 +491,10 @@
         "mail" : {
           "type" : [ "object", "null" ],
           "properties" : {
+            "credentials" : {
+              "$ref" : "#/$defs/Credentials-nullable",
+              "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+            },
             "smtpAddress" : {
               "type" : [ "string", "null" ],
               "description" : "Sets smtp port of external Mailserver"

@@ -44,6 +44,10 @@ class CredentialsReferenceConfigTest {
 		config.getJenkins().setPassword("jenkins-password");
 		config.getJenkins().setCredentials(reference);
 
+		config.getFeatures().getMail().setSmtpUser("smtp-user");
+		config.getFeatures().getMail().setSmtpPassword("smtp-password");
+		config.getFeatures().getMail().setCredentials(reference);
+
 		config.getRegistry().setUsername("registry-user");
 		config.getRegistry().setPassword("registry-password");
 		config.getRegistry().setCredentials(reference);
@@ -56,6 +60,9 @@ class CredentialsReferenceConfigTest {
 		assertThat(config.getJenkins().getCredentials()).isSameAs(reference);
 		assertThat(config.getJenkins().getUsername()).isEqualTo("jenkins-user");
 		assertThat(config.getJenkins().getPassword()).isEqualTo("jenkins-password");
+		assertThat(config.getFeatures().getMail().getCredentials()).isSameAs(reference);
+		assertThat(config.getFeatures().getMail().getSmtpUser()).isEqualTo("smtp-user");
+		assertThat(config.getFeatures().getMail().getSmtpPassword()).isEqualTo("smtp-password");
 		assertThat(config.getRegistry().getCredentials()).isSameAs(reference);
 		assertThat(config.getRegistry().getProxyCredentials()).isSameAs(reference);
 		assertThat(config.getRegistry().getReadOnlyCredentials()).isSameAs(reference);

@@ -29,6 +29,7 @@ public record MonitoringToolConfig(
 	CredentialsReference jenkinsMetricsCredentials,
 	String smtpUser,
 	String smtpPassword,
+	CredentialsReference smtpCredentials,
 	String grafanaUrl,
 	boolean jenkinsInternal,
 	String jenkinsNamespace,
