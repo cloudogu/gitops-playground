@@ -59,7 +59,7 @@ RUN apk add curl grep
 
 # When updating Helm, also upgrade the helm chart version in Config.java
 # renovate: depName=helm/helm datasource=github-releases
-ARG HELM_VERSION=4.2.1
+ARG HELM_VERSION=4.2.4
 
 # Install additional tools required for downloads
 # bash curl unzip required for Jenkins downloader
