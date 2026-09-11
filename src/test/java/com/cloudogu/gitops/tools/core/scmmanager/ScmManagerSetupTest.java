@@ -20,6 +20,8 @@ import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import okhttp3.internal.http.RealResponseBody;
+import okio.BufferedSource;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -311,11 +313,12 @@ class ScmManagerSetupTest {
 
 		@SuppressWarnings("unchecked")
 		Call<Void> apiCall = mock(Call.class);
-		@SuppressWarnings("unchecked")
-		Response<Void> response = mock(Response.class);
+		Response<Void> response = Response.error(
+			503,
+			new RealResponseBody("text/plain", 0, mock(BufferedSource.class))
+		);
 		when(generalApi.checkScmmAvailable()).thenReturn(apiCall);
 		when(apiCall.execute()).thenReturn(response);
-		when(response.isSuccessful()).thenReturn(false);
 
 		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
 			scmManager,
