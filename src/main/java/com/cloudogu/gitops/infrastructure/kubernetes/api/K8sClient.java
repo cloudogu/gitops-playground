@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceList;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.IntOrString;
@@ -32,9 +33,6 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.utils.Serialization;
-import io.fabric8.openshift.api.model.Project;
-import io.fabric8.openshift.api.model.ProjectBuilder;
-import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
@@ -78,6 +76,13 @@ public class K8sClient {
 	private static final String DOCKER_CONFIG_JSON_KEY = ".dockerconfigjson";
 	private static final String NOT_FOUND_IN_NAMESPACE = " not found in namespace ";
 	private static final String APPLIED_PREFIX = "Applied ";
+	private static final ResourceDefinitionContext OPENSHIFT_PROJECT_CONTEXT = new ResourceDefinitionContext.Builder()
+		.withGroup("project.openshift.io")
+		.withVersion("v1")
+		.withKind("Project")
+		.withPlural("projects")
+		.withNamespaced(false)
+		.build();
 
 	private static final int DEFAULT_TIMEOUT_SECONDS = 60;
 	private static final int DEFAULT_CHECK_INTERVAL_SECONDS = 1;
@@ -337,12 +342,16 @@ public class K8sClient {
 			log.debug("Namespace {} does not exist, proceeding to create.", name);
 
 			if (runInOpenshift()) {
-				OpenShiftClient osClient = client.adapt(OpenShiftClient.class);
-
-				Project project = new ProjectBuilder().withNewMetadata().withName(name).endMetadata().build();
+				GenericKubernetesResource project = new GenericKubernetesResourceBuilder()
+					.withApiVersion("project.openshift.io/v1")
+					.withKind("Project")
+					.withNewMetadata()
+					.withName(name)
+					.endMetadata()
+					.build();
 				executeWithErrorHandling(
 					"create project " + name, () -> {
-						osClient.projects().resource(project).create();
+						client.genericKubernetesResources(OPENSHIFT_PROJECT_CONTEXT).resource(project).create();
 						return null;
 					}
 				);

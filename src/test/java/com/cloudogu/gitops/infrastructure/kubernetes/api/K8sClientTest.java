@@ -19,7 +19,6 @@ import io.fabric8.kubernetes.api.model.StatusBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
-import io.fabric8.openshift.api.model.ProjectBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -451,7 +450,9 @@ class K8sClientTest {
 			  .post()
 			  .withPath("/apis/project.openshift.io/v1/projects")
 			  .andReturn(
-				  201, new ProjectBuilder()
+				  201, new GenericKubernetesResourceBuilder()
+					  .withApiVersion("project.openshift.io/v1")
+					  .withKind("Project")
 					  .withNewMetadata()
 					  .withName("test-project")
 					  .endMetadata()

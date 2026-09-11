@@ -262,10 +262,10 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
+            <artifactId>kubernetes-client</artifactId>
             <version>${kubernetes.fabric8.java.version}</version>
         </dependency>
 
