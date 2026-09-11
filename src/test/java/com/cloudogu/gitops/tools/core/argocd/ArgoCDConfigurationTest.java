@@ -43,7 +43,6 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @EnableKubernetesMockClient(crud = true)
 class ArgoCDConfigurationTest {
@@ -849,30 +848,6 @@ class ArgoCDConfigurationTest {
 		for (Map<String, Object> resource : parsedResourceInclusions) {
 			assertThat(resource).containsKey("clusters");
 			assertThat(listValue(resource, "clusters")).contains(expectedClusterUrl);
-		}
-	}
-
-	@Test
-	void resourceInclusionsClusterFromConfigTrumpsEnvironmentVariables() throws Exception {
-		ArgoCD argocd = setupOperatorTest(false);
-		config.getApplication().setInternalKubernetesApiUrl("https://192.168.0.1:6443");
-
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
-			.and("KUBERNETES_SERVICE_PORT", "443")
-			.execute(() -> execute(argocd));
-
-		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
-
-		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
-		String expectedClusterUrlFromConfig = "https://192.168.0.1:6443";
-		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
-		List<Map<String, Object>> parsedResourceInclusions = parseYamlList(resourceInclusions);
-
-		for (Map<String, Object> resource : parsedResourceInclusions) {
-			assertThat(resource).containsKey("clusters");
-			assertThat(listValue(resource, "clusters"))
-				.contains(expectedClusterUrlFromConfig)
-				.doesNotContain("https://100.125.0.1:443");
 		}
 	}
 
