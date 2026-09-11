@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.integration.tools;
 
 import com.cloudogu.gitops.integration.TestK8sHelper;
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -59,13 +59,12 @@ public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	@Disabled("not start on jenkins")
 	@Test
-	void ensureMonitoringIsStarted() throws ApiException {
-		V1PodList pods = api.listNamespacedPod(namespace).execute();
-		assertThat(pods).isNotNull();
-		assertThat(pods.getItems().isEmpty()).isFalse();
+	void ensureMonitoringIsStarted() {
+		List<Pod> pods = listPods();
+		assertThat(pods).isNotEmpty();
 
-		V1Pod prometheus = null;
-		for (V1Pod pod : pods.getItems()) {
+		Pod prometheus = null;
+		for (Pod pod : pods) {
 			if (pod.getMetadata().getName().contains(prometheusPod)) {
 				prometheus = pod;
 				break;
@@ -77,8 +76,13 @@ public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	@Disabled("jenkins got only 2")
 	@Test
-	void ensureNamespaceGot3Pods() throws ApiException {
-		V1PodList pods = api.listNamespacedPod(namespace).execute();
-		assertThat(pods.getItems().size()).isEqualTo(3);
+	void ensureNamespaceGot3Pods() {
+		assertThat(listPods()).hasSize(3);
+	}
+
+	private List<Pod> listPods() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			return client.pods().inNamespace(namespace).list().getItems();
+		}
 	}
 }
