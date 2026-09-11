@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.dependencyinjection.okhttp;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +14,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -24,6 +27,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class RetryInterceptorTest {
 
@@ -100,28 +107,25 @@ class RetryInterceptorTest {
 	}
 
 	@Test
-	void retriesOnTimeout() throws IOException, GeneralSecurityException {
-		String path = "/timeout-test";
+	void retriesOnTimeout() throws IOException {
+		Request request = new Request.Builder().url("http://localhost/timeout-test").build();
+		Interceptor.Chain chain = mock(Interceptor.Chain.class);
+		Response successfulResponse = new Response.Builder()
+			.request(request)
+			.protocol(Protocol.HTTP_1_1)
+			.code(200)
+			.message("OK")
+			.build();
 
-		wireMock.stubFor(get(urlEqualTo(path))
-			.inScenario("Timeout Scenario")
-			.whenScenarioStateIs("Started")
-			.willReturn(aResponse()
-				.withStatus(200)
-				.withFixedDelay(2000))
-			.willSetStateTo("After Timeout"));
+		when(chain.request()).thenReturn(request);
+		when(chain.proceed(request))
+			.thenThrow(new SocketTimeoutException("Read timed out"))
+			.thenReturn(successfulResponse);
 
-		wireMock.stubFor(get(urlEqualTo(path))
-			.inScenario("Timeout Scenario")
-			.whenScenarioStateIs("After Timeout")
-			.willReturn(aResponse()
-				.withStatus(200)
-				.withBody("Successful Result")));
-
-		OkHttpClient client = createClient(100);
-		Response response = client.newCall(new Request.Builder().url(wireMock.baseUrl() + path).build()).execute();
-		assertThat(response.body().string()).isEqualTo("Successful Result");
-		wireMock.verify(2, getRequestedFor(urlEqualTo(path)));
+		try (Response response = new RetryInterceptor(3, 0).intercept(chain)) {
+			assertThat(response.code()).isEqualTo(200);
+		}
+		verify(chain, times(2)).proceed(request);
 	}
 
 	@Test
