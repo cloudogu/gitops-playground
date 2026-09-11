@@ -690,6 +690,51 @@ class ArgoCDConfigurationTest {
 			.contains("namespace: my-prefix-scm-manager")
 			.doesNotContain("namespace: my-prefix-my-prefix-scm-manager")
 			.contains("kubernetes.io/metadata.name: my-prefix-argocd");
+
+		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
+		assertThat(value(networkPolicy, "metadata", "name"))
+			.isEqualTo("allow-required-access-to-scm-manager");
+		assertThat(value(networkPolicy, "spec", "podSelector", "matchLabels", "app"))
+			.isEqualTo("scm-manager");
+
+		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
+		assertThat(ingressRules).hasSize(2);
+		assertNetworkPolicyPeer(
+			ingressRules.get(0),
+			"my-prefix-argocd",
+			"app.kubernetes.io/name",
+			"argocd-repo-server"
+		);
+		assertNetworkPolicyPeer(
+			ingressRules.get(1),
+			"my-prefix-ingress",
+			"app.kubernetes.io/name",
+			"traefik"
+		);
+	}
+
+	@Test
+	void restrictsScmManagerAccessByPodLabelsInSingleNamespace() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().setNamePrefix("my-prefix-");
+		config.getFeatures().getArgocd().setNamespace("platform");
+		// ScmManager updates its namespace with the application prefix before Argo CD is executed.
+		config.getScm().getScmManager().setNamespace("my-prefix-platform");
+
+		executeAndReadHelmValues();
+		String allowNamespaces = Files.readString(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
+		);
+		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
+
+		assertThat(value(networkPolicy, "metadata", "namespace")).isEqualTo("my-prefix-platform");
+		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
+		assertNetworkPolicyPeer(
+			ingressRules.get(0),
+			"my-prefix-platform",
+			"app.kubernetes.io/name",
+			"argocd-repo-server"
+		);
 	}
 
 	@Test
@@ -1810,6 +1855,22 @@ class ArgoCDConfigurationTest {
 	@SuppressWarnings("unchecked")
 	private static List<String> listValue(Map<String, Object> yaml, String... path) {
 		return (List<String>) value(yaml, path);
+	}
+
+	private static void assertNetworkPolicyPeer(
+		Map<String, Object> ingressRule,
+		String namespace,
+		String podLabel,
+		String podLabelValue) {
+		List<Map<String, Object>> peers = mapListValue(ingressRule, "from");
+		assertThat(peers).hasSize(1);
+		Map<String, Object> peer = peers.get(0);
+		assertThat(value(peer, "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name"))
+			.isEqualTo(namespace);
+		assertThat(value(peer, "podSelector", "matchLabels", podLabel)).isEqualTo(podLabelValue);
+
+		List<Map<String, Object>> ports = mapListValue(ingressRule, "ports");
+		assertThat(ports).containsExactly(Map.of("protocol", "TCP", "port", 8080));
 	}
 
 	private static Map<String, Object> map(Object... keyValues) {

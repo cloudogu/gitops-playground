@@ -52,6 +52,8 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getArgocd().getOidc().setClientId("argocd-client");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getMail().setActive(true);
 		config.getFeatures().getMail().setSmtpAddress("smtp.example.org");
 		config.getFeatures().getMail().setSmtpPort(2525);
@@ -158,6 +160,8 @@ class ArgoCDToolConfigMapperTest {
 															 ),
 															 "certManager",
 															 Map.of("active", true, "issuer", "production-issuer"),
+															 "ingress",
+															 Map.of("active", true, "namespace", "edge"),
 															 "mail",
 															 Map.of(
 																 "active", true,

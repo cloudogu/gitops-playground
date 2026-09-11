@@ -88,6 +88,8 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.argocd.url", config.getFeatures().getArgocd().getUrl())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.ingress.active", config.getFeatures().getIngress().getActive())
+			.put("features.ingress.namespace", config.getFeatures().getIngress().getIngressNamespace())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())
 			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
 			.put("features.mail.smtpPasswordConfigured", smtpPasswordConfigured(config))
