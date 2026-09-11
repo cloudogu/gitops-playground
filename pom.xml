@@ -313,15 +313,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Provides withEnvironmentVariable in tests. Replaces the unmaintained system-lambda
-        implementation with a Byte Buddy based implementation that supports current JDKs. -->
-        <dependency>
-            <groupId>uk.org.webcompere</groupId>
-            <artifactId>system-stubs-core</artifactId>
-            <version>2.1.8</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>

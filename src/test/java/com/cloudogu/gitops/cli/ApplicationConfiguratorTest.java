@@ -34,7 +34,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 class ApplicationConfiguratorTest {
 
@@ -76,7 +75,7 @@ class ApplicationConfiguratorTest {
 	@BeforeEach
 	void setup() {
 		fileSystemUtils = new FileSystemUtils();
-		applicationConfigurator = new ApplicationConfigurator();
+		applicationConfigurator = configuratorWithEnvironment(Map.of());
 		testLogger = new TestLogger(applicationConfigurator.getClass());
 		commonFeatureConfig = new CommonToolConfig();
 
@@ -126,11 +125,12 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
-	void setsConfigApplicationRunningInsideK8s() throws Exception {
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute(() -> {
-			Config actualConfig = applicationConfigurator.initConfig(testConfig);
-			assertThat(actualConfig.getApplication().getRunningInsideK8s()).isEqualTo(true);
-		});
+	void setsConfigApplicationRunningInsideK8s() {
+		applicationConfigurator = configuratorWithEnvironment(Map.of("KUBERNETES_SERVICE_HOST", "127.0.0.1"));
+
+		Config actualConfig = applicationConfigurator.initConfig(testConfig);
+
+		assertThat(actualConfig.getApplication().getRunningInsideK8s()).isEqualTo(true);
 	}
 
 	@Test
@@ -604,6 +604,21 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
+	void userProvidedResourceInclusionsClusterTrumpsEnvironmentVariables() {
+		applicationConfigurator = configuratorWithEnvironment(Map.of(
+			"KUBERNETES_SERVICE_HOST", "100.125.0.1",
+			"KUBERNETES_SERVICE_PORT", "443"
+		));
+		testConfig.getFeatures().getArgocd().setOperator(true);
+		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
+
+		applicationConfigurator.initConfig(testConfig);
+
+		assertThat(testConfig.getFeatures().getArgocd().getResourceInclusionsCluster())
+			.isEqualTo("https://192.168.0.1:6443");
+	}
+
+	@Test
 	void shouldThrowExceptionForUserProvidedInvalidResourceInclusionsClusterUrl() {
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster("invalid-url");
@@ -619,21 +634,21 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
-	void shouldSetResourceInclusionsClusterUsingKubernetesEnvVariablesWhenNotProvidedByUser() throws Exception {
+	void shouldSetResourceInclusionsClusterUsingKubernetesEnvVariablesWhenNotProvidedByUser() {
+		applicationConfigurator = configuratorWithEnvironment(Map.of(
+			"KUBERNETES_SERVICE_HOST", "127.0.0.1",
+			"KUBERNETES_SERVICE_PORT", "6443"
+		));
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster(null);
 
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-			.and("KUBERNETES_SERVICE_PORT", "6443")
-			.execute(() -> {
-				Config actualConfig = applicationConfigurator.initConfig(testConfig);
+		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
-				assertThat(actualConfig.getFeatures().getArgocd().getResourceInclusionsCluster())
-					.isEqualTo("https://127.0.0.1:6443");
-				assertThat(testLogger.getLogs().search(
-					"Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"
-				)).isNotEmpty();
-			});
+		assertThat(actualConfig.getFeatures().getArgocd().getResourceInclusionsCluster())
+			.isEqualTo("https://127.0.0.1:6443");
+		assertThat(testLogger.getLogs().search(
+			"Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"
+		)).isNotEmpty();
 	}
 
 	@Test
@@ -678,26 +693,30 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
-	void shouldThrowExceptionForInvalidKubernetesConstructedUrl() throws Exception {
+	void shouldThrowExceptionForInvalidKubernetesConstructedUrl() {
+		applicationConfigurator = configuratorWithEnvironment(Map.of(
+			"KUBERNETES_SERVICE_HOST", "invalid_host",
+			"KUBERNETES_SERVICE_PORT", "not_a_port"
+		));
 		testConfig.getFeatures().getArgocd().setOperator(true);
 		testConfig.getFeatures().getArgocd().setResourceInclusionsCluster(null);
 
-		withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "invalid_host")
-			.and("KUBERNETES_SERVICE_PORT", "not_a_port")
-			.execute(() -> {
-				RuntimeException exception = assertThrows(
-					RuntimeException.class,
-					() -> applicationConfigurator.initConfig(testConfig)
-				);
+		RuntimeException exception = assertThrows(
+			RuntimeException.class,
+			() -> applicationConfigurator.initConfig(testConfig)
+		);
 
-				assertThat(exception.getMessage()).contains(
-					"Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true."
-				);
-			});
+		assertThat(exception.getMessage()).contains(
+			"Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true."
+		);
 
 		assertThat(testLogger.getLogs().search(
 			"Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port"
 		)).isNotEmpty();
+	}
+
+	private static ApplicationConfigurator configuratorWithEnvironment(Map<String, String> environment) {
+		return new ApplicationConfigurator(environment::get);
 	}
 
 	@Test

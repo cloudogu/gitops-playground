@@ -2,17 +2,25 @@ package com.cloudogu.gitops.cli;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.function.Function;
 
-@RequiredArgsConstructor
 @Slf4j
 public class ApplicationConfigurator {
+	private final Function<String, String> environment;
+
+	public ApplicationConfigurator() {
+		this(System::getenv);
+	}
+
+	ApplicationConfigurator(Function<String, String> environment) {
+		this.environment = environment;
+	}
 
 	private static boolean hasText(String value) {
 		return value != null && !value.isEmpty();
@@ -128,7 +136,7 @@ public class ApplicationConfigurator {
 	}
 
 	private void addAdditionalApplicationConfig(Config newConfig) {
-		if (System.getenv("KUBERNETES_SERVICE_HOST") != null) {
+		if (environment.apply("KUBERNETES_SERVICE_HOST") != null) {
 			log.debug("installation is running in kubernetes.");
 			newConfig.getApplication().setRunningInsideK8s(true);
 		}
@@ -350,8 +358,8 @@ public class ApplicationConfigurator {
 	public void buildAndValidateURLFromEnvironment(Config config) {
 		log.debug("Attempting to set features.argocd.resourceInclusionsCluster via Kubernetes ENV variables.");
 
-		String host = System.getenv("KUBERNETES_SERVICE_HOST");
-		String port = System.getenv("KUBERNETES_SERVICE_PORT");
+		String host = environment.apply("KUBERNETES_SERVICE_HOST");
+		String port = environment.apply("KUBERNETES_SERVICE_PORT");
 
 		String errorMessage = "Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " + "Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " + "Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override.";
 
