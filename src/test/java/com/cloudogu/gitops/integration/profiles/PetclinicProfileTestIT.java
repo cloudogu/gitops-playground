@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -8,7 +9,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -38,7 +38,7 @@ public class PetclinicProfileTestIT extends ProfileTestSetup {
 		try {
 			waitForContentExamplePrerequisites();
 			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES);
-		} catch (ConditionTimeoutException timeoutEx) {
+		} catch (Polling.TimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods();
 			fail("Cluster not ready, sth false.", timeoutEx);
 		}

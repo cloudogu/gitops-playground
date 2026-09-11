@@ -11,10 +11,10 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.Awaitility;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -165,10 +165,11 @@ public class TestK8sHelper {
 									 .usingListener(listener)
 									 .exec(cmd)) {
 
-			Awaitility.await()
-					  .atMost(5, TimeUnit.MINUTES)
-					  .pollInterval(500, TimeUnit.MILLISECONDS)
-					  .until(() -> finished.getCount() == 0);
+			Polling.until(
+				() -> finished.getCount() == 0,
+				Duration.ofMinutes(5),
+				Duration.ofMillis(500)
+			);
 		} catch (Exception e) {
 			throw new RuntimeException("Exec failed/timeout for pod " + ns + "/" + pod, e);
 		}
@@ -255,10 +256,11 @@ public class TestK8sHelper {
 		int timeout,
 		TimeUnit timeoutUnit
 	) {
-		Awaitility.await()
-				  .atMost(timeout, timeoutUnit)
-				  .pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
-				  .untilAsserted(() -> checkAllPodsRunningInNamespace(namespace, podNameStartsWith));
+		Polling.untilAsserted(
+			() -> checkAllPodsRunningInNamespace(namespace, podNameStartsWith),
+			Duration.of(timeout, timeoutUnit.toChronoUnit()),
+			Duration.ofSeconds(DEFAULT_POLL_SECONDS)
+		);
 		return true;
 	}
 
@@ -343,10 +345,11 @@ public class TestK8sHelper {
 		int timeout,
 		TimeUnit timeoutUnit
 	) {
-		Awaitility.await()
-				  .atMost(timeout, timeoutUnit)
-				  .pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
-				  .untilAsserted(() -> checkPodPrefixesRunningInNamespace(namespace, expectedPodPrefixes));
+		Polling.untilAsserted(
+			() -> checkPodPrefixesRunningInNamespace(namespace, expectedPodPrefixes),
+			Duration.of(timeout, timeoutUnit.toChronoUnit()),
+			Duration.ofSeconds(DEFAULT_POLL_SECONDS)
+		);
 		return true;
 	}
 
@@ -434,10 +437,11 @@ public class TestK8sHelper {
 		int timeout,
 		TimeUnit timeoutUnit
 	) {
-		Awaitility.await()
-				  .atMost(timeout, timeoutUnit)
-				  .pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
-				  .untilAsserted(() -> checkPodsMatchingRunningInNamespace(namespace, expectedPods));
+		Polling.untilAsserted(
+			() -> checkPodsMatchingRunningInNamespace(namespace, expectedPods),
+			Duration.of(timeout, timeoutUnit.toChronoUnit()),
+			Duration.ofSeconds(DEFAULT_POLL_SECONDS)
+		);
 		return true;
 	}
 
@@ -482,10 +486,11 @@ public class TestK8sHelper {
 		int timeout,
 		TimeUnit timeoutUnit
 	) {
-		Awaitility.await()
-				  .atMost(timeout, timeoutUnit)
-				  .pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
-				  .untilAsserted(() -> checkNamespacesExist(expectedNamespaces));
+		Polling.untilAsserted(
+			() -> checkNamespacesExist(expectedNamespaces),
+			Duration.of(timeout, timeoutUnit.toChronoUnit()),
+			Duration.ofSeconds(DEFAULT_POLL_SECONDS)
+		);
 		return true;
 	}
 
