@@ -1,53 +1,23 @@
 package com.cloudogu.gitops.integration.tools;
 
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.KubeConfig;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public abstract class KubernetesApiTestSetup {
 
-	static String kubeConfigPath;
-	CoreV1Api api;
 	int TIME_TO_WAIT = 12;
 	int RETRY_SECONDS = 30;
 
 	/**
-	 * Gets path to kubeconfig.
-	 */
-	@BeforeAll
-	static void setupKubeconfig() {
-		kubeConfigPath = System.getenv("HOME") + "/.kube/config";
-		if (!new File(kubeConfigPath).exists()) {
-			kubeConfigPath = System.getenv("KUBECONFIG");
-		}
-		assertThat(kubeConfigPath).isNotBlank();
-	}
-
-	/**
-	 * establish connection to kubernetes and create API to use.
+	 * Waits until the Kubernetes resources required by the integration test are ready.
 	 */
 	@BeforeEach
-	void setupConnection() throws IOException {
-		ApiClient client = ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
-		// set the global default api-client to the out-of-cluster one from above
-		Configuration.setDefaultApiClient(client);
-
-		// the CoreV1Api loads default api-client from global configuration.
-		api = new CoreV1Api();
+	void waitUntilReady() {
 		waitForCondition(
 			this::waitingCondition,
 			maxWaitTimeInMinutes(TIME_TO_WAIT),
