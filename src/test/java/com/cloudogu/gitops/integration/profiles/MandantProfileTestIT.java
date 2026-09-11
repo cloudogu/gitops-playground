@@ -1,19 +1,19 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -42,18 +42,17 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 
 	private static void waitUntilTenantIsReady() {
 		// tenant is created very late after running GOP twice!
-		Awaitility.await()
-				  .atMost(40, TimeUnit.MINUTES)
-				  .pollInterval(5, TimeUnit.SECONDS)
-				  .untilAsserted(() -> assertThat(
-					  TestK8sHelper.checkAllPodsRunningInNamespace(
+		Polling.until(
+			() -> TestK8sHelper.checkAllPodsRunningInNamespace(
 						  TENANT_NAMESPACE_REGISTRY,
 						  "docker-registry"
 					  ) && TestK8sHelper.checkAllPodsRunningInNamespace(
 						  TENANT_NAMESPACE_SCM,
 						  "scmm-"
-					  )
-				  ).isTrue());
+					  ),
+			Duration.ofMinutes(40),
+			Duration.ofSeconds(5)
+		);
 	}
 
 	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
