@@ -508,7 +508,7 @@ public class Config {
 			helm.setChart("jenkins");
 			helm.setRepoURL("https://charts.jenkins.io");
 			// renovate: depName=jenkins registryUrl=https://charts.jenkins.io
-			helm.setVersion("5.9.18");
+			helm.setVersion("5.9.56");
 		}
 	}
 
