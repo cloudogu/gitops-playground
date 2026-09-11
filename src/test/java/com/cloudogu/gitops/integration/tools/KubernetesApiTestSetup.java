@@ -1,12 +1,9 @@
 package com.cloudogu.gitops.integration.tools;
 
+import com.cloudogu.gitops.integration.Polling;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.fail;
 
 public abstract class KubernetesApiTestSetup {
 
@@ -18,27 +15,11 @@ public abstract class KubernetesApiTestSetup {
 	 */
 	@BeforeEach
 	void waitUntilReady() {
-		waitForCondition(
+		Polling.until(
 			this::waitingCondition,
 			maxWaitTimeInMinutes(TIME_TO_WAIT),
 			pollIntervallSeconds(RETRY_SECONDS)
 		);
-	}
-
-	static void waitForCondition(Supplier<Boolean> condition, Duration timeout, Duration pollInterval) {
-		Instant end = Instant.now().plus(timeout);
-		while (Instant.now().isBefore(end)) {
-			if (condition.get()) {
-				return;
-			}
-			try {
-				Thread.sleep(pollInterval.toMillis());
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new RuntimeException("break polling", e);
-			}
-		}
-		fail("Wait condition not fulfilled in time");
 	}
 
 	private Duration pollIntervallSeconds(int time) {
