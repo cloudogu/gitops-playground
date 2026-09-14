@@ -18,7 +18,7 @@ import java.util.function.Predicate;
  * <p>To run locally: add -Dmicronaut.environments=full to your execute configuration
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols")
 public class FullProfileTestIT extends ProfileTestSetup {
 
 	/** Gets path to kubeconfig. */

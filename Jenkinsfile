@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -115,7 +115,7 @@ pipeline {
                             def profiles = []
 
                             if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
-                                profiles = ['minimal', 'full', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                                profiles = ['minimal', 'full', 'full-netpols', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
