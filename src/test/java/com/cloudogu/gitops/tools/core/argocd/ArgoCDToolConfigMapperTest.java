@@ -66,6 +66,9 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getSecrets().setActive(true);
+		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("build");
 		config.getMultiTenant().setCentralArgocdNamespace("central-gitops");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
@@ -179,6 +182,8 @@ class ArgoCDToolConfigMapperTest {
 															 "secrets",
 															 Map.of("active", true)
 														 ),
+														 "jenkins",
+														 Map.of("active", true, "internal", true, "namespace", "build"),
 														 "multiTenant",
 														 Map.of("centralArgocdNamespace", "central-gitops"),
 														 "scm",

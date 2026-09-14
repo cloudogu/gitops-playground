@@ -13,7 +13,7 @@ spec:
           podSelector:
             matchLabels:
               prometheus: kube-prometheus-stack-prometheus
-<#if config.jenkins.internal == true && namespace == jenkinsNamespace && (config.features.ingress.active == true || config.application.networkPolicies.bootstrapCidrs?has_content)>
+<#if config.jenkins.active == true && config.jenkins.internal == true && namespace == jenkinsNamespace>
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -28,6 +28,15 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              jenkins/jenkins-jenkins-agent: "true"
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 50000
 <#if config.features.ingress.active == true>
     - from:
         - namespaceSelector:

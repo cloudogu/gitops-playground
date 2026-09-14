@@ -714,6 +714,42 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void allowsInternalJenkinsControllerAndAgentsToScmManager() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().setNamePrefix("my-prefix-");
+		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("jenkins");
+
+		executeAndReadHelmValues();
+		String allowNamespaces = Files.readString(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
+		);
+		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
+
+		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
+		assertThat(ingressRules).hasSize(4);
+		assertNetworkPolicyPeer(
+			ingressRules.get(2),
+			"my-prefix-jenkins",
+			"app.kubernetes.io/component",
+			"jenkins-controller"
+		);
+		assertThat(value(
+			mapListValue(ingressRules.get(2), "from").get(0),
+			"podSelector",
+			"matchLabels",
+			"app.kubernetes.io/instance"
+		)).isEqualTo("jenkins");
+		assertNetworkPolicyPeer(
+			ingressRules.get(3),
+			"my-prefix-jenkins",
+			"jenkins/jenkins-jenkins-agent",
+			"true"
+		);
+	}
+
+	@Test
 	void allowsConfiguredBootstrapCidrsToScmManager() throws IOException {
 		config.getApplication().setNetpols(true);
 		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(

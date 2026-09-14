@@ -33,6 +33,29 @@ spec:
         - protocol: TCP
           port: 8080
 </#if>
+<#if config.jenkins.active == true && config.jenkins.internal == true>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.jenkins.namespace}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: jenkins-controller
+              app.kubernetes.io/instance: jenkins
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.jenkins.namespace}
+          podSelector:
+            matchLabels:
+              jenkins/jenkins-jenkins-agent: "true"
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
 <#list config.application.networkPolicies.bootstrapCidrs as bootstrapCidr>
     - from:
         - ipBlock:
