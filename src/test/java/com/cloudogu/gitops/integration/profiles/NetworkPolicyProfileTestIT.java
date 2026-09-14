@@ -36,6 +36,11 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 		waitForNetworkPolicy("jenkins", "allow-required-access-to-jenkins");
 	}
 
+	@Test
+	void ensureRegistryAccessPolicyExists() {
+		waitForNetworkPolicy("registry", "allow-required-access-to-registry");
+	}
+
 	private static void waitForNetworkPolicy(String namespace, String name) {
 		Awaitility.await()
 			.atMost(5, TimeUnit.MINUTES)

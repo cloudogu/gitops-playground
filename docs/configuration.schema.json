@@ -166,6 +166,13 @@
               "items" : {
                 "type" : "string"
               }
+            },
+            "registryAccessCidrs" : {
+              "description" : "CIDR ranges allowed to access the internal registry through its exposed service. An empty list adds no external registry ingress allowance",
+              "type" : [ "array", "null" ],
+              "items" : {
+                "type" : "string"
+              }
             }
           },
           "additionalProperties" : false,

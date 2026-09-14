@@ -136,6 +136,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.NAMESPACE_ISOLATION_DES
 import static com.cloudogu.gitops.config.ConfigConstants.NAME_PREFIX_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETPOLS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OIDC_DESCPRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OPENSHIFT_DESCRIPTION;
@@ -640,6 +641,9 @@ public class Config {
 
 			@JsonPropertyDescription(NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION)
 			private List<String> bootstrapCidrs = new ArrayList<>();
+
+			@JsonPropertyDescription(NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION)
+			private List<String> registryAccessCidrs = new ArrayList<>();
 		}
 
 		@Getter

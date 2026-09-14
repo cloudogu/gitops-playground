@@ -172,6 +172,33 @@ pipeline {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
                                 }}
 
+                            def createNetworkPolicyIntegrationConfig = {
+                                def clusterGateway = sh(
+                                    script: '''
+                                        cluster_container="k3d-${K3D_CLUSTER_NAME}-server-0"
+                                        cluster_network=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$cluster_container")
+                                        docker network inspect -f '{{(index .IPAM.Config 0).Gateway}}' "$cluster_network"
+                                    ''',
+                                    returnStdout: true
+                                ).trim()
+
+                                if (!clusterGateway) {
+                                    error('Could not determine the k3d network gateway for the network policy integration test')
+                                }
+
+                                def configFile = 'target/integration-test-config/network-policy.yaml'
+                                sh 'mkdir -p target/integration-test-config'
+                                writeFile file: configFile, text: """application:
+  networkPolicies:
+    bootstrapCidrs:
+      - ${clusterGateway}/32
+    registryAccessCidrs:
+      # Test-only: k3d/Docker NAT rewrites the registry source address.
+      - 0.0.0.0/0
+"""
+                                return configFile
+                            }
+
                             profiles.each { profile ->
                                 withK3dCluster(profile) {
 
@@ -191,8 +218,13 @@ pipeline {
                                         }
                                     }
 
+                                    def configFileArgument = ''
+                                    if (profile == 'full-netpols') {
+                                        configFileArgument = " --config-file=${createNetworkPolicyIntegrationConfig()}"
+                                    }
+
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}"
+                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}${configFileArgument}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         try {

@@ -6,6 +6,7 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
+import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
@@ -14,6 +15,8 @@ import com.cloudogu.gitops.utils.YamlUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.cloudogu.gitops.config.Config.DEFAULT_REGISTRY_PORT;
@@ -30,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RegistryTest {
@@ -44,6 +49,12 @@ class RegistryTest {
 
 	@Mock
 	private RepositoryWorkspace repositoryWorkspace;
+
+	@Mock
+	private GitRepo clusterResourcesRepo;
+
+	@TempDir
+	Path clusterResourcesDir;
 
 	@Test
 	void isDisabledWhenExternalRegistryIsConfigured() {
@@ -107,12 +118,81 @@ class RegistryTest {
 		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges("Update registry GitOps resources");
 	}
 
+	@Test
+	void createsNetworkPolicyForConfiguredRegistryAccessCidrs() throws IOException, GitAPIException {
+		Config.RegistrySchema registryConfig = new Config.RegistrySchema();
+		registryConfig.setActive(true);
+		registryConfig.setInternal(true);
+		Config config = createConfig(registryConfig);
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setRegistryAccessCidrs(
+			List.of("192.168.10.0/24", "10.0.0.5/32")
+		);
+		Registry registry = createRegistry(config);
+		install(registry, config);
+
+		ArgumentCaptor<String> yaml = ArgumentCaptor.forClass(String.class);
+		verify(clusterResourcesRepo).writeFile(
+			eq("apps/registry/netpols/allow-required-access-to-registry.yaml"),
+			yaml.capture()
+		);
+		assertThat(yaml.getValue())
+			.contains("name: allow-required-access-to-registry")
+			.contains("namespace: foo-registry")
+			.contains("app: docker-registry")
+			.contains("release: docker-registry")
+			.contains("cidr: 192.168.10.0/24")
+			.contains("cidr: 10.0.0.5/32")
+			.contains("port: 5000");
+	}
+
+	@Test
+	void createsDenyIngressPolicyWhenNoRegistryAccessCidrsAreConfigured() throws IOException, GitAPIException {
+		Config.RegistrySchema registryConfig = new Config.RegistrySchema();
+		registryConfig.setActive(true);
+		registryConfig.setInternal(true);
+		Config config = createConfig(registryConfig);
+		config.getApplication().setNetpols(true);
+
+		Registry registry = createRegistry(config);
+		install(registry, config);
+
+		ArgumentCaptor<String> yaml = ArgumentCaptor.forClass(String.class);
+		verify(clusterResourcesRepo).writeFile(
+			eq("apps/registry/netpols/allow-required-access-to-registry.yaml"),
+			yaml.capture()
+		);
+		assertThat(yaml.getValue())
+			.contains("name: allow-required-access-to-registry")
+			.contains("ingress: []");
+	}
+
+	@Test
+	void removesGeneratedNetworkPolicyWhenNetworkPoliciesAreDisabled() throws IOException, GitAPIException {
+		Path networkPolicy = clusterResourcesDir.resolve(
+			"apps/registry/netpols/allow-required-access-to-registry.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale policy");
+
+		Config.RegistrySchema registryConfig = new Config.RegistrySchema();
+		registryConfig.setActive(true);
+		registryConfig.setInternal(true);
+
+		install(createRegistry(registryConfig), registryConfig);
+
+		assertThat(networkPolicy).doesNotExist();
+	}
+
 	private Registry createRegistry() {
 		return createRegistry(new Config.RegistrySchema());
 	}
 
 	private Registry createRegistry(Config.RegistrySchema registryConfig) {
-		Config config = createConfig(registryConfig);
+		return createRegistry(createConfig(registryConfig));
+	}
+
+	private Registry createRegistry(Config config) {
 		k8sClient = new K8sClientForTest();
 
 		FileSystemUtils fileUtil = new FileSystemUtils() {
@@ -130,7 +210,13 @@ class RegistryTest {
 	}
 
 	private boolean install(Registry registry, Config.RegistrySchema registryConfig) {
-		deploymentContext = createContext(registryConfig);
+		return install(registry, createConfig(registryConfig));
+	}
+
+	private boolean install(Registry registry, Config config) {
+		when(repositoryWorkspace.getClusterResourcesRepository()).thenReturn(clusterResourcesRepo);
+		when(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()).thenReturn(clusterResourcesDir.toString());
+		deploymentContext = new ContextBuilder(config).build();
 		return registry.execute(deploymentContext, repositoryWorkspace);
 	}
 

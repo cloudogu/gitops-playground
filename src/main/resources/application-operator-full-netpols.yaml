@@ -5,11 +5,9 @@ application:
   insecure: true
   netpols: true
   networkPolicies:
-    # Required when GOP runs outside the Kubernetes cluster.
-    # These CIDRs allow GOP to reach internal services such as SCM-Manager
-    # and Jenkins during the initial deployment and subsequent GOP runs.
-    bootstrapCidrs:
-      - 172.18.0.1/32
+    # Environment-specific CIDRs are supplied through an additional config file.
+    bootstrapCidrs: []
+    registryAccessCidrs: []
 features:
   certManager:
     active: true

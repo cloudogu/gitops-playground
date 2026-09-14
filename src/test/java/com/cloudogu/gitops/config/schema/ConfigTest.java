@@ -72,17 +72,20 @@ class ConfigTest {
 	}
 
 	@Test
-	void mapsNetworkPolicyBootstrapCidrs() {
+	void mapsNetworkPolicyCidrs() {
 		Config config = Config.fromMap(Map.of(
 			"application", Map.of(
 				"networkPolicies", Map.of(
-					"bootstrapCidrs", List.of("172.18.0.1/32", "10.20.0.0/16")
+					"bootstrapCidrs", List.of("172.18.0.1/32", "10.20.0.0/16"),
+					"registryAccessCidrs", List.of("192.168.10.0/24")
 				)
 			)
 		));
 
 		assertThat(config.getApplication().getNetworkPolicies().getBootstrapCidrs())
 			.containsExactly("172.18.0.1/32", "10.20.0.0/16");
+		assertThat(config.getApplication().getNetworkPolicies().getRegistryAccessCidrs())
+			.containsExactly("192.168.10.0/24");
 	}
 
 	@Test

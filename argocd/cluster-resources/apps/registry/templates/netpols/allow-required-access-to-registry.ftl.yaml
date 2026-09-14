@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-registry
+  namespace: ${namespace}
+spec:
+  podSelector:
+    matchLabels:
+      app: docker-registry
+      release: docker-registry
+  policyTypes:
+    - Ingress
+<#if registryAccessCidrs?has_content>
+  ingress:
+<#list registryAccessCidrs as registryAccessCidr>
+    - from:
+        - ipBlock:
+            cidr: ${registryAccessCidr}
+      ports:
+        - protocol: TCP
+          port: 5000
+</#list>
+<#else>
+  ingress: []
+</#if>
