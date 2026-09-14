@@ -13,3 +13,39 @@ spec:
           podSelector:
             matchLabels:
               prometheus: kube-prometheus-stack-prometheus
+<#if config.jenkins.internal == true && namespace == jenkinsNamespace && (config.features.ingress.active == true || config.application.networkPolicies.bootstrapCidrs?has_content)>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-jenkins
+  namespace: ${namespace}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: jenkins-controller
+      app.kubernetes.io/instance: jenkins
+  policyTypes:
+    - Ingress
+  ingress:
+<#if config.features.ingress.active == true>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${namePrefix}${config.features.ingress.namespace}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
+<#list config.application.networkPolicies.bootstrapCidrs as bootstrapCidr>
+    - from:
+        - ipBlock:
+            cidr: ${bootstrapCidr}
+      ports:
+        - protocol: TCP
+          port: 8080
+</#list>
+</#if>

@@ -30,6 +30,7 @@ class MonitoringToolConfigMapperTest {
 		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of("team-a", "team-b")));
 		config.getApplication().setNamespaceIsolation(true);
 		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getApplication().setSkipCrds(true);
 		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
 		config.getApplication().setOpenshift(false);
@@ -58,6 +59,7 @@ class MonitoringToolConfigMapperTest {
 			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
 		);
 		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getFeatures().getMail().setActive(true);
@@ -147,6 +149,9 @@ class MonitoringToolConfigMapperTest {
 														 .templateConfig(Map.of(
 															 "application", Map.of(
 																 "namePrefix", "test-",
+																 "networkPolicies", Map.of(
+																	 "bootstrapCidrs", List.of("172.18.0.1/32")
+																 ),
 																 "namespaceIsolation", true,
 																 "openshift", true,
 																 "podResources", true,
@@ -155,6 +160,7 @@ class MonitoringToolConfigMapperTest {
 															 "features", Map.of(
 																 "certManager",
 																 Map.of("active", true, "issuer", "production-issuer"),
+																 "ingress", Map.of("active", true, "namespace", "edge"),
 																 "mail",
 																 Map.of(
 																	 "active", true,
@@ -198,7 +204,11 @@ class MonitoringToolConfigMapperTest {
 																	 )
 																 )
 															 ),
-															 "jenkins", Map.of("active", true),
+															 "jenkins", Map.of(
+																 "active", true,
+																 "internal", false,
+																 "namespace", "jenkins-system"
+															 ),
 															 "registry", Map.of("createImagePullSecrets", true),
 															 "scm", Map.of(
 																 "scmManager", Map.of("namespace", "source-control"),

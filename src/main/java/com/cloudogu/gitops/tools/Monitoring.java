@@ -256,7 +256,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 			try {
 				String netpolsYaml = new TemplatingEngine().template(
 					new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE), Map.of(
-						NAMESPACE_KEY, currentNamespace, "namePrefix", toolConfig().namePrefix()
+						NAMESPACE_KEY, currentNamespace,
+						"namePrefix", toolConfig().namePrefix(),
+						"jenkinsNamespace", toolConfig().namePrefix() + toolConfig().jenkinsNamespace(),
+						"config", toolConfig().templateConfig()
 					)
 				);
 

@@ -937,6 +937,38 @@ class MonitoringTest {
 	}
 
 	@Test
+	void networkPoliciesAllowRequiredAccessToInternalJenkins() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
+			"172.18.0.1/32",
+			"10.20.0.0/16"
+		));
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("foo-jenkins")));
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("jenkins");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
+
+		install(createStack(scmManagerMock));
+
+		File netPolsYaml = new File(
+			clusterResourcesRepoDir,
+			"apps/monitoring/misc/netpols/foo-jenkins.yaml"
+		);
+		String policy = Files.readString(netPolsYaml.toPath());
+
+		assertThat(policy)
+			.contains("name: allow-required-access-to-jenkins")
+			.contains("app.kubernetes.io/component: jenkins-controller")
+			.contains("app.kubernetes.io/instance: jenkins")
+			.contains("kubernetes.io/metadata.name: \"foo-edge\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("cidr: 172.18.0.1/32")
+			.contains("cidr: 10.20.0.0/16")
+			.contains("port: 8080");
+	}
+
+	@Test
 	void helmReleasesAreInstalledInAirGappedMode() throws GitAPIException, IOException, URISyntaxException {
 		config.getApplication().setMirrorRepos(true);
 		when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig.class))).thenReturn("a/b");

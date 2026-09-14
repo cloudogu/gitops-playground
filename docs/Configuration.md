@@ -186,6 +186,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--skip-crds` | `application.skipCrds` | Boolean | `false` | Skip installation of CRDs. This requires prior installation of CRDs |
 | `--namespace-isolation` | `application.namespaceIsolation` | Boolean | `false` | Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions. |
 | `--netpols` | `application.netpols` | Boolean | `false` | Sets Network Policies |
+| - | `application.networkPolicies.bootstrapCidrs` | List&lt;String&gt; | `[]` | CIDR ranges allowed to access internal GOP services when GOP is run outside the Kubernetes cluster |
 | `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
 | `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
 | `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |

@@ -6,6 +6,7 @@ import com.cloudogu.gitops.utils.MapUtils;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +69,20 @@ class ConfigTest {
 		Map<String, Object> secrets = MapUtils.asStringObjectMap(features.get("secrets"));
 		Map<String, Object> vault = MapUtils.asStringObjectMap(secrets.get("vault"));
 		assertThat(vault.get("mode")).isEqualTo("dev");
+	}
+
+	@Test
+	void mapsNetworkPolicyBootstrapCidrs() {
+		Config config = Config.fromMap(Map.of(
+			"application", Map.of(
+				"networkPolicies", Map.of(
+					"bootstrapCidrs", List.of("172.18.0.1/32", "10.20.0.0/16")
+				)
+			)
+		));
+
+		assertThat(config.getApplication().getNetworkPolicies().getBootstrapCidrs())
+			.containsExactly("172.18.0.1/32", "10.20.0.0/16");
 	}
 
 	@Test

@@ -714,6 +714,26 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void allowsConfiguredBootstrapCidrsToScmManager() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
+			"172.18.0.1/32",
+			"10.20.0.0/16"
+		));
+
+		executeAndReadHelmValues();
+		String allowNamespaces = Files.readString(
+			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
+		);
+		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
+
+		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
+		assertThat(ingressRules).hasSize(4);
+		assertNetworkPolicyIpBlock(ingressRules.get(2), "172.18.0.1/32");
+		assertNetworkPolicyIpBlock(ingressRules.get(3), "10.20.0.0/16");
+	}
+
+	@Test
 	void restrictsScmManagerAccessByPodLabelsInSingleNamespace() throws IOException {
 		config.getApplication().setNetpols(true);
 		config.getApplication().setNamePrefix("my-prefix-");
@@ -1868,6 +1888,15 @@ class ArgoCDConfigurationTest {
 		assertThat(value(peer, "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name"))
 			.isEqualTo(namespace);
 		assertThat(value(peer, "podSelector", "matchLabels", podLabel)).isEqualTo(podLabelValue);
+
+		List<Map<String, Object>> ports = mapListValue(ingressRule, "ports");
+		assertThat(ports).containsExactly(Map.of("protocol", "TCP", "port", 8080));
+	}
+
+	private static void assertNetworkPolicyIpBlock(Map<String, Object> ingressRule, String cidr) {
+		List<Map<String, Object>> peers = mapListValue(ingressRule, "from");
+		assertThat(peers).hasSize(1);
+		assertThat(value(peers.get(0), "ipBlock", "cidr")).isEqualTo(cidr);
 
 		List<Map<String, Object>> ports = mapListValue(ingressRule, "ports");
 		assertThat(ports).containsExactly(Map.of("protocol", "TCP", "port", 8080));

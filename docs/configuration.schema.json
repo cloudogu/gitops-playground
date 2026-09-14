@@ -157,6 +157,20 @@
           "type" : [ "boolean", "null" ],
           "description" : "Sets Network Policies"
         },
+        "networkPolicies" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "bootstrapCidrs" : {
+              "description" : "CIDR ranges allowed to access internal GOP services when GOP is run outside the Kubernetes cluster",
+              "type" : [ "array", "null" ],
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Additional NetworkPolicy settings"
+        },
         "openshift" : {
           "type" : [ "boolean", "null" ],
           "description" : "When set, openshift specific resources and configurations are applied"

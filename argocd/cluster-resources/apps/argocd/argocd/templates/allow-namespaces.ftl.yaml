@@ -33,3 +33,11 @@ spec:
         - protocol: TCP
           port: 8080
 </#if>
+<#list config.application.networkPolicies.bootstrapCidrs as bootstrapCidr>
+    - from:
+        - ipBlock:
+            cidr: ${bootstrapCidr}
+      ports:
+        - protocol: TCP
+          port: 8080
+</#list>

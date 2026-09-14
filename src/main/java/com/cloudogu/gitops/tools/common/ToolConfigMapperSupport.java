@@ -25,6 +25,13 @@ public final class ToolConfigMapperSupport {
 							  .build();
 	}
 
+	public static List<String> networkPolicyBootstrapCidrs(Config config) {
+		Config.ApplicationSchema.NetworkPoliciesSchema networkPolicies = config.getApplication().getNetworkPolicies();
+		return networkPolicies == null || networkPolicies.getBootstrapCidrs() == null
+			? List.of()
+			: List.copyOf(networkPolicies.getBootstrapCidrs());
+	}
+
 	public static ImagePullSecretConfig imagePullSecret(Config.RegistrySchema registry) {
 		return ImagePullSecretConfig.builder()
 									.create(registry.getCreateImagePullSecrets())

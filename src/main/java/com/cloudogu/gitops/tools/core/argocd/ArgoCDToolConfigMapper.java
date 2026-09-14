@@ -67,6 +67,10 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.netpols", config.getApplication().getNetpols())
+			.put(
+				"application.networkPolicies.bootstrapCidrs",
+				ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config)
+			)
 			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(
@@ -103,6 +107,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("scm.scmProviderType", config.getScm().getScmProviderType())
 			.values();
 	}
+
 
 	private static boolean smtpUserConfigured(Config config) {
 		return hasText(config.getFeatures().getMail().getSmtpUser()) || hasMailSecretReference(config);

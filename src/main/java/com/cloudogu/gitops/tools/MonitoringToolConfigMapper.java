@@ -64,12 +64,18 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			: config.getScm().getScmManager().getNamespace();
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
+			.put(
+				"application.networkPolicies.bootstrapCidrs",
+				ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config)
+			)
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.ingress.active", config.getFeatures().getIngress().getActive())
+			.put("features.ingress.namespace", config.getFeatures().getIngress().getIngressNamespace())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())
 			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
 			.put("features.mail.smtpCredentialsConfigured", smtpCredentialsConfigured(config))
@@ -88,6 +94,8 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("features.monitoring.helm.prometheusImage", helm.getPrometheusImage())
 			.put("features.monitoring.helm.prometheusOperatorImage", helm.getPrometheusOperatorImage())
 			.put("jenkins.active", config.getJenkins().getActive())
+			.put("jenkins.internal", config.getJenkins().getInternal())
+			.put("jenkins.namespace", config.getJenkins().getNamespace())
 			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
 			.put("scm.scmManager.namespace", scmManagerNamespace)
 			.put("scm.scmProviderType", config.getScm() == null ? null : config.getScm().getScmProviderType())

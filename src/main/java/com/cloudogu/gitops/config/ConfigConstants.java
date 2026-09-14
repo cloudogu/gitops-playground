@@ -101,6 +101,8 @@ public final class ConfigConstants {
 	public static final String NAMESPACE_ISOLATION_DESCRIPTION = "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.";
 	public static final String MIRROR_REPOS_DESCRIPTION = "Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.";
 	public static final String NETPOLS_DESCRIPTION = "Sets Network Policies";
+	public static final String NETWORK_POLICIES_DESCRIPTION = "Additional NetworkPolicy settings";
+	public static final String NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION = "CIDR ranges allowed to access internal GOP services when GOP is run outside the Kubernetes cluster";
 	public static final String CLUSTER_ADMIN_DESCRIPTION = "Binds ArgoCD controllers to cluster-admin ClusterRole";
 	public static final String OPENSHIFT_DESCRIPTION = "When set, openshift specific resources and configurations are applied";
 	public static final String APPLICATION_PROFIL = "Use predefined profile (full, only-argocd, operator-mandants aso.)";
