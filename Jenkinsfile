@@ -174,28 +174,13 @@ pipeline {
                                 }}
 
                             def createNetworkPolicyIntegrationConfig = {
-                                def clusterNetworkCidr = sh(
-                                    script: '''
-                                        cluster_container="k3d-${K3D_CLUSTER_NAME}-server-0"
-                                        cluster_network=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$cluster_container")
-                                        docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' "$cluster_network"
-                                    ''',
-                                    returnStdout: true
-                                ).trim()
-
-                                if (!clusterNetworkCidr) {
-                                    error('Could not determine the k3d Docker network CIDR for the network policy integration test')
-                                }
-
-                                echo "Using k3d Docker network CIDR '${clusterNetworkCidr}' for NetworkPolicy bootstrap access"
-
                                 def configFile = 'target/integration-test-config/network-policy.yaml'
                                 sh 'mkdir -p target/integration-test-config'
                                 writeFile file: configFile, text: """application:
   networkPolicies:
     bootstrapCidrs:
-      # Test-only: source NAT for NodePort traffic can use an address from the k3d Docker network.
-      - ${clusterNetworkCidr}
+      # Test-only: the GOP container uses host networking and the source address depends on the CI runner network setup.
+      - 0.0.0.0/0
     registryAccessCidrs:
       # Test-only: k3d/Docker NAT rewrites the registry source address.
       - 0.0.0.0/0
@@ -222,13 +207,13 @@ pipeline {
                                         }
                                     }
 
-                                    def configFileArgument = ''
+                                    def additionalArguments = ''
                                     if (profile == 'full-netpols') {
-                                        configFileArgument = " --config-file=${createNetworkPolicyIntegrationConfig()}"
+                                        additionalArguments = " --config-file=${createNetworkPolicyIntegrationConfig()} -x"
                                     }
 
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}${configFileArgument}"
+                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}${additionalArguments}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         try {
