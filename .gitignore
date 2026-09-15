@@ -10,6 +10,7 @@ scripts/local/**
 !scripts/local/**/*.sh
 
 scripts/dev/gop_airgapped_config.yaml
+scripts/dev/netpol-local.yaml
 
 # do not check in the workspace
 workspace/

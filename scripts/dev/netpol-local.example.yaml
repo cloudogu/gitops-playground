@@ -1,0 +1,11 @@
+# Copy this file to scripts/dev/netpol-local.yaml and replace <K3D_GATEWAY>
+# with the gateway of the local k3d Docker network.
+application:
+  networkPolicies:
+    bootstrapCidrs:
+      - <K3D_GATEWAY>/32
+
+    # Only for the ephemeral local k3d integration-test environment.
+    # Docker/k3d NAT can rewrite the source address of registry pushes.
+    registryAccessCidrs:
+      - 0.0.0.0/0

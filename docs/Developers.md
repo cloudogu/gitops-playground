@@ -96,6 +96,7 @@ mvn clean test
 
 where <PROFILES> can be one of:
 - full
+- full-netpols
 - full-prefix
 
 - content-examples
@@ -369,70 +370,98 @@ docker run --rm -t -u $(id -u) \
 
 ## Testing Network Policies locally
 
-The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
+Use the `full-netpols` profile to test the GOP NetworkPolicies end-to-end on a local k3d cluster. The profile deliberately keeps environment-specific CIDRs empty:
 
-That's why we need to initialize our local cluster with some netpols for everything to work.
-* The `<prefix>-jenkins` ,  `<prefix>-scm-manager` and `<prefix>-registry` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
-* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
+```yaml
+application:
+  netpols: true
+  networkPolicies:
+    bootstrapCidrs: []
+    registryAccessCidrs: []
+```
 
-After the cluster is initialized and before GOP is applied, do the following:
+The CIDRs must be supplied through an additional local config file. Do not add host-specific CIDRs to `application-full-netpols.yaml`.
+
+Create a fresh local cluster first:
 
 ```bash
-# Prefix handling:
-# if used, change prefix to your configured prefix and then
-# hyphen "-" is neccessary for this workaorund.
-# if no prefix is used, delete everthing after prefix=
-prefix=<prefix>-
-# When using harbor, do the same for namespace harbor
-
-
-for ns in ${prefix}jenkins  ${prefix}registry  ${prefix}scm-manager ${prefix}example-apps-production ${prefix}example-apps-staging ${prefix}monitoring ${prefix}secrets; do
-  k create ns $ns -oyaml --dry-run=client | k apply -f-
-  k apply --namespace "$ns" -f- <<EOF
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-from-ingress-controller
-spec:
-  podSelector: {}  
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ${prefix}traefik
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/component: controller
-              app.kubernetes.io/instance: traefik
-              app.kubernetes.io/name: traefik
----
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-from-same-namespace
-  annotations:
-    description: Allow connections inside the same namespace
-spec:
-  podSelector: {}
-  ingress:
-    - from:
-        - podSelector: {}
-EOF
-done
-# Some NS need to be accessible from docker image
-for ns in ${prefix}jenkins ${prefix}registry ${prefix}scm-manager; do
-  k apply --namespace "$ns" -f- <<EOF
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-all-ingress
-spec:
-  podSelector: {}
-  ingress:
-  - {}
-EOF
-done
+./scripts/init-cluster.sh --cluster-name=gitops-playground
 ```
+
+Determine the Docker gateway used by the k3d server container:
+
+```bash
+docker inspect k3d-gitops-playground-server-0 \
+  --format '{{range $name, $net := .NetworkSettings.Networks}}{{printf "%s gateway=%s ip=%s\n" $name $net.Gateway $net.IPAddress}}{{end}}'
+```
+
+Example output:
+
+```text
+k3d-gitops-playground gateway=172.18.0.1 ip=172.18.0.2
+```
+
+Copy the example config and replace `<K3D_GATEWAY>` with the gateway from the previous command:
+
+```bash
+cp scripts/dev/netpol-local.example.yaml scripts/dev/netpol-local.yaml
+```
+
+For the example above, the resulting local config is:
+
+```yaml
+application:
+  networkPolicies:
+    bootstrapCidrs:
+      - 172.18.0.1/32
+    registryAccessCidrs:
+      - 0.0.0.0/0
+```
+
+`bootstrapCidrs` allows a GOP process running outside Kubernetes to reach internal services such as SCM-Manager and Jenkins during bootstrap and subsequent GOP runs. Keep this CIDR as restrictive as possible.
+
+`registryAccessCidrs: 0.0.0.0/0` is only intended for the ephemeral local k3d integration-test environment. The Jenkins agents use the host Docker socket and k3d/Docker NAT can rewrite the source address of registry pushes. Do not use this value as a production default.
+
+Start GOP with both the normal credentials config and the local NetworkPolicy override:
+
+```bash
+./mvnw exec:java \
+  -Dexec.arguments="--yes --profile=full-netpols -x --config-file=credentials.yaml --config-file=scripts/dev/netpol-local.yaml"
+```
+
+The same arguments can be used in an IDE run configuration:
+
+```text
+--yes
+--profile=full-netpols
+-x
+--config-file=credentials.yaml
+--config-file=scripts/dev/netpol-local.yaml
+```
+
+After the rollout, verify that the required policies exist:
+
+```bash
+kubectl get networkpolicy -A
+
+kubectl -n scm-manager get networkpolicy allow-required-access-to-scm-manager -o yaml
+kubectl -n jenkins get networkpolicy allow-required-access-to-jenkins -o yaml
+kubectl -n registry get networkpolicy allow-required-access-to-registry -o yaml
+```
+
+Then run the `full-netpols` integration tests:
+
+```bash
+./mvnw failsafe:integration-test failsafe:verify \
+  -Dmicronaut.environments=full-netpols \
+  -Dsurefire.reportNameSuffix=full-netpols
+```
+
+The integration test covers the complete local communication path, including Jenkins controller and agent access to SCM-Manager, agent access to the Jenkins controller, Docker push to the internal registry, and the example application deployment.
+
+The local override file `scripts/dev/netpol-local.yaml` is intentionally ignored by Git because its `bootstrapCidrs` value depends on the local Docker/k3d network. Only the example file should be committed.
+
+The Jenkins CI test uses its own generated test-only override. It intentionally uses broad CIDRs in the ephemeral k3d cluster because the CI runner uses host networking and the source addresses depend on the runner network setup. These CI values must not be copied into production configuration.
 
 ## Emulate an airgapped environment
 
