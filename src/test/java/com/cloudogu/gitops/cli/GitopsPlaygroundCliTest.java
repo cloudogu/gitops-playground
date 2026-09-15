@@ -360,7 +360,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getChart()).isEqualTo("vault");
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getRepoURL())
 			.isEqualTo("localhost:3000/proxy/vault:latest");
-		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getVersion()).isEqualTo("0.25.0");
+		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getVersion()).isEqualTo("0.34.1");
 
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getChart()).isEqualTo("cert-manager");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getRepoURL()).isEqualTo(

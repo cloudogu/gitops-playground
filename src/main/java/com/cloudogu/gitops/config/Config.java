@@ -886,7 +886,7 @@ public class Config {
 				helm.setChart("vault");
 				helm.setRepoURL("https://helm.releases.hashicorp.com");
 				// renovate: depName=vault registryUrl=https://helm.releases.hashicorp.com
-				helm.setVersion("0.25.0");
+				helm.setVersion("0.34.1");
 			}
 
 			@Getter
@@ -1041,9 +1041,9 @@ public class Config {
 		@JsonCreator
 		public static VaultMode fromExternalValue(String value) {
 			return Arrays.stream(values())
-			             .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
-			             .findFirst()
-			             .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
+						 .filter(mode -> mode.externalValue.equalsIgnoreCase(value))
+						 .findFirst()
+						 .orElseThrow(() -> new IllegalArgumentException("Unknown Vault mode: " + value));
 		}
 
 		@JsonValue
@@ -1094,8 +1094,8 @@ public class Config {
 					BeanDescription beanDesc,
 					List<BeanPropertyWriter> beanProperties) {
 					return beanProperties.stream()
-					                     .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-					                     .toList();
+										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+										 .toList();
 				}
 			}));
 			return mapper;
