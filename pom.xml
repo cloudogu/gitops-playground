@@ -81,7 +81,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.2.1</version>
+                <version>3.2.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
@@ -89,7 +89,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
@@ -97,7 +97,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.22.0</version>
+                <version>2.22.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source:
@@ -106,7 +106,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.1</version>
+                <version>2.22.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- used for micronaut-http-client inside of test -->
@@ -137,7 +137,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.22.0</version>
+            <version>2.22.2</version>
         </dependency>
 
         <dependency>
