@@ -187,9 +187,9 @@ RUN apk add --no-cache \
       openssl \
       gnupg
 
-ARG JAVA_VERSION=17.0.19_10
-ARG JAVA_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.19%2B10/OpenJDK17U-jre_x64_alpine-linux_hotspot_${JAVA_VERSION}.tar.gz"
-ARG JAVA_SHA256="22d4d5579902d134dede626d0fdfb95891abc7578e13dea9cb23775498c4cf51"
+ARG JAVA_VERSION=25.0.4.1_1
+ARG JAVA_URL="https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jre_x64_alpine-linux_hotspot_${JAVA_VERSION}.tar.gz"
+ARG JAVA_SHA256="cde9e39d32cab07722cb3218d91980091012f16333f8a298c40896cd05e2ffea"
 
 RUN wget -O /tmp/openjdk.tar.gz "${JAVA_URL}" \
  && echo "${JAVA_SHA256}  /tmp/openjdk.tar.gz" | sha256sum -c - \
