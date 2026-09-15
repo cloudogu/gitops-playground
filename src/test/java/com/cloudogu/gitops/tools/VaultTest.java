@@ -139,6 +139,17 @@ class VaultTest {
 	}
 
 	@Test
+	void enablesNetworkPolicyWhenConfigured() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+
+		install(createVault());
+
+		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
+		Map<String, Object> networkPolicy = (Map<String, Object>) server.get("networkPolicy");
+		assertThat(networkPolicy.get("enabled")).isEqualTo(true);
+	}
+
+	@Test
 	void devModeCanBeEnabledViaConfig() throws GitAPIException, IOException {
 		config.getFeatures().getSecrets().getVault().setMode(Config.VaultMode.DEV);
 		config.getApplication().setUsername("abc");

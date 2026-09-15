@@ -48,6 +48,7 @@ class VaultToolConfigMapperTest {
 														"application", Map.of(
 															"namePrefix", "test-",
 															"namespaceIsolation", true,
+															"netpols", true,
 															"openshift", true,
 															"podResources", true
 														),
@@ -103,6 +104,7 @@ class VaultToolConfigMapperTest {
 
 		config.getApplication().setNamePrefix("test-");
 		config.getApplication().setLocalHelmChartFolder("/charts");
+		config.getApplication().setNetpols(true);
 		config.getApplication().setNamespaceIsolation(true);
 		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
 		config.getApplication().setOpenshift(false);

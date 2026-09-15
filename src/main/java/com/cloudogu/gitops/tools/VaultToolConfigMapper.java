@@ -41,6 +41,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
+			.put("application.netpols", config.getApplication().getNetpols())
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())

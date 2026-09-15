@@ -14,8 +14,13 @@ global:
 <#if config.features.secrets.vault.helm.image?has_content 
   || host?has_content 
   || config.application.podResources == true
+  || config.application.netpols == true
   || dev?has_content>
 server:
+</#if>
+<#if config.application.netpols == true>
+  networkPolicy:
+    enabled: true
 </#if>
 <#if config.features.secrets.vault.helm.image?has_content>
 <#assign imageObject = DockerImageParser.parse(config.features.secrets.vault.helm.image)>
