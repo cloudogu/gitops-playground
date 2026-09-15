@@ -139,6 +139,7 @@ pipeline {
                                         kubectl get events -A --sort-by=.lastTimestamp > '${dumpDir}/events.txt' 2>&1
                                         kubectl get pvc,pv -A -o wide > '${dumpDir}/volumes.txt' 2>&1
                                         kubectl get ingress -A -o wide > '${dumpDir}/ingress.txt' 2>&1
+                                        kubectl get networkpolicy -A -o yaml > '${dumpDir}/network-policies.yaml' 2>&1
                                         kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
 
                                         : > '${dumpDir}/container-logs.txt'
@@ -173,25 +174,28 @@ pipeline {
                                 }}
 
                             def createNetworkPolicyIntegrationConfig = {
-                                def clusterGateway = sh(
+                                def clusterNetworkCidr = sh(
                                     script: '''
                                         cluster_container="k3d-${K3D_CLUSTER_NAME}-server-0"
                                         cluster_network=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$cluster_container")
-                                        docker network inspect -f '{{(index .IPAM.Config 0).Gateway}}' "$cluster_network"
+                                        docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' "$cluster_network"
                                     ''',
                                     returnStdout: true
                                 ).trim()
 
-                                if (!clusterGateway) {
-                                    error('Could not determine the k3d network gateway for the network policy integration test')
+                                if (!clusterNetworkCidr) {
+                                    error('Could not determine the k3d Docker network CIDR for the network policy integration test')
                                 }
+
+                                echo "Using k3d Docker network CIDR '${clusterNetworkCidr}' for NetworkPolicy bootstrap access"
 
                                 def configFile = 'target/integration-test-config/network-policy.yaml'
                                 sh 'mkdir -p target/integration-test-config'
                                 writeFile file: configFile, text: """application:
   networkPolicies:
     bootstrapCidrs:
-      - ${clusterGateway}/32
+      # Test-only: source NAT for NodePort traffic can use an address from the k3d Docker network.
+      - ${clusterNetworkCidr}
     registryAccessCidrs:
       # Test-only: k3d/Docker NAT rewrites the registry source address.
       - 0.0.0.0/0
