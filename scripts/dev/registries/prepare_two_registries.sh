@@ -5,8 +5,8 @@ set -xeu pipefail
 
 scripts/init-cluster.sh
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values ./scripts/dev/two-registries-values.yaml
-./scripts/dev/mirror_images_to_registry.sh http://localhost:30000 configureHarbor
+helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values ./scripts/dev/registries/two-registries-values.yaml
+./scripts/dev/registries/mirror_images_to_registry.sh http://localhost:30000 configureHarbor
 
 # Append following lines to the config file file
 cat <<EOF > ./scripts/local/two-registries.yaml

@@ -1,4 +1,4 @@
-# Copy this file to scripts/dev/netpol-local.yaml and replace <K3D_GATEWAY>
+# Copy this file to scripts/dev/network-policies/netpol-local.yaml and replace <K3D_GATEWAY>
 # with the gateway of the local k3d Docker network.
 application:
   networkPolicies:

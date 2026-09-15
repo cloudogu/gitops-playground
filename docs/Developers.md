@@ -290,7 +290,7 @@ kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .s
 If you need to emulate an "external", private registry with credentials, then install it like so:
 ```bash
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
+helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/registries/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
 
 Once it's up and running either create your own private project or just set the existing `library` to private:
@@ -404,7 +404,7 @@ k3d-gitops-playground gateway=172.18.0.1 ip=172.18.0.2
 Copy the example config and replace `<K3D_GATEWAY>` with the gateway from the previous command:
 
 ```bash
-cp scripts/dev/netpol-local.example.yaml scripts/dev/netpol-local.yaml
+cp scripts/dev/network-policies/netpol-local.example.yaml scripts/dev/network-policies/netpol-local.yaml
 ```
 
 For the example above, the resulting local config is:
@@ -426,7 +426,7 @@ Start GOP with both the normal credentials config and the local NetworkPolicy ov
 
 ```bash
 ./mvnw exec:java \
-  -Dexec.arguments="--yes --profile=full-netpols -x --config-file=credentials.yaml --config-file=scripts/dev/netpol-local.yaml"
+  -Dexec.arguments="--yes --profile=full-netpols -x --config-file=credentials.yaml --config-file=scripts/dev/network-policies/netpol-local.yaml"
 ```
 
 The same arguments can be used in an IDE run configuration:
@@ -436,7 +436,7 @@ The same arguments can be used in an IDE run configuration:
 --profile=full-netpols
 -x
 --config-file=credentials.yaml
---config-file=scripts/dev/netpol-local.yaml
+--config-file=scripts/dev/network-policies/netpol-local.yaml
 ```
 
 After the rollout, verify that the required policies exist:
@@ -459,7 +459,7 @@ Then run the `full-netpols` integration tests:
 
 The integration test covers the complete local communication path, including Jenkins controller and agent access to SCM-Manager, agent access to the Jenkins controller, Docker push to the internal registry, and the example application deployment.
 
-The local override file `scripts/dev/netpol-local.yaml` is intentionally ignored by Git because its `bootstrapCidrs` value depends on the local Docker/k3d network. Only the example file should be committed.
+The local override file `scripts/dev/network-policies/netpol-local.yaml` is intentionally ignored by Git because its `bootstrapCidrs` value depends on the local Docker/k3d network. Only the example file should be committed.
 
 The Jenkins CI test uses its own generated test-only override. It intentionally uses broad CIDRs in the ephemeral k3d cluster because the CI runner uses host networking and the source addresses depend on the runner network setup. These CI values must not be copied into production configuration.
 
@@ -497,13 +497,13 @@ Don't disconnect from the internet yet, because
 * Helm repo updates need access to the internet
 * Argo CD images are not configurable yet and may still be pulled on demand.
 * Jenkins and SCM-Manager images can be pointed at the prepared registry via `jenkins.jenkinsImage` and
-  `scm.scmManager.scmmImage`; see `scripts/dev/gop_airgapped_config.yaml`.
+  `scm.scmManager.scmmImage`; see `scripts/dev/airgapped/gop_airgapped_config.yaml`.
 
 So, start the installation and once Argo CD is running, go offline.
 ```bash
 docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
-    -v ./scripts/dev/gop_airgapped_config.yaml:/gop.yaml \
+    -v ./scripts/dev/airgapped/gop_airgapped_config.yaml:/gop.yaml \
     --net=host gitops-playground:latest --config-file=/gop.yaml -x 
 ```
 

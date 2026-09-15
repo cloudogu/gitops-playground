@@ -9,7 +9,9 @@ scripts/local/**
 !scripts/local/**/
 !scripts/local/**/*.sh
 
-scripts/dev/gop_airgapped_config.yaml
+scripts/dev/airgapped/gop_airgapped_config.yaml
+scripts/dev/network-policies/netpol-local.yaml
+# Keep the former local NetworkPolicy override path ignored during the directory migration.
 scripts/dev/netpol-local.yaml
 
 # do not check in the workspace

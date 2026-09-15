@@ -196,7 +196,7 @@ pipeline {
                                             sh '''
                                                 apk add --no-cache kubectl
                                                 kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
-                                                kubectl apply -f ./scripts/dev/gop-secrets.yaml
+                                                kubectl apply -f ./scripts/dev/secrets/gop-secrets.yaml
                                             '''
                                         }
                                     }
