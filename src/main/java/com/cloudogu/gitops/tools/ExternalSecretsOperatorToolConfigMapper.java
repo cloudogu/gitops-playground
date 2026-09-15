@@ -22,6 +22,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		return ExternalSecretsOperatorToolConfig.builder()
 												.active(secrets.getActive())
 												.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
+												.netpols(config.getApplication().getNetpols())
 												.helm(ToolConfigMapperSupport.helmChart(
 													secrets.getExternalSecrets().getHelm(),
 													config.getApplication().getLocalHelmChartFolder()

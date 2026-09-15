@@ -127,6 +127,41 @@ class ExternalSecretsOperatorTest {
 	}
 
 	@Test
+	void createsRequiredNetworkPolicies() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+
+		install(createExternalSecretsOperator());
+
+		Path networkPolicy = clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/netpols/allow-required-access-to-external-secrets.yaml"
+		);
+		String policy = Files.readString(networkPolicy);
+
+		assertThat(policy)
+			.contains("name: restrict-external-secrets-ingress")
+			.contains("name: allow-required-access-to-external-secrets-webhook")
+			.contains("namespace: foo-secrets")
+			.contains("app.kubernetes.io/instance: external-secrets")
+			.contains("app.kubernetes.io/name: external-secrets-webhook")
+			.contains("ingress: []")
+			.contains("port: 10250");
+	}
+
+	@Test
+	void removesRequiredNetworkPoliciesWhenNetworkPoliciesAreDisabled() throws GitAPIException, IOException {
+		ExternalSecretsOperator operator = createExternalSecretsOperator();
+		Path networkPolicy = clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/netpols/allow-required-access-to-external-secrets.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale");
+
+		install(operator);
+
+		assertThat(networkPolicy).doesNotExist();
+	}
+
+	@Test
 	void skipsCrds() throws GitAPIException, IOException {
 		config.getApplication().setSkipCrds(true);
 

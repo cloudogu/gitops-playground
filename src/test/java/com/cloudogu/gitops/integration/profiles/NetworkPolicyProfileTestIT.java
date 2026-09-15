@@ -41,6 +41,18 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 		waitForNetworkPolicy("registry", "allow-required-access-to-registry");
 	}
 
+	@Test
+	void ensureCertManagerNetworkPoliciesExist() {
+		waitForNetworkPolicy("cert-manager", "restrict-cert-manager-ingress");
+		waitForNetworkPolicy("cert-manager", "allow-required-access-to-cert-manager-webhook");
+	}
+
+	@Test
+	void ensureExternalSecretsNetworkPoliciesExist() {
+		waitForNetworkPolicy("secrets", "restrict-external-secrets-ingress");
+		waitForNetworkPolicy("secrets", "allow-required-access-to-external-secrets-webhook");
+	}
+
 	private static void waitForNetworkPolicy(String namespace, String name) {
 		Awaitility.await()
 			.atMost(5, TimeUnit.MINUTES)

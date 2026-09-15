@@ -8,11 +8,16 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Map;
 
 @Singleton
 @Order(400)
@@ -25,6 +30,10 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 	private static final String TOOL_NAME = "external-secrets";
 	private static final String RELEASE_NAME = "external-secrets";
 	private static final String EXTERNAL_SECRETS_APP_PATH = "apps/external-secrets";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/external-secrets/templates/netpols/allow-required-access-to-external-secrets.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/external-secrets/netpols/allow-required-access-to-external-secrets.yaml";
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 
@@ -58,6 +67,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 
 		createImagePullSecret();
 		prepareExternalSecretsApp(repositoryWorkspace.getClusterResourcesRepository());
+		prepareExternalSecretsNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
 
 	@Override
@@ -87,5 +97,23 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, EXTERNAL_SECRETS_APP_PATH)
 		);
+	}
+
+	private void prepareExternalSecretsNetworkPolicy(GitRepo clusterResourcesRepo) {
+		Path networkPolicyPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), NETWORK_POLICY_PATH);
+		if (!toolConfig().netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of("namespace", namespace)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate external-secrets NetworkPolicy", e);
+		}
 	}
 }

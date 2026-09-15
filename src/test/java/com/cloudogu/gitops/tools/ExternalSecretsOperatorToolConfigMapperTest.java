@@ -19,6 +19,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		config.getApplication().setLocalHelmChartFolder("/charts");
 		config.getApplication().setPodResources(true);
 		config.getApplication().setSkipCrds(true);
+		config.getApplication().setNetpols(true);
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getRegistry().setProxyUrl("proxy.example.org");
 		config.getRegistry().setUrl("registry.example.org");
@@ -43,6 +44,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		assertThat(actual).isEqualTo(ExternalSecretsOperatorToolConfig.builder()
 																	  .active(true)
 																	  .namespace("test-external-secrets")
+																	  .netpols(true)
 																	  .helm(HelmChartConfig.builder()
 																						   .repoURL(
 																							   "https://eso.example.org")
