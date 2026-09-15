@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.fail;
  * <p>To run locally: add -Dmicronaut.environments=content-examples to your execute configuration
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|content-examples")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|operator-full-netpols|content-examples")
 public class PetclinicProfileTestIT extends ProfileTestSetup {
 
 	static String exampleStagingNs = "example-apps-staging";
@@ -55,7 +55,7 @@ public class PetclinicProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs);
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|content-examples")
+	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|operator-full-netpols|content-examples")
 	@Test
 	void ensurePetclinicIngressIsOnline() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
@@ -87,7 +87,7 @@ public class PetclinicProfileTestIT extends ProfileTestSetup {
 		}
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|content-examples")
+	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|operator-full-netpols|content-examples")
 	@Test
 	void ensurePetclinicServidsdsdceIsOnline() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {

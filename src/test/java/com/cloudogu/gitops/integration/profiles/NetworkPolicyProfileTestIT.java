@@ -15,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
- * Verifies that the network policies required by the full network policy profile are deployed.
+ * Verifies that the network policies required by the full network policy profiles are deployed.
  * Detailed selectors and ports are covered by the corresponding unit tests.
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols|operator-full-netpols")
 public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 
 	@BeforeAll
