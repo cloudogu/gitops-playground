@@ -932,69 +932,14 @@ class MonitoringTest {
 				clusterResourcesRepoDir,
 				"apps/monitoring/misc/netpols/" + namespace + ".yaml"
 			);
-			assertThat(Files.readString(netPolsYaml.toPath())).contains("namespace: " + namespace);
+			assertThat(Files.readString(netPolsYaml.toPath()))
+				.contains("name: allow-prometheus-scraping")
+				.contains("namespace: " + namespace)
+				.doesNotContain("name: allow-required-access-to-jenkins");
 		}
 	}
 
-	@Test
-	void networkPoliciesAllowRequiredAccessToInternalJenkins() throws GitAPIException, IOException {
-		config.getApplication().setNetpols(true);
-		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
-			"172.18.0.1/32",
-			"10.20.0.0/16"
-		));
-		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("foo-jenkins")));
-		config.getJenkins().setInternal(true);
-		config.getJenkins().setNamespace("jenkins");
-		config.getFeatures().getIngress().setActive(true);
-		config.getFeatures().getIngress().setIngressNamespace("edge");
 
-		install(createStack(scmManagerMock));
-
-		File netPolsYaml = new File(
-			clusterResourcesRepoDir,
-			"apps/monitoring/misc/netpols/foo-jenkins.yaml"
-		);
-		String policy = Files.readString(netPolsYaml.toPath());
-
-		assertThat(policy)
-			.contains("name: allow-required-access-to-jenkins")
-			.contains("app.kubernetes.io/component: jenkins-controller")
-			.contains("app.kubernetes.io/instance: jenkins")
-			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
-			.contains("kubernetes.io/metadata.name: \"foo-edge\"")
-			.contains("app.kubernetes.io/name: traefik")
-			.contains("cidr: 172.18.0.1/32")
-			.contains("cidr: 10.20.0.0/16")
-			.contains("port: 8080")
-			.contains("port: 50000");
-	}
-
-	@Test
-	void networkPoliciesAllowJenkinsAgentsWithoutIngressOrBootstrapCidrs() throws GitAPIException, IOException {
-		config.getApplication().setNetpols(true);
-		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("foo-jenkins")));
-		config.getJenkins().setActive(true);
-		config.getJenkins().setInternal(true);
-		config.getJenkins().setNamespace("jenkins");
-		config.getFeatures().getIngress().setActive(false);
-
-		install(createStack(scmManagerMock));
-
-		File netPolsYaml = new File(
-			clusterResourcesRepoDir,
-			"apps/monitoring/misc/netpols/foo-jenkins.yaml"
-		);
-		String policy = Files.readString(netPolsYaml.toPath());
-
-		assertThat(policy)
-			.contains("name: allow-required-access-to-jenkins")
-			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
-			.contains("port: 8080")
-			.contains("port: 50000")
-			.doesNotContain("app.kubernetes.io/name: traefik")
-			.doesNotContain("ipBlock:");
-	}
 
 	@Test
 	void helmReleasesAreInstalledInAirGappedMode() throws GitAPIException, IOException, URISyntaxException {

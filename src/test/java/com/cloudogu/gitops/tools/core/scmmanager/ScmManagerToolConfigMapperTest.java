@@ -8,6 +8,7 @@ import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,8 @@ class ScmManagerToolConfigMapperTest {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("test-");
 		config.getApplication().setLocalHelmChartFolder("/charts");
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getRegistry().setProxyUrl("proxy.example.org");
 		config.getRegistry().setUrl("registry.example.org");
@@ -29,7 +32,13 @@ class ScmManagerToolConfigMapperTest {
 		config.getRegistry().setReadOnlyPassword("read-only-password");
 		config.getRegistry().setPassword("registry-password");
 		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("automation");
 		config.getJenkins().setUrlForScm("http://jenkins.automation.svc");
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setNamespace("gitops");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
@@ -61,7 +70,15 @@ class ScmManagerToolConfigMapperTest {
 														 .gitOpsUsername("gitops-user")
 														 .skipPlugins(true)
 														 .skipRestart(true)
+														 .netpols(true)
+														 .bootstrapCidrs(List.of("172.18.0.1/32"))
+														 .argocdActive(true)
+														 .argocdNamespace("test-gitops")
+														 .ingressActive(true)
+														 .ingressNamespace("test-edge")
 														 .jenkinsActive(true)
+														 .jenkinsInternal(true)
+														 .jenkinsNamespace("test-automation")
 														 .jenkinsUrl("http://jenkins.automation.svc")
 														 .helm(HelmChartConfig.builder()
 																			  .repoURL("https://scm-chart.example.org")

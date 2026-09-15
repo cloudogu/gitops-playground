@@ -674,124 +674,18 @@ class ArgoCDConfigurationTest {
 	void configuresArgoCdWithActiveNetworkPolicies() throws IOException {
 		config.getApplication().setNetpols(true);
 		config.getApplication().setNamePrefix("my-prefix-");
-		config.getScm().getScmManager().setNamespace("my-prefix-scm-manager");
 
 		Map<String, Object> valuesYaml = executeAndReadHelmValues();
 		String argocdValues = Files.readString(
 			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "values.yaml")
 		);
-		String allowNamespaces = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
-		);
 
 		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(true);
 		assertThat(argocdValues).contains("namespace: my-prefix-monitoring");
-		assertThat(allowNamespaces)
-			.contains("namespace: my-prefix-scm-manager")
-			.doesNotContain("namespace: my-prefix-my-prefix-scm-manager")
-			.contains("kubernetes.io/metadata.name: my-prefix-argocd");
-
-		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
-		assertThat(value(networkPolicy, "metadata", "name"))
-			.isEqualTo("allow-required-access-to-scm-manager");
-		assertThat(value(networkPolicy, "spec", "podSelector", "matchLabels", "app"))
-			.isEqualTo("scm-manager");
-
-		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
-		assertThat(ingressRules).hasSize(2);
-		assertNetworkPolicyPeer(
-			ingressRules.get(0),
-			"my-prefix-argocd",
-			"app.kubernetes.io/name",
-			"argocd-repo-server"
-		);
-		assertNetworkPolicyPeer(
-			ingressRules.get(1),
-			"my-prefix-ingress",
-			"app.kubernetes.io/name",
-			"traefik"
-		);
 	}
 
-	@Test
-	void allowsInternalJenkinsControllerAndAgentsToScmManager() throws IOException {
-		config.getApplication().setNetpols(true);
-		config.getApplication().setNamePrefix("my-prefix-");
-		config.getJenkins().setActive(true);
-		config.getJenkins().setInternal(true);
-		config.getJenkins().setNamespace("jenkins");
 
-		executeAndReadHelmValues();
-		String allowNamespaces = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
-		);
-		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
 
-		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
-		assertThat(ingressRules).hasSize(4);
-		assertNetworkPolicyPeer(
-			ingressRules.get(2),
-			"my-prefix-jenkins",
-			"app.kubernetes.io/component",
-			"jenkins-controller"
-		);
-		assertThat(value(
-			mapListValue(ingressRules.get(2), "from").get(0),
-			"podSelector",
-			"matchLabels",
-			"app.kubernetes.io/instance"
-		)).isEqualTo("jenkins");
-		assertNetworkPolicyPeer(
-			ingressRules.get(3),
-			"my-prefix-jenkins",
-			"jenkins/jenkins-jenkins-agent",
-			"true"
-		);
-	}
-
-	@Test
-	void allowsConfiguredBootstrapCidrsToScmManager() throws IOException {
-		config.getApplication().setNetpols(true);
-		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
-			"172.18.0.1/32",
-			"10.20.0.0/16"
-		));
-
-		executeAndReadHelmValues();
-		String allowNamespaces = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
-		);
-		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
-
-		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
-		assertThat(ingressRules).hasSize(4);
-		assertNetworkPolicyIpBlock(ingressRules.get(2), "172.18.0.1/32");
-		assertNetworkPolicyIpBlock(ingressRules.get(3), "10.20.0.0/16");
-	}
-
-	@Test
-	void restrictsScmManagerAccessByPodLabelsInSingleNamespace() throws IOException {
-		config.getApplication().setNetpols(true);
-		config.getApplication().setNamePrefix("my-prefix-");
-		config.getFeatures().getArgocd().setNamespace("platform");
-		// ScmManager updates its namespace with the application prefix before Argo CD is executed.
-		config.getScm().getScmManager().setNamespace("my-prefix-platform");
-
-		executeAndReadHelmValues();
-		String allowNamespaces = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
-		);
-		Map<String, Object> networkPolicy = parseYaml(allowNamespaces);
-
-		assertThat(value(networkPolicy, "metadata", "namespace")).isEqualTo("my-prefix-platform");
-		List<Map<String, Object>> ingressRules = mapListValue(networkPolicy, "spec", "ingress");
-		assertNetworkPolicyPeer(
-			ingressRules.get(0),
-			"my-prefix-platform",
-			"app.kubernetes.io/name",
-			"argocd-repo-server"
-		);
-	}
 
 	@Test
 	void setsOperatorServerInsecureToTrueWhenInsecureIsSet() throws IOException {
@@ -1913,30 +1807,7 @@ class ArgoCDConfigurationTest {
 		return (List<String>) value(yaml, path);
 	}
 
-	private static void assertNetworkPolicyPeer(
-		Map<String, Object> ingressRule,
-		String namespace,
-		String podLabel,
-		String podLabelValue) {
-		List<Map<String, Object>> peers = mapListValue(ingressRule, "from");
-		assertThat(peers).hasSize(1);
-		Map<String, Object> peer = peers.get(0);
-		assertThat(value(peer, "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name"))
-			.isEqualTo(namespace);
-		assertThat(value(peer, "podSelector", "matchLabels", podLabel)).isEqualTo(podLabelValue);
 
-		List<Map<String, Object>> ports = mapListValue(ingressRule, "ports");
-		assertThat(ports).containsExactly(Map.of("protocol", "TCP", "port", 8080));
-	}
-
-	private static void assertNetworkPolicyIpBlock(Map<String, Object> ingressRule, String cidr) {
-		List<Map<String, Object>> peers = mapListValue(ingressRule, "from");
-		assertThat(peers).hasSize(1);
-		assertThat(value(peers.get(0), "ipBlock", "cidr")).isEqualTo(cidr);
-
-		List<Map<String, Object>> ports = mapListValue(ingressRule, "ports");
-		assertThat(ports).containsExactly(Map.of("protocol", "TCP", "port", 8080));
-	}
 
 	private static Map<String, Object> map(Object... keyValues) {
 		Map<String, Object> result = new LinkedHashMap<>();

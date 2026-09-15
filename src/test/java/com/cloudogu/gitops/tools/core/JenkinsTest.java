@@ -196,6 +196,52 @@ class JenkinsTest {
 	}
 
 	@Test
+	void createsRequiredAccessNetworkPolicy() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
+			"172.18.0.1/32",
+			"10.20.0.0/16"
+		));
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
+
+		install(createJenkins());
+
+		Path networkPolicy = Path.of(
+			localTempDir.getAbsolutePath(),
+			"apps/jenkins/netpols/allow-required-access-to-jenkins.yaml"
+		);
+		String policy = Files.readString(networkPolicy);
+
+		assertThat(policy)
+			.contains("namespace: jenkins")
+			.contains("app.kubernetes.io/component: jenkins-controller")
+			.contains("app.kubernetes.io/instance: jenkins")
+			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
+			.contains("kubernetes.io/metadata.name: edge")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("cidr: 172.18.0.1/32")
+			.contains("cidr: 10.20.0.0/16")
+			.contains("port: 8080")
+			.contains("port: 50000");
+	}
+
+	@Test
+	void removesRequiredAccessNetworkPolicyWhenNetworkPoliciesAreDisabled() throws GitAPIException, IOException {
+		Jenkins jenkins = createJenkins();
+		Path networkPolicy = Path.of(
+			localTempDir.getAbsolutePath(),
+			"apps/jenkins/netpols/allow-required-access-to-jenkins.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale");
+
+		install(jenkins);
+
+		assertThat(networkPolicy).doesNotExist();
+	}
+
+	@Test
 	void resolvesJenkinsCredentialsAtRuntimeWithoutMutatingConfig() throws GitAPIException, IOException {
 		config.getJenkins().setUsername("fallback-admin");
 		config.getJenkins().setPassword("fallback-password");

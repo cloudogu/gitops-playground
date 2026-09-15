@@ -27,6 +27,8 @@ class JenkinsToolConfigMapperTest {
 		config.getApplication().setTrace(true);
 		config.getApplication().setInsecure(true);
 		config.getApplication().setBaseUrl("example.org");
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getRegistry().setUrl("registry.example.org");
 		config.getRegistry().setPath("images");
 		config.getRegistry().setUsername("registry-user");
@@ -70,6 +72,8 @@ class JenkinsToolConfigMapperTest {
 		config.getJenkins().getHelm().setValues(Map.of("controller", Map.of("replicas", 2)));
 		config.getFeatures().getArgocd().setActive(true);
 		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
@@ -144,6 +148,10 @@ class JenkinsToolConfigMapperTest {
 																						  .build())
 													  .argocdActive(true)
 													  .monitoringActive(true)
+													  .netpols(true)
+													  .bootstrapCidrs(List.of("172.18.0.1/32"))
+													  .ingressActive(true)
+													  .ingressNamespace("test-edge")
 													  .kubernetesVersion(Config.K8S_VERSION)
 													  .helm(HelmChartConfig.builder()
 																		   .repoURL("https://jenkins-chart.example.org")

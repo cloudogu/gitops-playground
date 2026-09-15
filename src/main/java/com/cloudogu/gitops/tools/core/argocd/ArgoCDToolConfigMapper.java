@@ -37,7 +37,6 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
 							   .values(argocd.getValues())
 							   .multiTenant(context.isMultiTenant())
-							   .netpols(config.getApplication().getNetpols())
 							   .tenantName(config.getApplication().getTenantName())
 							   .url(argocd.getUrl())
 							   .tenantNamespaces(tenantNamespaces)
@@ -67,10 +66,6 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.netpols", config.getApplication().getNetpols())
-			.put(
-				"application.networkPolicies.bootstrapCidrs",
-				ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config)
-			)
 			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(

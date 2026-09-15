@@ -34,7 +34,6 @@ class ArgoCDToolConfigMapperTest {
 		)));
 		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of("team-a", "team-b")));
 		config.getApplication().setNetpols(true);
-		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getApplication().setClusterAdmin(true);
 		config.getApplication().setInsecure(true);
 		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
@@ -110,7 +109,6 @@ class ArgoCDToolConfigMapperTest {
 													 ))
 													 .values(Map.of("server", Map.of("replicas", 2)))
 													 .multiTenant(true)
-													 .netpols(true)
 													 .tenantName("tenant-a")
 													 .url("https://argocd.example.org")
 													 .tenantNamespaces(List.of("team-a", "team-b"))
@@ -125,9 +123,6 @@ class ArgoCDToolConfigMapperTest {
 															 "mirrorRepos", true,
 															 "namePrefix", "tenant-a-",
 															 "netpols", true,
-															 "networkPolicies", Map.of(
-																 "bootstrapCidrs", List.of("172.18.0.1/32")
-															 ),
 															 "openshift", true,
 															 "skipCrds", true
 														 ),

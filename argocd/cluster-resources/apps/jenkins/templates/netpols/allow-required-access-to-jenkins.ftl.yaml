@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-jenkins
+  namespace: ${namespace}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: jenkins-controller
+      app.kubernetes.io/instance: jenkins
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              jenkins/jenkins-jenkins-agent: "true"
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 50000
+<#if ingressActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${ingressNamespace}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
+<#list bootstrapCidrs as bootstrapCidr>
+    - from:
+        - ipBlock:
+            cidr: ${bootstrapCidr}
+      ports:
+        - protocol: TCP
+          port: 8080
+</#list>

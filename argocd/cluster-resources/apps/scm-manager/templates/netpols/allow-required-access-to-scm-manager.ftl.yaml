@@ -1,31 +1,34 @@
----
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-required-access-to-scm-manager
-  namespace: ${config.scm.scmManager.namespace}
+  namespace: ${namespace}
 spec:
   podSelector:
     matchLabels:
       app: scm-manager
   policyTypes:
     - Ingress
+<#assign hasIngress = argocdActive || ingressActive || (jenkinsActive && jenkinsInternal) || bootstrapCidrs?has_content>
+<#if hasIngress>
   ingress:
+<#if argocdActive>
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.features.argocd.namespace}
+              kubernetes.io/metadata.name: ${argocdNamespace}
           podSelector:
             matchLabels:
               app.kubernetes.io/name: argocd-repo-server
       ports:
         - protocol: TCP
           port: 8080
-<#if config.features.ingress.active == true>
+</#if>
+<#if ingressActive>
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.features.ingress.namespace}
+              kubernetes.io/metadata.name: ${ingressNamespace}
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
@@ -33,11 +36,11 @@ spec:
         - protocol: TCP
           port: 8080
 </#if>
-<#if config.jenkins.active == true && config.jenkins.internal == true>
+<#if jenkinsActive && jenkinsInternal>
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.jenkins.namespace}
+              kubernetes.io/metadata.name: ${jenkinsNamespace}
           podSelector:
             matchLabels:
               app.kubernetes.io/component: jenkins-controller
@@ -48,7 +51,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${config.application.namePrefix}${config.jenkins.namespace}
+              kubernetes.io/metadata.name: ${jenkinsNamespace}
           podSelector:
             matchLabels:
               jenkins/jenkins-jenkins-agent: "true"
@@ -56,7 +59,7 @@ spec:
         - protocol: TCP
           port: 8080
 </#if>
-<#list config.application.networkPolicies.bootstrapCidrs as bootstrapCidr>
+<#list bootstrapCidrs as bootstrapCidr>
     - from:
         - ipBlock:
             cidr: ${bootstrapCidr}
@@ -64,3 +67,6 @@ spec:
         - protocol: TCP
           port: 8080
 </#list>
+<#else>
+  ingress: []
+</#if>

@@ -72,6 +72,10 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 								.registry(registryConfig)
 								.argocdActive(config.getFeatures().getArgocd().getActive())
 								.monitoringActive(config.getFeatures().getMonitoring().getActive())
+								.netpols(config.getApplication().getNetpols())
+								.bootstrapCidrs(ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config))
+								.ingressActive(config.getFeatures().getIngress().getActive())
+								.ingressNamespace(config.getApplication().getNamePrefix() + config.getFeatures().getIngress().getIngressNamespace())
 								.kubernetesVersion(Config.K8S_VERSION)
 								.helm(ToolConfigMapperSupport.helmChart(
 									jenkins.getHelm(),

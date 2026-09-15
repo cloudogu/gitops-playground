@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
+import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.ScmManagerProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerApiClient;
 import com.cloudogu.gitops.infrastructure.git.providers.scmmanager.api.ScmManagerUser;
@@ -19,6 +20,7 @@ import freemarker.template.TemplateModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +32,10 @@ import java.util.Map;
 public class ScmManagerSetup {
 
 	private static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/scm-manager/templates/netpols/allow-required-access-to-scm-manager.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/scm-manager/netpols/allow-required-access-to-scm-manager.yaml";
 	private static final long MILLIS_PER_SECOND = 1000L;
 	private static final int SCMM_AVAILABILITY_TIMEOUT_SECONDS = 180;
 	private static final int SCMM_AVAILABILITY_POLL_INTERVAL_MILLIS = 5000;
@@ -112,6 +118,40 @@ public class ScmManagerSetup {
 			repositoryWorkspace.createLocalDirectories();
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to prepare bootstrap repositories", e);
+		}
+	}
+
+	public void prepareNetworkPolicy() {
+		GitRepo clusterResourcesRepo = repositoryWorkspace.getClusterResourcesRepository();
+		Path networkPolicyPath = Path.of(
+			clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(),
+			NETWORK_POLICY_PATH
+		);
+
+		if (!config.netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of(
+					"namespace", config.namespace(),
+					"argocdActive", config.argocdActive(),
+					"argocdNamespace", config.argocdNamespace(),
+					"ingressActive", config.ingressActive(),
+					"ingressNamespace", config.ingressNamespace(),
+					"jenkinsActive", config.jenkinsActive(),
+					"jenkinsInternal", config.jenkinsInternal(),
+					"jenkinsNamespace", config.jenkinsNamespace(),
+					"bootstrapCidrs", config.bootstrapCidrs()
+				)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+			k8sClient.applyYaml(networkPolicyPath.toString());
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate SCM-Manager NetworkPolicy", e);
 		}
 	}
 

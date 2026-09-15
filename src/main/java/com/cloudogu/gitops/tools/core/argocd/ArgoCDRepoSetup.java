@@ -148,10 +148,6 @@ public class ArgoCDRepoSetup {
 		} else {
 			FileSystemUtils.deleteDir(layout.multiTenantDir());
 		}
-
-		if (!config.netpols()) {
-			FileSystemUtils.deleteFile(layout.netpolFile());
-		}
 	}
 
 	private Map<String, Object> buildTemplateValues(GitRepo repo) {

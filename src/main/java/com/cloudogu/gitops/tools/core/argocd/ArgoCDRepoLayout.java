@@ -12,8 +12,6 @@ public record ArgoCDRepoLayout(String repoRootDir) {
 	private static final String OPERATOR_DIR = "operator";
 	private static final String PROJECTS_DIR = "projects";
 
-	private static final String NETPOL_YAML = "templates/allow-namespaces.yaml";
-
 	public String rootDir() {
 		return repoRootDir;
 	}
@@ -56,10 +54,6 @@ public record ArgoCDRepoLayout(String repoRootDir) {
 
 	public String chartYaml() {
 		return Path.of(helmDir(), "Chart.yaml").toString();
-	}
-
-	public String netpolFile() {
-		return Path.of(helmDir(), NETPOL_YAML).toString();
 	}
 
 	public static String argocdSubdirRel() {

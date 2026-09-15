@@ -319,31 +319,7 @@ class ArgoCDRepoSetupTest {
 		assertThat(Path.of(clusterRepoLayout.multiTenantDir())).doesNotExist();
 	}
 
-	@Test
-	void prepareRepositoriesDeletesNetpolFileWhenNetpolsDisabled() {
-		config.getApplication().setNetpols(false);
 
-		ArgoCDRepoSetup setup = createSetup(new FileSystemUtils()).setup;
-
-		setup.prepareRepositories();
-
-		ArgoCDRepoLayout clusterRepoLayout = setup.clusterRepoLayout();
-
-		assertThat(Path.of(clusterRepoLayout.netpolFile())).doesNotExist();
-	}
-
-	@Test
-	void prepareRepositoriesKeepsNetpolFileWhenNetpolsEnabled() {
-		config.getApplication().setNetpols(true);
-
-		ArgoCDRepoSetup setup = createSetup(new FileSystemUtils()).setup;
-
-		setup.prepareRepositories();
-
-		ArgoCDRepoLayout clusterRepoLayout = setup.clusterRepoLayout();
-
-		assertThat(Path.of(clusterRepoLayout.netpolFile())).exists();
-	}
 
 	@Test
 	void prepareRepositoriesPreparesTenantBootstrapRepositoryInDedicatedMode() {
