@@ -33,6 +33,7 @@ The versions are also specified in the `Config.java` file, so it is recommended 
   - [Basic test](#basic-test)
   - [Proper test](#proper-test)
 - [Testing Network Policies locally](#testing-network-policies-locally)
+  - [Run GOP from the Docker image](#run-gop-from-the-docker-image)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
   - [Install the playground](#install-the-playground)
@@ -438,6 +439,31 @@ The same arguments can be used in an IDE run configuration:
 --config-file=credentials.yaml
 --config-file=scripts/dev/network-policies/netpol-local.yaml
 ```
+
+### Run GOP from the Docker image
+
+To verify the actual GOP image with NetworkPolicies, build the image locally:
+
+```bash
+docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
+```
+
+Run the image with host networking, mount the k3d kubeconfig and the local NetworkPolicy override, and use the `full-netpols` profile. This example intentionally does not mount an additional credentials file:
+
+```bash
+docker run --rm -it \
+  --network=host \
+  -e KUBECONFIG=/home/.kube/config \
+  -v "$HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config:ro" \
+  -v "$(pwd)/scripts/dev/network-policies/netpol-local.yaml:/home/netpol-local.yaml:ro" \
+  gitops-playground:dev \
+  --yes \
+  --profile=full-netpols \
+  -x \
+  --config-file=/home/netpol-local.yaml
+```
+
+`--network=host` is required for this local k3d setup so that the GOP container can reach services exposed by the cluster. The local `netpol-local.yaml` is an environment-specific test workaround and is intentionally not committed. Use `scripts/dev/network-policies/netpol-local.example.yaml` as the template and adjust `bootstrapCidrs` to the gateway of the local k3d Docker network.
 
 After the rollout, verify that the required policies exist:
 
