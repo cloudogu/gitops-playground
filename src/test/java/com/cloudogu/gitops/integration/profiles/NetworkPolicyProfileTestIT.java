@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,7 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
 	void ensureCertManagerNetworkPoliciesExist() {
 		waitForNetworkPolicy("cert-manager", "restrict-cert-manager-ingress");
 		waitForNetworkPolicy("cert-manager", "allow-required-access-to-cert-manager-webhook");
@@ -53,11 +55,24 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 		waitForNetworkPolicy("secrets", "allow-required-access-to-external-secrets-webhook");
 	}
 
+	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
+	void ensureVaultNetworkPolicyExists() {
+		waitForNetworkPolicyWithSelector("secrets", Map.of("app.kubernetes.io/name", "vault"));
+	}
+
 	private static void waitForNetworkPolicy(String namespace, String name) {
 		Awaitility.await()
 			.atMost(5, TimeUnit.MINUTES)
 			.pollInterval(5, TimeUnit.SECONDS)
 			.untilAsserted(() -> assertNetworkPolicyExists(namespace, name));
+	}
+
+	private static void waitForNetworkPolicyWithSelector(String namespace, Map<String, String> selector) {
+		Awaitility.await()
+			.atMost(5, TimeUnit.MINUTES)
+			.pollInterval(5, TimeUnit.SECONDS)
+			.untilAsserted(() -> assertNetworkPolicyWithSelectorExists(namespace, selector));
 	}
 
 	private static void assertNetworkPolicyExists(String namespace, String name) {
@@ -72,6 +87,23 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 			assertThat(networkPolicy)
 				.as("NetworkPolicy '%s' not found in namespace '%s'", name, namespace)
 				.isNotNull();
+		} catch (KubernetesClientException ex) {
+			fail("Unexpected Kubernetes exception", ex);
+		}
+	}
+
+	private static void assertNetworkPolicyWithSelectorExists(String namespace, Map<String, String> selector) {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			assertThat(client.network()
+				.v1()
+				.networkPolicies()
+				.inNamespace(namespace)
+				.list()
+				.getItems())
+				.as("No NetworkPolicy with selector %s found in namespace '%s'", selector, namespace)
+				.anySatisfy(networkPolicy -> assertThat(networkPolicy.getSpec()
+					.getPodSelector()
+					.getMatchLabels()).containsAllEntriesOf(selector));
 		} catch (KubernetesClientException ex) {
 			fail("Unexpected Kubernetes exception", ex);
 		}
