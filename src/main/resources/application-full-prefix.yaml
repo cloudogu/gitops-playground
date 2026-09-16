@@ -55,12 +55,12 @@ content:
     - ${config.application.namePrefix}example-apps-staging
   variables:
     petclinic:
-      baseDomain: "petclinic.localhost"
+      baseDomain: "petclinic"
     images:
       kubectl: "alpine/kubectl:latest"
       helm: "ghcr.io/cloudogu/helm:latest"
       kubeval: "ghcr.io/cloudogu/helm:latest"
       helmKubeval: "ghcr.io/cloudogu/helm:latest"
       yamllint: "cytopia/yamllint:1.25-0.7"
-      petclinic: "eclipse-temurin:17-jre-alpine"
+      petclinic: "eclipse-temurin:17-jre"
       maven: ""

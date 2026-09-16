@@ -4,8 +4,9 @@ argo-cd:
   crds:
     install: false
 </#if>
-<#if config.application.netpols == true>
   global:
+    domain: ${argocd.host}
+<#if config.application.netpols == true>
     networkPolicy:
       create: true
 </#if>
@@ -61,7 +62,7 @@ argo-cd:
       application.namespaces: "${config.application.namePrefix}${config.features.argocd.namespace}"
       server.insecure: true # tls terminated in ingress
 
-    # Repo credential templates are created dynamically in groovy, so they are not stored in git
+    # Repo credential templates are created dynamically by GOP, so they are not stored in git
     #credentialTemplates:
     #  scmm:
     #    url: http://scmm.scm-manager.svc.cluster.local
@@ -70,9 +71,31 @@ argo-cd:
     cm:
       timeout.reconciliation: 15s
       repository.check.interval: 30s
+      application.resourceTrackingMethod: annotation
+      <#if config.features.argocd.url?has_content && argocd.host?has_content>
+      url: ${config.features.argocd.url}
+      additionalUrls: |
+        - http://${argocd.host}
+        - https://${argocd.host}
+      </#if>
+      <#assign argocdOidc = (config.features.argocd.oidc)!{}>
+      <#if argocdOidc?has_content && argocdOidc.enabled>
+      oidc.config: |
+        name: ${(argocdOidc.providerName)!"Keycloak"}
+        issuer: ${argocdOidc.issuerUrl}
+        clientID: ${argocdOidc.clientId}
+        clientSecret: ${argocdOidc.clientSecret}
+        requestedScopes: [<#list (argocdOidc.scopes!["openid", "profile", "email"]) as scope>"${scope}"<#sep>, </#list>]
+      </#if>
+    <#if argocdOidc?has_content && argocdOidc.enabled && argocdOidc.adminGroupName?has_content>
+    rbac:
+      policy.csv: |
+        g, ${argocdOidc.adminGroupName}, role:admin
+      scopes: '[groups]'
+    </#if>
 
   notifications:
-    # secrets are created dynamically in groovy, so they are not stored in git
+    # secrets are created dynamically by GOP, so they are not stored in git
     secret:
       create: false
     enabled: <#if config.features.mail.active == true>true<#else>false</#if>
@@ -86,8 +109,8 @@ argo-cd:
       <#if config.features.mail.smtpAddress?has_content>
         host: ${config.features.mail.smtpAddress}
         <#if config.features.mail.smtpPort??>port: ${config.features.mail.smtpPort?c}</#if>
-        <#if config.features.mail.smtpUser?has_content>username: $email-username</#if>
-        <#if config.features.mail.smtpPassword?has_content>password: $email-password</#if>
+        <#if config.features.mail.smtpUserConfigured>username: $email-username</#if>
+        <#if config.features.mail.smtpPasswordConfigured>password: $email-password</#if>
       <#else>
         host: mail.${config.application.namePrefix}${config.features.monitoring.namespace}.svc.cluster.local
         port: 1025

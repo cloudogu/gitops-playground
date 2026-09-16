@@ -8,15 +8,19 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
 	awk -F '##' '{printf "  %-15s %s\n", $$1, $$2}'
 
-.PHONY:
+.PHONY: prepare-airgapped-cluster
 prepare-airgapped-cluster: ## for airgapped-tests
 	./scripts/dev/prepare_airgapped_cluster.sh
 
-.PHONY:
+.PHONY: cluster
 cluster: ## creates a k3d cluster suitable for GOP
 	./scripts/init-cluster.sh $(RUN_ARGS)
 
-.PHONY:
+.PHONY: keycloak
+keycloak: ## installs local Keycloak test instance for OIDC
+	bash ./scripts/keycloak/install-keycloak.sh
+
+.PHONY: prepare-two-registries
 prepare-two-registries: ## for testing with multiple registries
 	./scripts/dev/prepare_two_registries.sh
 
@@ -29,6 +33,13 @@ install-operator: ## installs argocd operator via kubectl and kustomize
 image: ## builds the docker image for local testing
 	docker buildx prune -f && docker build . -t local/gop
 	echo "created docker image local/gop"
+
+.PHONY: gop-config-in-secrets
+gop-config-in-secrets: ## creates a local cluster with test credentials stored in Kubernetes Secrets
+	./scripts/init-cluster.sh
+	kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
+	kubectl apply -f ./scripts/dev/gop-secrets.yaml
+	echo "created cluster with GOP test credentials in Kubernetes Secrets"
 
 %:
 	@:

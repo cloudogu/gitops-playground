@@ -5,13 +5,11 @@ persistence:
 livenessProbe:
   initialDelaySeconds: 120
 
-fullnameOverride : ${releaseName}
+fullnameOverride: ${releaseName}
 
-extraEnv: |
-  - name: SCM_WEBAPP_INITIALUSER
-    value: "${username}"
-  - name: SCM_WEBAPP_INITIALPASSWORD
-    value: "${password}"
+extraEnvFrom: |
+  - secretRef:
+      name: ${credentialsSecretName}
 
 service:
   type: NodePort
@@ -30,4 +28,16 @@ ingress:
       hosts:
         - ${host}
 </#if>
+</#if>
+<#if config.scm.scmManager.scmmImage?has_content || config.registry.createImagePullSecrets == true>
+image:
+  <#if config.scm.scmManager.scmmImage?has_content>
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+  <#assign scmmImage = DockerImageParser.parse(config.scm.scmManager.scmmImage)>
+  repository: ${scmmImage.registryAndRepositoryAsString}
+  tag: ${scmmImage.tag}
+  </#if>
+  <#if config.registry.createImagePullSecrets == true>
+  pullSecret: proxy-registry
+  </#if>
 </#if>

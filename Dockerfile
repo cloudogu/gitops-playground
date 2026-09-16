@@ -2,7 +2,7 @@
 # BUILD ARGUMENTS
 # ============================================================================
 # Keep in sync with the versions in pom.xml
-ARG JDK_VERSION='17'
+ARG JDK_VERSION='25'
 
 # ============================================================================
 # STAGE 1: Maven Dependency Cache
@@ -33,7 +33,6 @@ COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
 
 COPY src/main /app/src/main
-COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app
@@ -58,8 +57,9 @@ RUN apk add curl grep
 # 3.1: Version Configuration
 # -----------------------------------------------------------------------------
 
-# When updating Helm, also upgrade helm image in Config.groovy
-ARG HELM_VERSION=4.2.1
+# When updating Helm, also upgrade the helm chart version in Config.java
+# renovate: depName=helm/helm datasource=github-releases
+ARG HELM_VERSION=4.2.4
 
 # Install additional tools required for downloads
 # bash curl unzip required for Jenkins downloader
@@ -133,10 +133,10 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 # -----------------------------------------------------------------------------
 # 3.7: Download Helm Charts
 # -----------------------------------------------------------------------------
-COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
-COPY src/main/groovy/com/cloudogu/gitops/config/scm/ScmTenantSchema.groovy /tmp/
+COPY src/main/java/com/cloudogu/gitops/config/Config.java /tmp/
+COPY src/main/java/com/cloudogu/gitops/config/scm/ScmTenantSchema.java /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy /tmp/ScmTenantSchema.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.java /tmp/ScmTenantSchema.java
 
 # -----------------------------------------------------------------------------
 # 3.8: Prepare Application Files
@@ -170,36 +170,7 @@ RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 # - JRE base (smaller than JDK)
 # - No source code (security & size optimization)
 # - Only compiled JAR with runtime dependencies
-FROM alpine:3.24 AS runtime
-
-ENV JAVA_HOME=/opt/java/openjdk
-ENV PATH="${JAVA_HOME}/bin:${PATH}"
-
-RUN apk add --no-cache \
-      ca-certificates \
-      fontconfig \
-      ttf-dejavu \
-      p11-kit-trust \
-      musl-locales \
-      musl-locales-lang \
-      tzdata \
-      coreutils \
-      openssl \
-      gnupg
-
-ARG JAVA_VERSION=17.0.19_10
-ARG JAVA_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.19%2B10/OpenJDK17U-jre_x64_alpine-linux_hotspot_${JAVA_VERSION}.tar.gz"
-ARG JAVA_SHA256="22d4d5579902d134dede626d0fdfb95891abc7578e13dea9cb23775498c4cf51"
-
-RUN wget -O /tmp/openjdk.tar.gz "${JAVA_URL}" \
- && echo "${JAVA_SHA256}  /tmp/openjdk.tar.gz" | sha256sum -c - \
- && mkdir -p "${JAVA_HOME}" \
- && tar -xzf /tmp/openjdk.tar.gz \
-      -C "${JAVA_HOME}" \
-      --strip-components=1 \
-      --no-same-owner \
- && rm /tmp/openjdk.tar.gz \
- && java --version
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS runtime
 
 # -----------------------------------------------------------------------------
 # 4.1: Environment Variables

@@ -45,14 +45,14 @@ content:
     - \${config.application.namePrefix}example-apps-staging
   variables:
     petclinic:
-      baseDomain: "petclinic.localhost"
+      baseDomain: "petclinic"
     images:
       kubectl: "localhost:30000/proxy/kubectl:latest"
       helm: "localhost:30000/proxy/helm:latest"
       kubeval: "localhost:30000/proxy/helm:latest"
       helmKubeval: "localhost:30000/proxy/helm:latest"
       yamllint: "localhost:30000/proxy/cytopia/yamllint:latest"
-      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre"
       maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
 registry:
   internalPort: 30000
@@ -68,6 +68,10 @@ registry:
   createImagePullSecrets: true
 jenkins:
   active: true
+  jenkinsImage: "localhost:30000/proxy/jenkins-helm:latest"
+scm:
+  scmManager:
+    scmmImage: "localhost:30000/proxy/scm-manager:latest"
 application:
   baseUrl: "http://localhost"
   insecure: true

@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.cloudogu</groupId>
     <artifactId>gitops-playground-cli</artifactId>
     <version>0.1</version>
-    <packaging>${packaging}</packaging>
+    <packaging>jar</packaging>
 
     <parent>
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
-        <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml
-        without critical CVE -->
-        <version>4.10.16</version>
+        <version>4.10.17</version>
     </parent>
 
     <properties>
-        <packaging>jar</packaging>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Micronaut derives source/target from jdk.version and the release flag from release.version. -->
+        <jdk.version>25</jdk.version>
+        <release.version>25</release.version>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
+        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
 
         <!--suppress
         UnresolvedMavenProperty -->
@@ -31,15 +30,12 @@
         </versionName>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 
-        <versionNameVersion>2.2.0</versionNameVersion>
         <okhttpVersion>5.3.2</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
-        <groovy.version>5.0.5</groovy.version>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.client.java.version>26.0.0</kubernetes.client.java.version>
-        <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
+        <kubernetes.fabric8.java.version>7.8.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
-        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
+        <netty.version>4.2.17.Final</netty.version>
     </properties>
 
     <scm>
@@ -69,14 +65,14 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>12.1.8</version>
+                <version>12.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty.ee10</groupId>
                 <artifactId>jetty-ee10-bom</artifactId>
-                <version>12.1.8</version>
+                <version>12.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -85,7 +81,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.1</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
@@ -97,20 +93,29 @@
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-            <!-- used for io-fabric8, gitlab4j, groovy-yaml and retrofit -->
+            <!-- used for io-fabric8, gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>2.22.0</version>
                 <scope>compile</scope>
             </dependency>
-            <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-            <!-- used for io-fabric8, gitlab4j, groovy-yaml and retrofit -->
+            <!-- Source:
+            https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+            <!-- used for io-fabric8, gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.0</version>
+                <version>2.22.1</version>
                 <scope>compile</scope>
+            </dependency>
+            <!-- used for micronaut-http-client inside of test -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -118,59 +123,26 @@
     <dependencies>
         <dependency>
             <groupId>io.micronaut</groupId>
-            <artifactId>micronaut-inject-groovy</artifactId>
+            <artifactId>micronaut-aop</artifactId>
         </dependency>
 
         <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
         <dependency>
             <groupId>io.micronaut.reactor</groupId>
             <artifactId>micronaut-reactor</artifactId>
-            <version>3.9.1</version>
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy-all</artifactId>
-            <version>${groovy.version}</version>
-            <type>pom</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.testng</groupId>
-                    <artifactId>testng</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.groovy</groupId>
-                    <artifactId>groovy-testng</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.groovy</groupId>
-                    <artifactId>groovy-test</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- not included in groovy-all -->
-        <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy-yaml</artifactId>
-        </dependency>
-
-        <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
+        <!-- Used by production YAML parsing. -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.21.2</version>
+            <version>2.22.0</version>
         </dependency>
 
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.micronaut.groovy</groupId>
-            <artifactId>micronaut-runtime-groovy</artifactId>
         </dependency>
 
         <dependency>
@@ -209,7 +181,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
-            <version>7.0.5</version>
+            <version>7.1.1</version>
         </dependency>
 
         <dependency>
@@ -217,7 +189,7 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read
             the developers.md#JGit docs -->
-            <version>7.6.0.202603022253-r</version>
+            <version>7.7.1.202607240634-r</version>
         </dependency>
 
         <dependency>
@@ -235,7 +207,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>logging-interceptor</artifactId>
-            <version>5.3.2</version>
+            <version>${okhttpVersion}</version>
         </dependency>
 
         <dependency>
@@ -245,7 +217,7 @@
         </dependency>
 
         <dependency>
-            <!-- Converts HTTP body objects from groovy to JSON -->
+            <!-- Converts HTTP body objects to JSON -->
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>converter-jackson</artifactId>
             <version>${retrofitVersion}</version>
@@ -253,7 +225,7 @@
 
         <dependency>
             <groupId>org.wiremock</groupId>
-            <artifactId>wiremock-jetty12</artifactId>
+            <artifactId>wiremock-standalone</artifactId>
             <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
@@ -269,7 +241,7 @@
             <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
             <groupId>org.springframework</groupId>
             <artifactId>spring-jcl</artifactId>
-            <version>6.2.18</version>
+            <version>6.2.19</version>
             <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
             <scope>test</scope>
         </dependency>
@@ -277,7 +249,7 @@
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
-            <version>2.3.34</version>
+            <version>2.3.35</version>
         </dependency>
 
         <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
@@ -288,18 +260,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
+            <artifactId>kubernetes-client</artifactId>
             <version>${kubernetes.fabric8.java.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java</artifactId>
-            <version>${kubernetes.client.java.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -324,32 +289,31 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <!-- Runtime bytecode manipulation via Java agent is prohibited by the blocklist. -->
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>4.0.0-M1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- provides withEnvironmentVariable in Tests -->
-        <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-lambda</artifactId>
-            <version>1.2.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -363,7 +327,7 @@
         <dependency>
             <groupId>org.gitlab4j</groupId>
             <artifactId>gitlab4j-api</artifactId>
-            <version>6.2.0</version>
+            <version>6.3.0</version>
         </dependency>
 
         <dependency>
@@ -381,7 +345,7 @@
         <dependency>
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
-            <version>3.0.2</version>
+            <version>3.0.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -391,27 +355,12 @@
         </dependency>
 
         <dependency>
-            <groupId>com.cloudogu.versionName</groupId>
-            <artifactId>processor</artifactId>
-            <version>${versionNameVersion}</version>
-            <!-- This dependency is only necessary during compile time -->
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>4.3.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>4.8.184</version>
+            <version>4.8.194</version>
         </dependency>
 
-        <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
+        <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
@@ -420,21 +369,50 @@
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
-            <version>4.0.7</version>
+            <version>4.0.9</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.48</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/version</directory>
+                <targetPath>com/cloudogu/gitops/cli</targetPath>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.5</version>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>3.10.1</version>
+
                 <configuration>
-                    <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's
-                    withEnvironmentVariable -->
-                    <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+                    <java>
+                        <indent>
+                            <tabs>true</tabs>
+                            <spacesPerTab>4</spacesPerTab>
+                        </indent>
+                    </java>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
                     <systemProperties>
                         <property>
                             <name>ROOT_LOG_LEVEL</name>
@@ -445,13 +423,12 @@
                             <value>OFF</value>
                         </property>
                     </systemProperties>
-
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
                 <executions>
                     <execution>
                         <goals>
@@ -502,7 +479,7 @@
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.5.1</version>
             </plugin>
 
             <plugin>
@@ -511,75 +488,34 @@
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>4.3.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <configScript>compiler.groovy</configScript>
-                    <targetBytecode>17</targetBytecode>
-                </configuration>
-            </plugin>
-
-            <!--  Since some dependencies are signed, and we have an uber jar, there will be some
-            security conflicts.
-                  So we delete the responsible files -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>truezip-maven-plugin</artifactId>
-                <version>1.2</version>
-                <executions>
-                    <execution>
-                        <id>remove-a-file-in-sub-archive</id>
-                        <goals>
-                            <goal>remove</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <fileset>
-                                <directory>
-                                    ${project.build.directory}/${project.artifactId}-${project.version}.jar/META-INF/
-                                </directory>
-                                <includes>
-                                    <include>*.DSA</include>
-                                    <include>*.RSA</include>
-                                    <include>*.SF</include>
-                                </includes>
-                            </fileset>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>3.16.0</version>
                 <configuration>
-                    <annotationProcessorPaths>
+                    <!-- Lombok must be listed before micronaut-inject-java: Micronaut's
+                    annotation processor needs to see Lombok-generated constructors when it
+                    builds bean definitions. The parent POM appends micronaut-inject-java to
+                    this list, which would otherwise put it before Lombok, so we override
+                    (rather than append to) the inherited list and order it explicitly. -->
+                    <annotationProcessorPaths combine.self="override">
                         <path>
-                            <groupId>com.cloudogu.versionName</groupId>
-                            <artifactId>processor</artifactId>
-                            <version>${versionNameVersion}</version>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.48</version>
+                        </path>
+                        <path>
+                            <groupId>io.micronaut</groupId>
+                            <artifactId>micronaut-inject-java</artifactId>
+                            <version>${micronaut.version}</version>
                         </path>
                     </annotationProcessorPaths>
-
-                    <compilerArgs>
-                        <arg>-AversionName=${versionName}</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>10.0.0</version>
+                <version>10.0.1</version>
                 <executions>
                     <execution>
                         <id>get-the-git-infos</id>
@@ -599,7 +535,7 @@
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.10.0</version>
+                <version>3.11.0</version>
             </plugin>
 
             <plugin>
@@ -620,30 +556,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.3.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>set-system-properties</goal>
-                        </goals>
-                        <configuration>
-                            <properties>
-                                <property>
-                                    <name>groovy.target.directory</name>
-                                    <value>${project.build.directory}/classes</value>
-                                </property>
-                                <property>
-                                    <name>groovy.parameters</name>
-                                    <value>true</value>
-                                </property>
-                            </properties>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>

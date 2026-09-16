@@ -1,0 +1,112 @@
+package com.cloudogu.gitops.tools;
+
+import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
+import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.tools.common.TemplateConfig;
+import com.cloudogu.gitops.tools.common.ToolConfigMapper;
+import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
+import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Collection;
+import java.util.Map;
+
+@Singleton
+@RequiredArgsConstructor
+public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringToolConfig> {
+
+	private final Config config;
+
+	@Override
+	public MonitoringToolConfig map(DeploymentContext context) {
+		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
+		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
+		return MonitoringToolConfig.builder()
+								   .active(monitoring.getActive())
+								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
+								   .namePrefix(config.getApplication().getNamePrefix())
+								   .activeNamespaces(activeNamespaces)
+								   .namespaceIsolation(config.getApplication().getNamespaceIsolation())
+								   .netpols(config.getApplication().getNetpols())
+								   .skipCrds(config.getApplication().getSkipCrds())
+								   .openshift(context.isOpenshift())
+								   .airgapped(context.isAirgapped())
+								   .applicationUsername(config.getApplication().getUsername())
+								   .applicationPassword(config.getApplication().getPassword())
+								   .applicationCredentials(CredentialsReference.from(config.getApplication().getCredentials()))
+								   .jenkinsMetricsUsername(config.getJenkins().getMetricsUsername())
+								   .jenkinsMetricsPassword(config.getJenkins().getMetricsPassword())
+								   .jenkinsMetricsCredentials(CredentialsReference.from(config.getJenkins().getMetricsCredentials()))
+								   .smtpUser(config.getFeatures().getMail().getSmtpUser())
+								   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
+								   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
+								   .grafanaUrl(monitoring.getGrafanaUrl())
+								   .jenkinsInternal(config.getJenkins().getInternal())
+								   .jenkinsNamespace(config.getJenkins().getNamespace())
+								   .jenkinsUrl(config.getJenkins().getUrl())
+								   .scmProviderType(config.getScm() == null ? null : config.getScm().getScmProviderType())
+								   .ingressActive(config.getFeatures().getIngress().getActive())
+								   .jenkinsActive(config.getJenkins().getActive())
+								   .helm(ToolConfigMapperSupport.helmChart(
+									   monitoring.getHelm(),
+									   config.getApplication().getLocalHelmChartFolder()
+								   ))
+								   .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								   .templateConfig(templateConfig(config, context))
+								   .build();
+	}
+
+	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
+		Config.MonitoringSchema.MonitoringHelmSchema helm = config.getFeatures().getMonitoring().getHelm();
+		String scmManagerNamespace = config.getScm() == null || config.getScm().getScmManager() == null
+			? "scm-manager"
+			: config.getScm().getScmManager().getNamespace();
+		return new TemplateConfig()
+			.put("application.namePrefix", config.getApplication().getNamePrefix())
+			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
+			.put("application.openshift", context.isOpenshift())
+			.put("application.podResources", config.getApplication().getPodResources())
+			.put("application.skipCrds", config.getApplication().getSkipCrds())
+			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
+			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.mail.active", config.getFeatures().getMail().getActive())
+			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
+			.put("features.mail.smtpCredentialsConfigured", smtpCredentialsConfigured(config))
+			.put("features.mail.smtpPort", config.getFeatures().getMail().getSmtpPort())
+			.put("features.monitoring.grafanaEmailFrom", config.getFeatures().getMonitoring().getGrafanaEmailFrom())
+			.put("features.monitoring.grafanaEmailTo", config.getFeatures().getMonitoring().getGrafanaEmailTo())
+			.put("features.monitoring.grafanaUrl", config.getFeatures().getMonitoring().getGrafanaUrl())
+			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
+			.put(
+				"features.monitoring.oidc", ToolConfigMapperSupport.oidc(
+					config.getFeatures().getMonitoring().getOidc())
+			)
+			.put("features.monitoring.helm.grafanaImage", helm.getGrafanaImage())
+			.put("features.monitoring.helm.grafanaSidecarImage", helm.getGrafanaSidecarImage())
+			.put("features.monitoring.helm.prometheusConfigReloaderImage", helm.getPrometheusConfigReloaderImage())
+			.put("features.monitoring.helm.prometheusImage", helm.getPrometheusImage())
+			.put("features.monitoring.helm.prometheusOperatorImage", helm.getPrometheusOperatorImage())
+			.put("jenkins.active", config.getJenkins().getActive())
+			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
+			.put("scm.scmManager.namespace", scmManagerNamespace)
+			.put("scm.scmProviderType", config.getScm() == null ? null : config.getScm().getScmProviderType())
+			.values();
+	}
+
+	private static boolean smtpCredentialsConfigured(Config config) {
+		return hasText(config.getFeatures().getMail().getSmtpUser())
+			|| hasText(config.getFeatures().getMail().getSmtpPassword())
+			|| hasMailSecretReference(config);
+	}
+
+	private static boolean hasMailSecretReference(Config config) {
+		var credentials = config.getFeatures().getMail().getCredentials();
+		return credentials != null
+			&& (hasText(credentials.getSecretName()) || hasText(credentials.getSecretNamespace()));
+	}
+
+	private static boolean hasText(String value) {
+		return value != null && !value.isEmpty();
+	}
+}

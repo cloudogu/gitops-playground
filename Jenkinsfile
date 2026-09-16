@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -24,7 +24,7 @@ pipeline {
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
         DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
-        MAVEN_IMAGE = 'maven:3-eclipse-temurin-17'
+        MAVEN_IMAGE = 'maven:3-eclipse-temurin-25'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
         GOLANG_IMAGE = 'golang:1.25-alpine'
@@ -43,19 +43,30 @@ pipeline {
 
             parallel {
 
-                stage("Unit Test") {
-                    agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
-                        reuseNode true
-                    }}
+                stage("Test & SonarScanner") {
+                    agent {
+                        docker {
+                            image "${env.MAVEN_IMAGE}"
+                            args "-e HOME=${env.WORKSPACE}/.maven-home"
+                            reuseNode true
+                        }
+                    }
                     steps {
-                        sh 'mvn -B clean test'
+                        withSonarQubeEnv('ces-sonar') {
+                            sh '''
+                                mkdir -p "$WORKSPACE/.maven-home/.m2/repository"
+
+                                mvn -B \
+                                    -Dmaven.repo.local="$WORKSPACE/.maven-home/.m2/repository" \
+                                    clean verify sonar:sonar \
+                                    -Dsonar.projectKey=gitops-playground \
+                                    -Dsonar.branch.name="$BRANCH_NAME"
+                            '''
+                        }
                     }
                     post {
                         always {
                             junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                            archiveArtifacts artifacts: "**/target/site/jacoco/**"
                         }
                     }
                 }
@@ -63,23 +74,10 @@ pipeline {
                 stage("Build Image") {
                     steps {
                         script {
-                            def buildArgs = "--no-cache " +
-                                            "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                            "--build-arg VCS_REF='${env.GIT_COMMIT}' "
+                            def buildArgs = (params.noCache ? "--no-cache " : "") +
+                                    "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
+                                    "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
-                        }
-                    }
-                }
-
-                stage("SonarScanner") {
-                    agent { docker {
-                        image "${env.MAVEN_IMAGE}"
-                        args "-v maven-cache:/root/.m2"
-                        reuseNode true
-                    }}
-                    steps {
-                        withSonarQubeEnv('ces-sonar') {
-                            sh "mvn -B clean verify sonar:sonar -Dsonar.projectKey=gitops-playground -Dsonar.branch.name=${BRANCH_NAME}"
                         }
                     }
                 }
@@ -97,14 +95,22 @@ pipeline {
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
                                          $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
+
+                        catchError(
+                                buildResult: 'SUCCESS',
+                                stageResult: 'UNSTABLE',
+                                catchInterruptions: false
+                        ) {
+                            sh '''docker run --rm -v $WORKSPACE:/workspace \
                                          -v /var/run/docker.sock:/var/run/docker.sock:ro \
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
                                          $GRYPE_IMAGE sbom:/workspace/sbom.json \
                                              --output table=/workspace/vulnerabilities.txt \
                                              --output sarif=/workspace/vulnerabilities.sarif \
-                                             --quiet --sort-by severity --fail-on critical'''
+                                             --sort-by severity --fail-on critical'''
+                        }
+
                         archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
                     }
                 }
@@ -113,10 +119,9 @@ pipeline {
                     steps {
                         script {
                             def profiles = []
-                            def isTriggeredByTimer = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
 
-                            if (isTriggeredByTimer || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
-                                profiles = ['minimal', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                            if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
+                                profiles = ['minimal', 'full', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -154,29 +159,42 @@ pipeline {
                                           kubectl logs -n "\${namespace}" "\${pod}" --all-containers=true --previous --tail=200 --prefix=true >> '${dumpDir}/container-logs.txt' 2>&1
                                           echo >> '${dumpDir}/container-logs.txt'
                                         done
+
+                                        chown -R ${env.BUILD_USER}:${env.BUILD_GROUP} target
                                     """, returnStatus: true)
                                 }
 
-                                  archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
-                              }
+                                archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
+                            }
 
                             def withK3dCluster = { profile, body ->
                                 try {
                                     sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
                                     body()
-                                } catch(Throwable t) {
+                                } catch (Throwable t) {
                                     dumpKubernetesDebugInfo(profile)
                                     throw t
                                 } finally {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
-                                }}
+                                }
+                            }
 
                             profiles.each { profile ->
                                 withK3dCluster(profile) {
 
+                                    if (profile == 'full-secrets') {
+                                        docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                            sh '''
+                                                apk add --no-cache kubectl
+                                                kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
+                                                kubectl apply -f ./scripts/dev/gop-secrets.yaml
+                                            '''
+                                        }
+                                    }
+
                                     if (profile.startsWith('operator')) {
                                         docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh 'apk add --no-cache make bash curl git kubectl && ./scripts/local/install-argocd-operator.sh'
+                                            sh 'apk add --no-cache make bash curl git kubectl && make install-operator'
                                         }
                                     }
 
@@ -184,7 +202,11 @@ pipeline {
                                         sh "java -jar /app/gitops-playground.jar --profile=${profile}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} && chown $BUILD_USER:$BUILD_GROUP ./* -R"
+                                        try {
+                                            sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                        } finally {
+                                            sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                        }
                                     }
                                 }
 
@@ -236,16 +258,37 @@ pipeline {
     }
 
     post {
+        always {
+            script {
+                if (isTriggeredByTimer()) {
+                    currentBuild.displayName = "#${env.BUILD_NUMBER} weekly"
+                    emailext(
+                            subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            to: env.GOP_DEVELOPERS
+                    )
+                }
+            }
+        }
         changed {
-            emailext(
-                subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: '${SCRIPT, template="groovy-html.template"}',
-                mimeType: 'text/html',
-                recipientProviders: [
-                    [$class: 'DevelopersRecipientProvider'],
-                    [$class: 'RequesterRecipientProvider']
-                ]
-            )
+            script {
+                if (!isTriggeredByTimer()) {
+                    emailext(
+                            subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            recipientProviders: [
+                                    [$class: 'DevelopersRecipientProvider'],
+                                    [$class: 'RequesterRecipientProvider']
+                            ]
+                    )
+                }
+            }
         }
     }
+}
+
+boolean isTriggeredByTimer() {
+    return !currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
 }

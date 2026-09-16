@@ -11,7 +11,7 @@ REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
 ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v0.9.16"
 VAULT_IMAGE="docker://hashicorp/vault:2.0.4"
-TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.3.3"
+TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.6.15"
 
 PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.8.0"
 PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1"
@@ -19,12 +19,17 @@ PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/promet
 GRAFANA_IMAGE="docker://docker.io/grafana/grafana:12.3.0"
 K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.1.2"
 
+JENKINS_IMAGE_TAG="5.9.18"
+SCM_MANAGER_IMAGE_TAG="3.11.6"
+JENKINS_IMAGE="docker://ghcr.io/cloudogu/jenkins-helm:${JENKINS_IMAGE_TAG}"
+SCM_MANAGER_IMAGE="docker://docker.io/scmmanager/scm-manager:${SCM_MANAGER_IMAGE_TAG}"
+
 CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.16.1"
 CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1"
 CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
 
 KUBECTL_IMAGE="docker://alpine/kubectl:latest"
-TEMURIN_IMAGE="docker://eclipse-temurin:17-jre-alpine"
+TEMURIN_IMAGE="docker://eclipse-temurin:17-jre"
 HELM_IMAGE="docker://ghcr.io/cloudogu/helm:latest"
 MVN_IMAGE="docker://maven:3-eclipse-temurin-17-alpine"
 YAMLLINT_IMAGE="docker://cytopia/yamllint:latest"
@@ -38,6 +43,7 @@ if [[ -n $HARBOR ]]; then
 
     operations=("Proxy" "Registry")
     readOnlyUser='RegistryRead'
+    declare -A projectIds
 
     for operation in "${operations[@]}"; do
 
@@ -45,19 +51,26 @@ if [[ -n $HARBOR ]]; then
         lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
 
         echo "creating project ${lower_operation}"
-        projectId=$(curl -is --fail "$REGISTRY_BASE_URL/api/v2.0/projects" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
+        projectResponse=$(curl -is "$REGISTRY_BASE_URL/api/v2.0/projects" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" || true)
+        projectId=$(echo "$projectResponse" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]' || true)
+
+        if [[ -z "$projectId" ]]; then
+            projectId=$(curl -s --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${lower_operation}" -u admin:Harbor12345 | sed -n 's/.*"project_id":\([0-9]*\).*/\1/p')
+        fi
+
+        projectIds[$lower_operation]=$projectId
 
         echo creating user ${operation} with PW ${operation}12345
-        curl -s  --fail "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
+        curl -s "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}" || true
 
         echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
-        curl --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
+        curl "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}" || true
     done
 
     echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
-    curl -s  --fail "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
-    echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
-    curl  --fail "$REGISTRY_BASE_URL/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":5,\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
+    curl -s "$REGISTRY_BASE_URL/api/v2.0/users" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}" || true
+    echo "Adding member ${readOnlyUser} to project proxy; ID=${projectIds[proxy]}"
+    curl "$REGISTRY_BASE_URL/api/v2.0/projects/${projectIds[proxy]}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":5,\"member_user\":{\"username\":\"${readOnlyUser}\"}}" || true
 
     # sleep 5 seconds just to make sure the registry is ready
     sleep 5
@@ -65,7 +78,7 @@ if [[ -n $HARBOR ]]; then
     # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
     skopeo copy $ESO_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/external-secrets
     skopeo copy $VAULT_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/vault
-    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.3.3
+    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.6.15
 
     # Monitoring
     skopeo copy $PROMETHEUS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/prometheus
@@ -74,6 +87,10 @@ if [[ -n $HARBOR ]]; then
     skopeo copy $GRAFANA_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/grafana
     skopeo copy $K8S_SIDECAR --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/k8s-sidecar
 
+    # Core tools
+    skopeo copy $JENKINS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/jenkins-helm
+    skopeo copy $SCM_MANAGER_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/scm-manager
+
     # Cert Manager images
     skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-controller
     skopeo copy $CERT_MANAGER_CA_INJECTOR --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/cert-manager-cainjector
@@ -81,7 +98,7 @@ if [[ -n $HARBOR ]]; then
 
     # Needed for the builds to work with proxy-registry
     skopeo copy $KUBECTL_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/alpine/kubectl:latest
-    skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre-alpine
+    skopeo copy $TEMURIN_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/eclipse-temurin:17-jre
     skopeo copy $HELM_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/helm:latest
     skopeo copy $MVN_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/maven:3-eclipse-temurin-17-alpine
     skopeo copy $YAMLLINT_IMAGE  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/yamllint:latest
@@ -92,7 +109,7 @@ fi
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
 skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/external-secrets
 skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/vault
-skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.3.3
+skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.6.15
 
 # Monitoring
 skopeo copy $PROMETHEUS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/prometheus
@@ -101,6 +118,10 @@ skopeo copy $PROMETHEUS_OPERATOR_CONFIG_RELOADER --dest-creds admin:Harbor12345 
 skopeo copy $GRAFANA_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/grafana
 skopeo copy $K8S_SIDECAR --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/k8s-sidecar
 
+# Core tools
+skopeo copy $JENKINS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/jenkins-helm
+skopeo copy $SCM_MANAGER_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/scm-manager
+
 # Cert Manager images
 skopeo copy $CERT_MANAGER_CONTROLLER --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-controller
 skopeo copy $CERT_MANAGER_CA_INJECTOR --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/cert-manager-cainjector
@@ -108,7 +129,7 @@ skopeo copy $CERT_MANAGER_WEBHOOK --dest-creds admin:Harbor12345 --dest-tls-veri
 
 # Needed for the builds to work with proxy-registry
 skopeo copy $KUBECTL_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/alpine/kubectl:latest
-skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre-alpine
+skopeo copy $TEMURIN_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/eclipse-temurin:17-jre
 skopeo copy $HELM_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/helm:latest
 skopeo copy $MVN_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/maven:3-eclipse-temurin-17-alpine
 skopeo copy $YAMLLINT_IMAGE  --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/yamllint:latest
