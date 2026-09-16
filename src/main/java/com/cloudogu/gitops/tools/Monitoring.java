@@ -52,7 +52,9 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	private static final List<String> MONITORING_CRD_FILES = List.of(
 		"crd-servicemonitors.yaml",
 		"crd-prometheuses.yaml",
-		"crd-prometheusrules.yaml"
+		"crd-prometheusrules.yaml",
+		"crd-podmonitors.yaml",
+		"crd-probes.yaml"
 	);
 
 	private final ImagePullSecretCreator imagePullSecretCreator;

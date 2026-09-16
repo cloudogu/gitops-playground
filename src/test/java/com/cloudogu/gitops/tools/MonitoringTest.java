@@ -602,7 +602,9 @@ class MonitoringTest {
 		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
 		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheuses.yaml").toString());
 		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
-		verify(k8sClient, times(3)).applyYaml(anyString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-podmonitors.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-probes.yaml").toString());
+		verify(k8sClient, times(5)).applyYaml(anyString());
 	}
 
 	@Test
@@ -618,7 +620,9 @@ class MonitoringTest {
 		verify(k8sClient).applyYaml(crdBaseUrl + "crd-servicemonitors.yaml");
 		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheuses.yaml");
 		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheusrules.yaml");
-		verify(k8sClient, times(3)).applyYaml(anyString());
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-podmonitors.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-probes.yaml");
+		verify(k8sClient, times(5)).applyYaml(anyString());
 	}
 
 	@Test
