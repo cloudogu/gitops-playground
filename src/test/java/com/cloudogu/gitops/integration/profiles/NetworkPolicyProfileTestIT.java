@@ -16,10 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
- * Verifies that the network policies required by the full network policy profiles are deployed.
+ * Verifies that the network policies required by the full network policy profile are deployed.
  * Detailed selectors and ports are covered by the corresponding unit tests.
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols|operator-full-netpols")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
 public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 
 	@BeforeAll
@@ -43,7 +43,6 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
 	void ensureCertManagerNetworkPoliciesExist() {
 		waitForNetworkPolicy("cert-manager", "restrict-cert-manager-ingress");
 		waitForNetworkPolicy("cert-manager", "allow-required-access-to-cert-manager-webhook");
@@ -56,7 +55,6 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-netpols")
 	void ensureVaultNetworkPolicyExists() {
 		waitForNetworkPolicyWithSelector("secrets", Map.of("app.kubernetes.io/name", "vault"));
 	}

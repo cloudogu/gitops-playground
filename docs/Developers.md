@@ -102,7 +102,6 @@ where <PROFILES> can be one of:
 
 - content-examples
 - operator-full
-- operator-full-netpols
 - operator-mandants
 
 Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.

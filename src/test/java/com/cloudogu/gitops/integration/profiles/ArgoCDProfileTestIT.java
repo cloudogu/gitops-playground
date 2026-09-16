@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>To run locally: add -Dmicronaut.environments=full to your execution configuration
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|minimal|operator-full|operator-full-netpols|content-examples|operator-minimal|operator-content-examples")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
 public class ArgoCDProfileTestIT extends ProfileTestSetup {
 
 	String namespace = "argocd";
