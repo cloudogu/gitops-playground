@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -626,7 +627,9 @@ class MonitoringTest {
 		config.getApplication().setSkipCrds(false);
 		config.getApplication().setMirrorRepos(false);
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		new DeploymentOrchestrator(List.of(monitoring)).deployTools(deploymentContext, repositoryWorkspace);
 
 		verify(k8sClient, never()).applyYaml(anyString());
 	}
@@ -957,44 +960,22 @@ class MonitoringTest {
 	void worksWithNamespaceIsolation() throws GitAPIException, IOException {
 		config.getApplication().setNamespaceIsolation(true);
 
-		Monitoring prometheusStack = createStack(scmManagerMock);
-		install(prometheusStack);
+		install(createStack(scmManagerMock));
+
+		assertUsesNamespacedMonitoringRbac(parseActualYaml());
+	}
+
+	@Test
+	void worksWithArgoCdOperatorMode() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(true);
+
+		install(createStack(scmManagerMock));
 
 		Map<String, Object> yaml = parseActualYaml();
-		Map<String, Object> global = (Map<String, Object>) yaml.get("global");
-		Map<String, Object> globalRbac = (Map<String, Object>) global.get("rbac");
-		assertThat(globalRbac.get("create")).isEqualTo(false);
+		assertUsesNamespacedMonitoringRbac(yaml);
 
-		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
-			File rbacYaml = new File(
-				clusterResourcesRepoDir,
-				"apps/monitoring/misc/rbac/" + namespace + ".yaml"
-			);
-			String rbacText = Files.readString(rbacYaml.toPath());
-			assertThat(rbacText).contains("namespace: " + namespace);
-			assertThat(rbacText).contains("    namespace: foo-monitoring");
-		}
-
-		Map<String, Object> kubeApiServer = (Map<String, Object>) yaml.get("kubeApiServer");
-		assertThat(kubeApiServer.get("enabled")).isEqualTo(false);
-
-		Map<String, Object> prometheusOperator = (Map<String, Object>) yaml.get("prometheusOperator");
-		Map<String, Object> kubeletService = (Map<String, Object>) prometheusOperator.get("kubeletService");
-		assertThat(kubeletService.get("enabled")).isEqualTo(false);
-
-		Map<String, Object> namespaces = (Map<String, Object>) prometheusOperator.get("namespaces");
-		assertThat(namespaces.get("releaseNamespace")).isEqualTo(false);
-		assertThat((List<String>) namespaces.get("additional"))
-			.hasSameElementsAs(config.getApplication().getNamespaces().getActiveNamespaces());
-
-		Map<String, Object> grafana = (Map<String, Object>) yaml.get("grafana");
-		Map<String, Object> rbac = (Map<String, Object>) grafana.get("rbac");
-		assertThat(rbac.get("create")).isEqualTo(false);
-		Map<String, Object> sidecar = (Map<String, Object>) grafana.get("sidecar");
-		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
-		assertThat(dashboards.get("searchNamespace"))
-			.isEqualTo(String.join(",", config.getApplication().getNamespaces().getActiveNamespaces()));
-		assertThat(dashboards.get("resource")).isEqualTo("configmap");
+		Map<String, Object> crds = (Map<String, Object>) yaml.get("crds");
+		assertThat(crds.get("enabled")).isEqualTo(false);
 	}
 
 	@Test
@@ -1116,6 +1097,43 @@ class MonitoringTest {
 		Map<String, Object> prometheus = (Map<String, Object>) actual.get("prometheus");
 		Map<String, Object> prometheusSpec = (Map<String, Object>) prometheus.get("prometheusSpec");
 		assertThat(prometheusSpec.get("serviceMonitorNamespaceSelector")).isEqualTo(expectedSelector);
+	}
+
+	private void assertUsesNamespacedMonitoringRbac(Map<String, Object> yaml) throws IOException {
+		Map<String, Object> global = (Map<String, Object>) yaml.get("global");
+		Map<String, Object> globalRbac = (Map<String, Object>) global.get("rbac");
+		assertThat(globalRbac.get("create")).isEqualTo(false);
+
+		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
+			File rbacYaml = new File(
+				clusterResourcesRepoDir,
+				"apps/monitoring/misc/rbac/" + namespace + ".yaml"
+			);
+			String rbacText = Files.readString(rbacYaml.toPath());
+			assertThat(rbacText).contains("namespace: " + namespace);
+			assertThat(rbacText).contains("    namespace: foo-monitoring");
+		}
+
+		Map<String, Object> kubeApiServer = (Map<String, Object>) yaml.get("kubeApiServer");
+		assertThat(kubeApiServer.get("enabled")).isEqualTo(false);
+
+		Map<String, Object> prometheusOperator = (Map<String, Object>) yaml.get("prometheusOperator");
+		Map<String, Object> kubeletService = (Map<String, Object>) prometheusOperator.get("kubeletService");
+		assertThat(kubeletService.get("enabled")).isEqualTo(false);
+
+		Map<String, Object> namespaces = (Map<String, Object>) prometheusOperator.get("namespaces");
+		assertThat(namespaces.get("releaseNamespace")).isEqualTo(false);
+		assertThat((List<String>) namespaces.get("additional"))
+			.hasSameElementsAs(config.getApplication().getNamespaces().getActiveNamespaces());
+
+		Map<String, Object> grafana = (Map<String, Object>) yaml.get("grafana");
+		Map<String, Object> rbac = (Map<String, Object>) grafana.get("rbac");
+		assertThat(rbac.get("create")).isEqualTo(false);
+		Map<String, Object> sidecar = (Map<String, Object>) grafana.get("sidecar");
+		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
+		assertThat(dashboards.get("searchNamespace"))
+			.isEqualTo(String.join(",", config.getApplication().getNamespaces().getActiveNamespaces()));
+		assertThat(dashboards.get("resource")).isEqualTo("configmap");
 	}
 
 	private Monitoring createStack(ScmManagerProviderMock scmManagerMock) throws GitAPIException {

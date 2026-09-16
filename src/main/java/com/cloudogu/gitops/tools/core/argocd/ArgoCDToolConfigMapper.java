@@ -65,7 +65,6 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.insecure", config.getApplication().getInsecure())
 			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
-			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
 			.put("application.netpols", config.getApplication().getNetpols())
 			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())

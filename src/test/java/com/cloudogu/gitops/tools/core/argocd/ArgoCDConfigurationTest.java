@@ -809,7 +809,7 @@ class ArgoCDConfigurationTest {
 
 		assertThat(resourceInclusions).contains(expectedMonitoring, expectedExternalSecret);
 		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
-			.containsExactly("Role", "RoleBinding", "ClusterRole", "ClusterRoleBinding");
+			.containsExactly("Role", "RoleBinding");
 	}
 
 	@Test
@@ -832,21 +832,6 @@ class ArgoCDConfigurationTest {
 			.containsExactly("Role", "RoleBinding");
 	}
 
-	@Test
-	void excludesClusterRbacResourceInclusionsWhenNamespaceIsolationIsActive() throws IOException {
-		config.getApplication().setNamespaceIsolation(true);
-		config.getFeatures().getMonitoring().setActive(true);
-
-		ArgoCD argocd = setupOperatorTest(true);
-		execute(argocd);
-		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
-
-		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
-		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
-
-		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
-			.containsExactly("Role", "RoleBinding");
-	}
 
 	@Test
 	void configuresResourceInclusionsCluster() throws IOException {

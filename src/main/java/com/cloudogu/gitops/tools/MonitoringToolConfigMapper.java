@@ -22,12 +22,15 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 	public MonitoringToolConfig map(DeploymentContext context) {
 		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
+		boolean argocdOperatorMode = Boolean.TRUE.equals(config.getFeatures().getArgocd().getActive())
+			&& Boolean.TRUE.equals(config.getFeatures().getArgocd().getOperator());
 		return MonitoringToolConfig.builder()
 								   .active(monitoring.getActive())
 								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
 								   .namePrefix(config.getApplication().getNamePrefix())
 								   .activeNamespaces(activeNamespaces)
 								   .namespaceIsolation(config.getApplication().getNamespaceIsolation())
+								   .argocdOperatorMode(argocdOperatorMode)
 								   .netpols(config.getApplication().getNetpols())
 								   .skipCrds(config.getApplication().getSkipCrds())
 								   .openshift(context.isOpenshift())

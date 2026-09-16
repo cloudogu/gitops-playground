@@ -106,6 +106,7 @@ class MonitoringToolConfigMapperTest {
 															 "team-b"
 														 ))
 														 .namespaceIsolation(true)
+														 .argocdOperatorMode(true)
 														 .netpols(true)
 														 .skipCrds(true)
 														 .openshift(true)

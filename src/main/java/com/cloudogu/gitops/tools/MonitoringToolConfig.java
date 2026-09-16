@@ -17,6 +17,7 @@ public record MonitoringToolConfig(
 	String namePrefix,
 	Collection<String> activeNamespaces,
 	boolean namespaceIsolation,
+	boolean argocdOperatorMode,
 	boolean netpols,
 	boolean skipCrds,
 	boolean openshift,

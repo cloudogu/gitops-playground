@@ -220,11 +220,6 @@ spec:
       kinds:
       - "Role"
       - "RoleBinding"
-  <#-- Cluster-wide dashboard discovery requires the cluster RBAC rendered by the monitoring chart. -->
-  <#if config.features.monitoring.active == true && config.application.namespaceIsolation == false>
-      - "ClusterRole"
-      - "ClusterRoleBinding"
-  </#if>
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"

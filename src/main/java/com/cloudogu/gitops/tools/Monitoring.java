@@ -168,7 +168,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	}
 
 	private void writeMonitoringGitOpsArtifacts(GitRepo clusterResourcesRepo) {
-		if (toolConfig().namespaceIsolation()) {
+		if (usesNamespacedMonitoringRbac()) {
 			generateNamespaceIsolationRBAC(clusterResourcesRepo);
 		}
 
@@ -234,6 +234,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 				)
 			);
 		}
+	}
+
+	private boolean usesNamespacedMonitoringRbac() {
+		return toolConfig().namespaceIsolation() || toolConfig().argocdOperatorMode();
 	}
 
 	private void generateNamespaceIsolationRBAC(GitRepo clusterResourcesRepo) {
