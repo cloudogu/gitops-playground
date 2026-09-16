@@ -619,6 +619,57 @@ class MonitoringTest {
 	}
 
 	@Test
+	void configuresArgoCdOperatorServiceMonitors() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setNamespace("delivery");
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus.get("additionalServiceMonitors")).isEqualTo(List.of(
+			Map.of(
+				"name", "argocd-application-controller",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-metrics")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			),
+			Map.of(
+				"name", "argocd-repo-server",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-repo-server")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			),
+			Map.of(
+				"name", "argocd-server",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-server-metrics")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			)
+		));
+	}
+
+	@Test
+	void doesNotConfigureArgoCdOperatorServiceMonitorsInHelmMode() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(false);
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus).doesNotContainKey("additionalServiceMonitors");
+	}
+
+	@Test
+	void doesNotConfigureArgoCdOperatorServiceMonitorsWhenArgoCdIsInactive() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setActive(false);
+		config.getFeatures().getArgocd().setOperator(true);
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus).doesNotContainKey("additionalServiceMonitors");
+	}
+
+	@Test
 	void usesRemoteScmmUrlIfRequested() throws GitAPIException, IOException {
 		install(createStack(scmManagerMock));
 

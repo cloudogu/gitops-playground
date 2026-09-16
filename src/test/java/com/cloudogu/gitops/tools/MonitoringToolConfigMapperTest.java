@@ -58,6 +58,9 @@ class MonitoringToolConfigMapperTest {
 		config.getJenkins().setMetricsCredentials(
 			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
 		);
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setNamespace("delivery");
+		config.getFeatures().getArgocd().setOperator(true);
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
@@ -158,6 +161,11 @@ class MonitoringToolConfigMapperTest {
 																 "skipCrds", true
 															 ),
 															 "features", Map.of(
+																 "argocd", Map.of(
+																	 "active", true,
+																	 "namespace", "delivery",
+																	 "operator", true
+																 ),
 																 "certManager",
 																 Map.of("active", true, "issuer", "production-issuer"),
 																 "ingress", Map.of("active", true, "namespace", "edge"),

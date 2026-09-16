@@ -287,6 +287,39 @@ grafana:
 </#if>
 
 prometheus:
+<#if config.features.argocd.active == true && config.features.argocd.operator == true>
+  # Argo CD Operator 0.17 always exposes component metric services, but enabling
+  # spec.prometheus would also create a separate Prometheus instance. Reuse the
+  # GOP kube-prometheus-stack instead and only add ServiceMonitors for those services.
+  additionalServiceMonitors:
+    - name: argocd-application-controller
+      namespaceSelector:
+        matchNames:
+          - ${config.application.namePrefix}${config.features.argocd.namespace}
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-metrics
+      endpoints:
+        - port: metrics
+    - name: argocd-repo-server
+      namespaceSelector:
+        matchNames:
+          - ${config.application.namePrefix}${config.features.argocd.namespace}
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-repo-server
+      endpoints:
+        - port: metrics
+    - name: argocd-server
+      namespaceSelector:
+        matchNames:
+          - ${config.application.namePrefix}${config.features.argocd.namespace}
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: argocd-server-metrics
+      endpoints:
+        - port: metrics
+</#if>
   prometheusSpec:
     <#if config.application.openshift == true>
     automountServiceAccountToken: null
