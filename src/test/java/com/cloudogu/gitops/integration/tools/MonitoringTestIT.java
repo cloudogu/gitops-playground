@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Operator
  * - prometheus-stack
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full")
 public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	String namespace = "monitoring";

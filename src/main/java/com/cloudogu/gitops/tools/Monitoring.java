@@ -25,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -48,6 +49,11 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 	private static final String MONITORING_RBAC_PATH = MONITORING_APP_PATH + "/misc/rbac";
 	private static final String MONITORING_NETPOLS_PATH = MONITORING_APP_PATH + "/misc/netpols";
 	private static final String MONITORING_DASHBOARD_PATH = MONITORING_APP_PATH + "/misc/dashboard";
+	private static final List<String> MONITORING_CRD_FILES = List.of(
+		"crd-servicemonitors.yaml",
+		"crd-prometheuses.yaml",
+		"crd-prometheusrules.yaml"
+	);
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
@@ -95,7 +101,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		// Create secrets imperatively here instead of values.yaml,
 		// because we don't want credentials to be visible in the Git repo.
 		setupMonitoringSecrets();
-		createMonitoringCrd();
+		createMonitoringCrds();
 
 		prepareMonitoringApp(repositoryWorkspace.getClusterResourcesRepository());
 		replaceMonitoringTemplates(repositoryWorkspace.getClusterResourcesRepository());
@@ -287,25 +293,34 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		);
 	}
 
-	protected void createMonitoringCrd() {
+	protected void createMonitoringCrds() {
 		if (!toolConfig().skipCrds()) {
-			String serviceMonitorCrdYaml;
-			if (toolConfig().airgapped()) {
-				serviceMonitorCrdYaml = Path.of(
-												toolConfig().helm().localHelmChartFolder() + "/" + toolConfig().helm().chart(),
-												"charts/crds/crds/crd-servicemonitors.yaml"
-											)
-											.toString();
-			} else {
-				serviceMonitorCrdYaml = "https://raw.githubusercontent.com/prometheus-community/helm-charts/" + "kube-prometheus-stack-" + toolConfig().helm().version() + "/" + "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml";
+			for (String crdFile : MONITORING_CRD_FILES) {
+				String crdYaml = monitoringCrdLocation(crdFile);
+				log.debug(
+					"Applying monitoring CRD {}; Argo CD fails if it is not there. Chicken-egg-problem.\n"
+						+ "Applying from path {}",
+					crdFile,
+					crdYaml
+				);
+				k8sClient.applyYaml(crdYaml);
 			}
-
-			log.debug(
-				"Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" + "Applying from path {}",
-				serviceMonitorCrdYaml
-			);
-			k8sClient.applyYaml(serviceMonitorCrdYaml);
 		}
+	}
+
+	private String monitoringCrdLocation(String crdFile) {
+		if (toolConfig().airgapped()) {
+			return Path.of(
+				toolConfig().helm().localHelmChartFolder(),
+				toolConfig().helm().chart(),
+				"charts/crds/crds",
+				crdFile
+			).toString();
+		}
+
+		return "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
+			+ "kube-prometheus-stack-" + toolConfig().helm().version()
+			+ "/charts/kube-prometheus-stack/charts/crds/crds/" + crdFile;
 	}
 
 	private Map<String, String> jenkinsConfigurationMetrics() {

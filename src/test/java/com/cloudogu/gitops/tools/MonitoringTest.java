@@ -47,7 +47,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -579,7 +581,7 @@ class MonitoringTest {
 	}
 
 	@Test
-	void appliesPrometheusServiceMonitorCrdFromFileBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
+	void appliesRequiredMonitoringCrdsFromFilesBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(true);
 		config.getApplication().setSkipCrds(false);
@@ -587,35 +589,56 @@ class MonitoringTest {
 		Path rootChartsFolder = Files.createTempDirectory(getClass().getSimpleName());
 		config.getApplication().setLocalHelmChartFolder(rootChartsFolder.toString());
 
-		Path crdFile = rootChartsFolder.resolve(
-			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds/crd-servicemonitors.yaml"
-		);
-		Files.createDirectories(crdFile.getParent());
-		Files.writeString(crdFile, "dummy");
-
 		Path chartYaml = rootChartsFolder.resolve(config.getFeatures().getMonitoring().getHelm().getChart() + "/Chart.yaml");
 		Files.createDirectories(chartYaml.getParent());
 		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n");
 
 		install(createStack(scmManagerMock));
+
+		Path crdDirectory = rootChartsFolder.resolve(
+			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
+		);
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheuses.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
+		verify(k8sClient, times(3)).applyYaml(anyString());
 	}
 
 	@Test
-	void appliesPrometheusServiceMonitorCrdFromGithubBeforeInstalling() throws GitAPIException {
+	void appliesRequiredMonitoringCrdsFromGithubBeforeInstalling() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setSkipCrds(false);
 
 		install(createStack(scmManagerMock));
+
+		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
+			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-servicemonitors.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheuses.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheusrules.yaml");
+		verify(k8sClient, times(3)).applyYaml(anyString());
 	}
 
 	@Test
-	void doesNotApplyServiceMonitorCrdWhenMonitoringIsDisabled() throws GitAPIException {
+	void doesNotApplyMonitoringCrdsWhenMonitoringIsDisabled() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(false);
 		config.getApplication().setSkipCrds(false);
 		config.getApplication().setMirrorRepos(false);
 
 		install(createStack(scmManagerMock));
+
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
+	void doesNotApplyMonitoringCrdsWhenCrdsAreSkipped() throws GitAPIException {
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getApplication().setSkipCrds(true);
+
+		install(createStack(scmManagerMock));
+
+		verify(k8sClient, never()).applyYaml(anyString());
 	}
 
 	@Test
