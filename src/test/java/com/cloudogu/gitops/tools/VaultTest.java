@@ -139,7 +139,7 @@ class VaultTest {
 	}
 
 	@Test
-	void enablesNetworkPolicyWhenConfigured() throws GitAPIException, IOException {
+	void restrictsVaultNetworkPolicyToRequiredInternalClients() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
 
 		install(createVault());
@@ -147,6 +147,61 @@ class VaultTest {
 		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
 		Map<String, Object> networkPolicy = (Map<String, Object>) server.get("networkPolicy");
 		assertThat(networkPolicy.get("enabled")).isEqualTo(true);
+
+		List<Map<String, Object>> ingress = (List<Map<String, Object>>) networkPolicy.get("ingress");
+		assertThat(ingress).hasSize(2);
+
+		Map<String, Object> vaultRule = ingress.get(0);
+		List<Map<String, Object>> vaultPeers = (List<Map<String, Object>>) vaultRule.get("from");
+		Map<String, Object> vaultPodSelector = (Map<String, Object>) vaultPeers.get(0).get("podSelector");
+		assertThat((Map<String, Object>) vaultPodSelector.get("matchLabels")).containsExactlyInAnyOrderEntriesOf(Map.of(
+			"app.kubernetes.io/instance", "vault",
+			"app.kubernetes.io/name", "vault"
+		));
+		assertThat((List<Map<String, Object>>) vaultRule.get("ports")).containsExactlyInAnyOrder(
+			Map.of("protocol", "TCP", "port", 8200),
+			Map.of("protocol", "TCP", "port", 8201)
+		);
+
+		Map<String, Object> externalSecretsRule = ingress.get(1);
+		List<Map<String, Object>> externalSecretsPeers =
+			(List<Map<String, Object>>) externalSecretsRule.get("from");
+		Map<String, Object> namespaceSelector =
+			(Map<String, Object>) externalSecretsPeers.get(0).get("namespaceSelector");
+		assertThat((Map<String, Object>) namespaceSelector.get("matchLabels"))
+			.containsEntry("kubernetes.io/metadata.name", "foo-secrets");
+		Map<String, Object> externalSecretsPodSelector =
+			(Map<String, Object>) externalSecretsPeers.get(0).get("podSelector");
+		assertThat((Map<String, Object>) externalSecretsPodSelector.get("matchLabels"))
+			.containsExactlyInAnyOrderEntriesOf(Map.of("app.kubernetes.io/instance", "external-secrets"));
+		assertThat((List<Map<String, Object>>) externalSecretsRule.get("ports"))
+			.containsExactly(Map.of("protocol", "TCP", "port", 8200));
+	}
+
+	@Test
+	void allowsIngressControllerToAccessVaultWhenIngressIsConfigured() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("custom-ingress");
+		config.getFeatures().getSecrets().getVault().setUrl("http://vault.local");
+
+		install(createVault());
+
+		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
+		Map<String, Object> networkPolicy = (Map<String, Object>) server.get("networkPolicy");
+		List<Map<String, Object>> ingress = (List<Map<String, Object>>) networkPolicy.get("ingress");
+		assertThat(ingress).hasSize(3);
+
+		Map<String, Object> ingressControllerRule = ingress.get(2);
+		List<Map<String, Object>> peers = (List<Map<String, Object>>) ingressControllerRule.get("from");
+		Map<String, Object> namespaceSelector = (Map<String, Object>) peers.get(0).get("namespaceSelector");
+		assertThat((Map<String, Object>) namespaceSelector.get("matchLabels"))
+			.containsEntry("kubernetes.io/metadata.name", "foo-custom-ingress");
+		Map<String, Object> podSelector = (Map<String, Object>) peers.get(0).get("podSelector");
+		assertThat((Map<String, Object>) podSelector.get("matchLabels"))
+			.containsEntry("app.kubernetes.io/name", "traefik");
+		assertThat((List<Map<String, Object>>) ingressControllerRule.get("ports"))
+			.containsExactly(Map.of("protocol", "TCP", "port", 8200));
 	}
 
 	@Test

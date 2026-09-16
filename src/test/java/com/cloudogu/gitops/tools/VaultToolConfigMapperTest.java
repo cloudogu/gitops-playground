@@ -58,7 +58,12 @@ class VaultToolConfigMapperTest {
 																"active", true,
 																"issuer", "production-issuer"
 															),
+															"ingress", Map.of(
+																"active", false,
+																"namespace", "test-ingress"
+															),
 															"secrets", Map.of(
+																"namespace", "test-secrets",
 																"vault", Map.of(
 																	"oidc", Map.of(
 																		"providerName",

@@ -423,6 +423,10 @@ application:
 
 `registryAccessCidrs: 0.0.0.0/0` is only intended for the ephemeral local k3d integration-test environment. The Jenkins agents use the host Docker socket and k3d/Docker NAT can rewrite the source address of registry pushes. Do not use this value as a production default.
 
+When NetworkPolicies are enabled, Vault uses the chart-provided NetworkPolicy with a GOP-defined least-privilege ingress configuration. Vault-to-Vault traffic is allowed on ports 8200/8201, External Secrets can reach the Vault API on port 8200, and the GOP-managed Traefik ingress can reach port 8200 when a Vault ingress is configured. Application namespaces do not receive direct Vault network access by default; applications should consume Vault-backed values through External Secrets.
+
+The GOP profiles currently use Vault development mode. Vault dev mode is intended for development/testing and stores data in memory, so it must not be used as persistent customer secret storage. Direct application access to Vault should only be introduced together with a production-ready Vault setup and explicit per-namespace/service-account authorization.
+
 Start GOP with both the normal credentials config and the local NetworkPolicy override:
 
 ```bash

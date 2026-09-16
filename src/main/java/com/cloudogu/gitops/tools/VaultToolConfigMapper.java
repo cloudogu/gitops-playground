@@ -47,6 +47,15 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.ingress.active", config.getFeatures().getIngress().getActive())
+			.put(
+				"features.ingress.namespace",
+				config.getApplication().getNamePrefix() + config.getFeatures().getIngress().getIngressNamespace()
+			)
+			.put(
+				"features.secrets.namespace",
+				config.getApplication().getNamePrefix() + config.getFeatures().getSecrets().getNamespace()
+			)
 			.put(
 				"features.secrets.vault.oidc",
 				ToolConfigMapperSupport.oidc(config.getFeatures().getSecrets().getVault().getOidc())
