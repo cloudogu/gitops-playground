@@ -878,6 +878,7 @@ class MonitoringTest {
 		assertThat(grafana.get("rbac")).isNull();
 		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
 		assertThat(dashboards.get("searchNamespace")).isEqualTo("ALL");
+		assertThat(dashboards.get("resource")).isEqualTo("configmap");
 
 		assertThat(yaml.get("crds")).isNull();
 		assertThat(new File(clusterResourcesRepoDir, "apps/monitoring/misc/rbac")).doesNotExist();
@@ -993,6 +994,7 @@ class MonitoringTest {
 		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
 		assertThat(dashboards.get("searchNamespace"))
 			.isEqualTo(String.join(",", config.getApplication().getNamespaces().getActiveNamespaces()));
+		assertThat(dashboards.get("resource")).isEqualTo("configmap");
 	}
 
 	@Test

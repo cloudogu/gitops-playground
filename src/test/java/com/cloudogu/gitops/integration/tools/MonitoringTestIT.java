@@ -31,7 +31,7 @@ public class MonitoringTestIT extends KubernetesApiTestSetup {
 	@Override
 	boolean isReadyToStartTests() {
 		try {
-			return TestK8sHelper.checkAllPodsRunningInNamespace(namespace, grafanaPod);
+			return TestK8sHelper.checkAllPodContainersReadyInNamespace(namespace, grafanaPod);
 		} catch (AssertionError ignored) {
 			return false;
 		}
@@ -49,7 +49,7 @@ public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	@Test
 	void ensureGrafanaIsStarted() {
-		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, grafanaPod);
+		TestK8sHelper.waitForAllPodContainersReadyInNamespace(namespace, grafanaPod);
 	}
 
 	@Test

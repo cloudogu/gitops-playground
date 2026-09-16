@@ -229,6 +229,51 @@ public class TestK8sHelper {
 		}
 	}
 
+	/**
+	 * Checks the current Kubernetes state once and verifies that every container of every matching pod is ready.
+	 * Use a waitFor... variant when the tested resource may still be rolling out.
+	 *
+	 * @param namespace         namespace
+	 * @param podNameStartsWith pod name prefix
+	 */
+	public static boolean checkAllPodContainersReadyInNamespace(String namespace, String podNameStartsWith) {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			List<Pod> actualPods = client.pods().inNamespace(namespace).list().getItems().stream()
+				.filter(pod -> pod.getMetadata().getName().startsWith(podNameStartsWith))
+				.collect(Collectors.toList());
+
+			assertThat(actualPods)
+				.withFailMessage("No pods found in namespace: %s with name %s", namespace, podNameStartsWith)
+				.isNotEmpty();
+
+			failOnFatalPods(namespace, actualPods);
+
+			List<Pod> notReadyPods = actualPods.stream()
+				.filter(pod -> {
+					List<ContainerStatus> statuses = pod.getStatus() == null
+						? null
+						: pod.getStatus().getContainerStatuses();
+					return !isPodRunning(pod)
+						|| statuses == null
+						|| statuses.isEmpty()
+						|| statuses.stream().anyMatch(status -> !Boolean.TRUE.equals(status.getReady()));
+				})
+				.collect(Collectors.toList());
+
+			assertThat(notReadyPods)
+				.withFailMessage(
+					"These pods in %s do not have all containers ready: %s",
+					namespace,
+					describePods(notReadyPods)
+				)
+				.isEmpty();
+			return true;
+		} catch (KubernetesClientException ex) {
+			fail("Unexpected Kubernetes exception", ex);
+			return false;
+		}
+	}
+
 	public static boolean waitForAllPodsRunningInNamespace(String namespace) {
 		return waitForAllPodsRunningInNamespace(namespace, "", DEFAULT_WAIT_MINUTES, TimeUnit.MINUTES);
 	}
@@ -240,6 +285,17 @@ public class TestK8sHelper {
 			DEFAULT_WAIT_MINUTES,
 			TimeUnit.MINUTES
 		);
+	}
+
+	/**
+	 * Waits until at least one matching pod exists and all of its containers are ready.
+	 */
+	public static boolean waitForAllPodContainersReadyInNamespace(String namespace, String podNameStartsWith) {
+		Awaitility.await()
+			.atMost(DEFAULT_WAIT_MINUTES, TimeUnit.MINUTES)
+			.pollInterval(DEFAULT_POLL_SECONDS, TimeUnit.SECONDS)
+			.untilAsserted(() -> checkAllPodContainersReadyInNamespace(namespace, podNameStartsWith));
+		return true;
 	}
 
 	public static boolean waitForAllPodsRunningInNamespace(String namespace, String podNameStartsWith, int timeout) {

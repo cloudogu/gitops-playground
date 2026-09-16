@@ -20,6 +20,7 @@ class ArgoCDToolConfigMapperTest {
 	void mapsAllRelevantValuesFromDeploymentContextAndConfig() {
 		Config config = new Config();
 		config.getApplication().setNamePrefix("tenant-a-");
+		config.getApplication().setNamespaceIsolation(true);
 		config.getApplication().setUsername("application-user");
 		config.getApplication().setPassword("application-password");
 		Credentials applicationCredentials = new Credentials();
@@ -122,6 +123,7 @@ class ArgoCDToolConfigMapperTest {
 															 "insecure", true,
 															 "mirrorRepos", true,
 															 "namePrefix", "tenant-a-",
+															 "namespaceIsolation", true,
 															 "netpols", true,
 															 "openshift", true,
 															 "skipCrds", true

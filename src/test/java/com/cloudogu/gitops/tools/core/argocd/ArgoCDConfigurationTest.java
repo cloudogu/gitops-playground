@@ -808,6 +808,8 @@ class ArgoCDConfigurationTest {
 		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
 
 		assertThat(resourceInclusions).contains(expectedMonitoring, expectedExternalSecret);
+		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
+			.containsExactly("Role", "RoleBinding", "ClusterRole", "ClusterRoleBinding");
 	}
 
 	@Test
@@ -826,6 +828,24 @@ class ArgoCDConfigurationTest {
 		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
 
 		assertThat(resourceInclusions).doesNotContain(expectedMonitoring, expectedExternalSecret);
+		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
+			.containsExactly("Role", "RoleBinding");
+	}
+
+	@Test
+	void excludesClusterRbacResourceInclusionsWhenNamespaceIsolationIsActive() throws IOException {
+		config.getApplication().setNamespaceIsolation(true);
+		config.getFeatures().getMonitoring().setActive(true);
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Map<String, Object> yaml = parseActualYaml(clusterResourcesRepoLayout.operatorConfigFile());
+		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
+
+		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
+			.containsExactly("Role", "RoleBinding");
 	}
 
 	@Test
@@ -1779,6 +1799,14 @@ class ArgoCDConfigurationTest {
 
 	private static List<Map<String, Object>> parseYamlList(String yaml) throws IOException {
 		return YAML_MAPPER.readValue(yaml, YAML_MAP_LIST_TYPE);
+	}
+
+	private static Map<String, Object> resourceInclusionForApiGroup(String resourceInclusions, String apiGroup)
+		throws IOException {
+		return parseYamlList(resourceInclusions).stream()
+			.filter(resource -> listValue(resource, "apiGroups").contains(apiGroup))
+			.findFirst()
+			.orElseThrow();
 	}
 
 	private static Object value(Map<String, Object> yaml, String... path) {

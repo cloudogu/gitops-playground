@@ -211,6 +211,8 @@ grafana:
     dashboards:
       # This needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: '1'
+      # Dashboards are published as ConfigMaps; the sidecar does not need access to Secrets.
+      resource: configmap
 <#if config.application.namespaceIsolation == true>
       searchNamespace: <#list namespaces as namespace>${namespace}<#if namespace_has_next>,</#if></#list>
 <#else>
