@@ -41,6 +41,7 @@ version information.
     - [Using ingresses locally](#using-ingresses-locally)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
+    - [Updating the GOP Helm chart](#updating-the-gop-helm-chart)
 - [Installing ArgoCD Operator](#installing-argocd-operator)
     - [Prerequisites:](#prerequisites)
     - [Installation Script](#installation-script)
@@ -601,8 +602,36 @@ git checkout main \
 For now, please start a Jenkins Build of `main` manually.  
 We might introduce tag builds in our Jenkins organization at a later stage.
 
-A GitHub release containing all merged PRs since the last release is create automatically via
-a [GitHub action](../.github/workflows/create-release.yml)
+A GitHub release containing all merged PRs since the last release is created automatically via
+a [GitHub action](../.github/workflows/create-release.yml).
+
+### Updating the GOP Helm chart
+
+After the GOP image for `$TAG` has been published, update the
+[GOP Helm chart](https://github.com/cloudogu/gop-helm) before considering the release complete. This keeps the chart,
+its configuration documentation, and the GOP image on compatible versions and prevents installations from silently
+using `latest`.
+
+1. Create a branch in the `gop-helm` repository.
+2. Set `image.tag` in `values.yaml` and `appVersion` in `Chart.yaml` to `$TAG`.
+3. Increment the chart `version` in `Chart.yaml` according to semantic versioning.
+4. Update the version-specific GOP configuration and schema links in `README.md` and `values.yaml`.
+5. Update the expected default and fallback image versions in `tests/job_test.yaml`.
+6. Validate the chart from the `gop-helm` repository:
+
+    ````shell
+    if ! helm plugin list | grep -q '^unittest'; then
+      helm plugin install https://github.com/helm-unittest/helm-unittest
+    fi
+
+    helm lint .
+    helm unittest .
+    ````
+
+7. Create and merge the `gop-helm` pull request.
+8. Tag and publish the new chart version as described in the
+   [`gop-helm` release documentation](https://github.com/cloudogu/gop-helm#releasing).
+9. Verify that rendering the released chart without an `image.tag` override uses `$TAG` and never `latest`.
 
 ## Installing ArgoCD Operator
 
