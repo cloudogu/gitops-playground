@@ -43,6 +43,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		assertThat(actual).isEqualTo(ExternalSecretsOperatorToolConfig.builder()
 																	  .active(true)
 																	  .namespace("test-external-secrets")
+																	  .skipCrds(true)
 																	  .helm(HelmChartConfig.builder()
 																						   .repoURL(
 																							   "https://eso.example.org")
