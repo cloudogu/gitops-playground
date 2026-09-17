@@ -379,6 +379,8 @@ class ScmManagerSetupTest {
 		config.getFeatures().getArgocd().setNamespace("argocd");
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getJenkins().setActive(true);
 		config.getJenkins().setInternal(true);
 		config.getJenkins().setNamespace("automation");
@@ -405,6 +407,8 @@ class ScmManagerSetupTest {
 			.contains("app.kubernetes.io/name: argocd-repo-server")
 			.contains("kubernetes.io/metadata.name: test-edge")
 			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: test-observability")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
 			.contains("kubernetes.io/metadata.name: test-automation")
 			.contains("app.kubernetes.io/component: jenkins-controller")
 			.contains("jenkins/jenkins-jenkins-agent: \"true\"")

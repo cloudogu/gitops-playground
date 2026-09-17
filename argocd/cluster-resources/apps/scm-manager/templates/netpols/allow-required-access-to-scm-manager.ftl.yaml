@@ -9,7 +9,7 @@ spec:
       app: scm-manager
   policyTypes:
     - Ingress
-<#assign hasIngress = argocdActive || ingressActive || (jenkinsActive && jenkinsInternal) || bootstrapCidrs?has_content>
+<#assign hasIngress = argocdActive || ingressActive || monitoringActive || (jenkinsActive && jenkinsInternal) || bootstrapCidrs?has_content>
 <#if hasIngress>
   ingress:
 <#if argocdActive>
@@ -32,6 +32,18 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
+<#if monitoringActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${monitoringNamespace}
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
       ports:
         - protocol: TCP
           port: 8080

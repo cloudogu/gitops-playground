@@ -39,6 +39,8 @@ class ScmManagerToolConfigMapperTest {
 		config.getFeatures().getArgocd().setNamespace("gitops");
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
@@ -76,6 +78,8 @@ class ScmManagerToolConfigMapperTest {
 														 .argocdNamespace("test-gitops")
 														 .ingressActive(true)
 														 .ingressNamespace("test-edge")
+														 .monitoringActive(true)
+														 .monitoringNamespace("test-observability")
 														 .jenkinsActive(true)
 														 .jenkinsInternal(true)
 														 .jenkinsNamespace("test-automation")

@@ -285,6 +285,8 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 					"namespace", namespace,
 					"ingressActive", toolConfig().ingressActive(),
 					"ingressNamespace", toolConfig().ingressNamespace(),
+					"monitoringActive", toolConfig().monitoringActive(),
+					"monitoringNamespace", toolConfig().monitoringNamespace(),
 					"bootstrapCidrs", toolConfig().bootstrapCidrs()
 				)
 			);

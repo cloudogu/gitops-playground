@@ -46,6 +46,8 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .argocdNamespace(namePrefix + config.getFeatures().getArgocd().getNamespace())
 								   .ingressActive(config.getFeatures().getIngress().getActive())
 								   .ingressNamespace(namePrefix + config.getFeatures().getIngress().getIngressNamespace())
+								   .monitoringActive(config.getFeatures().getMonitoring().getActive())
+								   .monitoringNamespace(namePrefix + config.getFeatures().getMonitoring().getNamespace())
 								   .jenkinsActive(config.getJenkins().getActive())
 								   .jenkinsInternal(config.getJenkins().getInternal())
 								   .jenkinsNamespace(namePrefix + config.getJenkins().getNamespace())

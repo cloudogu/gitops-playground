@@ -72,6 +72,7 @@ class JenkinsToolConfigMapperTest {
 		config.getJenkins().getHelm().setValues(Map.of("controller", Map.of("replicas", 2)));
 		config.getFeatures().getArgocd().setActive(true);
 		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
@@ -148,6 +149,7 @@ class JenkinsToolConfigMapperTest {
 																						  .build())
 													  .argocdActive(true)
 													  .monitoringActive(true)
+													  .monitoringNamespace("test-observability")
 													  .netpols(true)
 													  .bootstrapCidrs(List.of("172.18.0.1/32"))
 													  .ingressActive(true)

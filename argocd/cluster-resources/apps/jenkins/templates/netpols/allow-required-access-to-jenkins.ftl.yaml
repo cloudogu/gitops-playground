@@ -32,6 +32,18 @@ spec:
         - protocol: TCP
           port: 8080
 </#if>
+<#if monitoringActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${monitoringNamespace}
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
 <#list bootstrapCidrs as bootstrapCidr>
     - from:
         - ipBlock:

@@ -204,6 +204,8 @@ class JenkinsTest {
 		));
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 
 		install(createJenkins());
 
@@ -220,6 +222,8 @@ class JenkinsTest {
 			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
 			.contains("kubernetes.io/metadata.name: edge")
 			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: observability")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
 			.contains("cidr: 172.18.0.1/32")
 			.contains("cidr: 10.20.0.0/16")
 			.contains("port: 8080")

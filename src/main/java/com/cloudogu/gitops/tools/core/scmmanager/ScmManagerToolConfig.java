@@ -25,6 +25,8 @@ public record ScmManagerToolConfig(
 	String argocdNamespace,
 	boolean ingressActive,
 	String ingressNamespace,
+	boolean monitoringActive,
+	String monitoringNamespace,
 	boolean jenkinsActive,
 	boolean jenkinsInternal,
 	String jenkinsNamespace,

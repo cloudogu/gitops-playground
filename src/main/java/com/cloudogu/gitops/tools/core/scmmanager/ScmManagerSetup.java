@@ -136,16 +136,18 @@ public class ScmManagerSetup {
 		try {
 			String networkPolicyYaml = new TemplatingEngine().template(
 				new File(NETWORK_POLICY_TEMPLATE),
-				Map.of(
-					"namespace", config.namespace(),
-					"argocdActive", config.argocdActive(),
-					"argocdNamespace", config.argocdNamespace(),
-					"ingressActive", config.ingressActive(),
-					"ingressNamespace", config.ingressNamespace(),
-					"jenkinsActive", config.jenkinsActive(),
-					"jenkinsInternal", config.jenkinsInternal(),
-					"jenkinsNamespace", config.jenkinsNamespace(),
-					"bootstrapCidrs", config.bootstrapCidrs()
+				Map.ofEntries(
+					Map.entry("namespace", config.namespace()),
+					Map.entry("argocdActive", config.argocdActive()),
+					Map.entry("argocdNamespace", config.argocdNamespace()),
+					Map.entry("ingressActive", config.ingressActive()),
+					Map.entry("ingressNamespace", config.ingressNamespace()),
+					Map.entry("monitoringActive", config.monitoringActive()),
+					Map.entry("monitoringNamespace", config.monitoringNamespace()),
+					Map.entry("jenkinsActive", config.jenkinsActive()),
+					Map.entry("jenkinsInternal", config.jenkinsInternal()),
+					Map.entry("jenkinsNamespace", config.jenkinsNamespace()),
+					Map.entry("bootstrapCidrs", config.bootstrapCidrs())
 				)
 			);
 			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);

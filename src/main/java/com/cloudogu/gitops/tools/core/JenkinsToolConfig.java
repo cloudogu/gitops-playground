@@ -21,6 +21,7 @@ public record JenkinsToolConfig(
 	Registry registry,
 	boolean argocdActive,
 	boolean monitoringActive,
+	String monitoringNamespace,
 	boolean netpols,
 	List<String> bootstrapCidrs,
 	boolean ingressActive,
