@@ -25,12 +25,12 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		Collection<String> tenantNamespaces = config.getApplication().getNamespaces().getTenantNamespaces();
 		return ArgoCDToolConfig.builder()
-							   .active(argocd.getActive())
+							   .active(context.isArgoCdEnabled())
 							   .namespace(config.getApplication().getNamePrefix() + argocd.getNamespace())
 							   .username(config.getApplication().getUsername())
 							   .password(config.getApplication().getPassword())
 							   .credentials(CredentialsReference.from(config.getApplication().getCredentials()))
-							   .operator(argocd.getOperator())
+							   .operator(context.isArgoCdOperator())
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
@@ -79,7 +79,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.argocd.env", config.getFeatures().getArgocd().getEnv())
 			.put("features.argocd.namespace", config.getFeatures().getArgocd().getNamespace())
 			.put("features.argocd.oidc", ToolConfigMapperSupport.oidc(config.getFeatures().getArgocd().getOidc()))
-			.put("features.argocd.operator", config.getFeatures().getArgocd().getOperator())
+			.put("features.argocd.operator", context.isArgoCdOperator())
 			.put(
 				"features.argocd.resourceInclusionsCluster",
 				config.getFeatures().getArgocd().getResourceInclusionsCluster()

@@ -318,6 +318,7 @@ class RepositoryProvisioningTest {
 			Boolean.TRUE.equals(config.getScm().getScmManager().getInternal())
 				? DeploymentContext.ScmManagerDeploymentMode.INTERNAL
 				: DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
 			Boolean.TRUE.equals(config.getApplication().getMirrorRepos()),
 			Boolean.TRUE.equals(config.getApplication().getOpenshift())
 				? DeploymentContext.ClusterDistribution.OPENSHIFT

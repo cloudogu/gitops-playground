@@ -40,9 +40,10 @@ class ArgoCDToolConfigMapperTest {
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setOpenshift(false);
 		config.getApplication().setSkipCrds(true);
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify ArgoCD deployment mode comes from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getArgocd().setNamespace("gitops");
-		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setOperator(false);
 		config.getFeatures().getArgocd().setUrl("https://argocd.example.org");
 		config.getFeatures().getArgocd().setEmailFrom("argocd@example.org");
 		config.getFeatures().getArgocd().setEmailToAdmin("admins@example.org");
@@ -201,6 +202,7 @@ class ArgoCDToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
 			true,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

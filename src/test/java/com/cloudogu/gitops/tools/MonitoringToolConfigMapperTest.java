@@ -58,9 +58,10 @@ class MonitoringToolConfigMapperTest {
 		config.getJenkins().setMetricsCredentials(
 			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
 		);
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify ArgoCD deployment mode comes from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getArgocd().setNamespace("delivery");
-		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setOperator(false);
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
@@ -231,6 +232,7 @@ class MonitoringToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
 			true,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

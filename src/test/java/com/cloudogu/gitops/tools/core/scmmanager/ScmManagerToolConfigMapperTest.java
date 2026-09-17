@@ -142,6 +142,7 @@ class ScmManagerToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

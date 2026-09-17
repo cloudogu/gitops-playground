@@ -22,8 +22,7 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 	public MonitoringToolConfig map(DeploymentContext context) {
 		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
-		boolean argocdOperatorMode = Boolean.TRUE.equals(config.getFeatures().getArgocd().getActive())
-			&& Boolean.TRUE.equals(config.getFeatures().getArgocd().getOperator());
+		boolean argocdOperatorMode = context.isArgoCdOperator();
 		return MonitoringToolConfig.builder()
 								   .active(monitoring.getActive())
 								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
@@ -75,9 +74,9 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
-			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
+			.put("features.argocd.active", context.isArgoCdEnabled())
 			.put("features.argocd.namespace", config.getFeatures().getArgocd().getNamespace())
-			.put("features.argocd.operator", config.getFeatures().getArgocd().getOperator())
+			.put("features.argocd.operator", context.isArgoCdOperator())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.ingress.active", config.getFeatures().getIngress().getActive())

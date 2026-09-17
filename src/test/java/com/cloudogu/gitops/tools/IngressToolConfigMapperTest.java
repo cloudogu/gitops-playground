@@ -67,6 +67,7 @@ class IngressToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

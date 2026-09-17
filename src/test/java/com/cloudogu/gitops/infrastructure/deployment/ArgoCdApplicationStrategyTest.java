@@ -365,6 +365,7 @@ class ArgoCdApplicationStrategyTest {
 		config.setScm(scm);
 
 		Config.ArgoCDSchema argoCd = new Config.ArgoCDSchema();
+		argoCd.setActive(true);
 		argoCd.setOperator(argocdOperator);
 		Config.FeaturesSchema features = new Config.FeaturesSchema();
 		features.setArgocd(argoCd);
