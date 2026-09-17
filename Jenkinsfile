@@ -120,7 +120,9 @@ pipeline {
                         script {
                             def profiles = []
 
-                            if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
+                            if (isTriggeredByTimer()
+                                    || params.chooseProfile == 'all-profiles'
+                                    || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
                                 profiles = ['minimal', 'full', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
@@ -291,4 +293,8 @@ pipeline {
 
 boolean isTriggeredByTimer() {
     return !currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
+}
+
+boolean isTriggeredByUser() {
+    return !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
 }
