@@ -212,16 +212,41 @@ class IngressTest {
 	}
 
 	@Test
-	void activatesNetworkPolicies() throws GitAPIException, IOException {
+	void createsLeastPrivilegeNetworkPolicy() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 
 		install(createIngress());
 
-		Map<String, Object> actual = parseActualYaml();
-		Map<String, Object> deployment = (Map<String, Object>) actual.get("deployment");
-		Map<String, Object> networkPolicy = (Map<String, Object>) deployment.get("networkPolicy");
+		File networkPolicy = new File(
+			clusterResourcesRepoDir,
+			"apps/traefik/netpols/allow-required-access-to-traefik.yaml"
+		);
+		assertThat(networkPolicy).exists();
+		assertThat(Files.readString(networkPolicy.toPath()))
+			.contains("namespace: foo-ingress")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("port: web")
+			.contains("port: websecure")
+			.contains("kubernetes.io/metadata.name: foo-observability")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("port: metrics");
+	}
 
-		assertThat(networkPolicy.get("enabled")).isEqualTo(true);
+	@Test
+	void removesNetworkPolicyWhenNetworkPoliciesAreDisabled() throws GitAPIException, IOException {
+		Ingress ingress = createIngress();
+		Path networkPolicy = Path.of(
+			clusterResourcesRepoDir.getAbsolutePath(),
+			"apps/traefik/netpols/allow-required-access-to-traefik.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale");
+
+		install(ingress);
+
+		assertThat(networkPolicy).doesNotExist();
 	}
 
 	@Test

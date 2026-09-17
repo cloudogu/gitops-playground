@@ -50,8 +50,11 @@ class IngressToolConfigMapperTest {
 																		   .localHelmChartFolder("/charts")
 																		   .build())
 													  .imagePullSecret(imagePullSecret())
+													  .netpols(true)
+													  .monitoringActive(true)
+													  .monitoringNamespace("test-observability")
 													  .templateConfig(Map.of(
-														  "application", Map.of("namePrefix", "test-", "netpols", true),
+														  "application", Map.of("namePrefix", "test-"),
 														  "features", Map.of(
 															  "ingress",
 															  Map.of("helm", Map.of("image", "ingress-image")),
