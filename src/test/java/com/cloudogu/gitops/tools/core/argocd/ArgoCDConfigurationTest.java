@@ -676,12 +676,29 @@ class ArgoCDConfigurationTest {
 		config.getApplication().setNamePrefix("my-prefix-");
 
 		Map<String, Object> valuesYaml = executeAndReadHelmValues();
-		String argocdValues = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "values.yaml")
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
 		);
 
-		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(argocdValues).contains("namespace: my-prefix-monitoring");
+		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(false);
+		assertThat(value(valuesYaml, "argo-cd", "applicationSet", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(value(valuesYaml, "argo-cd", "commitServer", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(value(valuesYaml, "argo-cd", "dex", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(value(valuesYaml, "argo-cd", "notifications", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(value(valuesYaml, "argo-cd", "redis", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-server-helm")
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("name: allow-required-access-to-argocd-application-controller-helm")
+			.contains("kubernetes.io/metadata.name: \"my-prefix-ingress\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: \"my-prefix-monitoring\"")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("port: server")
+			.contains("port: repo-server")
+			.contains("port: metrics")
+			.doesNotContain("port: 8080")
+			.doesNotContain("namespaceSelector: {}");
 		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-server");
 		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-repo-server");
 		verify(k8sClient).delete(
@@ -689,6 +706,16 @@ class ArgoCDConfigurationTest {
 			"my-prefix-argocd",
 			"allow-required-access-to-argocd-application-controller"
 		);
+	}
+
+	@Test
+	void doesNotGenerateHelmNetworkPoliciesWhenNetworkPoliciesAreDisabled() throws IOException {
+		config.getApplication().setNetpols(false);
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+
+		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(false);
+		assertThat(Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")).doesNotExist();
 	}
 
 

@@ -6,7 +6,21 @@ argo-cd:
 </#if>
   global:
     domain: ${argocd.host}
+    # GOP owns the policies for server, repo server and application controller.
+    # Keep the upstream global switch disabled because its server and metrics rules are too broad.
+    networkPolicy:
+      create: false
 <#if config.application.netpols == true>
+  applicationSet:
+    networkPolicy:
+      create: true
+  commitServer:
+    networkPolicy:
+      create: true
+  dex:
+    networkPolicy:
+      create: true
+  redis:
     networkPolicy:
       create: true
 </#if>
@@ -95,6 +109,10 @@ argo-cd:
     </#if>
 
   notifications:
+<#if config.application.netpols == true>
+    networkPolicy:
+      create: true
+</#if>
     # secrets are created dynamically by GOP, so they are not stored in git
     secret:
       create: false

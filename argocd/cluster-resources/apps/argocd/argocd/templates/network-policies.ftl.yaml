@@ -1,0 +1,119 @@
+<#if config.application.netpols == true>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  policyTypes:
+    - Ingress
+<#assign hasServerIngress = config.features.ingress.active || config.application.openshift || config.features.monitoring.active>
+<#if hasServerIngress>
+  ingress:
+<#if config.features.ingress.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.ingress.namespace}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: server
+</#if>
+<#if config.application.openshift>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - protocol: TCP
+          port: server
+</#if>
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+</#if>
+<#else>
+  ingress: []
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-repo-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-application-controller
+<#if config.features.mail.active>
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-notifications-controller
+</#if>
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-applicationset-controller
+      ports:
+        - protocol: TCP
+          port: repo-server
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-application-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  policyTypes:
+    - Ingress
+<#if config.features.monitoring.active>
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+<#else>
+  ingress: []
+</#if>
+</#if>
