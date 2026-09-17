@@ -17,9 +17,9 @@ spec:
               jenkins/jenkins-jenkins-agent: "true"
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
         - protocol: TCP
-          port: 50000
+          port: agent-listener
 <#if ingressActive>
     - from:
         - namespaceSelector:
@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#if monitoringActive>
     - from:
@@ -42,7 +42,7 @@ spec:
               prometheus: kube-prometheus-stack-prometheus
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#list bootstrapCidrs as bootstrapCidr>
     - from:
@@ -50,5 +50,5 @@ spec:
             cidr: ${bootstrapCidr}
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#list>

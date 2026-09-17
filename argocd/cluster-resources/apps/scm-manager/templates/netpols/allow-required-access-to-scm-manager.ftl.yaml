@@ -22,7 +22,7 @@ spec:
               app.kubernetes.io/name: argocd-repo-server
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#if ingressActive>
     - from:
@@ -34,7 +34,7 @@ spec:
               app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#if monitoringActive>
     - from:
@@ -46,7 +46,7 @@ spec:
               prometheus: kube-prometheus-stack-prometheus
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#if jenkinsActive && jenkinsInternal>
     - from:
@@ -59,7 +59,7 @@ spec:
               app.kubernetes.io/instance: jenkins
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
     - from:
         - namespaceSelector:
             matchLabels:
@@ -69,7 +69,7 @@ spec:
               jenkins/jenkins-jenkins-agent: "true"
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#if>
 <#list bootstrapCidrs as bootstrapCidr>
     - from:
@@ -77,7 +77,7 @@ spec:
             cidr: ${bootstrapCidr}
       ports:
         - protocol: TCP
-          port: 8080
+          port: http
 </#list>
 <#else>
   ingress: []

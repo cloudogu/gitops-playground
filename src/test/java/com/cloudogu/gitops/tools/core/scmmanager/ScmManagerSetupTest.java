@@ -414,7 +414,7 @@ class ScmManagerSetupTest {
 			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
 			.contains("cidr: 172.18.0.1/32")
 			.contains("cidr: 10.20.0.0/16")
-			.contains("port: 8080");
+			.contains("port: http");
 
 		verify(k8sClient).applyYaml(
 			Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), relativePath).toString()

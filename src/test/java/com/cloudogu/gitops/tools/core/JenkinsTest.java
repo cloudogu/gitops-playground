@@ -226,8 +226,8 @@ class JenkinsTest {
 			.contains("prometheus: kube-prometheus-stack-prometheus")
 			.contains("cidr: 172.18.0.1/32")
 			.contains("cidr: 10.20.0.0/16")
-			.contains("port: 8080")
-			.contains("port: 50000");
+			.contains("port: http")
+			.contains("port: agent-listener");
 	}
 
 	@Test
