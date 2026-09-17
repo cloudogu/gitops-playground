@@ -6,24 +6,11 @@ argo-cd:
 </#if>
   global:
     domain: ${argocd.host}
-    # GOP owns the policies for server, repo server and application controller.
-    # Keep the upstream global switch disabled because its server and metrics rules are too broad.
+    # GOP owns the Argo CD ingress policies. Keep the upstream policies disabled because
+    # several of them contain broad namespaceSelector rules that cannot be narrowed by
+    # additional NetworkPolicies.
     networkPolicy:
       create: false
-<#if config.application.netpols == true>
-  applicationSet:
-    networkPolicy:
-      create: true
-  commitServer:
-    networkPolicy:
-      create: true
-  dex:
-    networkPolicy:
-      create: true
-  redis:
-    networkPolicy:
-      create: true
-</#if>
   server:
 <#if argocd.host?has_content>
     ingress:
@@ -109,10 +96,6 @@ argo-cd:
     </#if>
 
   notifications:
-<#if config.application.netpols == true>
-    networkPolicy:
-      create: true
-</#if>
     # secrets are created dynamically by GOP, so they are not stored in git
     secret:
       create: false

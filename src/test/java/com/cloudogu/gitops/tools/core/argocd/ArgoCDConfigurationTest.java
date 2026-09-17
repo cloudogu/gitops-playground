@@ -681,15 +681,18 @@ class ArgoCDConfigurationTest {
 		);
 
 		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(false);
-		assertThat(value(valuesYaml, "argo-cd", "applicationSet", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(value(valuesYaml, "argo-cd", "commitServer", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(value(valuesYaml, "argo-cd", "dex", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(value(valuesYaml, "argo-cd", "notifications", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(value(valuesYaml, "argo-cd", "redis", "networkPolicy", "create")).isEqualTo(true);
+		assertThat(value(valuesYaml, "argo-cd", "applicationSet", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "commitServer", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "dex", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "notifications", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "redis", "networkPolicy")).isNull();
 		assertThat(networkPolicies)
 			.contains("name: allow-required-access-to-argocd-server-helm")
 			.contains("name: allow-required-access-to-argocd-repo-server-helm")
 			.contains("name: allow-required-access-to-argocd-application-controller-helm")
+			.contains("name: allow-required-access-to-argocd-dex-server-helm")
+			.contains("name: allow-required-access-to-argocd-redis-helm")
+			.contains("name: allow-required-access-to-argocd-applicationset-controller-helm")
 			.contains("kubernetes.io/metadata.name: \"my-prefix-ingress\"")
 			.contains("app.kubernetes.io/name: traefik")
 			.contains("kubernetes.io/metadata.name: \"my-prefix-monitoring\"")
@@ -697,6 +700,9 @@ class ArgoCDConfigurationTest {
 			.contains("port: server")
 			.contains("port: repo-server")
 			.contains("port: metrics")
+			.contains("port: http")
+			.contains("port: grpc")
+			.contains("port: redis")
 			.doesNotContain("port: 8080")
 			.doesNotContain("namespaceSelector: {}");
 		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-server");

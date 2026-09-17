@@ -116,4 +116,80 @@ spec:
 <#else>
   ingress: []
 </#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-dex-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-dex-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+      ports:
+        - protocol: TCP
+          port: http
+        - protocol: TCP
+          port: grpc
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-redis-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-repo-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-application-controller
+      ports:
+        - protocol: TCP
+          port: redis
+---
+# GOP does not expose the ApplicationSet webhook. Keep the controller isolated until
+# an explicit webhook ingress path is configured.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-applicationset-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-applicationset-controller
+  policyTypes:
+    - Ingress
+  ingress: []
+<#if config.features.mail.active>
+---
+# The notifications controller only watches Kubernetes resources and sends outbound
+# notifications. It does not require application ingress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-notifications-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-notifications-controller
+  policyTypes:
+    - Ingress
+  ingress: []
+</#if>
 </#if>
