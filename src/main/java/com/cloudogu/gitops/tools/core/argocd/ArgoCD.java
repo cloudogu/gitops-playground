@@ -33,6 +33,12 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	private static final int BCRYPT_LOG_ROUNDS = 4;
 	private static final String TOOL_NAME = "argocd";
 	private static final String SECRET_RESOURCE = "secret";
+	private static final String NETWORK_POLICY_RESOURCE = "networkpolicy";
+	private static final List<String> OPERATOR_NETWORK_POLICIES = List.of(
+		"allow-required-access-to-argocd-server",
+		"allow-required-access-to-argocd-repo-server",
+		"allow-required-access-to-argocd-application-controller"
+	);
 
 	private final K8sClient k8sClient;
 	private final HelmClient helmClient;
@@ -96,6 +102,8 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 		log.debug("Creating namespaces");
 		k8sClient.createNamespaces(new ArrayList<>(toolConfig().activeNamespaces()));
+
+		cleanupOperatorNetworkPoliciesIfNotRequired();
 
 		deploymentMode.createSCMCredentialsSecret();
 		createNotificationSecretIfRequired();
@@ -248,6 +256,21 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 		log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively");
 		k8sClient.applyYaml(clusterResourcesRepo.operatorRbacDir());
+
+		if (toolConfig().netpols()) {
+			log.debug("Apply NetworkPolicies for operator-managed ArgoCD components imperatively");
+			k8sClient.applyYaml(clusterResourcesRepo.operatorNetworkPolicyDir());
+		}
+	}
+
+	private void cleanupOperatorNetworkPoliciesIfNotRequired() {
+		if (toolConfig().operator() && toolConfig().netpols()) {
+			return;
+		}
+
+		for (String networkPolicy : OPERATOR_NETWORK_POLICIES) {
+			k8sClient.delete(NETWORK_POLICY_RESOURCE, namespace, networkPolicy);
+		}
 	}
 
 	private void updateAdminPasswordForOperator() {

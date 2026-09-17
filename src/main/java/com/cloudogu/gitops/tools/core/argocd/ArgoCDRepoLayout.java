@@ -28,6 +28,10 @@ public record ArgoCDRepoLayout(String repoRootDir) {
 		return Path.of(operatorDir(), "rbac").toString();
 	}
 
+	public String operatorNetworkPolicyDir() {
+		return Path.of(operatorDir(), "netpols").toString();
+	}
+
 	public String operatorConfigFile() {
 		return Path.of(operatorDir(), "argocd.yaml").toString();
 	}

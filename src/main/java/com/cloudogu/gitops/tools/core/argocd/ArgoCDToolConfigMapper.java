@@ -31,6 +31,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .password(config.getApplication().getPassword())
 							   .credentials(CredentialsReference.from(config.getApplication().getCredentials()))
 							   .operator(context.isArgoCdOperator())
+							   .netpols(config.getApplication().getNetpols())
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())

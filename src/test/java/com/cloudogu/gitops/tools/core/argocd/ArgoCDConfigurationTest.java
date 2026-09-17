@@ -682,10 +682,102 @@ class ArgoCDConfigurationTest {
 
 		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(true);
 		assertThat(argocdValues).contains("namespace: my-prefix-monitoring");
+		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-server");
+		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-repo-server");
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"my-prefix-argocd",
+			"allow-required-access-to-argocd-application-controller"
+		);
 	}
 
 
+	@Test
+	void generatesLeastPrivilegeNetworkPoliciesForOperatorArgoCd() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().setNamePrefix("tenant-");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
 
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Path networkPolicyPath = Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		);
+		String networkPolicies = Files.readString(networkPolicyPath);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-server")
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("name: allow-required-access-to-argocd-application-controller")
+			.contains("namespace: \"tenant-argocd\"")
+			.contains("kubernetes.io/metadata.name: \"tenant-edge\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: \"tenant-observability\"")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("app.kubernetes.io/name: argocd-notifications-controller")
+			.contains("app.kubernetes.io/name: argocd-applicationset-controller")
+			.contains("port: server")
+			.contains("port: metrics")
+			.contains("port: 8080")
+			.contains("port: 8082")
+			.contains("port: 8083");
+
+		verify(k8sClient).applyYaml(clusterResourcesRepoLayout.operatorNetworkPolicyDir());
+	}
+
+	@Test
+	void generatesOpenShiftIngressRuleForOperatorArgoCd() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getFeatures().getMonitoring().setActive(false);
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("policy-group.network.openshift.io/ingress: \"\"")
+			.doesNotContain("prometheus: kube-prometheus-stack-prometheus");
+	}
+
+	@Test
+	void removesOperatorNetworkPoliciesWhenNetworkPoliciesAreDisabled() {
+		config.getApplication().setNetpols(false);
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		assertThat(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		)).doesNotExist();
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-server"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-repo-server"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-application-controller"
+		);
+	}
 
 	@Test
 	void setsOperatorServerInsecureToTrueWhenInsecureIsSet() throws IOException {

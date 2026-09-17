@@ -1,0 +1,123 @@
+<#if config.application.netpols == true>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-server
+  namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  policyTypes:
+    - Ingress
+<#assign hasServerIngress = config.features.ingress.active || config.application.openshift || config.features.monitoring.active>
+<#if hasServerIngress>
+  ingress:
+<#if config.features.ingress.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.ingress.namespace}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        # ArgoCD Operator 0.17 generates an unnamed server container port.
+        - protocol: TCP
+          port: 8080
+</#if>
+<#if config.application.openshift>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - protocol: TCP
+          port: 8080
+</#if>
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        # ArgoCD Operator 0.17 generates an unnamed metrics container port.
+        - protocol: TCP
+          port: 8083
+</#if>
+<#else>
+  ingress: []
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-repo-server
+  namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-application-controller
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-notifications-controller
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-applicationset-controller
+      ports:
+        - protocol: TCP
+          port: server
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-application-controller
+  namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  policyTypes:
+    - Ingress
+<#if config.features.monitoring.active>
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        # ArgoCD Operator 0.17 generates an unnamed metrics container port.
+        - protocol: TCP
+          port: 8082
+<#else>
+  ingress: []
+</#if>
+</#if>

@@ -94,6 +94,7 @@ class ArgoCDToolConfigMapperTest {
 														 "admin-password"
 													 ))
 													 .operator(true)
+													 .netpols(true)
 													 .activeNamespaces(List.of(
 														 "argocd",
 														 "monitoring",

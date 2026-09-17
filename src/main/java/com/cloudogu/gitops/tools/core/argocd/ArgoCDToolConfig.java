@@ -16,6 +16,7 @@ public record ArgoCDToolConfig(
 	String password,
 	CredentialsReference credentials,
 	boolean operator,
+	boolean netpols,
 	Collection<String> activeNamespaces,
 	String smtpUser,
 	String smtpPassword,
