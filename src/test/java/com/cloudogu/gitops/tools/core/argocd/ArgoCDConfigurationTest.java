@@ -748,6 +748,8 @@ class ArgoCDConfigurationTest {
 			.contains("name: allow-required-access-to-argocd-server")
 			.contains("name: allow-required-access-to-argocd-repo-server")
 			.contains("name: allow-required-access-to-argocd-application-controller")
+			.contains("name: allow-required-access-to-argocd-applicationset-controller")
+			.contains("name: allow-required-access-to-argocd-notifications-controller")
 			.contains("namespace: \"tenant-argocd\"")
 			.contains("kubernetes.io/metadata.name: \"tenant-edge\"")
 			.contains("app.kubernetes.io/name: traefik")
@@ -809,6 +811,16 @@ class ArgoCDConfigurationTest {
 			"networkpolicy",
 			"argocd",
 			"allow-required-access-to-argocd-application-controller"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-applicationset-controller"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-notifications-controller"
 		);
 	}
 

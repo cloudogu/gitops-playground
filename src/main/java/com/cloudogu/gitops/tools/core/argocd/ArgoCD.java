@@ -37,7 +37,9 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	private static final List<String> OPERATOR_NETWORK_POLICIES = List.of(
 		"allow-required-access-to-argocd-server",
 		"allow-required-access-to-argocd-repo-server",
-		"allow-required-access-to-argocd-application-controller"
+		"allow-required-access-to-argocd-application-controller",
+		"allow-required-access-to-argocd-applicationset-controller",
+		"allow-required-access-to-argocd-notifications-controller"
 	);
 
 	private final K8sClient k8sClient;

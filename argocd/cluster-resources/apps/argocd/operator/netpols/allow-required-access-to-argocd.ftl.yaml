@@ -120,4 +120,32 @@ spec:
 <#else>
   ingress: []
 </#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-applicationset-controller
+  namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-applicationset-controller
+  policyTypes:
+    - Ingress
+  # GOP does not expose the ApplicationSet webhook in operator mode.
+  ingress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-notifications-controller
+  namespace: "${config.application.namePrefix}${config.features.argocd.namespace}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-notifications-controller
+  policyTypes:
+    - Ingress
+  # The notifications controller does not require inbound traffic in the GOP setup.
+  ingress: []
 </#if>
