@@ -1,0 +1,165 @@
+<mxfile host="app.diagrams.net" modified="2026-09-18T10:00:00.000Z" agent="ChatGPT" version="24.7.17" type="device">
+  <diagram id="gop-netpol" name="GOP NetworkPolicies">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="GOP NetworkPolicy communication paths" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="700" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Representative paths; see docs/NetworkPolicies.md for the full implemented relationship table." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#52606D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="900" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="external-zone" value="Outside the cluster" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=10;spacingLeft=12;fontStyle=1;fillColor=#F7F9FB;strokeColor=#6B7C93;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="30" y="105" width="245" height="760" as="geometry"/>
+        </mxCell>
+        <mxCell id="cluster-zone" value="Kubernetes cluster" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=10;spacingLeft=12;fontStyle=1;fillColor=#F7F9FB;strokeColor=#6B7C93;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="105" width="1260" height="760" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="external-client" value="External client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#B7791F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="170" width="185" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="gop-runner" value="GOP runner&lt;br&gt;configured bootstrap CIDR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#B7791F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="290" width="185" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="registry-client" value="Registry client&lt;br&gt;configured CIDR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#B7791F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="425" width="185" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="external-repos" value="External SCM / Git / Helm repository&lt;br&gt;configured CIDR + port" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#B7791F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="590" width="185" height="82" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-ingress" value="ingress namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="330" y="160" width="220" height="165" as="geometry"/>
+        </mxCell>
+        <mxCell id="traefik" value="Traefik" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="365" y="215" width="150" height="62" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-argocd" value="argocd namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="590" y="160" width="310" height="245" as="geometry"/>
+        </mxCell>
+        <mxCell id="argocd-server" value="Argo CD server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="620" y="215" width="115" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="repo-server" value="Repo server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="755" y="215" width="115" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="argocd-controllers" value="Controllers / AppSet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="620" y="305" width="115" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="argocd-redis" value="Redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="755" y="305" width="115" height="54" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-monitoring" value="monitoring namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="940" y="160" width="280" height="245" as="geometry"/>
+        </mxCell>
+        <mxCell id="prometheus" value="Prometheus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="975" y="215" width="210" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="grafana" value="Grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="975" y="305" width="210" height="54" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-jenkins" value="jenkins namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="330" y="445" width="230" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="jenkins-controller" value="Jenkins controller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="365" y="495" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="jenkins-agent" value="Jenkins agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="365" y="565" width="160" height="38" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-scm" value="SCM namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="600" y="445" width="230" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="scm-manager" value="SCM-Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="635" y="505" width="160" height="62" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-secrets" value="secrets namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="870" y="445" width="270" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="external-secrets" value="External Secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="900" y="495" width="105" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="vault" value="Vault" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="495" width="90" height="54" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-webhooks" value="cluster API / admission webhooks" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="445" width="340" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="kube-api" value="Kubernetes API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="1205" y="495" width="120" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="cert-webhook" value="cert-manager webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="490" width="130" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="eso-webhook" value="ESO webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="550" width="130" height="44" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-registry" value="registry namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="330" y="680" width="230" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="registry" value="Internal registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="365" y="735" width="160" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ns-app" value="application / customer namespace" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=8;spacingLeft=10;fontStyle=1;fillColor=#EEF5FB;strokeColor=#5B8DB8;" vertex="1" parent="1">
+          <mxGeometry x="600" y="680" width="340" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="app-pod" value="Application pod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3F3;strokeColor=#B85C5C;" vertex="1" parent="1">
+          <mxGeometry x="650" y="735" width="240" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="note" value="No generic allow-prometheus-scraping policy in application/customer namespaces.&lt;br&gt;GOP does not add a default-deny for arbitrary customer apps.&lt;br&gt;Jenkins, Vault and internal SCM-Manager reject unknown ingress sources.&lt;br&gt;Repo-server egress isolation is opt-in and requires all external SCM/Git/Helm CIDRs." style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=12;fillColor=#FFFDF5;strokeColor=#9F8B4C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="980" y="680" width="535" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- Explicitly allowed -->
+        <mxCell id="e-public-traefik" value="HTTP/HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;fontColor=#334E68;" edge="1" parent="1" source="external-client" target="traefik"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-traefik-argocd" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="traefik" target="argocd-server"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-traefik-jenkins" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="traefik" target="jenkins-controller"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-traefik-scm" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="traefik" target="scm-manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-traefik-grafana" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="traefik" target="grafana"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-traefik-vault" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="traefik" target="vault"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-grafana-prom" value="queries" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="grafana" target="prometheus"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-controller-repo" value="repo ops" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="argocd-controllers" target="repo-server"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-repo-redis" value="Redis" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="repo-server" target="argocd-redis"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-repo-scm" value="Git" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="repo-server" target="scm-manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-jenkins-scm" value="SCM access" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="jenkins-controller" target="scm-manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-agent-controller" value="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="jenkins-agent" target="jenkins-controller"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-eso-vault" value="8200" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="external-secrets" target="vault"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-api-cert" value="TCP/10250" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="kube-api" target="cert-webhook"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-api-eso" value="TCP/10250" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="kube-api" target="eso-webhook"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-prom-metrics" value="metrics endpoints" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="prometheus" target="argocd-server"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- Configured / conditional -->
+        <mxCell id="e-bootstrap-jenkins" value="bootstrapCidrs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 6;strokeColor=#EF6C00;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="gop-runner" target="jenkins-controller"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-bootstrap-scm" value="bootstrapCidrs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 6;strokeColor=#EF6C00;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="gop-runner" target="scm-manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-registry" value="registryAccessCidrs :5000" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 6;strokeColor=#EF6C00;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="registry-client" target="registry"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-external-repo" value="externalConnections; opt-in egress isolation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 6;strokeColor=#EF6C00;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="repo-server" target="external-repos"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- Blocked examples -->
+        <mxCell id="e-app-jenkins" value="blocked" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=7 6;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;fontColor=#C62828;fontStyle=1;" edge="1" parent="1" source="app-pod" target="jenkins-controller"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-app-vault" value="blocked" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=7 6;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;fontColor=#C62828;fontStyle=1;" edge="1" parent="1" source="app-pod" target="vault"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e-app-scm" value="blocked" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=7 6;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;fontColor=#C62828;fontStyle=1;" edge="1" parent="1" source="app-pod" target="scm-manager"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="legend-allow-line" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2E7D32;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="40" y="915" as="sourcePoint"/><mxPoint x="105" y="915" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="legend-allow" value="explicitly allowed" style="text;html=1;strokeColor=none;fillColor=none;align=left;" vertex="1" parent="1"><mxGeometry x="120" y="900" width="160" height="30" as="geometry"/></mxCell>
+        <mxCell id="legend-cond-line" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 6;strokeColor=#EF6C00;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="310" y="915" as="sourcePoint"/><mxPoint x="375" y="915" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="legend-cond" value="configured / conditional CIDR path" style="text;html=1;strokeColor=none;fillColor=none;align=left;" vertex="1" parent="1"><mxGeometry x="390" y="900" width="250" height="30" as="geometry"/></mxCell>
+        <mxCell id="legend-block-line" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=7 6;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="690" y="915" as="sourcePoint"/><mxPoint x="755" y="915" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="legend-block" value="example traffic blocked by destination ingress policy" style="text;html=1;strokeColor=none;fillColor=none;align=left;" vertex="1" parent="1"><mxGeometry x="770" y="900" width="420" height="30" as="geometry"/></mxCell>
+        <mxCell id="footer" value="Important: this diagram does not imply global default-deny for application/customer namespaces or global egress isolation." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontColor=#52606D;fontSize=11;" vertex="1" parent="1"><mxGeometry x="40" y="945" width="1100" height="30" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

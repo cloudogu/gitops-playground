@@ -371,6 +371,8 @@ docker run --rm -t -u $(id -u) \
 
 ## Testing Network Policies locally
 
+For the implemented communication paths, blocked examples and configuration boundaries, see [NetworkPolicy communication model](NetworkPolicies.md).
+
 Use the `full-netpols` profile to test the GOP NetworkPolicies end-to-end on a local k3d cluster. The profile deliberately keeps environment-specific CIDRs empty:
 
 ```yaml
