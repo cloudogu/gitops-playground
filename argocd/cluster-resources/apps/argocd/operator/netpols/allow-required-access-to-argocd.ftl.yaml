@@ -146,6 +146,20 @@ spec:
       app.kubernetes.io/name: argocd-notifications-controller
   policyTypes:
     - Ingress
-  # The notifications controller does not require inbound traffic in the GOP setup.
+<#if config.features.monitoring.active>
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        # ArgoCD Operator 0.17 exposes notifications metrics on an unnamed container port.
+        - protocol: TCP
+          port: 9001
+<#else>
   ingress: []
+</#if>
 </#if>

@@ -985,10 +985,34 @@ class MonitoringTest {
 	@Test
 	void networkPoliciesAreCreatedForPrometheus() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
+		config.getApplication().getNamespaces().getDedicatedNamespaces().add("foo-monitoring");
 		Monitoring prometheusStack = createStack(scmManagerMock);
 		install(prometheusStack);
 
+		File monitoringNetPolsYaml = new File(
+			clusterResourcesRepoDir,
+			"apps/monitoring/misc/netpols/foo-monitoring.yaml"
+		);
+		assertThat(Files.readString(monitoringNetPolsYaml.toPath()))
+			.contains("name: allow-required-access-to-grafana")
+			.contains("name: allow-required-access-to-prometheus")
+			.contains("name: allow-required-access-to-prometheus-operator")
+			.contains("namespace: foo-monitoring")
+			.contains("kubernetes.io/metadata.name: \"foo-ingress\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("port: grafana")
+			.contains("port: http-web")
+			.contains("port: reloader-web")
+			.contains("port: http")
+			.doesNotContain("name: allow-prometheus-scraping")
+			.doesNotContain("podSelector: {}");
+
 		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
+			if (namespace.equals("foo-monitoring")) {
+				continue;
+			}
+
 			File netPolsYaml = new File(
 				clusterResourcesRepoDir,
 				"apps/monitoring/misc/netpols/" + namespace + ".yaml"

@@ -761,7 +761,8 @@ class ArgoCDConfigurationTest {
 			.contains("port: metrics")
 			.contains("port: 8080")
 			.contains("port: 8082")
-			.contains("port: 8083");
+			.contains("port: 8083")
+			.contains("port: 9001");
 
 		verify(k8sClient).applyYaml(clusterResourcesRepoLayout.operatorNetworkPolicyDir());
 	}
@@ -782,7 +783,8 @@ class ArgoCDConfigurationTest {
 
 		assertThat(networkPolicies)
 			.contains("policy-group.network.openshift.io/ingress: \"\"")
-			.doesNotContain("prometheus: kube-prometheus-stack-prometheus");
+			.doesNotContain("prometheus: kube-prometheus-stack-prometheus")
+			.doesNotContain("port: 9001");
 	}
 
 	@Test
