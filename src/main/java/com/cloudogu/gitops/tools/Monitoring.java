@@ -36,7 +36,6 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml";
 	public static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml";
-	public static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/netpols/prometheus-allow-scraping.ftl.yaml";
 	public static final String NETWORK_POLICIES_MONITORING_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/netpols/monitoring.ftl.yaml";
 
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
@@ -175,8 +174,9 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 			generateNamespaceIsolationRBAC(clusterResourcesRepo);
 		}
 
+		cleanupGeneratedNetworkPolicies(clusterResourcesRepo);
 		if (toolConfig().netpols()) {
-			generateNetpols(clusterResourcesRepo);
+			generateMonitoringNetpols(clusterResourcesRepo);
 		}
 
 		// Remove dashboards for features that are not enabled
@@ -264,27 +264,10 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		}
 	}
 
-	private void generateNetpols(GitRepo clusterResourcesRepo) {
-		generateMonitoringNetpols(clusterResourcesRepo);
-
-		for (String currentNamespace : toolConfig().activeNamespaces()) {
-			if (Objects.equals(currentNamespace, namespace)) {
-				continue;
-			}
-
-			try {
-				String netpolsYaml = new TemplatingEngine().template(
-					new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE), Map.of(
-						NAMESPACE_KEY, currentNamespace,
-						"namePrefix", toolConfig().namePrefix()
-					)
-				);
-
-				clusterResourcesRepo.writeFile(MONITORING_NETPOLS_PATH + "/" + currentNamespace + ".yaml", netpolsYaml);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to generate netpols allow template for " + currentNamespace, e);
-			}
-		}
+	private void cleanupGeneratedNetworkPolicies(GitRepo clusterResourcesRepo) {
+		FileSystemUtils.deleteDir(
+			Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), MONITORING_NETPOLS_PATH).toString()
+		);
 	}
 
 	private void generateMonitoringNetpols(GitRepo clusterResourcesRepo) {

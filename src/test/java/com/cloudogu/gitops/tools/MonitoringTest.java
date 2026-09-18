@@ -983,16 +983,14 @@ class MonitoringTest {
 	}
 
 	@Test
-	void networkPoliciesAreCreatedForPrometheus() throws GitAPIException, IOException {
+	void networkPoliciesAreCreatedOnlyForMonitoringComponents() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
 		config.getApplication().getNamespaces().getDedicatedNamespaces().add("foo-monitoring");
 		Monitoring prometheusStack = createStack(scmManagerMock);
 		install(prometheusStack);
 
-		File monitoringNetPolsYaml = new File(
-			clusterResourcesRepoDir,
-			"apps/monitoring/misc/netpols/foo-monitoring.yaml"
-		);
+		File monitoringNetPolsDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/netpols");
+		File monitoringNetPolsYaml = new File(monitoringNetPolsDir, "foo-monitoring.yaml");
 		assertThat(Files.readString(monitoringNetPolsYaml.toPath()))
 			.contains("name: allow-required-access-to-grafana")
 			.contains("name: allow-required-access-to-prometheus")
@@ -1008,20 +1006,25 @@ class MonitoringTest {
 			.doesNotContain("name: allow-prometheus-scraping")
 			.doesNotContain("podSelector: {}");
 
-		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
-			if (namespace.equals("foo-monitoring")) {
-				continue;
-			}
-
-			File netPolsYaml = new File(
-				clusterResourcesRepoDir,
-				"apps/monitoring/misc/netpols/" + namespace + ".yaml"
-			);
-			assertThat(Files.readString(netPolsYaml.toPath()))
-				.contains("name: allow-prometheus-scraping")
-				.contains("namespace: " + namespace)
-				.doesNotContain("name: allow-required-access-to-jenkins");
+		try (var files = Files.list(monitoringNetPolsDir.toPath())) {
+			assertThat(files.map(path -> path.getFileName().toString()).toList())
+				.containsExactly("foo-monitoring.yaml");
 		}
+	}
+
+	@Test
+	void removesObsoleteGeneratedNetworkPolicies() throws GitAPIException, IOException {
+		Monitoring prometheusStack = createStack(scmManagerMock);
+		File monitoringNetPolsDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/netpols");
+		assertThat(monitoringNetPolsDir.mkdirs()).isTrue();
+		Files.writeString(
+			new File(monitoringNetPolsDir, "test1-argocd.yaml").toPath(),
+			"name: allow-prometheus-scraping"
+		);
+
+		install(prometheusStack);
+
+		assertThat(monitoringNetPolsDir).doesNotExist();
 	}
 
 

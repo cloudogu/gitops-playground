@@ -52,3 +52,16 @@ spec:
         - protocol: TCP
           port: http
 </#list>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-jenkins-agents-ingress
+  namespace: ${namespace}
+spec:
+  podSelector:
+    matchLabels:
+      jenkins/jenkins-jenkins-agent: "true"
+  policyTypes:
+    - Ingress
+  ingress: []

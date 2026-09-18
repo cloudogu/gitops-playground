@@ -217,6 +217,8 @@ class JenkinsTest {
 
 		assertThat(policy)
 			.contains("namespace: jenkins")
+			.contains("name: allow-required-access-to-jenkins")
+			.contains("name: restrict-jenkins-agents-ingress")
 			.contains("app.kubernetes.io/component: jenkins-controller")
 			.contains("app.kubernetes.io/instance: jenkins")
 			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
