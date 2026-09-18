@@ -4,9 +4,11 @@ application:
   baseUrl: http://localhost
   netpols: true
   networkPolicies:
-    # Environment-specific CIDRs are supplied through an additional config file.
+    # Environment-specific CIDRs and external connections are supplied through an additional config file.
     bootstrapCidrs: []
     registryAccessCidrs: []
+    egressIsolation: false
+    externalConnections: []
 features:
   certManager:
     active: true

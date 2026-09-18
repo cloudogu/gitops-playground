@@ -136,8 +136,17 @@ import static com.cloudogu.gitops.config.ConfigConstants.NAMESPACE_ISOLATION_DES
 import static com.cloudogu.gitops.config.ConfigConstants.NAME_PREFIX_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETPOLS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EGRESS_ISOLATION_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_CIDRS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_DIRECTION_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORTS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_PROTOCOL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_TOOL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OIDC_DESCPRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OPENSHIFT_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OUTPUT_CONFIG_FILE_DESCRIPTION;
@@ -644,6 +653,43 @@ public class Config {
 
 			@JsonPropertyDescription(NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION)
 			private List<String> registryAccessCidrs = new ArrayList<>();
+
+			@JsonPropertyDescription(NETWORK_POLICIES_EGRESS_ISOLATION_DESCRIPTION)
+			private boolean egressIsolation = false;
+
+			@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION)
+			private List<ExternalConnectionSchema> externalConnections = new ArrayList<>();
+
+			@Getter
+			@Setter
+			public static class ExternalConnectionSchema {
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_TOOL_DESCRIPTION)
+				private String tool = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_DIRECTION_DESCRIPTION)
+				private String direction = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_CIDRS_DESCRIPTION)
+				private List<String> cidrs = new ArrayList<>();
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORTS_DESCRIPTION)
+				private List<ExternalConnectionPortSchema> ports = new ArrayList<>();
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalConnectionPortSchema {
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_PROTOCOL_DESCRIPTION)
+				private String protocol = "TCP";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_DESCRIPTION)
+				private Integer port;
+			}
 		}
 
 		@Getter

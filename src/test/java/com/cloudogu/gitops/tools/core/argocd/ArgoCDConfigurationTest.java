@@ -703,6 +703,7 @@ class ArgoCDConfigurationTest {
 			.contains("port: http")
 			.contains("port: grpc")
 			.contains("port: redis")
+			.doesNotContain("    - Egress")
 			.doesNotContain("port: 8080")
 			.doesNotContain("namespaceSelector: {}");
 		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-server");
@@ -712,6 +713,44 @@ class ArgoCDConfigurationTest {
 			"my-prefix-argocd",
 			"allow-required-access-to-argocd-application-controller"
 		);
+	}
+
+	@Test
+	void configuresExternalScmEgressForHelmRepoServer() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		configureExternalScmConnection();
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("cidr: 35.246.133.109/32")
+			.contains("protocol: TCP")
+			.contains("port: 443")
+			.contains("port: 6379")
+			.contains("# External connection: external-scm-manager");
+	}
+
+	@Test
+	void doesNotEnableRepoServerEgressIsolationWithoutExplicitFlag() throws IOException {
+		config.getApplication().setNetpols(true);
+		configureExternalScmConnection();
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.doesNotContain("    - Egress")
+			.doesNotContain("# External connection: external-scm-manager");
 	}
 
 	@Test
@@ -762,9 +801,36 @@ class ArgoCDConfigurationTest {
 			.contains("port: 8080")
 			.contains("port: 8082")
 			.contains("port: 8083")
-			.contains("port: 9001");
+			.contains("port: 9001")
+			.doesNotContain("    - Egress");
 
 		verify(k8sClient).applyYaml(clusterResourcesRepoLayout.operatorNetworkPolicyDir());
+	}
+
+	@Test
+	void configuresExternalScmEgressForOperatorRepoServer() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		configureExternalScmConnection();
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("cidr: 35.246.133.109/32")
+			.contains("protocol: TCP")
+			.contains("port: 443")
+			.contains("port: 6379")
+			.contains("# External connection: external-scm-manager");
 	}
 
 	@Test
@@ -1640,6 +1706,23 @@ class ArgoCDConfigurationTest {
 
 		execute(argocd);
 		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+	}
+
+	private void configureExternalScmConnection() {
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema connection =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema();
+		connection.setName("external-scm-manager");
+		connection.setTool("argocd-repo-server");
+		connection.setDirection("egress");
+		connection.setCidrs(List.of("35.246.133.109/32"));
+
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema port =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema();
+		port.setProtocol("TCP");
+		port.setPort(443);
+		connection.setPorts(List.of(port));
+
+		config.getApplication().getNetworkPolicies().setExternalConnections(List.of(connection));
 	}
 
 	private ArgoCD setupOperatorTest(boolean openshift) {

@@ -67,6 +67,15 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.netpols", config.getApplication().getNetpols())
+			.put(
+				"application.networkPolicies.argocdRepoServerEgressIsolation",
+				config.getApplication().getNetworkPolicies() != null
+					&& config.getApplication().getNetworkPolicies().isEgressIsolation()
+			)
+			.put(
+				"application.networkPolicies.argocdRepoServerEgress",
+				ToolConfigMapperSupport.networkPolicyExternalConnections(config, "argocd-repo-server", "egress")
+			)
 			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(

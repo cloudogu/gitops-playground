@@ -39,6 +39,53 @@ public final class ToolConfigMapperSupport {
 			: List.copyOf(networkPolicies.getRegistryAccessCidrs());
 	}
 
+	public static List<Map<String, Object>> networkPolicyExternalConnections(
+		Config config,
+		String tool,
+		String direction) {
+		Config.ApplicationSchema.NetworkPoliciesSchema networkPolicies = config.getApplication().getNetworkPolicies();
+		if (networkPolicies == null || networkPolicies.getExternalConnections() == null) {
+			return List.of();
+		}
+
+		return networkPolicies.getExternalConnections()
+			.stream()
+			.filter(connection -> connection != null)
+			.filter(connection -> tool.equalsIgnoreCase(connection.getTool()))
+			.filter(connection -> direction.equalsIgnoreCase(connection.getDirection()))
+			.filter(ToolConfigMapperSupport::hasExternalConnectionRules)
+			.map(ToolConfigMapperSupport::externalConnectionTemplateData)
+			.toList();
+	}
+
+	private static boolean hasExternalConnectionRules(
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema connection) {
+		return connection.getCidrs() != null
+			&& !connection.getCidrs().isEmpty()
+			&& connection.getPorts() != null
+			&& connection.getPorts().stream().anyMatch(port -> port != null && port.getPort() != null);
+	}
+
+	private static Map<String, Object> externalConnectionTemplateData(
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema connection) {
+		List<Map<String, Object>> ports = connection.getPorts() == null
+			? List.of()
+			: connection.getPorts()
+				.stream()
+				.filter(port -> port != null && port.getPort() != null)
+				.map(port -> new TemplateConfig()
+					.put("protocol", port.getProtocol() == null || port.getProtocol().isBlank() ? "TCP" : port.getProtocol().toUpperCase())
+					.put("port", port.getPort())
+					.values())
+				.toList();
+
+		return new TemplateConfig()
+			.put("name", connection.getName())
+			.put("cidrs", connection.getCidrs() == null ? List.of() : List.copyOf(connection.getCidrs()))
+			.put("ports", ports)
+			.values();
+	}
+
 	public static ImagePullSecretConfig imagePullSecret(Config.RegistrySchema registry) {
 		return ImagePullSecretConfig.builder()
 									.create(registry.getCreateImagePullSecrets())

@@ -188,6 +188,8 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | `--netpols` | `application.netpols` | Boolean | `false` | Sets Network Policies |
 | - | `application.networkPolicies.bootstrapCidrs` | List&lt;String&gt; | `[]` | CIDR ranges allowed to access internal GOP services when GOP is run outside the Kubernetes cluster |
 | - | `application.networkPolicies.registryAccessCidrs` | List&lt;String&gt; | `[]` | CIDR ranges allowed to access the internal registry through its exposed service. An empty list adds no external registry ingress allowance |
+| - | `application.networkPolicies.egressIsolation` | Boolean | `false` | Explicitly enable Argo CD repo-server egress isolation when supported external egress connections are configured |
+| - | `application.networkPolicies.externalConnections` | List&lt;ExternalConnectionSchema&gt; | `[]` | External network connections for supported GOP workloads. Currently Argo CD repo-server egress is supported |
 | `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
 | `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
 | `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |

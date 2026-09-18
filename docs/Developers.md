@@ -379,9 +379,11 @@ application:
   networkPolicies:
     bootstrapCidrs: []
     registryAccessCidrs: []
+    egressIsolation: false
+    externalConnections: []
 ```
 
-The CIDRs must be supplied through an additional local config file. Do not add host-specific CIDRs to `application-full-netpols.yaml`.
+Environment-specific CIDRs and external connections must be supplied through an additional local config file. Do not add host-specific CIDRs or external endpoints to `application-full-netpols.yaml`.
 
 Create a fresh local cluster first:
 
@@ -417,11 +419,38 @@ application:
       - 172.18.0.1/32
     registryAccessCidrs:
       - 0.0.0.0/0
+    egressIsolation: false
+    externalConnections: []
 ```
 
 `bootstrapCidrs` allows a GOP process running outside Kubernetes to reach internal services such as SCM-Manager and Jenkins during bootstrap and subsequent GOP runs. Keep this CIDR as restrictive as possible.
 
 `registryAccessCidrs: 0.0.0.0/0` is only intended for the ephemeral local k3d integration-test environment. The Jenkins agents use the host Docker socket and k3d/Docker NAT can rewrite the source address of registry pushes. Do not use this value as a production default.
+
+`externalConnections` contains environment-specific CIDR/port allowances for external systems. The current implementation supports external egress from the Argo CD repo server. The committed `full-netpols` profile therefore keeps this list empty; put concrete CIDRs only into a local or environment-specific override such as `netpol-local.yaml`.
+
+`egressIsolation` is deliberately `false` by default. A configured external connection does not restrict traffic while egress isolation is disabled.
+
+Setting `egressIsolation` to `true` isolates all egress traffic of the Argo CD repo server. In this mode, every external destination required by the repo server must be configured explicitly, including external SCM systems as well as Git and Helm repositories. Otherwise Argo CD applications depending on non-configured external repositories will fail to refresh. For an external SCM-Manager test, use for example:
+
+```yaml
+application:
+  networkPolicies:
+    egressIsolation: true
+    externalConnections:
+      - name: external-scm-manager
+        tool: argocd-repo-server
+        direction: egress
+        cidrs:
+          - <EXTERNAL_SCM_CIDR>
+        ports:
+          - protocol: TCP
+            port: 443
+```
+
+The example above only demonstrates the SCM connection. In a real deployment, all other external Git and Helm repository destinations required by the Argo CD repo server must also be configured before enabling egress isolation.
+
+Standard Kubernetes NetworkPolicies use CIDRs, not host names. Only use egress isolation when all required destination CIDRs are known and sufficiently stable.
 
 When NetworkPolicies are enabled, Vault uses the chart-provided NetworkPolicy with a GOP-defined least-privilege ingress configuration. Vault-to-Vault traffic is allowed on ports 8200/8201, External Secrets can reach the Vault API on port 8200, and the GOP-managed Traefik ingress can reach port 8200 when a Vault ingress is configured. Application namespaces do not receive direct Vault network access by default; applications should consume Vault-backed values through External Secrets.
 

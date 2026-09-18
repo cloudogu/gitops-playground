@@ -72,12 +72,20 @@ class ConfigTest {
 	}
 
 	@Test
-	void mapsNetworkPolicyCidrs() {
+	void mapsNetworkPolicyCidrsAndExternalConnections() {
 		Config config = Config.fromMap(Map.of(
 			"application", Map.of(
 				"networkPolicies", Map.of(
 					"bootstrapCidrs", List.of("172.18.0.1/32", "10.20.0.0/16"),
-					"registryAccessCidrs", List.of("192.168.10.0/24")
+					"registryAccessCidrs", List.of("192.168.10.0/24"),
+					"egressIsolation", true,
+					"externalConnections", List.of(Map.of(
+						"name", "external-scm-manager",
+						"tool", "argocd-repo-server",
+						"direction", "egress",
+						"cidrs", List.of("35.246.133.109/32"),
+						"ports", List.of(Map.of("protocol", "TCP", "port", 443))
+					))
 				)
 			)
 		));
@@ -86,6 +94,17 @@ class ConfigTest {
 			.containsExactly("172.18.0.1/32", "10.20.0.0/16");
 		assertThat(config.getApplication().getNetworkPolicies().getRegistryAccessCidrs())
 			.containsExactly("192.168.10.0/24");
+		assertThat(config.getApplication().getNetworkPolicies().isEgressIsolation()).isTrue();
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema externalConnection =
+			config.getApplication().getNetworkPolicies().getExternalConnections().getFirst();
+		assertThat(externalConnection.getName()).isEqualTo("external-scm-manager");
+		assertThat(externalConnection.getTool()).isEqualTo("argocd-repo-server");
+		assertThat(externalConnection.getDirection()).isEqualTo("egress");
+		assertThat(externalConnection.getCidrs()).containsExactly("35.246.133.109/32");
+		assertThat(externalConnection.getPorts()).singleElement().satisfies(port -> {
+			assertThat(port.getProtocol()).isEqualTo("TCP");
+			assertThat(port.getPort()).isEqualTo(443);
+		});
 	}
 
 	@Test

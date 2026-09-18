@@ -79,6 +79,19 @@ class ArgoCDToolConfigMapperTest {
 		helmRelease.setChart("postgresql");
 		helmRelease.setRepoURL("https://charts.example.org");
 		config.getContent().setHelmReleases(List.of(helmRelease));
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema externalConnection =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema();
+		externalConnection.setName("external-scm-manager");
+		externalConnection.setTool("argocd-repo-server");
+		externalConnection.setDirection("egress");
+		externalConnection.setCidrs(List.of("35.246.133.109/32"));
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema port =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema();
+		port.setProtocol("tcp");
+		port.setPort(443);
+		externalConnection.setPorts(List.of(port));
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		config.getApplication().getNetworkPolicies().setExternalConnections(List.of(externalConnection));
 
 		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper(config).map(context());
 
@@ -125,6 +138,16 @@ class ArgoCDToolConfigMapperTest {
 															 "mirrorRepos", true,
 															 "namePrefix", "tenant-a-",
 															 "netpols", true,
+															 "networkPolicies",
+															 Map.of(
+																 "argocdRepoServerEgressIsolation", true,
+																 "argocdRepoServerEgress",
+																 List.of(Map.of(
+																	 "name", "external-scm-manager",
+																	 "cidrs", List.of("35.246.133.109/32"),
+																	 "ports", List.of(Map.of("protocol", "TCP", "port", 443))
+																 ))
+															 ),
 															 "openshift", true,
 															 "skipCrds", true
 														 ),

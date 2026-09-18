@@ -167,6 +167,57 @@
                 "type" : "string"
               }
             },
+            "egressIsolation" : {
+              "type" : "boolean",
+              "description" : "Explicitly enable Argo CD repo-server egress isolation when supported external egress connections are configured"
+            },
+            "externalConnections" : {
+              "description" : "External network connections for supported GOP workloads. Currently Argo CD repo-server egress is supported",
+              "type" : [ "array", "null" ],
+              "items" : {
+                "type" : "object",
+                "properties" : {
+                  "cidrs" : {
+                    "description" : "CIDR ranges allowed for the external connection",
+                    "type" : [ "array", "null" ],
+                    "items" : {
+                      "type" : "string"
+                    }
+                  },
+                  "direction" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "NetworkPolicy direction of the external connection. Currently egress is supported for argocd-repo-server"
+                  },
+                  "name" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Stable name of the external network connection"
+                  },
+                  "ports" : {
+                    "description" : "Ports allowed for the external connection",
+                    "type" : [ "array", "null" ],
+                    "items" : {
+                      "type" : "object",
+                      "properties" : {
+                        "port" : {
+                          "type" : [ "integer", "null" ],
+                          "description" : "Allowed network port"
+                        },
+                        "protocol" : {
+                          "type" : [ "string", "null" ],
+                          "description" : "Protocol of the allowed port, for example TCP or UDP"
+                        }
+                      },
+                      "additionalProperties" : false
+                    }
+                  },
+                  "tool" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Supported GOP workload identifier. Currently argocd-repo-server is supported"
+                  }
+                },
+                "additionalProperties" : false
+              }
+            },
             "registryAccessCidrs" : {
               "description" : "CIDR ranges allowed to access the internal registry through its exposed service. An empty list adds no external registry ingress allowance",
               "type" : [ "array", "null" ],

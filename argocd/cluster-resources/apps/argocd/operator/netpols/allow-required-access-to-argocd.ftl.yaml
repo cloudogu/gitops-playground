@@ -63,6 +63,9 @@ spec:
       app.kubernetes.io/name: argocd-repo-server
   policyTypes:
     - Ingress
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation && config.application.networkPolicies.argocdRepoServerEgress?has_content>
+    - Egress
+</#if>
   ingress:
     - from:
         - podSelector:
@@ -92,6 +95,41 @@ spec:
         - protocol: TCP
           port: metrics
 </#if>
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation && config.application.networkPolicies.argocdRepoServerEgress?has_content>
+  egress:
+    # Repository host names must remain resolvable while egress isolation is active.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # The repo server uses Redis internally. Keep this cluster-local dependency reachable.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+<#list config.application.networkPolicies.argocdRepoServerEgress as connection>
+    # External connection: ${connection.name}
+    - to:
+<#list connection.cidrs as cidr>
+        - ipBlock:
+            cidr: ${cidr}
+</#list>
+      ports:
+<#list connection.ports as port>
+        - protocol: ${port.protocol}
+          port: ${port.port}
+</#list>
+</#list>
+</#if>
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
