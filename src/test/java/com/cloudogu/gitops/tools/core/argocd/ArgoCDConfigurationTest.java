@@ -205,6 +205,19 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void skipsHelmBootstrapWhenArgoCdIsAlreadyBootstrapped() {
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+
+		execute(argocd);
+		int helmCommandCountAfterInitialBootstrap = helmCommands.getActualCommands().size();
+		assertThat(k8sClient.resourceExists("application", "bootstrap", "argocd")).isTrue();
+
+		execute(argocd);
+
+		assertThat(helmCommands.getActualCommands()).hasSize(helmCommandCountAfterInitialBootstrap);
+	}
+
+	@Test
 	void installsArgoCd() throws IOException {
 		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
 

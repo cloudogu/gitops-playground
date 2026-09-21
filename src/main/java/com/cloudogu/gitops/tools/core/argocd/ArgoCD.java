@@ -109,10 +109,13 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 	@Override
 	protected void deploy() {
-		log.debug("Installing Argo CD");
+		log.debug("Ensuring Argo CD is installed");
 
 		if (toolConfig().operator()) {
 			deployWithOperator();
+		} else if (isAlreadyBootstrapped()) {
+			log.debug("ArgoCD is already bootstrapped, skipping Helm installation");
+			updateBcryptAdminPassword();
 		} else {
 			deployWithHelm();
 		}
@@ -268,6 +271,10 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 		// but we want to set our own admin password so we set the password in both Secrets for
 		// consistency.
 		updateBcryptAdminPassword();
+	}
+
+	private boolean isAlreadyBootstrapped() {
+		return k8sClient.resourceExists("application", "bootstrap", namespace);
 	}
 
 	private void deployWithHelm() {

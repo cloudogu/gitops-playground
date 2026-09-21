@@ -62,6 +62,91 @@ class K8sClientTest {
 		k8sApiClient.defaultRetries = 3;
 	}
 
+	@Test
+	void resourceExistsReturnsTrueForExistingResource() {
+		var pod = new PodBuilder()
+			.withNewMetadata()
+			.withName("test-pod")
+			.withNamespace("test-ns")
+			.endMetadata()
+			.build();
+
+		server.expect()
+			  .get()
+			  .withPath("/api/v1/namespaces/test-ns/pods/test-pod")
+			  .andReturn(200, pod)
+			  .once();
+
+		assertThat(k8sApiClient.resourceExists("pod", "test-pod", "test-ns")).isTrue();
+	}
+
+	@Test
+	void resourceExistsReturnsFalseForMissingResource() {
+		server.expect()
+			  .get()
+			  .withPath("/api/v1/namespaces/test-ns/pods/missing-pod")
+			  .andReturn(404, new StatusBuilder().withCode(404).withReason("NotFound").build())
+			  .once();
+
+		assertThat(k8sApiClient.resourceExists("pod", "missing-pod", "test-ns")).isFalse();
+	}
+
+	@Test
+	void resourceExistsFallsBackToCrdForCustomResource() {
+		server.expect()
+			  .get()
+			  .withPath("/apis")
+			  .andReturn(200, Map.of("groups", List.of()))
+			  .once();
+
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(
+				  200, Map.of(
+					  "apiVersion", "apiextensions.k8s.io/v1",
+					  "kind", "CustomResourceDefinitionList",
+					  "items", List.of(Map.of(
+						  "apiVersion", "apiextensions.k8s.io/v1",
+						  "kind", "CustomResourceDefinition",
+						  "metadata", Map.of("name", "applications.argoproj.io"),
+						  "spec", Map.of(
+							  "group", "argoproj.io",
+							  "scope", "Namespaced",
+							  "names", Map.of(
+								  "kind", "Application",
+								  "plural", "applications",
+								  "singular", "application"
+							  ),
+							  "versions", List.of(Map.of(
+								  "name", "v1alpha1",
+								  "served", true,
+								  "storage", true
+							  ))
+						  )
+					  ))
+				  )
+			  )
+			  .once();
+
+		GenericKubernetesResource bootstrap = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1alpha1")
+			.withKind("Application")
+			.withNewMetadata()
+			.withName("bootstrap")
+			.withNamespace("argocd")
+			.endMetadata()
+			.build();
+
+		server.expect()
+			  .get()
+			  .withPath("/apis/argoproj.io/v1alpha1/namespaces/argocd/applications/bootstrap")
+			  .andReturn(200, bootstrap)
+			  .once();
+
+		assertThat(k8sApiClient.resourceExists("application", "bootstrap", "argocd")).isTrue();
+	}
+
 	// ========================================
 	// Node Operations Tests
 	// ========================================

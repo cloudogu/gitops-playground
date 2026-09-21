@@ -405,6 +405,29 @@ public class K8sClient {
 	}
 
 	/**
+	 * Checks if a resource exists. Custom resources are resolved via Kubernetes API discovery.
+	 *
+	 * @param resource  resource type, e.g. {@code application} or {@code secret}
+	 * @param name      resource name
+	 * @param namespace namespace of the resource; empty means the default namespace
+	 * @return true if the resource exists
+	 */
+	public boolean resourceExists(String resource, String name, String namespace) {
+		try {
+			Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+				client,
+				resource,
+				name,
+				resolveNamespace(namespace)
+			);
+			return resourceClient.get() != null;
+		} catch (KubernetesApiResourceNotFoundException e) {
+			log.trace("Resource type {} is not available: {}", resource, e.getMessage());
+			return false;
+		}
+	}
+
+	/**
 	 * Creates or updates an empty secret in the default namespace (idempotent).
 	 *
 	 * @param type secret type, e.g. {@code generic}
