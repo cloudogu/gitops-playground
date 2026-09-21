@@ -737,6 +737,25 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void enablesHelmRepoServerEgressIsolationWithoutExternalConnections() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("port: 53")
+			.contains("port: 6379")
+			.doesNotContain("# External connection:");
+	}
+
+	@Test
 	void doesNotEnableRepoServerEgressIsolationWithoutExplicitFlag() throws IOException {
 		config.getApplication().setNetpols(true);
 		configureExternalScmConnection();
@@ -830,6 +849,29 @@ class ArgoCDConfigurationTest {
 			.contains("port: 443")
 			.contains("port: 6379")
 			.contains("# External connection: external-scm-manager");
+	}
+
+	@Test
+	void enablesOperatorRepoServerEgressIsolationWithoutExternalConnections() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("port: 53")
+			.contains("port: 6379")
+			.doesNotContain("# External connection:");
 	}
 
 	@Test

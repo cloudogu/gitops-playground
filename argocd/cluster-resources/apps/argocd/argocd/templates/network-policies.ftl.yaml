@@ -59,7 +59,7 @@ spec:
       app.kubernetes.io/name: argocd-repo-server
   policyTypes:
     - Ingress
-<#if config.application.networkPolicies.argocdRepoServerEgressIsolation && config.application.networkPolicies.argocdRepoServerEgress?has_content>
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation>
     - Egress
 </#if>
   ingress:
@@ -93,7 +93,7 @@ spec:
         - protocol: TCP
           port: metrics
 </#if>
-<#if config.application.networkPolicies.argocdRepoServerEgressIsolation && config.application.networkPolicies.argocdRepoServerEgress?has_content>
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation>
   egress:
     # Repository host names must remain resolvable while egress isolation is active.
     - to:
