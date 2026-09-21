@@ -10,8 +10,8 @@ HARBOR=$2
 REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
 ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v0.9.16"
-VAULT_IMAGE="docker://hashicorp/vault:1.14.0"
-TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.3.3"
+VAULT_IMAGE="docker://hashicorp/vault:2.0.4"
+TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.6.15"
 
 PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.8.0"
 PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1"
@@ -78,7 +78,7 @@ if [[ -n $HARBOR ]]; then
     # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
     skopeo copy $ESO_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/external-secrets
     skopeo copy $VAULT_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/vault
-    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.3.3
+    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.6.15
 
     # Monitoring
     skopeo copy $PROMETHEUS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/prometheus
@@ -109,7 +109,7 @@ fi
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
 skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/external-secrets
 skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/vault
-skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.3.3
+skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.6.15
 
 # Monitoring
 skopeo copy $PROMETHEUS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/prometheus

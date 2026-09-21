@@ -30,12 +30,10 @@
         </versionName>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 
-        <versionNameVersion>2.2.0</versionNameVersion>
         <okhttpVersion>5.3.2</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.client.java.version>26.0.1</kubernetes.client.java.version>
-        <kubernetes.fabric8.java.version>7.7.0</kubernetes.fabric8.java.version>
+        <kubernetes.fabric8.java.version>7.8.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
         <netty.version>4.2.17.Final</netty.version>
     </properties>
@@ -67,14 +65,14 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>12.1.10</version>
+                <version>12.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty.ee10</groupId>
                 <artifactId>jetty-ee10-bom</artifactId>
-                <version>12.1.10</version>
+                <version>12.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -183,7 +181,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
-            <version>7.0.5</version>
+            <version>7.1.1</version>
         </dependency>
 
         <dependency>
@@ -227,7 +225,7 @@
 
         <dependency>
             <groupId>org.wiremock</groupId>
-            <artifactId>wiremock-jetty12</artifactId>
+            <artifactId>wiremock-standalone</artifactId>
             <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
@@ -251,7 +249,7 @@
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
-            <version>2.3.34</version>
+            <version>2.3.35</version>
         </dependency>
 
         <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
@@ -262,18 +260,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
+            <artifactId>kubernetes-client</artifactId>
             <version>${kubernetes.fabric8.java.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java</artifactId>
-            <version>${kubernetes.client.java.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -298,27 +289,31 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <!-- Runtime bytecode manipulation via Java agent is prohibited by the blocklist. -->
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>4.0.0-M1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Provides withEnvironmentVariable in tests. Replaces the unmaintained system-lambda
-        implementation with a Byte Buddy based implementation that supports current JDKs. -->
-        <dependency>
-            <groupId>uk.org.webcompere</groupId>
-            <artifactId>system-stubs-core</artifactId>
-            <version>2.1.8</version>
             <scope>test</scope>
         </dependency>
 
@@ -360,21 +355,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.cloudogu.versionName</groupId>
-            <artifactId>processor</artifactId>
-            <version>${versionNameVersion}</version>
-            <!-- This dependency is only necessary during compile time -->
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>4.3.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
             <version>4.8.194</version>
@@ -403,11 +383,22 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/version</directory>
+                <targetPath>com/cloudogu/gitops/cli</targetPath>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.10.1</version>
 
                 <configuration>
                     <java>
@@ -420,7 +411,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.6</version>
+                <version>3.6.0</version>
                 <configuration>
                     <systemProperties>
                         <property>
@@ -488,7 +479,7 @@
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.5.1</version>
             </plugin>
 
             <plugin>
@@ -499,7 +490,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>3.16.0</version>
                 <configuration>
                     <!-- Lombok must be listed before micronaut-inject-java: Micronaut's
                     annotation processor needs to see Lombok-generated constructors when it
@@ -517,16 +508,7 @@
                             <artifactId>micronaut-inject-java</artifactId>
                             <version>${micronaut.version}</version>
                         </path>
-                        <path>
-                            <groupId>com.cloudogu.versionName</groupId>
-                            <artifactId>processor</artifactId>
-                            <version>${versionNameVersion}</version>
-                        </path>
                     </annotationProcessorPaths>
-
-                    <compilerArgs>
-                        <arg>-AversionName=${versionName}</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
 

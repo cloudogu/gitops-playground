@@ -1,16 +1,16 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.integration.Polling;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -60,17 +60,19 @@ public class NetworkPolicyProfileTestIT extends ProfileTestSetup {
 	}
 
 	private static void waitForNetworkPolicy(String namespace, String name) {
-		Awaitility.await()
-			.atMost(5, TimeUnit.MINUTES)
-			.pollInterval(5, TimeUnit.SECONDS)
-			.untilAsserted(() -> assertNetworkPolicyExists(namespace, name));
+		Polling.untilAsserted(
+			() -> assertNetworkPolicyExists(namespace, name),
+			Duration.ofMinutes(5),
+			Duration.ofSeconds(5)
+		);
 	}
 
 	private static void waitForNetworkPolicyWithSelector(String namespace, Map<String, String> selector) {
-		Awaitility.await()
-			.atMost(5, TimeUnit.MINUTES)
-			.pollInterval(5, TimeUnit.SECONDS)
-			.untilAsserted(() -> assertNetworkPolicyWithSelectorExists(namespace, selector));
+		Polling.untilAsserted(
+			() -> assertNetworkPolicyWithSelectorExists(namespace, selector),
+			Duration.ofMinutes(5),
+			Duration.ofSeconds(5)
+		);
 	}
 
 	private static void assertNetworkPolicyExists(String namespace, String name) {

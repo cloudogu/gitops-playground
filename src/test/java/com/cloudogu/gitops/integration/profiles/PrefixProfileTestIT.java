@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -39,7 +39,7 @@ public class PrefixProfileTestIT extends ProfileTestSetup {
 
 		try {
 			TestK8sHelper.waitForAllPodsRunningInNamespace(certManagerNs, "", 40, TimeUnit.MINUTES);
-		} catch (ConditionTimeoutException timeoutEx) {
+		} catch (Polling.TimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods();
 			fail("Cluster not ready, sth false.", timeoutEx);
 		}

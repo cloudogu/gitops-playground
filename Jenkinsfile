@@ -65,9 +65,9 @@ pipeline {
                         }
                     }
                     post {
-                    	always {
-                    		junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                    	}
+                        always {
+                            junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                        }
                     }
                 }
 
@@ -75,8 +75,8 @@ pipeline {
                     steps {
                         script {
                             def buildArgs = (params.noCache ? "--no-cache " : "") +
-                                            "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
-                                            "--build-arg VCS_REF='${env.GIT_COMMIT}' "
+                                    "--build-arg BUILD_DATE='${env.BUILD_DATE}' " +
+                                    "--build-arg VCS_REF='${env.GIT_COMMIT}' "
                             docker.build(env.FULL_IMAGE_TAG, "${buildArgs} .")
                         }
                     }
@@ -88,7 +88,6 @@ pipeline {
 
             parallel {
 
-/* tmp excluded because anyOf CVE problems. TODO: do not build break, make it yellow!
                 stage('SBOM & Vulnerability Scan') {
                     steps {
                         sh '''docker run --rm -v $WORKSPACE:/workspace \
@@ -96,26 +95,35 @@ pipeline {
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
                                          $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
+
+                        catchError(
+                                buildResult: 'SUCCESS',
+                                stageResult: 'UNSTABLE',
+                                catchInterruptions: false
+                        ) {
+                            sh '''docker run --rm -v $WORKSPACE:/workspace \
                                          -v /var/run/docker.sock:/var/run/docker.sock:ro \
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
                                          $GRYPE_IMAGE sbom:/workspace/sbom.json \
                                              --output table=/workspace/vulnerabilities.txt \
                                              --output sarif=/workspace/vulnerabilities.sarif \
-                                             --quiet --sort-by severity --fail-on critical'''
+                                             --sort-by severity --fail-on critical'''
+                        }
+
                         archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
                     }
                 }
- */
 
                 stage('Integration tests') {
                     steps {
                         script {
                             def profiles = []
 
-                            if (isTriggeredByTimer() || params.chooseProfile == 'all-profiles' || env.BRANCH_NAME == 'main') {
-                                profiles = ['minimal', 'full', 'full-netpols', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full','operator-mandants']
+                            if (isTriggeredByTimer()
+                                    || params.chooseProfile == 'all-profiles'
+                                    || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
+                                profiles = ['minimal', 'full', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -159,19 +167,20 @@ pipeline {
                                     """, returnStatus: true)
                                 }
 
-                                  archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
-                              }
+                                archiveArtifacts artifacts: "${dumpDir}/**", allowEmptyArchive: true
+                            }
 
                             def withK3dCluster = { profile, body ->
                                 try {
                                     sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
                                     body()
-                                } catch(Throwable t) {
+                                } catch (Throwable t) {
                                     dumpKubernetesDebugInfo(profile)
                                     throw t
                                 } finally {
                                     sh "KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml $HOME/.local/bin/k3d cluster delete ${env.K3D_CLUSTER_NAME}"
-                                }}
+                                }
+                            }
 
                             def createNetworkPolicyIntegrationConfig = {
                                 def configFile = 'target/integration-test-config/network-policy.yaml'
@@ -277,10 +286,10 @@ pipeline {
                 if (isTriggeredByTimer()) {
                     currentBuild.displayName = "#${env.BUILD_NUMBER} weekly"
                     emailext(
-                        subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: '${SCRIPT, template="groovy-html.template"}',
-                        mimeType: 'text/html',
-                        to: env.GOP_DEVELOPERS
+                            subject: "Weekly build ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            to: env.GOP_DEVELOPERS
                     )
                 }
             }
@@ -289,13 +298,13 @@ pipeline {
             script {
                 if (!isTriggeredByTimer()) {
                     emailext(
-                        subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: '${SCRIPT, template="groovy-html.template"}',
-                        mimeType: 'text/html',
-                        recipientProviders: [
-                            [$class: 'DevelopersRecipientProvider'],
-                            [$class: 'RequesterRecipientProvider']
-                        ]
+                            subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: '${SCRIPT, template="groovy-html.template"}',
+                            mimeType: 'text/html',
+                            recipientProviders: [
+                                    [$class: 'DevelopersRecipientProvider'],
+                                    [$class: 'RequesterRecipientProvider']
+                            ]
                     )
                 }
             }
@@ -305,4 +314,8 @@ pipeline {
 
 boolean isTriggeredByTimer() {
     return !currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
+}
+
+boolean isTriggeredByUser() {
+    return !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
 }

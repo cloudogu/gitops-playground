@@ -18,6 +18,7 @@ import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.core.Jenkins;
+import com.cloudogu.gitops.tools.core.JenkinsToolConfigMapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
@@ -58,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -78,7 +78,7 @@ class ContentLoaderTest {
 	private final CredentialsResolver credentialsResolver = new CredentialsResolver(k8sClient);
 	private final TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils());
 	private final TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config);
-	private final Jenkins jenkins = mock(Jenkins.class);
+	private final JenkinsForTest jenkins = new JenkinsForTest();
 	private final ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock();
 	private final GitHandler gitHandler = new GitHandlerForTests(scmManagerMock);
 	private final Deployer deployer = mock(Deployer.class);
@@ -965,6 +965,7 @@ class ContentLoaderTest {
 
 	@Test
 	void ensureJenkinsJobWillBeCreated() {
+		config.getJenkins().setActive(true);
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));
 			repo.setRef("main");
@@ -973,15 +974,15 @@ class ContentLoaderTest {
 			repo.setTarget("common/repo");
 		})));
 		scmmApiClient.mockRepoApiBehaviour();
-		when(jenkins.isEnabled(any(DeploymentContext.class))).thenReturn(true);
 
 		install(createContent(config), config);
 
-		verify(jenkins).createJenkinsjob(any(), any());
+		assertThat(jenkins.createdJobs).containsExactly("common/common");
 	}
 
 	@Test
 	void ensureJenkinsJobCreationWillBeIgnored() {
+		config.getJenkins().setActive(true);
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));
 			repo.setRef("main");
@@ -990,28 +991,27 @@ class ContentLoaderTest {
 			repo.setTarget("common/repo");
 		})));
 		scmmApiClient.mockRepoApiBehaviour();
-		when(jenkins.isEnabled(any(DeploymentContext.class))).thenReturn(false);
 
 		install(createContent(config), config);
 
-		verify(jenkins, never()).createJenkinsjob(any(), any());
+		assertThat(jenkins.createdJobs).isEmpty();
 	}
 
 	@Test
 	void ensureJenkinsJobWillNotBeCreatedIfJenkinsIsNotEnabled() {
+		config.getJenkins().setActive(false);
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));
 			repo.setRef("main");
 			repo.setType(ContentRepoType.COPY);
-			repo.setCreateJenkinsJob(false);
+			repo.setCreateJenkinsJob(true);
 			repo.setTarget("common/repo");
 		})));
 		scmmApiClient.mockRepoApiBehaviour();
-		when(jenkins.isEnabled(any(DeploymentContext.class))).thenReturn(false);
 
 		install(createContent(config), config);
 
-		verify(jenkins, never()).createJenkinsjob(any(), any());
+		assertThat(jenkins.createdJobs).isEmpty();
 	}
 
 	@Test
@@ -1426,6 +1426,37 @@ class ContentLoaderTest {
 		Field field = target.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
 		return field.get(target);
+	}
+
+	class JenkinsForTest extends Jenkins {
+
+		private final List<String> createdJobs = new ArrayList<>();
+
+		JenkinsForTest() {
+			super(
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				new JenkinsToolConfigMapper(config),
+				null,
+				null,
+				null
+			);
+		}
+
+		@Override
+		public void createJenkinsjob(String namespace, String repoName) {
+			createdJobs.add(namespace + "/" + repoName);
+		}
 	}
 
 	class ContentLoaderForTest extends ContentLoader {

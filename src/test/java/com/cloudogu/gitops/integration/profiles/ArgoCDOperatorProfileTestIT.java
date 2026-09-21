@@ -1,17 +1,16 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -31,19 +30,18 @@ public class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 	static void labelTest() {
 		System.out.println("###### Integration ArgoCD Operator test ######");
 		try {
-			Awaitility.await()
-					  .atMost(40, TimeUnit.MINUTES)
-					  .pollInterval(5, TimeUnit.SECONDS)
-					  .untilAsserted(() -> assertThat(
-						  TestK8sHelper.checkAllPodsRunningInNamespace(
+			Polling.until(
+				() -> TestK8sHelper.checkAllPodsRunningInNamespace(
 							  namespaceOperator,
 							  "argocd-operator-controller"
 						  ) && TestK8sHelper.checkAllPodsRunningInNamespace(
 							  namespaceArgocd,
 							  "argocd-server"
-						  )
-					  ).isTrue());
-		} catch (ConditionTimeoutException timeoutEx) {
+						  ),
+				Duration.ofMinutes(40),
+				Duration.ofSeconds(5)
+			);
+		} catch (Polling.TimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods();
 			fail("Cluster not ready, sth false.");
 		}

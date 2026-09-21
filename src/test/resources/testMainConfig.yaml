@@ -23,7 +23,7 @@ jenkins:
   jenkinsImage: ""
   mavenCentralMirror: ""
   helm:
-    values: {}
+    values: { }
 scm:
   scmProviderType: "SCM_MANAGER"
   scmManager:
@@ -73,7 +73,7 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
-      values: {}
+      values: { }
       grafanaImage: ""
       grafanaSidecarImage: ""
       prometheusImage: ""
@@ -94,15 +94,15 @@ features:
       helm:
         chart: "vault"
         repoURL: "https://helm.releases.hashicorp.com"
-        version: "0.25.0"
+        version: "0.34.1"
         image: ""
   ingress:
     active: false
     helm:
       chart: "traefik"
       repoURL: "https://traefik.github.io/charts"
-      version: "39.0.0"
-      values: {}
+      version: "39.0.9"
+      values: { }
       image: ""
   certManager:
     active: false
@@ -110,7 +110,7 @@ features:
       chart: "cert-manager"
       repoURL: "https://charts.jetstack.io"
       version: "1.16.1"
-      values: {}
+      values: { }
       image: ""
       webhookImage: ""
       cainjectorImage: ""
