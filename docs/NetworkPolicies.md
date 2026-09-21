@@ -38,6 +38,16 @@ The diagram below shows the most important allowed and denied communication path
 | Configured registry CIDR | Internal registry | Image push/pull access | Allowed only for configured `registryAccessCidrs` on TCP/5000. |
 | Argo CD repo-server | External SCM/Git/Helm endpoint | Optional restricted external repository access | CIDR/port rules are generated from `externalConnections` when repo-server egress isolation is explicitly enabled. |
 
+## Explicit least-privilege exceptions
+
+Some Kubernetes control-plane communication cannot be restricted to a portable pod or namespace selector.
+
+The Kubernetes API server needs to reach admission and conversion webhooks such as the cert-manager and External Secrets webhooks. Standard Kubernetes NetworkPolicies do not provide a portable selector that identifies the API server across Kubernetes, OpenShift and other supported environments.
+
+For these webhook paths, GOP therefore restricts ingress to the required webhook port TCP/10250, but does not restrict the source of the connection.
+
+This is an explicit portability trade-off. Environments that require stricter control-plane filtering need environment-specific restrictions, for example based on control-plane CIDRs.
+
 ## Application and customer namespaces
 
 GOP no longer creates a generic `allow-prometheus-scraping` NetworkPolicy in application/customer namespaces. Monitoring access is owned by the GOP workloads that are actually scraped instead of being distributed as a broad policy to every known namespace.
