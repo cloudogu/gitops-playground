@@ -1,8 +1,7 @@
 # $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
 application:
   "yes": true
-  baseUrl: http://my-prefix.localhost
-  namePrefix: my-prefix
+  baseUrl: http://localhost
   insecure: true
 features:
   certManager:
