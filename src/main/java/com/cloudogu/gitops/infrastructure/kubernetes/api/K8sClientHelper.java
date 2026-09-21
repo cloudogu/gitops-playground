@@ -218,6 +218,8 @@ class K8sClientHelper {
 			case "node", "nodes" -> client.nodes().withName(name);
 			case "serviceaccount", "serviceaccounts" ->
 				client.serviceAccounts().inNamespace(resolvedNamespace).withName(name);
+			case "customresourcedefinition", "customresourcedefinitions", "crd", "crds" ->
+				client.apiextensions().v1().customResourceDefinitions().withName(name);
 			default -> {
 				log.debug(
 					"Searching API resource via discovery for resourceType={}, name={}, ns={}",

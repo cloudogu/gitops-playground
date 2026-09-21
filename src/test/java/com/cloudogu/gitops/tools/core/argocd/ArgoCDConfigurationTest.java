@@ -295,6 +295,7 @@ class ArgoCDConfigurationTest {
 		assertThat(value(argocdYaml, "spec", "source", "directory")).isNull();
 		assertThat((String) value(argocdYaml, "spec", "source", "path"))
 			.isIn("apps/argocd/argocd", "apps/argocd/argocd/");
+		assertThat(value(argocdYaml, "spec", "source", "helm", "releaseName")).isEqualTo("argocd");
 	}
 
 	@Test
@@ -666,11 +667,55 @@ class ArgoCDConfigurationTest {
 		execute(argocd);
 
 		GitRepo clusterResourcesRepo = argocd.clusterResourcesRepo;
+		clusterResourcesRepoLayout = argocd.getClusterRepoLayout();
 		assertArgoCdYamlPrefixes(
 			clusterResourcesRepo.getGitProvider().getUrl(),
 			config.getApplication().getNamePrefix(),
-			argocd.getClusterRepoLayout()
+			clusterResourcesRepoLayout
 		);
+
+		assertThat(helmCommands.getActualCommands().get(2).trim())
+			.isEqualTo("helm upgrade -i abc-argocd " + clusterResourcesRepoLayout.helmDir()
+				+ " --create-namespace --namespace abc-argocd");
+
+		Map<String, Object> argocdYaml = parseActualYaml(
+			Path.of(clusterResourcesRepoLayout.applicationsDir(), "argocd.yaml").toString()
+		);
+		assertThat(value(argocdYaml, "spec", "source", "helm", "releaseName")).isEqualTo("abc-argocd");
+	}
+
+	@Test
+	void disablesArgoCdCrdInstallationWhenCrdsBelongToAnotherHelmRelease() throws IOException {
+		createArgoCdCrds("argocd", "argocd");
+		config.getApplication().setNamePrefix("abc-");
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+
+		assertThat(value(valuesYaml, "argo-cd", "crds", "install")).isEqualTo(false);
+	}
+
+	@Test
+	void deletesHelmReleaseSecretUsingPrefixedReleaseName() {
+		config.getApplication().setNamePrefix("abc-");
+		ArgoCDForTest argocd = (ArgoCDForTest) createArgoCD();
+		client.secrets()
+			.inNamespace("abc-argocd")
+			.resource(new SecretBuilder()
+				.withNewMetadata()
+				.withName("sh.helm.release.v1.abc-argocd.v1")
+				.withNamespace("abc-argocd")
+				.addToLabels("owner", "helm")
+				.addToLabels("name", "abc-argocd")
+				.endMetadata()
+				.build())
+			.create();
+
+		execute(argocd);
+
+		assertThat(client.secrets()
+			.inNamespace("abc-argocd")
+			.withName("sh.helm.release.v1.abc-argocd.v1")
+			.get()).isNull();
 	}
 
 	@Test
@@ -1622,7 +1667,7 @@ class ArgoCDConfigurationTest {
 
 		createNamespaceIfMissing(namespace);
 		createNamespaceIfMissing(centralNamespace);
-		createArgoCdCrds();
+		createArgoCdCrds(namespace, namespace);
 
 		config.getApplication().getNamespaces().getActiveNamespaces().forEach(this::createNamespaceIfMissing);
 
@@ -1643,14 +1688,16 @@ class ArgoCDConfigurationTest {
 		}
 	}
 
-	private void createArgoCdCrds() {
+	private void createArgoCdCrds(String releaseName, String releaseNamespace) {
 		createNamespacedCrd(
 			"appprojects.argoproj.io",
 			"argoproj.io",
 			"v1alpha1",
 			"AppProject",
 			"appprojects",
-			"appproject"
+			"appproject",
+			releaseName,
+			releaseNamespace
 		);
 		createNamespacedCrd(
 			"applications.argoproj.io",
@@ -1658,7 +1705,9 @@ class ArgoCDConfigurationTest {
 			"v1alpha1",
 			"Application",
 			"applications",
-			"application"
+			"application",
+			releaseName,
+			releaseNamespace
 		);
 		createNamespacedCrd(
 			"argocds.argoproj.io",
@@ -1666,7 +1715,9 @@ class ArgoCDConfigurationTest {
 			"v1beta1",
 			"ArgoCD",
 			"argocds",
-			"argocd"
+			"argocd",
+			releaseName,
+			releaseNamespace
 		);
 	}
 
@@ -1676,7 +1727,9 @@ class ArgoCDConfigurationTest {
 		String version,
 		String kind,
 		String plural,
-		String singular) {
+		String singular,
+		String releaseName,
+		String releaseNamespace) {
 		if (client.apiextensions().v1().customResourceDefinitions().withName(name).get() != null) {
 			return;
 		}
@@ -1684,6 +1737,8 @@ class ArgoCDConfigurationTest {
 		CustomResourceDefinition crd = new CustomResourceDefinitionBuilder()
 			.withNewMetadata()
 			.withName(name)
+			.addToAnnotations("meta.helm.sh/release-name", releaseName)
+			.addToAnnotations("meta.helm.sh/release-namespace", releaseNamespace)
 			.endMetadata()
 			.withNewSpec()
 			.withGroup(group)

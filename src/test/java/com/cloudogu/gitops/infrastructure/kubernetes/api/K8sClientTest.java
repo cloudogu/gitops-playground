@@ -92,6 +92,21 @@ class K8sClientTest {
 	}
 
 	@Test
+	void resourceExistsSupportsCustomResourceDefinitionAlias() {
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/applications.argoproj.io")
+			  .andReturn(200, Map.of(
+				  "apiVersion", "apiextensions.k8s.io/v1",
+				  "kind", "CustomResourceDefinition",
+				  "metadata", Map.of("name", "applications.argoproj.io")
+			  ))
+			  .once();
+
+		assertThat(k8sApiClient.resourceExists("crd", "applications.argoproj.io", "")).isTrue();
+	}
+
+	@Test
 	void resourceExistsFallsBackToCrdForCustomResource() {
 		server.expect()
 			  .get()
