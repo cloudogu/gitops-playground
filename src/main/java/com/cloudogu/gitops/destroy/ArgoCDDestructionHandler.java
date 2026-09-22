@@ -69,7 +69,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 		}
 
 		installArgoCDViaHelm(repo, argocdNamespace);
-		helmClient.uninstall(ARGOCD, ARGOCD);
+		helmClient.uninstall(argocdNamespace, argocdNamespace);
 		for (CustomResource project : k8sClient.getCustomResource("appprojects")) {
 			k8sClient.delete("appproject", project.namespace(), project.name());
 		}
@@ -96,7 +96,7 @@ public class ArgoCDDestructionHandler implements DestructionHandler {
 																										  "dependencies"));
 		helmClient.addRepo("argo", (String) helmDependencies.get(0).get("repository"));
 		helmClient.dependencyBuild(umbrellaChartPath);
-		helmClient.upgrade(ARGOCD, umbrellaChartPath, Map.of("namespace", argocdNamespace));
+		helmClient.upgrade(argocdNamespace, umbrellaChartPath, Map.of("namespace", argocdNamespace));
 	}
 
 }
