@@ -3,7 +3,7 @@ apache-httpcomponents-client-4-api:4.5.14-269.vfa_2321039a_83
 asm-api:9.10.1-216.va_9256d3b_844b_
 authentication-tokens:1.144.v5ff4a_5ec5c33
 bootstrap5-api:5.3.8-1048.va_c299057e35c
-bouncycastle-api:2.30.1.84-291.v9f17b_21896e2
+bouncycastle-api:2.30.1.85.2-304.v4b_5b_62e59a_a_7
 branch-api:2.1280.v0d4e5b_b_460ef
 caffeine-api:3.2.4-208.v7e2da_a_7db_82b_
 checks-api:415.vf022234a_931d
