@@ -11,6 +11,8 @@ import java.util.Map;
 public record ExternalSecretsOperatorToolConfig(
 	boolean active,
 	String namespace,
+	boolean operator,
+	boolean skipCrds,
 	boolean netpols,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,

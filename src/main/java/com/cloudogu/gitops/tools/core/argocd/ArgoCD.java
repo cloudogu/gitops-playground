@@ -33,6 +33,9 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	private static final int BCRYPT_LOG_ROUNDS = 4;
 	private static final String TOOL_NAME = "argocd";
 	private static final String SECRET_RESOURCE = "secret";
+	private static final String ARGOCD_APPLICATION_CRD = "applications.argoproj.io";
+	private static final String HELM_RELEASE_NAME_ANNOTATION = "meta.helm.sh/release-name";
+	private static final String HELM_RELEASE_NAMESPACE_ANNOTATION = "meta.helm.sh/release-namespace";
 	private static final String NETWORK_POLICY_RESOURCE = "networkpolicy";
 	private static final List<String> OPERATOR_NETWORK_POLICIES = List.of(
 		"allow-required-access-to-argocd-server",
@@ -114,15 +117,19 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 			deploymentMode.generateRBAC();
 		} else {
 			mergeHelmValuesIfConfigured();
+			disableSharedArgoCdCrdsIfRequired();
 		}
 	}
 
 	@Override
 	protected void deploy() {
-		log.debug("Installing Argo CD");
+		log.debug("Ensuring Argo CD is installed");
 
 		if (toolConfig().operator()) {
 			deployWithOperator();
+		} else if (isAlreadyBootstrapped()) {
+			log.debug("ArgoCD is already bootstrapped, skipping Helm installation");
+			updateBcryptAdminPassword();
 		} else {
 			deployWithHelm();
 		}
@@ -234,7 +241,12 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 		// This does not delete Argo from the cluster, but you can no longer modify argo directly with
 		// helm.
 		// For development keeping it in helm makes it easier, e.g. for helm uninstall.
-		k8sClient.delete(SECRET_RESOURCE, namespace, new Tuple<>("owner", "helm"), new Tuple<>("name", TOOL_NAME));
+		k8sClient.delete(
+			SECRET_RESOURCE,
+			namespace,
+			new Tuple<>("owner", "helm"),
+			new Tuple<>("name", helmReleaseName())
+		);
 	}
 
 	private void deployWithOperator() {
@@ -295,6 +307,45 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 		updateBcryptAdminPassword();
 	}
 
+	private boolean isAlreadyBootstrapped() {
+		return k8sClient.resourceExists("application", "bootstrap", namespace);
+	}
+
+	private String helmReleaseName() {
+		return namespace;
+	}
+
+	private void disableSharedArgoCdCrdsIfRequired() {
+		if (!k8sClient.resourceExists("crd", ARGOCD_APPLICATION_CRD, "")) {
+			return;
+		}
+
+		String ownerReleaseName = getCrdAnnotation(HELM_RELEASE_NAME_ANNOTATION);
+		String ownerReleaseNamespace = getCrdAnnotation(HELM_RELEASE_NAMESPACE_ANNOTATION);
+		if (helmReleaseName().equals(ownerReleaseName) && namespace.equals(ownerReleaseNamespace)) {
+			return;
+		}
+
+		log.debug(
+			"ArgoCD CRDs are already managed outside Helm release {}/{}; disabling CRD installation",
+			namespace,
+			helmReleaseName()
+		);
+		mergeAndWriteYamlValues(
+			clusterResourcesRepo.helmValuesFile(),
+			Map.<String, Object>of("argo-cd", Map.of("crds", Map.of("install", false))),
+			"values.yaml"
+		);
+	}
+
+	private String getCrdAnnotation(String annotation) {
+		try {
+			return k8sClient.getAnnotation("crd", ARGOCD_APPLICATION_CRD, annotation);
+		} catch (IllegalStateException e) {
+			return null;
+		}
+	}
+
 	private void deployWithHelm() {
 		String umbrellaChartPath = clusterResourcesRepo.helmDir();
 
@@ -306,7 +357,7 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 		helmClient.addRepo("argo", repository);
 		helmClient.dependencyBuild(umbrellaChartPath);
-		helmClient.upgrade(TOOL_NAME, umbrellaChartPath, Map.of("namespace", namespace));
+		helmClient.upgrade(helmReleaseName(), umbrellaChartPath, Map.of("namespace", namespace));
 
 		updateBcryptAdminPassword();
 	}

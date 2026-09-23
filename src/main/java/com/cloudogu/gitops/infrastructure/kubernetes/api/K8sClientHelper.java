@@ -218,6 +218,8 @@ class K8sClientHelper {
 			case "node", "nodes" -> client.nodes().withName(name);
 			case "serviceaccount", "serviceaccounts" ->
 				client.serviceAccounts().inNamespace(resolvedNamespace).withName(name);
+			case "customresourcedefinition", "customresourcedefinitions", "crd", "crds" ->
+				client.apiextensions().v1().customResourceDefinitions().withName(name);
 			default -> {
 				log.debug(
 					"Searching API resource via discovery for resourceType={}, name={}, ns={}",
@@ -235,31 +237,14 @@ class K8sClientHelper {
 		String resourceType,
 		String name,
 		String namespace) {
-		String normalized = resourceType.toLowerCase(Locale.ROOT);
-
-		Map<String, Object> match = findApiResourceViaDiscovery(client, normalized, resourceType);
-
-		if (match.isEmpty()) {
-			throw new K8sClient.KubernetesApiResourceNotFoundException(resourceType);
-		}
-
-		log.debug(
-			"Resolved '{}' via discovery to {}/{} kind={} plural={} namespaced={}",
-			resourceType,
-			match.get(GROUP_KEY),
-			match.get(VERSION_KEY),
-			match.get(KIND_KEY),
-			match.get(PLURAL_KEY),
-			match.get(NAMESPACED_KEY)
-		);
-
-		ResourceDefinitionContext context = toResourceDefinitionContext(match);
-		boolean namespaced = Boolean.TRUE.equals(match.get(NAMESPACED_KEY));
+		ResourceDefinitionContext context = resolveResourceDefinitionContext(client, resourceType);
 
 		// type is MixedOperation<GenericKubernetesResource, GenericKubernetesResourceList,
 		// Resource<GenericKubernetesResource>>; kept as `var` deliberately.
 		var resourceClient = client.genericKubernetesResources(context);
-		return namespaced ? resourceClient.inNamespace(namespace).withName(name) : resourceClient.withName(name);
+		return context.isNamespaceScoped()
+			? resourceClient.inNamespace(namespace).withName(name)
+			: resourceClient.withName(name);
 	}
 
 	private static ResourceDefinitionContext toResourceDefinitionContext(Map<String, Object> match) {

@@ -45,6 +45,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	  .active(true)
 																	  .namespace("test-external-secrets")
 																	  .netpols(true)
+																	  .skipCrds(true)
 																	  .helm(HelmChartConfig.builder()
 																						   .repoURL(
 																							   "https://eso.example.org")

@@ -9,6 +9,8 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
+import com.cloudogu.gitops.infrastructure.helm.HelmClient;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -74,6 +76,10 @@ class ExternalSecretsOperatorTest {
 
 	@Mock
 	private Deployer deployer;
+	@Mock
+	private K8sClient k8sClient;
+	@Mock
+	private HelmClient helmClient;
 	@Mock
 	private AirGappedUtils airGappedUtils;
 	@Mock
@@ -304,6 +310,8 @@ class ExternalSecretsOperatorTest {
 		return new ExternalSecretsOperator(
 			fileSystemUtils,
 			deployer,
+			k8sClient,
+			helmClient,
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator,
