@@ -56,6 +56,7 @@ class ArgoCdApplicationTargetResolverTest {
 		config.setApplication(application);
 
 		Config.ArgoCDSchema argoCd = new Config.ArgoCDSchema();
+		argoCd.setActive(true);
 		argoCd.setNamespace("argocd");
 		Config.FeaturesSchema features = new Config.FeaturesSchema();
 		features.setArgocd(argoCd);

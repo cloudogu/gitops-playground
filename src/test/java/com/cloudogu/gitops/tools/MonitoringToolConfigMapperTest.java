@@ -30,6 +30,7 @@ class MonitoringToolConfigMapperTest {
 		config.getApplication().getNamespaces().setTenantNamespaces(new LinkedHashSet<>(List.of("team-a", "team-b")));
 		config.getApplication().setNamespaceIsolation(true);
 		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getApplication().setSkipCrds(true);
 		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
 		config.getApplication().setOpenshift(false);
@@ -57,7 +58,12 @@ class MonitoringToolConfigMapperTest {
 		config.getJenkins().setMetricsCredentials(
 			new Credentials(null, null, "jenkins-metrics-secret", "gop-job", "metrics-user", "metrics-password")
 		);
+		// Intentionally differs from the DeploymentContext to verify ArgoCD deployment mode comes from the context.
+		config.getFeatures().getArgocd().setActive(false);
+		config.getFeatures().getArgocd().setNamespace("delivery");
+		config.getFeatures().getArgocd().setOperator(false);
 		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getFeatures().getMail().setActive(true);
@@ -101,6 +107,7 @@ class MonitoringToolConfigMapperTest {
 															 "team-b"
 														 ))
 														 .namespaceIsolation(true)
+														 .argocdOperatorMode(true)
 														 .netpols(true)
 														 .skipCrds(true)
 														 .openshift(true)
@@ -147,14 +154,23 @@ class MonitoringToolConfigMapperTest {
 														 .templateConfig(Map.of(
 															 "application", Map.of(
 																 "namePrefix", "test-",
+																 "networkPolicies", Map.of(
+																	 "bootstrapCidrs", List.of("172.18.0.1/32")
+																 ),
 																 "namespaceIsolation", true,
 																 "openshift", true,
 																 "podResources", true,
 																 "skipCrds", true
 															 ),
 															 "features", Map.of(
+																 "argocd", Map.of(
+																	 "active", true,
+																	 "namespace", "delivery",
+																	 "operator", true
+																 ),
 																 "certManager",
 																 Map.of("active", true, "issuer", "production-issuer"),
+																 "ingress", Map.of("active", true, "namespace", "edge"),
 																 "mail",
 																 Map.of(
 																	 "active", true,
@@ -198,7 +214,11 @@ class MonitoringToolConfigMapperTest {
 																	 )
 																 )
 															 ),
-															 "jenkins", Map.of("active", true),
+															 "jenkins", Map.of(
+																 "active", true,
+																 "internal", false,
+																 "namespace", "jenkins-system"
+															 ),
 															 "registry", Map.of("createImagePullSecrets", true),
 															 "scm", Map.of(
 																 "scmManager", Map.of("namespace", "source-control"),
@@ -212,6 +232,7 @@ class MonitoringToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
 			true,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

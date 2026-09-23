@@ -25,19 +25,19 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		Collection<String> tenantNamespaces = config.getApplication().getNamespaces().getTenantNamespaces();
 		return ArgoCDToolConfig.builder()
-							   .active(argocd.getActive())
+							   .active(context.isArgoCdEnabled())
 							   .namespace(config.getApplication().getNamePrefix() + argocd.getNamespace())
 							   .username(config.getApplication().getUsername())
 							   .password(config.getApplication().getPassword())
 							   .credentials(CredentialsReference.from(config.getApplication().getCredentials()))
-							   .operator(argocd.getOperator())
+							   .operator(context.isArgoCdOperator())
+							   .netpols(config.getApplication().getNetpols())
 							   .activeNamespaces(activeNamespaces)
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
 							   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
 							   .values(argocd.getValues())
 							   .multiTenant(context.isMultiTenant())
-							   .netpols(config.getApplication().getNetpols())
 							   .tenantName(config.getApplication().getTenantName())
 							   .url(argocd.getUrl())
 							   .tenantNamespaces(tenantNamespaces)
@@ -67,6 +67,15 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("application.mirrorRepos", context.isAirgapped())
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.netpols", config.getApplication().getNetpols())
+			.put(
+				"application.networkPolicies.argocdRepoServerEgressIsolation",
+				config.getApplication().getNetworkPolicies() != null
+					&& config.getApplication().getNetworkPolicies().isEgressIsolation()
+			)
+			.put(
+				"application.networkPolicies.argocdRepoServerEgress",
+				ToolConfigMapperSupport.networkPolicyExternalConnections(config, "argocd-repo-server", "egress")
+			)
 			.put("application.openshift", context.isOpenshift())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
 			.put(
@@ -80,7 +89,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.argocd.env", config.getFeatures().getArgocd().getEnv())
 			.put("features.argocd.namespace", config.getFeatures().getArgocd().getNamespace())
 			.put("features.argocd.oidc", ToolConfigMapperSupport.oidc(config.getFeatures().getArgocd().getOidc()))
-			.put("features.argocd.operator", config.getFeatures().getArgocd().getOperator())
+			.put("features.argocd.operator", context.isArgoCdOperator())
 			.put(
 				"features.argocd.resourceInclusionsCluster",
 				config.getFeatures().getArgocd().getResourceInclusionsCluster()
@@ -88,6 +97,8 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.argocd.url", config.getFeatures().getArgocd().getUrl())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.ingress.active", config.getFeatures().getIngress().getActive())
+			.put("features.ingress.namespace", config.getFeatures().getIngress().getIngressNamespace())
 			.put("features.mail.active", config.getFeatures().getMail().getActive())
 			.put("features.mail.smtpAddress", config.getFeatures().getMail().getSmtpAddress())
 			.put("features.mail.smtpPasswordConfigured", smtpPasswordConfigured(config))
@@ -96,11 +107,15 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
 			.put("features.secrets.active", config.getFeatures().getSecrets().getActive())
+			.put("jenkins.active", config.getJenkins().getActive())
+			.put("jenkins.internal", config.getJenkins().getInternal())
+			.put("jenkins.namespace", config.getJenkins().getNamespace())
 			.put("multiTenant.centralArgocdNamespace", config.getMultiTenant().getCentralArgocdNamespace())
 			.put("scm.scmManager.namespace", scmManagerNamespace)
 			.put("scm.scmProviderType", config.getScm().getScmProviderType())
 			.values();
 	}
+
 
 	private static boolean smtpUserConfigured(Config config) {
 		return hasText(config.getFeatures().getMail().getSmtpUser()) || hasMailSecretReference(config);

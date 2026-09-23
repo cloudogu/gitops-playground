@@ -19,6 +19,7 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.CommandExecutor;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.NetworkingUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
 import io.micronaut.core.annotation.Order;
 import io.micronaut.core.util.StringUtils;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +58,10 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private static final String TOOL_NAME = "jenkins";
 	private static final String ETC_GROUP_PATH = "/etc/group";
 	private static final String JENKINS_APP_PATH = "apps/jenkins";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/jenkins/templates/netpols/allow-required-access-to-jenkins.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/jenkins/netpols/allow-required-access-to-jenkins.yaml";
 	private static final int PLUGIN_NAME_SPLIT_LIMIT = 2;
 	private static final int GID_GREPPER_POD_SUFFIX_BOUND = 10_000;
 	private static final int ETC_GROUP_MIN_FIELDS = 3;
@@ -140,6 +146,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		createJenkinsCredentialsSecret();
 		prepareJenkinsHelmValues();
 		prepareJenkinsApp(repositoryWorkspace.getClusterResourcesRepository());
+		prepareJenkinsNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
 
 	@Override
@@ -262,6 +269,31 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, JENKINS_APP_PATH)
 		);
+	}
+
+	private void prepareJenkinsNetworkPolicy(GitRepo clusterResourcesRepo) {
+		Path networkPolicyPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), NETWORK_POLICY_PATH);
+		if (!toolConfig().netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of(
+					"namespace", namespace,
+					"ingressActive", toolConfig().ingressActive(),
+					"ingressNamespace", toolConfig().ingressNamespace(),
+					"monitoringActive", toolConfig().monitoringActive(),
+					"monitoringNamespace", toolConfig().monitoringNamespace(),
+					"bootstrapCidrs", toolConfig().bootstrapCidrs()
+				)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate Jenkins NetworkPolicy", e);
+		}
 	}
 
 	private void runSetupScript() {

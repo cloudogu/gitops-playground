@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -147,6 +147,7 @@ pipeline {
                                         kubectl get events -A --sort-by=.lastTimestamp > '${dumpDir}/events.txt' 2>&1
                                         kubectl get pvc,pv -A -o wide > '${dumpDir}/volumes.txt' 2>&1
                                         kubectl get ingress -A -o wide > '${dumpDir}/ingress.txt' 2>&1
+                                        kubectl get networkpolicy -A -o yaml > '${dumpDir}/network-policies.yaml' 2>&1
                                         kubectl describe all -A > '${dumpDir}/describe-all.txt' 2>&1
 
                                         : > '${dumpDir}/container-logs.txt'
@@ -181,6 +182,21 @@ pipeline {
                                 }
                             }
 
+                            def createNetworkPolicyIntegrationConfig = {
+                                def configFile = 'target/integration-test-config/network-policy.yaml'
+                                sh 'mkdir -p target/integration-test-config'
+                                writeFile file: configFile, text: """application:
+  networkPolicies:
+    bootstrapCidrs:
+      # Test-only: the GOP container uses host networking and the source address depends on the CI runner network setup.
+      - 0.0.0.0/0
+    registryAccessCidrs:
+      # Test-only: k3d/Docker NAT rewrites the registry source address.
+      - 0.0.0.0/0
+"""
+                                return configFile
+                            }
+
                             profiles.each { profile ->
                                 withK3dCluster(profile) {
 
@@ -189,7 +205,7 @@ pipeline {
                                             sh '''
                                                 apk add --no-cache kubectl
                                                 kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
-                                                kubectl apply -f ./scripts/dev/gop-secrets.yaml
+                                                kubectl apply -f ./scripts/dev/secrets/gop-secrets.yaml
                                             '''
                                         }
                                     }
@@ -200,8 +216,13 @@ pipeline {
                                         }
                                     }
 
+                                    def additionalArguments = ''
+                                    if (profile == 'full-netpols') {
+                                        additionalArguments = " --config-file=${createNetworkPolicyIntegrationConfig()} -x"
+                                    }
+
                                     docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}"
+                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}${additionalArguments}"
                                     }
                                     docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                         try {

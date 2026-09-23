@@ -19,9 +19,9 @@ AIRGAPPED_REGISTRY_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{
 
 # Switch context to airgapped cluster here, e.g.
 sed -i -r "s/127.0.0.1([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g" ~/.config/k3d/kubeconfig-airgapped-playground.yaml
-sed -r "s/<address>/k3d-$AIRGAPPED_REGISTRY_NAME:$AIRGAPPED_REGISTRY_PORT/g" ./scripts/dev/gop_airgapped_config.yaml.tpl > ./scripts/dev/gop_airgapped_config.yaml
+sed -r "s/<address>/k3d-$AIRGAPPED_REGISTRY_NAME:$AIRGAPPED_REGISTRY_PORT/g" ./scripts/dev/airgapped/gop_airgapped_config.yaml.tpl > ./scripts/dev/airgapped/gop_airgapped_config.yaml
 export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 
-./scripts/dev/mirror_images_to_registry.sh http://${AIRGAPPED_REGISTRY_IP}:${AIRGAPPED_REGISTRY_PORT}
+./scripts/dev/registries/mirror_images_to_registry.sh http://${AIRGAPPED_REGISTRY_IP}:${AIRGAPPED_REGISTRY_PORT}
 
-echo "DONE: airgapped environment prepared. Start GOP using ./scripts/dev/gop_airgapped_config.yaml as config file"
+echo "DONE: airgapped environment prepared. Start GOP using ./scripts/dev/airgapped/gop_airgapped_config.yaml as config file"

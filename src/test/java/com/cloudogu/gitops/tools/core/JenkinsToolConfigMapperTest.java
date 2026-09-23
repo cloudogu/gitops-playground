@@ -27,6 +27,8 @@ class JenkinsToolConfigMapperTest {
 		config.getApplication().setTrace(true);
 		config.getApplication().setInsecure(true);
 		config.getApplication().setBaseUrl("example.org");
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of("172.18.0.1/32"));
 		config.getRegistry().setUrl("registry.example.org");
 		config.getRegistry().setPath("images");
 		config.getRegistry().setUsername("registry-user");
@@ -68,8 +70,12 @@ class JenkinsToolConfigMapperTest {
 		config.getJenkins().getHelm().setChart("jenkins-chart");
 		config.getJenkins().getHelm().setVersion("7.8.9");
 		config.getJenkins().getHelm().setValues(Map.of("controller", Map.of("replicas", 2)));
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
@@ -144,6 +150,11 @@ class JenkinsToolConfigMapperTest {
 																						  .build())
 													  .argocdActive(true)
 													  .monitoringActive(true)
+													  .monitoringNamespace("test-observability")
+													  .netpols(true)
+													  .bootstrapCidrs(List.of("172.18.0.1/32"))
+													  .ingressActive(true)
+													  .ingressNamespace("test-edge")
 													  .kubernetesVersion(Config.K8S_VERSION)
 													  .helm(HelmChartConfig.builder()
 																		   .repoURL("https://jenkins-chart.example.org")
@@ -215,6 +226,7 @@ class JenkinsToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.HELM,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

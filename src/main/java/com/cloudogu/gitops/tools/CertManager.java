@@ -8,10 +8,13 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 
 @Singleton
@@ -24,6 +27,10 @@ public class CertManager extends AbstractMappedTool<CertManagerToolConfig> {
 	private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
 	private static final String TOOL_NAME = "cert-manager";
 	private static final String CERT_MANAGER_APP_PATH = "apps/cert-manager";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/cert-manager/templates/netpols/allow-required-access-to-cert-manager.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/cert-manager/netpols/allow-required-access-to-cert-manager.yaml";
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private String namespace;
@@ -54,6 +61,7 @@ public class CertManager extends AbstractMappedTool<CertManagerToolConfig> {
 
 		createImagePullSecret();
 		prepareCertManagerApp(repositoryWorkspace.getClusterResourcesRepository());
+		prepareCertManagerNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 		replaceCertManagerTemplates(repositoryWorkspace.getClusterResourcesRepository());
 	}
 
@@ -89,6 +97,24 @@ public class CertManager extends AbstractMappedTool<CertManagerToolConfig> {
 			CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, CERT_MANAGER_APP_PATH)
 		);
+	}
+
+	private void prepareCertManagerNetworkPolicy(GitRepo clusterResourcesRepo) {
+		Path networkPolicyPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), NETWORK_POLICY_PATH);
+		if (!toolConfig().netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of("namespace", namespace)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate cert-manager NetworkPolicy", e);
+		}
 	}
 
 	private void replaceCertManagerTemplates(GitRepo clusterResourcesRepo) {

@@ -13,6 +13,7 @@ public record ExternalSecretsOperatorToolConfig(
 	String namespace,
 	boolean operator,
 	boolean skipCrds,
+	boolean netpols,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
 	Map<String, Object> templateConfig

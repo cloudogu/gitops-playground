@@ -7,6 +7,7 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
+import java.util.List;
 import java.util.Map;
 
 @Builder
@@ -20,6 +21,11 @@ public record JenkinsToolConfig(
 	Registry registry,
 	boolean argocdActive,
 	boolean monitoringActive,
+	String monitoringNamespace,
+	boolean netpols,
+	List<String> bootstrapCidrs,
+	boolean ingressActive,
+	String ingressNamespace,
 	String kubernetesVersion,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
@@ -27,6 +33,7 @@ public record JenkinsToolConfig(
 ) {
 
 	public JenkinsToolConfig {
+		bootstrapCidrs = List.copyOf(bootstrapCidrs);
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 

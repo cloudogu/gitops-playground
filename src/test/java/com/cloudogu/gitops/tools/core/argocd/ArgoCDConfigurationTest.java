@@ -731,22 +731,264 @@ class ArgoCDConfigurationTest {
 	void configuresArgoCdWithActiveNetworkPolicies() throws IOException {
 		config.getApplication().setNetpols(true);
 		config.getApplication().setNamePrefix("my-prefix-");
-		config.getScm().getScmManager().setNamespace("my-prefix-scm-manager");
 
 		Map<String, Object> valuesYaml = executeAndReadHelmValues();
-		String argocdValues = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "values.yaml")
-		);
-		String allowNamespaces = Files.readString(
-			Path.of(clusterResourcesRepoLayout.argocdRoot(), "argocd", "templates", "allow-namespaces.yaml")
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
 		);
 
-		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(true);
-		assertThat(argocdValues).contains("namespace: my-prefix-monitoring");
-		assertThat(allowNamespaces)
-			.contains("namespace: my-prefix-scm-manager")
-			.doesNotContain("namespace: my-prefix-my-prefix-scm-manager")
-			.contains("kubernetes.io/metadata.name: my-prefix-argocd");
+		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(false);
+		assertThat(value(valuesYaml, "argo-cd", "applicationSet", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "commitServer", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "dex", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "notifications", "networkPolicy")).isNull();
+		assertThat(value(valuesYaml, "argo-cd", "redis", "networkPolicy")).isNull();
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-server-helm")
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("name: allow-required-access-to-argocd-application-controller-helm")
+			.contains("name: allow-required-access-to-argocd-dex-server-helm")
+			.contains("name: allow-required-access-to-argocd-redis-helm")
+			.contains("name: allow-required-access-to-argocd-applicationset-controller-helm")
+			.contains("kubernetes.io/metadata.name: \"my-prefix-ingress\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: \"my-prefix-monitoring\"")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("port: server")
+			.contains("port: repo-server")
+			.contains("port: metrics")
+			.contains("port: http")
+			.contains("port: grpc")
+			.contains("port: redis")
+			.doesNotContain("    - Egress")
+			.doesNotContain("port: 8080")
+			.doesNotContain("namespaceSelector: {}");
+		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-server");
+		verify(k8sClient).delete("networkpolicy", "my-prefix-argocd", "allow-required-access-to-argocd-repo-server");
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"my-prefix-argocd",
+			"allow-required-access-to-argocd-application-controller"
+		);
+	}
+
+	@Test
+	void configuresExternalScmEgressForHelmRepoServer() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		configureExternalScmConnection();
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("cidr: 35.246.133.109/32")
+			.contains("protocol: TCP")
+			.contains("port: 443")
+			.contains("port: 6379")
+			.contains("# External connection: external-scm-manager");
+	}
+
+	@Test
+	void enablesHelmRepoServerEgressIsolationWithoutExternalConnections() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("port: 53")
+			.contains("port: 6379")
+			.doesNotContain("# External connection:");
+	}
+
+	@Test
+	void doesNotEnableRepoServerEgressIsolationWithoutExplicitFlag() throws IOException {
+		config.getApplication().setNetpols(true);
+		configureExternalScmConnection();
+
+		executeAndReadHelmValues();
+		String networkPolicies = Files.readString(
+			Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")
+		);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server-helm")
+			.doesNotContain("    - Egress")
+			.doesNotContain("# External connection: external-scm-manager");
+	}
+
+	@Test
+	void doesNotGenerateHelmNetworkPoliciesWhenNetworkPoliciesAreDisabled() throws IOException {
+		config.getApplication().setNetpols(false);
+
+		Map<String, Object> valuesYaml = executeAndReadHelmValues();
+
+		assertThat(value(valuesYaml, "argo-cd", "global", "networkPolicy", "create")).isEqualTo(false);
+		assertThat(Path.of(clusterResourcesRepoLayout.helmDir(), "templates", "network-policies.yaml")).doesNotExist();
+	}
+
+
+	@Test
+	void generatesLeastPrivilegeNetworkPoliciesForOperatorArgoCd() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().setNamePrefix("tenant-");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		Path networkPolicyPath = Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		);
+		String networkPolicies = Files.readString(networkPolicyPath);
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-server")
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("name: allow-required-access-to-argocd-application-controller")
+			.contains("name: allow-required-access-to-argocd-applicationset-controller")
+			.contains("name: allow-required-access-to-argocd-notifications-controller")
+			.contains("namespace: \"tenant-argocd\"")
+			.contains("kubernetes.io/metadata.name: \"tenant-edge\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: \"tenant-observability\"")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("app.kubernetes.io/name: argocd-notifications-controller")
+			.contains("app.kubernetes.io/name: argocd-applicationset-controller")
+			.contains("port: server")
+			.contains("port: metrics")
+			.contains("port: 8080")
+			.contains("port: 8082")
+			.contains("port: 8083")
+			.contains("port: 9001")
+			.doesNotContain("    - Egress");
+
+		verify(k8sClient).applyYaml(clusterResourcesRepoLayout.operatorNetworkPolicyDir());
+	}
+
+	@Test
+	void configuresExternalScmEgressForOperatorRepoServer() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		configureExternalScmConnection();
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("cidr: 35.246.133.109/32")
+			.contains("protocol: TCP")
+			.contains("port: 443")
+			.contains("port: 6379")
+			.contains("# External connection: external-scm-manager");
+	}
+
+	@Test
+	void enablesOperatorRepoServerEgressIsolationWithoutExternalConnections() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("name: allow-required-access-to-argocd-repo-server")
+			.contains("    - Egress")
+			.contains("kubernetes.io/metadata.name: kube-system")
+			.contains("port: 53")
+			.contains("port: 6379")
+			.doesNotContain("# External connection:");
+	}
+
+	@Test
+	void generatesOpenShiftIngressRuleForOperatorArgoCd() throws IOException {
+		config.getApplication().setNetpols(true);
+		config.getFeatures().getMonitoring().setActive(false);
+
+		ArgoCD argocd = setupOperatorTest(true);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		String networkPolicies = Files.readString(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		));
+
+		assertThat(networkPolicies)
+			.contains("policy-group.network.openshift.io/ingress: \"\"")
+			.doesNotContain("prometheus: kube-prometheus-stack-prometheus")
+			.doesNotContain("port: 9001");
+	}
+
+	@Test
+	void removesOperatorNetworkPoliciesWhenNetworkPoliciesAreDisabled() {
+		config.getApplication().setNetpols(false);
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		assertThat(Path.of(
+			clusterResourcesRepoLayout.operatorNetworkPolicyDir(),
+			"allow-required-access-to-argocd.yaml"
+		)).doesNotExist();
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-server"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-repo-server"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-application-controller"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-applicationset-controller"
+		);
+		verify(k8sClient).delete(
+			"networkpolicy",
+			"argocd",
+			"allow-required-access-to-argocd-notifications-controller"
+		);
 	}
 
 	@Test
@@ -870,6 +1112,8 @@ class ArgoCDConfigurationTest {
 		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
 
 		assertThat(resourceInclusions).contains(expectedMonitoring, expectedExternalSecret);
+		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
+			.containsExactly("Role", "RoleBinding");
 	}
 
 	@Test
@@ -888,7 +1132,10 @@ class ArgoCDConfigurationTest {
 		String resourceInclusions = (String) value(yaml, "spec", "resourceInclusions");
 
 		assertThat(resourceInclusions).doesNotContain(expectedMonitoring, expectedExternalSecret);
+		assertThat(listValue(resourceInclusionForApiGroup(resourceInclusions, "rbac.authorization.k8s.io"), "kinds"))
+			.containsExactly("Role", "RoleBinding");
 	}
+
 
 	@Test
 	void configuresResourceInclusionsCluster() throws IOException {
@@ -1536,6 +1783,23 @@ class ArgoCDConfigurationTest {
 		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
 	}
 
+	private void configureExternalScmConnection() {
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema connection =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema();
+		connection.setName("external-scm-manager");
+		connection.setTool("argocd-repo-server");
+		connection.setDirection("egress");
+		connection.setCidrs(List.of("35.246.133.109/32"));
+
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema port =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema();
+		port.setProtocol("TCP");
+		port.setPort(443);
+		connection.setPorts(List.of(port));
+
+		config.getApplication().getNetworkPolicies().setExternalConnections(List.of(connection));
+	}
+
 	private ArgoCD setupOperatorTest(boolean openshift) {
 		config.getFeatures().getArgocd().setOperator(true);
 		config.getFeatures().getArgocd().setResourceInclusionsCluster("https://192.168.0.1:6443");
@@ -1829,6 +2093,14 @@ class ArgoCDConfigurationTest {
 		return YAML_MAPPER.readValue(yaml, YAML_MAP_LIST_TYPE);
 	}
 
+	private static Map<String, Object> resourceInclusionForApiGroup(String resourceInclusions, String apiGroup)
+		throws IOException {
+		return parseYamlList(resourceInclusions).stream()
+			.filter(resource -> listValue(resource, "apiGroups").contains(apiGroup))
+			.findFirst()
+			.orElseThrow();
+	}
+
 	private static Object value(Map<String, Object> yaml, String... path) {
 		Object current = yaml;
 		for (String key : path) {
@@ -1854,6 +2126,8 @@ class ArgoCDConfigurationTest {
 	private static List<String> listValue(Map<String, Object> yaml, String... path) {
 		return (List<String>) value(yaml, path);
 	}
+
+
 
 	private static Map<String, Object> map(Object... keyValues) {
 		Map<String, Object> result = new LinkedHashMap<>();

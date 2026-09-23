@@ -50,8 +50,11 @@ class IngressToolConfigMapperTest {
 																		   .localHelmChartFolder("/charts")
 																		   .build())
 													  .imagePullSecret(imagePullSecret())
+													  .netpols(true)
+													  .monitoringActive(true)
+													  .monitoringNamespace("test-observability")
 													  .templateConfig(Map.of(
-														  "application", Map.of("namePrefix", "test-", "netpols", true),
+														  "application", Map.of("namePrefix", "test-"),
 														  "features", Map.of(
 															  "ingress",
 															  Map.of("helm", Map.of("image", "ingress-image")),
@@ -67,6 +70,7 @@ class IngressToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

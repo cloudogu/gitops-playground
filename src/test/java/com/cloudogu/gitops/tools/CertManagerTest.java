@@ -124,6 +124,41 @@ class CertManagerTest {
 	}
 
 	@Test
+	void createsRequiredNetworkPolicies() throws GitAPIException, IOException {
+		config.getApplication().setNetpols(true);
+
+		install(createCertManager());
+
+		Path networkPolicy = clusterResourcesRepoDir.toPath().resolve(
+			"apps/cert-manager/netpols/allow-required-access-to-cert-manager.yaml"
+		);
+		String policy = Files.readString(networkPolicy);
+
+		assertThat(policy)
+			.contains("name: restrict-cert-manager-ingress")
+			.contains("name: allow-required-access-to-cert-manager-webhook")
+			.contains("namespace: cert-manager")
+			.contains("app.kubernetes.io/instance: cert-manager")
+			.contains("app.kubernetes.io/component: webhook")
+			.contains("ingress: []")
+			.contains("port: 10250");
+	}
+
+	@Test
+	void removesRequiredNetworkPoliciesWhenNetworkPoliciesAreDisabled() throws GitAPIException, IOException {
+		CertManager certManager = createCertManager();
+		Path networkPolicy = clusterResourcesRepoDir.toPath().resolve(
+			"apps/cert-manager/netpols/allow-required-access-to-cert-manager.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale");
+
+		install(certManager);
+
+		assertThat(networkPolicy).doesNotExist();
+	}
+
+	@Test
 	void isDisabledViaActiveFlag() throws GitAPIException {
 		config.getFeatures().getCertManager().setActive(false);
 

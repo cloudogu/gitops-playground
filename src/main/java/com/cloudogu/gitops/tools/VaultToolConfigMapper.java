@@ -41,11 +41,21 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
 			.put("application.namespaceIsolation", config.getApplication().getNamespaceIsolation())
+			.put("application.netpols", config.getApplication().getNetpols())
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
-			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
+			.put("features.argocd.active", context.isArgoCdEnabled())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
+			.put("features.ingress.active", config.getFeatures().getIngress().getActive())
+			.put(
+				"features.ingress.namespace",
+				config.getApplication().getNamePrefix() + config.getFeatures().getIngress().getIngressNamespace()
+			)
+			.put(
+				"features.secrets.namespace",
+				config.getApplication().getNamePrefix() + config.getFeatures().getSecrets().getNamespace()
+			)
 			.put(
 				"features.secrets.vault.oidc",
 				ToolConfigMapperSupport.oidc(config.getFeatures().getSecrets().getVault().getOidc())

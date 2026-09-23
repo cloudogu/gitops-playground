@@ -22,6 +22,7 @@ public class CertManagerToolConfigMapper implements ToolConfigMapper<CertManager
 		return CertManagerToolConfig.builder()
 									.active(certManager.getActive())
 									.namespace(config.getApplication().getNamePrefix() + certManager.getNamespace())
+									.netpols(config.getApplication().getNetpols())
 									.helm(ToolConfigMapperSupport.helmChart(
 										certManager.getHelm(),
 										config.getApplication().getLocalHelmChartFolder()

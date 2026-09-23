@@ -48,6 +48,7 @@ class VaultToolConfigMapperTest {
 														"application", Map.of(
 															"namePrefix", "test-",
 															"namespaceIsolation", true,
+															"netpols", true,
 															"openshift", true,
 															"podResources", true
 														),
@@ -57,7 +58,12 @@ class VaultToolConfigMapperTest {
 																"active", true,
 																"issuer", "production-issuer"
 															),
+															"ingress", Map.of(
+																"active", false,
+																"namespace", "test-ingress"
+															),
 															"secrets", Map.of(
+																"namespace", "test-secrets",
 																"vault", Map.of(
 																	"oidc", Map.of(
 																		"providerName",
@@ -103,6 +109,7 @@ class VaultToolConfigMapperTest {
 
 		config.getApplication().setNamePrefix("test-");
 		config.getApplication().setLocalHelmChartFolder("/charts");
+		config.getApplication().setNetpols(true);
 		config.getApplication().setNamespaceIsolation(true);
 		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
 		config.getApplication().setOpenshift(false);
@@ -121,7 +128,8 @@ class VaultToolConfigMapperTest {
 		config.getRegistry().setReadOnlyPassword("read-only-password");
 		config.getRegistry().setPassword("registry-password");
 
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.getFeatures().getArgocd().setActive(false);
 
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
@@ -144,6 +152,7 @@ class VaultToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.HELM,
 			false,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

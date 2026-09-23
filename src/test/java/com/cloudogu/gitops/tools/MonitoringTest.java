@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -47,7 +48,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -579,7 +582,7 @@ class MonitoringTest {
 	}
 
 	@Test
-	void appliesPrometheusServiceMonitorCrdFromFileBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
+	void appliesRequiredMonitoringCrdsFromFilesBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(true);
 		config.getApplication().setSkipCrds(false);
@@ -587,35 +590,113 @@ class MonitoringTest {
 		Path rootChartsFolder = Files.createTempDirectory(getClass().getSimpleName());
 		config.getApplication().setLocalHelmChartFolder(rootChartsFolder.toString());
 
-		Path crdFile = rootChartsFolder.resolve(
-			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds/crd-servicemonitors.yaml"
-		);
-		Files.createDirectories(crdFile.getParent());
-		Files.writeString(crdFile, "dummy");
-
 		Path chartYaml = rootChartsFolder.resolve(config.getFeatures().getMonitoring().getHelm().getChart() + "/Chart.yaml");
 		Files.createDirectories(chartYaml.getParent());
 		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n");
 
 		install(createStack(scmManagerMock));
+
+		Path crdDirectory = rootChartsFolder.resolve(
+			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
+		);
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheuses.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-podmonitors.yaml").toString());
+		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-probes.yaml").toString());
+		verify(k8sClient, times(5)).applyYaml(anyString());
 	}
 
 	@Test
-	void appliesPrometheusServiceMonitorCrdFromGithubBeforeInstalling() throws GitAPIException {
+	void appliesRequiredMonitoringCrdsFromGithubBeforeInstalling() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setSkipCrds(false);
 
 		install(createStack(scmManagerMock));
+
+		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
+			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-servicemonitors.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheuses.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheusrules.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-podmonitors.yaml");
+		verify(k8sClient).applyYaml(crdBaseUrl + "crd-probes.yaml");
+		verify(k8sClient, times(5)).applyYaml(anyString());
 	}
 
 	@Test
-	void doesNotApplyServiceMonitorCrdWhenMonitoringIsDisabled() throws GitAPIException {
+	void doesNotApplyMonitoringCrdsWhenMonitoringIsDisabled() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(false);
 		config.getApplication().setSkipCrds(false);
 		config.getApplication().setMirrorRepos(false);
 
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		new DeploymentOrchestrator(List.of(monitoring)).deployTools(deploymentContext, repositoryWorkspace);
+
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
+	void doesNotApplyMonitoringCrdsWhenCrdsAreSkipped() throws GitAPIException {
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getApplication().setSkipCrds(true);
+
 		install(createStack(scmManagerMock));
+
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
+	void configuresArgoCdOperatorServiceMonitors() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setNamespace("delivery");
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus.get("additionalServiceMonitors")).isEqualTo(List.of(
+			Map.of(
+				"name", "argocd-application-controller",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-metrics")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			),
+			Map.of(
+				"name", "argocd-repo-server",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-repo-server")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			),
+			Map.of(
+				"name", "argocd-server",
+				"namespaceSelector", Map.of("matchNames", List.of("foo-delivery")),
+				"selector", Map.of("matchLabels", Map.of("app.kubernetes.io/name", "argocd-server-metrics")),
+				"endpoints", List.of(Map.of("port", "metrics"))
+			)
+		));
+	}
+
+	@Test
+	void doesNotConfigureArgoCdOperatorServiceMonitorsInHelmMode() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(false);
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus).doesNotContainKey("additionalServiceMonitors");
+	}
+
+	@Test
+	void doesNotConfigureArgoCdOperatorServiceMonitorsWhenArgoCdIsInactive() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setActive(false);
+		config.getFeatures().getArgocd().setOperator(true);
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		assertThat(prometheus).doesNotContainKey("additionalServiceMonitors");
 	}
 
 	@Test
@@ -804,6 +885,7 @@ class MonitoringTest {
 		assertThat(grafana.get("rbac")).isNull();
 		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
 		assertThat(dashboards.get("searchNamespace")).isEqualTo("ALL");
+		assertThat(dashboards.get("resource")).isEqualTo("configmap");
 
 		assertThat(yaml.get("crds")).isNull();
 		assertThat(new File(clusterResourcesRepoDir, "apps/monitoring/misc/rbac")).doesNotExist();
@@ -882,59 +964,70 @@ class MonitoringTest {
 	void worksWithNamespaceIsolation() throws GitAPIException, IOException {
 		config.getApplication().setNamespaceIsolation(true);
 
-		Monitoring prometheusStack = createStack(scmManagerMock);
-		install(prometheusStack);
+		install(createStack(scmManagerMock));
 
-		Map<String, Object> yaml = parseActualYaml();
-		Map<String, Object> global = (Map<String, Object>) yaml.get("global");
-		Map<String, Object> globalRbac = (Map<String, Object>) global.get("rbac");
-		assertThat(globalRbac.get("create")).isEqualTo(false);
-
-		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
-			File rbacYaml = new File(
-				clusterResourcesRepoDir,
-				"apps/monitoring/misc/rbac/" + namespace + ".yaml"
-			);
-			String rbacText = Files.readString(rbacYaml.toPath());
-			assertThat(rbacText).contains("namespace: " + namespace);
-			assertThat(rbacText).contains("    namespace: foo-monitoring");
-		}
-
-		Map<String, Object> kubeApiServer = (Map<String, Object>) yaml.get("kubeApiServer");
-		assertThat(kubeApiServer.get("enabled")).isEqualTo(false);
-
-		Map<String, Object> prometheusOperator = (Map<String, Object>) yaml.get("prometheusOperator");
-		Map<String, Object> kubeletService = (Map<String, Object>) prometheusOperator.get("kubeletService");
-		assertThat(kubeletService.get("enabled")).isEqualTo(false);
-
-		Map<String, Object> namespaces = (Map<String, Object>) prometheusOperator.get("namespaces");
-		assertThat(namespaces.get("releaseNamespace")).isEqualTo(false);
-		assertThat((List<String>) namespaces.get("additional"))
-			.hasSameElementsAs(config.getApplication().getNamespaces().getActiveNamespaces());
-
-		Map<String, Object> grafana = (Map<String, Object>) yaml.get("grafana");
-		Map<String, Object> rbac = (Map<String, Object>) grafana.get("rbac");
-		assertThat(rbac.get("create")).isEqualTo(false);
-		Map<String, Object> sidecar = (Map<String, Object>) grafana.get("sidecar");
-		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
-		assertThat(dashboards.get("searchNamespace"))
-			.isEqualTo(String.join(",", config.getApplication().getNamespaces().getActiveNamespaces()));
+		assertUsesNamespacedMonitoringRbac(parseActualYaml());
 	}
 
 	@Test
-	void networkPoliciesAreCreatedForPrometheus() throws GitAPIException, IOException {
+	void worksWithArgoCdOperatorMode() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setOperator(true);
+
+		install(createStack(scmManagerMock));
+
+		Map<String, Object> yaml = parseActualYaml();
+		assertUsesNamespacedMonitoringRbac(yaml);
+
+		Map<String, Object> crds = (Map<String, Object>) yaml.get("crds");
+		assertThat(crds.get("enabled")).isEqualTo(false);
+	}
+
+	@Test
+	void networkPoliciesAreCreatedOnlyForMonitoringComponents() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
+		config.getApplication().getNamespaces().getDedicatedNamespaces().add("foo-monitoring");
 		Monitoring prometheusStack = createStack(scmManagerMock);
 		install(prometheusStack);
 
-		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
-			File netPolsYaml = new File(
-				clusterResourcesRepoDir,
-				"apps/monitoring/misc/netpols/" + namespace + ".yaml"
-			);
-			assertThat(Files.readString(netPolsYaml.toPath())).contains("namespace: " + namespace);
+		File monitoringNetPolsDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/netpols");
+		File monitoringNetPolsYaml = new File(monitoringNetPolsDir, "foo-monitoring.yaml");
+		assertThat(Files.readString(monitoringNetPolsYaml.toPath()))
+			.contains("name: allow-required-access-to-grafana")
+			.contains("name: allow-required-access-to-prometheus")
+			.contains("name: allow-required-access-to-prometheus-operator")
+			.contains("namespace: foo-monitoring")
+			.contains("kubernetes.io/metadata.name: \"foo-ingress\"")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("port: grafana")
+			.contains("port: http-web")
+			.contains("port: reloader-web")
+			.contains("port: http")
+			.doesNotContain("name: allow-prometheus-scraping")
+			.doesNotContain("podSelector: {}");
+
+		try (var files = Files.list(monitoringNetPolsDir.toPath())) {
+			assertThat(files.map(path -> path.getFileName().toString()).toList())
+				.containsExactly("foo-monitoring.yaml");
 		}
 	}
+
+	@Test
+	void removesObsoleteGeneratedNetworkPolicies() throws GitAPIException, IOException {
+		Monitoring prometheusStack = createStack(scmManagerMock);
+		File monitoringNetPolsDir = new File(clusterResourcesRepoDir, "apps/monitoring/misc/netpols");
+		assertThat(monitoringNetPolsDir.mkdirs()).isTrue();
+		Files.writeString(
+			new File(monitoringNetPolsDir, "test1-argocd.yaml").toPath(),
+			"name: allow-prometheus-scraping"
+		);
+
+		install(prometheusStack);
+
+		assertThat(monitoringNetPolsDir).doesNotExist();
+	}
+
+
 
 	@Test
 	void helmReleasesAreInstalledInAirGappedMode() throws GitAPIException, IOException, URISyntaxException {
@@ -1035,6 +1128,43 @@ class MonitoringTest {
 		Map<String, Object> prometheus = (Map<String, Object>) actual.get("prometheus");
 		Map<String, Object> prometheusSpec = (Map<String, Object>) prometheus.get("prometheusSpec");
 		assertThat(prometheusSpec.get("serviceMonitorNamespaceSelector")).isEqualTo(expectedSelector);
+	}
+
+	private void assertUsesNamespacedMonitoringRbac(Map<String, Object> yaml) throws IOException {
+		Map<String, Object> global = (Map<String, Object>) yaml.get("global");
+		Map<String, Object> globalRbac = (Map<String, Object>) global.get("rbac");
+		assertThat(globalRbac.get("create")).isEqualTo(false);
+
+		for (String namespace : config.getApplication().getNamespaces().getActiveNamespaces()) {
+			File rbacYaml = new File(
+				clusterResourcesRepoDir,
+				"apps/monitoring/misc/rbac/" + namespace + ".yaml"
+			);
+			String rbacText = Files.readString(rbacYaml.toPath());
+			assertThat(rbacText).contains("namespace: " + namespace);
+			assertThat(rbacText).contains("    namespace: foo-monitoring");
+		}
+
+		Map<String, Object> kubeApiServer = (Map<String, Object>) yaml.get("kubeApiServer");
+		assertThat(kubeApiServer.get("enabled")).isEqualTo(false);
+
+		Map<String, Object> prometheusOperator = (Map<String, Object>) yaml.get("prometheusOperator");
+		Map<String, Object> kubeletService = (Map<String, Object>) prometheusOperator.get("kubeletService");
+		assertThat(kubeletService.get("enabled")).isEqualTo(false);
+
+		Map<String, Object> namespaces = (Map<String, Object>) prometheusOperator.get("namespaces");
+		assertThat(namespaces.get("releaseNamespace")).isEqualTo(false);
+		assertThat((List<String>) namespaces.get("additional"))
+			.hasSameElementsAs(config.getApplication().getNamespaces().getActiveNamespaces());
+
+		Map<String, Object> grafana = (Map<String, Object>) yaml.get("grafana");
+		Map<String, Object> rbac = (Map<String, Object>) grafana.get("rbac");
+		assertThat(rbac.get("create")).isEqualTo(false);
+		Map<String, Object> sidecar = (Map<String, Object>) grafana.get("sidecar");
+		Map<String, Object> dashboards = (Map<String, Object>) sidecar.get("dashboards");
+		assertThat(dashboards.get("searchNamespace"))
+			.isEqualTo(String.join(",", config.getApplication().getNamespaces().getActiveNamespaces()));
+		assertThat(dashboards.get("resource")).isEqualTo("configmap");
 	}
 
 	private Monitoring createStack(ScmManagerProviderMock scmManagerMock) throws GitAPIException {

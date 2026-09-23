@@ -1,0 +1,84 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-scm-manager
+  namespace: ${namespace}
+spec:
+  podSelector:
+    matchLabels:
+      app: scm-manager
+  policyTypes:
+    - Ingress
+<#assign hasIngress = argocdActive || ingressActive || monitoringActive || (jenkinsActive && jenkinsInternal) || bootstrapCidrs?has_content>
+<#if hasIngress>
+  ingress:
+<#if argocdActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${argocdNamespace}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-repo-server
+      ports:
+        - protocol: TCP
+          port: http
+</#if>
+<#if ingressActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${ingressNamespace}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: http
+</#if>
+<#if monitoringActive>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${monitoringNamespace}
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: http
+</#if>
+<#if jenkinsActive && jenkinsInternal>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${jenkinsNamespace}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: jenkins-controller
+              app.kubernetes.io/instance: jenkins
+      ports:
+        - protocol: TCP
+          port: http
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ${jenkinsNamespace}
+          podSelector:
+            matchLabels:
+              jenkins/jenkins-jenkins-agent: "true"
+      ports:
+        - protocol: TCP
+          port: http
+</#if>
+<#list bootstrapCidrs as bootstrapCidr>
+    - from:
+        - ipBlock:
+            cidr: ${bootstrapCidr}
+      ports:
+        - protocol: TCP
+          port: http
+</#list>
+<#else>
+  ingress: []
+</#if>

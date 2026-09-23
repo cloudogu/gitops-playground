@@ -86,6 +86,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		 * from the remote main branch before generated GitOps artifacts are written.
 		 */
 		setup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
+		setup.prepareNetworkPolicy();
 
 		/*
 		 * The SCM-Manager ArgoCD Application is created through ArgoCdApplicationStrategy.

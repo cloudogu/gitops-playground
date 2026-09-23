@@ -19,15 +19,19 @@ public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConf
 	@Override
 	public IngressToolConfig map(DeploymentContext context) {
 		Config.IngressSchema ingress = config.getFeatures().getIngress();
+		String namePrefix = config.getApplication().getNamePrefix();
 
 		return IngressToolConfig.builder()
 								.active(ingress.getActive())
-								.namespace(config.getApplication().getNamePrefix() + ingress.getIngressNamespace())
+								.namespace(namePrefix + ingress.getIngressNamespace())
 								.helm(ToolConfigMapperSupport.helmChart(
 									ingress.getHelm(),
 									config.getApplication().getLocalHelmChartFolder()
 								))
 								.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								.netpols(config.getApplication().getNetpols())
+								.monitoringActive(config.getFeatures().getMonitoring().getActive())
+								.monitoringNamespace(namePrefix + config.getFeatures().getMonitoring().getNamespace())
 								.templateConfig(templateConfig(config))
 								.build();
 	}
@@ -35,7 +39,6 @@ public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConf
 	private static Map<String, Object> templateConfig(Config config) {
 		return new TemplateConfig()
 			.put("application.namePrefix", config.getApplication().getNamePrefix())
-			.put("application.netpols", config.getApplication().getNetpols())
 			.put("features.ingress.helm.image", config.getFeatures().getIngress().getHelm().getImage())
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())

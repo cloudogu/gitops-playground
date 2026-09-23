@@ -36,6 +36,14 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 	private static final String ARGOCD_APPLICATION_CRD = "applications.argoproj.io";
 	private static final String HELM_RELEASE_NAME_ANNOTATION = "meta.helm.sh/release-name";
 	private static final String HELM_RELEASE_NAMESPACE_ANNOTATION = "meta.helm.sh/release-namespace";
+	private static final String NETWORK_POLICY_RESOURCE = "networkpolicy";
+	private static final List<String> OPERATOR_NETWORK_POLICIES = List.of(
+		"allow-required-access-to-argocd-server",
+		"allow-required-access-to-argocd-repo-server",
+		"allow-required-access-to-argocd-application-controller",
+		"allow-required-access-to-argocd-applicationset-controller",
+		"allow-required-access-to-argocd-notifications-controller"
+	);
 
 	private final K8sClient k8sClient;
 	private final HelmClient helmClient;
@@ -99,6 +107,8 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 		log.debug("Creating namespaces");
 		k8sClient.createNamespaces(new ArrayList<>(toolConfig().activeNamespaces()));
+
+		cleanupOperatorNetworkPoliciesIfNotRequired();
 
 		deploymentMode.createSCMCredentialsSecret();
 		createNotificationSecretIfRequired();
@@ -260,6 +270,21 @@ public class ArgoCD extends AbstractMappedTool<ArgoCDToolConfig> implements Conf
 
 		log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively");
 		k8sClient.applyYaml(clusterResourcesRepo.operatorRbacDir());
+
+		if (toolConfig().netpols()) {
+			log.debug("Apply NetworkPolicies for operator-managed ArgoCD components imperatively");
+			k8sClient.applyYaml(clusterResourcesRepo.operatorNetworkPolicyDir());
+		}
+	}
+
+	private void cleanupOperatorNetworkPoliciesIfNotRequired() {
+		if (toolConfig().operator() && toolConfig().netpols()) {
+			return;
+		}
+
+		for (String networkPolicy : OPERATOR_NETWORK_POLICIES) {
+			k8sClient.delete(NETWORK_POLICY_RESOURCE, namespace, networkPolicy);
+		}
 	}
 
 	private void updateAdminPasswordForOperator() {

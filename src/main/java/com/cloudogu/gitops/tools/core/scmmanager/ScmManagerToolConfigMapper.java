@@ -40,7 +40,17 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .gitOpsUsername(scmManager.getGitOpsUsername())
 								   .skipPlugins(scmManager.getSkipPlugins())
 								   .skipRestart(scmManager.getSkipRestart())
+								   .netpols(config.getApplication().getNetpols())
+								   .bootstrapCidrs(ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config))
+								   .argocdActive(context.isArgoCdEnabled())
+								   .argocdNamespace(namePrefix + config.getFeatures().getArgocd().getNamespace())
+								   .ingressActive(config.getFeatures().getIngress().getActive())
+								   .ingressNamespace(namePrefix + config.getFeatures().getIngress().getIngressNamespace())
+								   .monitoringActive(config.getFeatures().getMonitoring().getActive())
+								   .monitoringNamespace(namePrefix + config.getFeatures().getMonitoring().getNamespace())
 								   .jenkinsActive(config.getJenkins().getActive())
+								   .jenkinsInternal(config.getJenkins().getInternal())
+								   .jenkinsNamespace(namePrefix + config.getJenkins().getNamespace())
 								   .jenkinsUrl(config.getJenkins().getUrlForScm())
 								   .helm(ToolConfigMapperSupport.helmChart(
 									   scmManager.getHelm(),

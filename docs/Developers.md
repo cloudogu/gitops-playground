@@ -33,6 +33,7 @@ version information.
     - [Basic test](#basic-test)
     - [Proper test](#proper-test)
 - [Testing Network Policies locally](#testing-network-policies-locally)
+  - [Run GOP from the Docker image](#run-gop-from-the-docker-image)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
     - [Setup cluster](#setup-cluster)
     - [Install the playground](#install-the-playground)
@@ -97,8 +98,8 @@ mvn clean test
 ```
 
 where <PROFILES> can be one of:
-
 - full
+- full-netpols
 - full-prefix
 
 - content-examples
@@ -304,7 +305,7 @@ If you need to emulate an "external", private registry with credentials, then in
 
 ```bash
 helm repo add harbor https://helm.goharbor.io
-helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
+helm upgrade -i my-harbor harbor/harbor -f ./scripts/dev/registries/external-registry-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
 
 Once it's up and running either create your own private project or just set the existing `library` to private:
@@ -390,73 +391,158 @@ docker run --rm -t -u $(id -u) \
 
 ## Testing Network Policies locally
 
-The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu
-Ecosystem.
+For the implemented communication paths, blocked examples and configuration boundaries, see [NetworkPolicy communication model](NetworkPolicies.md).
 
-That's why we need to initialize our local cluster with some netpols for everything to work.
+Use the `full-netpols` profile to test the GOP NetworkPolicies end-to-end on a local k3d cluster. The profile deliberately keeps environment-specific CIDRs empty:
 
-* The `<prefix>-jenkins` ,  `<prefix>-scm-manager` and `<prefix>-registry` namespace needs to be accesible from outside
-  the cluster (so GOP apply via `docker run` has access)
-* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller
+```yaml
+application:
+  netpols: true
+  networkPolicies:
+    bootstrapCidrs: []
+    registryAccessCidrs: []
+    egressIsolation: false
+    externalConnections: []
+```
 
-After the cluster is initialized and before GOP is applied, do the following:
+Environment-specific CIDRs and external connections must be supplied through an additional local config file. Do not add host-specific CIDRs or external endpoints to `application-full-netpols.yaml`.
+
+Create a fresh local cluster first:
 
 ```bash
-# Prefix handling:
-# if used, change prefix to your configured prefix and then
-# hyphen "-" is neccessary for this workaorund.
-# if no prefix is used, delete everthing after prefix=
-prefix=<prefix>-
-# When using harbor, do the same for namespace harbor
-
-
-for ns in ${prefix}jenkins  ${prefix}registry  ${prefix}scm-manager ${prefix}example-apps-production ${prefix}example-apps-staging ${prefix}monitoring ${prefix}secrets; do
-  k create ns $ns -oyaml --dry-run=client | k apply -f-
-  k apply --namespace "$ns" -f- <<EOF
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-from-ingress-controller
-spec:
-  podSelector: {}  
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ${prefix}traefik
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/component: controller
-              app.kubernetes.io/instance: traefik
-              app.kubernetes.io/name: traefik
----
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-from-same-namespace
-  annotations:
-    description: Allow connections inside the same namespace
-spec:
-  podSelector: {}
-  ingress:
-    - from:
-        - podSelector: {}
-EOF
-done
-# Some NS need to be accessible from docker image
-for ns in ${prefix}jenkins ${prefix}registry ${prefix}scm-manager; do
-  k apply --namespace "$ns" -f- <<EOF
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-all-ingress
-spec:
-  podSelector: {}
-  ingress:
-  - {}
-EOF
-done
+./scripts/init-cluster.sh --cluster-name=gitops-playground
 ```
+
+Determine the Docker gateway used by the k3d server container:
+
+```bash
+docker inspect k3d-gitops-playground-server-0 \
+  --format '{{range $name, $net := .NetworkSettings.Networks}}{{printf "%s gateway=%s ip=%s\n" $name $net.Gateway $net.IPAddress}}{{end}}'
+```
+
+Example output:
+
+```text
+k3d-gitops-playground gateway=172.18.0.1 ip=172.18.0.2
+```
+
+Copy the example config and replace `<K3D_GATEWAY>` with the gateway from the previous command:
+
+```bash
+cp scripts/dev/network-policies/netpol-local.example.yaml scripts/dev/network-policies/netpol-local.yaml
+```
+
+For the example above, the resulting local config is:
+
+```yaml
+application:
+  networkPolicies:
+    bootstrapCidrs:
+      - 172.18.0.1/32
+    registryAccessCidrs:
+      - 0.0.0.0/0
+    egressIsolation: false
+    externalConnections: []
+```
+
+`bootstrapCidrs` allows a GOP process running outside Kubernetes to reach internal services such as SCM-Manager and Jenkins during bootstrap and subsequent GOP runs. Keep this CIDR as restrictive as possible.
+
+`registryAccessCidrs: 0.0.0.0/0` is only intended for the ephemeral local k3d integration-test environment. The Jenkins agents use the host Docker socket and k3d/Docker NAT can rewrite the source address of registry pushes. Do not use this value as a production default.
+
+`externalConnections` contains environment-specific CIDR/port allowances for external systems. The current implementation supports external egress from the Argo CD repo server. The committed `full-netpols` profile therefore keeps this list empty; put concrete CIDRs only into a local or environment-specific override such as `netpol-local.yaml`.
+
+`egressIsolation` is deliberately `false` by default. A configured external connection does not restrict traffic while egress isolation is disabled.
+
+Setting `egressIsolation` to `true` isolates all egress traffic of the Argo CD repo server. In this mode, every external destination required by the repo server must be configured explicitly, including external SCM systems as well as Git and Helm repositories. Otherwise Argo CD applications depending on non-configured external repositories will fail to refresh. For an external SCM-Manager test, use for example:
+
+```yaml
+application:
+  networkPolicies:
+    egressIsolation: true
+    externalConnections:
+      - name: external-scm-manager
+        tool: argocd-repo-server
+        direction: egress
+        cidrs:
+          - <EXTERNAL_SCM_CIDR>
+        ports:
+          - protocol: TCP
+            port: 443
+```
+
+The example above only demonstrates the SCM connection. In a real deployment, all other external Git and Helm repository destinations required by the Argo CD repo server must also be configured before enabling egress isolation.
+
+Standard Kubernetes NetworkPolicies use CIDRs, not host names. Only use egress isolation when all required destination CIDRs are known and sufficiently stable.
+
+When NetworkPolicies are enabled, Vault uses the chart-provided NetworkPolicy with a GOP-defined least-privilege ingress configuration. Vault-to-Vault traffic is allowed on ports 8200/8201, External Secrets can reach the Vault API on port 8200, and the GOP-managed Traefik ingress can reach port 8200 when a Vault ingress is configured. Application namespaces do not receive direct Vault network access by default; applications should consume Vault-backed values through External Secrets.
+
+The GOP profiles currently use Vault development mode. Vault dev mode is intended for development/testing and stores data in memory, so it must not be used as persistent customer secret storage. Direct application access to Vault should only be introduced together with a production-ready Vault setup and explicit per-namespace/service-account authorization.
+
+Start GOP with both the normal credentials config and the local NetworkPolicy override:
+
+```bash
+./mvnw exec:java \
+  -Dexec.arguments="--yes --profile=full-netpols -x --config-file=credentials.yaml --config-file=scripts/dev/network-policies/netpol-local.yaml"
+```
+
+The same arguments can be used in an IDE run configuration:
+
+```text
+--yes
+--profile=full-netpols
+-x
+--config-file=credentials.yaml
+--config-file=scripts/dev/network-policies/netpol-local.yaml
+```
+
+### Run GOP from the Docker image
+
+To verify the actual GOP image with NetworkPolicies, build the image locally:
+
+```bash
+docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
+```
+
+Run the image with host networking, mount the k3d kubeconfig and the local NetworkPolicy override, and use the `full-netpols` profile. This example intentionally does not mount an additional credentials file:
+
+```bash
+docker run --rm -it \
+  --network=host \
+  -e KUBECONFIG=/home/.kube/config \
+  -v "$HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config:ro" \
+  -v "$(pwd)/scripts/dev/network-policies/netpol-local.yaml:/home/netpol-local.yaml:ro" \
+  gitops-playground:dev \
+  --yes \
+  --profile=full-netpols \
+  -x \
+  --config-file=/home/netpol-local.yaml
+```
+
+`--network=host` is required for this local k3d setup so that the GOP container can reach services exposed by the cluster. The local `netpol-local.yaml` is an environment-specific test workaround and is intentionally not committed. Use `scripts/dev/network-policies/netpol-local.example.yaml` as the template and adjust `bootstrapCidrs` to the gateway of the local k3d Docker network.
+
+After the rollout, verify that the required policies exist:
+
+```bash
+kubectl get networkpolicy -A
+
+kubectl -n scm-manager get networkpolicy allow-required-access-to-scm-manager -o yaml
+kubectl -n jenkins get networkpolicy allow-required-access-to-jenkins -o yaml
+kubectl -n registry get networkpolicy allow-required-access-to-registry -o yaml
+```
+
+Then run the `full-netpols` integration tests:
+
+```bash
+./mvnw failsafe:integration-test failsafe:verify \
+  -Dmicronaut.environments=full-netpols \
+  -Dsurefire.reportNameSuffix=full-netpols
+```
+
+The integration test covers the complete local communication path, including Jenkins controller and agent access to SCM-Manager, agent access to the Jenkins controller, Docker push to the internal registry, and the example application deployment.
+
+The local override file `scripts/dev/network-policies/netpol-local.yaml` is intentionally ignored by Git because its `bootstrapCidrs` value depends on the local Docker/k3d network. Only the example file should be committed.
+
+The Jenkins CI test uses its own generated test-only override. It intentionally uses broad CIDRs in the ephemeral k3d cluster because the CI runner uses host networking and the source addresses depend on the runner network setup. These CI values must not be copied into production configuration.
 
 ## Emulate an airgapped environment
 
@@ -494,14 +580,14 @@ Don't disconnect from the internet yet, because
 * Helm repo updates need access to the internet
 * Argo CD images are not configurable yet and may still be pulled on demand.
 * Jenkins and SCM-Manager images can be pointed at the prepared registry via `jenkins.jenkinsImage` and
-  `scm.scmManager.scmmImage`; see `scripts/dev/gop_airgapped_config.yaml`.
+  `scm.scmManager.scmmImage`; see `scripts/dev/airgapped/gop_airgapped_config.yaml`.
 
 So, start the installation and once Argo CD is running, go offline.
 
 ```bash
 docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
-    -v ./scripts/dev/gop_airgapped_config.yaml:/gop.yaml \
+    -v ./scripts/dev/airgapped/gop_airgapped_config.yaml:/gop.yaml \
     --net=host gitops-playground:latest --config-file=/gop.yaml -x 
 ```
 

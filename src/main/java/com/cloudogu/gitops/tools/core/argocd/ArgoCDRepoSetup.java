@@ -100,6 +100,7 @@ public class ArgoCDRepoSetup {
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, ARGOCD_APP_PATH)
 		);
 
+		removeUnusedDeploymentModeResources();
 		clusterResourcesRepo.replaceTemplates(buildTemplateValues(clusterResourcesRepo));
 
 		prepareClusterResourcesLayout();
@@ -119,7 +120,7 @@ public class ArgoCDRepoSetup {
 		tenantBootstrapRepo.replaceTemplates(buildTemplateValues(tenantBootstrapRepo));
 	}
 
-	private void prepareClusterResourcesLayout() {
+	private void removeUnusedDeploymentModeResources() {
 		ArgoCDRepoLayout layout = clusterRepoLayout();
 
 		if (config.operator()) {
@@ -127,6 +128,10 @@ public class ArgoCDRepoSetup {
 		} else {
 			FileSystemUtils.deleteDir(layout.operatorDir());
 		}
+	}
+
+	private void prepareClusterResourcesLayout() {
+		ArgoCDRepoLayout layout = clusterRepoLayout();
 
 		if (config.multiTenant()) {
 			log.debug(
@@ -147,10 +152,6 @@ public class ArgoCDRepoSetup {
 			FileSystemUtils.deleteDir(layout.multiTenantDir());
 		} else {
 			FileSystemUtils.deleteDir(layout.multiTenantDir());
-		}
-
-		if (!config.netpols()) {
-			FileSystemUtils.deleteFile(layout.netpolFile());
 		}
 	}
 

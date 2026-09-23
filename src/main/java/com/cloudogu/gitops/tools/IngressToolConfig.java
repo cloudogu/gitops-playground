@@ -13,6 +13,9 @@ public record IngressToolConfig(
 	String namespace,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
+	boolean netpols,
+	boolean monitoringActive,
+	String monitoringNamespace,
 	Map<String, Object> templateConfig
 ) {
 

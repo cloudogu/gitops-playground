@@ -19,6 +19,7 @@ class CertManagerToolConfigMapperTest {
 		config.getApplication().setLocalHelmChartFolder("/charts");
 		config.getApplication().setPodResources(true);
 		config.getApplication().setSkipCrds(true);
+		config.getApplication().setNetpols(true);
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getRegistry().setProxyUrl("proxy.example.org");
 		config.getRegistry().setUrl("registry.example.org");
@@ -46,6 +47,7 @@ class CertManagerToolConfigMapperTest {
 		assertThat(actual).isEqualTo(CertManagerToolConfig.builder()
 														  .active(true)
 														  .namespace("test-certificates")
+														  .netpols(true)
 														  .helm(HelmChartConfig.builder()
 																			   .repoURL("https://cert.example.org")
 																			   .chart("cert-chart")
@@ -80,6 +82,7 @@ class CertManagerToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

@@ -371,6 +371,84 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
+	void preparesAndAppliesRequiredAccessNetworkPolicy() throws IOException {
+		config.getApplication().setNamePrefix("test-");
+		config.getApplication().setNetpols(true);
+		config.getApplication().getNetworkPolicies().setBootstrapCidrs(List.of(
+			"172.18.0.1/32",
+			"10.20.0.0/16"
+		));
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setNamespace("argocd");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setNamespace("observability");
+		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("automation");
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
+		);
+
+		scmManagerSetup.prepareNetworkPolicy();
+
+		ArgumentCaptor<String> yamlCaptor = ArgumentCaptor.forClass(String.class);
+		String relativePath = "apps/scm-manager/netpols/allow-required-access-to-scm-manager.yaml";
+		verify(clusterResourcesRepo).writeFile(eq(relativePath), yamlCaptor.capture());
+		String policy = yamlCaptor.getValue();
+		assertThat(policy)
+			.contains("namespace: test-scm-manager")
+			.contains("kubernetes.io/metadata.name: test-argocd")
+			.contains("app.kubernetes.io/name: argocd-repo-server")
+			.contains("kubernetes.io/metadata.name: test-edge")
+			.contains("app.kubernetes.io/name: traefik")
+			.contains("kubernetes.io/metadata.name: test-observability")
+			.contains("prometheus: kube-prometheus-stack-prometheus")
+			.contains("kubernetes.io/metadata.name: test-automation")
+			.contains("app.kubernetes.io/component: jenkins-controller")
+			.contains("jenkins/jenkins-jenkins-agent: \"true\"")
+			.contains("cidr: 172.18.0.1/32")
+			.contains("cidr: 10.20.0.0/16")
+			.contains("port: http");
+
+		verify(k8sClient).applyYaml(
+			Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), relativePath).toString()
+		);
+	}
+
+	@Test
+	void removesRequiredAccessNetworkPolicyWhenNetworkPoliciesAreDisabled() throws IOException {
+		String relativePath = "apps/scm-manager/netpols/allow-required-access-to-scm-manager.yaml";
+		Path networkPolicy = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), relativePath);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "stale");
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient
+		);
+
+		scmManagerSetup.prepareNetworkPolicy();
+
+		assertThat(networkPolicy).doesNotExist();
+		verify(clusterResourcesRepo, never()).writeFile(eq(relativePath), anyString());
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
 	void pushBootstrapRepositoriesAfterScmManagerDeploymentPushesClusterResourcesRepository()
 		throws GitAPIException {
 		RepositoryWorkspace workspace = new RepositoryWorkspace(clusterResourcesRepo);

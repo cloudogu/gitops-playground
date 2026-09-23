@@ -40,9 +40,10 @@ class ArgoCDToolConfigMapperTest {
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setOpenshift(false);
 		config.getApplication().setSkipCrds(true);
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify ArgoCD deployment mode comes from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getArgocd().setNamespace("gitops");
-		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getArgocd().setOperator(false);
 		config.getFeatures().getArgocd().setUrl("https://argocd.example.org");
 		config.getFeatures().getArgocd().setEmailFrom("argocd@example.org");
 		config.getFeatures().getArgocd().setEmailToAdmin("admins@example.org");
@@ -52,6 +53,8 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getArgocd().getOidc().setClientId("argocd-client");
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
+		config.getFeatures().getIngress().setActive(true);
+		config.getFeatures().getIngress().setIngressNamespace("edge");
 		config.getFeatures().getMail().setActive(true);
 		config.getFeatures().getMail().setSmtpAddress("smtp.example.org");
 		config.getFeatures().getMail().setSmtpPort(2525);
@@ -63,6 +66,9 @@ class ArgoCDToolConfigMapperTest {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getSecrets().setActive(true);
+		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("build");
 		config.getMultiTenant().setCentralArgocdNamespace("central-gitops");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
@@ -73,6 +79,19 @@ class ArgoCDToolConfigMapperTest {
 		helmRelease.setChart("postgresql");
 		helmRelease.setRepoURL("https://charts.example.org");
 		config.getContent().setHelmReleases(List.of(helmRelease));
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema externalConnection =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionSchema();
+		externalConnection.setName("external-scm-manager");
+		externalConnection.setTool("argocd-repo-server");
+		externalConnection.setDirection("egress");
+		externalConnection.setCidrs(List.of("35.246.133.109/32"));
+		Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema port =
+			new Config.ApplicationSchema.NetworkPoliciesSchema.ExternalConnectionPortSchema();
+		port.setProtocol("tcp");
+		port.setPort(443);
+		externalConnection.setPorts(List.of(port));
+		config.getApplication().getNetworkPolicies().setEgressIsolation(true);
+		config.getApplication().getNetworkPolicies().setExternalConnections(List.of(externalConnection));
 
 		ArgoCDToolConfig actual = new ArgoCDToolConfigMapper(config).map(context());
 
@@ -88,6 +107,7 @@ class ArgoCDToolConfigMapperTest {
 														 "admin-password"
 													 ))
 													 .operator(true)
+													 .netpols(true)
 													 .activeNamespaces(List.of(
 														 "argocd",
 														 "monitoring",
@@ -104,7 +124,6 @@ class ArgoCDToolConfigMapperTest {
 													 ))
 													 .values(Map.of("server", Map.of("replicas", 2)))
 													 .multiTenant(true)
-													 .netpols(true)
 													 .tenantName("tenant-a")
 													 .url("https://argocd.example.org")
 													 .tenantNamespaces(List.of("team-a", "team-b"))
@@ -119,6 +138,16 @@ class ArgoCDToolConfigMapperTest {
 															 "mirrorRepos", true,
 															 "namePrefix", "tenant-a-",
 															 "netpols", true,
+															 "networkPolicies",
+															 Map.of(
+																 "argocdRepoServerEgressIsolation", true,
+																 "argocdRepoServerEgress",
+																 List.of(Map.of(
+																	 "name", "external-scm-manager",
+																	 "cidrs", List.of("35.246.133.109/32"),
+																	 "ports", List.of(Map.of("protocol", "TCP", "port", 443))
+																 ))
+															 ),
 															 "openshift", true,
 															 "skipCrds", true
 														 ),
@@ -158,6 +187,8 @@ class ArgoCDToolConfigMapperTest {
 															 ),
 															 "certManager",
 															 Map.of("active", true, "issuer", "production-issuer"),
+															 "ingress",
+															 Map.of("active", true, "namespace", "edge"),
 															 "mail",
 															 Map.of(
 																 "active", true,
@@ -171,6 +202,8 @@ class ArgoCDToolConfigMapperTest {
 															 "secrets",
 															 Map.of("active", true)
 														 ),
+														 "jenkins",
+														 Map.of("active", true, "internal", true, "namespace", "build"),
 														 "multiTenant",
 														 Map.of("centralArgocdNamespace", "central-gitops"),
 														 "scm",
@@ -193,6 +226,7 @@ class ArgoCDToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
 			true,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

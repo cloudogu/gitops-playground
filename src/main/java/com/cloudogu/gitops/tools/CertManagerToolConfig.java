@@ -11,6 +11,7 @@ import java.util.Map;
 public record CertManagerToolConfig(
 	boolean active,
 	String namespace,
+	boolean netpols,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
 	Map<String, Object> templateConfig

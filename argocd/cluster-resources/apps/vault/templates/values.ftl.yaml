@@ -14,8 +14,50 @@ global:
 <#if config.features.secrets.vault.helm.image?has_content 
   || host?has_content 
   || config.application.podResources == true
+  || config.application.netpols == true
   || dev?has_content>
 server:
+</#if>
+<#if config.application.netpols == true>
+  networkPolicy:
+    enabled: true
+    ingress:
+      # Vault server-to-server communication. The podSelector without a namespaceSelector
+      # intentionally only matches Vault pods in this namespace.
+      - from:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/instance: vault
+                app.kubernetes.io/name: vault
+        ports:
+          - protocol: TCP
+            port: 8200
+          - protocol: TCP
+            port: 8201
+      # External Secrets fetches values from Vault on behalf of application namespaces.
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ${config.features.secrets.namespace}
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/instance: external-secrets
+        ports:
+          - protocol: TCP
+            port: 8200
+<#if host?has_content && config.features.ingress.active == true>
+      # Allow access through the GOP-managed ingress controller when Vault has an ingress.
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ${config.features.ingress.namespace}
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: traefik
+        ports:
+          - protocol: TCP
+            port: 8200
+</#if>
 </#if>
 <#if config.features.secrets.vault.helm.image?has_content>
 <#assign imageObject = DockerImageParser.parse(config.features.secrets.vault.helm.image)>

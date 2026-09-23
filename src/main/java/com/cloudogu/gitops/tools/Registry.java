@@ -1,16 +1,20 @@
 package com.cloudogu.gitops.tools;
 
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
+import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +30,10 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 
 	private static final String TOOL_NAME = "registry";
 	private static final String RELEASE_NAME = "docker-registry";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/registry/templates/netpols/allow-required-access-to-registry.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/registry/netpols/allow-required-access-to-registry.yaml";
 
 	private final K8sClient k8sClient;
 
@@ -59,6 +67,7 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 		this.namespace = activeNamespace(toolConfig());
 
 		prepareRegistryHelmValues();
+		prepareRegistryNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
 
 	@Override
@@ -94,6 +103,33 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 		service.put("nodePort", toolConfig().bootstrapNodePort());
 		service.put("type", "NodePort");
 		addHelmValuesData("service", service);
+	}
+
+	private void prepareRegistryNetworkPolicy(GitRepo clusterResourcesRepo) {
+		Path networkPolicyPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), NETWORK_POLICY_PATH);
+		if (!toolConfig().netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		if (toolConfig().registryAccessCidrs().isEmpty()) {
+			log.warn(
+				"No registry access CIDRs configured. External access to the internal registry will remain blocked."
+			);
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of(
+					"namespace", namespace,
+					"registryAccessCidrs", toolConfig().registryAccessCidrs()
+				)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate registry NetworkPolicy", e);
+		}
 	}
 
 	private void deployInternalRegistry() {

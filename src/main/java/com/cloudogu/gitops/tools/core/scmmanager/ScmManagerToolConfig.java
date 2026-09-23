@@ -5,6 +5,7 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import com.cloudogu.gitops.tools.common.ImmutableConfigData;
 import lombok.Builder;
 
+import java.util.List;
 import java.util.Map;
 
 @Builder
@@ -18,7 +19,17 @@ public record ScmManagerToolConfig(
 	String gitOpsUsername,
 	boolean skipPlugins,
 	boolean skipRestart,
+	boolean netpols,
+	List<String> bootstrapCidrs,
+	boolean argocdActive,
+	String argocdNamespace,
+	boolean ingressActive,
+	String ingressNamespace,
+	boolean monitoringActive,
+	String monitoringNamespace,
 	boolean jenkinsActive,
+	boolean jenkinsInternal,
+	String jenkinsNamespace,
 	String jenkinsUrl,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
@@ -26,6 +37,7 @@ public record ScmManagerToolConfig(
 ) {
 
 	public ScmManagerToolConfig {
+		bootstrapCidrs = List.copyOf(bootstrapCidrs);
 		templateConfig = ImmutableConfigData.copyMap(templateConfig);
 	}
 }
