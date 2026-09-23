@@ -33,7 +33,7 @@
         <okhttpVersion>5.3.2</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.fabric8.java.version>7.8.0</kubernetes.fabric8.java.version>
+        <kubernetes.fabric8.java.version>7.9.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
         <netty.version>4.2.17.Final</netty.version>
     </properties>
