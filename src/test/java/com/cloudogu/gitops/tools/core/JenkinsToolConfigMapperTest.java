@@ -70,7 +70,8 @@ class JenkinsToolConfigMapperTest {
 		config.getJenkins().getHelm().setChart("jenkins-chart");
 		config.getJenkins().getHelm().setVersion("7.8.9");
 		config.getJenkins().getHelm().setValues(Map.of("controller", Map.of("replicas", 2)));
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
 		config.getFeatures().getIngress().setActive(true);
@@ -225,7 +226,7 @@ class JenkinsToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
-			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
+			DeploymentContext.ArgoCdDeploymentMode.HELM,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

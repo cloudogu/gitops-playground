@@ -128,7 +128,8 @@ class VaultToolConfigMapperTest {
 		config.getRegistry().setReadOnlyPassword("read-only-password");
 		config.getRegistry().setPassword("registry-password");
 
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.getFeatures().getArgocd().setActive(false);
 
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
@@ -151,7 +152,7 @@ class VaultToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
-			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
+			DeploymentContext.ArgoCdDeploymentMode.HELM,
 			false,
 			DeploymentContext.ClusterDistribution.OPENSHIFT
 		);

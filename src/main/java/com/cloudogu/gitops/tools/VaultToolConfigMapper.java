@@ -44,7 +44,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 			.put("application.netpols", config.getApplication().getNetpols())
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
-			.put("features.argocd.active", config.getFeatures().getArgocd().getActive())
+			.put("features.argocd.active", context.isArgoCdEnabled())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.ingress.active", config.getFeatures().getIngress().getActive())

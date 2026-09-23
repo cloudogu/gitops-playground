@@ -35,7 +35,8 @@ class ScmManagerToolConfigMapperTest {
 		config.getJenkins().setInternal(true);
 		config.getJenkins().setNamespace("automation");
 		config.getJenkins().setUrlForScm("http://jenkins.automation.svc");
-		config.getFeatures().getArgocd().setActive(true);
+		// Intentionally differs from the DeploymentContext to verify derived values come from the context.
+		config.getFeatures().getArgocd().setActive(false);
 		config.getFeatures().getArgocd().setNamespace("gitops");
 		config.getFeatures().getIngress().setActive(true);
 		config.getFeatures().getIngress().setIngressNamespace("edge");
@@ -146,7 +147,7 @@ class ScmManagerToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.MULTI_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.INTERNAL,
-			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
+			DeploymentContext.ArgoCdDeploymentMode.HELM,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);

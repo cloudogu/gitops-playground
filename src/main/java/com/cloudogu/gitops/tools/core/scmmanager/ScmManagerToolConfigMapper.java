@@ -42,7 +42,7 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .skipRestart(scmManager.getSkipRestart())
 								   .netpols(config.getApplication().getNetpols())
 								   .bootstrapCidrs(ToolConfigMapperSupport.networkPolicyBootstrapCidrs(config))
-								   .argocdActive(config.getFeatures().getArgocd().getActive())
+								   .argocdActive(context.isArgoCdEnabled())
 								   .argocdNamespace(namePrefix + config.getFeatures().getArgocd().getNamespace())
 								   .ingressActive(config.getFeatures().getIngress().getActive())
 								   .ingressNamespace(namePrefix + config.getFeatures().getIngress().getIngressNamespace())
