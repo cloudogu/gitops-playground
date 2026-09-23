@@ -92,6 +92,20 @@ import static com.cloudogu.gitops.config.ConfigConstants.DEBUG_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.DESTROY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_ENABLE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_DATA_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAMESPACE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_PATH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_SERVER_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_STORE_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_VERSION_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION;
@@ -902,6 +916,12 @@ public class Config {
 			@JsonPropertyDescription(ESO_ENABLE_DESCRIPTION)
 			private Boolean active = false;
 
+			@JsonPropertyDescription(EXTERNAL_VAULT_DESCRIPTION)
+			private ExternalVaultSchema vault = new ExternalVaultSchema();
+
+			@JsonPropertyDescription(EXTERNAL_SECRET_RESOURCES_DESCRIPTION)
+			private List<ExternalSecretSchema> secrets = new ArrayList<>();
+
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			private ESOHelmSchema helm;
@@ -912,6 +932,58 @@ public class Config {
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
 				helm.setVersion("0.9.16");
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalVaultSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_STORE_NAME_DESCRIPTION)
+				private String storeName = "external-vault";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_SERVER_DESCRIPTION)
+				private String server = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_PATH_DESCRIPTION)
+				private String path = "secret";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_VERSION_DESCRIPTION)
+				private String version = "v2";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_AUTH_DESCRIPTION)
+				private VaultAuthSchema auth = new VaultAuthSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class VaultAuthSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION)
+				private TokenSecretRefSchema tokenSecretRef = new TokenSecretRefSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class TokenSecretRefSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_KEY_DESCRIPTION)
+				private String key = "token";
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalSecretSchema {
+				@JsonPropertyDescription(EXTERNAL_SECRET_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_NAMESPACE_DESCRIPTION)
+				private String namespace = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION)
+				private String remoteKey = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_DATA_DESCRIPTION)
+				private Map<String, String> data = new HashMap<>();
 			}
 
 			@Getter

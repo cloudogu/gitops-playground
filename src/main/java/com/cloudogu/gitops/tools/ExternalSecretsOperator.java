@@ -10,8 +10,8 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.MapUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -24,9 +24,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.util.Map;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -49,6 +46,10 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		"argocd/cluster-resources/apps/external-secrets/templates/netpols/allow-required-access-to-external-secrets.ftl.yaml";
 	private static final String NETWORK_POLICY_PATH =
 		"apps/external-secrets/netpols/allow-required-access-to-external-secrets.yaml";
+	private static final String EXTERNAL_VAULT_RESOURCES_TEMPLATE =
+		"argocd/cluster-resources/apps/external-secrets/templates/external-vault-resources.ftl.yaml";
+	private static final String EXTERNAL_VAULT_RESOURCES_PATH =
+		"apps/external-secrets/misc/external-vault-resources.yaml";
 
 	// Kinds that a namespaced ArgoCD cluster registration (see SingleTenantMode) can never sync itself.
 	private static final Set<String> CLUSTER_SCOPED_KINDS = Set.of(
@@ -99,6 +100,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		applyClusterScopedResources();
 		prepareExternalSecretsApp(repositoryWorkspace.getClusterResourcesRepository());
 		prepareExternalSecretsNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
+		prepareExternalVaultResources(repositoryWorkspace.getClusterResourcesRepository());
 	}
 
 	@Override
@@ -228,6 +230,46 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to generate external-secrets NetworkPolicy", e);
+		}
+	}
+
+	private void prepareExternalVaultResources(GitRepo clusterResourcesRepo) {
+		Path resourcesPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), EXTERNAL_VAULT_RESOURCES_PATH);
+		if (toolConfig().managedSecrets().isEmpty()) {
+			FileSystemUtils.deleteFile(resourcesPath.toString());
+			return;
+		}
+
+		ExternalVaultConfig vault = toolConfig().externalVault();
+		Map<String, Object> vaultTemplateData = Map.of(
+			"storeName", vault.storeName(),
+			"server", vault.server(),
+			"path", vault.path(),
+			"version", vault.version(),
+			"tokenSecretName", vault.tokenSecretName(),
+			"tokenSecretKey", vault.tokenSecretKey(),
+			"targetNamespaces", vault.targetNamespaces()
+		);
+		var secretTemplateData = toolConfig().managedSecrets().stream()
+			.map(secret -> Map.<String, Object>of(
+				"name", secret.name(),
+				"namespace", secret.namespace(),
+				"remoteKey", secret.remoteKey(),
+				"data", secret.data()
+			))
+			.toList();
+
+		try {
+			String resourcesYaml = new TemplatingEngine().template(
+				new File(EXTERNAL_VAULT_RESOURCES_TEMPLATE),
+				Map.of(
+					"vault", vaultTemplateData,
+					"externalSecrets", secretTemplateData
+				)
+			);
+			clusterResourcesRepo.writeFile(EXTERNAL_VAULT_RESOURCES_PATH, resourcesYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate external Vault resources", e);
 		}
 	}
 }

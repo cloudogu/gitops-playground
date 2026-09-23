@@ -1,0 +1,41 @@
+<#list vault.targetNamespaces as namespace>
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: "${vault.storeName?json_string}"
+  namespace: "${namespace?json_string}"
+spec:
+  provider:
+    vault:
+      server: "${vault.server?json_string}"
+      path: "${vault.path?json_string}"
+      version: "${vault.version?json_string}"
+      auth:
+        tokenSecretRef:
+          name: "${vault.tokenSecretName?json_string}"
+          key: "${vault.tokenSecretKey?json_string}"
+---
+</#list>
+<#list externalSecrets as secret>
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: "${secret.name?json_string}"
+  namespace: "${secret.namespace?json_string}"
+spec:
+  secretStoreRef:
+    name: "${vault.storeName?json_string}"
+    kind: SecretStore
+  target:
+    name: "${secret.name?json_string}"
+    creationPolicy: Owner
+  data:
+<#list secret.data as secretKey, property>
+    - secretKey: "${secretKey?json_string}"
+      remoteRef:
+        key: "${secret.remoteKey?json_string}"
+        property: "${property?json_string}"
+</#list>
+<#if secret_has_next>---
+</#if>
+</#list>

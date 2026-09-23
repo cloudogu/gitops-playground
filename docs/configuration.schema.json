@@ -58,6 +58,13 @@
         "type" : "string"
       }
     },
+    "Map(String,String)-nullable" : {
+      "anyOf" : [ {
+        "type" : "null"
+      }, {
+        "$ref" : "#/$defs/Map(String,String)"
+      } ]
+    },
     "OidcSchema-nullable" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -705,6 +712,80 @@
                   },
                   "additionalProperties" : false,
                   "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+                },
+                "secrets" : {
+                  "description" : "Secrets to synchronize from the external Vault into Kubernetes",
+                  "type" : [ "array", "null" ],
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "data" : {
+                        "$ref" : "#/$defs/Map(String,String)-nullable",
+                        "description" : "Mapping from Kubernetes Secret keys to Vault properties",
+                        "additionalProperties" : {
+                          "type" : "string"
+                        }
+                      },
+                      "name" : {
+                        "type" : [ "string", "null" ],
+                        "description" : "Name of the generated ExternalSecret and target Kubernetes Secret"
+                      },
+                      "namespace" : {
+                        "type" : [ "string", "null" ],
+                        "description" : "Target Kubernetes namespace. The namespace must already exist and be managed by Argo CD"
+                      },
+                      "remoteKey" : {
+                        "type" : [ "string", "null" ],
+                        "description" : "Path of the secret inside the configured Vault KV secrets engine"
+                      }
+                    },
+                    "additionalProperties" : false
+                  }
+                },
+                "vault" : {
+                  "type" : [ "object", "null" ],
+                  "properties" : {
+                    "auth" : {
+                      "type" : [ "object", "null" ],
+                      "properties" : {
+                        "tokenSecretRef" : {
+                          "type" : [ "object", "null" ],
+                          "properties" : {
+                            "key" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Key in the Kubernetes Secret containing the Vault token"
+                            },
+                            "name" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Name of the Kubernetes Secret containing the Vault token"
+                            }
+                          },
+                          "additionalProperties" : false,
+                          "description" : "Reference to an existing Kubernetes Secret containing the Vault token. The Secret must exist in every target namespace"
+                        }
+                      },
+                      "additionalProperties" : false,
+                      "description" : "Authentication settings used by the external secrets operator to access the external Vault"
+                    },
+                    "path" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Vault KV secrets engine mount path"
+                    },
+                    "server" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "URL of the external HashiCorp Vault"
+                    },
+                    "storeName" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Name of the namespaced SecretStore generated for the external Vault"
+                    },
+                    "version" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Vault KV secrets engine version"
+                    }
+                  },
+                  "additionalProperties" : false,
+                  "description" : "Configures an external HashiCorp Vault as a secret source for the external secrets operator"
                 }
               },
               "additionalProperties" : false,
@@ -781,11 +862,7 @@
           "description" : "Installs Jenkins as CI server"
         },
         "additionalEnvs" : {
-          "anyOf" : [ {
-            "type" : "null"
-          }, {
-            "$ref" : "#/$defs/Map(String,String)"
-          } ],
+          "$ref" : "#/$defs/Map(String,String)-nullable",
           "description" : "Set additional environments to Jenkins",
           "additionalProperties" : {
             "type" : "string"

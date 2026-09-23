@@ -61,7 +61,9 @@ public class ApplicationConfigurator {
 	private void addFeatureConfig(Config newConfig) {
 		Config.SecretsSchema secrets = newConfig.getFeatures().getSecrets();
 		boolean vaultActive = secrets.getVault().getMode() != null;
-		if (vaultActive) {
+		boolean externalVaultSecretsConfigured = secrets.getExternalSecrets().getSecrets() != null
+			&& !secrets.getExternalSecrets().getSecrets().isEmpty();
+		if (vaultActive || externalVaultSecretsConfigured) {
 			secrets.getExternalSecrets().setActive(true);
 		}
 		secrets.setActive(vaultActive || Boolean.TRUE.equals(secrets.getExternalSecrets().getActive()));

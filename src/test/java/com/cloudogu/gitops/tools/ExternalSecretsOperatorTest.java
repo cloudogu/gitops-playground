@@ -133,6 +133,43 @@ class ExternalSecretsOperatorTest {
 	}
 
 	@Test
+	void rendersExternalVaultSecretStoreAndExternalSecret() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+
+		install(createExternalSecretsOperator());
+
+		Path resources = clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/misc/external-vault-resources.yaml"
+		);
+		String yaml = Files.readString(resources);
+
+		assertThat(yaml)
+			.contains("kind: SecretStore")
+			.contains("name: \"customer-vault\"")
+			.contains("namespace: \"customer-app\"")
+			.contains("server: \"http://host.k3d.internal:8200\"")
+			.contains("name: \"vault-token\"")
+			.contains("kind: ExternalSecret")
+			.contains("name: \"customer-credentials\"")
+			.contains("key: \"gop/customer-test\"")
+			.contains("secretKey: \"username\"")
+			.contains("property: \"username\"")
+			.contains("secretKey: \"password\"")
+			.contains("property: \"password\"");
+	}
+
+	@Test
+	void doesNotRenderExternalVaultResourcesWithoutManagedSecrets() throws GitAPIException {
+		install(createExternalSecretsOperator());
+
+		Path resources = clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/misc/external-vault-resources.yaml"
+		);
+
+		assertThat(resources).doesNotExist();
+	}
+
+	@Test
 	void createsRequiredNetworkPolicies() throws GitAPIException, IOException {
 		config.getApplication().setNetpols(true);
 
@@ -277,6 +314,24 @@ class ExternalSecretsOperatorTest {
 			.isEqualTo(expectedImagePullSecrets);
 		assertThat(((Map<String, Object>) parseActualYaml().get("webhook")).get("imagePullSecrets"))
 			.isEqualTo(expectedImagePullSecrets);
+	}
+
+	private void configureExternalVaultSecret() {
+		Config.SecretsSchema.ESOSchema externalSecrets = config.getFeatures().getSecrets().getExternalSecrets();
+		externalSecrets.getVault().setStoreName("customer-vault");
+		externalSecrets.getVault().setServer("http://host.k3d.internal:8200");
+		externalSecrets.getVault().setPath("secret");
+		externalSecrets.getVault().setVersion("v2");
+		externalSecrets.getVault().getAuth().getTokenSecretRef().setName("vault-token");
+		externalSecrets.getVault().getAuth().getTokenSecretRef().setKey("token");
+
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema secret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		secret.setName("customer-credentials");
+		secret.setNamespace("customer-app");
+		secret.setRemoteKey("gop/customer-test");
+		secret.setData(Map.of("username", "username", "password", "password"));
+		externalSecrets.setSecrets(List.of(secret));
 	}
 
 	private ExternalSecretsOperator createExternalSecretsOperator() throws GitAPIException {

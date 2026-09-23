@@ -6,6 +6,7 @@ import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,21 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setImage("eso-image");
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setCertControllerImage("cert-controller-image");
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setWebhookImage("webhook-image");
+		Config.SecretsSchema.ESOSchema.ExternalVaultSchema externalVault =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault();
+		externalVault.setStoreName("customer-vault");
+		externalVault.setServer("https://vault.example.org");
+		externalVault.setPath("customer-secrets");
+		externalVault.setVersion("v2");
+		externalVault.getAuth().getTokenSecretRef().setName("vault-token");
+		externalVault.getAuth().getTokenSecretRef().setKey("token");
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		externalSecret.setName("customer-credentials");
+		externalSecret.setNamespace("customer-app");
+		externalSecret.setRemoteKey("gop/customer");
+		externalSecret.setData(Map.of("username", "username", "password", "password"));
+		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
 
 		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context());
 
@@ -62,6 +78,21 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																							   "/charts")
 																						   .build())
 																	  .imagePullSecret(imagePullSecret())
+																	  .externalVault(ExternalVaultConfig.builder()
+																	    .storeName("customer-vault")
+																	    .server("https://vault.example.org")
+																	    .path("customer-secrets")
+																	    .version("v2")
+																	    .tokenSecretName("vault-token")
+																	    .tokenSecretKey("token")
+																	    .targetNamespaces(List.of("customer-app"))
+																	    .build())
+																	  .managedSecrets(List.of(ManagedExternalSecretConfig.builder()
+																	    .name("customer-credentials")
+																	    .namespace("customer-app")
+																	    .remoteKey("gop/customer")
+																	    .data(Map.of("username", "username", "password", "password"))
+																	    .build()))
 																	  .templateConfig(Map.of(
 																		  "application",
 																		  Map.of(
@@ -99,6 +130,26 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context());
 
 		assertThat(actual.active()).isFalse();
+	}
+
+	@Test
+	void rejectsManagedSecretsWithoutExternalVaultConnection() {
+		Config config = new Config();
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		externalSecret.setName("customer-credentials");
+		externalSecret.setNamespace("customer-app");
+		externalSecret.setRemoteKey("gop/customer");
+		externalSecret.setData(Map.of("password", "password"));
+		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
+
+		IllegalArgumentException exception = org.junit.jupiter.api.Assertions.assertThrows(
+			IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context())
+		);
+
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.vault.server must be configured when external Vault secrets are used");
 	}
 
 	private static DeploymentContext context() {

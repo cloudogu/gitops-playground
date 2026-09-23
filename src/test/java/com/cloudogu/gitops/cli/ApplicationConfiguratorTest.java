@@ -140,6 +140,24 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
+	void activatesExternalSecretsWhenExternalVaultSecretsAreConfigured() {
+		Config config = minimalConfig();
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		externalSecret.setName("customer-credentials");
+		externalSecret.setNamespace("customer-app");
+		externalSecret.setRemoteKey("gop/customer");
+		externalSecret.setData(Map.of("password", "password"));
+		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
+
+		Config actualConfig = applicationConfigurator.initConfig(config);
+
+		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isNull();
+	}
+
+	@Test
 	void setsConfigApplicationRunningInsideK8s() {
 		applicationConfigurator = configuratorWithEnvironment(Map.of("KUBERNETES_SERVICE_HOST", "127.0.0.1"));
 
