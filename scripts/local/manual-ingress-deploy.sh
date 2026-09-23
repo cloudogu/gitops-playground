@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "Install Gateway API CRDs"
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml
+
+
 cat <<EOF > values.yaml
 deployment:
   kind: Deployment
