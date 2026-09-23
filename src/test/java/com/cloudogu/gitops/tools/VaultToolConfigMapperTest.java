@@ -36,6 +36,7 @@ class VaultToolConfigMapperTest {
 														"application-credentials", "gop-job", "username", "password"
 													))
 													.developmentMode(false)
+													.operator(false)
 													.helm(HelmChartConfig.builder()
 																		 .repoURL("https://vault-chart.example.org")
 																		 .chart("vault-chart")
@@ -53,7 +54,7 @@ class VaultToolConfigMapperTest {
 															"podResources", true
 														),
 														"features", Map.of(
-															"argocd", Map.of("active", true),
+															"argocd", Map.of("active", true, "operator", false),
 															"certManager", Map.of(
 																"active", true,
 																"issuer", "production-issuer"
@@ -88,6 +89,25 @@ class VaultToolConfigMapperTest {
 														"registry", Map.of("createImagePullSecrets", true)
 													))
 													.build());
+	}
+
+	@Test
+	void mapsArgoCdOperatorModeFromDeploymentContext() {
+		Config config = config();
+		DeploymentContext context = new DeploymentContext(
+			DeploymentContext.TenantMode.SINGLE_TENANT,
+			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
+			false,
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
+
+		VaultToolConfig actual = new VaultToolConfigMapper(config).map(context);
+
+		assertThat(actual.operator()).isTrue();
+		Map<String, Object> features = (Map<String, Object>) actual.templateConfig().get("features");
+		Map<String, Object> argocd = (Map<String, Object>) features.get("argocd");
+		assertThat(argocd).containsEntry("operator", true);
 	}
 
 	@ParameterizedTest

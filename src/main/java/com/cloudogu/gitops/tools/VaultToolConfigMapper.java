@@ -29,6 +29,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 							  .applicationPassword(config.getApplication().getPassword())
 							  .applicationCredentials(CredentialsReference.from(config.getApplication().getCredentials()))
 							  .developmentMode(isDevelopmentMode(secrets.getVault().getMode()))
+							  .operator(context.isArgoCdOperator())
 							  .helm(ToolConfigMapperSupport.helmChart(
 								  secrets.getVault().getHelm(), config.getApplication().getLocalHelmChartFolder()
 							  ))
@@ -45,6 +46,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 			.put("application.openshift", context.isOpenshift())
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("features.argocd.active", context.isArgoCdEnabled())
+			.put("features.argocd.operator", context.isArgoCdOperator())
 			.put("features.certManager.active", config.getFeatures().getCertManager().getActive())
 			.put("features.certManager.issuer", config.getFeatures().getCertManager().getIssuer())
 			.put("features.ingress.active", config.getFeatures().getIngress().getActive())

@@ -205,6 +205,58 @@ class VaultTest {
 	}
 
 	@Test
+	void operatorModeCreatesVaultAuthDelegatorBindingImperatively() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+
+		install(createVault());
+
+		var binding = client.rbac().clusterRoleBindings().withName("vault-server-binding").get();
+		assertThat(binding).isNotNull();
+		assertThat(binding.getRoleRef().getKind()).isEqualTo("ClusterRole");
+		assertThat(binding.getRoleRef().getName()).isEqualTo("system:auth-delegator");
+		assertThat(binding.getSubjects()).singleElement().satisfies(subject -> {
+			assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+			assertThat(subject.getName()).isEqualTo("vault");
+			assertThat(subject.getNamespace()).isEqualTo("foo-secrets");
+		});
+
+		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
+		Map<String, Object> authDelegator = (Map<String, Object>) server.get("authDelegator");
+		assertThat(authDelegator.get("enabled")).isEqualTo(false);
+	}
+
+	@Test
+	void operatorModeDoesNotCreateVaultAuthDelegatorBindingWhenExplicitlyDisabled() throws GitAPIException, IOException {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getSecrets().getVault().getHelm().setValues(Map.of(
+			"server", Map.of("authDelegator", Map.of("enabled", false))
+		));
+
+		install(createVault());
+
+		assertThat(client.rbac().clusterRoleBindings().withName("vault-server-binding").get()).isNull();
+	}
+
+	@Test
+	void operatorModeUsesConfiguredVaultServiceAccountForAuthDelegatorBinding() throws GitAPIException {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		config.getFeatures().getSecrets().getVault().getHelm().setValues(Map.of(
+			"server", Map.of("serviceAccount", Map.of("name", "custom-vault"))
+		));
+
+		install(createVault());
+
+		var binding = client.rbac().clusterRoleBindings().withName("vault-server-binding").get();
+		assertThat(binding).isNotNull();
+		assertThat(binding.getSubjects()).singleElement().satisfies(subject ->
+			assertThat(subject.getName()).isEqualTo("custom-vault")
+		);
+	}
+
+	@Test
 	void devModeCanBeEnabledViaConfig() throws GitAPIException, IOException {
 		config.getFeatures().getSecrets().getVault().setMode(Config.VaultMode.DEV);
 		config.getApplication().setUsername("abc");
