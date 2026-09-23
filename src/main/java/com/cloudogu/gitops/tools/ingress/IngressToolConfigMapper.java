@@ -1,0 +1,48 @@
+package com.cloudogu.gitops.tools.ingress;
+
+import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.tools.common.TemplateConfig;
+import com.cloudogu.gitops.tools.common.ToolConfigMapper;
+import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
+import jakarta.inject.Singleton;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
+@Singleton
+@RequiredArgsConstructor
+public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConfig> {
+
+	private final Config config;
+
+	@Override
+	public IngressToolConfig map(DeploymentContext context) {
+		Config.IngressSchema ingress = config.getFeatures().getIngress();
+		String namePrefix = config.getApplication().getNamePrefix();
+
+		return IngressToolConfig.builder()
+								.active(ingress.getActive())
+								.namespace(namePrefix + ingress.getIngressNamespace())
+								.helm(ToolConfigMapperSupport.helmChart(
+									ingress.getHelm(),
+									config.getApplication().getLocalHelmChartFolder()
+								))
+								.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+								.netpols(config.getApplication().getNetpols())
+								.monitoringActive(config.getFeatures().getMonitoring().getActive())
+								.monitoringNamespace(namePrefix + config.getFeatures().getMonitoring().getNamespace())
+								.templateConfig(templateConfig(config))
+								.build();
+	}
+
+	private static Map<String, Object> templateConfig(Config config) {
+		return new TemplateConfig()
+			.put("application.namePrefix", config.getApplication().getNamePrefix())
+			.put("features.ingress.helm.image", config.getFeatures().getIngress().getHelm().getImage())
+			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
+			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
+			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
+			.values();
+	}
+}
