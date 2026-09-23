@@ -106,7 +106,7 @@ class ExternalSecretsOperatorTest {
 			"https://charts.external-secrets.io",
 			"external-secrets",
 			"external-secrets",
-			"0.9.16",
+			"2.11.0",
 			"foo-secrets",
 			"external-secrets",
 			temporaryYamlFile,
@@ -240,7 +240,7 @@ class ExternalSecretsOperatorTest {
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture());
 		assertThat(helmConfig.getValue().chart()).isEqualTo("external-secrets");
 		assertThat(helmConfig.getValue().repoURL()).isEqualTo("https://charts.external-secrets.io");
-		assertThat(helmConfig.getValue().version()).isEqualTo("0.9.16");
+		assertThat(helmConfig.getValue().version()).isEqualTo("2.11.0");
 
 		verify(deployer).deployFeature(
 			eq("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b"),

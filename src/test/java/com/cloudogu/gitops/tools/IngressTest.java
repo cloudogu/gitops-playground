@@ -177,7 +177,7 @@ class IngressTest {
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture());
 		assertThat(helmConfig.getValue().chart()).isEqualTo("traefik");
 		assertThat(helmConfig.getValue().repoURL()).isEqualTo("https://traefik.github.io/charts");
-		assertThat(helmConfig.getValue().version()).isEqualTo("39.0.9");
+		assertThat(helmConfig.getValue().version()).isEqualTo("41.6.0");
 
 		verify(deployer).deployFeature(
 			"http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b",
