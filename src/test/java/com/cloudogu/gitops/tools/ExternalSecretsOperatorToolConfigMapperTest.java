@@ -31,6 +31,8 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		config.getRegistry().setPassword("registry-password");
 		config.getFeatures().getSecrets().setActive(true);
 		config.getFeatures().getSecrets().setNamespace("external-secrets");
+		// Intentionally differs from the DeploymentContext to verify the derived ArgoCD mode comes from the context.
+		config.getFeatures().getArgocd().setOperator(false);
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setRepoURL("https://eso.example.org");
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setChart("eso-chart");
 		config.getFeatures().getSecrets().getExternalSecrets().getHelm().setVersion("2.3.4");
@@ -44,6 +46,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		assertThat(actual).isEqualTo(ExternalSecretsOperatorToolConfig.builder()
 																	  .active(true)
 																	  .namespace("test-external-secrets")
+																	  .operator(true)
 																	  .netpols(true)
 																	  .skipCrds(true)
 																	  .helm(HelmChartConfig.builder()
@@ -92,7 +95,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		return new DeploymentContext(
 			DeploymentContext.TenantMode.SINGLE_TENANT,
 			DeploymentContext.ScmManagerDeploymentMode.EXTERNAL,
-			DeploymentContext.ArgoCdDeploymentMode.DISABLED,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
 			false,
 			DeploymentContext.ClusterDistribution.KUBERNETES
 		);
