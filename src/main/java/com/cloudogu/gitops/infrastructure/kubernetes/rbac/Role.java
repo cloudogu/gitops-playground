@@ -30,6 +30,7 @@ public record Role(
 
 	public enum Variant {
 		ARGOCD("templates/kubernetes/rbac/argocd-role.ftl.yaml"),
+		ARGOCD_JENKINS("templates/kubernetes/rbac/argocd-jenkins-role.ftl.yaml"),
 		CLUSTER_ADMIN("");
 
 		private final String templatePath;

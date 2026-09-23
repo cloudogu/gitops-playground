@@ -33,6 +33,7 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .operator(context.isArgoCdOperator())
 							   .netpols(config.getApplication().getNetpols())
 							   .activeNamespaces(activeNamespaces)
+							   .internalJenkinsNamespace(internalJenkinsNamespace(config))
 							   .smtpUser(config.getFeatures().getMail().getSmtpUser())
 							   .smtpPassword(config.getFeatures().getMail().getSmtpPassword())
 							   .smtpCredentials(CredentialsReference.from(config.getFeatures().getMail().getCredentials()))
@@ -47,6 +48,14 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 							   .templateConfig(templateConfig(config, context))
 							   .rbacTemplateConfig(rbacTemplateConfig(config, context))
 							   .build();
+	}
+
+	private static String internalJenkinsNamespace(Config config) {
+		if (!config.getJenkins().getActive() || !config.getJenkins().getInternal()) {
+			return null;
+		}
+
+		return config.getApplication().getNamePrefix() + config.getJenkins().getNamespace();
 	}
 
 	private static Map<String, Object> rbacTemplateConfig(Config config, DeploymentContext context) {
