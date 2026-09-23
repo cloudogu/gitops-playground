@@ -82,11 +82,11 @@ features:
   monitoring:
     active: true
     helm:
-      grafanaImage: "localhost:30000/proxy/grafana"
-      grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar"
-      prometheusImage: "localhost:30000/proxy/prometheus"
-      prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator"
-      prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader"
+      grafanaImage: "localhost:30000/proxy/grafana:latest"
+      grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar:latest"
+      prometheusImage: "localhost:30000/proxy/prometheus:latest"
+      prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator:latest"
+      prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader:latest"
   ingress:
     active: true
     helm:
@@ -98,15 +98,15 @@ features:
   secrets:
     externalSecrets:
       helm:
-        image: "localhost:30000/proxy/external-secrets"
+        image: "localhost:30000/proxy/external-secrets:latest"
     vault:
       helm:
-        image: "localhost:30000/proxy/vault"
+        image: "localhost:30000/proxy/vault:latest"
   certManager:
     active: true
     helm:
-      image: "localhost:30000/proxy/cert-manager-controller"
-      webhookImage: "localhost:30000/proxy/cert-manager-webhook"
-      cainjectorImage: "localhost:30000/proxy/cert-manager-cainjector"
+      image: "localhost:30000/proxy/cert-manager-controller:latest"
+      webhookImage: "localhost:30000/proxy/cert-manager-webhook:latest"
+      cainjectorImage: "localhost:30000/proxy/cert-manager-cainjector:latest"
 
 EOF
