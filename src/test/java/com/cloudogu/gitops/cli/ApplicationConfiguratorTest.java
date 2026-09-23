@@ -120,8 +120,23 @@ class ApplicationConfiguratorTest {
 		assertThat(actualConfig.getJenkins().getInternal()).isEqualTo(false);
 		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isEqualTo(EXPECTED_VAULT_MODE);
 
-		// Dynamic value (depends on vault mode)
-		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isEqualTo(true);
+		// Dynamic values (depend on vault mode)
+		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
+	}
+
+	@Test
+	void activatesExternalSecretsWithoutInternalVault() {
+		Config config = minimalConfig();
+		config.getApplication().setBaseUrl("http://localhost");
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
+
+		Config actualConfig = applicationConfigurator.initConfig(config);
+
+		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isNull();
+		assertThat(actualConfig.getFeatures().getSecrets().getVault().getUrl()).isEmpty();
 	}
 
 	@Test
@@ -399,7 +414,8 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setActive(false);
 		testConfig.getFeatures().getMail().setActive(false);
 		testConfig.getFeatures().getMonitoring().setActive(false);
-		testConfig.getFeatures().getSecrets().setActive(false);
+		testConfig.getFeatures().getSecrets().getExternalSecrets().setActive(false);
+		testConfig.getFeatures().getSecrets().getVault().setMode(null);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 

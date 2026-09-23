@@ -59,9 +59,12 @@ public class ApplicationConfigurator {
 	}
 
 	private void addFeatureConfig(Config newConfig) {
-		if (newConfig.getFeatures().getSecrets().getVault().getMode() != null) {
-			newConfig.getFeatures().getSecrets().setActive(true);
+		Config.SecretsSchema secrets = newConfig.getFeatures().getSecrets();
+		boolean vaultActive = secrets.getVault().getMode() != null;
+		if (vaultActive) {
+			secrets.getExternalSecrets().setActive(true);
 		}
+		secrets.setActive(vaultActive || Boolean.TRUE.equals(secrets.getExternalSecrets().getActive()));
 
 		if (hasText(newConfig.getFeatures().getMail().getSmtpAddress())) {
 			newConfig.getFeatures().getMail().setActive(true);
@@ -257,7 +260,7 @@ public class ApplicationConfigurator {
 			monitoring.setGrafanaUrl(injectSubdomain("grafana", baseUrl, urlSeparatorHyphen));
 			log.debug("Setting Monitoring URL {}", monitoring.getGrafanaUrl());
 		}
-		if (newConfig.getFeatures().getSecrets().getActive() && !hasText(vault.getUrl())) {
+		if (vault.getMode() != null && !hasText(vault.getUrl())) {
 			vault.setUrl(injectSubdomain("vault", baseUrl, urlSeparatorHyphen));
 			log.debug("Setting Vault URL {}", vault.getUrl());
 		}

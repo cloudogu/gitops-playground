@@ -81,7 +81,7 @@ class VaultTest {
 
 	VaultTest() {
 		config.getApplication().setNamePrefix("foo-");
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getVault().setMode(Config.VaultMode.DEV);
 	}
 
 	@BeforeEach
@@ -91,8 +91,8 @@ class VaultTest {
 	}
 
 	@Test
-	void isDisabledViaActiveFlag() throws GitAPIException {
-		config.getFeatures().getSecrets().setActive(false);
+	void isDisabledWithoutVaultMode() throws GitAPIException {
+		config.getFeatures().getSecrets().getVault().setMode(null);
 
 		assertFalse(createVault().isEnabled(new ContextBuilder(config).build()));
 	}
@@ -135,7 +135,8 @@ class VaultTest {
 	void doesNotUseIngressByDefault() throws GitAPIException, IOException {
 		install(createVault());
 
-		assertThat(parseActualYaml()).doesNotContainKey("server");
+		Map<String, Object> server = (Map<String, Object>) parseActualYaml().get("server");
+		assertThat(server).doesNotContainKey("ingress");
 	}
 
 	@Test

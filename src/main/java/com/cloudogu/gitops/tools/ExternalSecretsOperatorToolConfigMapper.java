@@ -20,7 +20,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 	public ExternalSecretsOperatorToolConfig map(DeploymentContext context) {
 		Config.SecretsSchema secrets = config.getFeatures().getSecrets();
 		return ExternalSecretsOperatorToolConfig.builder()
-												.active(secrets.getActive())
+												.active(secrets.getExternalSecrets().getActive())
 												.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
 												.operator(context.isArgoCdOperator())
 												.skipCrds(config.getApplication().getSkipCrds())

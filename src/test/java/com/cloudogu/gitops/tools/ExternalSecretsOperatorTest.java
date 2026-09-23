@@ -61,7 +61,7 @@ class ExternalSecretsOperatorTest {
 		"application", Map.of("namePrefix", "foo-"),
 		"registry", Map.of(),
 		"features", Map.of(
-			"secrets", Map.of("active", true)
+			"secrets", Map.of("externalSecrets", Map.of("active", true))
 		)
 	));
 
@@ -93,7 +93,7 @@ class ExternalSecretsOperatorTest {
 
 	@Test
 	void isDisabledViaActiveFlag() throws GitAPIException {
-		config.getFeatures().getSecrets().setActive(false);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(false);
 
 		assertFalse(createExternalSecretsOperator().isEnabled(new ContextBuilder(config).build()));
 	}

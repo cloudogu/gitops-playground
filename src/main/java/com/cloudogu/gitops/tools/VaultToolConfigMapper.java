@@ -21,7 +21,7 @@ public class VaultToolConfigMapper implements ToolConfigMapper<VaultToolConfig> 
 	public VaultToolConfig map(DeploymentContext context) {
 		Config.SecretsSchema secrets = config.getFeatures().getSecrets();
 		return VaultToolConfig.builder()
-							  .active(secrets.getActive())
+							  .active(secrets.getVault().getMode() != null)
 							  .namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
 							  .namePrefix(config.getApplication().getNamePrefix())
 							  .url(secrets.getVault().getUrl())

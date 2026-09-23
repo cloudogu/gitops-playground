@@ -91,6 +91,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_VARIABLES_DESCR
 import static com.cloudogu.gitops.config.ConfigConstants.DEBUG_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.DESTROY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.ESO_ENABLE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION;
@@ -897,6 +898,10 @@ public class Config {
 		@Getter
 		@Setter
 		public static class ESOSchema {
+			@Option(names = {"--external-secrets"}, description = ESO_ENABLE_DESCRIPTION)
+			@JsonPropertyDescription(ESO_ENABLE_DESCRIPTION)
+			private Boolean active = false;
+
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			private ESOHelmSchema helm;

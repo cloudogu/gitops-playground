@@ -29,7 +29,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		config.getRegistry().setProxyPassword("proxy-password");
 		config.getRegistry().setReadOnlyPassword("read-only-password");
 		config.getRegistry().setPassword("registry-password");
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 		config.getFeatures().getSecrets().setNamespace("external-secrets");
 		// Intentionally differs from the DeploymentContext to verify the derived ArgoCD mode comes from the context.
 		config.getFeatures().getArgocd().setOperator(false);
@@ -89,6 +89,16 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																		  Map.of("createImagePullSecrets", true)
 																	  ))
 																	  .build());
+	}
+
+	@Test
+	void mapsExternalSecretsActiveIndependentlyFromAggregateSecretsFlag() {
+		Config config = new Config();
+		config.getFeatures().getSecrets().setActive(true);
+
+		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context());
+
+		assertThat(actual.active()).isFalse();
 	}
 
 	private static DeploymentContext context() {

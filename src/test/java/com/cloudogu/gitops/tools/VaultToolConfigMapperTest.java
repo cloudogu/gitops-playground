@@ -90,6 +90,17 @@ class VaultToolConfigMapperTest {
 													.build());
 	}
 
+	@Test
+	void isInactiveWithoutVaultModeEvenWhenSecretsAreActive() {
+		Config config = config();
+		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getVault().setMode(null);
+
+		VaultToolConfig actual = new VaultToolConfigMapper(config).map(context());
+
+		assertThat(actual.active()).isFalse();
+	}
+
 	@ParameterizedTest
 	@CsvSource({
 		"DEV, true",

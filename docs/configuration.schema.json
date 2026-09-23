@@ -667,6 +667,10 @@
             "externalSecrets" : {
               "type" : [ "object", "null" ],
               "properties" : {
+                "active" : {
+                  "type" : [ "boolean", "null" ],
+                  "description" : "Installs the external secrets operator."
+                },
                 "helm" : {
                   "type" : [ "object", "null" ],
                   "properties" : {

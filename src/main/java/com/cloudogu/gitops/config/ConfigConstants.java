@@ -129,6 +129,7 @@ public final class ConfigConstants {
 	// group vault / secrets
 	public static final String SECRETS_DESCRIPTION = "Config parameters for the secrets management";
 	public static final String ESO_DESCRIPTION = "Config parameters for the external secrets operator";
+	public static final String ESO_ENABLE_DESCRIPTION = "Installs the external secrets operator.";
 	public static final String VAULT_DESCRIPTION = "Config parameters for the secrets-vault";
 	public static final String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod.";
 	public static final String VAULT_URL_DESCRIPTION = "Sets url for vault ui";
