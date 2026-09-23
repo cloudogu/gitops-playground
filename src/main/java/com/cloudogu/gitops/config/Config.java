@@ -520,7 +520,7 @@ public class Config {
 			helm.setChart("jenkins");
 			helm.setRepoURL("https://charts.jenkins.io");
 			// renovate: depName=jenkins registryUrl=https://charts.jenkins.io
-			helm.setVersion("5.9.56");
+			helm.setVersion("5.9.63");
 		}
 	}
 
@@ -848,7 +848,7 @@ public class Config {
 			helm.setChart("kube-prometheus-stack");
 			helm.setRepoURL("https://prometheus-community.github.io/helm-charts");
 			// renovate: depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
-			helm.setVersion("80.2.2");
+			helm.setVersion("91.5.0");
 			helm.setValues(new HashMap<>());
 		}
 
@@ -906,7 +906,7 @@ public class Config {
 				helm.setChart("external-secrets");
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
-				helm.setVersion("0.9.16");
+				helm.setVersion("2.11.0");
 			}
 
 			@Getter
@@ -1021,7 +1021,7 @@ public class Config {
 			helm.setChart("traefik");
 			helm.setRepoURL("https://traefik.github.io/charts");
 			// renovate: depName=traefik registryUrl=https://traefik.github.io/charts
-			helm.setVersion("39.0.9");
+			helm.setVersion("41.6.0");
 		}
 
 		@Getter
@@ -1057,7 +1057,7 @@ public class Config {
 			helm.setChart("cert-manager");
 			helm.setRepoURL("https://charts.jetstack.io");
 			// renovate: depName=cert-manager registryUrl=https://charts.jetstack.io
-			helm.setVersion("1.19.4");
+			helm.setVersion("1.21.2");
 		}
 
 		@Getter

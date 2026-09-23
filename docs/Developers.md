@@ -757,5 +757,5 @@ If the helm repos are not present or up-to-date:
 ```shell
 helm repo add traefik https://traefik.github.io/charts
 helm repo update
-helm install traefik traefik/traefik --version 39.0.9
+helm install traefik traefik/traefik --version 41.6.0
 ```

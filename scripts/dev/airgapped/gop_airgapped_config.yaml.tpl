@@ -31,11 +31,11 @@ features:
         image:
           registry: "<address>"
           repository: "library/traefik"
-          tag: "v3.3.3"
+          tag: "v3.7.13"
   certManager:
     active: true
     helm:
-      version: v1.16.1
+      version: v1.21.2
       image: "<address>/library/cert-manager-controller:latest"
       webhookImage: "<address>/library/cert-manager-webhook:latest"
       cainjectorImage: "<address>/library/cert-manager-cainjector:latest"
