@@ -114,6 +114,7 @@ class ArgoCDToolConfigMapperTest {
 														 "team-a",
 														 "team-b"
 													 ))
+													 .internalJenkinsNamespace("tenant-a-build")
 													 .smtpUser("smtp-user")
 													 .smtpPassword("smtp-password")
 													 .smtpCredentials(new CredentialsReference(

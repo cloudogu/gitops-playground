@@ -84,7 +84,7 @@ features:
       helm:
         chart: "external-secrets"
         repoURL: "https://charts.external-secrets.io"
-        version: "0.9.16"
+        version: "2.11.0"
         image: ""
         certControllerImage: ""
         webhookImage: ""
@@ -101,7 +101,7 @@ features:
     helm:
       chart: "traefik"
       repoURL: "https://traefik.github.io/charts"
-      version: "39.0.9"
+      version: "41.6.0"
       values: { }
       image: ""
   certManager:

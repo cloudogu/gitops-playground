@@ -19,7 +19,7 @@
         <jdk.version>25</jdk.version>
         <release.version>25</release.version>
         <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
-        <sonar-maven-plugin.version>5.7.0.6970</sonar-maven-plugin.version>
+        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
 
         <!--suppress
         UnresolvedMavenProperty -->
@@ -33,9 +33,9 @@
         <okhttpVersion>5.3.2</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.fabric8.java.version>7.8.0</kubernetes.fabric8.java.version>
+        <kubernetes.fabric8.java.version>7.9.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
-        <netty.version>4.2.17.Final</netty.version>
+        <netty.version>4.2.18.Final</netty.version>
     </properties>
 
     <scm>
@@ -81,7 +81,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.2.1</version>
+                <version>3.2.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
@@ -89,7 +89,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
@@ -97,7 +97,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.22.0</version>
+                <version>2.22.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source:
@@ -106,7 +106,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.1</version>
+                <version>2.22.2</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Keep transitive Netty dependencies on a patched version. -->
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.22.0</version>
+            <version>2.22.2</version>
         </dependency>
 
         <dependency>
@@ -321,7 +321,7 @@
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>4.8.194</version>
+            <version>4.8.195</version>
         </dependency>
 
         <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->

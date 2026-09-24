@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "Install Gateway API CRDs"
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml
+
+
 cat <<EOF > values.yaml
 deployment:
   kind: Deployment
@@ -43,7 +47,7 @@ EOF
 helm repo add traefik https://traefik.github.io/charts
 
 helm upgrade --install traefik traefik/traefik \
-  --version 39.0.9 \
+  --version 41.6.0 \
   --namespace ingress \
   --create-namespace \
   -f values.yaml && rm ./values.yaml

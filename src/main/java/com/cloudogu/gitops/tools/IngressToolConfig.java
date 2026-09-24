@@ -16,7 +16,9 @@ public record IngressToolConfig(
 	boolean netpols,
 	boolean monitoringActive,
 	String monitoringNamespace,
-	Map<String, Object> templateConfig
+	Map<String, Object> templateConfig,
+	boolean airgapped,
+	boolean skipCrds
 ) {
 
 	public IngressToolConfig {

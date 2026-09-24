@@ -4,9 +4,11 @@ import java.util.List;
 
 public interface DeploymentMode {
 
+	String ARGOCD_APPLICATION_CONTROLLER_SERVICE_ACCOUNT = "argocd-argocd-application-controller";
+
 	List<String> ARGOCD_SERVICE_ACCOUNTS = List.of(
 		"argocd-argocd-server",
-		"argocd-argocd-application-controller",
+		ARGOCD_APPLICATION_CONTROLLER_SERVICE_ACCOUNT,
 		"argocd-applicationset-controller"
 	);
 

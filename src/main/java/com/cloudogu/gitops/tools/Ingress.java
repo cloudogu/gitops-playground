@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
@@ -14,6 +15,8 @@ import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.nio.file.Path;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -35,7 +38,12 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 	private static final String NETWORK_POLICY_PATH =
 		"apps/traefik/netpols/allow-required-access-to-traefik.yaml";
 
+	// Gateway API CRDs are no longer shipped with chart!
+	private static final String GATEWAY_API_CRD_VERSION = "v1.6.1";
+	private static final String GATEWAY_API_CRD = "https://github.com/kubernetes-sigs/gateway-api/releases/download/" + GATEWAY_API_CRD_VERSION + "/standard-install.yaml";
+
 	private final ImagePullSecretCreator imagePullSecretCreator;
+	private final K8sClient k8sClient;
 
 	@Getter
 	@Setter
@@ -47,13 +55,14 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
-		IngressToolConfigMapper configMapper) {
+		IngressToolConfigMapper configMapper, K8sClient k8sClient) {
 		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
 		this.airGappedUtils = airGappedUtils;
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.k8sClient = k8sClient;
 	}
 
 	@Override
@@ -66,6 +75,7 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
+		prepareGatewayAPICRDs();
 		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
 		prepareIngressNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
@@ -119,5 +129,21 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 			CLUSTER_RESOURCES_SOURCE_DIR,
 			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH)
 		);
+	}
+
+	private void prepareGatewayAPICRDs() {
+		if (!toolConfig().skipCrds()) {
+			String crds = GATEWAY_API_CRD;
+
+			if (toolConfig().airgapped()) {
+				crds = Path.of(
+							   toolConfig().helm().localHelmChartFolder() + "/" + toolConfig().helm().chart(),
+							   "charts/traefik/crds/gateway-api-standard-install.yaml"
+						   )
+						   .toString();
+			}
+			log.debug("Applying GatewayAPI CRDs." + "Applying from path {}", crds);
+			k8sClient.applyYaml(crds);
+		}
 	}
 }

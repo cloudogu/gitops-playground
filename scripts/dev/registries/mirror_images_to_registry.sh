@@ -9,24 +9,24 @@ REGISTRY_BASE_URL=$1
 HARBOR=$2
 REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
-ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v0.9.16"
+ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v2.11.0"
 VAULT_IMAGE="docker://hashicorp/vault:2.0.4"
-TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.6.15"
+TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.7.13"
 
-PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.8.0"
-PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1"
-PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.87.1"
-GRAFANA_IMAGE="docker://docker.io/grafana/grafana:12.3.0"
-K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.1.2"
+PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.14.0-distroless"
+PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.94.0"
+PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.94.0"
+GRAFANA_IMAGE="docker://docker.io/grafana/grafana:13.2.2-distroless"
+K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.11.2"
 
-JENKINS_IMAGE_TAG="5.9.18"
-SCM_MANAGER_IMAGE_TAG="3.11.6"
+JENKINS_IMAGE_TAG="5.9.63-1"
+SCM_MANAGER_IMAGE_TAG="3.12.1"
 JENKINS_IMAGE="docker://ghcr.io/cloudogu/jenkins-helm:${JENKINS_IMAGE_TAG}"
 SCM_MANAGER_IMAGE="docker://docker.io/scmmanager/scm-manager:${SCM_MANAGER_IMAGE_TAG}"
 
-CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.16.1"
-CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1"
-CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.16.1"
+CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.21.2"
+CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.21.2"
+CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.21.2"
 
 KUBECTL_IMAGE="docker://alpine/kubectl:latest"
 TEMURIN_IMAGE="docker://eclipse-temurin:17-jre"
@@ -78,7 +78,7 @@ if [[ -n $HARBOR ]]; then
     # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
     skopeo copy $ESO_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/external-secrets
     skopeo copy $VAULT_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/proxy/vault
-    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.6.15
+    skopeo copy $TRAEFIK_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/traefik:v3.7.13
 
     # Monitoring
     skopeo copy $PROMETHEUS_IMAGE --dest-creds Proxy:Proxy12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/proxy/prometheus
@@ -109,7 +109,7 @@ fi
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
 skopeo copy $ESO_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/external-secrets
 skopeo copy $VAULT_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false  $REGISTRY_DOCKER_BASE_URL/library/vault
-skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.6.15
+skopeo copy $TRAEFIK_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/traefik:v3.7.13
 
 # Monitoring
 skopeo copy $PROMETHEUS_IMAGE --dest-creds admin:Harbor12345 --dest-tls-verify=false $REGISTRY_DOCKER_BASE_URL/library/prometheus

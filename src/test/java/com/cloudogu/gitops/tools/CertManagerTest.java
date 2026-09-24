@@ -50,7 +50,7 @@ class CertManagerTest {
 	};
 	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
 
-	private final String chartVersion = "1.19.4";
+	private final String chartVersion = "1.21.2";
 	private final Config config = Config.fromMap(Map.of(
 		"features", Map.of(
 			"certManager", Map.of(
