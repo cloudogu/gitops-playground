@@ -11,7 +11,7 @@
     <parent>
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
-        <version>4.10.17</version>
+        <version>5.1.5</version>
     </parent>
 
     <properties>
