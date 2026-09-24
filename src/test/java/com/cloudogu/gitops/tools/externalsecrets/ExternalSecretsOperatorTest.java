@@ -155,7 +155,10 @@ class ExternalSecretsOperatorTest {
 			.contains("secretKey: \"username\"")
 			.contains("property: \"username\"")
 			.contains("secretKey: \"password\"")
-			.contains("property: \"password\"");
+			.contains("property: \"password\"")
+			.contains("conversionStrategy: Default")
+			.contains("decodingStrategy: None")
+			.contains("metadataPolicy: None");
 	}
 
 	@Test

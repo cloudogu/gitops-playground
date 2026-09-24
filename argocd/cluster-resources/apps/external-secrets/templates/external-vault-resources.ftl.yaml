@@ -33,7 +33,10 @@ spec:
 <#list secret.data as secretKey, property>
     - secretKey: "${secretKey?json_string}"
       remoteRef:
+        conversionStrategy: Default
+        decodingStrategy: None
         key: "${secret.remoteKey?json_string}"
+        metadataPolicy: None
         property: "${property?json_string}"
 </#list>
 <#if secret_has_next>---
