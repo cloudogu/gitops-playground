@@ -9,7 +9,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.time.Duration;
@@ -27,7 +26,9 @@ import static org.assertj.core.api.Assertions.fail;
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
 public class MandantProfileTestIT extends ProfileTestSetup {
 
-	/** Gets path to kubeconfig. */
+	/**
+	 * Gets path to kubeconfig.
+	 */
 	static final String RUNNING = "Running";
 	static final String TENANT_POD_FOR_CONDITION = "argocd-application-controller";
 	static final String TENANT_NAMESPACE_ARGOCD = "tenant1-argocd";
@@ -44,19 +45,17 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 		// tenant is created very late after running GOP twice!
 		Polling.until(
 			() -> TestK8sHelper.checkAllPodsRunningInNamespace(
-						  TENANT_NAMESPACE_REGISTRY,
-						  "docker-registry"
-					  ) && TestK8sHelper.checkAllPodsRunningInNamespace(
-						  TENANT_NAMESPACE_SCM,
-						  "scmm-"
-					  ),
+				TENANT_NAMESPACE_REGISTRY,
+				"docker-registry"
+			) && TestK8sHelper.checkAllPodsRunningInNamespace(
+				TENANT_NAMESPACE_SCM,
+				"scmm-"
+			),
 			Duration.ofMinutes(40),
 			Duration.ofSeconds(5)
 		);
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
-	// just local
 	@Test
 	void ensureJenkinsPodIsStartedOnTenant() {
 		TestK8sHelper.waitForAllPodsRunningInNamespace("tenant1-jenkins", "jenkins");
@@ -67,8 +66,6 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace("tenant1-registry", "docker-registry");
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
-	// just local
 	@Test
 	void ensureArgocdPodsAreStartedOnTenant() {
 		String argocdNamespace = TENANT_NAMESPACE_ARGOCD;
@@ -79,8 +76,6 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(argocdNamespace, "argocd-server");
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
-	// just local
 	@Test
 	void ensureArgocdPodsAreStartedOnCentral() {
 		String argocdNamespace = "argocd";
@@ -96,24 +91,19 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace("scm-manager");
 	}
 
-	@DisabledIfSystemProperty(named = "micronaut.environments", matches = "operator-mandants")
-	// just local
 	@Test
 	void ensureNamespacesExists() {
 		List<String> expectedNamespaces = List.of(
-				"argocd",
-				"argocd-operator-system",
-				"scm-manager",
-				"default",
-				"tenant1-argocd",
-				"tenant1-jenkins",
-				"tenant1-registry",
-				"tenant1-example-apps-staging",
-				"tenant1-example-apps-staging",
-				"tenant1-scm-manager",
-				"kube-node-lease",
-				"kube-public",
-				"kube-system"
+			"argocd",
+			"argocd-operator-system",
+			"scm-manager",
+			"default",
+			"tenant1-argocd",
+			"tenant1-registry",
+			"tenant1-scm-manager",
+			"kube-node-lease",
+			"kube-public",
+			"kube-system"
 		);
 
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
@@ -121,12 +111,13 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 
 			// 1. Verify all expected pods are present
 			List<String> missingNamespaces = expectedNamespaces.stream()
-					.filter(prefix -> currentNamespaces.stream()
-							.noneMatch(namespace -> namespace.getMetadata().getName().startsWith(prefix)))
-					.toList();
+															   .filter(prefix -> currentNamespaces.stream()
+																								  .noneMatch(namespace -> namespace.getMetadata().getName().startsWith(
+																									  prefix)))
+															   .toList();
 			assertThat(missingNamespaces)
-					.as("Missing these Namespace: %s", missingNamespaces)
-					.isEmpty();
+				.as("Missing these Namespace: %s", missingNamespaces)
+				.isEmpty();
 		} catch (KubernetesClientException ex) {
 			fail("Unexpected Kubernetes exception", ex);
 		}
