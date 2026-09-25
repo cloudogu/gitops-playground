@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -16,8 +18,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Path;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Singleton
 @Order(150)
 @Slf4j
-public class Ingress extends AbstractMappedTool<IngressToolConfig> {
+public class Ingress extends AbstractMappedTool<IngressToolConfig> implements CrdBootstrap {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml";
 
@@ -75,7 +75,6 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
-		prepareGatewayAPICRDs();
 		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
 		prepareIngressNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
@@ -131,19 +130,23 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> {
 		);
 	}
 
-	private void prepareGatewayAPICRDs() {
-		if (!toolConfig().skipCrds()) {
-			String crds = GATEWAY_API_CRD;
-
-			if (toolConfig().airgapped()) {
-				crds = Path.of(
-							   toolConfig().helm().localHelmChartFolder() + "/" + toolConfig().helm().chart(),
-							   "charts/traefik/crds/gateway-api-standard-install.yaml"
-						   )
-						   .toString();
-			}
-			log.debug("Applying GatewayAPI CRDs." + "Applying from path {}", crds);
-			k8sClient.applyYaml(crds);
+	@Override
+	public void bootstrapCrds(DeploymentContext context) {
+		IngressToolConfig config = mapConfig(context);
+		if (!isEnabled(config) || config.skipCrds()) {
+			return;
 		}
+
+		String crds = GATEWAY_API_CRD;
+		if (config.airgapped()) {
+			crds = Path.of(
+				config.helm().localHelmChartFolder(),
+				config.helm().chart(),
+				"charts/traefik/crds/gateway-api-standard-install.yaml"
+			).toString();
+		}
+
+		log.debug("Applying Gateway API CRDs before tool deployment from path {}", crds);
+		k8sClient.applyYaml(crds);
 	}
 }

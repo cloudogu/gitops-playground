@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,6 +77,8 @@ class IngressTest {
 	private GitProvider gitProvider;
 	@Mock
 	private ImagePullSecretCreator imagePullSecretCreator;
+	@Mock
+	private K8sClient k8sClient;
 
 	KubernetesClient client;
 
@@ -278,6 +280,44 @@ class IngressTest {
 	}
 
 	@Test
+	void bootstrapsGatewayApiCrdsBeforeToolDeployment() throws GitAPIException {
+		Ingress ingress = createIngress();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		ingress.bootstrapCrds(context);
+
+		verify(k8sClient).applyYaml(
+			"https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml"
+		);
+	}
+
+	@Test
+	void bootstrapsGatewayApiCrdsFromLocalChartInAirGappedMode() throws GitAPIException, IOException {
+		config.getApplication().setMirrorRepos(true);
+		Path localHelmCharts = Files.createTempDirectory(getClass().getSimpleName());
+		config.getApplication().setLocalHelmChartFolder(localHelmCharts.toString());
+		Ingress ingress = createIngress();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		ingress.bootstrapCrds(context);
+
+		verify(k8sClient).applyYaml(
+			localHelmCharts.resolve("traefik/charts/traefik/crds/gateway-api-standard-install.yaml").toString()
+		);
+	}
+
+	@Test
+	void doesNotBootstrapGatewayApiCrdsWhenCrdsAreSkipped() throws GitAPIException {
+		config.getApplication().setSkipCrds(true);
+		Ingress ingress = createIngress();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		ingress.bootstrapCrds(context);
+
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
 	void getNamespaceFromFeature() throws GitAPIException {
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build()))
 			.isEqualTo("foo-" + config.getFeatures().getIngress().getIngressNamespace());
@@ -319,7 +359,7 @@ class IngressTest {
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator,
-			new IngressToolConfigMapper(config), mock(K8sClient.class)
+			new IngressToolConfigMapper(config), k8sClient
 		);
 	}
 

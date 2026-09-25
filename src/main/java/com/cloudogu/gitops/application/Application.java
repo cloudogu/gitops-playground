@@ -11,6 +11,7 @@ import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
 import freemarker.template.Configuration;
@@ -66,6 +67,7 @@ public class Application {
 		DeploymentContext context = contextBuilder.build();
 
 		setNamespaceListToConfig(context);
+		bootstrapCrds(context);
 		storeGopInformationInSecret();
 		gitHandler.prepareProviders(context);
 		repositoryProvisioning.prepare(context);
@@ -74,6 +76,16 @@ public class Application {
 		}
 
 		log.debug("Application finished");
+	}
+
+	private void bootstrapCrds(DeploymentContext context) {
+		log.debug("Bootstrapping CRDs before tool deployment");
+
+		for (AbstractTool tool : tools) {
+			if (tool instanceof CrdBootstrap crdBootstrap) {
+				crdBootstrap.bootstrapCrds(context);
+			}
+		}
 	}
 
 	private void storeGopInformationInSecret() {

@@ -11,6 +11,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 class ApplicationTest {
 
@@ -61,6 +64,40 @@ class ApplicationTest {
 		var order = inOrder(gitHandler, contextBuilder);
 		order.verify(gitHandler).validate();
 		order.verify(contextBuilder).build();
+	}
+
+	@Test
+	void bootstrapsCrdsBeforeRepositoryAndToolDeployment() {
+		ContextBuilder contextBuilder = mock(ContextBuilder.class);
+		K8sClient k8sClient = mock(K8sClient.class);
+		GitHandler gitHandler = mock(GitHandler.class);
+		RepositoryProvisioning repositoryProvisioning = mock(RepositoryProvisioning.class);
+		DeploymentOrchestrator deploymentOrchestrator = mock(DeploymentOrchestrator.class);
+		DeploymentContext context = buildContext();
+		RepositoryWorkspace workspace = mock(RepositoryWorkspace.class);
+		AbstractTool tool = mock(AbstractTool.class, withSettings().extraInterfaces(CrdBootstrap.class));
+		CrdBootstrap crdBootstrap = (CrdBootstrap) tool;
+
+		when(contextBuilder.build()).thenReturn(context);
+		when(deploymentOrchestrator.getTools()).thenReturn(List.of(tool));
+		when(repositoryProvisioning.provideWorkspace(context)).thenReturn(workspace);
+
+		Application application = new Application(
+			config,
+			contextBuilder,
+			k8sClient,
+			new CredentialsResolver(k8sClient),
+			gitHandler,
+			repositoryProvisioning,
+			deploymentOrchestrator
+		);
+
+		application.start();
+
+		var order = inOrder(crdBootstrap, repositoryProvisioning, deploymentOrchestrator);
+		order.verify(crdBootstrap).bootstrapCrds(context);
+		order.verify(repositoryProvisioning).prepare(context);
+		order.verify(deploymentOrchestrator).deployTools(context, workspace);
 	}
 
 	@Test

@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -122,6 +123,86 @@ class ExternalSecretsOperatorTest {
 		assertThat(parseActualYaml()).doesNotContainKey("webhook");
 
 		assertThat(parseActualYaml().get("installCRDs")).isNull();
+	}
+
+	@Test
+	void bootstrapsOnlyExternalSecretsCrdsBeforeToolDeployment() throws Exception {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		when(helmClient.template(eq("external-secrets"), eq("external-secrets/external-secrets"), any()))
+			.thenReturn(renderedClusterScopedResources());
+		ExternalSecretsOperator operator = createExternalSecretsOperator();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		operator.bootstrapCrds(context);
+
+		ArgumentCaptor<Map<String, ?>> helmArgsCaptor = ArgumentCaptor.forClass(Map.class);
+		verify(helmClient).template(
+			eq("external-secrets"),
+			eq("external-secrets/external-secrets"),
+			helmArgsCaptor.capture()
+		);
+		Map<String, Object> bootstrapValues = YAML_MAPPER.readValue(
+			Path.of(helmArgsCaptor.getValue().get("values").toString()).toFile(),
+			YAML_MAP_TYPE
+		);
+		assertThat(bootstrapValues.get("installCRDs")).isEqualTo(true);
+
+		ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
+		verify(k8sClient).applyYaml(pathCaptor.capture());
+		String appliedYaml = Files.readString(Path.of(pathCaptor.getValue()));
+		assertThat(appliedYaml)
+			.contains("kind: CustomResourceDefinition")
+			.doesNotContain("kind: ClusterRole")
+			.doesNotContain("kind: ValidatingWebhookConfiguration");
+	}
+
+	@Test
+	void bootstrapsExternalSecretsCrdsFromLocalChartInAirGappedMode() throws Exception {
+		config.getApplication().setMirrorRepos(true);
+		Path localHelmCharts = Files.createTempDirectory(getClass().getSimpleName());
+		config.getApplication().setLocalHelmChartFolder(localHelmCharts.toString());
+		String localChart = localHelmCharts.resolve("external-secrets").toString();
+		when(helmClient.template(eq("external-secrets"), eq(localChart), any()))
+			.thenReturn(renderedClusterScopedResources());
+		ExternalSecretsOperator operator = createExternalSecretsOperator();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		operator.bootstrapCrds(context);
+
+		verify(helmClient, never()).addRepo(anyString(), anyString());
+		verify(k8sClient).applyYaml(anyString());
+	}
+
+	@Test
+	void doesNotBootstrapExternalSecretsCrdsWhenCrdsAreSkipped() throws Exception {
+		config.getApplication().setSkipCrds(true);
+		ExternalSecretsOperator operator = createExternalSecretsOperator();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		operator.bootstrapCrds(context);
+
+		verify(helmClient, never()).template(anyString(), anyString(), any());
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
+	void operatorDeploymentAppliesClusterScopedResourcesWithoutCrds() throws Exception {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		when(helmClient.template(eq("external-secrets"), eq("external-secrets/external-secrets"), any()))
+			.thenReturn(renderedClusterScopedResources());
+
+		install(createExternalSecretsOperator());
+
+		ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
+		verify(k8sClient).applyYaml(pathCaptor.capture());
+		String appliedYaml = Files.readString(Path.of(pathCaptor.getValue()));
+		assertThat(appliedYaml)
+			.contains("kind: ClusterRole")
+			.contains("kind: ValidatingWebhookConfiguration")
+			.doesNotContain("kind: CustomResourceDefinition");
+		assertThat(parseActualYaml().get("installCRDs")).isEqualTo(false);
 	}
 
 	@Test
@@ -317,6 +398,26 @@ class ExternalSecretsOperatorTest {
 			imagePullSecretCreator,
 			new ExternalSecretsOperatorToolConfigMapper(config)
 		);
+	}
+
+	private static String renderedClusterScopedResources() {
+		return """
+			---
+			apiVersion: apiextensions.k8s.io/v1
+			kind: CustomResourceDefinition
+			metadata:
+			  name: externalsecrets.external-secrets.io
+			---
+			apiVersion: rbac.authorization.k8s.io/v1
+			kind: ClusterRole
+			metadata:
+			  name: external-secrets-controller
+			---
+			apiVersion: admissionregistration.k8s.io/v1
+			kind: ValidatingWebhookConfiguration
+			metadata:
+			  name: external-secrets-webhook
+			""";
 	}
 
 	private boolean install(ExternalSecretsOperator operator) {

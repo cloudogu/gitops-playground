@@ -1,5 +1,6 @@
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if config.application.skipCrds == true>
+<#if config.application.skipCrds == true || config.features.argocd.operator == true>
+# GOP bootstraps CRDs before Argo CD starts so newly installed APIs are available during initial discovery.
 installCRDs: false
 </#if>
 <#if config.application.podResources == true>

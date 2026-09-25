@@ -72,6 +72,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																		  ),
 																		  "features",
 																		  Map.of(
+																			  "argocd", Map.of("operator", true),
 																			  "secrets", Map.of(
 																				  "externalSecrets", Map.of(
 																					  "helm", Map.of(

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
@@ -8,6 +9,7 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
@@ -32,7 +34,7 @@ import java.util.Objects;
 @Singleton
 @Order(300)
 @Slf4j
-public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
+public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> implements CrdBootstrap {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/monitoring/templates/prometheus-stack-helm-values.ftl.yaml";
 	public static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/monitoring/templates/rbac/namespace-isolation-rbac.ftl.yaml";
@@ -103,7 +105,6 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		// Create secrets imperatively here instead of values.yaml,
 		// because we don't want credentials to be visible in the Git repo.
 		setupMonitoringSecrets();
-		createMonitoringCrds();
 
 		prepareMonitoringApp(repositoryWorkspace.getClusterResourcesRepository());
 		replaceMonitoringTemplates(repositoryWorkspace.getClusterResourcesRepository());
@@ -304,33 +305,36 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> {
 		);
 	}
 
-	protected void createMonitoringCrds() {
-		if (!toolConfig().skipCrds()) {
-			for (String crdFile : MONITORING_CRD_FILES) {
-				String crdYaml = monitoringCrdLocation(crdFile);
-				log.debug(
-					"Applying monitoring CRD {}; Argo CD fails if it is not there. Chicken-egg-problem.\n"
-						+ "Applying from path {}",
-					crdFile,
-					crdYaml
-				);
-				k8sClient.applyYaml(crdYaml);
-			}
+	@Override
+	public void bootstrapCrds(DeploymentContext context) {
+		MonitoringToolConfig config = mapConfig(context);
+		if (!isEnabled(config) || config.skipCrds()) {
+			return;
+		}
+
+		for (String crdFile : MONITORING_CRD_FILES) {
+			String crdYaml = monitoringCrdLocation(config, crdFile);
+			log.debug(
+				"Applying monitoring CRD {} before tool deployment from path {}",
+				crdFile,
+				crdYaml
+			);
+			k8sClient.applyYaml(crdYaml);
 		}
 	}
 
-	private String monitoringCrdLocation(String crdFile) {
-		if (toolConfig().airgapped()) {
+	private String monitoringCrdLocation(MonitoringToolConfig config, String crdFile) {
+		if (config.airgapped()) {
 			return Path.of(
-				toolConfig().helm().localHelmChartFolder(),
-				toolConfig().helm().chart(),
+				config.helm().localHelmChartFolder(),
+				config.helm().chart(),
 				"charts/crds/crds",
 				crdFile
 			).toString();
 		}
 
 		return "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
-			+ "kube-prometheus-stack-" + toolConfig().helm().version()
+			+ "kube-prometheus-stack-" + config.helm().version()
 			+ "/charts/kube-prometheus-stack/charts/crds/crds/" + crdFile;
 	}
 

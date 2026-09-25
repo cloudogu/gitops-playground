@@ -1,17 +1,19 @@
 package com.cloudogu.gitops.tools;
 
+import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.MapUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -24,20 +26,18 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.util.Map;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 @Singleton
 @Order(400)
 @Slf4j
-public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsOperatorToolConfig> {
+public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsOperatorToolConfig> implements CrdBootstrap {
 
 	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml";
 
@@ -50,10 +50,11 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 	private static final String NETWORK_POLICY_PATH =
 		"apps/external-secrets/netpols/allow-required-access-to-external-secrets.yaml";
 
+	private static final Set<String> CRD_KINDS = Set.of("CustomResourceDefinition");
+
 	// Kinds that a namespaced ArgoCD cluster registration (see SingleTenantMode) can never sync itself.
-	private static final Set<String> CLUSTER_SCOPED_KINDS = Set.of(
-		"CustomResourceDefinition", "ClusterRole", "ClusterRoleBinding",
-		"ValidatingWebhookConfiguration", "MutatingWebhookConfiguration"
+	private static final Set<String> OPERATOR_CLUSTER_SCOPED_KINDS = Set.of(
+		"ClusterRole", "ClusterRoleBinding", "ValidatingWebhookConfiguration", "MutatingWebhookConfiguration"
 	);
 	private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
@@ -121,70 +122,100 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
 	}
 
-	/**
-	 * Renders the external-secrets Helm chart and applies its cluster-scoped resources (CRDs, ClusterRoles,
-	 * ClusterRoleBindings, webhook configurations) imperatively. Argo CD fails to sync these when the
-	 * in-cluster target is registered as a namespaced cluster (operator mode). Chicken-egg-problem.
-	 */
-	private void applyClusterScopedResources() {
-		if (!toolConfig().operator() || toolConfig().skipCrds()) {
+	@Override
+	public void bootstrapCrds(DeploymentContext context) {
+		ExternalSecretsOperatorToolConfig config = mapConfig(context);
+		if (!isEnabled(config) || config.skipCrds()) {
 			return;
 		}
 
-		addHelmValuesData(
+		String renderedManifests = renderHelmManifests(config, context, true);
+		applyRenderedResources(
+			renderedManifests,
+			CRD_KINDS,
+			"external-secrets CRDs before tool deployment"
+		);
+	}
+
+	/**
+	 * Applies cluster-scoped resources that a namespaced Argo CD cluster registration cannot manage.
+	 * CRDs are installed separately during the application bootstrap before Argo CD starts.
+	 */
+	private void applyClusterScopedResources() {
+		if (!toolConfig().operator()) {
+			return;
+		}
+
+		String renderedManifests = renderHelmManifests(toolConfig(), context, false);
+		applyRenderedResources(
+			renderedManifests,
+			OPERATOR_CLUSTER_SCOPED_KINDS,
+			"external-secrets cluster-scoped RBAC and webhook resources"
+		);
+	}
+
+	private String renderHelmManifests(
+		ExternalSecretsOperatorToolConfig config,
+		DeploymentContext deploymentContext,
+		boolean includeCrds) {
+		Map<String, Object> templateData = new HashMap<>();
+		templateData.put(
 			"statics",
 			new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
 		);
-		addHelmValuesData("config", toolConfig().templateConfig());
-		Map<String, Object> helmValuesData = templateToMap(HELM_VALUES_PATH, this.helmValuesTemplateData);
-		helmValuesData = MapUtils.deepMerge(toolConfig().helm().values(), helmValuesData);
+		templateData.put("config", config.templateConfig());
+
+		Map<String, Object> helmValuesData = new HashMap<>(templateToMap(HELM_VALUES_PATH, templateData));
+		MapUtils.deepMerge(config.helm().values(), helmValuesData);
+		if (includeCrds) {
+			helmValuesData.put("installCRDs", true);
+		}
 		Path valuesPath = fileSystemUtils.writeTempFile(helmValuesData);
 
-		helmClient.addRepo(TOOL_NAME, toolConfig().helm().repoURL());
-		String renderedManifests = helmClient.template(
-			RELEASE_NAME,
-			TOOL_NAME + "/" + toolConfig().helm().chart(),
-			Map.of(
-				"version", toolConfig().helm().version(),
-				"values", valuesPath.toString(),
-				"namespace", namespace
-			)
-		);
+		String chartOrPath;
+		Map<String, Object> helmArguments = new HashMap<>();
+		helmArguments.put("values", valuesPath.toString());
+		helmArguments.put("namespace", config.namespace());
 
-		String clusterScopedYaml = filterClusterScopedResources(renderedManifests);
-		if (clusterScopedYaml.isBlank()) {
+		if (deploymentContext.isAirgapped()) {
+			chartOrPath = Path.of(config.helm().localHelmChartFolder(), config.helm().chart()).toString();
+		} else {
+			helmClient.addRepo(TOOL_NAME, config.helm().repoURL());
+			chartOrPath = TOOL_NAME + "/" + config.helm().chart();
+			helmArguments.put("version", config.helm().version());
+		}
+
+		return helmClient.template(RELEASE_NAME, chartOrPath, helmArguments);
+	}
+
+	private void applyRenderedResources(
+		String renderedManifests,
+		Set<String> resourceKinds,
+		String description) {
+		String filteredYaml = filterResources(renderedManifests, resourceKinds);
+		if (filteredYaml.isBlank()) {
 			return;
 		}
 
-		Path clusterScopedFile = fileSystemUtils.createTempFile();
+		Path resourceFile = fileSystemUtils.createTempFile();
 		try {
-			Files.writeString(clusterScopedFile, clusterScopedYaml);
+			Files.writeString(resourceFile, filteredYaml);
 		} catch (IOException exception) {
 			throw new UncheckedIOException(
-				"Failed to write cluster-scoped resources for external-secrets to temp file",
+				"Failed to write " + description + " to temp file",
 				exception
 			);
 		}
 
-		log.debug(
-			"Applying cluster-scoped resources (CRDs, ClusterRoles, ClusterRoleBindings, webhooks) for " +
-				"external-secrets; Argo CD fails to sync them when running in namespaced (operator) mode. " +
-				"Chicken-egg-problem.\nApplying from path {}",
-			clusterScopedFile
-		);
-		k8sClient.applyYaml(clusterScopedFile.toString());
+		log.debug("Applying {} from path {}", description, resourceFile);
+		k8sClient.applyYaml(resourceFile.toString());
 	}
 
-	/**
-	 * Filters a rendered, multi-document Helm YAML string down to the cluster-scoped resource kinds
-	 * (CRDs, ClusterRoles, ClusterRoleBindings, webhook configurations) that must be applied imperatively,
-	 * since ArgoCD cannot manage them when the in-cluster target is registered as a namespaced cluster.
-	 */
-	private static String filterClusterScopedResources(String multiDocYaml) {
+	private static String filterResources(String multiDocYaml, Set<String> resourceKinds) {
 		StringBuilder filtered = new StringBuilder();
 
 		for (String document : multiDocYaml.split("(?m)^---\\s*$")) {
-			if (document.isBlank() || !CLUSTER_SCOPED_KINDS.contains(kindOf(document))) {
+			if (document.isBlank() || !resourceKinds.contains(kindOf(document))) {
 				continue;
 			}
 			filtered.append("---\n").append(document.strip()).append("\n");
@@ -199,7 +230,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			Object kind = parsed == null ? null : parsed.get("kind");
 			return kind == null ? "" : kind.toString();
 		} catch (IOException exception) {
-			log.error("IOException occured");
+			log.error("Failed to determine Kubernetes resource kind", exception);
 			return "";
 		}
 	}

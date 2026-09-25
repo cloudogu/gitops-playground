@@ -56,7 +56,7 @@ public abstract class AbstractMappedTool<T> extends AbstractTool {
 		return isEnabled(mappedConfig) ? activeNamespace(mappedConfig) : null;
 	}
 
-	private T mapConfig(DeploymentContext context) {
+	protected final T mapConfig(DeploymentContext context) {
 		Objects.requireNonNull(context, "Deployment context must not be null");
 
 		return Objects.requireNonNull(

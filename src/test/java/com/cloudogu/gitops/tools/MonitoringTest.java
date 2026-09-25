@@ -3,7 +3,6 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsResolver;
-import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -582,7 +581,7 @@ class MonitoringTest {
 	}
 
 	@Test
-	void appliesRequiredMonitoringCrdsFromFilesBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
+	void bootstrapsRequiredMonitoringCrdsFromFilesInAirGappedMode() throws GitAPIException, IOException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(true);
 		config.getApplication().setSkipCrds(false);
@@ -594,7 +593,9 @@ class MonitoringTest {
 		Files.createDirectories(chartYaml.getParent());
 		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n");
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
 		Path crdDirectory = rootChartsFolder.resolve(
 			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
@@ -608,12 +609,14 @@ class MonitoringTest {
 	}
 
 	@Test
-	void appliesRequiredMonitoringCrdsFromGithubBeforeInstalling() throws GitAPIException {
+	void bootstrapsRequiredMonitoringCrdsFromGithub() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setSkipCrds(false);
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
 		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
 			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
@@ -633,7 +636,7 @@ class MonitoringTest {
 
 		Monitoring monitoring = createStack(scmManagerMock);
 		deploymentContext = new ContextBuilder(config).build();
-		new DeploymentOrchestrator(List.of(monitoring)).deployTools(deploymentContext, repositoryWorkspace);
+		monitoring.bootstrapCrds(deploymentContext);
 
 		verify(k8sClient, never()).applyYaml(anyString());
 	}
@@ -643,7 +646,9 @@ class MonitoringTest {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setSkipCrds(true);
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
 		verify(k8sClient, never()).applyYaml(anyString());
 	}
