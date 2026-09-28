@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -53,6 +54,8 @@ public class SingleTenantMode implements DeploymentMode {
 												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 												   .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
 												   .generate();
+
+			generateJenkinsReconcileRbacIfRequired(ns);
 		}
 
 		if (config.clusterAdmin()) {
@@ -64,6 +67,21 @@ public class SingleTenantMode implements DeploymentMode {
 														  .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
 														  .generate();
 		}
+	}
+
+	private void generateJenkinsReconcileRbacIfRequired(String managedNamespace) {
+		if (!managedNamespace.equals(config.internalJenkinsNamespace())) {
+			return;
+		}
+
+		new RbacDefinition(Role.Variant.ARGOCD_JENKINS)
+			.withName("argocd-jenkins-rbac-reconcile")
+			.withNamespace(managedNamespace)
+			.withServiceAccountsFrom(namespace, List.of(ARGOCD_APPLICATION_CONTROLLER_SERVICE_ACCOUNT))
+			.withTemplateConfig(config.rbacTemplateConfig())
+			.withRepo(repositoryWorkspace.getClusterResourcesRepository())
+			.withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
+			.generate();
 	}
 
 	@Override

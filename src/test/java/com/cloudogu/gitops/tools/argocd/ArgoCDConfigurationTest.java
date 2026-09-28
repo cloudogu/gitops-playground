@@ -1337,6 +1337,58 @@ class ArgoCDConfigurationTest {
 	}
 
 	@Test
+	void grantsApplicationControllerOnlyTheAdditionalPermissionsRequiredForJenkinsRbac() throws IOException {
+		config.getApplication().setNamePrefix("testPrefix-");
+		config.getJenkins().setActive(true);
+		config.getJenkins().setInternal(true);
+		config.getJenkins().setNamespace("jenkins");
+		config.getApplication().getNamespaces().setDedicatedNamespaces(new LinkedHashSet<>(List.of("jenkins")));
+
+		ArgoCD argocd = setupOperatorTest(false);
+		execute(argocd);
+		clusterResourcesRepoLayout = ((ArgoCDForTest) argocd).getClusterRepoLayout();
+
+		File rbacDir = Path.of(clusterResourcesRepoLayout.operatorRbacDir()).toFile();
+		File roleFile = new File(
+			rbacDir,
+			"role-argocd-jenkins-rbac-reconcile-testPrefix-jenkins.yaml"
+		);
+		File bindingFile = new File(
+			rbacDir,
+			"rolebinding-argocd-jenkins-rbac-reconcile-testPrefix-jenkins.yaml"
+		);
+
+		assertThat(roleFile).exists();
+		assertThat(bindingFile).exists();
+
+		Map<String, Object> roleYaml = parseActualYaml(roleFile.toString());
+		List<Map<String, Object>> rules = mapListValue(roleYaml, "rules");
+		assertThat(rules).anySatisfy(rule -> {
+			assertThat(listValue(rule, "resources"))
+				.containsExactly("pods", "persistentvolumeclaims");
+			assertThat(listValue(rule, "verbs")).containsExactly("deletecollection");
+		});
+		assertThat(rules).anySatisfy(rule -> {
+			assertThat(listValue(rule, "resources")).containsExactly("pods/exec");
+			assertThat(listValue(rule, "verbs")).containsExactlyInAnyOrder(
+				"create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"
+			);
+		});
+
+		Map<String, Object> bindingYaml = parseActualYaml(bindingFile.toString());
+		List<Map<String, Object>> subjects = mapListValue(bindingYaml, "subjects");
+		assertThat(subjects).hasSize(1);
+		assertThat(subjects.getFirst().get("name")).isEqualTo("argocd-argocd-application-controller");
+		assertThat(subjects.getFirst().get("namespace")).isEqualTo("testPrefix-argocd");
+
+		File regularRoleFile = new File(rbacDir, "role-argocd-testPrefix-jenkins.yaml");
+		Map<String, Object> regularRoleYaml = parseActualYaml(regularRoleFile.toString());
+		List<Map<String, Object>> regularRules = mapListValue(regularRoleYaml, "rules");
+		assertThat(regularRules).noneMatch(rule -> listValue(rule, "verbs").contains("deletecollection"));
+		assertThat(regularRules).noneMatch(rule -> listValue(rule, "resources").contains("pods/exec"));
+	}
+
+	@Test
 	void includesNodeAccessRulesInOperatorRbacWhenNotOnOpenShift() throws IOException {
 		config.getApplication().setNamePrefix("testprefix-");
 

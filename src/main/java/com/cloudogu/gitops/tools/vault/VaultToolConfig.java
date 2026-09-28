@@ -18,6 +18,7 @@ public record VaultToolConfig(
 	String applicationPassword,
 	CredentialsReference applicationCredentials,
 	boolean developmentMode,
+	boolean operator,
 	HelmChartConfig helm,
 	ImagePullSecretConfig imagePullSecret,
 	Map<String, Object> templateConfig

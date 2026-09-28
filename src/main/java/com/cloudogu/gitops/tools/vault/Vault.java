@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,6 +40,8 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 	private static final String RELEASE_NAME = "vault";
 	private static final String VAULT_APP_PATH = "apps/vault";
 	private static final String VAULT_USER_CREDENTIALS_SECRET = "vault-user-credentials";
+	private static final String VAULT_AUTH_DELEGATOR_BINDING = "vault-server-binding";
+	private static final String SYSTEM_AUTH_DELEGATOR = "system:auth-delegator";
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
@@ -77,6 +80,7 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
+		ensureVaultAuthDelegatorBinding();
 		prepareVaultApp(repositoryWorkspace.getClusterResourcesRepository());
 		replaceVaultTemplates(repositoryWorkspace.getClusterResourcesRepository());
 		prepareVaultHelmValues();
@@ -97,6 +101,67 @@ public class Vault extends AbstractMappedTool<VaultToolConfig> {
 	@Override
 	protected String activeNamespace(VaultToolConfig config) {
 		return config.namespace();
+	}
+
+	private void ensureVaultAuthDelegatorBinding() {
+		if (!toolConfig().operator() || !isAuthDelegatorEnabled()) {
+			return;
+		}
+
+		String serviceAccountName = vaultServiceAccountName();
+		Map<String, Object> binding = Map.of(
+			"apiVersion", "rbac.authorization.k8s.io/v1",
+			"kind", "ClusterRoleBinding",
+			"metadata", Map.of("name", VAULT_AUTH_DELEGATOR_BINDING),
+			"roleRef", Map.of(
+				"apiGroup", "rbac.authorization.k8s.io",
+				"kind", "ClusterRole",
+				"name", SYSTEM_AUTH_DELEGATOR
+			),
+			"subjects", List.of(Map.of(
+				"kind", "ServiceAccount",
+				"name", serviceAccountName,
+				"namespace", namespace
+			))
+		);
+
+		Path bindingFile = fileSystemUtils.writeTempFile(binding);
+		log.debug(
+			"Applying Vault auth-delegator ClusterRoleBinding for service account {}/{} because Argo CD " +
+				"cannot sync cluster-scoped resources in operator mode",
+			namespace, serviceAccountName
+		);
+		k8sClient.applyYaml(bindingFile.toString());
+	}
+
+	private boolean isAuthDelegatorEnabled() {
+		Object server = toolConfig().helm().values().get("server");
+		if (!(server instanceof Map<?, ?> serverValues)) {
+			return true;
+		}
+
+		Object authDelegator = serverValues.get("authDelegator");
+		if (!(authDelegator instanceof Map<?, ?> authDelegatorValues)) {
+			return true;
+		}
+
+		Object enabled = authDelegatorValues.get("enabled");
+		return !(enabled instanceof Boolean value) || value;
+	}
+
+	private String vaultServiceAccountName() {
+		Object server = toolConfig().helm().values().get("server");
+		if (server instanceof Map<?, ?> serverValues) {
+			Object serviceAccount = serverValues.get("serviceAccount");
+			if (serviceAccount instanceof Map<?, ?> serviceAccountValues) {
+				Object configuredName = serviceAccountValues.get("name");
+				if (configuredName instanceof String name && !name.isBlank()) {
+					return name;
+				}
+			}
+		}
+
+		return RELEASE_NAME;
 	}
 
 	private void createImagePullSecret() {

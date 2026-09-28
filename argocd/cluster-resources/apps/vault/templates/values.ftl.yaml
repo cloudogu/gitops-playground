@@ -15,8 +15,15 @@ global:
   || host?has_content 
   || config.application.podResources == true
   || config.application.netpols == true
+  || config.features.argocd.operator == true
   || dev?has_content>
 server:
+<#if config.features.argocd.operator == true>
+  # In Argo CD operator mode the target cluster is registered namespace-scoped, so Argo CD cannot
+  # create the cluster-scoped auth-delegator binding. GOP creates that binding imperatively instead.
+  authDelegator:
+    enabled: false
+</#if>
 </#if>
 <#if config.application.netpols == true>
   networkPolicy:

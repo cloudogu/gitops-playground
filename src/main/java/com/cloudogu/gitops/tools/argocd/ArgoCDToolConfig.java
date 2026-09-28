@@ -18,6 +18,7 @@ public record ArgoCDToolConfig(
 	boolean operator,
 	boolean netpols,
 	Collection<String> activeNamespaces,
+	String internalJenkinsNamespace,
 	String smtpUser,
 	String smtpPassword,
 	CredentialsReference smtpCredentials,

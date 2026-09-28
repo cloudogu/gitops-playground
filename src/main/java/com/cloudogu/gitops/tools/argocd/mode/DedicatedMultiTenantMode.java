@@ -115,6 +115,10 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 												   .withSubfolder(ArgoCDRepoLayout.operatorRbacTenantSubfolder())
 												   .generate();
+
+			generateJenkinsReconcileRbacIfRequired(
+				"argocd", ns, namespace, ArgoCDRepoLayout.operatorRbacTenantSubfolder()
+			);
 		}
 	}
 
@@ -131,7 +135,30 @@ public class DedicatedMultiTenantMode implements DeploymentMode {
 												   .withRepo(repositoryWorkspace.getClusterResourcesRepository())
 												   .withSubfolder(ArgoCDRepoLayout.operatorRbacSubfolder())
 												   .generate();
+
+			generateJenkinsReconcileRbacIfRequired(
+				"argocd-central", ns, config.centralNamespace(), ArgoCDRepoLayout.operatorRbacSubfolder()
+			);
 		}
+	}
+
+	private void generateJenkinsReconcileRbacIfRequired(
+		String argoCdRoleName,
+		String managedNamespace,
+		String argoCdNamespace,
+		String subfolder) {
+		if (!managedNamespace.equals(config.internalJenkinsNamespace())) {
+			return;
+		}
+
+		new RbacDefinition(Role.Variant.ARGOCD_JENKINS)
+			.withName(argoCdRoleName + "-jenkins-rbac-reconcile")
+			.withNamespace(managedNamespace)
+			.withServiceAccountsFrom(argoCdNamespace, List.of(ARGOCD_APPLICATION_CONTROLLER_SERVICE_ACCOUNT))
+			.withTemplateConfig(config.rbacTemplateConfig())
+			.withRepo(repositoryWorkspace.getClusterResourcesRepository())
+			.withSubfolder(subfolder)
+			.generate();
 	}
 
 	private void updateCentralManagedNamespaces() {
