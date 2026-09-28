@@ -767,23 +767,23 @@ public class K8sClient {
 	}
 
 	/**
-	 * Adds or removes labels on a resource in the default namespace.
+	 * Adds labels to a resource in the default namespace.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
 	 * @param name      resource name
-	 * @param keyValues labels to set; a key ending in {@code -} removes that label
+	 * @param keyValues labels to set
 	 */
 	public void label(String resource, String name, Tuple<?, ?>... keyValues) {
 		label(resource, name, "", keyValues);
 	}
 
 	/**
-	 * Adds or removes labels on a resource.
+	 * Adds labels to a resource.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
 	 * @param name      resource name
 	 * @param namespace namespace of the resource; empty means the default namespace
-	 * @param keyValues labels to set; a key ending in {@code -} removes that label
+	 * @param keyValues labels to set
 	 */
 	public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
 		if (keyValues == null || keyValues.length == 0) {
@@ -793,17 +793,8 @@ public class K8sClient {
 		log.debug("Labeling {}/{} in namespace {}", resource, name, namespace);
 
 		Map<String, String> labelsToAdd = new HashMap<>();
-		List<String> labelsToRemove = new ArrayList<>();
-
 		for (Tuple<?, ?> tuple : keyValues) {
-			String key = String.valueOf(tuple.getFirst());
-			String value = String.valueOf(tuple.getSecond());
-
-			if (key.endsWith("-")) {
-				labelsToRemove.add(key.substring(0, key.length() - 1));
-			} else {
-				labelsToAdd.put(key, value);
-			}
+			labelsToAdd.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
 		}
 
 		executeWithErrorHandling(
@@ -814,7 +805,7 @@ public class K8sClient {
 					name,
 					resolveNamespace(namespace)
 				);
-				applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
+				applyLabelChanges(resourceClient, resource, name, labelsToAdd, List.of());
 				return null;
 			}
 		);
@@ -859,22 +850,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Removes the given labels from a resource.
-	 *
-	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name
-	 * @param namespace namespace of the resource; empty means the default namespace
-	 * @param keys      label keys to remove
-	 */
-	public void labelRemove(String resource, String name, String namespace, String... keys) {
-		Tuple<?, ?>[] tuples = new Tuple<?, ?>[keys.length];
-		for (int i = 0; i < keys.length; i++) {
-			tuples[i] = new Tuple<>(keys[i] + "-", "");
-		}
-		label(resource, name, namespace, tuples);
-	}
-
-	/**
 	 * Removes the given labels from all nodes in the cluster.
 	 *
 	 * @param keys label keys to remove
@@ -887,9 +862,24 @@ public class K8sClient {
 
 		for (Node node : nodes.getItems()) {
 			if (node.getMetadata() != null && node.getMetadata().getName() != null) {
-				labelRemove("node", node.getMetadata().getName(), "", keys);
+				removeLabels("node", node.getMetadata().getName(), "", keys);
 			}
 		}
+	}
+
+	private void removeLabels(String resource, String name, String namespace, String... keys) {
+		executeWithErrorHandling(
+			"remove labels from " + resource + "/" + name, () -> {
+				Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+					client,
+					resource,
+					name,
+					resolveNamespace(namespace)
+				);
+				applyLabelChanges(resourceClient, resource, name, Map.of(), List.of(keys));
+				return null;
+			}
+		);
 	}
 
 	/**

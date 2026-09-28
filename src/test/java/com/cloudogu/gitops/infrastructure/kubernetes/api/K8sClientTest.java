@@ -1197,33 +1197,6 @@ class K8sClientTest {
 	}
 
 	@Test
-	void labelRemoveRemovesLabelsFromResource() throws InterruptedException {
-		// Given
-		var pod = new PodBuilder()
-			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withLabels(Map.of("app", "myapp", "version", "1.0"))
-			.endMetadata()
-			.build();
-
-		server.expect().get().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
-		server.expect().get().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
-		server.expect().patch().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
-
-		// When
-		k8sApiClient.labelRemove("pod", "test-pod", "default", "version");
-
-		// Then
-		var request = server.getLastRequest();
-		assertThat(request.getMethod()).isEqualTo("PATCH");
-		assertThat(request.getPath()).isEqualTo("/api/v1/namespaces/default/pods/test-pod");
-		assertThat(parseJsonList(request.getUtf8Body())).containsExactly(
-			Map.of("op", "remove", "path", "/metadata/labels/version")
-		);
-	}
-
-	@Test
 	void removeLabelsFromAllNodesRemovesLabelsFromEachNode() throws InterruptedException {
 		// Given
 		var firstNode = new NodeBuilder()
