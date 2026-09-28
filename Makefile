@@ -41,5 +41,29 @@ gop-config-in-secrets: ## creates a local cluster with test credentials stored i
 	kubectl apply -f ./scripts/dev/secrets/gop-secrets.yaml
 	echo "created cluster with GOP test credentials in Kubernetes Secrets"
 
+.PHONY: openshift-setup-host
+openshift-setup-host: ## trusts the CRC registry route in the host docker daemon (see docs/deploy-local-openshift.md)
+	./scripts/local-openshift/openshift.sh setup-host
+
+.PHONY: openshift-cleanup-host
+openshift-cleanup-host: ## reverts openshift-setup-host
+	./scripts/local-openshift/openshift.sh cleanup-host
+
+.PHONY: openshift-up
+openshift-up: ## starts CRC + the Jenkins k3d cluster and deploys GOP across both
+	./scripts/local-openshift/openshift.sh up
+
+.PHONY: openshift-down
+openshift-down: ## stops CRC + the Jenkins k3d cluster, keeps all data
+	./scripts/local-openshift/openshift.sh down
+
+.PHONY: openshift-reset
+openshift-reset: ## recreates the Jenkins k3d cluster and redeploys GOP; keeps the CRC VM (fast test cycle)
+	./scripts/local-openshift/openshift.sh reset
+
+.PHONY: openshift-destroy
+openshift-destroy: ## deletes the CRC VM and the Jenkins k3d cluster entirely
+	./scripts/local-openshift/openshift.sh destroy
+
 %:
 	@:

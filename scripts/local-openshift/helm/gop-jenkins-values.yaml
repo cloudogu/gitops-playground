@@ -1,0 +1,50 @@
+# gop-jenkins-values.yaml - Configuration for GOP Helm Chart in the "gitops-playground-jenkins" k3d cluster
+#
+# Deploys Jenkins AND SCM-Manager here (unchanged docker-socket-mount architecture from
+# scripts/init-cluster.sh for Jenkins), both reachable from CRC via nip.io hostnames so no host DNS/hosts
+# changes are needed. __HOST_IP__ is substituted by openshift.sh before this file is applied.
+#
+# SCM-Manager moved here (rather than staying CRC-hosted) to avoid OpenShift Route + cert-manager TLS
+# entirely for it -- that combination was producing SSL handshake errors, and a plain k3d ingress (the same,
+# already-proven-working path Jenkins uses) sidesteps it. GOP supports this split explicitly:
+# ScmManagerTenantConfig has a `urlForJenkins` field mirroring JenkinsSchema's `urlForScm`, i.e. "SCM-Manager
+# and Jenkins both external to the platform cluster" is a designed-for scenario, not a workaround.
+#
+# Not using --profile=full here: its defaults (registry, argocd, monitoring, vault, certManager active) would
+# all need to be individually turned back off. Starting from GOP's own (all-off) defaults and enabling only
+# Jenkins is simpler and avoids drift if the "full" profile changes. SCM-Manager needs no such flag -- it's a
+# mandatory core tool GOP always provisions when not pointed at an external one via `scm.scmManager.url`.
+
+extraArgs:
+  # GOP derives the jenkins ingress hostname by prefixing "jenkins." to --base-url's host itself
+  # (ApplicationConfigurator.addJenkinsConfig) -- so this must be the bare host, not already jenkins-prefixed.
+  # Result: Jenkins ends up reachable at http://jenkins.__HOST_IP__.nip.io
+  - "--base-url=http://__HOST_IP__.nip.io"
+
+config:
+  # yaml-language-server: $schema=https://raw.githubusercontent.com/cloudogu/gitops-playground/refs/heads/main/docs/configuration.schema.json
+  # features.ingress (GOP's own Traefik) only ever deploys via an Argo CD Application -- with no Argo CD in
+  # this cluster that manifest never applies. openshift.sh's installMinimalIngressController() (plain
+  # ingress-nginx) provides the controller instead; Jenkins' own Ingress object only needs --base-url set
+  # above (see argocd/cluster-resources/apps/jenkins/templates/values.ftl.yaml), not this flag.
+  features:
+    ingress:
+      active: false
+  jenkins:
+    active: true
+    password: "admin"
+  # Example-app pipelines (e.g. petclinic-helm) push built images to "localhost:30000" -- the port
+  # scripts/init-cluster.sh always forwards host:30000 -> k3d loadbalancer -> node port 30000. Without this,
+  # nothing listens there (registry.active defaults to false outside --profile=full) and the Jenkins Docker
+  # stage fails with "Get http://localhost:30000/v2/: EOF". Deploys via Helm directly (no ArgoCD needed).
+  registry:
+    active: true
+  scm:
+    scmManager:
+      password: "admin"
+      # Pinned back from the current default (3.12.1, bumped in commit 9a6a9283) -- that version's
+      # SCM-Manager rejects GOP's own `PUT /api/v2/config` call with 405 Method Not Allowed
+      # (ScmManagerSetup.setSetupConfigs), an upstream API-compatibility regression unrelated to this
+      # OpenShift setup. Remove this override once that's fixed upstream.
+      helm:
+        version: "3.11.10"

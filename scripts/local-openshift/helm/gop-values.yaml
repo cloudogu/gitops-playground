@@ -1,4 +1,10 @@
 # gop-values.yaml - Configuration for GOP Helm Chart on OpenShift Local (CRC)
+#
+# "Platform" run: deploys Argo CD, Vault, Monitoring, and the Registry. Jenkins AND SCM-Manager both run
+# externally, in the "gitops-playground-jenkins" k3d cluster (see ../../openshift.sh, gop-jenkins-values.yaml)
+# -- Jenkins because its build agents need the host's /var/run/docker.sock (unavailable/disallowed inside a
+# CRC node), SCM-Manager to avoid OpenShift Route + cert-manager TLS, which was producing SSL handshake
+# errors against it. __JENKINS_URL__/__SCM_URL__ are substituted by openshift.sh before this file is applied.
 
 # Container image from the internal OpenShift Image Registry
 image:
@@ -14,6 +20,7 @@ serviceAccount:
 logLevel: trace
 
 # Direct CLI flags passed to the GOP container (takes highest precedence)
+# CRC stays on its default ports 80/443 (see openshift.sh for why) -- no port needed in this base-url.
 extraArgs:
   - "--profile=full"
   - "--openshift"
@@ -27,3 +34,26 @@ config:
     "yes": false # strange, but toggle issue with picocli
     password: "admin"
     insecure: true
+  # OpenShift's Router already provides ingress natively -- GOP's own Traefik + Gateway API CRD install
+  # (features.ingress, on by default in the "full" profile) both isn't needed here and actively conflicts:
+  # OpenShift's Ingress Operator owns the Gateway API CRDs and its ValidatingAdmissionPolicy rejects GOP
+  # trying to (re-)install the upstream ones (com.cloudogu.gitops.tools.Ingress.prepareGatewayAPICRDs).
+  features:
+    ingress:
+      active: false
+  # Jenkins is deployed separately in k3d; reference it here as an external Jenkins so the content step
+  # (SCM repo + job creation) and Argo CD/Monitoring's Jenkins links still work. Setting `url` is enough --
+  # ApplicationConfigurator.addJenkinsConfig sets `active`/`internal` itself based on it (and rejects them as
+  # unknown schema properties if set explicitly here, same issue as `jenkins.ingress` earlier).
+  jenkins:
+    url: "__JENKINS_URL__"
+    username: "admin"
+    password: "admin"
+  # SCM-Manager also runs externally now (k3d) -- see the top-of-file note. `url` is enough, same as
+  # jenkins above: internal/active get derived from it, and are rejected as unknown schema properties if
+  # set explicitly (ScmTenantSchema.ScmManagerTenantConfig.internal has no @JsonPropertyDescription).
+  scm:
+    scmManager:
+      url: "__SCM_URL__"
+      username: "admin"
+      password: "admin"
