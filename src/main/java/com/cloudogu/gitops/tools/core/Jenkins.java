@@ -204,9 +204,9 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		// Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir"
 		// for details.
 		// Remove first in case new nodes were added.
-		k8sClient.labelRemove("node", "--all", "", "node");
+		k8sClient.removeLabelsFromAllNodes("node");
 
-		String nodeName = k8sClient.waitForNode().replace("node/", "");
+		String nodeName = k8sClient.waitForNode();
 		k8sClient.label("node", nodeName, new Tuple<>("node", TOOL_NAME));
 	}
 

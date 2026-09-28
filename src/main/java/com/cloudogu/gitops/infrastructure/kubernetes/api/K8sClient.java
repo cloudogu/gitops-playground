@@ -832,7 +832,7 @@ public class K8sClient {
 	 * Adds or removes labels on a resource in the default namespace.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
+	 * @param name      resource name
 	 * @param keyValues labels to set; a key ending in {@code -} removes that label
 	 */
 	public void label(String resource, String name, Tuple<?, ?>... keyValues) {
@@ -843,23 +843,13 @@ public class K8sClient {
 	 * Adds or removes labels on a resource.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
+	 * @param name      resource name
 	 * @param namespace namespace of the resource; empty means the default namespace
 	 * @param keyValues labels to set; a key ending in {@code -} removes that label
 	 */
 	public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
 		if (keyValues == null || keyValues.length == 0) {
 			throw new IllegalArgumentException("Missing key-value-pairs");
-		}
-
-		if ("--all".equals(name)) {
-			NodeList nodes = client.nodes().list();
-			if (nodes != null && nodes.getItems() != null) {
-				for (Node node : nodes.getItems()) {
-					label(resource, node.getMetadata().getName(), namespace, keyValues);
-				}
-			}
-			return;
 		}
 
 		log.debug("Labeling {}/{} in namespace {}", resource, name, namespace);
@@ -934,7 +924,7 @@ public class K8sClient {
 	 * Removes the given labels from a resource.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
+	 * @param name      resource name
 	 * @param namespace namespace of the resource; empty means the default namespace
 	 * @param keys      label keys to remove
 	 */
@@ -944,6 +934,24 @@ public class K8sClient {
 			tuples[i] = new Tuple<>(keys[i] + "-", "");
 		}
 		label(resource, name, namespace, tuples);
+	}
+
+	/**
+	 * Removes the given labels from all nodes in the cluster.
+	 *
+	 * @param keys label keys to remove
+	 */
+	public void removeLabelsFromAllNodes(String... keys) {
+		NodeList nodes = client.nodes().list();
+		if (nodes == null || nodes.getItems() == null) {
+			return;
+		}
+
+		for (Node node : nodes.getItems()) {
+			if (node.getMetadata() != null && node.getMetadata().getName() != null) {
+				labelRemove("node", node.getMetadata().getName(), "", keys);
+			}
+		}
 	}
 
 	/**

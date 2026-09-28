@@ -1313,6 +1313,50 @@ class K8sClientTest {
 	}
 
 	@Test
+	void removeLabelsFromAllNodesRemovesLabelsFromEachNode() throws InterruptedException {
+		// Given
+		var firstNode = new NodeBuilder()
+			.withNewMetadata()
+			.withName("node-1")
+			.withLabels(Map.of("node", "jenkins", "keep", "value"))
+			.endMetadata()
+			.build();
+		var secondNode = new NodeBuilder()
+			.withNewMetadata()
+			.withName("node-2")
+			.withLabels(Map.of("node", "jenkins", "keep", "value"))
+			.endMetadata()
+			.build();
+
+		server.expect()
+			  .get()
+			  .withPath("/api/v1/nodes")
+			  .andReturn(200, new NodeListBuilder().withItems(firstNode, secondNode).build())
+			  .once();
+		server.expect().get().withPath("/api/v1/nodes/node-1").andReturn(200, firstNode).times(2);
+		server.expect().patch().withPath("/api/v1/nodes/node-1").andReturn(200, firstNode).once();
+		server.expect().get().withPath("/api/v1/nodes/node-2").andReturn(200, secondNode).times(2);
+		server.expect().patch().withPath("/api/v1/nodes/node-2").andReturn(200, secondNode).once();
+
+		// When
+		k8sApiClient.removeLabelsFromAllNodes("node");
+
+		// Then
+		assertThat(server.getRequestCount()).isEqualTo(7);
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-1");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-1");
+		assertThat(parseJsonList(server.takeRequest().getUtf8Body())).containsExactly(
+			Map.of("op", "remove", "path", "/metadata/labels/node")
+		);
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-2");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-2");
+		assertThat(parseJsonList(server.takeRequest().getUtf8Body())).containsExactly(
+			Map.of("op", "remove", "path", "/metadata/labels/node")
+		);
+	}
+
+	@Test
 	void patchPatchesResourceWithStrategicMerge() throws InterruptedException {
 		// Given
 		var pod = new PodBuilder()

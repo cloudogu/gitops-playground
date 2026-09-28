@@ -103,8 +103,7 @@ class JenkinsTest {
 
 	@BeforeEach
 	void setup() {
-		// waitForInternalNodeIp -> waitForNode()
-		when(k8sClient.waitForNode()).thenReturn("node/" + expectedNodeName);
+		when(k8sClient.waitForNode()).thenReturn(expectedNodeName);
 		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn("");
 	}
 
@@ -147,7 +146,7 @@ class JenkinsTest {
 		verify(repositoryWorkspace).commitAndPushClusterResourcesChanges("Update jenkins GitOps resources");
 
 		verify(k8sClient).label("node", expectedNodeName, new Tuple<>("node", "jenkins"));
-		verify(k8sClient).labelRemove("node", "--all", "", "node");
+		verify(k8sClient).removeLabelsFromAllNodes("node");
 		verify(k8sClient).createSecret(
 			"generic",
 			"jenkins-credentials",
