@@ -269,68 +269,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Patches the nodePort of a specific port in a service.
-	 *
-	 * @param serviceName name of the service to patch
-	 * @param namespace   namespace of the service
-	 * @param portName    name of the port entry whose nodePort is replaced
-	 * @param newNodePort new node port value
-	 */
-	public void patchServiceNodePort(String serviceName, String namespace, String portName, int newNodePort) {
-		K8sClientHelper.validateServiceNodePortPatch(serviceName, namespace, portName, newNodePort);
-
-		log.debug("Patching service {} port {} with nodePort {}", serviceName, portName, newNodePort);
-
-		Service service = client.services().inNamespace(namespace).withName(serviceName).get();
-
-		if (service == null) {
-			throw new IllegalStateException("Service " + serviceName + NOT_FOUND_IN_NAMESPACE + namespace);
-		}
-
-		List<ServicePort> ports = service.getSpec().getPorts();
-		int portIndex = -1;
-		for (int i = 0; i < ports.size(); i++) {
-			if (portName.equals(ports.get(i).getName())) {
-				portIndex = i;
-				break;
-			}
-		}
-
-		if (portIndex == -1) {
-			throw new IllegalStateException("Port with name " + portName + " not found in service " + serviceName + ".");
-		}
-
-		// Create JSON patch
-		List<Map<String, Object>> patch = List.of(Map.of(
-			"op",
-			"replace",
-			"path",
-			"/spec/ports/" + portIndex + "/nodePort",
-			"value",
-			newNodePort
-		));
-
-		String patchJson = Serialization.asJson(patch);
-		PatchContext patchContext = new PatchContext.Builder().withPatchType(io.fabric8.kubernetes.client.dsl.base.PatchType.JSON)
-															  .build();
-
-		executeWithErrorHandling(
-			"patch service " + serviceName, () -> {
-				client.services().inNamespace(namespace).withName(serviceName).patch(patchContext, patchJson);
-				return null;
-			}
-		);
-
-		log.debug(
-			"Service {} in namespace {} successfully patched with nodePort {} for port {}.",
-			serviceName,
-			namespace,
-			newNodePort,
-			portName
-		);
-	}
-
-	/**
 	 * Creates a namespace (or an OpenShift project) if it does not already exist (idempotent).
 	 *
 	 * @param name name of the namespace to create

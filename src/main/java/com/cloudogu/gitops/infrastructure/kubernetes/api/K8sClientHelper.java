@@ -166,12 +166,6 @@ class K8sClientHelper {
 		}
 	}
 
-	static void validateServiceNodePortPatch(String serviceName, String namespace, String portName, int newNodePort) {
-		if (StringUtils.isEmpty(serviceName) || StringUtils.isEmpty(namespace) || StringUtils.isEmpty(portName) || newNodePort <= 0) {
-			throw new IllegalArgumentException("Service name, namespace, port name, and valid nodePort must be provided");
-		}
-	}
-
 	static void validateWaitForResourcePhaseParams(
 		String resourceType,
 		String resourceName,
