@@ -21,6 +21,8 @@ import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
 import com.cloudogu.gitops.utils.Tuple;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.micronaut.core.annotation.Order;
 import io.micronaut.core.util.StringUtils;
 import jakarta.inject.Singleton;
@@ -489,12 +491,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 	protected String findDockerGid() {
 		String gid = "";
-		String etcGroup = k8sClient.runTemporaryPod(
-			"tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
-			"irrelevant" /* Redundant until the pod overrides are replaced with a typed pod spec */,
-			namespace,
-			createGidGrepperOverrides()
-		);
+		String etcGroup = k8sClient.runTemporaryPod(createGidGrepperPod());
 
 		if (etcGroup != null) {
 			String[] lines = etcGroup.split("\n");
@@ -521,26 +518,31 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 	}
 
-	Map<String, Object> createGidGrepperOverrides() {
-		return Map.of(
-			"spec", Map.of(
-				"containers",
-				List.of(Map.of(
-					"name",
-					"tmp-docker-gid-grepper",
-					"image",
-					toolConfig().server().internalBashImage(),
-					"args",
-					List.of("cat", ETC_GROUP_PATH),
-					"volumeMounts",
-					List.of(Map.of("name", "group", "mountPath", ETC_GROUP_PATH, "readOnly", true))
-				)),
-				"nodeSelector",
-				Map.of("node", TOOL_NAME),
-				"volumes",
-				List.of(Map.of("name", "group", "hostPath", Map.of("path", ETC_GROUP_PATH)))
-			)
-		);
+	private Pod createGidGrepperPod() {
+		return new PodBuilder().withNewMetadata()
+							   .withName("tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND))
+							   .withNamespace(namespace)
+							   .endMetadata()
+							   .withNewSpec()
+							   .withNodeSelector(Map.of("node", TOOL_NAME))
+							   .addNewContainer()
+							   .withName("tmp-docker-gid-grepper")
+							   .withImage(toolConfig().server().internalBashImage())
+							   .withArgs("cat", ETC_GROUP_PATH)
+							   .addNewVolumeMount()
+							   .withName("group")
+							   .withMountPath(ETC_GROUP_PATH)
+							   .withReadOnly(true)
+							   .endVolumeMount()
+							   .endContainer()
+							   .addNewVolume()
+							   .withName("group")
+							   .withNewHostPath()
+							   .withPath(ETC_GROUP_PATH)
+							   .endHostPath()
+							   .endVolume()
+							   .endSpec()
+							   .build();
 	}
 
 }

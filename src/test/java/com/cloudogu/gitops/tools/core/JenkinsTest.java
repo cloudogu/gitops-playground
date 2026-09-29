@@ -30,6 +30,7 @@ import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.cloudogu.gitops.utils.Tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import io.fabric8.kubernetes.api.model.Pod;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,6 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -104,7 +104,7 @@ class JenkinsTest {
 	@BeforeEach
 	void setup() {
 		when(k8sClient.waitForNode()).thenReturn(expectedNodeName);
-		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("");
+		when(k8sClient.runTemporaryPod(any(Pod.class))).thenReturn("");
 	}
 
 	@Test
@@ -121,7 +121,7 @@ class JenkinsTest {
 		config.getJenkins().setInternalBashImage("bash:42");
 		config.getJenkins().setInternalDockerClientVersion("23");
 
-		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("""
+		when(k8sClient.runTemporaryPod(any(Pod.class))).thenReturn("""
 			root:x:0:
 			daemon:x:1:
 			docker:x:42:me
@@ -178,19 +178,21 @@ class JenkinsTest {
 		assertThat(agent.get("runAsUser")).isEqualTo(1000);
 		assertThat(agent.get("runAsGroup")).isEqualTo(42);
 
-		ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
-		verify(k8sClient).runTemporaryPod(
-			nameCaptor.capture(),
-			anyString(),
-			eq(jenkins.getNamespace()),
-			overridesCaptor.capture()
-		);
-		assertThat(nameCaptor.getValue()).startsWith("tmp-docker-gid-grepper-");
+		ArgumentCaptor<Pod> podCaptor = ArgumentCaptor.forClass(Pod.class);
+		verify(k8sClient).runTemporaryPod(podCaptor.capture());
 
-		Map<String, Object> spec = (Map<String, Object>) overridesCaptor.getValue().get("spec");
-		List<Map<String, Object>> containers = (List<Map<String, Object>>) spec.get("containers");
-		assertThat(containers.get(0).get("image").toString()).isEqualTo("bash:42");
+		Pod gidGrepperPod = podCaptor.getValue();
+		assertThat(gidGrepperPod.getMetadata().getName()).startsWith("tmp-docker-gid-grepper-");
+		assertThat(gidGrepperPod.getMetadata().getNamespace()).isEqualTo(jenkins.getNamespace());
+		assertThat(gidGrepperPod.getSpec().getNodeSelector()).containsEntry("node", "jenkins");
+		assertThat(gidGrepperPod.getSpec().getContainers()).hasSize(1);
+		assertThat(gidGrepperPod.getSpec().getContainers().get(0).getImage()).isEqualTo("bash:42");
+		assertThat(gidGrepperPod.getSpec().getContainers().get(0).getArgs()).containsExactly("cat", "/etc/group");
+		assertThat(gidGrepperPod.getSpec().getContainers().get(0).getVolumeMounts()).hasSize(1);
+		assertThat(gidGrepperPod.getSpec().getContainers().get(0).getVolumeMounts().get(0).getMountPath())
+			.isEqualTo("/etc/group");
+		assertThat(gidGrepperPod.getSpec().getVolumes()).hasSize(1);
+		assertThat(gidGrepperPod.getSpec().getVolumes().get(0).getHostPath().getPath()).isEqualTo("/etc/group");
 	}
 
 	@Test
@@ -312,7 +314,7 @@ class JenkinsTest {
 
 	@Test
 	void installsJenkinsWithoutDockerGid() throws GitAPIException, IOException {
-		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("""
+		when(k8sClient.runTemporaryPod(any(Pod.class))).thenReturn("""
 			root:x:0:
 			daemon:x:1:
 			me:x:1000:""");

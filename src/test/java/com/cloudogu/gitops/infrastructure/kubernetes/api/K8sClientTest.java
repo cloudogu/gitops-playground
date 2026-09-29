@@ -1330,7 +1330,7 @@ class K8sClientTest {
 	}
 
 	@Test
-	void runTemporaryPodReturnsLogsAppliesOverridesAndRemovesPod() throws InterruptedException {
+	void runTemporaryPodReturnsLogsAndRemovesPod() throws InterruptedException {
 		// Given
 		server.expect()
 			  .post()
@@ -1386,21 +1386,33 @@ class K8sClientTest {
 			  .andReturn(200, new StatusBuilder().build())
 			  .once();
 
-		Map<String, Object> overrides = Map.of(
-			"spec", Map.of(
-				"containers", List.of(Map.of(
-					"name", "override-container",
-					"image", "bash:42",
-					"args", List.of("cat", "/etc/group"),
-					"volumeMounts", List.of(Map.of("name", "group", "mountPath", "/etc/group", "readOnly", true))
-				)),
-				"nodeSelector", Map.of("node", "jenkins"),
-				"volumes", List.of(Map.of("name", "group", "hostPath", Map.of("path", "/etc/group")))
-			)
-		);
+		var pod = new PodBuilder().withNewMetadata()
+							  .withName("gid-pod")
+							  .withNamespace("jenkins")
+							  .endMetadata()
+							  .withNewSpec()
+							  .withNodeSelector(Map.of("node", "jenkins"))
+							  .addNewContainer()
+							  .withName("gid-container")
+							  .withImage("bash:42")
+							  .withArgs("cat", "/etc/group")
+							  .addNewVolumeMount()
+							  .withName("group")
+							  .withMountPath("/etc/group")
+							  .withReadOnly(true)
+							  .endVolumeMount()
+							  .endContainer()
+							  .addNewVolume()
+							  .withName("group")
+							  .withNewHostPath()
+							  .withPath("/etc/group")
+							  .endHostPath()
+							  .endVolume()
+							  .endSpec()
+							  .build();
 
 		// When
-		String result = k8sApiClient.runTemporaryPod("gid-pod", "nginx:latest", "jenkins", overrides);
+		String result = k8sApiClient.runTemporaryPod(pod);
 
 		// Then
 		assertThat(result).isEqualTo("root:x:0:\ndocker:x:42:\n");
@@ -1415,7 +1427,7 @@ class K8sClientTest {
 		List<Map<String, Object>> containers = (List<Map<String, Object>>) spec.get("containers");
 		assertThat(containers).hasSize(1);
 		Map<String, Object> container = containers.get(0);
-		assertThat(container.get("name")).isEqualTo("override-container");
+		assertThat(container.get("name")).isEqualTo("gid-container");
 		assertThat(container.get("image")).isEqualTo("bash:42");
 		assertThat((List<String>) container.get("args")).containsExactly("cat", "/etc/group");
 

@@ -1009,40 +1009,27 @@ public class K8sClient {
 
 	/**
 	 * Runs a temporary pod, waits for completion, returns its logs and removes the pod afterwards.
+	 * The pod is always configured with {@code restartPolicy: Never}.
 	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param overrides pod spec fields to override
+	 * @param pod pod definition to run
 	 * @return logs written by the completed pod
 	 */
-	public String runTemporaryPod(String name, String image, String namespace, Map<String, ?> overrides) {
-		log.debug("Running temporary pod {} with image {} in namespace {}", name, image, namespace);
-		String resolvedNamespace = resolveNamespace(namespace);
+	public String runTemporaryPod(Pod pod) {
+		String name = pod.getMetadata().getName();
+		String resolvedNamespace = resolveNamespace(pod.getMetadata().getNamespace());
+		Pod temporaryPod = new PodBuilder(pod).editMetadata()
+									   .withNamespace(resolvedNamespace)
+									   .endMetadata()
+									   .editOrNewSpec()
+									   .withRestartPolicy("Never")
+									   .endSpec()
+									   .build();
 
-		Pod pod = new PodBuilder().withNewMetadata()
-									  .withName(name)
-									  .withNamespace(resolvedNamespace)
-									  .endMetadata()
-									  .withNewSpec()
-									  .withRestartPolicy("Never")
-									  .addNewContainer()
-									  .withName(name)
-									  .withImage(image)
-									  .endContainer()
-									  .endSpec()
-									  .build();
-
-		if (overrides != null && !overrides.isEmpty()) {
-			log.debug("Applying overrides: {}", overrides);
-			pod = K8sClientHelper.applyPodOverrides(pod, overrides);
-		}
-
-		final Pod finalPod = pod;
+		log.debug("Running temporary pod {} in namespace {}", name, resolvedNamespace);
 		Pod createdPod = executeWithErrorHandling(
 			"run temporary pod " + name, () -> client.pods()
 											.inNamespace(resolvedNamespace)
-											.resource(finalPod)
+											.resource(temporaryPod)
 											.create()
 		);
 
