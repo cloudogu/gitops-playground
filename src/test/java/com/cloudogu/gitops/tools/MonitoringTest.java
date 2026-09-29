@@ -306,13 +306,21 @@ class MonitoringTest {
 	}
 
 	@Test
-	void checkIfKubernetesSecretWillBeCreatedWhenExternalEmailserversCredentialIsSet() throws GitAPIException {
+	void createsKubernetesSecretWhenExternalMailserverCredentialsAreSet() throws GitAPIException {
 		config.getFeatures().getMail().setActive(true);
 		config.getFeatures().getMail().setSmtpAddress("smtp.example.com");
 		config.getFeatures().getMail().setSmtpUser("grafana@example.com");
 		config.getFeatures().getMail().setSmtpPassword("1101ABCabc&/+*~");
 
 		install(createStack(scmManagerMock));
+
+		verify(k8sClient).createSecret(
+			"generic",
+			"grafana-email-secret",
+			"foo-monitoring",
+			new Tuple<>("user", "grafana@example.com"),
+			new Tuple<>("password", "1101ABCabc&/+*~")
+		);
 	}
 
 	@Test
