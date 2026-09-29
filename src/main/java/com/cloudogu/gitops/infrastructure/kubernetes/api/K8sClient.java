@@ -365,27 +365,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Creates or updates an empty secret in the default namespace (idempotent).
-	 *
-	 * @param type secret type, e.g. {@code generic}
-	 * @param name name of the secret
-	 */
-	public void createSecret(String type, String name) {
-		createSecret(type, name, "", new Tuple<?, ?>[0]);
-	}
-
-	/**
-	 * Creates or updates an empty secret (idempotent).
-	 *
-	 * @param type      secret type, e.g. {@code generic}
-	 * @param name      name of the secret
-	 * @param namespace target namespace; empty means the default namespace
-	 */
-	public void createSecret(String type, String name, String namespace) {
-		createSecret(type, name, namespace, new Tuple<?, ?>[0]);
-	}
-
-	/**
 	 * Creates or updates a generic secret (idempotent).
 	 *
 	 * @param type      secret type; {@code generic} is mapped to {@code Opaque}
@@ -423,18 +402,6 @@ public class K8sClient {
 		);
 
 		log.debug("Secret {} created/updated successfully", name);
-	}
-
-	/**
-	 * Creates or updates an image pull secret in the default namespace (idempotent).
-	 *
-	 * @param name     name of the secret
-	 * @param host     registry host the credentials belong to
-	 * @param user     registry username
-	 * @param password registry password
-	 */
-	public void createImagePullSecret(String name, String host, String user, String password) {
-		createImagePullSecret(name, "", host, user, password);
 	}
 
 	/**
@@ -882,17 +849,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Patches a resource in the default namespace using the default patch type.
-	 *
-	 * @param resource resource type, e.g. {@code service}
-	 * @param name     resource name
-	 * @param yaml     patch content as nested map
-	 */
-	public void patch(String resource, String name, Map<String, Object> yaml) {
-		patch(resource, name, "", "", yaml);
-	}
-
-	/**
 	 * Patches a resource using the default patch type.
 	 *
 	 * @param resource  resource type, e.g. {@code service}
@@ -934,26 +890,6 @@ public class K8sClient {
 		);
 
 		log.debug("Resource {}/{} patched successfully", resource, name);
-	}
-
-	/**
-	 * Deletes resources by label selectors in the default namespace, see {@link #delete(String,
-	 * String, Tuple...)}.
-	 *
-	 * @param resource resource type, e.g. {@code secret}
-	 */
-	public void delete(String resource) {
-		delete(resource, "", new Tuple<?, ?>[0]);
-	}
-
-	/**
-	 * Deletes resources by label selectors, see {@link #delete(String, String, Tuple...)}.
-	 *
-	 * @param resource  resource type, e.g. {@code secret}
-	 * @param namespace namespace to delete in; empty means the default namespace
-	 */
-	public void delete(String resource, String namespace) {
-		delete(resource, namespace, new Tuple<?, ?>[0]);
 	}
 
 	/**
