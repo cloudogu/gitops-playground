@@ -36,7 +36,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.SystemReader;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -147,31 +146,30 @@ class ContentLoaderTest {
 		}
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void deploysImagePullSecrets() {
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getContent().setNamespaces(List.of("example-apps-staging", "example-apps-production"));
+		K8sClient runtimeK8sClient = mock(K8sClient.class);
 
-		install(createContent(config), config);
+		install(createContent(config, runtimeK8sClient), config);
 
-		assertRegistrySecrets("reg-user", "reg-pw");
+		assertRegistrySecrets(runtimeK8sClient, "reg-user", "reg-pw");
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void deploysImagePullSecretsFromReadOnlyVars() {
 		config.getRegistry().setCreateImagePullSecrets(true);
 		config.getContent().setNamespaces(List.of("example-apps-staging", "example-apps-production"));
 		config.getRegistry().setReadOnlyUsername("other-user");
 		config.getRegistry().setReadOnlyPassword("other-pw");
+		K8sClient runtimeK8sClient = mock(K8sClient.class);
 
-		install(createContent(config), config);
+		install(createContent(config, runtimeK8sClient), config);
 
-		assertRegistrySecrets("other-user", "other-pw");
+		assertRegistrySecrets(runtimeK8sClient, "other-user", "other-pw");
 	}
 
-	@Disabled("TODO: Does not run on Jenkins: Caused by: java.net.UnknownHostException: kubernetes.default.svc: Name or service not known")
 	@Test
 	void deploysAdditionalImagePullSecretsForProxyRegistry() {
 		config.getRegistry().setCreateImagePullSecrets(true);
@@ -180,10 +178,12 @@ class ContentLoaderTest {
 		config.getRegistry().setProxyUrl("proxy-url");
 		config.getRegistry().setProxyUsername("proxy-user");
 		config.getRegistry().setProxyPassword("proxy-pw");
+		K8sClient runtimeK8sClient = mock(K8sClient.class);
 
-		install(createContent(config), config);
+		install(createContent(config, runtimeK8sClient), config);
 
-		assertRegistrySecrets("reg-user", "reg-pw");
+		assertRegistrySecrets(runtimeK8sClient, "reg-user", "reg-pw");
+		assertProxyRegistrySecrets(runtimeK8sClient);
 	}
 
 	@Test
@@ -1252,7 +1252,35 @@ class ContentLoaderTest {
 		return readYaml(new File(path));
 	}
 
-	private void assertRegistrySecrets(String regUser, String regPw) {
+	private void assertRegistrySecrets(K8sClient runtimeK8sClient, String regUser, String regPw) {
+		for (String namespace : config.getContent().getNamespaces()) {
+			verify(runtimeK8sClient).createNamespace(namespace);
+			verify(runtimeK8sClient).createImagePullSecret(
+				"registry",
+				namespace,
+				"reg-url",
+				regUser,
+				regPw
+			);
+			verify(runtimeK8sClient).patch(
+				"serviceaccount",
+				"default",
+				namespace,
+				Map.of("imagePullSecrets", List.of(Map.of("name", "registry")))
+			);
+		}
+	}
+
+	private void assertProxyRegistrySecrets(K8sClient runtimeK8sClient) {
+		for (String namespace : config.getContent().getNamespaces()) {
+			verify(runtimeK8sClient).createImagePullSecret(
+				"proxy-registry",
+				namespace,
+				"proxy-url",
+				"proxy-user",
+				"proxy-pw"
+			);
+		}
 	}
 
 	private ContentLoaderForTest createContent(Config contentConfig) {
@@ -1260,6 +1288,19 @@ class ContentLoaderTest {
 			contentConfig,
 			k8sClient,
 			credentialsResolver,
+			scmmRepoProvider,
+			jenkins,
+			gitHandler,
+			fileSystemUtils,
+			deployer
+		);
+	}
+
+	private ContentLoaderForTest createContent(Config contentConfig, K8sClient runtimeK8sClient) {
+		return new ContentLoaderForTest(
+			contentConfig,
+			runtimeK8sClient,
+			new CredentialsResolver(runtimeK8sClient),
 			scmmRepoProvider,
 			jenkins,
 			gitHandler,
