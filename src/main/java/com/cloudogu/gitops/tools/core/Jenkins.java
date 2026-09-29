@@ -489,15 +489,11 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 	protected String findDockerGid() {
 		String gid = "";
-		String etcGroup = k8sClient.run(
+		String etcGroup = k8sClient.runTemporaryPod(
 			"tmp-docker-gid-grepper-" + RANDOM.nextInt(GID_GREPPER_POD_SUFFIX_BOUND),
-			"irrelevant" /* Redundant, but mandatory param */,
+			"irrelevant" /* Redundant until the pod overrides are replaced with a typed pod spec */,
 			namespace,
-			createGidGrepperOverrides(),
-			"--restart=Never",
-			"-ti",
-			"--rm",
-			"--quiet"
+			createGidGrepperOverrides()
 		);
 
 		if (etcGroup != null) {

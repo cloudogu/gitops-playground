@@ -47,7 +47,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1009,83 +1008,30 @@ public class K8sClient {
 	}
 
 	/**
-	 * Runs a pod in the default namespace, see {@link #run(String, String, String, Map, String...)}.
-	 *
-	 * @param name  name of the pod
-	 * @param image container image to run
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image) {
-		return run(name, image, "", Map.of(), new String[0]);
-	}
-
-	/**
-	 * Runs a pod, see {@link #run(String, String, String, Map, String...)}.
+	 * Runs a temporary pod, waits for completion, returns its logs and removes the pod afterwards.
 	 *
 	 * @param name      name of the pod
 	 * @param image     container image to run
 	 * @param namespace target namespace; empty means the default namespace
-	 * @return a status message or, with {@code --rm}-style params, the pod output
+	 * @param overrides pod spec fields to override
+	 * @return logs written by the completed pod
 	 */
-	public String run(String name, String image, String namespace) {
-		return run(name, image, namespace, Map.of(), new String[0]);
-	}
-
-	/**
-	 * Runs a pod with pod-spec overrides, see {@link #run(String, String, String, Map, String...)}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image, String namespace, Map<String, ?> overrides) {
-		return run(name, image, namespace, overrides, new String[0]);
-	}
-
-	/**
-	 * Runs a pod with kubectl-run-style params, see {@link #run(String, String, String, Map,
-	 * String...)}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param params    kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image, String namespace, String... params) {
-		return run(name, image, namespace, Map.of(), params);
-	}
-
-	/**
-	 * Runs a pod, analogous to {@code kubectl run}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
-	 * @param params    kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
-	 * @return a status message or, when the params request output collection, the pod output
-	 */
-	public String run(String name, String image, String namespace, Map<String, ?> overrides, String... params) {
-		log.debug("Running pod {} with image {} in namespace {}", name, image, namespace);
+	public String runTemporaryPod(String name, String image, String namespace, Map<String, ?> overrides) {
+		log.debug("Running temporary pod {} with image {} in namespace {}", name, image, namespace);
 		String resolvedNamespace = resolveNamespace(namespace);
-		List<String> runParams = params != null ? Arrays.asList(params) : Collections.emptyList();
 
 		Pod pod = new PodBuilder().withNewMetadata()
-								  .withName(name)
-								  .withNamespace(resolvedNamespace)
-								  .endMetadata()
-								  .withNewSpec()
-								  .addNewContainer()
-								  .withName(name)
-								  .withImage(image)
-								  .endContainer()
-								  .endSpec()
-								  .build();
-
-		K8sClientHelper.applyRunParams(pod, runParams);
+									  .withName(name)
+									  .withNamespace(resolvedNamespace)
+									  .endMetadata()
+									  .withNewSpec()
+									  .withRestartPolicy("Never")
+									  .addNewContainer()
+									  .withName(name)
+									  .withImage(image)
+									  .endContainer()
+									  .endSpec()
+									  .build();
 
 		if (overrides != null && !overrides.isEmpty()) {
 			log.debug("Applying overrides: {}", overrides);
@@ -1094,27 +1040,21 @@ public class K8sClient {
 
 		final Pod finalPod = pod;
 		Pod createdPod = executeWithErrorHandling(
-			"run pod " + name, () -> client.pods()
-										   .inNamespace(resolvedNamespace)
-										   .resource(finalPod)
-										   .create()
+			"run temporary pod " + name, () -> client.pods()
+											.inNamespace(resolvedNamespace)
+											.resource(finalPod)
+											.create()
 		);
 
-		log.debug("Pod {} created successfully", name);
-		if (K8sClientHelper.shouldReturnPodOutput(runParams)) {
-			return K8sClientHelper.collectPodRunOutput(
-				client,
-				createdPod.getMetadata()
-						  .getName(),
-				resolvedNamespace,
-				K8sClientHelper.shouldRemovePod(runParams),
-				defaultRetries,
-				sleepTimeMillis,
-				this
-			);
-		}
-
-		return "pod/" + createdPod.getMetadata().getName() + " created";
+		log.debug("Temporary pod {} created successfully", name);
+		return K8sClientHelper.collectCompletedPodLogsAndDelete(
+			client,
+			createdPod.getMetadata().getName(),
+			resolvedNamespace,
+			defaultRetries,
+			sleepTimeMillis,
+			this
+		);
 	}
 
 	/**

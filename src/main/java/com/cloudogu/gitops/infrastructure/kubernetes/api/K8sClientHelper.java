@@ -70,32 +70,10 @@ class K8sClientHelper {
 		return value;
 	}
 
-	static void applyRunParams(Pod pod, List<String> params) {
-		String restartPolicy = null;
-		for (String param : params) {
-			if (param.startsWith("--restart=")) {
-				restartPolicy = param.substring("--restart=".length());
-				break;
-			}
-		}
-		if (restartPolicy != null) {
-			pod.getSpec().setRestartPolicy(restartPolicy);
-		}
-	}
-
-	static boolean shouldReturnPodOutput(List<String> params) {
-		return params.contains("--rm") || params.contains("-i") || params.contains("-it") || params.contains("-ti");
-	}
-
-	static boolean shouldRemovePod(List<String> params) {
-		return params.contains("--rm");
-	}
-
-	static String collectPodRunOutput(
+	static String collectCompletedPodLogsAndDelete(
 		KubernetesClient client,
 		String podName,
 		String namespace,
-		boolean removePod,
 		int defaultRetries,
 		int sleepTime,
 		K8sClient k8sClient) {
@@ -113,9 +91,7 @@ class K8sClientHelper {
 
 			return logOutput;
 		} finally {
-			if (removePod) {
-				k8sClient.delete("pod", namespace, podName);
-			}
+			k8sClient.delete("pod", namespace, podName);
 		}
 	}
 

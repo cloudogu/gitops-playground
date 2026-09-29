@@ -104,7 +104,7 @@ class JenkinsTest {
 	@BeforeEach
 	void setup() {
 		when(k8sClient.waitForNode()).thenReturn(expectedNodeName);
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn("");
+		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("");
 	}
 
 	@Test
@@ -121,7 +121,7 @@ class JenkinsTest {
 		config.getJenkins().setInternalBashImage("bash:42");
 		config.getJenkins().setInternalDockerClientVersion("23");
 
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn("""
+		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("""
 			root:x:0:
 			daemon:x:1:
 			docker:x:42:me
@@ -180,12 +180,11 @@ class JenkinsTest {
 
 		ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
-		verify(k8sClient).run(
+		verify(k8sClient).runTemporaryPod(
 			nameCaptor.capture(),
 			anyString(),
 			eq(jenkins.getNamespace()),
-			overridesCaptor.capture(),
-			any(String[].class)
+			overridesCaptor.capture()
 		);
 		assertThat(nameCaptor.getValue()).startsWith("tmp-docker-gid-grepper-");
 
@@ -313,7 +312,7 @@ class JenkinsTest {
 
 	@Test
 	void installsJenkinsWithoutDockerGid() throws GitAPIException, IOException {
-		when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn("""
+		when(k8sClient.runTemporaryPod(anyString(), anyString(), anyString(), anyMap())).thenReturn("""
 			root:x:0:
 			daemon:x:1:
 			me:x:1000:""");
