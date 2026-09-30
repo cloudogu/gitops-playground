@@ -1,24 +1,16 @@
 package com.cloudogu.gitops.integration.tools;
 
 import com.cloudogu.gitops.integration.TestK8sHelper;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * This class checks if Prometheus is started well.
- * Prometheus contains own namespace ('monitoring') which owns and 3 Pods:
- * - Grafana
- * - Operator
- * - prometheus-stack
+ * Prometheus uses its own namespace ('monitoring'). The tests verify that the core monitoring pods
+ * for Grafana, the Prometheus Operator, and Prometheus are running.
  */
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full")
 public class MonitoringTestIT extends KubernetesApiTestSetup {
@@ -57,32 +49,8 @@ public class MonitoringTestIT extends KubernetesApiTestSetup {
 		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, operatorPod);
 	}
 
-	@Disabled("not start on jenkins")
 	@Test
 	void ensureMonitoringIsStarted() {
-		List<Pod> pods = listPods();
-		assertThat(pods).isNotEmpty();
-
-		Pod prometheus = null;
-		for (Pod pod : pods) {
-			if (pod.getMetadata().getName().contains(prometheusPod)) {
-				prometheus = pod;
-				break;
-			}
-		}
-		assertThat(prometheus).isNotNull();
-		assertThat(prometheus.getStatus().getPhase()).isEqualTo("Running");
-	}
-
-	@Disabled("jenkins got only 2")
-	@Test
-	void ensureNamespaceGot3Pods() {
-		assertThat(listPods()).hasSize(3);
-	}
-
-	private List<Pod> listPods() {
-		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			return client.pods().inNamespace(namespace).list().getItems();
-		}
+		TestK8sHelper.waitForAllPodsRunningInNamespace(namespace, prometheusPod);
 	}
 }
