@@ -55,7 +55,8 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		AirGappedUtils airGappedUtils,
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
-		IngressToolConfigMapper configMapper, K8sClient k8sClient) {
+		IngressToolConfigMapper configMapper,
+		K8sClient k8sClient) {
 		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
@@ -147,6 +148,6 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		}
 
 		log.debug("Applying Gateway API CRDs before tool deployment from path {}", crds);
-		k8sClient.applyYaml(crds);
+		k8sClient.applyYamlAndWaitForCrds(crds);
 	}
 }

@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -724,11 +725,33 @@ public class K8sClient {
 	 * @return a summary of how many resources were applied
 	 */
 	public String applyYaml(String yamlLocation) {
+		return applyYaml(yamlLocation, false);
+	}
+
+	/**
+	 * Applies YAML resources and waits until every contained CustomResourceDefinition is established.
+	 *
+	 * <p>This is intended for bootstrap paths where consumers may start immediately after the CRDs are applied.
+	 * Returning only after {@code Established=True} prevents consumers such as Argo CD from starting discovery while
+	 * the Kubernetes API server is still registering the newly created APIs.</p>
+	 *
+	 * @param yamlLocation http(s) URL, file path or directory path containing YAML resources
+	 * @return a summary of how many resources were applied
+	 */
+	public String applyYamlAndWaitForCrds(String yamlLocation) {
+		return applyYaml(yamlLocation, true);
+	}
+
+	private String applyYaml(String yamlLocation, boolean waitForCrds) {
 		log.debug("Applying YAML from {}", yamlLocation);
 
 		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
 			try {
-				int appliedResources = applyYamlStream(URI.create(yamlLocation).toURL().openStream(), yamlLocation);
+				int appliedResources = applyYamlStream(
+					URI.create(yamlLocation).toURL().openStream(),
+					yamlLocation,
+					waitForCrds
+				);
 				return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 			} catch (IOException | IllegalArgumentException e) {
 				throw new UncheckedIOException("Failed to apply YAML from URL: " + yamlLocation, new IOException(e));
@@ -757,7 +780,11 @@ public class K8sClient {
 			int appliedResources = 0;
 			for (File file : yamlFiles) {
 				try {
-					appliedResources += applyYamlStream(Files.newInputStream(file.toPath()), file.getAbsolutePath());
+					appliedResources += applyYamlStream(
+						Files.newInputStream(file.toPath()),
+						file.getAbsolutePath(),
+						waitForCrds
+					);
 				} catch (IOException e) {
 					throw new UncheckedIOException("Failed to apply YAML file: " + file.getAbsolutePath(), e);
 				}
@@ -767,14 +794,18 @@ public class K8sClient {
 		}
 
 		try {
-			int appliedResources = applyYamlStream(Files.newInputStream(location.toPath()), yamlLocation);
+			int appliedResources = applyYamlStream(
+				Files.newInputStream(location.toPath()),
+				yamlLocation,
+				waitForCrds
+			);
 			return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to apply YAML file: " + yamlLocation, e);
 		}
 	}
 
-	private int applyYamlStream(InputStream stream, String sourceDescription) {
+	private int applyYamlStream(InputStream stream, String sourceDescription, boolean waitForCrds) {
 		List<HasMetadata> resources = executeWithErrorHandling(
 			"load YAML from " + sourceDescription,
 			() -> loadYamlItems(stream, sourceDescription)
@@ -789,7 +820,40 @@ public class K8sClient {
 			);
 		}
 
+		if (waitForCrds) {
+			waitForAppliedCrds(resources);
+		}
+
 		return resources.size();
+	}
+
+	private void waitForAppliedCrds(List<HasMetadata> resources) {
+		resources.stream()
+			.filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
+			.map(HasMetadata::getMetadata)
+			.filter(Objects::nonNull)
+			.map(metadata -> metadata.getName())
+			.filter(name -> name != null && !name.isBlank())
+			.forEach(this::waitForCrdEstablished);
+	}
+
+	private void waitForCrdEstablished(String crdName) {
+		log.debug("Waiting for CRD {} to become Established", crdName);
+		waitForResourceWithRetry(
+			"CRD " + crdName + " to become Established",
+			() -> {
+				var crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
+				if (crd == null || crd.getStatus() == null || crd.getStatus().getConditions() == null) {
+					return null;
+				}
+
+				boolean established = crd.getStatus().getConditions().stream()
+					.anyMatch(condition ->
+						"Established".equals(condition.getType()) && "True".equals(condition.getStatus())
+					);
+				return established ? crd : null;
+			}
+		);
 	}
 
 	private void applyResource(HasMetadata resource) {

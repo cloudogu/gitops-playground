@@ -149,7 +149,7 @@ class ExternalSecretsOperatorTest {
 		assertThat(bootstrapValues.get("installCRDs")).isEqualTo(true);
 
 		ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
-		verify(k8sClient).applyYaml(pathCaptor.capture());
+		verify(k8sClient).applyYamlAndWaitForCrds(pathCaptor.capture());
 		String appliedYaml = Files.readString(Path.of(pathCaptor.getValue()));
 		assertThat(appliedYaml)
 			.contains("kind: CustomResourceDefinition")
@@ -171,7 +171,7 @@ class ExternalSecretsOperatorTest {
 		operator.bootstrapCrds(context);
 
 		verify(helmClient, never()).addRepo(anyString(), anyString());
-		verify(k8sClient).applyYaml(anyString());
+		verify(k8sClient).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -183,7 +183,7 @@ class ExternalSecretsOperatorTest {
 		operator.bootstrapCrds(context);
 
 		verify(helmClient, never()).template(anyString(), anyString(), any());
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test

@@ -319,7 +319,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 				crdFile,
 				crdYaml
 			);
-			k8sClient.applyYaml(crdYaml);
+			k8sClient.applyYamlAndWaitForCrds(crdYaml);
 		}
 	}
 

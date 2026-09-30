@@ -600,12 +600,12 @@ class MonitoringTest {
 		Path crdDirectory = rootChartsFolder.resolve(
 			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
 		);
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheuses.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-podmonitors.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-probes.yaml").toString());
-		verify(k8sClient, times(5)).applyYaml(anyString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheuses.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-podmonitors.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-probes.yaml").toString());
+		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -620,12 +620,12 @@ class MonitoringTest {
 
 		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
 			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-servicemonitors.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheuses.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheusrules.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-podmonitors.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-probes.yaml");
-		verify(k8sClient, times(5)).applyYaml(anyString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-servicemonitors.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheuses.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheusrules.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-podmonitors.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-probes.yaml");
+		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -638,7 +638,7 @@ class MonitoringTest {
 		deploymentContext = new ContextBuilder(config).build();
 		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -650,7 +650,7 @@ class MonitoringTest {
 		deploymentContext = new ContextBuilder(config).build();
 		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test

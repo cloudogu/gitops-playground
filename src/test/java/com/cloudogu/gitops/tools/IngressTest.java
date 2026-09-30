@@ -286,7 +286,7 @@ class IngressTest {
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient).applyYaml(
+		verify(k8sClient).applyYamlAndWaitForCrds(
 			"https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml"
 		);
 	}
@@ -301,7 +301,7 @@ class IngressTest {
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient).applyYaml(
+		verify(k8sClient).applyYamlAndWaitForCrds(
 			localHelmCharts.resolve("traefik/charts/traefik/crds/gateway-api-standard-install.yaml").toString()
 		);
 	}
@@ -314,7 +314,7 @@ class IngressTest {
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test

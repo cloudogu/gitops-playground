@@ -133,7 +133,8 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		applyRenderedResources(
 			renderedManifests,
 			CRD_KINDS,
-			"external-secrets CRDs before tool deployment"
+			"external-secrets CRDs before tool deployment",
+			true
 		);
 	}
 
@@ -150,7 +151,8 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		applyRenderedResources(
 			renderedManifests,
 			OPERATOR_CLUSTER_SCOPED_KINDS,
-			"external-secrets cluster-scoped RBAC and webhook resources"
+			"external-secrets cluster-scoped RBAC and webhook resources",
+			false
 		);
 	}
 
@@ -191,7 +193,8 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 	private void applyRenderedResources(
 		String renderedManifests,
 		Set<String> resourceKinds,
-		String description) {
+		String description,
+		boolean waitForCrds) {
 		String filteredYaml = filterResources(renderedManifests, resourceKinds);
 		if (filteredYaml.isBlank()) {
 			return;
@@ -208,7 +211,11 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		}
 
 		log.debug("Applying {} from path {}", description, resourceFile);
-		k8sClient.applyYaml(resourceFile.toString());
+		if (waitForCrds) {
+			k8sClient.applyYamlAndWaitForCrds(resourceFile.toString());
+		} else {
+			k8sClient.applyYaml(resourceFile.toString());
+		}
 	}
 
 	private static String filterResources(String multiDocYaml, Set<String> resourceKinds) {
