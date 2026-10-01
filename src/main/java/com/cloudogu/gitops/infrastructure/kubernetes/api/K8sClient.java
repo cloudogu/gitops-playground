@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
@@ -827,6 +828,10 @@ public class K8sClient {
 		return resources.size();
 	}
 
+	/**
+	 * Filters the applied resources down to named CRDs and waits for each CRD until Kubernetes reports
+	 * {@code Established=True}. Non-CRD resources and resources without usable metadata are ignored.
+	 */
 	private void waitForAppliedCrds(List<HasMetadata> resources) {
 		resources.stream()
 			.filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
@@ -843,17 +848,20 @@ public class K8sClient {
 			"CRD " + crdName + " to become Established",
 			() -> {
 				var crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
-				if (crd == null || crd.getStatus() == null || crd.getStatus().getConditions() == null) {
-					return null;
-				}
-
-				boolean established = crd.getStatus().getConditions().stream()
-					.anyMatch(condition ->
-						"Established".equals(condition.getType()) && "True".equals(condition.getStatus())
-					);
-				return established ? crd : null;
+				return isCrdEstablished(crd) ? crd : null;
 			}
 		);
+	}
+
+	private boolean isCrdEstablished(CustomResourceDefinition crd) {
+		if (crd == null || crd.getStatus() == null || crd.getStatus().getConditions() == null) {
+			return false;
+		}
+
+		return crd.getStatus().getConditions().stream()
+			.anyMatch(condition ->
+				"Established".equals(condition.getType()) && "True".equals(condition.getStatus())
+			);
 	}
 
 	private void applyResource(HasMetadata resource) {

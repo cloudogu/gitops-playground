@@ -82,9 +82,11 @@ public class Application {
 		log.debug("Bootstrapping CRDs before tool deployment");
 
 		for (AbstractTool tool : tools) {
-			if (tool instanceof CrdBootstrap crdBootstrap) {
-				crdBootstrap.bootstrapCrds(context);
+			if (!(tool instanceof CrdBootstrap crdBootstrap)) {
+				continue;
 			}
+
+			crdBootstrap.bootstrapCrds(context);
 		}
 	}
 
