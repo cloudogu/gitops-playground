@@ -994,6 +994,124 @@ class K8sClientTest {
 	}
 
 	@Test
+	void applyYamlAndWaitForCrdsWaitsUntilAppliedCrdIsEstablished() throws IOException {
+		Path yamlFile = tempDir.resolve("widgets-crd.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: apiextensions.k8s.io/v1
+				kind: CustomResourceDefinition
+				metadata:
+				  name: widgets.example.com
+				spec:
+				  group: example.com
+				  scope: Namespaced
+				  names:
+				    plural: widgets
+				    singular: widget
+				    kind: Widget
+				  versions:
+				    - name: v1
+				      served: true
+				      storage: true
+				      schema:
+				        openAPIV3Schema:
+				          type: object
+				"""
+		);
+
+		Map<String, Object> crdWithoutEstablishedCondition = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of("conditions", List.of())
+		);
+		Map<String, Object> establishedCrd = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of(
+				"conditions", List.of(Map.of("type", "Established", "status", "True"))
+			)
+		);
+
+		server.expect()
+			  .post()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(201, crdWithoutEstablishedCondition)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, crdWithoutEstablishedCondition)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, establishedCrd)
+			  .once();
+
+		String result = k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString());
+
+		assertThat(result).contains("Applied 1 resource(s)");
+	}
+
+	@Test
+	void applyYamlAndWaitForCrdsFailsWhenAppliedCrdDoesNotBecomeEstablished() throws IOException {
+		Path yamlFile = tempDir.resolve("widgets-crd-not-established.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: apiextensions.k8s.io/v1
+				kind: CustomResourceDefinition
+				metadata:
+				  name: widgets.example.com
+				spec:
+				  group: example.com
+				  scope: Namespaced
+				  names:
+				    plural: widgets
+				    singular: widget
+				    kind: Widget
+				  versions:
+				    - name: v1
+				      served: true
+				      storage: true
+				      schema:
+				        openAPIV3Schema:
+				          type: object
+				"""
+		);
+
+		Map<String, Object> notEstablishedCrd = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of(
+				"conditions", List.of(Map.of("type", "Established", "status", "False"))
+			)
+		);
+
+		server.expect()
+			  .post()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(201, notEstablishedCrd)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, notEstablishedCrd)
+			  .times(3);
+
+		var exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString())
+		);
+
+		assertThat(exception.getMessage())
+			.contains("CRD widgets.example.com to become Established")
+			.contains("after 3 retries");
+	}
+
+	@Test
 	void applyYamlAppliesGenericKubernetesResourceViaDiscovery() throws IOException {
 		// Given
 		Path yamlFile = tempDir.resolve("app-project.yaml");

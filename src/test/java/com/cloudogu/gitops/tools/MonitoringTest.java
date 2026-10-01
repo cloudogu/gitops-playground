@@ -3,7 +3,6 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.context.ContextBuilder;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsResolver;
-import com.cloudogu.gitops.application.orchestration.DeploymentOrchestrator;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
@@ -590,7 +589,7 @@ class MonitoringTest {
 	}
 
 	@Test
-	void appliesRequiredMonitoringCrdsFromFilesBeforeInstallingAirGappedMode() throws GitAPIException, IOException {
+	void bootstrapsRequiredMonitoringCrdsFromFilesInAirGappedMode() throws GitAPIException, IOException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(true);
 		config.getApplication().setSkipCrds(false);
@@ -602,35 +601,39 @@ class MonitoringTest {
 		Files.createDirectories(chartYaml.getParent());
 		Files.writeString(chartYaml, "apiVersion: v2\nname: kube-prometheus-stack\nversion: 42.0.3\n");
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
 		Path crdDirectory = rootChartsFolder.resolve(
 			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
 		);
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheuses.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-podmonitors.yaml").toString());
-		verify(k8sClient).applyYaml(crdDirectory.resolve("crd-probes.yaml").toString());
-		verify(k8sClient, times(5)).applyYaml(anyString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheuses.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-podmonitors.yaml").toString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-probes.yaml").toString());
+		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
-	void appliesRequiredMonitoringCrdsFromGithubBeforeInstalling() throws GitAPIException {
+	void bootstrapsRequiredMonitoringCrdsFromGithub() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setMirrorRepos(false);
 		config.getApplication().setSkipCrds(false);
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
 		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
 			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-servicemonitors.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheuses.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-prometheusrules.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-podmonitors.yaml");
-		verify(k8sClient).applyYaml(crdBaseUrl + "crd-probes.yaml");
-		verify(k8sClient, times(5)).applyYaml(anyString());
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-servicemonitors.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheuses.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheusrules.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-podmonitors.yaml");
+		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-probes.yaml");
+		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -641,9 +644,9 @@ class MonitoringTest {
 
 		Monitoring monitoring = createStack(scmManagerMock);
 		deploymentContext = new ContextBuilder(config).build();
-		new DeploymentOrchestrator(List.of(monitoring)).deployTools(deploymentContext, repositoryWorkspace);
+		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
@@ -651,9 +654,11 @@ class MonitoringTest {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setSkipCrds(true);
 
-		install(createStack(scmManagerMock));
+		Monitoring monitoring = createStack(scmManagerMock);
+		deploymentContext = new ContextBuilder(config).build();
+		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYaml(anyString());
+		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
 	}
 
 	@Test
