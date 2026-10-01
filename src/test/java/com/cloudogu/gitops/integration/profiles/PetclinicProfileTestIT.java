@@ -37,6 +37,7 @@ public class PetclinicProfileTestIT extends ProfileTestSetup {
 		// petclinic need most of time to run. If online, we can start all tests.
 		try {
 			waitForContentExamplePrerequisites();
+			log.info("Waiting for Petclinic pods in namespace {}", exampleStagingNs);
 			TestK8sHelper.waitForAllPodsRunningInNamespace(exampleStagingNs, "", 40, TimeUnit.MINUTES);
 		} catch (Polling.TimeoutException timeoutEx) {
 			TestK8sHelper.dumpNamespacesAndPods();
@@ -45,8 +46,13 @@ public class PetclinicProfileTestIT extends ProfileTestSetup {
 	}
 
 	private static void waitForContentExamplePrerequisites() {
+		log.info("Waiting for Jenkins, registry and {} namespaces", exampleStagingNs);
 		TestK8sHelper.waitForNamespaces(List.of("jenkins", "registry", exampleStagingNs));
+
+		log.info("Waiting for registry pod");
 		TestK8sHelper.waitForAllPodsRunningInNamespace("registry", "docker-registry", 40);
+
+		log.info("Waiting for Jenkins pod");
 		TestK8sHelper.waitForAllPodsRunningInNamespace("jenkins", "jenkins", 40);
 	}
 
