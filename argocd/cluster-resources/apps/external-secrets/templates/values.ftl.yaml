@@ -1,5 +1,6 @@
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if config.application.skipCrds == true>
+<#if config.application.skipCrds == true || config.features.argocd.operator == true>
+# CRD installation via this chart is disabled because GOP bootstraps CRDs separately or CRD installation was explicitly skipped.
 installCRDs: false
 </#if>
 <#if config.application.podResources == true>

@@ -33,6 +33,8 @@ public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConf
 								.monitoringActive(config.getFeatures().getMonitoring().getActive())
 								.monitoringNamespace(namePrefix + config.getFeatures().getMonitoring().getNamespace())
 								.templateConfig(templateConfig(config))
+								.airgapped(context.isAirgapped())
+								.skipCrds(config.getApplication().getSkipCrds())
 								.build();
 	}
 

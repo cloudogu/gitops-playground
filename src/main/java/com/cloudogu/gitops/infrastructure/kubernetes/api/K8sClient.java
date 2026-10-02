@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
@@ -47,7 +48,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -269,68 +270,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Patches the nodePort of a specific port in a service.
-	 *
-	 * @param serviceName name of the service to patch
-	 * @param namespace   namespace of the service
-	 * @param portName    name of the port entry whose nodePort is replaced
-	 * @param newNodePort new node port value
-	 */
-	public void patchServiceNodePort(String serviceName, String namespace, String portName, int newNodePort) {
-		K8sClientHelper.validateServiceNodePortPatch(serviceName, namespace, portName, newNodePort);
-
-		log.debug("Patching service {} port {} with nodePort {}", serviceName, portName, newNodePort);
-
-		Service service = client.services().inNamespace(namespace).withName(serviceName).get();
-
-		if (service == null) {
-			throw new IllegalStateException("Service " + serviceName + NOT_FOUND_IN_NAMESPACE + namespace);
-		}
-
-		List<ServicePort> ports = service.getSpec().getPorts();
-		int portIndex = -1;
-		for (int i = 0; i < ports.size(); i++) {
-			if (portName.equals(ports.get(i).getName())) {
-				portIndex = i;
-				break;
-			}
-		}
-
-		if (portIndex == -1) {
-			throw new IllegalStateException("Port with name " + portName + " not found in service " + serviceName + ".");
-		}
-
-		// Create JSON patch
-		List<Map<String, Object>> patch = List.of(Map.of(
-			"op",
-			"replace",
-			"path",
-			"/spec/ports/" + portIndex + "/nodePort",
-			"value",
-			newNodePort
-		));
-
-		String patchJson = Serialization.asJson(patch);
-		PatchContext patchContext = new PatchContext.Builder().withPatchType(io.fabric8.kubernetes.client.dsl.base.PatchType.JSON)
-															  .build();
-
-		executeWithErrorHandling(
-			"patch service " + serviceName, () -> {
-				client.services().inNamespace(namespace).withName(serviceName).patch(patchContext, patchJson);
-				return null;
-			}
-		);
-
-		log.debug(
-			"Service {} in namespace {} successfully patched with nodePort {} for port {}.",
-			serviceName,
-			namespace,
-			newNodePort,
-			portName
-		);
-	}
-
-	/**
 	 * Creates a namespace (or an OpenShift project) if it does not already exist (idempotent).
 	 *
 	 * @param name name of the namespace to create
@@ -428,27 +367,6 @@ public class K8sClient {
 	}
 
 	/**
-	 * Creates or updates an empty secret in the default namespace (idempotent).
-	 *
-	 * @param type secret type, e.g. {@code generic}
-	 * @param name name of the secret
-	 */
-	public void createSecret(String type, String name) {
-		createSecret(type, name, "", new Tuple<?, ?>[0]);
-	}
-
-	/**
-	 * Creates or updates an empty secret (idempotent).
-	 *
-	 * @param type      secret type, e.g. {@code generic}
-	 * @param name      name of the secret
-	 * @param namespace target namespace; empty means the default namespace
-	 */
-	public void createSecret(String type, String name, String namespace) {
-		createSecret(type, name, namespace, new Tuple<?, ?>[0]);
-	}
-
-	/**
 	 * Creates or updates a generic secret (idempotent).
 	 *
 	 * @param type      secret type; {@code generic} is mapped to {@code Opaque}
@@ -486,18 +404,6 @@ public class K8sClient {
 		);
 
 		log.debug("Secret {} created/updated successfully", name);
-	}
-
-	/**
-	 * Creates or updates an image pull secret in the default namespace (idempotent).
-	 *
-	 * @param name     name of the secret
-	 * @param host     registry host the credentials belong to
-	 * @param user     registry username
-	 * @param password registry password
-	 */
-	public void createImagePullSecret(String name, String host, String user, String password) {
-		createImagePullSecret(name, "", host, user, password);
 	}
 
 	/**
@@ -724,11 +630,33 @@ public class K8sClient {
 	 * @return a summary of how many resources were applied
 	 */
 	public String applyYaml(String yamlLocation) {
+		return applyYaml(yamlLocation, false);
+	}
+
+	/**
+	 * Applies YAML resources and waits until every contained CustomResourceDefinition is established.
+	 *
+	 * <p>This is intended for bootstrap paths where consumers may start immediately after the CRDs are applied.
+	 * Returning only after {@code Established=True} prevents consumers such as Argo CD from starting discovery while
+	 * the Kubernetes API server is still registering the newly created APIs.</p>
+	 *
+	 * @param yamlLocation http(s) URL, file path or directory path containing YAML resources
+	 * @return a summary of how many resources were applied
+	 */
+	public String applyYamlAndWaitForCrds(String yamlLocation) {
+		return applyYaml(yamlLocation, true);
+	}
+
+	private String applyYaml(String yamlLocation, boolean waitForCrds) {
 		log.debug("Applying YAML from {}", yamlLocation);
 
 		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
 			try {
-				int appliedResources = applyYamlStream(URI.create(yamlLocation).toURL().openStream(), yamlLocation);
+				int appliedResources = applyYamlStream(
+					URI.create(yamlLocation).toURL().openStream(),
+					yamlLocation,
+					waitForCrds
+				);
 				return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 			} catch (IOException | IllegalArgumentException e) {
 				throw new UncheckedIOException("Failed to apply YAML from URL: " + yamlLocation, new IOException(e));
@@ -757,7 +685,11 @@ public class K8sClient {
 			int appliedResources = 0;
 			for (File file : yamlFiles) {
 				try {
-					appliedResources += applyYamlStream(Files.newInputStream(file.toPath()), file.getAbsolutePath());
+					appliedResources += applyYamlStream(
+						Files.newInputStream(file.toPath()),
+						file.getAbsolutePath(),
+						waitForCrds
+					);
 				} catch (IOException e) {
 					throw new UncheckedIOException("Failed to apply YAML file: " + file.getAbsolutePath(), e);
 				}
@@ -767,14 +699,18 @@ public class K8sClient {
 		}
 
 		try {
-			int appliedResources = applyYamlStream(Files.newInputStream(location.toPath()), yamlLocation);
+			int appliedResources = applyYamlStream(
+				Files.newInputStream(location.toPath()),
+				yamlLocation,
+				waitForCrds
+			);
 			return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to apply YAML file: " + yamlLocation, e);
 		}
 	}
 
-	private int applyYamlStream(InputStream stream, String sourceDescription) {
+	private int applyYamlStream(InputStream stream, String sourceDescription, boolean waitForCrds) {
 		List<HasMetadata> resources = executeWithErrorHandling(
 			"load YAML from " + sourceDescription,
 			() -> loadYamlItems(stream, sourceDescription)
@@ -789,7 +725,47 @@ public class K8sClient {
 			);
 		}
 
+		if (waitForCrds) {
+			waitForAppliedCrds(resources);
+		}
+
 		return resources.size();
+	}
+
+	/**
+	 * Filters the applied resources down to named CRDs and waits for each CRD until Kubernetes reports
+	 * {@code Established=True}. Non-CRD resources and resources without usable metadata are ignored.
+	 */
+	private void waitForAppliedCrds(List<HasMetadata> resources) {
+		resources.stream()
+			.filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
+			.map(HasMetadata::getMetadata)
+			.filter(Objects::nonNull)
+			.map(metadata -> metadata.getName())
+			.filter(name -> name != null && !name.isBlank())
+			.forEach(this::waitForCrdEstablished);
+	}
+
+	private void waitForCrdEstablished(String crdName) {
+		log.debug("Waiting for CRD {} to become Established", crdName);
+		waitForResourceWithRetry(
+			"CRD " + crdName + " to become Established",
+			() -> {
+				var crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
+				return isCrdEstablished(crd) ? crd : null;
+			}
+		);
+	}
+
+	private boolean isCrdEstablished(CustomResourceDefinition crd) {
+		if (crd == null || crd.getStatus() == null || crd.getStatus().getConditions() == null) {
+			return false;
+		}
+
+		return crd.getStatus().getConditions().stream()
+			.anyMatch(condition ->
+				"Established".equals(condition.getType()) && "True".equals(condition.getStatus())
+			);
 	}
 
 	private void applyResource(HasMetadata resource) {
@@ -829,53 +805,34 @@ public class K8sClient {
 	}
 
 	/**
-	 * Adds or removes labels on a resource in the default namespace.
+	 * Adds labels to a resource in the default namespace.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
-	 * @param keyValues labels to set; a key ending in {@code -} removes that label
+	 * @param name      resource name
+	 * @param keyValues labels to set
 	 */
 	public void label(String resource, String name, Tuple<?, ?>... keyValues) {
 		label(resource, name, "", keyValues);
 	}
 
 	/**
-	 * Adds or removes labels on a resource.
+	 * Adds labels to a resource.
 	 *
 	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
+	 * @param name      resource name
 	 * @param namespace namespace of the resource; empty means the default namespace
-	 * @param keyValues labels to set; a key ending in {@code -} removes that label
+	 * @param keyValues labels to set
 	 */
 	public void label(String resource, String name, String namespace, Tuple<?, ?>... keyValues) {
 		if (keyValues == null || keyValues.length == 0) {
 			throw new IllegalArgumentException("Missing key-value-pairs");
 		}
 
-		if ("--all".equals(name)) {
-			NodeList nodes = client.nodes().list();
-			if (nodes != null && nodes.getItems() != null) {
-				for (Node node : nodes.getItems()) {
-					label(resource, node.getMetadata().getName(), namespace, keyValues);
-				}
-			}
-			return;
-		}
-
 		log.debug("Labeling {}/{} in namespace {}", resource, name, namespace);
 
 		Map<String, String> labelsToAdd = new HashMap<>();
-		List<String> labelsToRemove = new ArrayList<>();
-
 		for (Tuple<?, ?> tuple : keyValues) {
-			String key = String.valueOf(tuple.getFirst());
-			String value = String.valueOf(tuple.getSecond());
-
-			if (key.endsWith("-")) {
-				labelsToRemove.add(key.substring(0, key.length() - 1));
-			} else {
-				labelsToAdd.put(key, value);
-			}
+			labelsToAdd.put(String.valueOf(tuple.getFirst()), String.valueOf(tuple.getSecond()));
 		}
 
 		executeWithErrorHandling(
@@ -886,7 +843,7 @@ public class K8sClient {
 					name,
 					resolveNamespace(namespace)
 				);
-				applyLabelChanges(resourceClient, resource, name, labelsToAdd, labelsToRemove);
+				applyLabelChanges(resourceClient, resource, name, labelsToAdd, List.of());
 				return null;
 			}
 		);
@@ -931,30 +888,36 @@ public class K8sClient {
 	}
 
 	/**
-	 * Removes the given labels from a resource.
+	 * Removes the given labels from all nodes in the cluster.
 	 *
-	 * @param resource  resource type, e.g. {@code node}
-	 * @param name      resource name; {@code --all} applies to all nodes
-	 * @param namespace namespace of the resource; empty means the default namespace
-	 * @param keys      label keys to remove
+	 * @param keys label keys to remove
 	 */
-	public void labelRemove(String resource, String name, String namespace, String... keys) {
-		Tuple<?, ?>[] tuples = new Tuple<?, ?>[keys.length];
-		for (int i = 0; i < keys.length; i++) {
-			tuples[i] = new Tuple<>(keys[i] + "-", "");
+	public void removeLabelsFromAllNodes(String... keys) {
+		NodeList nodes = client.nodes().list();
+		if (nodes == null || nodes.getItems() == null) {
+			return;
 		}
-		label(resource, name, namespace, tuples);
+
+		for (Node node : nodes.getItems()) {
+			if (node.getMetadata() != null && node.getMetadata().getName() != null) {
+				removeLabels("node", node.getMetadata().getName(), "", keys);
+			}
+		}
 	}
 
-	/**
-	 * Patches a resource in the default namespace using the default patch type.
-	 *
-	 * @param resource resource type, e.g. {@code service}
-	 * @param name     resource name
-	 * @param yaml     patch content as nested map
-	 */
-	public void patch(String resource, String name, Map<String, Object> yaml) {
-		patch(resource, name, "", "", yaml);
+	private void removeLabels(String resource, String name, String namespace, String... keys) {
+		executeWithErrorHandling(
+			"remove labels from " + resource + "/" + name, () -> {
+				Resource<? extends HasMetadata> resourceClient = K8sClientHelper.getResourceClient(
+					client,
+					resource,
+					name,
+					resolveNamespace(namespace)
+				);
+				applyLabelChanges(resourceClient, resource, name, Map.of(), List.of(keys));
+				return null;
+			}
+		);
 	}
 
 	/**
@@ -999,26 +962,6 @@ public class K8sClient {
 		);
 
 		log.debug("Resource {}/{} patched successfully", resource, name);
-	}
-
-	/**
-	 * Deletes resources by label selectors in the default namespace, see {@link #delete(String,
-	 * String, Tuple...)}.
-	 *
-	 * @param resource resource type, e.g. {@code secret}
-	 */
-	public void delete(String resource) {
-		delete(resource, "", new Tuple<?, ?>[0]);
-	}
-
-	/**
-	 * Deletes resources by label selectors, see {@link #delete(String, String, Tuple...)}.
-	 *
-	 * @param resource  resource type, e.g. {@code secret}
-	 * @param namespace namespace to delete in; empty means the default namespace
-	 */
-	public void delete(String resource, String namespace) {
-		delete(resource, namespace, new Tuple<?, ?>[0]);
 	}
 
 	/**
@@ -1073,112 +1016,40 @@ public class K8sClient {
 	}
 
 	/**
-	 * Runs a pod in the default namespace, see {@link #run(String, String, String, Map, String...)}.
+	 * Runs a temporary pod, waits for completion, returns its logs and removes the pod afterwards.
+	 * The pod is always configured with {@code restartPolicy: Never}.
 	 *
-	 * @param name  name of the pod
-	 * @param image container image to run
-	 * @return a status message or, with {@code --rm}-style params, the pod output
+	 * @param pod pod definition to run
+	 * @return logs written by the completed pod
 	 */
-	public String run(String name, String image) {
-		return run(name, image, "", Map.of(), new String[0]);
-	}
+	public String runTemporaryPod(Pod pod) {
+		String name = pod.getMetadata().getName();
+		String resolvedNamespace = resolveNamespace(pod.getMetadata().getNamespace());
+		Pod temporaryPod = new PodBuilder(pod).editMetadata()
+									   .withNamespace(resolvedNamespace)
+									   .endMetadata()
+									   .editOrNewSpec()
+									   .withRestartPolicy("Never")
+									   .endSpec()
+									   .build();
 
-	/**
-	 * Runs a pod, see {@link #run(String, String, String, Map, String...)}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image, String namespace) {
-		return run(name, image, namespace, Map.of(), new String[0]);
-	}
-
-	/**
-	 * Runs a pod with pod-spec overrides, see {@link #run(String, String, String, Map, String...)}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image, String namespace, Map<String, ?> overrides) {
-		return run(name, image, namespace, overrides, new String[0]);
-	}
-
-	/**
-	 * Runs a pod with kubectl-run-style params, see {@link #run(String, String, String, Map,
-	 * String...)}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param params    kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
-	 * @return a status message or, with {@code --rm}-style params, the pod output
-	 */
-	public String run(String name, String image, String namespace, String... params) {
-		return run(name, image, namespace, Map.of(), params);
-	}
-
-	/**
-	 * Runs a pod, analogous to {@code kubectl run}.
-	 *
-	 * @param name      name of the pod
-	 * @param image     container image to run
-	 * @param namespace target namespace; empty means the default namespace
-	 * @param overrides pod spec fields to override, analogous to {@code kubectl run --overrides}
-	 * @param params    kubectl-run-style flags such as {@code --rm} or {@code --restart=Never}
-	 * @return a status message or, when the params request output collection, the pod output
-	 */
-	public String run(String name, String image, String namespace, Map<String, ?> overrides, String... params) {
-		log.debug("Running pod {} with image {} in namespace {}", name, image, namespace);
-		String resolvedNamespace = resolveNamespace(namespace);
-		List<String> runParams = params != null ? Arrays.asList(params) : Collections.emptyList();
-
-		Pod pod = new PodBuilder().withNewMetadata()
-								  .withName(name)
-								  .withNamespace(resolvedNamespace)
-								  .endMetadata()
-								  .withNewSpec()
-								  .addNewContainer()
-								  .withName(name)
-								  .withImage(image)
-								  .endContainer()
-								  .endSpec()
-								  .build();
-
-		K8sClientHelper.applyRunParams(pod, runParams);
-
-		if (overrides != null && !overrides.isEmpty()) {
-			log.debug("Applying overrides: {}", overrides);
-			pod = K8sClientHelper.applyPodOverrides(pod, overrides);
-		}
-
-		final Pod finalPod = pod;
+		log.debug("Running temporary pod {} in namespace {}", name, resolvedNamespace);
 		Pod createdPod = executeWithErrorHandling(
-			"run pod " + name, () -> client.pods()
-										   .inNamespace(resolvedNamespace)
-										   .resource(finalPod)
-										   .create()
+			"run temporary pod " + name, () -> client.pods()
+											.inNamespace(resolvedNamespace)
+											.resource(temporaryPod)
+											.create()
 		);
 
-		log.debug("Pod {} created successfully", name);
-		if (K8sClientHelper.shouldReturnPodOutput(runParams)) {
-			return K8sClientHelper.collectPodRunOutput(
-				client,
-				createdPod.getMetadata()
-						  .getName(),
-				resolvedNamespace,
-				K8sClientHelper.shouldRemovePod(runParams),
-				defaultRetries,
-				sleepTimeMillis,
-				this
-			);
-		}
-
-		return "pod/" + createdPod.getMetadata().getName() + " created";
+		log.debug("Temporary pod {} created successfully", name);
+		return K8sClientHelper.collectCompletedPodLogsAndDelete(
+			client,
+			createdPod.getMetadata().getName(),
+			resolvedNamespace,
+			defaultRetries,
+			sleepTimeMillis,
+			this
+		);
 	}
 
 	/**

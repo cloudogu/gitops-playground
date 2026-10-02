@@ -3,7 +3,6 @@ set -o errexit -o nounset -o pipefail
 
 ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
 
-source ${ABSOLUTE_BASEDIR}/../utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins-REST-client.sh
 
 if [[ $TRACE == true ]]; then
@@ -20,10 +19,6 @@ if [[ $INSECURE == true ]]; then
 fi
 
 function initJenkins() {
-  if [[ ${INTERNAL_JENKINS} == true ]]; then
-    setExternalHostnameIfNecessary "JENKINS" "jenkins" "${NAME_PREFIX}jenkins"
-  fi
-
   installPlugins
 }
 

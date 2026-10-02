@@ -11,7 +11,7 @@
     <parent>
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
-        <version>5.1.5</version>
+        <version>5.2.0</version>
     </parent>
 
     <properties>
@@ -81,7 +81,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>3.2.2</version>
+                <version>3.2.3</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
@@ -89,7 +89,7 @@
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>3.2.2</version>
+                <version>3.2.3</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
@@ -97,7 +97,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.22.2</version>
+                <version>2.22.3</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Source:
@@ -106,7 +106,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.2</version>
+                <version>2.22.3</version>
                 <scope>compile</scope>
             </dependency>
             <!-- Keep transitive Netty dependencies on a patched version. -->
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.22.2</version>
+            <version>2.22.3</version>
         </dependency>
 
         <dependency>
@@ -309,7 +309,7 @@
         <dependency>
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
-            <version>3.0.7</version>
+            <version>3.0.8</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -321,7 +321,7 @@
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>4.8.195</version>
+            <version>4.8.196</version>
         </dependency>
 
         <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->
@@ -362,7 +362,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.10.2</version>
+                <version>3.10.3</version>
 
                 <configuration>
                     <java>

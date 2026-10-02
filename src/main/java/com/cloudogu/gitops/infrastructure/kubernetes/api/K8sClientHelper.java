@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.infrastructure.kubernetes.api;
 
-import com.cloudogu.gitops.utils.MapUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.APIGroup;
 import io.fabric8.kubernetes.api.model.APIGroupList;
 import io.fabric8.kubernetes.api.model.APIResource;
@@ -13,24 +11,18 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
-import io.fabric8.kubernetes.client.utils.Serialization;
 import io.micronaut.core.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
 class K8sClientHelper {
-
-	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
-	};
 
 	private static final String GROUP_KEY = "group";
 	private static final String VERSION_KEY = "version";
@@ -41,61 +33,10 @@ class K8sClientHelper {
 	private K8sClientHelper() {
 	}
 
-	static Pod applyPodOverrides(Pod pod, Map<String, ?> overrides) {
-		Map<String, Object> podAsMap = Serialization.unmarshal(Serialization.asJson(pod), MAP_TYPE);
-		Map<String, Object> normalizedOverrides = MapUtils.asStringObjectMap(normalizeOverrideValue(overrides));
-		Map<String, Object> mergedPod = MapUtils.deepMerge(normalizedOverrides, podAsMap);
-		return Serialization.unmarshal(Serialization.asJson(mergedPod), Pod.class);
-	}
-
-	static Object normalizeOverrideValue(Object value) {
-		if (value instanceof CharSequence) {
-			return value.toString();
-		}
-
-		if (value instanceof Map) {
-			Map<String, Object> result = new LinkedHashMap<>();
-			((Map<?, ?>) value).forEach((k, v) -> result.put(k.toString(), normalizeOverrideValue(v)));
-			return result;
-		}
-
-		if (value instanceof Collection) {
-			List<Object> result = new ArrayList<>();
-			for (Object entry : (Collection<?>) value) {
-				result.add(normalizeOverrideValue(entry));
-			}
-			return result;
-		}
-
-		return value;
-	}
-
-	static void applyRunParams(Pod pod, List<String> params) {
-		String restartPolicy = null;
-		for (String param : params) {
-			if (param.startsWith("--restart=")) {
-				restartPolicy = param.substring("--restart=".length());
-				break;
-			}
-		}
-		if (restartPolicy != null) {
-			pod.getSpec().setRestartPolicy(restartPolicy);
-		}
-	}
-
-	static boolean shouldReturnPodOutput(List<String> params) {
-		return params.contains("--rm") || params.contains("-i") || params.contains("-it") || params.contains("-ti");
-	}
-
-	static boolean shouldRemovePod(List<String> params) {
-		return params.contains("--rm");
-	}
-
-	static String collectPodRunOutput(
+	static String collectCompletedPodLogsAndDelete(
 		KubernetesClient client,
 		String podName,
 		String namespace,
-		boolean removePod,
 		int defaultRetries,
 		int sleepTime,
 		K8sClient k8sClient) {
@@ -113,9 +54,7 @@ class K8sClientHelper {
 
 			return logOutput;
 		} finally {
-			if (removePod) {
-				k8sClient.delete("pod", namespace, podName);
-			}
+			k8sClient.delete("pod", namespace, podName);
 		}
 	}
 
@@ -163,12 +102,6 @@ class K8sClientHelper {
 	static void validateNamespaceName(String name) {
 		if (name == null || name.trim().isEmpty()) {
 			throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
-		}
-	}
-
-	static void validateServiceNodePortPatch(String serviceName, String namespace, String portName, int newNodePort) {
-		if (StringUtils.isEmpty(serviceName) || StringUtils.isEmpty(namespace) || StringUtils.isEmpty(portName) || newNodePort <= 0) {
-			throw new IllegalArgumentException("Service name, namespace, port name, and valid nodePort must be provided");
 		}
 	}
 

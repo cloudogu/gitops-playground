@@ -409,95 +409,6 @@ class K8sClientTest {
 		assertThat(ports.get(0).get("nodePort")).isNull();
 	}
 
-	@Test
-	void patchServiceNodePortUpdatesServicePort() throws InterruptedException {
-		// Given
-		var service = new ServiceBuilder()
-			.withNewMetadata()
-			.withName("test-service")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewSpec()
-			.addNewPort()
-			.withName("http")
-			.withPort(8080)
-			.withNodePort(30080)
-			.endPort()
-			.endSpec()
-			.build();
-
-		server.expect()
-			  .get()
-			  .withPath("/api/v1/namespaces/test-ns/services/test-service")
-			  .andReturn(200, service)
-			  .once();
-
-		server.expect()
-			  .get()
-			  .withPath("/api/v1/namespaces/test-ns/services/test-service")
-			  .andReturn(200, service)
-			  .once();
-
-		server.expect()
-			  .patch()
-			  .withPath("/api/v1/namespaces/test-ns/services/test-service")
-			  .andReturn(200, service)
-			  .once();
-
-		// When
-		k8sApiClient.patchServiceNodePort("test-service", "test-ns", "http", 30090);
-
-		// Then
-		var request = server.getLastRequest();
-		assertThat(request.getMethod()).isEqualTo("PATCH");
-		assertThat(request.getPath()).isEqualTo("/api/v1/namespaces/test-ns/services/test-service");
-		assertThat(parseJsonList(request.getUtf8Body())).containsExactly(Map.of(
-			"op", "replace",
-			"path", "/spec/ports/0/nodePort",
-			"value", 30090
-		));
-	}
-
-	@Test
-	void patchServiceNodePortThrowsExceptionForInvalidParameters() {
-		// When/Then
-		var exception = assertThrows(
-			IllegalArgumentException.class,
-			() -> k8sApiClient.patchServiceNodePort("", "test-ns", "http", 30000)
-		);
-		assertThat(exception.getMessage()).contains("Service name");
-	}
-
-	@Test
-	void patchServiceNodePortThrowsExceptionWhenPortNotFound() {
-		// Given
-		var service = new ServiceBuilder()
-			.withNewMetadata()
-			.withName("test-service")
-			.withNamespace("test-ns")
-			.endMetadata()
-			.withNewSpec()
-			.addNewPort()
-			.withName("http")
-			.withPort(8080)
-			.endPort()
-			.endSpec()
-			.build();
-
-		server.expect()
-			  .get()
-			  .withPath("/api/v1/namespaces/test-ns/services/test-service")
-			  .andReturn(200, service)
-			  .once();
-
-		// When/Then
-		var exception = assertThrows(
-			RuntimeException.class,
-			() -> k8sApiClient.patchServiceNodePort("test-service", "test-ns", "https", 30000)
-		);
-		assertThat(exception.getMessage()).contains("Port with name https not found");
-	}
-
 	// ========================================
 	// Namespace Operations Tests
 	// ========================================
@@ -1083,6 +994,124 @@ class K8sClientTest {
 	}
 
 	@Test
+	void applyYamlAndWaitForCrdsWaitsUntilAppliedCrdIsEstablished() throws IOException {
+		Path yamlFile = tempDir.resolve("widgets-crd.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: apiextensions.k8s.io/v1
+				kind: CustomResourceDefinition
+				metadata:
+				  name: widgets.example.com
+				spec:
+				  group: example.com
+				  scope: Namespaced
+				  names:
+				    plural: widgets
+				    singular: widget
+				    kind: Widget
+				  versions:
+				    - name: v1
+				      served: true
+				      storage: true
+				      schema:
+				        openAPIV3Schema:
+				          type: object
+				"""
+		);
+
+		Map<String, Object> crdWithoutEstablishedCondition = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of("conditions", List.of())
+		);
+		Map<String, Object> establishedCrd = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of(
+				"conditions", List.of(Map.of("type", "Established", "status", "True"))
+			)
+		);
+
+		server.expect()
+			  .post()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(201, crdWithoutEstablishedCondition)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, crdWithoutEstablishedCondition)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, establishedCrd)
+			  .once();
+
+		String result = k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString());
+
+		assertThat(result).contains("Applied 1 resource(s)");
+	}
+
+	@Test
+	void applyYamlAndWaitForCrdsFailsWhenAppliedCrdDoesNotBecomeEstablished() throws IOException {
+		Path yamlFile = tempDir.resolve("widgets-crd-not-established.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: apiextensions.k8s.io/v1
+				kind: CustomResourceDefinition
+				metadata:
+				  name: widgets.example.com
+				spec:
+				  group: example.com
+				  scope: Namespaced
+				  names:
+				    plural: widgets
+				    singular: widget
+				    kind: Widget
+				  versions:
+				    - name: v1
+				      served: true
+				      storage: true
+				      schema:
+				        openAPIV3Schema:
+				          type: object
+				"""
+		);
+
+		Map<String, Object> notEstablishedCrd = Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", "widgets.example.com"),
+			"status", Map.of(
+				"conditions", List.of(Map.of("type", "Established", "status", "False"))
+			)
+		);
+
+		server.expect()
+			  .post()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+			  .andReturn(201, notEstablishedCrd)
+			  .once();
+		server.expect()
+			  .get()
+			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
+			  .andReturn(200, notEstablishedCrd)
+			  .times(3);
+
+		var exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString())
+		);
+
+		assertThat(exception.getMessage())
+			.contains("CRD widgets.example.com to become Established")
+			.contains("after 3 retries");
+	}
+
+	@Test
 	void applyYamlAppliesGenericKubernetesResourceViaDiscovery() throws IOException {
 		// Given
 		Path yamlFile = tempDir.resolve("app-project.yaml");
@@ -1286,29 +1315,46 @@ class K8sClientTest {
 	}
 
 	@Test
-	void labelRemoveRemovesLabelsFromResource() throws InterruptedException {
+	void removeLabelsFromAllNodesRemovesLabelsFromEachNode() throws InterruptedException {
 		// Given
-		var pod = new PodBuilder()
+		var firstNode = new NodeBuilder()
 			.withNewMetadata()
-			.withName("test-pod")
-			.withNamespace("default")
-			.withLabels(Map.of("app", "myapp", "version", "1.0"))
+			.withName("node-1")
+			.withLabels(Map.of("node", "jenkins", "keep", "value"))
+			.endMetadata()
+			.build();
+		var secondNode = new NodeBuilder()
+			.withNewMetadata()
+			.withName("node-2")
+			.withLabels(Map.of("node", "jenkins", "keep", "value"))
 			.endMetadata()
 			.build();
 
-		server.expect().get().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
-		server.expect().get().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
-		server.expect().patch().withPath("/api/v1/namespaces/default/pods/test-pod").andReturn(200, pod).once();
+		server.expect()
+			  .get()
+			  .withPath("/api/v1/nodes")
+			  .andReturn(200, new NodeListBuilder().withItems(firstNode, secondNode).build())
+			  .once();
+		server.expect().get().withPath("/api/v1/nodes/node-1").andReturn(200, firstNode).times(2);
+		server.expect().patch().withPath("/api/v1/nodes/node-1").andReturn(200, firstNode).once();
+		server.expect().get().withPath("/api/v1/nodes/node-2").andReturn(200, secondNode).times(2);
+		server.expect().patch().withPath("/api/v1/nodes/node-2").andReturn(200, secondNode).once();
 
 		// When
-		k8sApiClient.labelRemove("pod", "test-pod", "default", "version");
+		k8sApiClient.removeLabelsFromAllNodes("node");
 
 		// Then
-		var request = server.getLastRequest();
-		assertThat(request.getMethod()).isEqualTo("PATCH");
-		assertThat(request.getPath()).isEqualTo("/api/v1/namespaces/default/pods/test-pod");
-		assertThat(parseJsonList(request.getUtf8Body())).containsExactly(
-			Map.of("op", "remove", "path", "/metadata/labels/version")
+		assertThat(server.getRequestCount()).isEqualTo(7);
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-1");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-1");
+		assertThat(parseJsonList(server.takeRequest().getUtf8Body())).containsExactly(
+			Map.of("op", "remove", "path", "/metadata/labels/node")
+		);
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-2");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/api/v1/nodes/node-2");
+		assertThat(parseJsonList(server.takeRequest().getUtf8Body())).containsExactly(
+			Map.of("op", "remove", "path", "/metadata/labels/node")
 		);
 	}
 
@@ -1402,88 +1448,7 @@ class K8sClientTest {
 	}
 
 	@Test
-	void runCreatesPodWithImage() {
-		// Given
-		server.expect()
-			  .post()
-			  .withPath("/api/v1/namespaces/default/pods")
-			  .andReturn(
-				  201, new PodBuilder()
-					  .withNewMetadata()
-					  .withName("test-pod")
-					  .endMetadata()
-					  .build()
-			  )
-			  .once();
-
-		// When
-		String result = k8sApiClient.run("test-pod", "nginx:latest", "", Map.of());
-
-		// Then
-		assertThat(result).contains("pod/test-pod created");
-	}
-
-	@Test
-	void runAppliesPodOverridesInsteadOfGeneratedParameterValues() throws InterruptedException {
-		// Given
-		server.expect()
-			  .post()
-			  .withPath("/api/v1/namespaces/jenkins/pods")
-			  .andReturn(
-				  201, new PodBuilder()
-					  .withNewMetadata()
-					  .withName("test-pod")
-					  .endMetadata()
-					  .build()
-			  )
-			  .once();
-
-		String overrideImage = "bash:42";
-		Map<String, Object> overrides = Map.of(
-			"spec", Map.of(
-				"containers", List.of(Map.of(
-					"name", "override-container",
-					"image", overrideImage,
-					"args", List.of("cat", "/etc/group"),
-					"volumeMounts", List.of(Map.of("name", "group", "mountPath", "/etc/group", "readOnly", true))
-				)),
-				"nodeSelector", Map.of("node", "jenkins"),
-				"volumes", List.of(Map.of("name", "group", "hostPath", Map.of("path", "/etc/group")))
-			)
-		);
-
-		// When
-		k8sApiClient.run("test-pod", "nginx:latest", "jenkins", overrides);
-
-		// Then
-		Map<String, Object> requestBody = parseJson(server.getLastRequest().getUtf8Body());
-		assertThat(((Map<String, Object>) requestBody.get("metadata")).get("name")).isEqualTo("test-pod");
-		assertThat(((Map<String, Object>) requestBody.get("metadata")).get("namespace")).isEqualTo("jenkins");
-		assertThat(((Map<String, Object>) ((Map<String, Object>) requestBody.get("spec")).get("nodeSelector")).get(
-			"node")).isEqualTo("jenkins");
-
-		List<Map<String, Object>> containers = (List<Map<String, Object>>) ((Map<String, Object>) requestBody.get("spec")).get(
-			"containers");
-		assertThat(containers).hasSize(1);
-		Map<String, Object> container = containers.get(0);
-		assertThat(container.get("name")).isEqualTo("override-container");
-		assertThat(container.get("image")).isEqualTo("bash:42");
-		List<String> args = (List<String>) container.get("args");
-		assertThat(args).containsExactly("cat", "/etc/group");
-
-		List<Map<String, Object>> volumeMounts = (List<Map<String, Object>>) container.get("volumeMounts");
-		Map<String, Object> volumeMount = volumeMounts.get(0);
-		assertThat(volumeMount.get("mountPath")).isEqualTo("/etc/group");
-		assertThat(volumeMount.get("readOnly")).isEqualTo(true);
-
-		List<Map<String, Object>> volumes = (List<Map<String, Object>>) ((Map<String, Object>) requestBody.get("spec")).get(
-			"volumes");
-		Map<String, Object> volume = volumes.get(0);
-		assertThat(((Map<String, Object>) volume.get("hostPath")).get("path")).isEqualTo("/etc/group");
-	}
-
-	@Test
-	void runReturnsPodLogsAndRemovesPodForInteractiveRmMode() throws InterruptedException {
+	void runTemporaryPodReturnsLogsAndRemovesPod() throws InterruptedException {
 		// Given
 		server.expect()
 			  .post()
@@ -1539,14 +1504,56 @@ class K8sClientTest {
 			  .andReturn(200, new StatusBuilder().build())
 			  .once();
 
+		var pod = new PodBuilder().withNewMetadata()
+							  .withName("gid-pod")
+							  .withNamespace("jenkins")
+							  .endMetadata()
+							  .withNewSpec()
+							  .withNodeSelector(Map.of("node", "jenkins"))
+							  .addNewContainer()
+							  .withName("gid-container")
+							  .withImage("bash:42")
+							  .withArgs("cat", "/etc/group")
+							  .addNewVolumeMount()
+							  .withName("group")
+							  .withMountPath("/etc/group")
+							  .withReadOnly(true)
+							  .endVolumeMount()
+							  .endContainer()
+							  .addNewVolume()
+							  .withName("group")
+							  .withNewHostPath()
+							  .withPath("/etc/group")
+							  .endHostPath()
+							  .endVolume()
+							  .endSpec()
+							  .build();
+
 		// When
-		String result = k8sApiClient.run("gid-pod", "bash:42", "jenkins", "--restart=Never", "-ti", "--rm", "--quiet");
+		String result = k8sApiClient.runTemporaryPod(pod);
 
 		// Then
 		assertThat(result).isEqualTo("root:x:0:\ndocker:x:42:\n");
 
 		Map<String, Object> createRequest = parseJson(server.takeRequest().getUtf8Body());
-		assertThat(((Map<String, Object>) createRequest.get("spec")).get("restartPolicy")).isEqualTo("Never");
+		assertThat(((Map<String, Object>) createRequest.get("metadata")).get("name")).isEqualTo("gid-pod");
+		assertThat(((Map<String, Object>) createRequest.get("metadata")).get("namespace")).isEqualTo("jenkins");
+		Map<String, Object> spec = (Map<String, Object>) createRequest.get("spec");
+		assertThat(spec.get("restartPolicy")).isEqualTo("Never");
+		assertThat(((Map<String, Object>) spec.get("nodeSelector")).get("node")).isEqualTo("jenkins");
+
+		List<Map<String, Object>> containers = (List<Map<String, Object>>) spec.get("containers");
+		assertThat(containers).hasSize(1);
+		Map<String, Object> container = containers.get(0);
+		assertThat(container.get("name")).isEqualTo("gid-container");
+		assertThat(container.get("image")).isEqualTo("bash:42");
+		assertThat((List<String>) container.get("args")).containsExactly("cat", "/etc/group");
+
+		List<Map<String, Object>> volumeMounts = (List<Map<String, Object>>) container.get("volumeMounts");
+		assertThat(volumeMounts.get(0)).containsEntry("mountPath", "/etc/group").containsEntry("readOnly", true);
+
+		List<Map<String, Object>> volumes = (List<Map<String, Object>>) spec.get("volumes");
+		assertThat(((Map<String, Object>) volumes.get(0).get("hostPath")).get("path")).isEqualTo("/etc/group");
 	}
 
 	// ========================================
