@@ -38,7 +38,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 
 	private static final ResourceDefinitionContext SECRET_STORE_CONTEXT = new ResourceDefinitionContext.Builder()
 		.withGroup("external-secrets.io")
-		.withVersion("v1beta1")
+		.withVersion("v1")
 		.withKind("SecretStore")
 		.withPlural("secretstores")
 		.withNamespaced(true)
@@ -46,7 +46,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 
 	private static final ResourceDefinitionContext EXTERNAL_SECRET_CONTEXT = new ResourceDefinitionContext.Builder()
 		.withGroup("external-secrets.io")
-		.withVersion("v1beta1")
+		.withVersion("v1")
 		.withKind("ExternalSecret")
 		.withPlural("externalsecrets")
 		.withNamespaced(true)

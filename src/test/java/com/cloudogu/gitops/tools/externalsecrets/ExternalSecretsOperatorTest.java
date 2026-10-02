@@ -225,6 +225,7 @@ class ExternalSecretsOperatorTest {
 		String yaml = Files.readString(resources);
 
 		assertThat(yaml)
+			.contains("apiVersion: external-secrets.io/v1")
 			.contains("kind: SecretStore")
 			.contains("name: \"customer-vault\"")
 			.contains("namespace: \"customer-app\"")

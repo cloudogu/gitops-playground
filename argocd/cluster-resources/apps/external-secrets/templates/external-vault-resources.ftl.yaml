@@ -1,5 +1,5 @@
 <#list vault.targetNamespaces as namespace>
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: SecretStore
 metadata:
   name: "${vault.storeName?json_string}"
@@ -17,7 +17,7 @@ spec:
 ---
 </#list>
 <#list externalSecrets as secret>
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: "${secret.name?json_string}"
