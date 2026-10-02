@@ -114,8 +114,11 @@ key:       token
 After preparing the test Vault, run GOP with the dedicated development/integration profile:
 
 ```bash
-./mvnw exec:java -Dexec.arguments="--profile=full-external-vault"
+./mvnw clean compile exec:java \
+  -Dexec.arguments="--profile=full-external-vault"
 ```
+
+Using `compile` also processes the profile resources and compiles the GOP classes, so the command works with a fresh or deleted `target/` directory.
 
 Then run the integration test:
 
