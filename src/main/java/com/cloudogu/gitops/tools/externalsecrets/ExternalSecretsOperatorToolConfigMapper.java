@@ -38,7 +38,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
 			.externalVault(externalVault)
 			.managedSecrets(managedSecrets)
-			.templateConfig(templateConfig(config))
+			.templateConfig(templateConfig(config, context))
 			.build();
 	}
 
@@ -116,7 +116,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		}
 	}
 
-	private static Map<String, Object> templateConfig(Config config) {
+	private static Map<String, Object> templateConfig(Config config,  DeploymentContext context) {
 		Config.SecretsSchema.ESOSchema.ESOHelmSchema helm = config.getFeatures()
 			.getSecrets()
 			.getExternalSecrets()
@@ -124,6 +124,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		return new TemplateConfig()
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())
+			.put("features.argocd.operator", context.isArgoCdOperator())
 			.put("features.secrets.externalSecrets.helm.image", helm.getImage())
 			.put("features.secrets.externalSecrets.helm.certControllerImage", helm.getCertControllerImage())
 			.put("features.secrets.externalSecrets.helm.webhookImage", helm.getWebhookImage())
