@@ -380,13 +380,19 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		String credentialId = "scm-user";
 		String prefixedNamespace = toolConfig().application().namePrefix() + namespace;
 		String jobName = toolConfig().application().namePrefix() + repoName;
+		boolean internalJenkins = isInternalJenkins();
 
 		ResolvedCredentials scmManagerCredentials = null;
-		if (toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
+		if (internalJenkins && toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
 			scmManagerCredentials = scmManagerCredentialsForJenkins();
 		}
 
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
+
+		if (!internalJenkins) {
+			jobManager.startJob(jobName);
+			return;
+		}
 
 		if (scmManagerCredentials != null) {
 			jobManager.createCredential(
