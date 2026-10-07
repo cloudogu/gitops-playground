@@ -21,4 +21,6 @@ registry:
   password: "admin"
 scm:
   scmManager:
+    technicalUser:
+      password: "technical-password"
     password: "admin"
