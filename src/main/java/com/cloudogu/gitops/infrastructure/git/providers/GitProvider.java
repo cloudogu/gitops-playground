@@ -44,5 +44,5 @@ public interface GitProvider {
 
 	String getHost();
 
-	String getGitOpsUsername();
+	String getRepositoryPermissionUsername();
 }

@@ -118,6 +118,26 @@ class GitHandlerTest {
 	}
 
 	@Test
+	void doesNotDeriveGopManagedTechnicalUsernameForExternalScmManager() {
+		Config config = config(Map.of(
+			"application", Map.of("namePrefix", "fv40-"),
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"url", "https://scmm.example.com/scm",
+					"internal", false
+				)
+			)
+		));
+
+		GitHandler gitHandler = handler(config);
+
+		gitHandler.validate();
+
+		assertEquals(ScmProviderType.SCM_MANAGER, config.getScm().getScmProviderType());
+		assertTrue(config.getScm().getScmManager().getGopManagedTechnicalUsername().isBlank());
+	}
+
+	@Test
 	void validateGitLabAcceptsKubernetesSecretCredentials() {
 		Config config = config(Map.of(
 			"scm", Map.of(
