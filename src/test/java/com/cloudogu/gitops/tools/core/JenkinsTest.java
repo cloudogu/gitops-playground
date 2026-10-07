@@ -488,7 +488,7 @@ class JenkinsTest {
 		assertThat(env.get("INSECURE")).isEqualTo("false");
 
 		assertThat(env.get("SCM_URL")).isEqualTo("http://scmm.scm-manager.svc.cluster.local/scm");
-		assertThat(env.get("SCM_PASSWORD")).isEqualTo(scmManagerMock.getCredentials().getPassword());
+		assertThat(env).doesNotContainKey("SCM_PASSWORD");
 		assertThat(env.get("INSTALL_ARGOCD")).isEqualTo("true");
 
 		assertThat(env.get("SKIP_PLUGINS")).isEqualTo("true");

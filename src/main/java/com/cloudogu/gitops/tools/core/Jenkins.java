@@ -310,7 +310,6 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		scriptParams.put("JENKINS_PASSWORD", runtimeCredentials.password());
 		scriptParams.put("SCM_URL", this.gitHandler.getTenant().getUrl());
 		scriptParams.put("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
-		scriptParams.put("SCM_PASSWORD", this.gitHandler.getTenant().getCredentials().getPassword());
 		scriptParams.put("SCM_PROVIDER", toolConfig().scm().providerType());
 		scriptParams.put("INSTALL_ARGOCD", toolConfig().argocdActive());
 		scriptParams.put("NAME_PREFIX", toolConfig().application().namePrefix());
