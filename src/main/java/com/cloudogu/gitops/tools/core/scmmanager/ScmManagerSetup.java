@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
@@ -52,6 +54,7 @@ public class ScmManagerSetup {
 	private final FileSystemUtils fileSystemUtils;
 	private final ScmManagerToolConfig config;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 
 	private Path tempValuesPath;
 
@@ -373,12 +376,23 @@ public class ScmManagerSetup {
 
 	private void addDefaultUsers() {
 		String metricsUsername = config.namePrefix() + "metrics";
-		String runtimePassword = scmManager.getCredentials().getPassword();
+		String provisioningPassword = scmManager.getCredentials().getPassword();
+		ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
+			config.technicalUserCredentials(),
+			config.gopManagedTechnicalUsername(),
+			config.technicalUserPassword()
+		);
+
+		if (technicalCredentials.password() == null || technicalCredentials.password().isBlank()) {
+			throw new IllegalArgumentException(
+				"Internal SCM-Manager requires a password for the GOP-managed technical user"
+			);
+		}
 
 		addUser(
-			config.gitOpsUsername(), runtimePassword, "changeme@test.local"
+			config.gopManagedTechnicalUsername(), technicalCredentials.password(), "changeme@test.local"
 		);
-		addUser(metricsUsername, runtimePassword, "changeme@test.local");
+		addUser(metricsUsername, provisioningPassword, "changeme@test.local");
 		grantUserPermissions(metricsUsername, List.of("metrics:read"));
 	}
 

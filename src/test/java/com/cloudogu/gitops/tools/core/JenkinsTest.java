@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -510,11 +511,12 @@ class JenkinsTest {
 	}
 
 	@Test
-	void usesRuntimeScmCredentialsForJenkinsJob() throws GitAPIException {
+	void usesGopManagedTechnicalUserForInternalScmManager() throws GitAPIException {
 		config.getApplication().setNamePrefix("test-");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
-		config.getScm().getScmManager().setPassword("config-scm-password");
-		scmManagerMock.setCredentials(new Credentials("runtime-scm-user", "runtime-scm-password"));
+		config.getScm().getScmManager().setPassword("provisioning-password");
+		config.getScm().getScmManager().getTechnicalUser().setPassword("technical-password");
+		scmManagerMock.setCredentials(new Credentials("provisioning-user", "runtime-provisioning-password"));
 
 		Jenkins jenkins = createJenkins();
 		install(jenkins);
@@ -524,14 +526,53 @@ class JenkinsTest {
 			"test-repo",
 			"scm-user",
 			"test-gitops",
-			"runtime-scm-password",
+			"technical-password",
 			"credentials for accessing scm-manager"
 		);
 	}
 
 	@Test
+	void usesExistingTechnicalUserForExternalScmManager() throws GitAPIException {
+		config.getApplication().setNamePrefix("test-");
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().getScmManager().setInternal(false);
+		config.getScm().getScmManager().getTechnicalUser().setUsername("existing-technical-user");
+		config.getScm().getScmManager().getTechnicalUser().setPassword("technical-password");
+		scmManagerMock.setCredentials(new Credentials("provisioning-user", "provisioning-password"));
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		verify(jobManger).createCredential(
+			"test-repo",
+			"scm-user",
+			"existing-technical-user",
+			"technical-password",
+			"credentials for accessing scm-manager"
+		);
+	}
+
+	@Test
+	void rejectsMissingTechnicalUserForExternalScmManager() throws GitAPIException {
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().getScmManager().setInternal(false);
+		scmManagerMock.setCredentials(new Credentials("provisioning-user", "provisioning-password"));
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+
+		assertThatThrownBy(() -> jenkins.createJenkinsjob("namespace", "repo"))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("External SCM-Manager requires technical user credentials for Jenkins repository access");
+
+		verify(jobManger, never()).createJob(anyString(), anyString(), anyString(), anyString());
+	}
+
+	@Test
 	void usesRuntimeRegistryCredentialsForJenkinsJob() throws GitAPIException {
 		config.getApplication().setNamePrefix("test-");
+		config.getScm().getScmManager().getTechnicalUser().setPassword("technical-password");
 		config.getRegistry().setUsername("fallback-registry-user");
 		config.getRegistry().setPassword("fallback-registry-password");
 		config.getRegistry().setCredentials(

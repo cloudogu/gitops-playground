@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.ContextBuilder;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
@@ -72,6 +73,7 @@ class ScmManagerSetupTest {
 	private final PluginApi pluginApi = mock(PluginApi.class);
 	private final ScmManagerApi generalApi = mock(ScmManagerApi.class);
 	private final K8sClient k8sClient = mock(K8sClient.class);
+	private final CredentialsResolver credentialsResolver = new CredentialsResolver(k8sClient);
 	private final FileSystemUtils fileSystemUtils = spy(new FileSystemUtils());
 
 	private final Config config = Config.fromMap(Map.of(
@@ -102,7 +104,8 @@ class ScmManagerSetupTest {
 				Map.entry("ingress", "scmm.master.localhost"),
 				Map.entry("skipRestart", false),
 				Map.entry("skipPlugins", false),
-				Map.entry("gitOpsUsername", "gitops"),
+				Map.entry("gopManagedTechnicalUsername", "gitops"),
+				Map.entry("technicalUser", Map.of("password", "technical-password")),
 				Map.entry(
 					"credentials", Map.of(
 						"username", "admin",
@@ -156,7 +159,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.setupHelm();
@@ -196,7 +200,7 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
-	void defaultUsersUseRuntimePassword() throws ReflectiveOperationException, IOException {
+	void gopManagedTechnicalUserUsesDedicatedPassword() throws ReflectiveOperationException, IOException {
 		UsersApi usersApi = mock(UsersApi.class);
 		@SuppressWarnings("unchecked")
 		Call<Void> addUserCall = mock(Call.class);
@@ -204,7 +208,7 @@ class ScmManagerSetupTest {
 		Call<Void> permissionCall = mock(Call.class);
 
 		when(scmManager.getApiClient()).thenReturn(apiClient);
-		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-password"));
+		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-provisioning-password"));
 		when(apiClient.usersApi()).thenReturn(usersApi);
 		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(addUserCall);
 		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
@@ -218,7 +222,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		invokePrivateAddDefaultUsers(scmManagerSetup);
@@ -226,8 +231,10 @@ class ScmManagerSetupTest {
 		ArgumentCaptor<ScmManagerUser> userCaptor = ArgumentCaptor.forClass(ScmManagerUser.class);
 		verify(usersApi, times(2)).addUser(userCaptor.capture());
 		assertThat(userCaptor.getAllValues())
+			.filteredOn(user -> "gitops".equals(user.getName()))
+			.singleElement()
 			.extracting(ScmManagerUser::getPassword)
-			.containsOnly("runtime-password");
+			.isEqualTo("technical-password");
 	}
 
 	@Test
@@ -247,7 +254,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.setupHelm();
@@ -298,7 +306,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		invokePrivateInstallScmmPlugins(scmManagerSetup);
@@ -327,7 +336,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		Thread.currentThread().interrupt();
@@ -354,7 +364,8 @@ class ScmManagerSetupTest {
 			workspace,
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
@@ -395,7 +406,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.prepareNetworkPolicy();
@@ -438,7 +450,8 @@ class ScmManagerSetupTest {
 			new RepositoryWorkspace(clusterResourcesRepo),
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.prepareNetworkPolicy();
@@ -460,7 +473,8 @@ class ScmManagerSetupTest {
 			workspace,
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();
@@ -483,7 +497,8 @@ class ScmManagerSetupTest {
 			workspace,
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.prepareBootstrapRepositoriesAfterScmManagerDeployment();
@@ -523,7 +538,8 @@ class ScmManagerSetupTest {
 			workspace,
 			fileSystemUtils,
 			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient
+			k8sClient,
+			credentialsResolver
 		);
 
 		scmManagerSetup.pushBootstrapRepositoriesAfterScmManagerDeployment();

@@ -22,6 +22,8 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 	public JenkinsToolConfig map(DeploymentContext context) {
 		Config.JenkinsSchema jenkins = config.getJenkins();
 		ScmProviderType scmProviderType = config.getScm() == null ? null : config.getScm().getScmProviderType();
+		var scmManager = config.getScm() == null ? null : config.getScm().getScmManager();
+		var technicalUser = scmManager == null ? null : scmManager.getTechnicalUser();
 
 		JenkinsToolConfig.Application applicationConfig = JenkinsToolConfig.Application.builder()
 																					   .namePrefix(config.getApplication().getNamePrefix())
@@ -47,6 +49,10 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 																		.build();
 		JenkinsToolConfig.Scm scmConfig = JenkinsToolConfig.Scm.builder()
 															.providerType(scmProviderType)
+															.internalScmManager(context.isInternalScmManager())
+															.technicalUsername(technicalUser == null ? null : technicalUser.getUsername())
+															.technicalPassword(technicalUser == null ? null : technicalUser.getPassword())
+															.technicalCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
 															.build();
 		JenkinsToolConfig.Registry registryConfig = JenkinsToolConfig.Registry.builder()
 																			  .url(config.getRegistry().getUrl())

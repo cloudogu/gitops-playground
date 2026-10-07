@@ -98,7 +98,7 @@ class GitHandlerTest {
 	// ---------- validate() ------------------------------------------------------------
 
 	@Test
-	void validateScmManagerSelectedAndGitopsUsernameReceivesNamePrefix() {
+	void validateScmManagerSelectedAndGopManagedTechnicalUsernameReceivesNamePrefix() {
 		Config config = config(Map.of(
 			"application", Map.of("namePrefix", "fv40-"),
 			"scm", Map.of(
@@ -114,7 +114,7 @@ class GitHandlerTest {
 		gitHandler.validate();
 
 		assertEquals(ScmProviderType.SCM_MANAGER, config.getScm().getScmProviderType());
-		assertEquals("fv40-gitops", config.getScm().getScmManager().getGitOpsUsername());
+		assertEquals("fv40-gitops", config.getScm().getScmManager().getGopManagedTechnicalUsername());
 	}
 
 	@Test

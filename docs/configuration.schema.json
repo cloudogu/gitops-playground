@@ -1048,9 +1048,9 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
+            "gopManagedTechnicalUsername" : {
               "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+              "description" : "Username of the GOP-managed technical SCM-Manager user"
             },
             "helm" : {
               "$ref" : "#/$defs/HelmConfigWithValues-nullable",
@@ -1085,15 +1085,15 @@
                 },
                 "password" : {
                   "type" : [ "string", "null" ],
-                  "description" : "Password of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+                  "description" : "Password of the technical SCM-Manager user used by Jenkins for Git repository access"
                 },
                 "username" : {
                   "type" : [ "string", "null" ],
-                  "description" : "Username of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+                  "description" : "Username of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external. Internal deployments derive the username from the name prefix"
                 }
               },
               "additionalProperties" : false,
-              "description" : "Credentials for an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+              "description" : "Credentials for the technical SCM-Manager user used by Jenkins for Git repository access. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external deployments, the configured username is reused unchanged"
             },
             "url" : {
               "type" : [ "string", "null" ],

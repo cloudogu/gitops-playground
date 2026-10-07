@@ -61,7 +61,7 @@ class ScmManagerProviderTest {
 
 	@BeforeEach
 	void setup() throws URISyntaxException {
-		lenient().when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot");
+		lenient().when(scmmCfg.getGopManagedTechnicalUsername()).thenReturn("gitops-bot");
 
 		lenient().when(urls.inClusterBase()).thenReturn(new URI("http://scmm.ns.svc.cluster.local/scm"));
 		lenient().when(urls.inClusterRepoPrefix()).thenReturn("http://scmm.ns.svc.cluster.local/scm/repo/fv40-");
@@ -204,7 +204,7 @@ class ScmManagerProviderTest {
 	}
 
 	@Test
-	void runtimeCredentialsAndGitOpsUsernameAreAvailable() throws ReflectiveOperationException {
+	void runtimeCredentialsAndGopManagedTechnicalUsernameAreAvailable() throws ReflectiveOperationException {
 		ScmManagerProvider scmManager = newScmManager();
 
 		assertEquals("user", scmManager.getCredentials().getUsername());

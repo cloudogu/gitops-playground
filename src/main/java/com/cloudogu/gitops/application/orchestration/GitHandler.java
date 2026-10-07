@@ -65,7 +65,7 @@ public class GitHandler {
 			if (prefix == null) {
 				prefix = "";
 			}
-			config.getScm().getScmManager().setGitOpsUsername(prefix + "gitops");
+			config.getScm().getScmManager().setGopManagedTechnicalUsername(prefix + "gitops");
 		}
 	}
 
