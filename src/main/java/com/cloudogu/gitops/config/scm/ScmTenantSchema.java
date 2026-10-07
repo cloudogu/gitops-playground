@@ -28,6 +28,7 @@ public class ScmTenantSchema {
 	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
 	public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
+	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Credentials for an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external";
 
 	@Option(names = {"--scm-provider"}, description = SCM_PROVIDER_TYPE_DESCRIPTION, defaultValue = "SCM_MANAGER")
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
@@ -123,6 +124,10 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 		private Credentials credentials;
 
+		@JsonPropertyDescription(SCMM_TECHNICAL_USER_DESCRIPTION)
+		@Mixin
+		private ScmTechnicalUserConfig technicalUser = new ScmTechnicalUserConfig();
+
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
 		private Config.HelmConfigWithValues helm;
@@ -155,6 +160,30 @@ public class ScmTenantSchema {
 		}
 
 		@Override
+		public Credentials getCredentials() {
+			return credentials != null ? credentials : new Credentials(username, password);
+		}
+	}
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	public static class ScmTechnicalUserConfig {
+
+		public static final String SCMM_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external";
+		public static final String SCMM_TECHNICAL_PASSWORD_DESCRIPTION = "Password of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external";
+
+		@Option(names = {"--scmm-technical-username"}, description = SCMM_TECHNICAL_USERNAME_DESCRIPTION)
+		@JsonPropertyDescription(SCMM_TECHNICAL_USERNAME_DESCRIPTION)
+		private String username = "";
+
+		@Option(names = {"--scmm-technical-password"}, description = SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
+		@JsonPropertyDescription(SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
+		private String password = "";
+
+		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
+		private Credentials credentials;
+
 		public Credentials getCredentials() {
 			return credentials != null ? credentials : new Credentials(username, password);
 		}
