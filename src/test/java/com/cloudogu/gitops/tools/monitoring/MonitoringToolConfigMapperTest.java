@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
+import com.cloudogu.gitops.config.scm.ScmCentralSchema;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -93,6 +94,15 @@ class MonitoringToolConfigMapperTest {
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
 		scmManager.setNamespace("source-control");
 		config.getScm().setScmManager(scmManager);
+		config.getMultiTenant().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		ScmCentralSchema.ScmManagerCentralConfig centralScmManager = new ScmCentralSchema.ScmManagerCentralConfig();
+		centralScmManager.setInternal(false);
+		centralScmManager.getMetricsUser().setUsername("scm-metrics-user");
+		centralScmManager.getMetricsUser().setPassword("scm-metrics-password");
+		centralScmManager.getMetricsUser().setCredentials(
+			new Credentials(null, null, "scm-metrics-secret", "gop-job", "metrics-user", "metrics-password")
+		);
+		config.getMultiTenant().setScmManager(centralScmManager);
 
 		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context());
 
@@ -141,6 +151,15 @@ class MonitoringToolConfigMapperTest {
 														 .jenkinsNamespace("jenkins-system")
 														 .jenkinsUrl("https://jenkins.example.org")
 														 .scmProviderType(ScmProviderType.SCM_MANAGER)
+														 .scmManagerInternal(false)
+														 .scmMetricsUsername("scm-metrics-user")
+														 .scmMetricsPassword("scm-metrics-password")
+														 .scmMetricsCredentials(new CredentialsReference(
+															 "scm-metrics-secret",
+															 "gop-job",
+															 "metrics-user",
+															 "metrics-password"
+														 ))
 														 .ingressActive(true)
 														 .jenkinsActive(true)
 														 .helm(HelmChartConfig.builder()
