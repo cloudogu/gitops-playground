@@ -5,8 +5,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
@@ -29,7 +27,7 @@ import static org.mockito.Mockito.when;
 class JobManagerTest {
 
 	@Test
-	void createsCredential() {
+	void createsCredentialWhenMissing() {
 		WireMockServer wireMockServer = new WireMockServer(options().dynamicPort());
 		wireMockServer.start();
 
@@ -46,7 +44,7 @@ class JobManagerTest {
 			config.setJenkins(jenkins);
 			JobManager jobManager = new JobManager(new JenkinsApiClient(config, new OkHttpClient()));
 
-			jobManager.createCredential("the-jobname", "the-id", "the-username", "the-password", "some description");
+			jobManager.createOrUpdateCredential("the-jobname", "the-id", "the-username", "the-password", "some description");
 
 			wireMockServer.verify(postRequestedFor(urlPathEqualTo(
 				"/jenkins/job/the-jobname/credentials/store/folder/domain/_/createCredentials")));
@@ -55,10 +53,52 @@ class JobManagerTest {
 			assertThat(requests).hasSize(1);
 
 			String requestBody = requests.get(0).getBodyAsString();
-			assertThat(URLDecoder.decode(requestBody, StandardCharsets.UTF_8))
-				.isEqualTo(
-					"json={\"credentials\":{\"scope\":\"GLOBAL\",\"id\":\"the-id\",\"username\":\"the-username\",\"password\":\"the-password\",\"description\":\"some description\",\"$class\":\"com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl\"}}");
+			assertThat(requestBody)
+				.contains("<scope>GLOBAL</scope>")
+				.contains("<id>the-id</id>")
+				.contains("<username>the-username</username>")
+				.contains("<password>the-password</password>")
+				.contains("<description>some description</description>");
 
+		} finally {
+			wireMockServer.stop();
+		}
+	}
+
+	@Test
+	void updatesCredentialWhenItAlreadyExists() {
+		WireMockServer wireMockServer = new WireMockServer(options().dynamicPort());
+		wireMockServer.start();
+
+		try {
+			wireMockServer.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+				.willReturn(okJson("{\"crumb\":\"the-crumb\"}")));
+
+			wireMockServer.stubFor(post(urlPathMatching(".*createCredentials.*"))
+				.willReturn(aResponse().withStatus(409)));
+
+			wireMockServer.stubFor(post(urlPathEqualTo(
+				"/jenkins/job/the-jobname/credentials/store/folder/domain/_/credential/the-id/config.xml"))
+				.willReturn(ok()));
+
+			Config config = new Config();
+			Config.JenkinsSchema jenkins = new Config.JenkinsSchema();
+			jenkins.setUrl(wireMockServer.baseUrl() + "/jenkins");
+			config.setJenkins(jenkins);
+			JobManager jobManager = new JobManager(new JenkinsApiClient(config, new OkHttpClient()));
+
+			jobManager.createOrUpdateCredential(
+				"the-jobname",
+				"the-id",
+				"the-username",
+				"updated&password",
+				"some description"
+			);
+
+			wireMockServer.verify(postRequestedFor(urlPathEqualTo(
+				"/jenkins/job/the-jobname/credentials/store/folder/domain/_/credential/the-id/config.xml"))
+				.withRequestBody(containing("<username>the-username</username>"))
+				.withRequestBody(containing("<password>updated&amp;password</password>")));
 		} finally {
 			wireMockServer.stop();
 		}
@@ -84,7 +124,7 @@ class JobManagerTest {
 
 			RuntimeException exception = assertThrows(
 				RuntimeException.class,
-				() -> jobManager.createCredential(
+				() -> jobManager.createOrUpdateCredential(
 					"the-jobname",
 					"the-id",
 					"the-username",
