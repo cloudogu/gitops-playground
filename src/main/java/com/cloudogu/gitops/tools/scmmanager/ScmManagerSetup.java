@@ -22,7 +22,11 @@ import freemarker.template.TemplateModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import retrofit2.Response;
+
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +49,7 @@ public class ScmManagerSetup {
 	private static final int SCMM_RESTART_START_DELAY_MILLIS = 100;
 	private static final int DEFAULT_PROXY_PORT = 8080;
 	private static final int DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS = 300;
+	private static final int HTTP_CONFLICT = 409;
 	static final String CREDENTIALS_SECRET_NAME = "scm-manager-credentials";
 
 	private final ScmManagerProvider scmManager;
@@ -389,14 +394,57 @@ public class ScmManagerSetup {
 			);
 		}
 
-		addUser(
+		createOrUpdateGopManagedTechnicalUser(
 			config.gopManagedTechnicalUsername(), technicalCredentials.password(), "changeme@test.local"
 		);
 		addUser(metricsUsername, provisioningPassword, "changeme@test.local");
 		grantUserPermissions(metricsUsername, List.of("metrics:read"));
 	}
 
+	private void createOrUpdateGopManagedTechnicalUser(String username, String password, String email) {
+		ScmManagerUser userRequest = userRequest(username, password, email);
+
+		try {
+			Response<Void> createUserResponse = scmManager.getApiClient().usersApi().addUser(userRequest).execute();
+			if (createUserResponse.code() == HTTP_CONFLICT) {
+				overwriteUserPassword(username, password);
+				log.debug("Successfully updated password for SCM-Manager User {}.", username);
+				return;
+			}
+			if (!createUserResponse.isSuccessful()) {
+				throw new IllegalStateException(
+					"Could not create SCM-Manager user '" + username + "'. HTTP Status: " + createUserResponse.code()
+				);
+			}
+			log.debug("Successfully created SCM-Manager User {}.", username);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create or update SCM-Manager user '" + username + "'", e);
+		}
+	}
+
+	private void overwriteUserPassword(String username, String password) throws IOException {
+		Response<Void> overwritePasswordResponse = scmManager.getApiClient()
+			.usersApi()
+			.overwritePassword(username, Map.of("newPassword", password))
+			.execute();
+
+		if (!overwritePasswordResponse.isSuccessful()) {
+			throw new IllegalStateException(
+				"Could not update password for SCM-Manager user '" + username
+					+ "'. HTTP Status: " + overwritePasswordResponse.code()
+			);
+		}
+	}
+
 	private void addUser(String username, String password, String email) {
+		ScmManagerApiClient.handleApiResponse(
+			scmManager.getApiClient().usersApi().addUser(userRequest(username, password, email))
+		);
+
+		log.debug("Successfully created SCM-Manager User {}.", username);
+	}
+
+	private ScmManagerUser userRequest(String username, String password, String email) {
 		ScmManagerUser userRequest = new ScmManagerUser();
 		userRequest.setName(username);
 		userRequest.setDisplayName(username);
@@ -405,10 +453,7 @@ public class ScmManagerSetup {
 		userRequest.setPassword(password);
 		userRequest.setActive(true);
 		userRequest.setLinks(new HashMap<>());
-
-		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().usersApi().addUser(userRequest));
-
-		log.debug("Successfully created SCM-Manager User {}.", username);
+		return userRequest;
 	}
 
 	private void grantUserPermissions(String username, List<String> permissions) {

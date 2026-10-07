@@ -1,20 +1,22 @@
 package com.cloudogu.gitops.infrastructure.jenkins;
 
 import com.cloudogu.gitops.utils.TemplatingEngine;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
 
 @Singleton
 @RequiredArgsConstructor
@@ -22,38 +24,73 @@ import java.util.Map;
 public class JobManager {
 
 	private static final int HTTP_OK = 200;
+	private static final int HTTP_CONFLICT = 409;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final JenkinsApiClient apiClient;
 
-	public void createCredential(String jobName, String id, String username, String password, String description) {
-		try {
-			Map<String, Object> innerMap = new LinkedHashMap<>();
-			innerMap.put("scope", "GLOBAL");
-			innerMap.put("id", id);
-			innerMap.put("username", username);
-			innerMap.put("password", password);
-			innerMap.put("description", description);
-			innerMap.put("$class", "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl");
+	public void createOrUpdateCredential(String jobName, String id, String username, String password, String description) {
+		RequestBody body = RequestBody.create(
+			credentialXml(id, username, password, description),
+			MediaType.get("text/xml")
+		);
 
-			Map<String, Object> payloadMap = new LinkedHashMap<>();
-			payloadMap.put("credentials", innerMap);
-
-			String jsonPayload = objectMapper.writeValueAsString(payloadMap);
-
-			try (Response response = apiClient.postRequestWithCrumb(
-				"job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
-				new FormBody.Builder().add("json", jsonPayload)
-									  .build()
-			)) {
-				if (response.code() != HTTP_OK) {
-					throw new IllegalStateException("Could not create credential id=" + id + ",job=" + jobName + ". StatusCode: " + response.code());
-				}
+		try (Response response = apiClient.postRequestWithCrumb(
+			"job/" + jobName + "/credentials/store/folder/domain/_/createCredentials",
+			body
+		)) {
+			if (response.code() == HTTP_CONFLICT) {
+				updateCredential(jobName, id, username, password, description);
+				return;
 			}
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to serialize or send credential request", e);
+			if (response.code() != HTTP_OK) {
+				throw new IllegalStateException("Could not create credential id=" + id + ",job=" + jobName + ". StatusCode: " + response.code());
+			}
 		}
+	}
+
+	private void updateCredential(String jobName, String id, String username, String password, String description) {
+		RequestBody body = RequestBody.create(
+			credentialXml(id, username, password, description),
+			MediaType.get("text/xml")
+		);
+
+		try (Response response = apiClient.postRequestWithCrumb(
+			"job/" + jobName + "/credentials/store/folder/domain/_/credential/" + id + "/config.xml",
+			body
+		)) {
+			if (response.code() != HTTP_OK) {
+				throw new IllegalStateException(
+					"Could not update credential id=" + id + ",job=" + jobName + ". StatusCode: " + response.code()
+				);
+			}
+		}
+	}
+
+	private String credentialXml(String id, String username, String password, String description) {
+		try {
+			StringWriter writer = new StringWriter();
+			XMLStreamWriter xml = XMLOutputFactory.newFactory().createXMLStreamWriter(writer);
+
+			xml.writeStartElement("com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl");
+			writeXmlElement(xml, "scope", "GLOBAL");
+			writeXmlElement(xml, "id", id);
+			writeXmlElement(xml, "description", description);
+			writeXmlElement(xml, "username", username);
+			writeXmlElement(xml, "password", password);
+			xml.writeEndElement();
+			xml.close();
+
+			return writer.toString();
+		} catch (XMLStreamException e) {
+			throw new IllegalStateException("Could not serialize Jenkins credential id=" + id, e);
+		}
+	}
+
+	private void writeXmlElement(XMLStreamWriter xml, String name, String value) throws XMLStreamException {
+		xml.writeStartElement(name);
+		xml.writeCharacters(value);
+		xml.writeEndElement();
 	}
 
 	/**

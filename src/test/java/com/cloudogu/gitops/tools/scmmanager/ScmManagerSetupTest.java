@@ -238,6 +238,84 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
+	void updatesGopManagedTechnicalUserPasswordWhenItAlreadyExists() throws ReflectiveOperationException, IOException {
+		UsersApi usersApi = mock(UsersApi.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> existingTechnicalUserCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> metricsUserCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> overwritePasswordCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> permissionCall = mock(Call.class);
+
+		when(scmManager.getApiClient()).thenReturn(apiClient);
+		when(apiClient.usersApi()).thenReturn(usersApi);
+		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(existingTechnicalUserCall, metricsUserCall);
+		when(usersApi.overwritePassword(eq("gitops"), anyMap())).thenReturn(overwritePasswordCall);
+		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
+		when(existingTechnicalUserCall.execute()).thenReturn(Response.error(
+			409,
+			new RealResponseBody("text/plain", 0, mock(BufferedSource.class))
+		));
+		when(metricsUserCall.execute()).thenReturn(Response.success(null));
+		when(overwritePasswordCall.execute()).thenReturn(Response.success(null));
+		when(permissionCall.execute()).thenReturn(Response.success(null));
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient,
+			credentialsResolver
+		);
+
+		invokePrivateAddDefaultUsers(scmManagerSetup);
+
+		verify(usersApi).overwritePassword("gitops", Map.of("newPassword", "technical-password"));
+	}
+
+	@Test
+	void rejectsFailedGopManagedTechnicalUserPasswordUpdate() throws IOException {
+		UsersApi usersApi = mock(UsersApi.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> existingTechnicalUserCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> overwritePasswordCall = mock(Call.class);
+
+		when(scmManager.getApiClient()).thenReturn(apiClient);
+		when(apiClient.usersApi()).thenReturn(usersApi);
+		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(existingTechnicalUserCall);
+		when(usersApi.overwritePassword(eq("gitops"), anyMap())).thenReturn(overwritePasswordCall);
+		when(existingTechnicalUserCall.execute()).thenReturn(Response.error(
+			409,
+			new RealResponseBody("text/plain", 0, mock(BufferedSource.class))
+		));
+		when(overwritePasswordCall.execute()).thenReturn(Response.error(
+			409,
+			new RealResponseBody("text/plain", 0, mock(BufferedSource.class))
+		));
+
+		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient,
+			credentialsResolver
+		);
+
+		assertThatThrownBy(() -> invokePrivateAddDefaultUsers(scmManagerSetup))
+			.hasRootCauseInstanceOf(IllegalStateException.class)
+			.hasRootCauseMessage("Could not update password for SCM-Manager user 'gitops'. HTTP Status: 409");
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void helmValuesContainCertManagerIngressConfiguration() throws IOException {
 		when(scmManager.getScmmConfig()).thenReturn(config.getScm().getScmManager());

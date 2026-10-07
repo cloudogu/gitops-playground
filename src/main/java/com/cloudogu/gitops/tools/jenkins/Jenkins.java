@@ -395,7 +395,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 
 		if (scmManagerCredentials != null) {
-			jobManager.createCredential(
+			jobManager.createOrUpdateCredential(
 				jobName,
 				credentialId,
 				scmManagerCredentials.username(),
@@ -406,7 +406,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 		if (toolConfig().scm().providerType() == ScmProviderType.GITLAB) {
 			var scmCredentials = gitHandler.getTenant().getCredentials();
-			jobManager.createCredential(
+			jobManager.createOrUpdateCredential(
 				jobName,
 				credentialId,
 				scmCredentials.getUsername(),
@@ -415,7 +415,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			);
 		}
 		ResolvedCredentials registryCredentials = registryCredentials();
-		jobManager.createCredential(
+		jobManager.createOrUpdateCredential(
 			jobName,
 			"registry-user",
 			registryCredentials.username(),
@@ -425,7 +425,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 		if (toolConfig().registry().twoRegistries()) {
 			ResolvedCredentials proxyRegistryCredentials = proxyRegistryCredentials();
-			jobManager.createCredential(
+			jobManager.createOrUpdateCredential(
 				jobName,
 				"registry-proxy-user",
 				proxyRegistryCredentials.username(),
