@@ -522,7 +522,7 @@ class JenkinsTest {
 		jenkins.createJenkinsjob("namespace", "repo");
 
 		verify(jobManger).createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user");
-		verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString());
+		verify(jobManger, never()).createOrUpdateCredential(anyString(), anyString(), anyString(), anyString(), anyString());
 		verify(jobManger).startJob("test-repo");
 	}
 
@@ -538,7 +538,7 @@ class JenkinsTest {
 		install(jenkins);
 		jenkins.createJenkinsjob("namespace", "repo");
 
-		verify(jobManger).createCredential(
+		verify(jobManger).createOrUpdateCredential(
 			"test-repo",
 			"scm-user",
 			"test-gitops",
@@ -560,7 +560,7 @@ class JenkinsTest {
 		install(jenkins);
 		jenkins.createJenkinsjob("namespace", "repo");
 
-		verify(jobManger).createCredential(
+		verify(jobManger).createOrUpdateCredential(
 			"test-repo",
 			"scm-user",
 			"existing-technical-user",
@@ -613,14 +613,14 @@ class JenkinsTest {
 		install(jenkins);
 		jenkins.createJenkinsjob("namespace", "repo");
 
-		verify(jobManger).createCredential(
+		verify(jobManger).createOrUpdateCredential(
 			"test-repo",
 			"registry-user",
 			"runtime-registry-user",
 			"runtime-registry-password",
 			"credentials for accessing the docker-registry for writing images built on jenkins"
 		);
-		verify(jobManger).createCredential(
+		verify(jobManger).createOrUpdateCredential(
 			"test-repo",
 			"registry-proxy-user",
 			"runtime-proxy-user",
@@ -733,7 +733,7 @@ class JenkinsTest {
 
 		install(createJenkins());
 
-		verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString());
+		verify(jobManger, never()).createOrUpdateCredential(anyString(), anyString(), anyString(), anyString(), anyString());
 		verify(jobManger, never()).startJob(anyString());
 	}
 

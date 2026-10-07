@@ -35,6 +35,17 @@ public interface UsersApi {
 	Call<Void> addUser(@Body ScmManagerUser user);
 
 	/**
+	 * Overwrites the password of an existing user account.
+	 *
+	 * @param username          username of the user whose password should be changed
+	 * @param passwordOverwrite payload containing the new password
+	 * @return call that completes when the password was updated
+	 */
+	@Headers("Content-Type: application/vnd.scmm-passwordOverwrite+json;v=2")
+	@PUT("v2/users/{username}/password")
+	Call<Void> overwritePassword(@Path("username") String username, @Body Map<String, String> passwordOverwrite);
+
+	/**
 	 * Replaces the global permissions of the given user.
 	 *
 	 * @param username    username of the user to update
