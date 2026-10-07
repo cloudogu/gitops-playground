@@ -86,7 +86,7 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		private String namespace = "scm-manager";
 
-		private String gitOpsUsername = "";
+		private String gopManagedTechnicalUsername = "";
 
 		@Override
 		public String getIngress() {

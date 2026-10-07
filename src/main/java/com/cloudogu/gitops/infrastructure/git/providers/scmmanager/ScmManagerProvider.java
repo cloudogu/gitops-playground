@@ -112,7 +112,7 @@ public class ScmManagerProvider implements GitProvider {
 
 	@Override
 	public String getGitOpsUsername() {
-		return scmmConfig.getGitOpsUsername();
+		return scmmConfig.getGopManagedTechnicalUsername();
 	}
 
 	@Override
