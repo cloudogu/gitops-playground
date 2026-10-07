@@ -169,7 +169,7 @@ class GitRepoTest {
 		String repoTarget = "foo/bar";
 		GitRepo repo = getRepo(repoTarget, scmManagerMock);
 		scmManagerMock.setNextCreateResults(new ArrayList<>(List.of(true))); // simulate "new repo"
-		scmManagerMock.setGitOpsUsername("foo-gitops"); // username available
+		scmManagerMock.setRepositoryPermissionUsername("foo-gitops"); // username available
 
 		boolean created = repo.createRepositoryAndSetPermission("testdescription", true);
 
@@ -188,13 +188,13 @@ class GitRepoTest {
 	}
 
 	@Test
-	void doesNotSetPermissionWhenNoGitOpsUsernameIsConfigured() {
+	void doesNotSetPermissionWhenNoRepositoryPermissionUsernameIsConfigured() {
 		String repoTarget = "foo/bar";
 		ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock();
 		GitRepo repo = getRepo(repoTarget, scmManagerMock);
 
 		scmManagerMock.setNextCreateResults(new ArrayList<>(List.of(true))); // repo is new
-		scmManagerMock.setGitOpsUsername(null); // no username
+		scmManagerMock.setRepositoryPermissionUsername(null); // no username
 
 		boolean created = repo.createRepositoryAndSetPermission("desc", true);
 

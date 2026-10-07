@@ -60,7 +60,8 @@ public class GitHandler {
 		}
 
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
-		if (config.getScm().getScmManager() != null) {
+		if (config.getScm().getScmManager() != null
+			&& Boolean.TRUE.equals(config.getScm().getScmManager().getInternal())) {
 			String prefix = config.getApplication().getNamePrefix();
 			if (prefix == null) {
 				prefix = "";

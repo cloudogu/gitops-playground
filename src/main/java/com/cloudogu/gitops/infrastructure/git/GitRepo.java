@@ -93,9 +93,9 @@ public class GitRepo implements AutoCloseable {
 
 	public boolean createRepositoryAndSetPermission(String description, boolean initialize) {
 		boolean isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize);
-		String gitOpsUsername = gitProvider.getGitOpsUsername();
-		if (gitOpsUsername != null && !gitOpsUsername.isEmpty()) {
-			gitProvider.setRepositoryPermission(repoTarget, gitOpsUsername, AccessRole.WRITE, Scope.USER);
+		String repositoryPermissionUsername = gitProvider.getRepositoryPermissionUsername();
+		if (repositoryPermissionUsername != null && !repositoryPermissionUsername.isEmpty()) {
+			gitProvider.setRepositoryPermission(repoTarget, repositoryPermissionUsername, AccessRole.WRITE, Scope.USER);
 		}
 		return isNewRepo;
 	}
