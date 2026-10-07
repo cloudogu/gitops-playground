@@ -2,6 +2,7 @@ package com.cloudogu.gitops.config.schema;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Config.VaultMode;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.MapUtils;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
@@ -114,6 +115,41 @@ class ConfigTest {
 		new CommandLine(config).parseArgs("--vault=dev");
 
 		assertThat(config.getFeatures().getSecrets().getVault().getMode()).isEqualTo(VaultMode.DEV);
+	}
+
+	@Test
+	void parsesScmTechnicalUserFromCli() {
+		Config config = new Config();
+
+		new CommandLine(config).parseArgs(
+			"--scmm-technical-username=existing-jenkins-user",
+			"--scmm-technical-password=technical-password"
+		);
+
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getUsername())
+			.isEqualTo("existing-jenkins-user");
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
+			.isEqualTo("technical-password");
+	}
+
+	@Test
+	void mapsScmTechnicalUserSecretReference() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"technicalUser", Map.of(
+						"credentials", Map.of(
+							"secretName", "scm-technical-user",
+							"secretNamespace", "gop-job"
+						)
+					)
+				)
+			)
+		));
+
+		Credentials credentials = config.getScm().getScmManager().getTechnicalUser().getCredentials();
+		assertThat(credentials.getSecretName()).isEqualTo("scm-technical-user");
+		assertThat(credentials.getSecretNamespace()).isEqualTo("gop-job");
 	}
 
 	@Test

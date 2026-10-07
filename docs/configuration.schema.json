@@ -1076,6 +1076,25 @@
               "type" : [ "boolean", "null" ],
               "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
             },
+            "technicalUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials for an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external"
+            },
             "url" : {
               "type" : [ "string", "null" ],
               "description" : "The host of your external scm-manager"
