@@ -50,6 +50,10 @@ registry:
   password: "admin"
 scm:
   scmManager:
+    technicalUser:
+      password: "technical-password"
+    metricsUser:
+      password: "metrics-password"
     password: "admin"
 content:
   repos:

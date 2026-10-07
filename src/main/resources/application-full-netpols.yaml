@@ -9,6 +9,13 @@ application:
     registryAccessCidrs: []
     egressIsolation: false
     externalConnections: []
+scm:
+  scmManager:
+    technicalUser:
+      password: "technical-password"
+    metricsUser:
+      password: "metrics-password"
+
 features:
   certManager:
     active: true
