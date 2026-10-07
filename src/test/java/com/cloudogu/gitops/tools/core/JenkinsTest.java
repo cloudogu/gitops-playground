@@ -511,6 +511,22 @@ class JenkinsTest {
 	}
 
 	@Test
+	void doesNotManageJobCredentialsForExternalJenkins() throws GitAPIException {
+		config.getApplication().setNamePrefix("test-");
+		config.getJenkins().setInternal(false);
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().getScmManager().setInternal(false);
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		verify(jobManger).createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user");
+		verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString());
+		verify(jobManger).startJob("test-repo");
+	}
+
+	@Test
 	void usesGopManagedTechnicalUserForInternalScmManager() throws GitAPIException {
 		config.getApplication().setNamePrefix("test-");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
@@ -555,6 +571,7 @@ class JenkinsTest {
 
 	@Test
 	void rejectsMissingTechnicalUserForExternalScmManager() throws GitAPIException {
+		config.getJenkins().setInternal(true);
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		config.getScm().getScmManager().setInternal(false);
 		scmManagerMock.setCredentials(new Credentials("provisioning-user", "provisioning-password"));

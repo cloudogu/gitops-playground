@@ -28,7 +28,7 @@ public class ScmTenantSchema {
 	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
 	public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
-	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Credentials for the technical SCM-Manager user used by Jenkins for Git repository access. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external deployments, the configured username is reused unchanged";
+	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Credentials for the technical SCM-Manager user used by GOP-managed Jenkins credentials. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external SCM-Manager with internal Jenkins, the configured username is reused unchanged. External Jenkins credentials are managed outside GOP";
 	public static final String SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION = "Username of the GOP-managed technical SCM-Manager user";
 
 	@Option(names = {"--scm-provider"}, description = SCM_PROVIDER_TYPE_DESCRIPTION, defaultValue = "SCM_MANAGER")
@@ -171,8 +171,8 @@ public class ScmTenantSchema {
 	@NoArgsConstructor
 	public static class ScmTechnicalUserConfig {
 
-		public static final String SCMM_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical SCM-Manager user used by Jenkins for Git repository access when SCM-Manager is external. Internal deployments derive the username from the name prefix";
-		public static final String SCMM_TECHNICAL_PASSWORD_DESCRIPTION = "Password of the technical SCM-Manager user used by Jenkins for Git repository access";
+		public static final String SCMM_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical SCM-Manager user used to create Jenkins credentials when SCM-Manager is external and Jenkins is internal. Internal SCM-Manager deployments derive the username from the name prefix";
+		public static final String SCMM_TECHNICAL_PASSWORD_DESCRIPTION = "Password of the technical SCM-Manager user used to create GOP-managed Jenkins credentials";
 
 		@Option(names = {"--scmm-technical-username"}, description = SCMM_TECHNICAL_USERNAME_DESCRIPTION)
 		@JsonPropertyDescription(SCMM_TECHNICAL_USERNAME_DESCRIPTION)
