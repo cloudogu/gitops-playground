@@ -3,6 +3,7 @@ package com.cloudogu.gitops.tools;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
@@ -23,6 +24,9 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 		Config.MonitoringSchema monitoring = config.getFeatures().getMonitoring();
 		Collection<String> activeNamespaces = config.getApplication().getNamespaces().getActiveNamespaces();
 		boolean argocdOperatorMode = context.isArgoCdOperator();
+		ScmManagerConfig resourcesScmManager = context.isMultiTenant()
+			? config.getMultiTenant().getScmManager()
+			: config.getScm().getScmManager();
 		return MonitoringToolConfig.builder()
 								   .active(monitoring.getActive())
 								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
@@ -48,6 +52,10 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 								   .jenkinsNamespace(config.getJenkins().getNamespace())
 								   .jenkinsUrl(config.getJenkins().getUrl())
 								   .scmProviderType(config.getScm() == null ? null : config.getScm().getScmProviderType())
+								   .scmManagerInternal(resourcesScmManager != null && Boolean.TRUE.equals(resourcesScmManager.getInternal()))
+								   .scmMetricsUsername(resourcesScmManager == null ? null : resourcesScmManager.getMetricsUsername())
+								   .scmMetricsPassword(resourcesScmManager == null ? null : resourcesScmManager.getMetricsPassword())
+								   .scmMetricsCredentials(resourcesScmManager == null ? null : CredentialsReference.from(resourcesScmManager.getMetricsCredentials()))
 								   .ingressActive(config.getFeatures().getIngress().getActive())
 								   .jenkinsActive(config.getJenkins().getActive())
 								   .helm(ToolConfigMapperSupport.helmChart(

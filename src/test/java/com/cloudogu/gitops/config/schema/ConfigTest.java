@@ -153,6 +153,41 @@ class ConfigTest {
 	}
 
 	@Test
+	void parsesScmMetricsUserFromCli() {
+		Config config = new Config();
+
+		new CommandLine(config).parseArgs(
+			"--scmm-metrics-username=existing-metrics-user",
+			"--scmm-metrics-password=metrics-password"
+		);
+
+		assertThat(config.getScm().getScmManager().getMetricsUser().getUsername())
+			.isEqualTo("existing-metrics-user");
+		assertThat(config.getScm().getScmManager().getMetricsUser().getPassword())
+			.isEqualTo("metrics-password");
+	}
+
+	@Test
+	void mapsScmMetricsUserSecretReference() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"metricsUser", Map.of(
+						"credentials", Map.of(
+							"secretName", "scm-metrics-user",
+							"secretNamespace", "gop-job"
+						)
+					)
+				)
+			)
+		));
+
+		Credentials credentials = config.getScm().getScmManager().getMetricsUser().getCredentials();
+		assertThat(credentials.getSecretName()).isEqualTo("scm-metrics-user");
+		assertThat(credentials.getSecretNamespace()).isEqualTo("gop-job");
+	}
+
+	@Test
 	void getsTenantNameFromConfig() {
 		testConfig.getApplication().setNamePrefix("testprefix-");
 

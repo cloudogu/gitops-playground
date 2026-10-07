@@ -892,6 +892,25 @@
               "type" : [ "boolean", "null" ],
               "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
             },
+            "metricsUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of the existing central SCM-Manager metrics user used by Prometheus"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of the existing central SCM-Manager metrics user used by Prometheus"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials of the existing central SCM-Manager metrics user used by Prometheus"
+            },
             "namespace" : {
               "type" : [ "string", "null" ],
               "description" : "Namespace where to find the Central SCMM"
@@ -1055,6 +1074,25 @@
             "helm" : {
               "$ref" : "#/$defs/HelmConfigWithValues-nullable",
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "metricsUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of the SCM-Manager metrics user used by Prometheus"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of an existing SCM-Manager metrics user used by Prometheus when SCM-Manager is external. Internal deployments derive the username from the name prefix"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials of the SCM-Manager metrics user used by Prometheus. Internal SCM-Manager deployments derive the username from the name prefix and GOP manages the account; external deployments use an existing user"
             },
             "namespace" : {
               "type" : [ "string", "null" ],

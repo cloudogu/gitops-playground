@@ -20,5 +20,11 @@ public interface ScmManagerConfig {
 
 	String getGopManagedTechnicalUsername();
 
+	String getMetricsUsername();
+
+	String getMetricsPassword();
+
+	Credentials getMetricsCredentials();
+
 	Credentials getCredentials();
 }

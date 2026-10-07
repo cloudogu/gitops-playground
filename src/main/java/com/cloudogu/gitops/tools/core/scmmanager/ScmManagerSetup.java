@@ -380,8 +380,6 @@ public class ScmManagerSetup {
 	}
 
 	private void addDefaultUsers() {
-		String metricsUsername = config.namePrefix() + "metrics";
-		String provisioningPassword = scmManager.getCredentials().getPassword();
 		ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
 			config.technicalUserCredentials(),
 			config.gopManagedTechnicalUsername(),
@@ -394,14 +392,30 @@ public class ScmManagerSetup {
 			);
 		}
 
-		createOrUpdateGopManagedTechnicalUser(
+		createOrUpdateGopManagedUser(
 			config.gopManagedTechnicalUsername(), technicalCredentials.password(), "changeme@test.local"
 		);
-		addUser(metricsUsername, provisioningPassword, "changeme@test.local");
-		grantUserPermissions(metricsUsername, List.of("metrics:read"));
+
+		if (config.monitoringActive()) {
+			String metricsUsername = config.namePrefix() + "metrics";
+			ResolvedCredentials metricsCredentials = credentialsResolver.resolveReference(
+				config.metricsUserCredentials(),
+				metricsUsername,
+				config.metricsUserPassword()
+			);
+
+			if (metricsCredentials.password() == null || metricsCredentials.password().isBlank()) {
+				throw new IllegalArgumentException(
+					"Internal SCM-Manager with monitoring enabled requires a password for the GOP-managed metrics user"
+				);
+			}
+
+			createOrUpdateGopManagedUser(metricsUsername, metricsCredentials.password(), "changeme@test.local");
+			grantUserPermissions(metricsUsername, List.of("metrics:read"));
+		}
 	}
 
-	private void createOrUpdateGopManagedTechnicalUser(String username, String password, String email) {
+	private void createOrUpdateGopManagedUser(String username, String password, String email) {
 		ScmManagerUser userRequest = userRequest(username, password, email);
 
 		try {
@@ -436,13 +450,6 @@ public class ScmManagerSetup {
 		}
 	}
 
-	private void addUser(String username, String password, String email) {
-		ScmManagerApiClient.handleApiResponse(
-			scmManager.getApiClient().usersApi().addUser(userRequest(username, password, email))
-		);
-
-		log.debug("Successfully created SCM-Manager User {}.", username);
-	}
 
 	private ScmManagerUser userRequest(String username, String password, String email) {
 		ScmManagerUser userRequest = new ScmManagerUser();

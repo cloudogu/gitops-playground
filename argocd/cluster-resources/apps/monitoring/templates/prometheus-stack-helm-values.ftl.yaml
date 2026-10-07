@@ -426,7 +426,7 @@ prometheus:
         scheme: ${scm.protocol}
         metrics_path: '${scm.path}'
         basic_auth:
-          username: '${config.application.namePrefix}metrics'
+          username: '${scm.metricsUsername}'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
 </#if>
 <#if hasJenkinsMetrics>
