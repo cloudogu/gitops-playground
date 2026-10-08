@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -123,7 +123,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = ['minimal', 'full', 'full-secrets', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -197,38 +197,70 @@ pipeline {
                                 return configFile
                             }
 
+                            def createExternalVaultIntegrationConfig = { vaultServer ->
+                                def configFile = 'target/integration-test-config/external-vault.yaml'
+                                sh 'mkdir -p target/integration-test-config'
+                                writeFile file: configFile, text: """features:
+  secrets:
+    externalSecrets:
+      vault:
+        server: \"${vaultServer}\"
+"""
+                                return configFile
+                            }
+
                             profiles.each { profile ->
                                 withK3dCluster(profile) {
+                                    def externalVaultContainer = null
+                                    try {
+                                        def additionalArguments = ''
 
-                                    if (profile == 'full-secrets') {
-                                        docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh '''
-                                                apk add --no-cache kubectl
-                                                kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
-                                                kubectl apply -f ./scripts/dev/secrets/gop-secrets.yaml
-                                            '''
+                                        if (profile == 'full-secrets') {
+                                            docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                                sh '''
+                                                    apk add --no-cache kubectl
+                                                    kubectl create namespace gop-job --dry-run=client -o yaml | kubectl apply -f -
+                                                    kubectl apply -f ./scripts/dev/secrets/gop-secrets.yaml
+                                                '''
+                                            }
                                         }
-                                    }
 
-                                    if (profile.startsWith('operator')) {
-                                        docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh 'apk add --no-cache make bash curl git kubectl && make install-operator'
+                                        if (profile == 'full-external-vault') {
+                                            externalVaultContainer = "external-vault-${env.BUILD_ID}"
+                                            def externalVaultServer
+                                            docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                                sh 'apk add --no-cache bash kubectl docker-cli'
+                                                externalVaultServer = sh(
+                                                    script: "./scripts/dev/external-vault/prepare-test-vault.sh --container-name=${externalVaultContainer} --host-port=0",
+                                                    returnStdout: true
+                                                ).trim()
+                                            }
+                                            additionalArguments = " --config-file=${createExternalVaultIntegrationConfig(externalVaultServer)}"
                                         }
-                                    }
 
-                                    def additionalArguments = ''
-                                    if (profile == 'full-netpols') {
-                                        additionalArguments = " --config-file=${createNetworkPolicyIntegrationConfig()} -x"
-                                    }
+                                        if (profile.startsWith('operator')) {
+                                            docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                                sh 'apk add --no-cache make bash curl git kubectl && make install-operator'
+                                            }
+                                        }
 
-                                    docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        sh "java -jar /app/gitops-playground.jar --profile=${profile}${additionalArguments}"
-                                    }
-                                    docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                        try {
-                                            sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
-                                        } finally {
-                                            sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                        if (profile == 'full-netpols') {
+                                            additionalArguments = " --config-file=${createNetworkPolicyIntegrationConfig()} -x"
+                                        }
+
+                                        docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                            sh "java -jar /app/gitops-playground.jar --profile=${profile}${additionalArguments}"
+                                        }
+                                        docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
+                                            try {
+                                                sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                            } finally {
+                                                sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
+                                            }
+                                        }
+                                    } finally {
+                                        if (externalVaultContainer != null) {
+                                            sh "docker rm -f ${externalVaultContainer} >/dev/null 2>&1 || true"
                                         }
                                     }
                                 }
