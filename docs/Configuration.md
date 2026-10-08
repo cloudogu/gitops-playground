@@ -372,18 +372,18 @@ Configuration of optional tools supported by gitops-playground.
 
 ### Tool: Cert Manager
 
-| CLI | Config key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `--cert-manager` | `features.certManager.active` | Boolean | `false` | Sets and enables Cert Manager |
-| `--cert-manager-issuer` | `features.certManager.issuer` | String | `cluster-selfsigned` | Sets and enables Cert Manager |
-| `--cert-manager-namespace` | `features.certManager.namespace` | String | `cert-manager` | Optional defines the kubernetes namespace for Cert Manager |
-| `--cert-manager-image` | `features.certManager.helm.image` | String | `` | Sets image for Cert Manager |
-| `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | String | `` | Sets webhook Image for Cert Manager |
-| `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | String | `` | Sets cainjector Image for Cert Manager |
-| `--cert-manager-acme-solver-image` | `features.certManager.helm.acmeSolverImage` | String | `` | Sets acmeSolver Image for Cert Manager |
-| `--cert-manager-startup-api-check-image` | `features.certManager.helm.startupAPICheckImage` | String | `` | Sets startupAPICheck Image for Cert Manager |
-| - | `features.certManager.helm.values` | Map | `{}` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-| - | `features.certManager.helm.chart` | String | `cert-manager` | Name of the Helm chart |
-| - | `features.certManager.helm.repoURL` | String | `https://charts.jetstack.io` | Repository url from which the Helm chart should be obtained |
-| - | `features.certManager.helm.version` | String | `v1.21.3` | The version of the Helm chart to be installed |
+| CLI                                      | Config key                                       | Type    | Default                      | Description                                                                                                            |
+|:-----------------------------------------|:-------------------------------------------------|:--------|:-----------------------------|:-----------------------------------------------------------------------------------------------------------------------|
+| `--cert-manager`                         | `features.certManager.active`                    | Boolean | `false`                      | Sets and enables Cert Manager                                                                                          |
+| `--cert-manager-issuer`                  | `features.certManager.issuer`                    | String  | `cluster-selfsigned`         | Sets and enables Cert Manager                                                                                          |
+| `--cert-manager-namespace`               | `features.certManager.namespace`                 | String  | `cert-manager`               | Optional defines the kubernetes namespace for Cert Manager                                                             |
+| `--cert-manager-image`                   | `features.certManager.helm.image`                | String  | ``                           | Sets image for Cert Manager                                                                                            |
+| `--cert-manager-webhook-image`           | `features.certManager.helm.webhookImage`         | String  | ``                           | Sets webhook Image for Cert Manager                                                                                    |
+| `--cert-manager-cainjector-image`        | `features.certManager.helm.cainjectorImage`      | String  | ``                           | Sets cainjector Image for Cert Manager                                                                                 |
+| `--cert-manager-acme-solver-image`       | `features.certManager.helm.acmeSolverImage`      | String  | ``                           | Sets acmeSolver Image for Cert Manager                                                                                 |
+| `--cert-manager-startup-api-check-image` | `features.certManager.helm.startupAPICheckImage` | String  | ``                           | Sets startupAPICheck Image for Cert Manager                                                                            |
+| -                                        | `features.certManager.helm.values`               | Map     | `{}`                         | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| -                                        | `features.certManager.helm.chart`                | String  | `cert-manager`               | Name of the Helm chart                                                                                                 |
+| -                                        | `features.certManager.helm.repoURL`              | String  | `https://charts.jetstack.io` | Repository url from which the Helm chart should be obtained                                                            |
+| -                                        | `features.certManager.helm.version`              | String  | `v1.21.3`                    | The version of the Helm chart to be installed                                                                          |
 
