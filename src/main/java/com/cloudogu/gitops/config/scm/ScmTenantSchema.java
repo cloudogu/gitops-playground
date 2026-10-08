@@ -27,7 +27,7 @@ public class ScmTenantSchema {
 	public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
 	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
-	public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
+	public static final String GITLAB_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP";
 	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Credentials for the technical SCM-Manager user used by GOP-managed Jenkins credentials. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external SCM-Manager with internal Jenkins, the configured username is reused unchanged. External Jenkins credentials are managed outside GOP";
 	public static final String SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION = "Username of the GOP-managed technical SCM-Manager user";
 
@@ -81,8 +81,8 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
 		private String parentGroupId = "";
 
-		@JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
-		private String gitOpsUsername = "";
+		@JsonPropertyDescription(GITLAB_TECHNICAL_USERNAME_DESCRIPTION)
+		private String technicalUsername = "";
 
 		private String defaultVisibility = "";
 

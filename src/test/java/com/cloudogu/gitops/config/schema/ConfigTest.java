@@ -118,6 +118,20 @@ class ConfigTest {
 	}
 
 	@Test
+	void mapsGitlabTechnicalUsername() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"gitlab", Map.of(
+					"technicalUsername", "existing-gitlab-user"
+				)
+			)
+		));
+
+		assertThat(config.getScm().getGitlab().getTechnicalUsername())
+			.isEqualTo("existing-gitlab-user");
+	}
+
+	@Test
 	void parsesScmTechnicalUserFromCli() {
 		Config config = new Config();
 
