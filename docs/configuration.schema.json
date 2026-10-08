@@ -865,6 +865,10 @@
               "type" : [ "string", "null" ],
               "description" : "Main Group for Gitlab where the GOP creates it's groups/repos"
             },
+            "technicalUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
+            },
             "password" : {
               "type" : [ "string", "null" ],
               "description" : "Password for SCM Manager authentication"
@@ -1032,9 +1036,9 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
+            "technicalUsername" : {
               "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
             },
             "internal" : {
               "type" : [ "boolean", "null" ],

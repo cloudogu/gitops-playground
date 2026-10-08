@@ -26,6 +26,7 @@ public final class ScmCentralSchema {
 		public static final String CENTRAL_GITLAB_USERNAME_DESCRIPTION = "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication";
 		public static final String CENTRAL_GITLAB_PASSWORD_DESCRIPTION = "Password for SCM Manager authentication";
 		public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos";
+		public static final String CENTRAL_GITLAB_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP";
 
 		@Option(names = {"--central-gitlab-url"}, description = CENTRAL_GITLAB_URL_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
@@ -46,7 +47,8 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
 		private String parentGroupId = "";
 
-		private String gitOpsUsername = "";
+		@JsonPropertyDescription(CENTRAL_GITLAB_TECHNICAL_USERNAME_DESCRIPTION)
+		private String technicalUsername = "";
 		private String defaultVisibility = "";
 
 		@Override
