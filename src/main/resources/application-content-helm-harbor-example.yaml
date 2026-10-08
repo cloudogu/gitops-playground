@@ -4,6 +4,11 @@ application:
   baseUrl: http://localhost
   insecure: true
   namePrefix: my-prefix
+scm:
+  scmManager:
+    technicalUser:
+      password: "technical-password"
+
 features:
   argocd:
     active: true

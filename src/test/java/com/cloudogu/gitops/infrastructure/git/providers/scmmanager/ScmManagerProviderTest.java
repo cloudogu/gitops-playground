@@ -30,6 +30,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -39,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,7 +63,7 @@ class ScmManagerProviderTest {
 
 	@BeforeEach
 	void setup() throws URISyntaxException {
-		lenient().when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot");
+		lenient().when(scmmCfg.getGopManagedTechnicalUsername()).thenReturn("gitops-bot");
 
 		lenient().when(urls.inClusterBase()).thenReturn(new URI("http://scmm.ns.svc.cluster.local/scm"));
 		lenient().when(urls.inClusterRepoPrefix()).thenReturn("http://scmm.ns.svc.cluster.local/scm/repo/fv40-");
@@ -204,11 +206,22 @@ class ScmManagerProviderTest {
 	}
 
 	@Test
-	void runtimeCredentialsAndGitOpsUsernameAreAvailable() throws ReflectiveOperationException {
+	void runtimeCredentialsAndRepositoryPermissionUsernameAreAvailableForInternalScmManager()
+		throws ReflectiveOperationException {
+		when(scmmCfg.getInternal()).thenReturn(true);
 		ScmManagerProvider scmManager = newScmManager();
 
 		assertEquals("user", scmManager.getCredentials().getUsername());
 		assertEquals("password", scmManager.getCredentials().getPassword());
-		assertEquals("gitops-bot", scmManager.getGitOpsUsername());
+		assertEquals("gitops-bot", scmManager.getRepositoryPermissionUsername());
+	}
+
+	@Test
+	void doesNotExposeRepositoryPermissionUsernameForExternalScmManager() throws ReflectiveOperationException {
+		when(scmmCfg.getInternal()).thenReturn(false);
+		ScmManagerProvider scmManager = newScmManager();
+
+		assertNull(scmManager.getRepositoryPermissionUsername());
+		verify(scmmCfg, never()).getGopManagedTechnicalUsername();
 	}
 }

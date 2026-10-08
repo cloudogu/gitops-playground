@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
@@ -26,6 +27,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final ScmManagerConfigUpdater configUpdater;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 	private ScmManagerSetup setup;
 
 	public ScmManager(
@@ -36,7 +38,8 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		ImagePullSecretCreator imagePullSecretCreator,
 		ScmManagerToolConfigMapper configMapper,
 		ScmManagerConfigUpdater configUpdater,
-		K8sClient k8sClient) {
+		K8sClient k8sClient,
+		CredentialsResolver credentialsResolver) {
 		super(configMapper);
 		this.gitHandler = gitHandler;
 		this.deployer = deployer;
@@ -45,6 +48,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		this.imagePullSecretCreator = imagePullSecretCreator;
 		this.configUpdater = configUpdater;
 		this.k8sClient = k8sClient;
+		this.credentialsResolver = credentialsResolver;
 	}
 
 	@Override
@@ -62,7 +66,7 @@ public class ScmManager extends AbstractMappedTool<ScmManagerToolConfig> {
 		ScmManagerProvider scmManager = getTenantScmManager();
 
 		this.setup = new ScmManagerSetup(
-			scmManager, deployer, context, repositoryWorkspace, fileSystemUtils, toolConfig(), k8sClient
+			scmManager, deployer, context, repositoryWorkspace, fileSystemUtils, toolConfig(), k8sClient, credentialsResolver
 		);
 	}
 

@@ -67,7 +67,10 @@ class MonitoringTest {
 			"createImagePullSecrets", false
 		),
 		"scm", Map.of(
-			"scmManager", Map.of("internal", true)
+			"scmManager", Map.of(
+				"internal", true,
+				"metricsUser", Map.of("password", "scm-metrics-password")
+			)
 		),
 		"jenkins", Map.of(
 			"internal", true,
@@ -457,8 +460,10 @@ class MonitoringTest {
 	}
 
 	@Test
-	void usesRuntimeScmCredentialsForPrometheusSecret() throws GitAPIException {
-		scmManagerMock.setCredentials(new Credentials("scm-admin", "scm-runtime-password"));
+	void usesDedicatedScmMetricsCredentialsForPrometheus() throws GitAPIException, IOException {
+		config.getScm().getScmManager().getMetricsUser().setUsername("scm-metrics-user");
+		config.getScm().getScmManager().getMetricsUser().setPassword("scm-metrics-password");
+		scmManagerMock.setCredentials(new Credentials("scm-admin", "provisioning-password"));
 
 		install(createStack(scmManagerMock));
 
@@ -466,8 +471,17 @@ class MonitoringTest {
 			"generic",
 			"prometheus-metrics-creds-scmm",
 			"foo-monitoring",
-			new Tuple<>("password", "scm-runtime-password")
+			new Tuple<>("password", "scm-metrics-password")
 		);
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		Map<String, Object> prometheusSpec = (Map<String, Object>) prometheus.get("prometheusSpec");
+		List<Map<String, Object>> additionalScrapeConfigs =
+			(List<Map<String, Object>>) prometheusSpec.get("additionalScrapeConfigs");
+		Map<String, Object> basicAuth = (Map<String, Object>) additionalScrapeConfigs.getFirst().get("basic_auth");
+		assertThat(basicAuth.get("username")).isEqualTo("foo-metrics");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("scm-metrics-password");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("provisioning-password");
 	}
 
 	@Test

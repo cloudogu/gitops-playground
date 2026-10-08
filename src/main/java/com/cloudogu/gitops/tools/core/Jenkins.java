@@ -91,6 +91,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private ResolvedCredentials runtimeMetricsCredentials;
 	private ResolvedCredentials runtimeRegistryCredentials;
 	private ResolvedCredentials runtimeProxyRegistryCredentials;
+	private ResolvedCredentials runtimeScmTechnicalCredentials;
 
 	public Jenkins(
 		CommandExecutor commandExecutor,
@@ -181,6 +182,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 	private void resolveRuntimeCredentials() {
 		runtimeRegistryCredentials = null;
 		runtimeProxyRegistryCredentials = null;
+		runtimeScmTechnicalCredentials = null;
 		runtimeCredentials = credentialsResolver.resolveReference(
 			toolConfig().server().credentials(),
 			toolConfig().server().username(),
@@ -308,7 +310,6 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		scriptParams.put("JENKINS_PASSWORD", runtimeCredentials.password());
 		scriptParams.put("SCM_URL", this.gitHandler.getTenant().getUrl());
 		scriptParams.put("PREFIXED_SCM_URL", this.gitHandler.getTenant().repoPrefix());
-		scriptParams.put("SCM_PASSWORD", this.gitHandler.getTenant().getCredentials().getPassword());
 		scriptParams.put("SCM_PROVIDER", toolConfig().scm().providerType());
 		scriptParams.put("INSTALL_ARGOCD", toolConfig().argocdActive());
 		scriptParams.put("NAME_PREFIX", toolConfig().application().namePrefix());
@@ -378,23 +379,33 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		String credentialId = "scm-user";
 		String prefixedNamespace = toolConfig().application().namePrefix() + namespace;
 		String jobName = toolConfig().application().namePrefix() + repoName;
+		boolean internalJenkins = isInternalJenkins();
+
+		ResolvedCredentials scmManagerCredentials = null;
+		if (internalJenkins && toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
+			scmManagerCredentials = scmManagerCredentialsForJenkins();
+		}
 
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
 
-		var scmCredentials = gitHandler.getTenant().getCredentials();
+		if (!internalJenkins) {
+			jobManager.startJob(jobName);
+			return;
+		}
 
-		if (toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
-			jobManager.createCredential(
+		if (scmManagerCredentials != null) {
+			jobManager.createOrUpdateCredential(
 				jobName,
 				credentialId,
-				toolConfig().application().namePrefix() + "gitops",
-				scmCredentials.getPassword(),
+				scmManagerCredentials.username(),
+				scmManagerCredentials.password(),
 				"credentials for accessing scm-manager"
 			);
 		}
 
 		if (toolConfig().scm().providerType() == ScmProviderType.GITLAB) {
-			jobManager.createCredential(
+			var scmCredentials = gitHandler.getTenant().getCredentials();
+			jobManager.createOrUpdateCredential(
 				jobName,
 				credentialId,
 				scmCredentials.getUsername(),
@@ -403,7 +414,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			);
 		}
 		ResolvedCredentials registryCredentials = registryCredentials();
-		jobManager.createCredential(
+		jobManager.createOrUpdateCredential(
 			jobName,
 			"registry-user",
 			registryCredentials.username(),
@@ -413,7 +424,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 		if (toolConfig().registry().twoRegistries()) {
 			ResolvedCredentials proxyRegistryCredentials = proxyRegistryCredentials();
-			jobManager.createCredential(
+			jobManager.createOrUpdateCredential(
 				jobName,
 				"registry-proxy-user",
 				proxyRegistryCredentials.username(),
@@ -423,6 +434,47 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 
 		jobManager.startJob(jobName);
+	}
+
+	private ResolvedCredentials scmManagerCredentialsForJenkins() {
+		if (runtimeScmTechnicalCredentials == null) {
+			boolean internalScmManager = toolConfig().scm().internalScmManager();
+			String gopManagedTechnicalUsername = toolConfig().application().namePrefix() + "gitops";
+			String technicalUsername = internalScmManager
+				? gopManagedTechnicalUsername
+				: toolConfig().scm().technicalUsername();
+
+			ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
+				toolConfig().scm().technicalCredentials(),
+				technicalUsername,
+				toolConfig().scm().technicalPassword()
+			);
+
+			if (internalScmManager) {
+				if (isBlank(technicalCredentials.password())) {
+					throw new IllegalArgumentException(
+						"Internal SCM-Manager requires a password for the GOP-managed technical user"
+					);
+				}
+				runtimeScmTechnicalCredentials = new ResolvedCredentials(
+					gopManagedTechnicalUsername,
+					technicalCredentials.password()
+				);
+			} else {
+				if (isBlank(technicalCredentials.username()) || isBlank(technicalCredentials.password())) {
+					throw new IllegalArgumentException(
+						"External SCM-Manager requires technical user credentials for Jenkins repository access"
+					);
+				}
+				runtimeScmTechnicalCredentials = technicalCredentials;
+			}
+		}
+
+		return runtimeScmTechnicalCredentials;
+	}
+
+	private static boolean isBlank(String value) {
+		return value == null || value.isBlank();
 	}
 
 	private ResolvedCredentials registryCredentials() {
