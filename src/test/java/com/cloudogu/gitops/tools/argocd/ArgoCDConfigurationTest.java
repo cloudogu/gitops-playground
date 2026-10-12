@@ -149,7 +149,7 @@ class ArgoCDConfigurationTest {
 				"helm", map("chart", "kube-prometheus-stack", "version", "42.0.3")
 			),
 			"ingress", map("active", true),
-			"secrets", map("active", true)
+			"secrets", map("externalSecrets", map("active", true))
 		)
 	));
 
@@ -1099,7 +1099,7 @@ class ArgoCDConfigurationTest {
 	@Test
 	void includesMonitoringAndExternalSecretsResourceInclusionsWhenFeaturesAreActive() throws IOException {
 		config.getFeatures().getMonitoring().setActive(true);
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 
 		String expectedMonitoring = "monitoring.coreos.com";
 		String expectedExternalSecret = "external-secrets.io";
@@ -1119,7 +1119,7 @@ class ArgoCDConfigurationTest {
 	@Test
 	void excludesMonitoringAndExternalSecretsResourceInclusionsWhenFeaturesAreInactive() throws IOException {
 		config.getFeatures().getMonitoring().setActive(false);
-		config.getFeatures().getSecrets().setActive(false);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(false);
 
 		String expectedMonitoring = "monitoring.coreos.com";
 		String expectedExternalSecret = "external-secrets.io";

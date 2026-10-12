@@ -115,7 +115,7 @@ class MonitoringTest {
 					"version", "19.2.2"
 				)
 			),
-			"secrets", Map.of("active", true),
+			"secrets", Map.of("externalSecrets", Map.of("active", true)),
 			"ingress", Map.of("active", true)
 		)
 	));
@@ -1109,7 +1109,7 @@ class MonitoringTest {
 	void serviceMonitorSelectors() throws GitAPIException, IOException {
 		config.getApplication().setNamePrefix("test1-");
 		config.getFeatures().getArgocd().setActive(true);
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 		config.getFeatures().getIngress().setActive(false);
 
 		LinkedHashSet<String> namespaceList = new LinkedHashSet<>(List.of(

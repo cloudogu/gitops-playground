@@ -124,16 +124,6 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 	}
 
 	@Test
-	void mapsExternalSecretsActiveIndependentlyFromAggregateSecretsFlag() {
-		Config config = new Config();
-		config.getFeatures().getSecrets().setActive(true);
-
-		ExternalSecretsOperatorToolConfig actual = new ExternalSecretsOperatorToolConfigMapper(config).map(context());
-
-		assertThat(actual.active()).isFalse();
-	}
-
-	@Test
 	void rejectsManagedSecretsWithoutExternalVaultConnection() {
 		Config config = new Config();
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =

@@ -121,7 +121,6 @@ class ApplicationConfiguratorTest {
 		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isEqualTo(EXPECTED_VAULT_MODE);
 
 		// Dynamic values (depend on vault mode)
-		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
 		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
 	}
 
@@ -133,7 +132,6 @@ class ApplicationConfiguratorTest {
 
 		Config actualConfig = applicationConfigurator.initConfig(config);
 
-		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
 		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
 		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isNull();
 		assertThat(actualConfig.getFeatures().getSecrets().getVault().getUrl()).isEmpty();
@@ -380,7 +378,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getApplication().setBaseUrl("http://localhost");
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
@@ -397,7 +394,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getApplication().setUrlSeparatorHyphen(true);
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
@@ -450,7 +446,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMail().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 		testConfig.getFeatures().getArgocd().setUrl("argocd");
 		testConfig.getFeatures().getMonitoring().setGrafanaUrl("grafana");
 		testConfig.getFeatures().getSecrets().getVault().setUrl("vault");

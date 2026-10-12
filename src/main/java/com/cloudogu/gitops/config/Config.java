@@ -895,8 +895,6 @@ public class Config {
 	@Getter
 	@Setter
 	public static class SecretsSchema {
-		private Boolean active = false;
-
 		@Mixin
 		@JsonPropertyDescription(ESO_DESCRIPTION)
 		private ESOSchema externalSecrets = new ESOSchema();

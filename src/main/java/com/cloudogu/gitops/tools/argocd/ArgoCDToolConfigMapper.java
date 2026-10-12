@@ -62,7 +62,10 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 		return new TemplateConfig()
 			.put("application.openshift", context.isOpenshift())
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
-			.put("features.secrets.active", config.getFeatures().getSecrets().getActive())
+			.put(
+				"features.secrets.externalSecrets.active",
+				config.getFeatures().getSecrets().getExternalSecrets().getActive()
+			)
 			.values();
 	}
 
@@ -115,7 +118,10 @@ public class ArgoCDToolConfigMapper implements ToolConfigMapper<ArgoCDToolConfig
 			.put("features.mail.smtpUserConfigured", smtpUserConfigured(config))
 			.put("features.monitoring.active", config.getFeatures().getMonitoring().getActive())
 			.put("features.monitoring.namespace", config.getFeatures().getMonitoring().getNamespace())
-			.put("features.secrets.active", config.getFeatures().getSecrets().getActive())
+			.put(
+				"features.secrets.externalSecrets.active",
+				config.getFeatures().getSecrets().getExternalSecrets().getActive()
+			)
 			.put("jenkins.active", config.getJenkins().getActive())
 			.put("jenkins.internal", config.getJenkins().getInternal())
 			.put("jenkins.namespace", config.getJenkins().getNamespace())

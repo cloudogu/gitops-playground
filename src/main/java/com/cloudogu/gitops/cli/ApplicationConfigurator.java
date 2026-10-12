@@ -71,8 +71,6 @@ public class ApplicationConfigurator {
 				"features.secrets.externalSecrets.active must be true when external Vault secrets are configured"
 			);
 		}
-		secrets.setActive(vaultActive || Boolean.TRUE.equals(secrets.getExternalSecrets().getActive()));
-
 		if (hasText(newConfig.getFeatures().getMail().getSmtpAddress())) {
 			newConfig.getFeatures().getMail().setActive(true);
 		}

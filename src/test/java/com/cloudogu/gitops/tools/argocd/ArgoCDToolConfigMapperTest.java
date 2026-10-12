@@ -65,7 +65,7 @@ class ArgoCDToolConfigMapperTest {
 		);
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getFeatures().getMonitoring().setNamespace("observability");
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 		config.getJenkins().setActive(true);
 		config.getJenkins().setInternal(true);
 		config.getJenkins().setNamespace("build");
@@ -200,8 +200,11 @@ class ArgoCDToolConfigMapperTest {
 															 ),
 															 "monitoring",
 															 Map.of("active", true, "namespace", "observability"),
-															 "secrets",
-															 Map.of("active", true)
+															 "secrets", Map.of(
+																 "externalSecrets", Map.of(
+																	 "active", true
+																 )
+															 )
 														 ),
 														 "jenkins",
 														 Map.of("active", true, "internal", true, "namespace", "build"),
@@ -217,7 +220,7 @@ class ArgoCDToolConfigMapperTest {
 														 "application", Map.of("openshift", true),
 														 "features", Map.of(
 															 "monitoring", Map.of("active", true),
-															 "secrets", Map.of("active", true)
+															 "secrets", Map.of("externalSecrets", Map.of("active", true))
 														 )
 													 ))
 													 .build());

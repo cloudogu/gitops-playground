@@ -92,9 +92,9 @@ class VaultToolConfigMapperTest {
 	}
 
 	@Test
-	void isInactiveWithoutVaultModeEvenWhenSecretsAreActive() {
+	void isInactiveWithoutVaultModeEvenWhenExternalSecretsAreActive() {
 		Config config = config();
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 		config.getFeatures().getSecrets().getVault().setMode(null);
 
 		VaultToolConfig actual = new VaultToolConfigMapper(config).map(context());
@@ -165,7 +165,7 @@ class VaultToolConfigMapperTest {
 		config.getFeatures().getCertManager().setActive(true);
 		config.getFeatures().getCertManager().setIssuer("production-issuer");
 
-		config.getFeatures().getSecrets().setActive(true);
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
 		config.getFeatures().getSecrets().setNamespace("secrets");
 		config.getFeatures().getSecrets().getVault().setUrl("https://vault.example.org");
 		config.getFeatures().getSecrets().getVault().getOidc().setClientId("vault-client");

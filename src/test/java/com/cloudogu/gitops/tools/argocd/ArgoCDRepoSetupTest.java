@@ -74,7 +74,7 @@ class ArgoCDRepoSetupTest {
 					)
 				),
 				"mail", Map.of("active", false),
-				"secrets", Map.of("active", true)
+				"secrets", Map.of("externalSecrets", Map.of("active", true))
 			)
 		));
 	}
