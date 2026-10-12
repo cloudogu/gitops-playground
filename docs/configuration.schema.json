@@ -732,7 +732,7 @@
                       },
                       "namespace" : {
                         "type" : [ "string", "null" ],
-                        "description" : "Target Kubernetes namespace. The namespace must already exist and be managed by Argo CD"
+                        "description" : "Target Kubernetes namespace. It must exist when the ExternalSecret is reconciled and can either be provided beforehand or created through content.namespaces"
                       },
                       "remoteKey" : {
                         "type" : [ "string", "null" ],

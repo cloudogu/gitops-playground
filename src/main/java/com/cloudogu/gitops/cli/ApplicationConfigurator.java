@@ -63,8 +63,13 @@ public class ApplicationConfigurator {
 		boolean vaultActive = secrets.getVault().getMode() != null;
 		boolean externalVaultSecretsConfigured = secrets.getExternalSecrets().getSecrets() != null
 			&& !secrets.getExternalSecrets().getSecrets().isEmpty();
-		if (vaultActive || externalVaultSecretsConfigured) {
+		if (vaultActive) {
 			secrets.getExternalSecrets().setActive(true);
+		}
+		if (externalVaultSecretsConfigured && !Boolean.TRUE.equals(secrets.getExternalSecrets().getActive())) {
+			throw new IllegalArgumentException(
+				"features.secrets.externalSecrets.active must be true when external Vault secrets are configured"
+			);
 		}
 		secrets.setActive(vaultActive || Boolean.TRUE.equals(secrets.getExternalSecrets().getActive()));
 

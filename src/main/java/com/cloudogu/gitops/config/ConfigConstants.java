@@ -141,7 +141,7 @@ public final class ConfigConstants {
 	public static final String EXTERNAL_VAULT_TOKEN_SECRET_KEY_DESCRIPTION = "Key in the Kubernetes Secret containing the Vault token";
 	public static final String EXTERNAL_SECRET_RESOURCES_DESCRIPTION = "Secrets to synchronize from the external Vault into Kubernetes";
 	public static final String EXTERNAL_SECRET_NAME_DESCRIPTION = "Name of the generated ExternalSecret and target Kubernetes Secret";
-	public static final String EXTERNAL_SECRET_NAMESPACE_DESCRIPTION = "Target Kubernetes namespace. The namespace must already exist and be managed by Argo CD";
+	public static final String EXTERNAL_SECRET_NAMESPACE_DESCRIPTION = "Target Kubernetes namespace. It must exist when the ExternalSecret is reconciled and can either be provided beforehand or created through content.namespaces";
 	public static final String EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION = "Path of the secret inside the configured Vault KV secrets engine";
 	public static final String EXTERNAL_SECRET_DATA_DESCRIPTION = "Mapping from Kubernetes Secret keys to Vault properties";
 	public static final String VAULT_DESCRIPTION = "Config parameters for the secrets-vault";

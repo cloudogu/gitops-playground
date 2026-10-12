@@ -140,7 +140,7 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
-	void activatesExternalSecretsWhenExternalVaultSecretsAreConfigured() {
+	void rejectsExternalVaultSecretsWithoutExplicitActivation() {
 		Config config = minimalConfig();
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
 			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
@@ -150,11 +150,13 @@ class ApplicationConfiguratorTest {
 		externalSecret.setData(Map.of("password", "password"));
 		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
 
-		Config actualConfig = applicationConfigurator.initConfig(config);
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> applicationConfigurator.initConfig(config)
+		);
 
-		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
-		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isTrue();
-		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isNull();
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.active must be true when external Vault secrets are configured");
 	}
 
 	@Test

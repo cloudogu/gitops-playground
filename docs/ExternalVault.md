@@ -14,7 +14,8 @@ Before starting GOP, make sure that:
 - a HashiCorp Vault already exists and is reachable from the Kubernetes cluster;
 - the required secret values already exist in Vault;
 - the configured KV secrets engine mount and version match the Vault setup;
-- every target namespace already exists or is created as part of the GOP content configuration;
+- every target namespace exists when the `ExternalSecret` is reconciled; it can either be provided beforehand or be
+  created through `content.namespaces`;
 - a Kubernetes Secret containing the Vault access token exists in every target namespace that receives a namespaced
   `SecretStore`;
 - the Vault token is restricted to the paths that ESO needs to read.
@@ -55,11 +56,32 @@ features:
             password: password
 ```
 
+`externalSecrets.active: true` is required when external Vault secrets are configured. GOP does not implicitly enable
+ESO just because entries exist below `externalSecrets.secrets`.
+
 The keys below `data` map Kubernetes Secret keys to properties in the remote Vault secret. In the example above, the
 resulting Kubernetes Secret contains the keys `username` and `password`.
 
 GOP generates one namespaced `SecretStore` per target namespace and the configured `ExternalSecret` resources. ESO then
 reads the values from Vault and creates the target Kubernetes Secrets.
+
+### Why namespaced SecretStores?
+
+GOP intentionally generates namespaced `SecretStore` resources instead of a shared `ClusterSecretStore`. This keeps the
+Vault connection and its authentication reference scoped to each target namespace and matches the namespace-isolated
+tenant setup used with the Argo CD operator. In operator mode, `SecretStore` and `ExternalSecret` are explicitly included
+in the resources managed by the namespaced Argo CD instance.
+
+The trade-off is that the referenced Vault token Secret must currently exist in every target namespace. A shared
+`ClusterSecretStore` could reduce that duplication by referring to one Secret in a fixed namespace, but it would also
+introduce a cluster-scoped store shared across namespaces. GOP does not generate a `ClusterSecretStore` in the current
+implementation.
+
+### Current Vault authentication scope
+
+The current GOP integration renders Vault token authentication through `tokenSecretRef`. AppRole, Kubernetes
+authentication and custom Vault CA configuration (`caProvider`/`caBundle`) are not exposed through the GOP external Vault
+configuration yet and can be added as separate extensions when required by the target environment.
 
 ## Required Vault token Secret
 

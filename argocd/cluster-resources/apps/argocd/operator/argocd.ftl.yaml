@@ -223,7 +223,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
-  <#if config.features.secrets.active == true>
+  <#if config.features.secrets.externalSecrets.active == true>
     - apiGroups:
       - "external-secrets.io"
       kinds:
