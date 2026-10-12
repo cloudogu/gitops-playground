@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Verifies the complete external Vault flow: Vault -> External Secrets Operator -> Kubernetes Secret.
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault|operator-full-external-vault")
 public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 
 	private static final String ESO_NAMESPACE = "secrets";

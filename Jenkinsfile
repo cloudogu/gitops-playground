@@ -16,7 +16,7 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
     }
 
     environment {
@@ -123,7 +123,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -225,7 +225,7 @@ pipeline {
                                             }
                                         }
 
-                                        if (profile == 'full-external-vault') {
+                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault') {
                                             externalVaultContainer = "external-vault-${env.BUILD_ID}"
                                             def externalVaultServer
                                             docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
