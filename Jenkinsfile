@@ -16,28 +16,72 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        booleanParam(defaultValue: false, name: 'performRelease', description: 'Creates a GitHub Release: tags HEAD, publishes SBOM assets to the release and pushes the image to GHCR.')
+        string(defaultValue: '', name: 'releaseVersion', description: 'Version to release, schema x.y.z. Leave empty to use the suggested next patch version. Only used when performRelease is checked.')
+        booleanParam(defaultValue: false, name: 'skipIntegrationTests', description: 'Skips the integration tests stage')
     }
 
     environment {
         BUILD_USER = sh(script: 'id -u', returnStdout: true).trim()
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
-        DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
+        GITHUB_REPOSITORY = sh(script: "git remote get-url origin | sed -E 's#^(git@github.com:|https://github.com/)##; s#[.]git\$##'", returnStdout: true).trim()
+        DOCKER_IMAGE_NAME = "${env.GITHUB_REPOSITORY}"
         MAVEN_IMAGE = 'maven:3-eclipse-temurin-25'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
+        ORAS_IMAGE = 'ghcr.io/oras-project/oras:v1.3.4'
         GOLANG_IMAGE = 'golang:1.25-alpine'
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
-        TAG_NAME = sh(returnStdout: true, script: "git fetch --tags && git --no-pager tag --points-at HEAD").trim()
         // Shared docker args for integration tests
         INTEGRATION_TEST_DOCKER_ARGS = "-e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml -v maven-cache:/root/.m2 -v /var/run/docker.sock:/var/run/docker.sock -u :${env.BUILD_GROUP} --network=host --entrypoint ''"
     }
 
     stages {
+
+        stage('Resolve tag') {
+            steps {
+                withCredentials([usernamePassword(
+                        credentialsId: 'cesmarvin',
+                        usernameVariable: 'SCM_USERNAME',
+                        passwordVariable: 'SCM_TOKEN'
+                )]) {
+                    sh "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' fetch --tags"
+                }
+                script {
+                    def latestTag = sh(script: "git tag --list '[0-9]*.[0-9]*.[0-9]*' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
+                    def suggestedNext = nextPatchVersion(latestTag)
+
+                    // Refreshes the releaseVersion default shown on the next 'Build with Parameters' screen.
+                    properties([parameters([
+                            booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
+                            booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache'),
+                            choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.'),
+                            booleanParam(defaultValue: false, name: 'performRelease', description: 'Creates a GitHub Release: tags HEAD, publishes SBOM assets to the release and pushes the image to GHCR.'),
+                            string(defaultValue: suggestedNext, name: 'releaseVersion', description: "Version to release, schema x.y.z. Suggested next version based on latest tag ${latestTag ?: 'none'}. Only used when performRelease is checked."),
+                            booleanParam(defaultValue: false, name: 'skipIntegrationTests', description: 'Skips the integration tests stage')
+                    ])])
+
+                    if (params.performRelease) {
+                        env.TAG_NAME = params.releaseVersion?.trim() ?: suggestedNext
+                        if (!(env.TAG_NAME ==~ "^\\d+\\.\\d+\\.\\d+\$")) {
+                            error("Release version '${env.TAG_NAME}' must match schema x.y.z")
+                        }
+                        if (sh(script: "git tag --list '${env.TAG_NAME}'", returnStdout: true).trim()) {
+                            error("Tag ${env.TAG_NAME} already exists - aborting release build.")
+                        }
+                        echo "Releasing version: ${env.TAG_NAME}"
+                    } else {
+                        env.TAG_NAME = sh(returnStdout: true, script: 'git --no-pager tag --points-at HEAD').trim()
+                        echo "Resolved tag: ${env.TAG_NAME ?: 'none'}"
+                    }
+                }
+            }
+        }
 
         stage('Build') {
 
@@ -87,14 +131,21 @@ pipeline {
         stage('Security & Integration') {
 
             parallel {
-
                 stage('SBOM & Vulnerability Scan') {
                     steps {
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
-                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
-                                         -u :$BUILD_GROUP \
-                                         -e NO_COLOR=1 \
-                                         $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
+                        sh '''docker run --rm \
+                                -v "$WORKSPACE:/workspace" \
+                                -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                                -u ":$BUILD_GROUP" \
+                                -e NO_COLOR=1 \
+                                "$SYFT_IMAGE" \
+                                   --output table=/workspace/sbom.txt \
+                                   --output json=/workspace/sbom.syft.json \
+                                   --output cyclonedx-json@1.6=/workspace/sbom.cdx.json \
+                                   --quiet \
+                                   "$FULL_IMAGE_TAG"
+                        '''
+                        sh 'sha256sum sbom.cdx.json > sbom.cdx.json.sha256'
 
                         catchError(
                                 buildResult: 'SUCCESS',
@@ -111,11 +162,14 @@ pipeline {
                                              --sort-by severity --fail-on critical'''
                         }
 
-                        archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
+                        archiveArtifacts(artifacts: 'sbom.*, vulnerabilities.*', allowEmptyArchive: false)
                     }
                 }
 
                 stage('Integration tests') {
+                    when {
+                        expression { return !params.skipIntegrationTests }
+                    }
                     steps {
                         script {
                             def profiles = []
@@ -246,12 +300,61 @@ pipeline {
             }
         }
 
+        stage('Create Release Tag') {
+            when {
+                expression { return params.performRelease }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin',
+                            usernameVariable: 'SCM_USERNAME',
+                            passwordVariable: 'SCM_TOKEN'
+                    )]) {
+
+                        // The key is stored with literal "\n" sequences, printf '%b' expands them
+                        withCredentials([string(credentialsId: 'cesmarvin_signing_gpg_privkey', variable: 'GPG_KEY')]) {
+                            sh '''
+                                export GNUPGHOME="$(mktemp -d)"
+                                trap 'gpgconf --kill gpg-agent; rm -rf "$GNUPGHOME"' EXIT
+                                printf '%b' "$GPG_KEY" | gpg --batch --import
+                                KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+                                # Tagger identity must match the key's UID, taken from the key itself
+                                UID_STR=$(gpg --list-secret-keys --with-colons "$KEY_ID" | awk -F: '/^uid/ {print $10; exit}')
+                                export GIT_COMMITTER_NAME="${UID_STR% <*}"
+                                export GIT_COMMITTER_EMAIL="${UID_STR##*<}"; GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL%>}"
+                                git -c user.signingkey="$KEY_ID" tag -s "$TAG_NAME" -m "$TAG_NAME"
+                                git -c credential.helper='!f() { echo username=$SCM_USERNAME; echo password=$SCM_TOKEN; }; f' push origin "$TAG_NAME"
+                            '''
+                        }
+                    }
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin-ghcr',
+                            usernameVariable: 'GH_USERNAME',
+                            passwordVariable: 'GH_TOKEN'
+                    )]) {
+                        // Create github release and generate release notes. Later further github interactions in Publish Sbom Stage
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
+                            sh '''
+                                apk add --no-cache github-cli
+                                gh release create "$TAG_NAME" \
+                                    --repo "$GITHUB_REPOSITORY" \
+                                    --title "$TAG_NAME" \
+                                    --generate-notes
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Push Image') {
             when {
                 anyOf {
                     branch 'main'
                     branch 'develop'
                     buildingTag()
+                    expression { return env.TAG_NAME }
                     expression { return params.forcePushImage }
                 }
                 not {
@@ -278,6 +381,55 @@ pipeline {
             }
         }
 
+        stage('Publish SBOM') {
+            when {
+                expression { return env.TAG_NAME }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin-ghcr',
+                            usernameVariable: 'GH_USERNAME',
+                            passwordVariable: 'GH_TOKEN'
+                    )]) {
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
+                            sh '''
+                                apk add --no-cache github-cli
+                                asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
+                                cp sbom.cdx.json "$asset"
+                                sha256sum "$asset" > "${asset}.sha256"
+                                
+                                # Upload to the released version 
+                                gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
+                                    --repo "$GITHUB_REPOSITORY" \
+                                    --clobber
+
+                                gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body > notes.md
+                                cat >> notes.md <<EOF
+
+## SBOM
+- [$asset](https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG_NAME/$asset)
+- [${asset}.sha256](https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG_NAME/${asset}.sha256)
+EOF
+                                gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
+                            '''
+                        }
+                        sh '''
+                            printf '%s' "$GH_TOKEN" | docker run --rm -i \
+                                -v "$WORKSPACE:/workspace" \
+                                -w /workspace \
+                                "$ORAS_IMAGE" attach \
+                                    --username "$GH_USERNAME" \
+                                    --password-stdin \
+                                    --artifact-type application/vnd.cyclonedx+json \
+                                    "$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME:$TAG_NAME" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
+                        '''
+                    }
+                }
+            }
+        }
     }
 
     post {
@@ -318,4 +470,12 @@ boolean isTriggeredByTimer() {
 
 boolean isTriggeredByUser() {
     return !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
+}
+
+String nextPatchVersion(String latestTag) {
+    if (!latestTag) {
+        return '0.0.1'
+    }
+    def parts = latestTag.tokenize('.').collect { it.toInteger() }
+    return "${parts[0]}.${parts[1]}.${parts[2] + 1}"
 }
