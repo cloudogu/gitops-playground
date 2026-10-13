@@ -20,6 +20,15 @@
       "matchStrings": [
         "# renovate: depName=(?<depName>[^\\s]+) datasource=(?<datasource>[^\\s]+)\\s+.*ARG HELM_VERSION=(?<currentValue>[^\\s]+)"
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^scripts\\/dev\\/external-vault\\/prepare-test-vault\\.sh$/"
+      ],
+      "matchStrings": [
+        "# renovate: depName=(?<depName>[^\\s]+) datasource=(?<datasource>[^\\s]+)\\s+VAULT_IMAGE=\"[^:]+:(?<currentValue>[^\"]+)\""
+      ]
     }
   ],
   "baseBranchPatterns": [

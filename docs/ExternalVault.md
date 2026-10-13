@@ -122,15 +122,11 @@ The command prints the Vault URL that is reachable from k3d. With the default po
 http://host.k3d.internal:8200
 ```
 
-The helper creates this test data:
+The helper creates a test secret at Vault path `secret/gop/customer-test`. Its username and password are shared
+with the integration tests via [`external-vault-test-fixture.properties`](../src/test/resources/external-vault-test-fixture.properties)
+so the test expectations and Vault contents stay consistent.
 
-```text
-Vault path: secret/gop/customer-test
-username:   customer-user
-password:   customer-password
-```
-
-and the Kubernetes authentication Secret:
+It also creates the Kubernetes authentication Secret:
 
 ```text
 namespace: external-vault-test

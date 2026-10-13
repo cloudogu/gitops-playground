@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.integration.profiles;
 
+import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
+import com.cloudogu.gitops.utils.YamlUtils;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -12,11 +14,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,8 +37,9 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	private static final String TARGET_NAMESPACE = "external-vault-test";
 	private static final String SECRET_STORE_NAME = "external-customer-vault";
 	private static final String EXTERNAL_SECRET_NAME = "customer-credentials";
-	private static final String EXPECTED_USERNAME = "customer-user";
-	private static final String EXPECTED_PASSWORD = "customer-password";
+	private static final Properties TEST_FIXTURE = loadTestFixture();
+	private static final String EXPECTED_USERNAME = fixtureValue("EXTERNAL_VAULT_TEST_USERNAME");
+	private static final String EXPECTED_PASSWORD = fixtureValue("EXTERNAL_VAULT_TEST_PASSWORD");
 	private static final Duration SYNC_TIMEOUT = Duration.ofMinutes(5);
 	private static final Duration POLL_INTERVAL = Duration.ofSeconds(5);
 
@@ -53,8 +60,31 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 		.build();
 
 	@BeforeAll
-	static void waitForExternalSecretsOperator() {
+	static void verifyProfileAndWaitForExternalSecretsOperator() {
 		log.info("########### EXTERNAL VAULT PROFILE TESTS ###########");
+		String profileName = System.getProperty("micronaut.environments");
+		Config profile = loadExternalVaultProfile(profileName);
+		var secretsConfig = profile.getFeatures().getSecrets();
+		assertThat(secretsConfig.getExternalSecrets().getActive())
+			.as("%s must explicitly enable External Secrets Operator", profileName)
+			.isTrue();
+		assertThat(secretsConfig.getVault().getMode())
+			.as("%s must not enable the GOP-managed Vault", profileName)
+			.isNull();
+		assertThat(secretsConfig.getExternalSecrets().getSecrets())
+			.as("%s must configure the external Vault test secret", profileName)
+			.anySatisfy(secret -> {
+				assertThat(secret.getName()).isEqualTo(EXTERNAL_SECRET_NAME);
+				assertThat(secret.getNamespace()).isEqualTo(TARGET_NAMESPACE);
+			});
+		if (profileName.startsWith("operator-")) {
+			assertThat(profile.getFeatures().getArgocd().getOperator())
+				.as("%s must use namespace-scoped Argo CD", profileName)
+				.isTrue();
+			assertThat(profile.getContent().getNamespaces())
+				.as("%s must let Argo CD manage the external Vault target namespace", profileName)
+				.contains(TARGET_NAMESPACE);
+		}
 		TestK8sHelper.waitForNamespaces(List.of(ESO_NAMESPACE, TARGET_NAMESPACE));
 		TestK8sHelper.waitForAllPodsRunningInNamespace(ESO_NAMESPACE, "external-secrets", 10);
 	}
@@ -143,5 +173,41 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	private static String secretValue(Secret secret, String key) {
 		assertThat(secret.getData()).containsKey(key);
 		return new String(Base64.getDecoder().decode(secret.getData().get(key)), StandardCharsets.UTF_8);
+	}
+
+	private static Config loadExternalVaultProfile(String profileName) {
+		String resourceName = "/application-" + profileName + ".yaml";
+		try (InputStream input = ExternalVaultProfileTestIT.class.getResourceAsStream(resourceName)) {
+			if (input == null) {
+				throw new IllegalStateException("External Vault test profile not found: " + resourceName);
+			}
+			String yaml = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+			return Config.fromMap(YamlUtils.parseYamlMap(yaml));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to load external Vault test profile: " + resourceName, e);
+		}
+	}
+
+	private static Properties loadTestFixture() {
+		try (InputStream input = ExternalVaultProfileTestIT.class.getResourceAsStream(
+			"/external-vault-test-fixture.properties"
+		)) {
+			if (input == null) {
+				throw new IllegalStateException("External Vault test fixture not found on classpath");
+			}
+			Properties properties = new Properties();
+			properties.load(input);
+			return properties;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to load external Vault test fixture", e);
+		}
+	}
+
+	private static String fixtureValue(String key) {
+		String value = TEST_FIXTURE.getProperty(key);
+		if (value == null || value.isBlank()) {
+			throw new IllegalStateException("Missing external Vault test fixture value: " + key);
+		}
+		return value;
 	}
 }

@@ -4,13 +4,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+# shellcheck source=/dev/null
+source "${PROJECT_ROOT}/src/test/resources/external-vault-test-fixture.properties"
+
 CONTAINER_NAME="external-vault"
 HOST_PORT="8200"
 NAMESPACE="external-vault-test"
 VAULT_TOKEN="dev-only-token"
 SECRET_PATH="secret/gop/customer-test"
-SECRET_USERNAME="customer-user"
-SECRET_PASSWORD="customer-password"
+SECRET_USERNAME="${EXTERNAL_VAULT_TEST_USERNAME}"
+SECRET_PASSWORD="${EXTERNAL_VAULT_TEST_PASSWORD}"
+# renovate: depName=hashicorp/vault datasource=docker
 VAULT_IMAGE="hashicorp/vault:2.1.1"
 
 while [[ $# -gt 0 ]]; do
