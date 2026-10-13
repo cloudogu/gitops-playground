@@ -282,7 +282,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		}
 
 		ExternalVaultConfig vault = toolConfig().externalVault();
-		Map<String, Object> vaultTemplateData = Map.of(
+		Map<String, Object> vaultTemplateData = new HashMap<>(Map.of(
 			"storeName", vault.storeName(),
 			"server", vault.server(),
 			"path", vault.path(),
@@ -290,7 +290,14 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			"tokenSecretName", vault.tokenSecretName(),
 			"tokenSecretKey", vault.tokenSecretKey(),
 			"targetNamespaces", vault.targetNamespaces()
-		);
+		));
+		if (vault.caProvider() != null) {
+			vaultTemplateData.put("caProvider", Map.of(
+				"type", vault.caProvider().type(),
+				"name", vault.caProvider().name(),
+				"key", vault.caProvider().key()
+			));
+		}
 		var secretTemplateData = toolConfig().managedSecrets().stream()
 			.map(secret -> Map.<String, Object>of(
 				"name", secret.name(),

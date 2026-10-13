@@ -771,6 +771,25 @@
                       "additionalProperties" : false,
                       "description" : "Authentication settings used by the external secrets operator to access the external Vault"
                     },
+                    "caProvider" : {
+                      "type" : [ "object", "null" ],
+                      "properties" : {
+                        "key" : {
+                          "type" : [ "string", "null" ],
+                          "description" : "Key containing the PEM-encoded Vault CA certificate"
+                        },
+                        "name" : {
+                          "type" : [ "string", "null" ],
+                          "description" : "Name of the ConfigMap or Secret containing the Vault CA certificate"
+                        },
+                        "type" : {
+                          "type" : [ "string", "null" ],
+                          "description" : "Kubernetes resource type containing the Vault CA certificate: ConfigMap or Secret"
+                        }
+                      },
+                      "additionalProperties" : false,
+                      "description" : "Optional reference to an existing ConfigMap or Secret containing the PEM CA certificate for an external Vault; the reference must exist in each target namespace"
+                    },
                     "path" : {
                       "type" : [ "string", "null" ],
                       "description" : "Vault KV secrets engine mount path"

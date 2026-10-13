@@ -52,6 +52,7 @@ features:
           namespace: customer-app
           remoteKey: gop/customer
           refreshInterval: 15m
+          # Kubernetes Secret key (left) -> Vault property name (right).
           data:
             username: username
             password: password
@@ -66,6 +67,27 @@ resulting Kubernetes Secret contains the keys `username` and `password`.
 `refreshInterval` controls how often ESO refreshes the target Kubernetes Secret from Vault. It is optional; when left
 out, GOP omits the field from the generated `ExternalSecret` and ESO uses its default of 1 hour. Set a shorter interval
 such as `15m` if secrets need to be refreshed sooner after rotation in Vault.
+
+### Vault servers with a private CA
+
+If the external Vault uses a certificate issued by an internal CA that is not trusted by ESO by default,
+configure an optional `caProvider` below `vault`. It references an existing Kubernetes ConfigMap or Secret
+containing the PEM-encoded CA certificate:
+
+```yaml
+vault:
+  server: https://vault.example.org
+  caProvider:
+    type: ConfigMap
+    name: external-vault-ca
+    key: ca.crt
+```
+
+GOP generates this reference in the namespaced `SecretStore`; it does not create the CA ConfigMap or Secret.
+The referenced object must exist in **each target namespace**, and it must contain the CA certificate under
+the configured key. `type` supports `ConfigMap` and `Secret`. `caBundle` is not supported by GOP in this scope.
+Without `caProvider`, ESO uses its regular trusted root certificates. The local HTTP test profiles do not
+configure a CA provider.
 
 GOP generates one namespaced `SecretStore` per target namespace and the configured `ExternalSecret` resources. ESO then
 reads the values from Vault and creates the target Kubernetes Secrets.
@@ -84,9 +106,9 @@ implementation.
 
 ### Current Vault authentication scope
 
-The current GOP integration renders Vault token authentication through `tokenSecretRef`. AppRole, Kubernetes
-authentication and custom Vault CA configuration (`caProvider`/`caBundle`) are not exposed through the GOP external Vault
-configuration yet and can be added as separate extensions when required by the target environment.
+The current GOP integration renders Vault token authentication through `tokenSecretRef`. AppRole and Kubernetes
+authentication are not exposed by GOP yet and can be added as separate extensions when required by the target
+environment. `caProvider` is supported for custom Vault CA certificates; `caBundle` is not supported.
 
 ## Required Vault token Secret
 

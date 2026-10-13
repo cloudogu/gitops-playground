@@ -99,6 +99,10 @@ import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_PATH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_SERVER_DESCRIPTION;
@@ -948,8 +952,24 @@ public class Config {
 				@JsonPropertyDescription(EXTERNAL_VAULT_VERSION_DESCRIPTION)
 				private String version = "v2";
 
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION)
+				private CaProviderSchema caProvider;
+
 				@JsonPropertyDescription(EXTERNAL_VAULT_AUTH_DESCRIPTION)
 				private VaultAuthSchema auth = new VaultAuthSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class CaProviderSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION)
+				private String type = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION)
+				private String key = "";
 			}
 
 			@Getter

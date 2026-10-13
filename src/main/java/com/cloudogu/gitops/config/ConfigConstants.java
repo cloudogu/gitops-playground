@@ -135,6 +135,10 @@ public final class ConfigConstants {
 	public static final String EXTERNAL_VAULT_SERVER_DESCRIPTION = "URL of the external HashiCorp Vault";
 	public static final String EXTERNAL_VAULT_PATH_DESCRIPTION = "Vault KV secrets engine mount path";
 	public static final String EXTERNAL_VAULT_VERSION_DESCRIPTION = "Vault KV secrets engine version";
+	public static final String EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION = "Optional reference to an existing ConfigMap or Secret containing the PEM CA certificate for an external Vault; the reference must exist in each target namespace";
+	public static final String EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION = "Kubernetes resource type containing the Vault CA certificate: ConfigMap or Secret";
+	public static final String EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION = "Name of the ConfigMap or Secret containing the Vault CA certificate";
+	public static final String EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION = "Key containing the PEM-encoded Vault CA certificate";
 	public static final String EXTERNAL_VAULT_AUTH_DESCRIPTION = "Authentication settings used by the external secrets operator to access the external Vault";
 	public static final String EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION = "Reference to an existing Kubernetes Secret containing the Vault token. The Secret must exist in every target namespace";
 	public static final String EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION = "Name of the Kubernetes Secret containing the Vault token";

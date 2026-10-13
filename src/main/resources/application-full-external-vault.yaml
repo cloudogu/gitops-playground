@@ -33,6 +33,7 @@ features:
           namespace: external-vault-test
           remoteKey: gop/customer-test
           refreshInterval: 15m
+          # Maps Kubernetes Secret keys (left) to properties in Vault (right).
           data:
             username: username
             password: password

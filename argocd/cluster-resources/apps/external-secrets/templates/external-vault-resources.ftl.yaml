@@ -10,6 +10,12 @@ spec:
       server: "${vault.server?json_string}"
       path: "${vault.path?json_string}"
       version: "${vault.version?json_string}"
+<#if vault.caProvider??>
+      caProvider:
+        type: "${vault.caProvider.type?json_string}"
+        name: "${vault.caProvider.name?json_string}"
+        key: "${vault.caProvider.key?json_string}"
+</#if>
       auth:
         tokenSecretRef:
           name: "${vault.tokenSecretName?json_string}"

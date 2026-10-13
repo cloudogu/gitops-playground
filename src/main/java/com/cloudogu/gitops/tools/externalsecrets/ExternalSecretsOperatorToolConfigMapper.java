@@ -46,6 +46,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		Config.SecretsSchema.ESOSchema externalSecrets,
 		List<ManagedExternalSecretConfig> managedSecrets) {
 		Config.SecretsSchema.ESOSchema.ExternalVaultSchema vault = externalSecrets.getVault();
+		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider = vault == null ? null : vault.getCaProvider();
 		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth = vault == null ? null : vault.getAuth();
 		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
 			auth == null ? null : auth.getTokenSecretRef();
@@ -59,6 +60,9 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 			.server(vault == null ? null : vault.getServer())
 			.path(vault == null ? null : vault.getPath())
 			.version(vault == null ? null : vault.getVersion())
+			.caProvider(caProvider == null ? null : new ExternalVaultConfig.CaProvider(
+				caProvider.getType(), caProvider.getName(), caProvider.getKey()
+			))
 			.tokenSecretName(tokenSecretRef == null ? null : tokenSecretRef.getName())
 			.tokenSecretKey(tokenSecretRef == null ? null : tokenSecretRef.getKey())
 			.targetNamespaces(targetNamespaces)
@@ -94,6 +98,17 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		requireText(vault.version(), "features.secrets.externalSecrets.vault.version");
 		requireText(vault.tokenSecretName(), "features.secrets.externalSecrets.vault.auth.tokenSecretRef.name");
 		requireText(vault.tokenSecretKey(), "features.secrets.externalSecrets.vault.auth.tokenSecretRef.key");
+
+		if (vault.caProvider() != null) {
+			ExternalVaultConfig.CaProvider caProvider = vault.caProvider();
+			String keyPrefix = "features.secrets.externalSecrets.vault.caProvider.";
+			requireText(caProvider.type(), keyPrefix + "type");
+			if (!"Secret".equals(caProvider.type()) && !"ConfigMap".equals(caProvider.type())) {
+				throw new IllegalArgumentException(keyPrefix + "type must be Secret or ConfigMap");
+			}
+			requireText(caProvider.name(), keyPrefix + "name");
+			requireText(caProvider.key(), keyPrefix + "key");
+		}
 
 		for (ManagedExternalSecretConfig secret : managedSecrets) {
 			requireText(secret.name(), "features.secrets.externalSecrets.secrets[].name");

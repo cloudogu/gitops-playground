@@ -11,11 +11,15 @@ public record ExternalVaultConfig(
 	String server,
 	String path,
 	String version,
+	CaProvider caProvider,
 	String tokenSecretName,
 	String tokenSecretKey,
 	List<String> targetNamespaces
 ) {
 	public ExternalVaultConfig {
 		targetNamespaces = ImmutableConfigData.copyList(targetNamespaces);
+	}
+
+	public record CaProvider(String type, String name, String key) {
 	}
 }

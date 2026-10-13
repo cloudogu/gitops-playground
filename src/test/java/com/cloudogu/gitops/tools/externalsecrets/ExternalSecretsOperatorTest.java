@@ -24,6 +24,8 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -242,7 +244,31 @@ class ExternalSecretsOperatorTest {
 			.contains("property: \"password\"")
 			.contains("conversionStrategy: Default")
 			.contains("decodingStrategy: None")
-			.contains("metadataPolicy: None");
+			.contains("metadataPolicy: None")
+			.doesNotContain("caProvider:");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"ConfigMap", "Secret"})
+	void rendersExternalVaultCaProvider(String type) throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
+			new Config.SecretsSchema.ESOSchema.CaProviderSchema();
+		caProvider.setType(type);
+		caProvider.setName("external-vault-ca");
+		caProvider.setKey("ca.crt");
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().setCaProvider(caProvider);
+
+		install(createExternalSecretsOperator());
+
+		String yaml = Files.readString(clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/misc/external-vault-resources.yaml"));
+		assertThat(yaml).contains(
+			"      caProvider:\n" +
+			"        type: \"" + type + "\"\n" +
+			"        name: \"external-vault-ca\"\n" +
+			"        key: \"ca.crt\""
+		);
 	}
 
 	@Test

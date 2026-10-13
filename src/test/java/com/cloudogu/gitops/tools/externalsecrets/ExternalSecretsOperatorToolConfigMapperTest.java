@@ -5,6 +5,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,12 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		externalVault.setServer("https://vault.example.org");
 		externalVault.setPath("customer-secrets");
 		externalVault.setVersion("v2");
+		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
+			new Config.SecretsSchema.ESOSchema.CaProviderSchema();
+		caProvider.setType("ConfigMap");
+		caProvider.setName("external-vault-ca");
+		caProvider.setKey("ca.crt");
+		externalVault.setCaProvider(caProvider);
 		externalVault.getAuth().getTokenSecretRef().setName("vault-token");
 		externalVault.getAuth().getTokenSecretRef().setKey("token");
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
@@ -84,6 +92,8 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	    .server("https://vault.example.org")
 																	    .path("customer-secrets")
 																	    .version("v2")
+																	    .caProvider(new ExternalVaultConfig.CaProvider(
+																	        "ConfigMap", "external-vault-ca", "ca.crt"))
 																	    .tokenSecretName("vault-token")
 																	    .tokenSecretKey("token")
 																	    .targetNamespaces(List.of("customer-app"))
@@ -143,6 +153,39 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 
 		assertThat(exception.getMessage())
 			.isEqualTo("features.secrets.externalSecrets.vault.server must be configured when external Vault secrets are used");
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+		"File,external-vault-ca,ca.crt,type must be Secret or ConfigMap",
+		"ConfigMap,'',ca.crt,name must be configured when external Vault secrets are used",
+		"ConfigMap,external-vault-ca,'',key must be configured when external Vault secrets are used"
+	})
+	void rejectsInvalidExternalVaultCaProvider(String type, String name, String key, String expectedError) {
+		Config config = new Config();
+		Config.SecretsSchema.ESOSchema externalSecrets = config.getFeatures().getSecrets().getExternalSecrets();
+		externalSecrets.getVault().setServer("https://vault.example.org");
+		externalSecrets.getVault().getAuth().getTokenSecretRef().setName("vault-token");
+		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
+			new Config.SecretsSchema.ESOSchema.CaProviderSchema();
+		caProvider.setType(type);
+		caProvider.setName(name);
+		caProvider.setKey(key);
+		externalSecrets.getVault().setCaProvider(caProvider);
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema secret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		secret.setName("customer-credentials");
+		secret.setNamespace("customer-app");
+		secret.setRemoteKey("gop/customer");
+		secret.setData(Map.of("password", "password"));
+		externalSecrets.setSecrets(List.of(secret));
+
+		IllegalArgumentException exception = org.junit.jupiter.api.Assertions.assertThrows(
+			IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context())
+		);
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.vault.caProvider." + expectedError);
 	}
 
 	private static DeploymentContext context() {
