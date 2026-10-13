@@ -52,17 +52,22 @@ features:
           namespace: customer-app
           remoteKey: gop/customer
           refreshInterval: 15m
-          # Kubernetes Secret key (left) -> Vault property name (right).
+          # Format: <Kubernetes Secret key>: <Vault property name>.
           data:
             username: username
             password: password
+          # data:
+          #   databaseUser: username
+          #   databasePassword: password
 ```
 
 `externalSecrets.active: true` is required when external Vault secrets are configured. GOP does not implicitly enable
 ESO just because entries exist below `externalSecrets.secrets`.
 
-The keys below `data` map Kubernetes Secret keys to properties in the remote Vault secret. In the example above, the
-resulting Kubernetes Secret contains the keys `username` and `password`.
+The left-hand name below `data` is the key in the generated Kubernetes Secret; the right-hand name
+is the property read from Vault. The active example uses `username` and `password` on both sides. The commented
+alternative uses different Kubernetes Secret keys (`databaseUser` and `databasePassword`) while reading the
+same Vault properties (`username` and `password`).
 
 `refreshInterval` controls how often ESO refreshes the target Kubernetes Secret from Vault. It is optional; when left
 out, GOP omits the field from the generated `ExternalSecret` and ESO uses its default of 1 hour. Set a shorter interval
