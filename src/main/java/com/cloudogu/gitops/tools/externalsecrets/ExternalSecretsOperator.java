@@ -296,6 +296,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 				"name", secret.name(),
 				"namespace", secret.namespace(),
 				"remoteKey", secret.remoteKey(),
+				"refreshInterval", secret.refreshInterval(),
 				"data", secret.data()
 			))
 			.toList();

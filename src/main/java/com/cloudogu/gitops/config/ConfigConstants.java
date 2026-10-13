@@ -143,6 +143,7 @@ public final class ConfigConstants {
 	public static final String EXTERNAL_SECRET_NAME_DESCRIPTION = "Name of the generated ExternalSecret and target Kubernetes Secret";
 	public static final String EXTERNAL_SECRET_NAMESPACE_DESCRIPTION = "Target Kubernetes namespace. It must exist when the ExternalSecret is reconciled and can either be provided beforehand or created through content.namespaces";
 	public static final String EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION = "Path of the secret inside the configured Vault KV secrets engine";
+	public static final String EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION = "Optional interval for ESO to refresh the Kubernetes Secret (for example 15m). If omitted, ESO uses its default interval of 1h";
 	public static final String EXTERNAL_SECRET_DATA_DESCRIPTION = "Mapping from Kubernetes Secret keys to Vault properties";
 	public static final String VAULT_DESCRIPTION = "Config parameters for the secrets-vault";
 	public static final String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod.";

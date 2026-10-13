@@ -35,6 +35,7 @@ features:
         - name: customer-credentials
           namespace: external-vault-test
           remoteKey: gop/customer-test
+          refreshInterval: 15m
           data:
             username: username
             password: password

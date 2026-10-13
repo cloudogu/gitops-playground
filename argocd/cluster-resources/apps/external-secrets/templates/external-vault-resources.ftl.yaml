@@ -23,6 +23,9 @@ metadata:
   name: "${secret.name?json_string}"
   namespace: "${secret.namespace?json_string}"
 spec:
+<#if secret.refreshInterval?has_content>
+  refreshInterval: "${secret.refreshInterval?json_string}"
+</#if>
   secretStoreRef:
     name: "${vault.storeName?json_string}"
     kind: SecretStore

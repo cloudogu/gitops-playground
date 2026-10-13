@@ -75,6 +75,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 				.name(secret.getName())
 				.namespace(secret.getNamespace())
 				.remoteKey(secret.getRemoteKey())
+				.refreshInterval(secret.getRefreshInterval())
 				.data(secret.getData())
 				.build())
 			.toList();

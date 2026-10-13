@@ -216,6 +216,7 @@ class ExternalSecretsOperatorTest {
 	@Test
 	void rendersExternalVaultSecretStoreAndExternalSecret() throws GitAPIException, IOException {
 		configureExternalVaultSecret();
+		config.getFeatures().getSecrets().getExternalSecrets().getSecrets().get(0).setRefreshInterval("15m");
 
 		install(createExternalSecretsOperator());
 
@@ -233,6 +234,7 @@ class ExternalSecretsOperatorTest {
 			.contains("name: \"vault-token\"")
 			.contains("kind: ExternalSecret")
 			.contains("name: \"customer-credentials\"")
+			.contains("refreshInterval: \"15m\"")
 			.contains("key: \"gop/customer-test\"")
 			.contains("secretKey: \"username\"")
 			.contains("property: \"username\"")
@@ -241,6 +243,18 @@ class ExternalSecretsOperatorTest {
 			.contains("conversionStrategy: Default")
 			.contains("decodingStrategy: None")
 			.contains("metadataPolicy: None");
+	}
+
+	@Test
+	void omitsRefreshIntervalWhenUnconfigured() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+
+		install(createExternalSecretsOperator());
+
+		Path resources = clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/misc/external-vault-resources.yaml"
+		);
+		assertThat(Files.readString(resources)).doesNotContain("refreshInterval:");
 	}
 
 	@Test

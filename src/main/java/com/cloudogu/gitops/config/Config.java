@@ -96,6 +96,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_DATA_DE
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAMESPACE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_DESCRIPTION;
@@ -979,6 +980,9 @@ public class Config {
 
 				@JsonPropertyDescription(EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION)
 				private String remoteKey = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION)
+				private String refreshInterval = "";
 
 				@JsonPropertyDescription(EXTERNAL_SECRET_DATA_DESCRIPTION)
 				private Map<String, String> data = new HashMap<>();

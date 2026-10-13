@@ -51,6 +51,7 @@ features:
         - name: customer-credentials
           namespace: customer-app
           remoteKey: gop/customer
+          refreshInterval: 15m
           data:
             username: username
             password: password
@@ -61,6 +62,10 @@ ESO just because entries exist below `externalSecrets.secrets`.
 
 The keys below `data` map Kubernetes Secret keys to properties in the remote Vault secret. In the example above, the
 resulting Kubernetes Secret contains the keys `username` and `password`.
+
+`refreshInterval` controls how often ESO refreshes the target Kubernetes Secret from Vault. It is optional; when left
+out, GOP omits the field from the generated `ExternalSecret` and ESO uses its default of 1 hour. Set a shorter interval
+such as `15m` if secrets need to be refreshed sooner after rotation in Vault.
 
 GOP generates one namespaced `SecretStore` per target namespace and the configured `ExternalSecret` resources. ESO then
 reads the values from Vault and creates the target Kubernetes Secrets.

@@ -54,6 +54,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		externalSecret.setName("customer-credentials");
 		externalSecret.setNamespace("customer-app");
 		externalSecret.setRemoteKey("gop/customer");
+		externalSecret.setRefreshInterval("15m");
 		externalSecret.setData(Map.of("username", "username", "password", "password"));
 		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
 
@@ -91,6 +92,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	    .name("customer-credentials")
 																	    .namespace("customer-app")
 																	    .remoteKey("gop/customer")
+																	    .refreshInterval("15m")
 																	    .data(Map.of("username", "username", "password", "password"))
 																	    .build()))
 																	  .templateConfig(Map.of(

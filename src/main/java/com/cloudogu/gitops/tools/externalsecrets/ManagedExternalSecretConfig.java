@@ -10,9 +10,11 @@ public record ManagedExternalSecretConfig(
 	String name,
 	String namespace,
 	String remoteKey,
+	String refreshInterval,
 	Map<String, String> data
 ) {
 	public ManagedExternalSecretConfig {
+		refreshInterval = refreshInterval == null ? "" : refreshInterval;
 		data = ImmutableConfigData.copyMap(data);
 	}
 }

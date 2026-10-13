@@ -734,6 +734,10 @@
                         "type" : [ "string", "null" ],
                         "description" : "Target Kubernetes namespace. It must exist when the ExternalSecret is reconciled and can either be provided beforehand or created through content.namespaces"
                       },
+                      "refreshInterval" : {
+                        "type" : [ "string", "null" ],
+                        "description" : "Optional interval for ESO to refresh the Kubernetes Secret (for example 15m). If omitted, ESO uses its default interval of 1h"
+                      },
                       "remoteKey" : {
                         "type" : [ "string", "null" ],
                         "description" : "Path of the secret inside the configured Vault KV secrets engine"
