@@ -225,8 +225,23 @@ the sync status failed, for example.
 
 Via the `vault` parameter, you can deploy Hashicorp Vault and the External Secrets Operator into your GitOps playground.
 
-With this, the whole flow from secret value in Vault to kubernetes `Secret` via External Secrets Operator can be seen in
-action:
+### External Vault
+
+The External Secrets Operator can also be used without the GOP-managed Vault. An existing external HashiCorp Vault can
+be configured as a secret source using `features.secrets.externalSecrets.vault`. GOP then generates namespaced
+`SecretStore` and `ExternalSecret` resources while the actual secret values remain in Vault until ESO synchronizes them
+into Kubernetes Secrets.
+
+The Vault token itself is not stored in the GOP configuration or generated Git resources. `tokenSecretRef` points to an
+existing Kubernetes Secret containing the token. Bootstrap secrets required by GOP itself are not supported by this flow.
+
+See [Using an external HashiCorp Vault with External Secrets Operator](ExternalVault.md) for prerequisites, configuration,
+a complete example and local k3d test instructions.
+
+### GOP-managed Vault
+
+With the GOP-managed Vault, the whole flow from secret value in Vault to kubernetes `Secret` via External Secrets Operator
+can be seen in action:
 
 ![External Secret Operator <-> Vault - flow](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/External-Secret-Operator-Flow.puml&fmt=svg)
 

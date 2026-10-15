@@ -100,11 +100,16 @@ mvn clean test
 where <PROFILES> can be one of:
 - full
 - full-netpols
+- full-secrets
+- full-external-vault
 - full-prefix
-
 - content-examples
 - operator-full
+- operator-full-external-vault
 - operator-mandants
+
+The `full-external-vault` and `operator-full-external-vault` profiles additionally require an external Vault test fixture and the referenced Vault token
+Secret. See [External Vault](ExternalVault.md#local-k3d-test) for the complete local setup.
 
 Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
 This can be done by running:

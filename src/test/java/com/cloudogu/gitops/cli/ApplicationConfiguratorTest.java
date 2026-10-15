@@ -17,10 +17,10 @@ import com.cloudogu.gitops.testhelper.TestLogger;
 import com.cloudogu.gitops.testhelper.git.GitHandlerForTests;
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.tools.common.CommonToolConfig;
-import com.cloudogu.gitops.tools.core.Jenkins;
-import com.cloudogu.gitops.tools.core.argocd.ArgoCD;
-import com.cloudogu.gitops.tools.core.argocd.ArgoCDToolConfigMapper;
-import com.cloudogu.gitops.tools.core.argocd.mode.DeploymentModeFactory;
+import com.cloudogu.gitops.tools.jenkins.Jenkins;
+import com.cloudogu.gitops.tools.argocd.ArgoCD;
+import com.cloudogu.gitops.tools.argocd.ArgoCDToolConfigMapper;
+import com.cloudogu.gitops.tools.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,8 +120,41 @@ class ApplicationConfiguratorTest {
 		assertThat(actualConfig.getJenkins().getInternal()).isEqualTo(false);
 		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isEqualTo(EXPECTED_VAULT_MODE);
 
-		// Dynamic value (depends on vault mode)
-		assertThat(actualConfig.getFeatures().getSecrets().getActive()).isEqualTo(true);
+		// Dynamic values (depend on vault mode)
+		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
+	}
+
+	@Test
+	void activatesExternalSecretsWithoutInternalVault() {
+		Config config = minimalConfig();
+		config.getApplication().setBaseUrl("http://localhost");
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(true);
+
+		Config actualConfig = applicationConfigurator.initConfig(config);
+
+		assertThat(actualConfig.getFeatures().getSecrets().getExternalSecrets().getActive()).isTrue();
+		assertThat(actualConfig.getFeatures().getSecrets().getVault().getMode()).isNull();
+		assertThat(actualConfig.getFeatures().getSecrets().getVault().getUrl()).isEmpty();
+	}
+
+	@Test
+	void rejectsExternalVaultSecretsWithoutExplicitActivation() {
+		Config config = minimalConfig();
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		externalSecret.setName("customer-credentials");
+		externalSecret.setNamespace("customer-app");
+		externalSecret.setRemoteKey("gop/customer");
+		externalSecret.setData(Map.of("password", "password"));
+		config.getFeatures().getSecrets().getExternalSecrets().setSecrets(List.of(externalSecret));
+
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> applicationConfigurator.initConfig(config)
+		);
+
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.active must be true when external Vault secrets are configured");
 	}
 
 	@Test
@@ -345,7 +378,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getApplication().setBaseUrl("http://localhost");
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
@@ -362,7 +394,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getApplication().setUrlSeparatorHyphen(true);
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
@@ -399,7 +430,8 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setActive(false);
 		testConfig.getFeatures().getMail().setActive(false);
 		testConfig.getFeatures().getMonitoring().setActive(false);
-		testConfig.getFeatures().getSecrets().setActive(false);
+		testConfig.getFeatures().getSecrets().getExternalSecrets().setActive(false);
+		testConfig.getFeatures().getSecrets().getVault().setMode(null);
 
 		Config actualConfig = applicationConfigurator.initConfig(testConfig);
 
@@ -414,7 +446,6 @@ class ApplicationConfiguratorTest {
 		testConfig.getFeatures().getArgocd().setActive(true);
 		testConfig.getFeatures().getMail().setActive(true);
 		testConfig.getFeatures().getMonitoring().setActive(true);
-		testConfig.getFeatures().getSecrets().setActive(true);
 		testConfig.getFeatures().getArgocd().setUrl("argocd");
 		testConfig.getFeatures().getMonitoring().setGrafanaUrl("grafana");
 		testConfig.getFeatures().getSecrets().getVault().setUrl("vault");
