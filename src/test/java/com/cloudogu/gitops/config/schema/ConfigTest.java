@@ -2,6 +2,7 @@ package com.cloudogu.gitops.config.schema;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Config.VaultMode;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.MapUtils;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
@@ -114,6 +115,90 @@ class ConfigTest {
 		new CommandLine(config).parseArgs("--vault=dev");
 
 		assertThat(config.getFeatures().getSecrets().getVault().getMode()).isEqualTo(VaultMode.DEV);
+	}
+
+	@Test
+	void mapsGitlabTechnicalUsername() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"gitlab", Map.of(
+					"technicalUsername", "existing-gitlab-user"
+				)
+			)
+		));
+
+		assertThat(config.getScm().getGitlab().getTechnicalUsername())
+			.isEqualTo("existing-gitlab-user");
+	}
+
+	@Test
+	void parsesScmTechnicalUserFromCli() {
+		Config config = new Config();
+
+		new CommandLine(config).parseArgs(
+			"--scmm-technical-username=existing-jenkins-user",
+			"--scmm-technical-password=technical-password"
+		);
+
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getUsername())
+			.isEqualTo("existing-jenkins-user");
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
+			.isEqualTo("technical-password");
+	}
+
+	@Test
+	void mapsScmTechnicalUserSecretReference() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"technicalUser", Map.of(
+						"credentials", Map.of(
+							"secretName", "scm-technical-user",
+							"secretNamespace", "gop-job"
+						)
+					)
+				)
+			)
+		));
+
+		Credentials credentials = config.getScm().getScmManager().getTechnicalUser().getCredentials();
+		assertThat(credentials.getSecretName()).isEqualTo("scm-technical-user");
+		assertThat(credentials.getSecretNamespace()).isEqualTo("gop-job");
+	}
+
+	@Test
+	void parsesScmMetricsUserFromCli() {
+		Config config = new Config();
+
+		new CommandLine(config).parseArgs(
+			"--scmm-metrics-username=existing-metrics-user",
+			"--scmm-metrics-password=metrics-password"
+		);
+
+		assertThat(config.getScm().getScmManager().getMetricsUser().getUsername())
+			.isEqualTo("existing-metrics-user");
+		assertThat(config.getScm().getScmManager().getMetricsUser().getPassword())
+			.isEqualTo("metrics-password");
+	}
+
+	@Test
+	void mapsScmMetricsUserSecretReference() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"metricsUser", Map.of(
+						"credentials", Map.of(
+							"secretName", "scm-metrics-user",
+							"secretNamespace", "gop-job"
+						)
+					)
+				)
+			)
+		));
+
+		Credentials credentials = config.getScm().getScmManager().getMetricsUser().getCredentials();
+		assertThat(credentials.getSecretName()).isEqualTo("scm-metrics-user");
+		assertThat(credentials.getSecretNamespace()).isEqualTo("gop-job");
 	}
 
 	@Test

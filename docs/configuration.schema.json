@@ -869,6 +869,10 @@
               "type" : [ "string", "null" ],
               "description" : "Password for SCM Manager authentication"
             },
+            "technicalUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
+            },
             "url" : {
               "type" : [ "string", "null" ],
               "description" : "URL for external Gitlab"
@@ -891,6 +895,25 @@
             "internal" : {
               "type" : [ "boolean", "null" ],
               "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
+            },
+            "metricsUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of the existing central SCM-Manager metrics user used by Prometheus"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of the existing central SCM-Manager metrics user used by Prometheus"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials of the existing central SCM-Manager metrics user used by Prometheus"
             },
             "namespace" : {
               "type" : [ "string", "null" ],
@@ -1013,10 +1036,6 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
-              "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
-            },
             "internal" : {
               "type" : [ "boolean", "null" ],
               "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
@@ -1028,6 +1047,10 @@
             "password" : {
               "type" : [ "string", "null" ],
               "description" : "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
+            },
+            "technicalUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
             },
             "url" : {
               "type" : [ "string", "null" ],
@@ -1048,13 +1071,32 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
+            "gopManagedTechnicalUsername" : {
               "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+              "description" : "Username of the GOP-managed technical SCM-Manager user"
             },
             "helm" : {
               "$ref" : "#/$defs/HelmConfigWithValues-nullable",
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "metricsUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of the SCM-Manager metrics user used by Prometheus"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of an existing SCM-Manager metrics user used by Prometheus when SCM-Manager is external. Internal deployments derive the username from the name prefix"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials of the SCM-Manager metrics user used by Prometheus. Internal SCM-Manager deployments derive the username from the name prefix and GOP manages the account; external deployments use an existing user"
             },
             "namespace" : {
               "type" : [ "string", "null" ],
@@ -1075,6 +1117,25 @@
             "skipRestart" : {
               "type" : [ "boolean", "null" ],
               "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
+            },
+            "technicalUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "credentials" : {
+                  "$ref" : "#/$defs/Credentials-nullable",
+                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
+                },
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Password of the technical SCM-Manager user used to create GOP-managed Jenkins credentials"
+                },
+                "username" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Username of an existing technical SCM-Manager user used to create Jenkins credentials when SCM-Manager is external and Jenkins is internal. Internal SCM-Manager deployments derive the username from the name prefix"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Credentials for the technical SCM-Manager user used by GOP-managed Jenkins credentials. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external SCM-Manager with internal Jenkins, the configured username is reused unchanged. External Jenkins credentials are managed outside GOP"
             },
             "url" : {
               "type" : [ "string", "null" ],

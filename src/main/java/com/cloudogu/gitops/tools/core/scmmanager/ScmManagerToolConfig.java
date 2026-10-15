@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretConfig;
 import com.cloudogu.gitops.tools.common.ImmutableConfigData;
@@ -16,7 +17,11 @@ public record ScmManagerToolConfig(
 	String namespace,
 	String releaseName,
 	String ingress,
-	String gitOpsUsername,
+	String gopManagedTechnicalUsername,
+	String technicalUserPassword,
+	CredentialsReference technicalUserCredentials,
+	String metricsUserPassword,
+	CredentialsReference metricsUserCredentials,
 	boolean skipPlugins,
 	boolean skipRestart,
 	boolean netpols,

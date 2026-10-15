@@ -2,6 +2,11 @@
 application:
   "yes": true
   baseUrl: http://localhost
+scm:
+  scmManager:
+    technicalUser:
+      password: "technical-password"
+
 features:
   argocd:
     active: true

@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
+import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -51,7 +53,15 @@ class ScmManagerToolConfigMapperTest {
 		scmManager.setIngress("scm.example.org");
 		scmManager.setUsername("scm-user");
 		scmManager.setPassword("scm-password");
-		scmManager.setGitOpsUsername("gitops-user");
+		scmManager.setGopManagedTechnicalUsername("gitops-user");
+		scmManager.getTechnicalUser().setPassword("technical-password");
+		scmManager.getTechnicalUser().setCredentials(
+			new Credentials(null, null, "technical-user-secret", "gop-job", "username", "password")
+		);
+		scmManager.getMetricsUser().setPassword("metrics-password");
+		scmManager.getMetricsUser().setCredentials(
+			new Credentials(null, null, "metrics-user-secret", "gop-job", "username", "password")
+		);
 		scmManager.setSkipPlugins(true);
 		scmManager.setSkipRestart(true);
 		scmManager.setScmmImage("scm-manager:custom");
@@ -70,7 +80,21 @@ class ScmManagerToolConfigMapperTest {
 														 .namespace("test-source-control")
 														 .releaseName("test-scmm")
 														 .ingress("scm.example.org")
-														 .gitOpsUsername("gitops-user")
+														 .gopManagedTechnicalUsername("gitops-user")
+														 .technicalUserPassword("technical-password")
+														 .technicalUserCredentials(new CredentialsReference(
+															 "technical-user-secret",
+															 "gop-job",
+															 "username",
+															 "password"
+														 ))
+														 .metricsUserPassword("metrics-password")
+														 .metricsUserCredentials(new CredentialsReference(
+															 "metrics-user-secret",
+															 "gop-job",
+															 "username",
+															 "password"
+														 ))
 														 .skipPlugins(true)
 														 .skipRestart(true)
 														 .netpols(true)

@@ -47,7 +47,7 @@ public class ScmManagerProviderMock implements GitProvider {
 	private Credentials credentials = new Credentials("gitops", "gitops");
 
 	@Setter
-	private String gitOpsUsername = "gitops";
+	private String repositoryPermissionUsername = "gitops";
 
 	@Getter
 	@Setter
@@ -138,8 +138,8 @@ public class ScmManagerProviderMock implements GitProvider {
 	}
 
 	@Override
-	public String getGitOpsUsername() {
-		return gitOpsUsername;
+	public String getRepositoryPermissionUsername() {
+		return repositoryPermissionUsername;
 	}
 
 	private static URI withoutTrailingSlash(URI uri) {

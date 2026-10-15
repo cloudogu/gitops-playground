@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsResolver;
+import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy;
@@ -20,7 +22,11 @@ import freemarker.template.TemplateModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import retrofit2.Response;
+
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +49,7 @@ public class ScmManagerSetup {
 	private static final int SCMM_RESTART_START_DELAY_MILLIS = 100;
 	private static final int DEFAULT_PROXY_PORT = 8080;
 	private static final int DEFAULT_LOGIN_ATTEMPT_LIMIT_TIMEOUT_SECONDS = 300;
+	private static final int HTTP_CONFLICT = 409;
 	static final String CREDENTIALS_SECRET_NAME = "scm-manager-credentials";
 
 	private final ScmManagerProvider scmManager;
@@ -52,6 +59,7 @@ public class ScmManagerSetup {
 	private final FileSystemUtils fileSystemUtils;
 	private final ScmManagerToolConfig config;
 	private final K8sClient k8sClient;
+	private final CredentialsResolver credentialsResolver;
 
 	private Path tempValuesPath;
 
@@ -372,17 +380,78 @@ public class ScmManagerSetup {
 	}
 
 	private void addDefaultUsers() {
-		String metricsUsername = config.namePrefix() + "metrics";
-		String runtimePassword = scmManager.getCredentials().getPassword();
-
-		addUser(
-			config.gitOpsUsername(), runtimePassword, "changeme@test.local"
+		ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
+			config.technicalUserCredentials(),
+			config.gopManagedTechnicalUsername(),
+			config.technicalUserPassword()
 		);
-		addUser(metricsUsername, runtimePassword, "changeme@test.local");
-		grantUserPermissions(metricsUsername, List.of("metrics:read"));
+
+		if (technicalCredentials.password() == null || technicalCredentials.password().isBlank()) {
+			throw new IllegalArgumentException(
+				"Internal SCM-Manager requires a password for the GOP-managed technical user"
+			);
+		}
+
+		createOrUpdateGopManagedUser(
+			config.gopManagedTechnicalUsername(), technicalCredentials.password(), "changeme@test.local"
+		);
+
+		if (config.monitoringActive()) {
+			String metricsUsername = config.namePrefix() + "metrics";
+			ResolvedCredentials metricsCredentials = credentialsResolver.resolveReference(
+				config.metricsUserCredentials(),
+				metricsUsername,
+				config.metricsUserPassword()
+			);
+
+			if (metricsCredentials.password() == null || metricsCredentials.password().isBlank()) {
+				throw new IllegalArgumentException(
+					"Internal SCM-Manager with monitoring enabled requires a password for the GOP-managed metrics user"
+				);
+			}
+
+			createOrUpdateGopManagedUser(metricsUsername, metricsCredentials.password(), "changeme@test.local");
+			grantUserPermissions(metricsUsername, List.of("metrics:read"));
+		}
 	}
 
-	private void addUser(String username, String password, String email) {
+	private void createOrUpdateGopManagedUser(String username, String password, String email) {
+		ScmManagerUser userRequest = userRequest(username, password, email);
+
+		try {
+			Response<Void> createUserResponse = scmManager.getApiClient().usersApi().addUser(userRequest).execute();
+			if (createUserResponse.code() == HTTP_CONFLICT) {
+				overwriteUserPassword(username, password);
+				log.debug("Successfully updated password for SCM-Manager User {}.", username);
+				return;
+			}
+			if (!createUserResponse.isSuccessful()) {
+				throw new IllegalStateException(
+					"Could not create SCM-Manager user '" + username + "'. HTTP Status: " + createUserResponse.code()
+				);
+			}
+			log.debug("Successfully created SCM-Manager User {}.", username);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create or update SCM-Manager user '" + username + "'", e);
+		}
+	}
+
+	private void overwriteUserPassword(String username, String password) throws IOException {
+		Response<Void> overwritePasswordResponse = scmManager.getApiClient()
+			.usersApi()
+			.overwritePassword(username, Map.of("newPassword", password))
+			.execute();
+
+		if (!overwritePasswordResponse.isSuccessful()) {
+			throw new IllegalStateException(
+				"Could not update password for SCM-Manager user '" + username
+					+ "'. HTTP Status: " + overwritePasswordResponse.code()
+			);
+		}
+	}
+
+
+	private ScmManagerUser userRequest(String username, String password, String email) {
 		ScmManagerUser userRequest = new ScmManagerUser();
 		userRequest.setName(username);
 		userRequest.setDisplayName(username);
@@ -391,10 +460,7 @@ public class ScmManagerSetup {
 		userRequest.setPassword(password);
 		userRequest.setActive(true);
 		userRequest.setLinks(new HashMap<>());
-
-		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().usersApi().addUser(userRequest));
-
-		log.debug("Successfully created SCM-Manager User {}.", username);
+		return userRequest;
 	}
 
 	private void grantUserPermissions(String username, List<String> permissions) {

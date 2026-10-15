@@ -84,6 +84,17 @@ public class FullSecretsProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
+	void usesScmMetricsCredentialsFromSecret() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			Secret source = secret(client, SOURCE_NAMESPACE, "scm-metrics-user-credentials");
+			Secret prometheusSecret = secret(client, "monitoring", "prometheus-metrics-creds-scmm");
+
+			assertThat(secretValue(prometheusSecret, "password"))
+				.isEqualTo(secretValue(source, "password"));
+		}
+	}
+
+	@Test
 	void usesRegistryCredentialsFromSecret() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			Secret source = secret(client, SOURCE_NAMESPACE, "registry-credentials");

@@ -158,9 +158,10 @@ See [parameters](./Configuration.md) for examples.
 
 The user has to have the following privileges:
 * install plugins
-* set credentials
 * create jobs
 * restarting
+
+Credentials of an external Jenkins are managed outside GOP. When using the example applications, the external Jenkins must already provide the credential IDs `scm-user` and `registry-user`. If a proxy registry is configured, `registry-proxy-user` must also exist.
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide

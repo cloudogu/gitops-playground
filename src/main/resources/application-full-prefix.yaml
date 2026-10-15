@@ -3,6 +3,13 @@ application:
   "yes": true
   baseUrl: http://my-prefix.localhost
   namePrefix: my-prefix
+scm:
+  scmManager:
+    technicalUser:
+      password: "technical-password"
+    metricsUser:
+      password: "metrics-password"
+
 features:
   certManager:
     active: true

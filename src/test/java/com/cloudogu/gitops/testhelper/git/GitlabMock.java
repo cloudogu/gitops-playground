@@ -90,7 +90,7 @@ public class GitlabMock implements GitProvider {
 	}
 
 	@Override
-	public String getGitOpsUsername() {
+	public String getRepositoryPermissionUsername() {
 		return "gitops";
 	}
 }

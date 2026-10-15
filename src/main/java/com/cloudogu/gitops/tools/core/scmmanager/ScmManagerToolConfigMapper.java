@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.tools.core.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
@@ -29,6 +30,8 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 			? baseNamespace
 			: namePrefix + baseNamespace;
 		String releaseName = namePrefix.strip().isEmpty() ? "scmm" : namePrefix.strip() + "scmm";
+		var technicalUser = scmManager.getTechnicalUser();
+		var metricsUser = scmManager.getMetricsUser();
 
 		return ScmManagerToolConfig.builder()
 								   .active(context.isInternalScmManager())
@@ -37,7 +40,11 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .namespace(namespace)
 								   .releaseName(releaseName)
 								   .ingress(scmManager.getIngress())
-								   .gitOpsUsername(scmManager.getGitOpsUsername())
+								   .gopManagedTechnicalUsername(scmManager.getGopManagedTechnicalUsername())
+								   .technicalUserPassword(technicalUser == null ? null : technicalUser.getPassword())
+								   .technicalUserCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
+								   .metricsUserPassword(metricsUser == null ? null : metricsUser.getPassword())
+								   .metricsUserCredentials(metricsUser == null ? null : CredentialsReference.from(metricsUser.getCredentials()))
 								   .skipPlugins(scmManager.getSkipPlugins())
 								   .skipRestart(scmManager.getSkipRestart())
 								   .netpols(config.getApplication().getNetpols())

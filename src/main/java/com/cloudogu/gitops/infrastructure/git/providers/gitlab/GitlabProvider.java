@@ -153,8 +153,8 @@ public class GitlabProvider implements GitProvider {
 	}
 
 	@Override
-	public String getGitOpsUsername() {
-		return gitlabConfig.getGitOpsUsername();
+	public String getRepositoryPermissionUsername() {
+		return gitlabConfig.getTechnicalUsername();
 	}
 
 	@Override

@@ -9,7 +9,7 @@ public interface GitlabConfig {
 
 	String getDefaultVisibility();
 
-	String getGitOpsUsername();
+	String getTechnicalUsername();
 
 	Credentials getCredentials();
 }
