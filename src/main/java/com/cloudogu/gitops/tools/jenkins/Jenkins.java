@@ -382,16 +382,11 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		boolean internalJenkins = isInternalJenkins();
 
 		ResolvedCredentials scmManagerCredentials = null;
-		if (internalJenkins && toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
+		if (toolConfig().scm().providerType() == ScmProviderType.SCM_MANAGER) {
 			scmManagerCredentials = scmManagerCredentialsForJenkins();
 		}
 
 		jobManager.createJob(jobName, this.gitHandler.getTenant().getUrl(), prefixedNamespace, credentialId);
-
-		if (!internalJenkins) {
-			jobManager.startJob(jobName);
-			return;
-		}
 
 		if (scmManagerCredentials != null) {
 			jobManager.createOrUpdateCredential(
@@ -401,6 +396,12 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 				scmManagerCredentials.password(),
 				"credentials for accessing scm-manager"
 			);
+		}
+
+		// Leave GitLab and registry credentials on external Jenkins externally managed.
+		if (!internalJenkins) {
+			jobManager.startJob(jobName);
+			return;
 		}
 
 		if (toolConfig().scm().providerType() == ScmProviderType.GITLAB) {

@@ -34,7 +34,10 @@ import io.fabric8.kubernetes.api.model.Pod;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,10 +56,13 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class JenkinsTest {
@@ -511,23 +517,47 @@ class JenkinsTest {
 	}
 
 	@Test
-	void doesNotManageJobCredentialsForExternalJenkins() throws GitAPIException {
+	void refreshesScmCredentialsOnExternalJenkins() throws GitAPIException {
 		config.getApplication().setNamePrefix("test-");
 		config.getJenkins().setInternal(false);
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		config.getScm().getScmManager().setInternal(false);
+		config.getScm().getScmManager().getTechnicalUser().setCredentials(
+			new Credentials(null, null, "scm-technical-user", "gop-job")
+		);
+		config.getRegistry().setTwoRegistries(true);
+		when(k8sClient.getCredentialsFromSecret(any(Credentials.class))).thenReturn(
+			new Credentials("existing-technical-user", "initial-password"),
+			new Credentials("existing-technical-user", "rotated-password")
+		);
+		when(jobManger.createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user"))
+			.thenReturn(true, false);
 
 		Jenkins jenkins = createJenkins();
-		install(jenkins);
-		jenkins.createJenkinsjob("namespace", "repo");
+		InOrder order = inOrder(jobManger);
+		for (String password : List.of("initial-password", "rotated-password")) {
+			install(jenkins);
+			jenkins.createJenkinsjob("namespace", "repo");
 
-		verify(jobManger).createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user");
-		verify(jobManger, never()).createOrUpdateCredential(anyString(), anyString(), anyString(), anyString(), anyString());
-		verify(jobManger).startJob("test-repo");
+			order.verify(jobManger).createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user");
+			order.verify(jobManger).createOrUpdateCredential(
+				"test-repo",
+				"scm-user",
+				"existing-technical-user",
+				password,
+				"credentials for accessing scm-manager"
+			);
+			order.verify(jobManger).startJob("test-repo");
+		}
+
+		// No registry credentials may be changed, even when both registries are configured.
+		verifyNoMoreInteractions(jobManger);
 	}
 
-	@Test
-	void usesGopManagedTechnicalUserForInternalScmManager() throws GitAPIException {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void usesGopManagedTechnicalUserForInternalScmManager(boolean internalJenkins) throws GitAPIException {
+		config.getJenkins().setInternal(internalJenkins);
 		config.getApplication().setNamePrefix("test-");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		config.getScm().getScmManager().setPassword("provisioning-password");
@@ -547,8 +577,10 @@ class JenkinsTest {
 		);
 	}
 
-	@Test
-	void usesExistingTechnicalUserForExternalScmManager() throws GitAPIException {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void usesExistingTechnicalUserForExternalScmManager(boolean internalJenkins) throws GitAPIException {
+		config.getJenkins().setInternal(internalJenkins);
 		config.getApplication().setNamePrefix("test-");
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		config.getScm().getScmManager().setInternal(false);
@@ -569,9 +601,10 @@ class JenkinsTest {
 		);
 	}
 
-	@Test
-	void rejectsMissingTechnicalUserForExternalScmManager() throws GitAPIException {
-		config.getJenkins().setInternal(true);
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void rejectsMissingTechnicalUserForExternalScmManager(boolean internalJenkins) throws GitAPIException {
+		config.getJenkins().setInternal(internalJenkins);
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		config.getScm().getScmManager().setInternal(false);
 		scmManagerMock.setCredentials(new Credentials("provisioning-user", "provisioning-password"));
@@ -583,7 +616,7 @@ class JenkinsTest {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("External SCM-Manager requires technical user credentials for Jenkins repository access");
 
-		verify(jobManger, never()).createJob(anyString(), anyString(), anyString(), anyString());
+		verifyNoInteractions(jobManger);
 	}
 
 	@Test
