@@ -51,9 +51,11 @@ pipeline {
                         passwordVariable: 'SCM_TOKEN'
                 )]) {
                     sh "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' fetch --tags"
+                    // Ask the remote directly, so the result does not depend on the state of the local checkout.
+                    env.LATEST_TAG = sh(script: "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+\$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
                 }
                 script {
-                    def latestTag = sh(script: "git tag --list '[0-9]*.[0-9]*.[0-9]*' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
+                    def latestTag = env.LATEST_TAG
                     def suggestedNext = nextPatchVersion(latestTag)
 
                     // Refreshes the releaseVersion default shown on the next 'Build with Parameters' screen.
@@ -62,7 +64,7 @@ pipeline {
                             booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache'),
                             choice(name: 'chooseProfile', choices: ['full', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.'),
                             booleanParam(defaultValue: false, name: 'performRelease', description: 'Creates a GitHub Release: tags HEAD, publishes SBOM assets to the release and pushes the image to GHCR.'),
-                            string(defaultValue: suggestedNext, name: 'releaseVersion', description: "Version to release, schema x.y.z. Suggested next version based on latest tag ${latestTag ?: 'none'}. Only used when performRelease is checked."),
+                            string(defaultValue: '', name: 'releaseVersion', description: "Version to release, schema x.y.z. Leave empty to use the next patch version after the latest remote tag (currently ${latestTag ?: 'none'}). Only used when performRelease is checked."),
                             booleanParam(defaultValue: false, name: 'skipIntegrationTests', description: 'Skips the integration tests stage')
                     ])])
 
