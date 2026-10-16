@@ -52,7 +52,9 @@ pipeline {
                 )]) {
                     sh "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' fetch --tags"
                     // Ask the remote directly, so the result does not depend on the state of the local checkout.
-                    env.LATEST_TAG = sh(script: "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+\$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
+                    script {
+                        env.LATEST_TAG = sh(script: "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+\$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
+                    }
                 }
                 script {
                     def latestTag = env.LATEST_TAG
