@@ -19,7 +19,7 @@ PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/promet
 GRAFANA_IMAGE="docker://docker.io/grafana/grafana:13.2.2-distroless"
 K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.11.2"
 
-JENKINS_IMAGE_TAG="5.9.63-1"
+JENKINS_IMAGE_TAG="5.9.68"
 SCM_MANAGER_IMAGE_TAG="3.12.1"
 JENKINS_IMAGE="docker://ghcr.io/cloudogu/jenkins-helm:${JENKINS_IMAGE_TAG}"
 SCM_MANAGER_IMAGE="docker://docker.io/scmmanager/scm-manager:${SCM_MANAGER_IMAGE_TAG}"
