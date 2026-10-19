@@ -49,7 +49,8 @@ path "secret/*" {
 EOF
   vault auth enable userpass 2>/dev/null || true
   # Create and authorize user via policy
-  vault write auth/userpass/users/$USERNAME password="$PASSWORD" policies=secret-editor
+  # Pass password via stdin: a leading '@' in "password=@..." would be read as a file reference by the vault CLI
+  printf '%s' "$PASSWORD" | vault write auth/userpass/users/$USERNAME password=- policies=secret-editor
 }
 
 enableKubernetesAuth() {
