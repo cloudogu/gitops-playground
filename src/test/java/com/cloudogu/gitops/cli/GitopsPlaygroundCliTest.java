@@ -292,7 +292,7 @@ class GitopsPlaygroundCliTest {
 			.isEqualTo("kube-prometheus-stack");
 		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getRepoURL())
 			.isEqualTo("https://prometheus-community.github.io/helm-chartsTEST");
-		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("91.5.0");
+		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("92.10.1");
 	}
 
 	@Test
@@ -337,7 +337,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getScm().getScmManager().getHelm().getChart()).isEqualTo("scm-manager");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getRepoURL())
 			.isEqualTo("https://packages.scm-manager.org/repository/helm-v2-releases/");
-		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.12.1");
+		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.12.2");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getValues().get("initialDelaySeconds"))
 			.isEqualTo(120);
 
@@ -355,7 +355,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getChart()).isEqualTo("my-secrets");
 		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getRepoURL())
 			.isEqualTo("https://charts.external-secrets.io");
-		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getVersion()).isEqualTo("2.11.0");
+		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getVersion()).isEqualTo("2.12.0");
 
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getChart()).isEqualTo("vault");
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getRepoURL())
