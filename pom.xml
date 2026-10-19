@@ -11,7 +11,7 @@
     <parent>
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
-        <version>5.2.1</version>
+        <version>5.2.2</version>
     </parent>
 
     <properties>
@@ -35,7 +35,7 @@
         <jsonschema.version>5.0.0</jsonschema.version>
         <kubernetes.fabric8.java.version>7.9.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
-        <netty.version>4.2.18.Final</netty.version>
+        <netty.version>4.2.19.Final</netty.version>
     </properties>
 
     <scm>
@@ -321,7 +321,7 @@
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>4.8.196</version>
+            <version>4.8.198</version>
         </dependency>
 
         <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->
@@ -362,7 +362,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.10.3</version>
+                <version>3.10.4</version>
 
                 <configuration>
                     <java>
