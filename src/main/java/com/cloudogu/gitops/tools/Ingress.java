@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.orchestration.GitHandler;
 import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
+import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractMappedTool;
 import com.cloudogu.gitops.tools.common.CrdBootstrap;
@@ -11,7 +12,10 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapperBuilder;
 import io.micronaut.core.annotation.Order;
 import jakarta.inject.Singleton;
 import lombok.Getter;
@@ -19,8 +23,15 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Singleton
 @Order(150)
@@ -42,8 +53,11 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 	private static final String GATEWAY_API_CRD_VERSION = "v1.6.1";
 	private static final String GATEWAY_API_CRD = "https://github.com/kubernetes-sigs/gateway-api/releases/download/" + GATEWAY_API_CRD_VERSION + "/standard-install.yaml";
 
+	private static final Pattern CLUSTER_RBAC_KIND = Pattern.compile("(?m)^kind: (ClusterRole|ClusterRoleBinding)\\s*$");
+
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
+	private final HelmClient helmClient;
 
 	@Getter
 	@Setter
@@ -56,7 +70,8 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		GitHandler gitHandler,
 		ImagePullSecretCreator imagePullSecretCreator,
 		IngressToolConfigMapper configMapper,
-		K8sClient k8sClient) {
+		K8sClient k8sClient,
+		HelmClient helmClient) {
 		super(configMapper);
 		this.deployer = deployer;
 		this.fileSystemUtils = fileSystemUtils;
@@ -64,6 +79,7 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		this.gitHandler = gitHandler;
 		this.imagePullSecretCreator = imagePullSecretCreator;
 		this.k8sClient = k8sClient;
+		this.helmClient = helmClient;
 	}
 
 	@Override
@@ -76,6 +92,7 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
+		applyClusterRbac();
 		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
 		prepareIngressNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
 	}
@@ -98,6 +115,49 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 
 	private void createImagePullSecret() {
 		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
+	}
+
+	/**
+	 * In operator mode Argo CD is registered namespaced and cannot sync cluster-scoped resources.
+	 * Without the ClusterRole Traefik cannot watch Ingresses and answers every request with 404.
+	 */
+	private void applyClusterRbac() {
+		if (!toolConfig().operator()) {
+			return;
+		}
+
+		Map<String, Object> templateData = new HashMap<>();
+		templateData.put("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels());
+		templateData.put("config", toolConfig().templateConfig());
+		Map<String, Object> helmValues = new HashMap<>(templateToMap(HELM_VALUES_PATH, templateData));
+		MapUtils.deepMerge(toolConfig().helm().values(), helmValues);
+
+		Map<String, Object> helmArguments = new HashMap<>();
+		helmArguments.put("values", fileSystemUtils.writeTempFile(helmValues).toString());
+		helmArguments.put("namespace", namespace);
+		// helm template has no cluster access; the chart fails rendering its ServiceMonitor without this API
+		helmArguments.put("api-versions", "monitoring.coreos.com/v1");
+		String chartOrPath;
+		if (toolConfig().airgapped()) {
+			chartOrPath = Path.of(toolConfig().helm().localHelmChartFolder(), toolConfig().helm().chart()).toString();
+		} else {
+			helmClient.addRepo(TOOL_NAME, toolConfig().helm().repoURL());
+			chartOrPath = TOOL_NAME + "/" + toolConfig().helm().chart();
+			helmArguments.put("version", toolConfig().helm().version());
+		}
+
+		String clusterRbac = Arrays.stream(helmClient.template(RELEASE_NAME, chartOrPath, helmArguments).split("(?m)^---\\s*$"))
+			.filter(document -> CLUSTER_RBAC_KIND.matcher(document).find())
+			.collect(Collectors.joining("\n---\n"));
+
+		Path rbacFile = fileSystemUtils.createTempFile();
+		try {
+			Files.writeString(rbacFile, clusterRbac);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to write Traefik cluster RBAC to temp file", e);
+		}
+		log.debug("Applying Traefik ClusterRole and ClusterRoleBinding from path {}", rbacFile);
+		k8sClient.applyYaml(rbacFile.toString());
 	}
 
 	private void prepareIngressNetworkPolicy(GitRepo clusterResourcesRepo) {
