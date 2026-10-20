@@ -138,6 +138,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.NETPOLS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EGRESS_ISOLATION_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_DIRECTION_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_NAME_DESCRIPTION;
@@ -145,7 +146,6 @@ import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERN
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_PROTOCOL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_TOOL_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OIDC_DESCPRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OPENSHIFT_DESCRIPTION;
@@ -520,7 +520,7 @@ public class Config {
 			helm.setChart("jenkins");
 			helm.setRepoURL("https://charts.jenkins.io");
 			// renovate: depName=jenkins registryUrl=https://charts.jenkins.io
-			helm.setVersion("5.9.64");
+			helm.setVersion("5.9.68");
 		}
 	}
 
@@ -848,7 +848,7 @@ public class Config {
 			helm.setChart("kube-prometheus-stack");
 			helm.setRepoURL("https://prometheus-community.github.io/helm-charts");
 			// renovate: depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
-			helm.setVersion("91.5.0");
+			helm.setVersion("92.10.1");
 			helm.setValues(new HashMap<>());
 		}
 
@@ -906,7 +906,7 @@ public class Config {
 				helm.setChart("external-secrets");
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
-				helm.setVersion("2.11.0");
+				helm.setVersion("2.12.0");
 			}
 
 			@Getter
@@ -1021,7 +1021,7 @@ public class Config {
 			helm.setChart("traefik");
 			helm.setRepoURL("https://traefik.github.io/charts");
 			// renovate: depName=traefik registryUrl=https://traefik.github.io/charts
-			helm.setVersion("41.6.0");
+			helm.setVersion("42.0.0");
 		}
 
 		@Getter
