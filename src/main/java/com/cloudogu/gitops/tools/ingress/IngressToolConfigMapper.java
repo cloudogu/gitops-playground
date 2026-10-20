@@ -35,6 +35,7 @@ public class IngressToolConfigMapper implements ToolConfigMapper<IngressToolConf
 								.templateConfig(templateConfig(config))
 								.airgapped(context.isAirgapped())
 								.skipCrds(config.getApplication().getSkipCrds())
+								.operator(context.isArgoCdOperator())
 								.build();
 	}
 

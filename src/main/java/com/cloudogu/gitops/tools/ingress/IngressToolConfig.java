@@ -18,7 +18,8 @@ public record IngressToolConfig(
 	String monitoringNamespace,
 	Map<String, Object> templateConfig,
 	boolean airgapped,
-	boolean skipCrds
+	boolean skipCrds,
+	boolean operator
 ) {
 
 	public IngressToolConfig {
