@@ -9,6 +9,7 @@ import com.cloudogu.gitops.infrastructure.deployment.Deployer;
 import com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.RepoType;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
+import com.cloudogu.gitops.infrastructure.helm.HelmClient;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
@@ -40,6 +41,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -79,6 +81,8 @@ class IngressTest {
 	private ImagePullSecretCreator imagePullSecretCreator;
 	@Mock
 	private K8sClient k8sClient;
+	@Mock
+	private HelmClient helmClient;
 
 	KubernetesClient client;
 
@@ -318,6 +322,45 @@ class IngressTest {
 	}
 
 	@Test
+	void appliesClusterRbacInOperatorMode() throws Exception {
+		config.getFeatures().getArgocd().setActive(true);
+		config.getFeatures().getArgocd().setOperator(true);
+		when(helmClient.template(eq("traefik"), eq("traefik/traefik"), any())).thenReturn("""
+			---
+			kind: ClusterRole
+			metadata:
+			  name: traefik-ingress
+			---
+			kind: ClusterRoleBinding
+			metadata:
+			  name: traefik-ingress
+			roleRef:
+			  kind: ClusterRole
+			---
+			kind: Deployment
+			metadata:
+			  name: traefik
+			""");
+
+		install(createIngress());
+
+		ArgumentCaptor<String> path = ArgumentCaptor.forClass(String.class);
+		verify(k8sClient).applyYaml(path.capture());
+		assertThat(Files.readString(Path.of(path.getValue())))
+			.contains("kind: ClusterRole\n")
+			.contains("kind: ClusterRoleBinding")
+			.doesNotContain("kind: Deployment");
+	}
+
+	@Test
+	void doesNotApplyClusterRbacWithoutOperatorMode() throws Exception {
+		install(createIngress());
+
+		verify(helmClient, never()).template(anyString(), anyString(), any());
+		verify(k8sClient, never()).applyYaml(anyString());
+	}
+
+	@Test
 	void getNamespaceFromFeature() throws GitAPIException {
 		assertThat(createIngress().getActiveNamespaceFromFeature(new ContextBuilder(config).build()))
 			.isEqualTo("foo-" + config.getFeatures().getIngress().getIngressNamespace());
@@ -359,7 +402,7 @@ class IngressTest {
 			airGappedUtils,
 			gitHandler,
 			imagePullSecretCreator,
-			new IngressToolConfigMapper(config), k8sClient
+			new IngressToolConfigMapper(config), k8sClient, helmClient
 		);
 	}
 
