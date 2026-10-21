@@ -292,7 +292,7 @@ class GitopsPlaygroundCliTest {
 			.isEqualTo("kube-prometheus-stack");
 		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getRepoURL())
 			.isEqualTo("https://prometheus-community.github.io/helm-chartsTEST");
-		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("91.5.0");
+		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("91.9.0");
 	}
 
 	@Test
