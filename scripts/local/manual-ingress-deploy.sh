@@ -47,7 +47,7 @@ EOF
 helm repo add traefik https://traefik.github.io/charts
 
 helm upgrade --install traefik traefik/traefik \
-  --version 41.6.0 \
+  --version 41.7.1 \
   --namespace ingress \
   --create-namespace \
   -f values.yaml && rm ./values.yaml
