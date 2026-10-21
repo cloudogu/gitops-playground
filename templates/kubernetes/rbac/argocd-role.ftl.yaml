@@ -58,7 +58,7 @@ rules:
     resources: [ "leases" ]
     verbs: [ "create", "delete", "get", "list", "patch", "update", "watch" ]
   
-  <#if config.features.secrets.active == true>
+  <#if config.features.secrets.externalSecrets.active == true>
   - apiGroups: [ "external-secrets.io" ]
     resources: [ "secretstores", "externalsecrets" ]
     verbs: [ "create", "delete", "get", "list", "patch", "update", "watch" ]

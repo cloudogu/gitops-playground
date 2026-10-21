@@ -12,7 +12,7 @@ import java.util.List;
  * Prometheus uses its own namespace ('monitoring'). The tests verify that the core monitoring pods
  * for Grafana, the Prometheus Operator, and Prometheus are running.
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols|operator-full|operator-full-external-vault")
 public class MonitoringTestIT extends KubernetesApiTestSetup {
 
 	String namespace = "monitoring";

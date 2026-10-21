@@ -14,7 +14,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
-import com.cloudogu.gitops.tools.core.Jenkins;
+import com.cloudogu.gitops.tools.jenkins.Jenkins;
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
