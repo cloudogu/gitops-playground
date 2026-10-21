@@ -101,7 +101,7 @@ features:
     helm:
       chart: "traefik"
       repoURL: "https://traefik.github.io/charts"
-      version: "41.6.0"
+      version: "41.7.1"
       values: { }
       image: ""
   certManager:
