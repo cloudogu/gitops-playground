@@ -92,11 +92,14 @@ import static com.cloudogu.gitops.config.ConfigConstants.DEBUG_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.DESTROY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_ENABLE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_DATA_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAMESPACE_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION;
@@ -111,9 +114,6 @@ import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SE
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_VERSION_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION;
-import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.FEATURES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.GIT_EMAIL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.GIT_NAME_DESCRIPTION;
@@ -868,7 +868,7 @@ public class Config {
 			helm.setChart("kube-prometheus-stack");
 			helm.setRepoURL("https://prometheus-community.github.io/helm-charts");
 			// renovate: depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
-			helm.setVersion("92.10.1");
+			helm.setVersion("92.13.1");
 			helm.setValues(new HashMap<>());
 		}
 
@@ -934,7 +934,7 @@ public class Config {
 				helm.setChart("external-secrets");
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
-				helm.setVersion("2.12.0");
+				helm.setVersion("2.14.0");
 			}
 
 			@Getter
@@ -1120,7 +1120,7 @@ public class Config {
 			helm.setChart("traefik");
 			helm.setRepoURL("https://traefik.github.io/charts");
 			// renovate: depName=traefik registryUrl=https://traefik.github.io/charts
-			helm.setVersion("42.0.0");
+			helm.setVersion("42.1.3");
 		}
 
 		@Getter

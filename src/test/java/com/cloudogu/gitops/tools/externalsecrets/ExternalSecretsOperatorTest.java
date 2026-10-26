@@ -24,9 +24,9 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -109,7 +109,7 @@ class ExternalSecretsOperatorTest {
 			"https://charts.external-secrets.io",
 			"external-secrets",
 			"external-secrets",
-			"2.12.0",
+			"2.14.0",
 			"foo-secrets",
 			"external-secrets",
 			temporaryYamlFile,
@@ -265,9 +265,9 @@ class ExternalSecretsOperatorTest {
 			"apps/external-secrets/misc/external-vault-resources.yaml"));
 		assertThat(yaml).contains(
 			"      caProvider:\n" +
-			"        type: \"" + type + "\"\n" +
-			"        name: \"external-vault-ca\"\n" +
-			"        key: \"ca.crt\""
+				"        type: \"" + type + "\"\n" +
+				"        name: \"external-vault-ca\"\n" +
+				"        key: \"ca.crt\""
 		);
 	}
 
@@ -402,7 +402,7 @@ class ExternalSecretsOperatorTest {
 		verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture());
 		assertThat(helmConfig.getValue().chart()).isEqualTo("external-secrets");
 		assertThat(helmConfig.getValue().repoURL()).isEqualTo("https://charts.external-secrets.io");
-		assertThat(helmConfig.getValue().version()).isEqualTo("2.12.0");
+		assertThat(helmConfig.getValue().version()).isEqualTo("2.14.0");
 
 		verify(deployer).deployFeature(
 			eq("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b"),
