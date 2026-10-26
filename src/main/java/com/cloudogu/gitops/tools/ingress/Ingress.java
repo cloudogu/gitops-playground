@@ -127,7 +127,10 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		}
 
 		Map<String, Object> templateData = new HashMap<>();
-		templateData.put("statics", new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels());
+		templateData.put(
+			"statics",
+			new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+		);
 		templateData.put("config", toolConfig().templateConfig());
 		Map<String, Object> helmValues = new HashMap<>(templateToMap(HELM_VALUES_PATH, templateData));
 		MapUtils.deepMerge(toolConfig().helm().values(), helmValues);
@@ -146,9 +149,12 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 			helmArguments.put("version", toolConfig().helm().version());
 		}
 
-		String clusterRbac = Arrays.stream(helmClient.template(RELEASE_NAME, chartOrPath, helmArguments).split("(?m)^---\\s*$"))
-			.filter(document -> CLUSTER_RBAC_KIND.matcher(document).find())
-			.collect(Collectors.joining("\n---\n"));
+		// Split the YAML stream into documents so each resource can be filtered by kind.
+		String extractFromInlineMultiYamls = "(?m)^---\\s*$";
+		String clusterRbac = Arrays.stream(helmClient.template(RELEASE_NAME, chartOrPath, helmArguments).split(
+									   extractFromInlineMultiYamls))
+								   .filter(document -> CLUSTER_RBAC_KIND.matcher(document).find())
+								   .collect(Collectors.joining("\n---\n"));
 
 		Path rbacFile = fileSystemUtils.createTempFile();
 		try {
