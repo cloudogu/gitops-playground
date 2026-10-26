@@ -301,8 +301,7 @@ class GitopsPlaygroundCliTest {
 			"jenkins", Map.of("helm", Map.of("version", "5.8.1")),
 			"scm", Map.of(
 				"scmManager", Map.of(
-					"helm", Map.of(
-						"values", Map.of("initialDelaySeconds", 120)
+					"helm", Map.of("values", Map.of("initialDelaySeconds", 120)
 					)
 				)
 			),
@@ -337,7 +336,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getScm().getScmManager().getHelm().getChart()).isEqualTo("scm-manager");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getRepoURL())
 			.isEqualTo("https://packages.scm-manager.org/repository/helm-v2-releases/");
-		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.12.1");
+		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.12.2");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getValues().get("initialDelaySeconds"))
 			.isEqualTo(120);
 
