@@ -11,7 +11,7 @@ REGISTRY_DOCKER_BASE_URL=docker:$(echo $REGISTRY_BASE_URL | cut -d: -f2-)
 
 ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v2.11.0"
 VAULT_IMAGE="docker://hashicorp/vault:2.0.4"
-TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.7.14"
+TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.7.16"
 
 PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.14.0-distroless"
 PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.94.1"
