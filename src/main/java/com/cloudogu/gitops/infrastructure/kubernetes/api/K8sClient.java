@@ -233,7 +233,33 @@ public class K8sClient {
 	 * @param namespace target namespace; empty means the default namespace
 	 */
 	public void createServiceNodePort(String name, String tcp, String nodePort, String namespace) {
+		createServiceNodePort(name, tcp, nodePort, namespace, null);
+	}
+
+	/**
+	 * Creates a NodePort service that targets the same pods as an existing service.
+	 */
+	public void createServiceNodePort(
+		String name, String tcp, String nodePort, String namespace, String backingServiceName
+	) {
 		log.debug("Creating NodePort service {} in namespace {}", name, namespace);
+
+		Map<String, String> selector = null;
+		if (backingServiceName != null) {
+			Service backingService = client.services()
+										   .inNamespace(resolveNamespace(namespace))
+										   .withName(backingServiceName)
+										   .get();
+			if (backingService == null || backingService.getSpec() == null
+				|| backingService.getSpec().getSelector() == null
+				|| backingService.getSpec().getSelector().isEmpty()) {
+				throw new IllegalStateException(
+					"Backing service " + backingServiceName + " has no pod selector in namespace "
+						+ resolveNamespace(namespace)
+				);
+			}
+			selector = backingService.getSpec().getSelector();
+		}
 
 		String[] ports = tcp.split(":");
 		int port = Integer.parseInt(ports[0]);
@@ -255,6 +281,9 @@ public class K8sClient {
 											  .withPorts(servicePort)
 											  .endSpec()
 											  .build();
+		if (selector != null) {
+			service.getSpec().setSelector(selector);
+		}
 
 		executeWithErrorHandling(
 			"create NodePort service " + name, () -> {
@@ -738,12 +767,12 @@ public class K8sClient {
 	 */
 	private void waitForAppliedCrds(List<HasMetadata> resources) {
 		resources.stream()
-			.filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
-			.map(HasMetadata::getMetadata)
-			.filter(Objects::nonNull)
-			.map(metadata -> metadata.getName())
-			.filter(name -> name != null && !name.isBlank())
-			.forEach(this::waitForCrdEstablished);
+				 .filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
+				 .map(HasMetadata::getMetadata)
+				 .filter(Objects::nonNull)
+				 .map(metadata -> metadata.getName())
+				 .filter(name -> name != null && !name.isBlank())
+				 .forEach(this::waitForCrdEstablished);
 	}
 
 	private void waitForCrdEstablished(String crdName) {
@@ -763,9 +792,9 @@ public class K8sClient {
 		}
 
 		return crd.getStatus().getConditions().stream()
-			.anyMatch(condition ->
-				"Established".equals(condition.getType()) && "True".equals(condition.getStatus())
-			);
+				  .anyMatch(condition ->
+					  "Established".equals(condition.getType()) && "True".equals(condition.getStatus())
+				  );
 	}
 
 	private void applyResource(HasMetadata resource) {
@@ -784,7 +813,10 @@ public class K8sClient {
 	}
 
 	private void applyGenericResource(GenericKubernetesResource resource) {
-		ResourceDefinitionContext context = K8sClientHelper.resolveResourceDefinitionContext(client, resource.getKind());
+		ResourceDefinitionContext context = K8sClientHelper.resolveResourceDefinitionContext(
+			client,
+			resource.getKind()
+		);
 		var resourceClient = client.genericKubernetesResources(context);
 		String namespace = resource.getMetadata() != null ? resource.getMetadata().getNamespace() : null;
 
@@ -1026,19 +1058,19 @@ public class K8sClient {
 		String name = pod.getMetadata().getName();
 		String resolvedNamespace = resolveNamespace(pod.getMetadata().getNamespace());
 		Pod temporaryPod = new PodBuilder(pod).editMetadata()
-									   .withNamespace(resolvedNamespace)
-									   .endMetadata()
-									   .editOrNewSpec()
-									   .withRestartPolicy("Never")
-									   .endSpec()
-									   .build();
+											  .withNamespace(resolvedNamespace)
+											  .endMetadata()
+											  .editOrNewSpec()
+											  .withRestartPolicy("Never")
+											  .endSpec()
+											  .build();
 
 		log.debug("Running temporary pod {} in namespace {}", name, resolvedNamespace);
 		Pod createdPod = executeWithErrorHandling(
 			"run temporary pod " + name, () -> client.pods()
-											.inNamespace(resolvedNamespace)
-											.resource(temporaryPod)
-											.create()
+													 .inNamespace(resolvedNamespace)
+													 .resource(temporaryPod)
+													 .create()
 		);
 
 		log.debug("Temporary pod {} created successfully", name);

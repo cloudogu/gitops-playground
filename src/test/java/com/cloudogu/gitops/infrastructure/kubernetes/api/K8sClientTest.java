@@ -375,6 +375,35 @@ class K8sClientTest {
 	}
 
 	@Test
+	void createServiceNodePortCopiesBackingServiceSelector() throws InterruptedException {
+		var backingService = new ServiceBuilder()
+			.withNewSpec()
+			.withSelector(Map.of("app", "custom-registry", "release", "custom-release"))
+			.endSpec()
+			.build();
+		server.expect()
+			  .get()
+			  .withPath("/api/v1/namespaces/registry/services/docker-registry")
+			  .andReturn(200, backingService)
+			  .once();
+		server.expect()
+			  .post()
+			  .withPath("/api/v1/namespaces/registry/services")
+			  .andReturn(201, new ServiceBuilder().build())
+			  .once();
+
+		k8sApiClient.createServiceNodePort(
+			"docker-registry-internal-port", "5000:5000", "32785", "registry", "docker-registry"
+		);
+
+		Map<String, Object> body = parseJson(server.getLastRequest().getUtf8Body());
+		Map<String, Object> spec = (Map<String, Object>) body.get("spec");
+		List<Map<String, Object>> ports = (List<Map<String, Object>>) spec.get("ports");
+		assertThat(spec.get("selector")).isEqualTo(Map.of("app", "custom-registry", "release", "custom-release"));
+		assertThat(ports.get(0).get("nodePort")).isEqualTo(32785);
+	}
+
+	@Test
 	void createServiceNodePortCreatesServiceWithoutExplicitNodePort() throws InterruptedException {
 		// Given
 		server.expect()

@@ -154,7 +154,7 @@ public class Registry extends AbstractMappedTool<RegistryToolConfig> {
 		 */
 		k8sClient.createServiceNodePort(
 			"docker-registry-internal-port", CONTAINER_PORT + ":" + CONTAINER_PORT,
-			toolConfig().internalPort().toString(), namespace
+			toolConfig().internalPort().toString(), namespace, RELEASE_NAME
 		);
 	}
 }
