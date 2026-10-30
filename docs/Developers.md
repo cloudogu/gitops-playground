@@ -406,12 +406,12 @@ deliberately keeps environment-specific CIDRs empty:
 
 ```yaml
 application:
-  netpols: true
-  networkPolicies:
-    bootstrapCidrs: []
-    registryAccessCidrs: []
-    egressIsolation: false
-    externalConnections: []
+    netpols: true
+    networkPolicies:
+        bootstrapCidrs: [ ]
+        registryAccessCidrs: [ ]
+        egressIsolation: false
+        externalConnections: [ ]
 ```
 
 Environment-specific CIDRs and external connections must be supplied through an additional local config file. Do not add
@@ -446,13 +446,13 @@ For the example above, the resulting local config is:
 
 ```yaml
 application:
-  networkPolicies:
-    bootstrapCidrs:
-      - 172.18.0.1/32
-    registryAccessCidrs:
-      - 0.0.0.0/0
-    egressIsolation: false
-    externalConnections: []
+    networkPolicies:
+        bootstrapCidrs:
+            - 172.18.0.1/32
+        registryAccessCidrs:
+            - 0.0.0.0/0
+        egressIsolation: false
+        externalConnections: [ ]
 ```
 
 `bootstrapCidrs` allows a GOP process running outside Kubernetes to reach internal services such as SCM-Manager and
@@ -477,17 +477,17 @@ refresh. For an external SCM-Manager test, use for example:
 
 ```yaml
 application:
-  networkPolicies:
-    egressIsolation: true
-    externalConnections:
-      - name: external-scm-manager
-        tool: argocd-repo-server
-        direction: egress
-        cidrs:
-          - <EXTERNAL_SCM_CIDR>
-        ports:
-          - protocol: TCP
-            port: 443
+    networkPolicies:
+        egressIsolation: true
+        externalConnections:
+            -   name: external-scm-manager
+                tool: argocd-repo-server
+                direction: egress
+                cidrs:
+                    - <EXTERNAL_SCM_CIDR>
+                ports:
+                    -   protocol: TCP
+                        port: 443
 ```
 
 The example above only demonstrates the SCM connection. In a real deployment, all other external Git and Helm repository
@@ -710,6 +710,36 @@ docker run --rm \
 ```
 
 ## Releasing
+
+### Release
+
+Preferred on `main` branch:
+
+- Open
+  Jenkins https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+- Build with Parameters:
+    - Check performRelease
+    - In the edit box releaseVersion is the current release version. It's guessed on earlier created Tags. Increment
+      Minor or Patch to the release version what you want to created e.g. 0.100.X -> 0.101.X or vice versa 0.X.100 ->
+      0.X.101). Hint: Be sure to follow the Semver Version 1 Standard!
+    - Hit the green Build button
+- If you are absolutely certain that the integration tests won't fail, you can check the skipIntegrationTests box.
+
+On `non main` Branch:
+
+- Open
+  Jenkins https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+- Build with Parameters:
+    - Check performRelease
+    - In the edit box releaseVersion is the current release version. It's guessed on earlier created Tags. Increment
+      Minor or Patch to the release version what you want to created e.g. 0.100.X -> 0.101.X or vice versa 0.X.100 ->
+      0.X.101). Hint: Be sure to follow the Semver Version 1 Standard!
+    - Hit the green Build button
+- If you are absolutely certain that the integration tests won't fail, you can check the skipIntegrationTests box.
+- Because the release does not run on `main`, the build pauses in the `Resolve tag` stage. Hover over the `Resolve tag`
+  stage in the stage view and click Confirm within 5 minutes, otherwise the build is aborted.
+
+### Releasing old (Deprecated)
 
 On `main` branch:
 

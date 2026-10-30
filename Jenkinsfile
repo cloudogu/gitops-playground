@@ -1,3 +1,8 @@
+import groovy.transform.Field
+
+// Single source for the chooseProfile choices: used by the parameters block and by refreshParameters().
+@Field List<String> PROFILES = ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+
 pipeline {
     agent {
         label 'high-cpu'
@@ -16,28 +21,86 @@ pipeline {
     parameters {
         booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
         booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache')
-        choice(name: 'chooseProfile', choices: ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        choice(name: 'chooseProfile', choices: PROFILES, description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+        booleanParam(defaultValue: false, name: 'performRelease', description: 'Creates a GitHub Release: tags HEAD, publishes SBOM assets to the release and pushes the image to GHCR. Outside the main branch, hover over the Resolve tag stage in the stage view and click Confirm within 5 minutes, otherwise the build is aborted.')
+        string(defaultValue: '', name: 'releaseVersion', description: 'Version to release, schema x.y.z. Leave empty to use the suggested next patch version. Only used when performRelease is checked.')
+        booleanParam(defaultValue: false, name: 'skipIntegrationTests', description: 'Skips the integration tests stage')
     }
 
     environment {
         BUILD_USER = sh(script: 'id -u', returnStdout: true).trim()
         BUILD_GROUP = sh(script: 'getent group docker | cut -d: -f3', returnStdout: true).trim()
         DOCKER_REGISTRY_BASE_URL = 'ghcr.io'
-        DOCKER_IMAGE_NAME = 'cloudogu/gitops-playground'
+        GITHUB_REPOSITORY = sh(script: "git remote get-url origin | sed -E 's#^(git@github.com:|https://github.com/)##; s#[.]git\$##'", returnStdout: true).trim()
+        DOCKER_IMAGE_NAME = "${env.GITHUB_REPOSITORY}"
         MAVEN_IMAGE = 'maven:3-eclipse-temurin-25'
         GRYPE_IMAGE = 'anchore/grype:v0.109.1'
         SYFT_IMAGE = 'anchore/syft:v1.42.2'
+        ORAS_IMAGE = 'ghcr.io/oras-project/oras:v1.3.4'
         GOLANG_IMAGE = 'golang:1.25-alpine'
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
         K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
-        TAG_NAME = sh(returnStdout: true, script: "git fetch --tags && git --no-pager tag --points-at HEAD").trim()
         // Shared docker args for integration tests
         INTEGRATION_TEST_DOCKER_ARGS = "-e KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml -v maven-cache:/root/.m2 -v /var/run/docker.sock:/var/run/docker.sock -u :${env.BUILD_GROUP} --network=host --entrypoint ''"
     }
 
     stages {
+
+        stage('Resolve tag') {
+            steps {
+                script {
+                    def latestTag
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin',
+                            usernameVariable: 'SCM_USERNAME',
+                            passwordVariable: 'SCM_TOKEN'
+                    )]) {
+                        sh "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' fetch --tags"
+                        // Ask the remote directly, so the result does not depend on the state of the local checkout.
+                        latestTag = sh(script: "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+\$' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1", returnStdout: true).trim()
+                    }
+                    def suggestedNext = nextPatchVersion(latestTag)
+
+                    refreshParameters(latestTag)
+
+                    if (params.performRelease) {
+                        env.TAG_NAME = params.releaseVersion?.trim() ?: suggestedNext
+                        if (!(env.TAG_NAME ==~ "^\\d+\\.\\d+\\.\\d+\$")) {
+                            error("Release version '${env.TAG_NAME}' must match schema x.y.z")
+                        }
+                        // Check the remote: a local tag left over from an aborted release build in a reused workspace must not block a retry.
+                        withCredentials([usernamePassword(
+                                credentialsId: 'cesmarvin',
+                                usernameVariable: 'SCM_USERNAME',
+                                passwordVariable: 'SCM_TOKEN'
+                        )]) {
+                            if (sh(script: "git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' ls-remote --tags --refs origin 'refs/tags/${env.TAG_NAME}'", returnStdout: true).trim()) {
+                                error("Tag ${env.TAG_NAME} already exists - aborting release build.")
+                            }
+                        }
+                        if (env.BRANCH_NAME != 'main') {
+                            timeout(time: 5, unit: 'MINUTES') {
+                                input message: "WARNING: Release ${env.TAG_NAME} would be created from branch '${env.BRANCH_NAME}', not 'main'. Continue?",
+                                        ok: 'Release from non-main branch'
+                            }
+                        }
+                        // Tag locally before packaging: the Dockerfile copies .git and the version output embeds git.tags.
+                        // The tag is pushed in 'Publish Release', after image, SBOM and OCI attachment exist.
+                        signTag(env.TAG_NAME)
+                        echo "Releasing version: ${env.TAG_NAME}"
+                    } else {
+                        // Several tags can point at HEAD, but only one may become TAG_NAME:
+                        // - grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' keeps only release versions x.y.z (e.g. 0.22.3), no other tag names
+                        // - sort -V sorts by version number (0.10.0 is higher than 0.9.0)
+                        // - tail -1 takes the highest one; the result is empty if there is no release tag
+                        env.TAG_NAME = sh(returnStdout: true, script: "git --no-pager tag --points-at HEAD | grep -E '^[0-9]+\\.[0-9]+\\.[0-9]+\$' | sort -V | tail -1").trim()
+                        echo "Resolved tag: ${env.TAG_NAME ?: 'none'}"
+                    }
+                }
+            }
+        }
 
         stage('Build') {
 
@@ -90,11 +153,19 @@ pipeline {
 
                 stage('SBOM & Vulnerability Scan') {
                     steps {
-                        sh '''docker run --rm -v $WORKSPACE:/workspace \
-                                         -v /var/run/docker.sock:/var/run/docker.sock:ro \
-                                         -u :$BUILD_GROUP \
-                                         -e NO_COLOR=1 \
-                                         $SYFT_IMAGE --output syft-table=/workspace/sbom.txt --output spdx-json=/workspace/sbom.json --quiet $FULL_IMAGE_TAG'''
+                        sh '''docker run --rm \
+                                -v "$WORKSPACE:/workspace" \
+                                -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                                -u ":$BUILD_GROUP" \
+                                -e NO_COLOR=1 \
+                                "$SYFT_IMAGE" \
+                                   --output table=/workspace/sbom.txt \
+                                   --output json=/workspace/sbom.syft.json \
+                                   --output cyclonedx-json@1.6=/workspace/sbom.cdx.json \
+                                   --quiet \
+                                   "$FULL_IMAGE_TAG"
+                        '''
+                        sh 'sha256sum sbom.cdx.json > sbom.cdx.json.sha256'
 
                         catchError(
                                 buildResult: 'SUCCESS',
@@ -105,17 +176,20 @@ pipeline {
                                          -v /var/run/docker.sock:/var/run/docker.sock:ro \
                                          -u :$BUILD_GROUP \
                                          -e NO_COLOR=1 \
-                                         $GRYPE_IMAGE sbom:/workspace/sbom.json \
+                                         $GRYPE_IMAGE sbom:/workspace/sbom.syft.json \
                                              --output table=/workspace/vulnerabilities.txt \
                                              --output sarif=/workspace/vulnerabilities.sarif \
                                              --sort-by severity --fail-on critical'''
                         }
 
-                        archiveArtifacts artifacts: 'sbom.*, vulnerabilities.*'
+                        archiveArtifacts(artifacts: 'sbom.*, vulnerabilities.*', allowEmptyArchive: false)
                     }
                 }
 
                 stage('Integration tests') {
+                    when {
+                        expression { return !params.skipIntegrationTests }
+                    }
                     steps {
                         script {
                             def profiles = []
@@ -123,7 +197,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+                                profiles = PROFILES - ['all-profiles', 'full-netpols']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -231,8 +305,8 @@ pipeline {
                                             docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                                 sh 'apk add --no-cache bash kubectl docker-cli'
                                                 externalVaultServer = sh(
-                                                    script: "./scripts/dev/external-vault/prepare-test-vault.sh --container-name=${externalVaultContainer} --host-port=0",
-                                                    returnStdout: true
+                                                        script: "./scripts/dev/external-vault/prepare-test-vault.sh --container-name=${externalVaultContainer} --host-port=0",
+                                                        returnStdout: true
                                                 ).trim()
                                             }
                                             additionalArguments = " --config-file=${createExternalVaultIntegrationConfig(externalVaultServer)}"
@@ -278,12 +352,45 @@ pipeline {
             }
         }
 
+        stage('Create Draft Release') {
+            when {
+                expression { return params.performRelease }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin-ghcr',
+                            usernameVariable: 'GH_USERNAME',
+                            passwordVariable: 'GH_TOKEN'
+                    )]) {
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
+                            // The tag is not pushed yet, so a draft is not bound to it. The tag is pushed in 'Publish Release'.
+                            // A draft left over from an aborted release build is removed, so a retry with the same version works.
+                            sh '''
+                                apk add --no-cache github-cli
+                                if [ "$(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null)" = "true" ]; then
+                                    gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes
+                                fi
+                                gh release create "$TAG_NAME" \
+                                    --repo "$GITHUB_REPOSITORY" \
+                                    --target "$GIT_COMMIT" \
+                                    --title "$TAG_NAME" \
+                                    --generate-notes \
+                                    --draft
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Push Image') {
             when {
                 anyOf {
                     branch 'main'
                     branch 'develop'
                     buildingTag()
+                    expression { return env.TAG_NAME }
                     expression { return params.forcePushImage }
                 }
                 not {
@@ -310,9 +417,86 @@ pipeline {
             }
         }
 
+        stage('Publish Release') {
+            when {
+                expression { return params.performRelease }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                            credentialsId: 'cesmarvin-ghcr',
+                            usernameVariable: 'GH_USERNAME',
+                            passwordVariable: 'GH_TOKEN'
+                    )]) {
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
+                            sh '''
+                                apk add --no-cache github-cli
+                                asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
+                                cp sbom.cdx.json "$asset"
+                                sha256sum "$asset" > "${asset}.sha256"
+                                gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
+                                    --repo "$GITHUB_REPOSITORY" \
+                                    --clobber
+
+                                gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body > notes.md
+                                download_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG_NAME"
+                                {
+                                    echo
+                                    echo "## SBOM"
+                                    echo "- [$asset]($download_url/$asset)"
+                                    echo "- [${asset}.sha256]($download_url/${asset}.sha256)"
+                                } >> notes.md
+                                gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
+                            '''
+                        }
+                        // Attach to the digest of the pushed image, not to the tag, so the SBOM is bound to exactly the scanned image.
+                        sh '''
+                            IMAGE_DIGEST=$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$FULL_IMAGE_TAG" | grep "^$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME@")
+                            printf '%s' "$GH_TOKEN" | docker run --rm -i \
+                                -v "$WORKSPACE:/workspace" \
+                                -w /workspace \
+                                "$ORAS_IMAGE" attach \
+                                    --username "$GH_USERNAME" \
+                                    --password-stdin \
+                                    --artifact-type application/vnd.cyclonedx+json \
+                                    "$IMAGE_DIGEST" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
+                        '''
+                        // Image, SBOM assets and OCI attachment exist: push the signed tag and make the draft release public.
+                        withCredentials([usernamePassword(
+                                credentialsId: 'cesmarvin',
+                                usernameVariable: 'SCM_USERNAME',
+                                passwordVariable: 'SCM_TOKEN'
+                        )]) {
+                            sh """
+                                git -c credential.helper='!f() { echo username=\$SCM_USERNAME; echo password=\$SCM_TOKEN; }; f' push origin '${env.TAG_NAME}'
+                            """
+                        }
+                        docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
+                            sh '''
+                                apk add --no-cache github-cli
+                                gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false
+                            '''
+                        }
+                        // Shows the new tag as latest on the next 'Build with Parameters' screen.
+                        refreshParameters(env.TAG_NAME)
+                    }
+                }
+            }
+        }
+
     }
 
     post {
+        unsuccessful {
+            script {
+                // The release tag is created locally before packaging. Drop it so it cannot leak into the next build in this workspace.
+                if (params.performRelease && env.TAG_NAME) {
+                    sh "git tag -d '${env.TAG_NAME}' || true"
+                }
+            }
+        }
         always {
             script {
                 if (isTriggeredByTimer()) {
@@ -331,7 +515,7 @@ pipeline {
                 if (!isTriggeredByTimer()) {
                     emailext(
                             subject: "${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                            body: '${SCRIPT, template="groovy-html.template"}',
+                            body: (env.ABORT_REASON ? "<p><b>${env.ABORT_REASON}</b></p>" : '') + '${SCRIPT, template="groovy-html.template"}',
                             mimeType: 'text/html',
                             recipientProviders: [
                                     [$class: 'DevelopersRecipientProvider'],
@@ -350,4 +534,45 @@ boolean isTriggeredByTimer() {
 
 boolean isTriggeredByUser() {
     return !currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').isEmpty()
+}
+
+// Refreshes the parameter descriptions shown on the next 'Build with Parameters' screen.
+void refreshParameters(String latestTag) {
+    properties([parameters([
+            booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
+            booleanParam(defaultValue: false, name: 'noCache', description: 'Builds the docker image without cache'),
+            choice(name: 'chooseProfile', choices: PROFILES, description: 'Starts GOP with given profile only and execute tests which belongs to profile.'),
+            booleanParam(defaultValue: false, name: 'performRelease', description: 'Creates a GitHub Release: tags HEAD, publishes SBOM assets to the release and pushes the image to GHCR. Outside the main branch, hover over the Resolve tag stage in the stage view and click Confirm within 5 minutes, otherwise the build is aborted.'),
+            string(defaultValue: '', name: 'releaseVersion', description: "Version to release, schema x.y.z. Leave empty to use the next patch version after the latest remote tag (currently ${latestTag ?: 'none'}). Only used when performRelease is checked."),
+            booleanParam(defaultValue: false, name: 'skipIntegrationTests', description: 'Skips the integration tests stage')
+    ])])
+}
+
+// Creates a local annotated tag signed with the GPG key of the build user. The tag is not pushed.
+void signTag(String tagName) {
+    withEnv(["TAG_TO_SIGN=${tagName}"]) {
+        // The key is stored with literal "\n" sequences, printf '%b' expands them
+        withCredentials([string(credentialsId: 'cesmarvin_signing_gpg_privkey', variable: 'GPG_KEY')]) {
+            sh '''
+                export GNUPGHOME="$(mktemp -d)"
+                trap 'gpgconf --kill gpg-agent; rm -rf "$GNUPGHOME"' EXIT
+                printf '%b' "$GPG_KEY" | gpg --batch --import
+                KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+                # Tagger identity must match the key's UID, taken from the key itself
+                UID_STR=$(gpg --list-secret-keys --with-colons "$KEY_ID" | awk -F: '/^uid/ {print $10; exit}')
+                export GIT_COMMITTER_NAME="${UID_STR% <*}"
+                export GIT_COMMITTER_EMAIL="${UID_STR##*<}"; GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL%>}"
+                git tag -d "$TAG_TO_SIGN" 2>/dev/null || true
+                git -c user.signingkey="$KEY_ID" tag -s "$TAG_TO_SIGN" -m "$TAG_TO_SIGN"
+            '''
+        }
+    }
+}
+
+String nextPatchVersion(String latestTag) {
+    if (!latestTag) {
+        return '0.0.1'
+    }
+    def parts = latestTag.tokenize('.').collect { it.toInteger() }
+    return "${parts[0]}.${parts[1]}.${parts[2] + 1}"
 }
