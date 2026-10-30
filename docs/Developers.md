@@ -725,6 +725,20 @@ Preferred on `main` branch:
     - Hit the green Build button
 - If you are absolutely certain that the integration tests won't fail, you can check the skipIntegrationTests box.
 
+On `non main` Branch:
+
+- Open
+  Jenkins https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+- Build with Parameters:
+    - Check performRelease
+    - In the edit box releaseVersion is the current release version. It's guessed on earlier created Tags. Increment
+      Minor or Patch to the release version what you want to created e.g. 0.100.X -> 0.101.X or vice versa 0.X.100 ->
+      0.X.101). Hint: Be sure to follow the Semver Version 1 Standard!
+    - Hit the green Build button
+- If you are absolutely certain that the integration tests won't fail, you can check the skipIntegrationTests box.
+- Because the release does not run on `main`, the build pauses in the `Resolve tag` stage. Hover over the `Resolve tag`
+  stage in the stage view and click Confirm within 5 minutes, otherwise the build is aborted.
+
 ### Releasing old (Deprecated)
 
 On `main` branch:
