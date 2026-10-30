@@ -172,7 +172,7 @@ pipeline {
 
                             def withK3dCluster = { profile, body ->
                                 try {
-                                    sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
+                                    sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}  --bind-registry-port=0 --bind-ingress-https-port=0 --bind-ingress-host=127.0.0.1 --bind-ingress-port=0"
                                     body()
                                 } catch (Throwable t) {
                                     dumpKubernetesDebugInfo(profile)
