@@ -7,7 +7,7 @@ application:
   "yes": true
   namePrefix: ""
   namespaceIsolation: false
-  skipCrds: true
+  skipCrds: false
   clusterAdmin: true
 jenkins:
   active: false
@@ -21,7 +21,7 @@ features:
   argocd:
     active: true
     operator: false
-    env: []
+    env: [ ]
     resourceInclusionsCluster: "https://10.43.0.1:443"
   ingress:
     active: true
