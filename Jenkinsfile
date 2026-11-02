@@ -30,7 +30,8 @@ pipeline {
         GOLANG_IMAGE = 'golang:1.25-alpine'
         SHORT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
         BUILD_DATE = sh(script: 'date --rfc-3339 ns', returnStdout: true).trim()
-        K3D_CLUSTER_NAME = "k3d-gop-cluster-${env.BUILD_ID}"
+        // BUILD_ID is unique only within a job; hash the full job name for a short, valid k3d name.
+        K3D_CLUSTER_NAME = "gop-${sh(script: 'printf %s "$JOB_NAME" | sha256sum | cut -c1-12', returnStdout: true).trim()}-${env.BUILD_ID}"
         FULL_IMAGE_TAG = "${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:${env.SHORT_SHA}"
         TAG_NAME = sh(returnStdout: true, script: "git fetch --tags && git --no-pager tag --points-at HEAD").trim()
         // Shared docker args for integration tests
@@ -172,8 +173,16 @@ pipeline {
 
                             def withK3dCluster = { profile, body ->
                                 try {
-                                    sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME}"
-                                    body()
+                                    // Keep the registry's cluster port at 30000 for Petclinic; let Docker choose a free host port.
+                                    sh "yes | KUBECONFIG=${env.WORKSPACE}/.kubeconfig.yaml ./scripts/init-cluster.sh --cluster-name=${env.K3D_CLUSTER_NAME} --bind-registry-port=0 --bind-ingress-port=- --bind-ingress-https-port=-"
+                                    def registryPort = sh(
+                                            script: "docker inspect --format='{{ with (index .NetworkSettings.Ports \"30000/tcp\") }}{{ (index . 0).HostPort }}{{ end }}' k3d-${env.K3D_CLUSTER_NAME}-serverlb",
+                                            returnStdout: true
+                                    ).trim()
+                                    if (!(registryPort ==~ /\d+/)) {
+                                        error "Could not determine registry host port for ${env.K3D_CLUSTER_NAME}"
+                                    }
+                                    body(registryPort)
                                 } catch (Throwable t) {
                                     dumpKubernetesDebugInfo(profile)
                                     throw t
@@ -210,7 +219,7 @@ pipeline {
                             }
 
                             profiles.each { profile ->
-                                withK3dCluster(profile) {
+                                withK3dCluster(profile) { registryPort ->
                                     def externalVaultContainer = null
                                     try {
                                         def additionalArguments = ''
@@ -249,7 +258,7 @@ pipeline {
                                         }
 
                                         docker.image("${env.FULL_IMAGE_TAG}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
-                                            sh "java -jar /app/gitops-playground.jar --profile=${profile}${additionalArguments}"
+                                            sh "java -jar /app/gitops-playground.jar --profile=${profile} --internal-registry-port=${registryPort}${additionalArguments}"
                                         }
                                         docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                             try {
