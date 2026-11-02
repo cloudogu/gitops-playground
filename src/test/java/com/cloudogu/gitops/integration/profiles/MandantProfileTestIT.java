@@ -49,7 +49,7 @@ public class MandantProfileTestIT extends ProfileTestSetup {
 				"docker-registry"
 			) && TestK8sHelper.checkAllPodsRunningInNamespace(
 				TENANT_NAMESPACE_SCM,
-				"tenant1-scmm-"
+				"tenant1-scm"
 			),
 			Duration.ofMinutes(40),
 			Duration.ofSeconds(5)
