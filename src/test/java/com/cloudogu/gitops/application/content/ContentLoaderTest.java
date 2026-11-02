@@ -964,6 +964,43 @@ class ContentLoaderTest {
 	}
 
 	@Test
+	void refreshesJenkinsJobWhenInitSkipsExistingRepo() throws Exception {
+		config.getJenkins().setActive(true);
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl(createContentRepo("copyRepo1"));
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+			repo.setCreateJenkinsJob(true);
+		})));
+		GitRepo targetRepo = scmmRepoProvider.create("common/repo", scmManagerMock);
+		scmManagerMock.initOnceRepo(targetRepo.getRepoTarget());
+
+		install(createContent(config), config);
+		assertThat(jenkins.createdJobs).containsExactly("common/common");
+
+		// The configured source no longer contains a Jenkinsfile, but the existing target repo does.
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl(createContentRepo("copyRepo2"));
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+			repo.setOverwriteMode(OverwriteMode.INIT);
+			repo.setCreateJenkinsJob(true);
+		})));
+
+		install(createContent(config), config);
+
+		assertThat(jenkins.createdJobs).containsExactly("common/common", "common/common");
+		try (Git git = cloneRepo("common/repo", tmpDir)) {
+			assertThat(git.log().call().iterator().next().getFullMessage())
+				.isEqualTo("Initialize content repo common/repo");
+			assertThat(Files.readString(new File(tmpDir, "file").toPath())).contains("copyRepo1");
+			assertThat(new File(tmpDir, "copyRepo1")).exists();
+			assertThat(new File(tmpDir, "copyRepo2")).doesNotExist();
+			assertThat(new File(tmpDir, "Jenkinsfile")).exists();
+		}
+	}
+
+	@Test
 	void ensureJenkinsJobWillBeCreated() {
 		config.getJenkins().setActive(true);
 		config.getContent().setRepos(List.of(repository(repo -> {

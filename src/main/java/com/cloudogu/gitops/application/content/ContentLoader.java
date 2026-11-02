@@ -658,6 +658,12 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 					isNewRepo,
 					repoCoordinate.repoConfig.getOverwriteMode()
 				);
+				// INIT must leave repository content untouched, but existing Jenkins credentials still need updating.
+				if (repoCoordinate.repoConfig.getCreateJenkinsJob() && jenkins.isEnabled(context)) {
+					targetRepo.cloneRepo();
+					createJenkinsJobIfApplicable(repoCoordinate, targetRepo);
+					cleanUpTargetRepoTempFolders(repoCoordinate, targetRepo);
+				}
 				return;
 			}
 
