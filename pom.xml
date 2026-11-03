@@ -321,7 +321,7 @@
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>6.0.0</version>
+            <version>6.0.1</version>
         </dependency>
 
         <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on modern JDKs -->
