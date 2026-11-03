@@ -280,6 +280,48 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
+	void gopManagedUsersFallBackToProvisioningPassword() throws ReflectiveOperationException, IOException {
+		config.getFeatures().getMonitoring().setActive(true);
+		config.getScm().getScmManager().getTechnicalUser().setPassword("");
+		config.getScm().getScmManager().getMetricsUser().setPassword("");
+		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-provisioning-password"));
+
+		UsersApi usersApi = mock(UsersApi.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> addUserCall = mock(Call.class);
+		@SuppressWarnings("unchecked")
+		Call<Void> permissionCall = mock(Call.class);
+		when(scmManager.getApiClient()).thenReturn(apiClient);
+		when(apiClient.usersApi()).thenReturn(usersApi);
+		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(addUserCall);
+		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
+		when(addUserCall.execute()).thenReturn(Response.success(null));
+		when(permissionCall.execute()).thenReturn(Response.success(null));
+
+		ScmManagerSetup setup = new ScmManagerSetup(
+			scmManager,
+			deployer,
+			new ContextBuilder(config).build(),
+			new RepositoryWorkspace(clusterResourcesRepo),
+			fileSystemUtils,
+			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
+			k8sClient,
+			credentialsResolver
+		);
+
+		invokePrivateAddDefaultUsers(setup);
+
+		ArgumentCaptor<ScmManagerUser> userCaptor = ArgumentCaptor.forClass(ScmManagerUser.class);
+		verify(usersApi, times(2)).addUser(userCaptor.capture());
+		assertThat(userCaptor.getAllValues())
+			.extracting(ScmManagerUser::getName)
+			.containsExactly("gitops", "testmetrics");
+		assertThat(userCaptor.getAllValues())
+			.extracting(ScmManagerUser::getPassword)
+			.containsExactly("runtime-provisioning-password", "runtime-provisioning-password");
+	}
+
+	@Test
 	void updatesGopManagedTechnicalUserPasswordWhenItAlreadyExists() throws ReflectiveOperationException, IOException {
 		UsersApi usersApi = mock(UsersApi.class);
 		@SuppressWarnings("unchecked")
