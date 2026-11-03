@@ -380,10 +380,12 @@ public class ScmManagerSetup {
 	}
 
 	private void addDefaultUsers() {
-		ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
+		String provisioningPassword = scmManager.getCredentials().getPassword();
+		ResolvedCredentials technicalCredentials = credentialsResolver.resolveGopManagedUser(
 			config.technicalUserCredentials(),
 			config.gopManagedTechnicalUsername(),
-			config.technicalUserPassword()
+			config.technicalUserPassword(),
+			provisioningPassword
 		);
 
 		if (technicalCredentials.password() == null || technicalCredentials.password().isBlank()) {
@@ -398,10 +400,11 @@ public class ScmManagerSetup {
 
 		if (config.monitoringActive()) {
 			String metricsUsername = config.namePrefix() + "metrics";
-			ResolvedCredentials metricsCredentials = credentialsResolver.resolveReference(
+			ResolvedCredentials metricsCredentials = credentialsResolver.resolveGopManagedUser(
 				config.metricsUserCredentials(),
 				metricsUsername,
-				config.metricsUserPassword()
+				config.metricsUserPassword(),
+				provisioningPassword
 			);
 
 			if (metricsCredentials.password() == null || metricsCredentials.password().isBlank()) {

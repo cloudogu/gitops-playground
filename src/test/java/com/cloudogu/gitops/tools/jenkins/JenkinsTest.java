@@ -579,6 +579,29 @@ class JenkinsTest {
 
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
+	void usesProvisioningPasswordForGopManagedTechnicalUserWithoutPassword(boolean internalJenkins)
+		throws GitAPIException {
+		config.getJenkins().setInternal(internalJenkins);
+		config.getApplication().setNamePrefix("test-");
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().getScmManager().getTechnicalUser().setPassword("");
+		scmManagerMock.setCredentials(new Credentials("provisioning-user", "runtime-provisioning-password"));
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		verify(jobManger).createOrUpdateCredential(
+			"test-repo",
+			"scm-user",
+			"test-gitops",
+			"runtime-provisioning-password",
+			"credentials for accessing scm-manager"
+		);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
 	void usesExistingTechnicalUserForExternalScmManager(boolean internalJenkins) throws GitAPIException {
 		config.getJenkins().setInternal(internalJenkins);
 		config.getApplication().setNamePrefix("test-");

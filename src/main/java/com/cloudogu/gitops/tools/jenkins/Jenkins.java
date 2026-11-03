@@ -445,11 +445,21 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 				? gopManagedTechnicalUsername
 				: toolConfig().scm().technicalUsername();
 
-			ResolvedCredentials technicalCredentials = credentialsResolver.resolveReference(
-				toolConfig().scm().technicalCredentials(),
-				technicalUsername,
-				toolConfig().scm().technicalPassword()
-			);
+			ResolvedCredentials technicalCredentials;
+			if (internalScmManager) {
+				technicalCredentials = credentialsResolver.resolveGopManagedUser(
+					toolConfig().scm().technicalCredentials(),
+					technicalUsername,
+					toolConfig().scm().technicalPassword(),
+					gitHandler.getTenant().getCredentials().getPassword()
+				);
+			} else {
+				technicalCredentials = credentialsResolver.resolveReference(
+					toolConfig().scm().technicalCredentials(),
+					technicalUsername,
+					toolConfig().scm().technicalPassword()
+				);
+			}
 
 			if (internalScmManager) {
 				if (isBlank(technicalCredentials.password())) {

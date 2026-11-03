@@ -201,6 +201,13 @@ The user on the scm has to have privileges to:
 * add / edit proxy
 * install plugins
 
+For an internal SCM-Manager, GOP reuses the resolved SCM provisioning password for the
+GOP-managed technical user if no separate technical password or Secret reference is
+configured. The same fallback applies to the metrics user when monitoring is enabled.
+Explicitly configured credentials take precedence. This keeps local deployments working
+without additional parameters; dedicated credentials are recommended for other environments.
+The fallback does not apply to technical users of an external SCM-Manager.
+
 ## Monitoring tools
 
 Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
