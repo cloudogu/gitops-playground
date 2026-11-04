@@ -1156,7 +1156,7 @@ public class Config {
 			helm.setChart("cert-manager");
 			helm.setRepoURL("https://charts.jetstack.io");
 			// renovate: depName=cert-manager registryUrl=https://charts.jetstack.io
-			helm.setVersion("1.21.2");
+			helm.setVersion("v1.21.3");
 		}
 
 		@Getter
