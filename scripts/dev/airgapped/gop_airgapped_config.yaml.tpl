@@ -35,7 +35,7 @@ features:
   certManager:
     active: true
     helm:
-      version: v1.21.2
+      version: v1.21.3
       image: "<address>/library/cert-manager-controller:latest"
       webhookImage: "<address>/library/cert-manager-webhook:latest"
       cainjectorImage: "<address>/library/cert-manager-cainjector:latest"

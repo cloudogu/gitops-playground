@@ -24,9 +24,9 @@ SCM_MANAGER_IMAGE_TAG="3.12.1"
 JENKINS_IMAGE="docker://ghcr.io/cloudogu/jenkins-helm:${JENKINS_IMAGE_TAG}"
 SCM_MANAGER_IMAGE="docker://docker.io/scmmanager/scm-manager:${SCM_MANAGER_IMAGE_TAG}"
 
-CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.21.2"
-CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.21.2"
-CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.21.2"
+CERT_MANAGER_CONTROLLER="docker://quay.io/jetstack/cert-manager-controller:v1.21.3"
+CERT_MANAGER_CA_INJECTOR="docker://quay.io/jetstack/cert-manager-cainjector:v1.21.3"
+CERT_MANAGER_WEBHOOK="docker://quay.io/jetstack/cert-manager-webhook:v1.21.3"
 
 KUBECTL_IMAGE="docker://alpine/kubectl:latest"
 TEMURIN_IMAGE="docker://eclipse-temurin:17-jre"
