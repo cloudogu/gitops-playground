@@ -13,9 +13,9 @@ ESO_IMAGE="docker://ghcr.io/external-secrets/external-secrets:v2.11.0"
 VAULT_IMAGE="docker://hashicorp/vault:2.0.4"
 TRAEFIK_IMAGE="docker://docker.io/library/traefik:v3.7.17"
 
-PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.14.0-distroless"
-PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.94.1"
-PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1"
+PROMETHEUS_IMAGE="docker://quay.io/prometheus/prometheus:v3.15.1-distroless"
+PROMETHEUS_OPERATOR_IMAGE="docker://quay.io/prometheus-operator/prometheus-operator:v0.94.2"
+PROMETHEUS_OPERATOR_CONFIG_RELOADER="docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.94.2"
 GRAFANA_IMAGE="docker://docker.io/grafana/grafana:13.2.2-distroless"
 K8S_SIDECAR="docker://quay.io/kiwigrid/k8s-sidecar:2.11.2"
 
