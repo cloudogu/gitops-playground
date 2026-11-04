@@ -364,7 +364,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getChart()).isEqualTo("cert-manager");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getRepoURL()).isEqualTo(
 			"https://charts.jetstack.io");
-		assertThat(myConfig.getFeatures().getCertManager().getHelm().getVersion()).isEqualTo("1.21.2");
+		assertThat(myConfig.getFeatures().getCertManager().getHelm().getVersion()).isEqualTo("v1.21.3");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getStartupAPICheckImage()).isEqualTo("");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getWebhookImage()).isEqualTo("");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getCainjectorImage()).isEqualTo("");

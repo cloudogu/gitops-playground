@@ -340,5 +340,5 @@ Configuration of optional tools supported by gitops-playground.
 | -                                        | `features.certManager.helm.values`               | Map     | `{}`                         | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | -                                        | `features.certManager.helm.chart`                | String  | `cert-manager`               | Name of the Helm chart                                                                                                 |
 | -                                        | `features.certManager.helm.repoURL`              | String  | `https://charts.jetstack.io` | Repository url from which the Helm chart should be obtained                                                            |
-| -                                        | `features.certManager.helm.version`              | String  | `1.21.2`                     | The version of the Helm chart to be installed                                                                          |
+| -                                        | `features.certManager.helm.version`              | String  | `v1.21.3`                    | The version of the Helm chart to be installed                                                                          |
 
