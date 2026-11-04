@@ -193,7 +193,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 		);
 
 		if (toolConfig().scmProviderType() == ScmProviderType.SCM_MANAGER) {
-			String metricsUsername = toolConfig().scmManagerInternal()
+			String metricsUsername = toolConfig().gopManagedScmMetricsUser()
 				? toolConfig().namePrefix() + "metrics"
 				: toolConfig().scmMetricsUsername();
 			ResolvedCredentials resolvedMetricsCredentials = credentialsResolver.resolveReference(
@@ -201,7 +201,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 				metricsUsername,
 				toolConfig().scmMetricsPassword()
 			);
-			runtimeScmMetricsCredentials = toolConfig().scmManagerInternal()
+			runtimeScmMetricsCredentials = toolConfig().gopManagedScmMetricsUser()
 				? new ResolvedCredentials(metricsUsername, resolvedMetricsCredentials.password())
 				: resolvedMetricsCredentials;
 		}
@@ -261,9 +261,9 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 			|| runtimeScmMetricsCredentials.password().isBlank()) {
 			throw new IllegalArgumentException("SCM-Manager metrics endpoint requires metrics user credentials");
 		}
-		if (!toolConfig().scmManagerInternal()
+		if (!toolConfig().gopManagedScmMetricsUser()
 			&& (runtimeScmMetricsCredentials.username() == null || runtimeScmMetricsCredentials.username().isBlank())) {
-			throw new IllegalArgumentException("External SCM-Manager metrics endpoint requires a metrics username");
+			throw new IllegalArgumentException("Existing SCM-Manager metrics endpoint requires a metrics username");
 		}
 	}
 

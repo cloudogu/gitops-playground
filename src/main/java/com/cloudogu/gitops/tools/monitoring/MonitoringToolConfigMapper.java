@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
+import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
 import com.cloudogu.gitops.tools.common.ToolConfigMapper;
 import com.cloudogu.gitops.tools.common.ToolConfigMapperSupport;
@@ -27,6 +28,13 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 		ScmManagerConfig resourcesScmManager = context.isMultiTenant()
 			? config.getMultiTenant().getScmManager()
 			: config.getScm().getScmManager();
+		ScmProviderType resourcesProviderType = context.isMultiTenant()
+			? config.getMultiTenant().getScmProviderType()
+			: config.getScm().getScmProviderType();
+		// A central SCM-Manager may be cluster-local, but its metrics account is not managed by this tenant GOP.
+		boolean gopManagedScmMetricsUser = !context.isMultiTenant()
+			&& resourcesScmManager != null
+			&& Boolean.TRUE.equals(resourcesScmManager.getInternal());
 		return MonitoringToolConfig.builder()
 								   .active(monitoring.getActive())
 								   .namespace(config.getApplication().getNamePrefix() + monitoring.getNamespace())
@@ -51,8 +59,8 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 								   .jenkinsInternal(config.getJenkins().getInternal())
 								   .jenkinsNamespace(config.getJenkins().getNamespace())
 								   .jenkinsUrl(config.getJenkins().getUrl())
-								   .scmProviderType(config.getScm() == null ? null : config.getScm().getScmProviderType())
-								   .scmManagerInternal(resourcesScmManager != null && Boolean.TRUE.equals(resourcesScmManager.getInternal()))
+								   .scmProviderType(resourcesProviderType)
+								   .gopManagedScmMetricsUser(gopManagedScmMetricsUser)
 								   .scmMetricsUsername(resourcesScmManager == null ? null : resourcesScmManager.getMetricsUsername())
 								   .scmMetricsPassword(resourcesScmManager == null ? null : resourcesScmManager.getMetricsPassword())
 								   .scmMetricsCredentials(resourcesScmManager == null ? null : CredentialsReference.from(resourcesScmManager.getMetricsCredentials()))
@@ -63,11 +71,12 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 									   config.getApplication().getLocalHelmChartFolder()
 								   ))
 								   .imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-								   .templateConfig(templateConfig(config, context))
+								   .templateConfig(templateConfig(config, context, resourcesProviderType))
 								   .build();
 	}
 
-	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
+	private static Map<String, Object> templateConfig(
+		Config config, DeploymentContext context, ScmProviderType resourcesProviderType) {
 		Config.MonitoringSchema.MonitoringHelmSchema helm = config.getFeatures().getMonitoring().getHelm();
 		String scmManagerNamespace = config.getScm() == null || config.getScm().getScmManager() == null
 			? "scm-manager"
@@ -111,7 +120,7 @@ public class MonitoringToolConfigMapper implements ToolConfigMapper<MonitoringTo
 			.put("jenkins.namespace", config.getJenkins().getNamespace())
 			.put("registry.createImagePullSecrets", config.getRegistry().getCreateImagePullSecrets())
 			.put("scm.scmManager.namespace", scmManagerNamespace)
-			.put("scm.scmProviderType", config.getScm() == null ? null : config.getScm().getScmProviderType())
+			.put("scm.scmProviderType", resourcesProviderType)
 			.values();
 	}
 

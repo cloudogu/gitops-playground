@@ -36,7 +36,7 @@ public record MonitoringToolConfig(
 	String jenkinsNamespace,
 	String jenkinsUrl,
 	ScmProviderType scmProviderType,
-	boolean scmManagerInternal,
+	boolean gopManagedScmMetricsUser,
 	String scmMetricsUsername,
 	String scmMetricsPassword,
 	CredentialsReference scmMetricsCredentials,
