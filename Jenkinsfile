@@ -407,9 +407,8 @@ pipeline {
                         image.push()
 
                         if (env.TAG_NAME) {
-                            image.push('latest')
+                            // 'latest' is pushed in 'Publish Release', once the release is complete.
                             image.push(env.TAG_NAME)
-                            currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
                             currentBuild.description += "\nRelease: ${env.TAG_NAME}"
                         }
                     }
@@ -434,9 +433,14 @@ pipeline {
                                 asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
                                 cp sbom.cdx.json "$asset"
                                 sha256sum "$asset" > "${asset}.sha256"
-                                gh release upload "$TAG_NAME" "$asset" "${asset}.sha256" \
-                                    --repo "$GITHUB_REPOSITORY" \
-                                    --clobber
+                                # One file at a time with retries: parallel uploads to the draft failed with a transient 404.
+                                for f in "$asset" "${asset}.sha256"; do
+                                    for i in 1 2 3; do
+                                        gh release upload "$TAG_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber && break
+                                        [ "$i" = 3 ] && exit 1
+                                        sleep 5
+                                    done
+                                done
 
                                 gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json body -q .body > notes.md
                                 download_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG_NAME"
@@ -479,6 +483,11 @@ pipeline {
                                 gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false
                             '''
                         }
+                        // Only a complete release moves 'latest'. Non-main releases got here only after confirmation in 'Resolve tag'.
+                        docker.withRegistry("https://${DOCKER_REGISTRY_BASE_URL}", 'cesmarvin-ghcr') {
+                            docker.image(env.FULL_IMAGE_TAG).push('latest')
+                        }
+                        currentBuild.description += "\nImage: ${env.DOCKER_REGISTRY_BASE_URL}/${env.DOCKER_IMAGE_NAME}:latest"
                         // Shows the new tag as latest on the next 'Build with Parameters' screen.
                         refreshParameters(env.TAG_NAME)
                     }
