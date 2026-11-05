@@ -43,8 +43,8 @@ public class GitHandler {
 	public void validate() {
 		boolean gitlabRequested = config.getScm().getScmProviderType() == ScmProviderType.GITLAB;
 		boolean gitlabUrlConfigured = config.getScm().getGitlab() != null && !StringUtils.isEmpty(config.getScm()
-																					.getGitlab()
-																					.getUrl());
+																										.getGitlab()
+																										.getUrl());
 		if (gitlabRequested || gitlabUrlConfigured) {
 			config.getScm().setScmProviderType(ScmProviderType.GITLAB);
 			config.getScm().setScmManager(null);
@@ -60,12 +60,13 @@ public class GitHandler {
 		}
 
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
-		if (config.getScm().getScmManager() != null) {
+
+		if (isInternalTenantScmManager()) {
 			String prefix = config.getApplication().getNamePrefix();
 			if (prefix == null) {
 				prefix = "";
 			}
-			config.getScm().getScmManager().setGitOpsUsername(prefix + "gitops");
+			config.getScm().getScmManager().setGopManagedTechnicalUsername(prefix + "gitops");
 		}
 	}
 
@@ -87,6 +88,11 @@ public class GitHandler {
 		}
 
 		throw new IllegalStateException("No SCM provider found.");
+	}
+
+	private boolean isInternalTenantScmManager() {
+		var scmManager = config.getScm().getScmManager();
+		return scmManager != null && Boolean.TRUE.equals(scmManager.getInternal());
 	}
 
 	private GitProvider createTenantScmProvider() {
@@ -122,7 +128,7 @@ public class GitHandler {
 			}
 			default ->
 				throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM: " + config.getScm()
-																											   .getScmProviderType());
+																										   .getScmProviderType());
 		};
 	}
 
@@ -154,7 +160,7 @@ public class GitHandler {
 				);
 			}
 			default -> throw new IllegalArgumentException("Unsupported SCM-Central provider: " + config.getMultiTenant()
-																													   .getScmProviderType());
+																									   .getScmProviderType());
 		};
 	}
 

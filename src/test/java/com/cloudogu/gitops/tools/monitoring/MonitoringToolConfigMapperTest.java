@@ -4,6 +4,7 @@ import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
+import com.cloudogu.gitops.config.scm.ScmCentralSchema;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -93,6 +94,15 @@ class MonitoringToolConfigMapperTest {
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
 		scmManager.setNamespace("source-control");
 		config.getScm().setScmManager(scmManager);
+		config.getMultiTenant().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		ScmCentralSchema.ScmManagerCentralConfig centralScmManager = new ScmCentralSchema.ScmManagerCentralConfig();
+		centralScmManager.setInternal(false);
+		centralScmManager.getMetricsUser().setUsername("scm-metrics-user");
+		centralScmManager.getMetricsUser().setPassword("scm-metrics-password");
+		centralScmManager.getMetricsUser().setCredentials(
+			new Credentials(null, null, "scm-metrics-secret", "gop-job", "metrics-user", "metrics-password")
+		);
+		config.getMultiTenant().setScmManager(centralScmManager);
 
 		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context());
 
@@ -141,6 +151,15 @@ class MonitoringToolConfigMapperTest {
 														 .jenkinsNamespace("jenkins-system")
 														 .jenkinsUrl("https://jenkins.example.org")
 														 .scmProviderType(ScmProviderType.SCM_MANAGER)
+														 .gopManagedScmMetricsUser(false)
+														 .scmMetricsUsername("scm-metrics-user")
+														 .scmMetricsPassword("scm-metrics-password")
+														 .scmMetricsCredentials(new CredentialsReference(
+															 "scm-metrics-secret",
+															 "gop-job",
+															 "metrics-user",
+															 "metrics-password"
+														 ))
 														 .ingressActive(true)
 														 .jenkinsActive(true)
 														 .helm(HelmChartConfig.builder()
@@ -226,6 +245,60 @@ class MonitoringToolConfigMapperTest {
 															 )
 														 ))
 														 .build());
+	}
+
+	@Test
+	void usesExistingCentralScmMetricsUserWhenTenantUsesGitLab() {
+		Config config = new Config();
+		config.getApplication().setNamePrefix("tenant-");
+		config.getScm().setScmProviderType(ScmProviderType.GITLAB);
+		config.getScm().setScmManager(null);
+		config.getMultiTenant().setScmProviderType(ScmProviderType.SCM_MANAGER);
+
+		ScmCentralSchema.ScmManagerCentralConfig centralScmManager = new ScmCentralSchema.ScmManagerCentralConfig();
+		centralScmManager.setInternal(true); // Cluster-local, but not managed by this tenant GOP.
+		centralScmManager.getMetricsUser().setUsername("central-metrics");
+		centralScmManager.getMetricsUser().setPassword("central-password");
+		centralScmManager.getMetricsUser().setCredentials(
+			new Credentials(null, null, "central-metrics-secret", "monitoring")
+		);
+		config.getMultiTenant().setScmManager(centralScmManager);
+
+		DeploymentContext context = new DeploymentContext(
+			DeploymentContext.TenantMode.MULTI_TENANT,
+			DeploymentContext.ScmManagerDeploymentMode.DISABLED,
+			DeploymentContext.ArgoCdDeploymentMode.OPERATOR,
+			false,
+			DeploymentContext.ClusterDistribution.KUBERNETES
+		);
+		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context);
+
+		assertThat(actual.scmProviderType()).isEqualTo(ScmProviderType.SCM_MANAGER);
+		assertThat(actual.gopManagedScmMetricsUser()).isFalse();
+		assertThat(actual.scmMetricsUsername()).isEqualTo("central-metrics");
+		assertThat(actual.scmMetricsPassword()).isEqualTo("central-password");
+		assertThat(actual.scmMetricsCredentials()).isEqualTo(
+			new CredentialsReference("central-metrics-secret", "monitoring", "username", "password")
+		);
+		assertThat(((Map<?, ?>) actual.templateConfig().get("scm")).get("scmProviderType"))
+			.isEqualTo(ScmProviderType.SCM_MANAGER);
+	}
+
+	@Test
+	void usesCentralGitLabProviderWhenTenantUsesScmManager() {
+		Config config = new Config();
+		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
+		config.getScm().setScmManager(new ScmTenantSchema.ScmManagerTenantConfig());
+		config.getMultiTenant().setScmProviderType(ScmProviderType.GITLAB);
+		config.getMultiTenant().setScmManager(null);
+
+		MonitoringToolConfig actual = new MonitoringToolConfigMapper(config).map(context());
+
+		assertThat(actual.scmProviderType()).isEqualTo(ScmProviderType.GITLAB);
+		assertThat(actual.gopManagedScmMetricsUser()).isFalse();
+		assertThat(actual.scmMetricsCredentials()).isNull();
+		assertThat(((Map<?, ?>) actual.templateConfig().get("scm")).get("scmProviderType"))
+			.isEqualTo(ScmProviderType.GITLAB);
 	}
 
 	private static DeploymentContext context() {

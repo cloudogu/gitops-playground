@@ -18,7 +18,13 @@ public interface ScmManagerConfig {
 
 	Config.HelmConfigWithValues getHelm();
 
-	String getGitOpsUsername();
+	String getGopManagedTechnicalUsername();
+
+	String getMetricsUsername();
+
+	String getMetricsPassword();
+
+	Credentials getMetricsCredentials();
 
 	Credentials getCredentials();
 }

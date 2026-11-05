@@ -158,9 +158,10 @@ See [parameters](./Configuration.md) for examples.
 
 The user has to have the following privileges:
 * install plugins
-* set credentials
 * create jobs
 * restarting
+
+Credentials of an external Jenkins are managed outside GOP. When using the example applications, the external Jenkins must already provide the credential IDs `scm-user` and `registry-user`. If a proxy registry is configured, `registry-proxy-user` must also exist.
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
@@ -199,6 +200,13 @@ The user on the scm has to have privileges to:
 * add / edit repositories
 * add / edit proxy
 * install plugins
+
+For an internal SCM-Manager, GOP reuses the resolved SCM provisioning password for the
+GOP-managed technical user if no separate technical password or Secret reference is
+configured. The same fallback applies to the metrics user when monitoring is enabled.
+Explicitly configured credentials take precedence. This keeps local deployments working
+without additional parameters; dedicated credentials are recommended for other environments.
+The fallback does not apply to technical users of an external SCM-Manager.
 
 ## Monitoring tools
 
