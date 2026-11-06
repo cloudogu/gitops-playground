@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.rbac.Role;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
@@ -32,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Verifies the complete external Vault flow: Vault -> External Secrets Operator -> Kubernetes Secret.
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault(-approle)?")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault(-(approle|kubernetes))?")
 public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 
 	private static final String ESO_NAMESPACE = "secrets";
@@ -162,6 +164,63 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 			Secret credentials = client.secrets().inNamespace(TARGET_NAMESPACE).withName("vault-approle").get();
 			assertThat(credentials).isNotNull();
 			assertThat(credentials.getData()).containsKey("secret-id");
+		}
+	}
+
+	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-kubernetes")
+	void usesKubernetesServiceAccountAuthentication() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			Polling.untilAsserted(() -> {
+				GenericKubernetesResource store = client.genericKubernetesResources(SECRET_STORE_CONTEXT)
+					.inNamespace(TARGET_NAMESPACE)
+					.withName(SECRET_STORE_NAME)
+					.get();
+				assertThat(store).isNotNull();
+
+				JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
+					.path("spec").path("provider").path("vault").path("auth");
+				assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
+				JsonNode kubernetes = auth.path("kubernetes");
+				assertThat(kubernetes.isObject()).isTrue();
+				assertThat(kubernetes.path("mountPath").asText()).isEqualTo("kubernetes");
+				assertThat(kubernetes.path("role").asText()).isEqualTo("gop-eso");
+				JsonNode account = kubernetes.path("serviceAccountRef");
+				assertThat(account.path("name").asText()).isEqualTo("eso-vault-auth");
+				assertThat(account.path("audiences").isArray()).isTrue();
+				assertThat(account.path("audiences").size()).isEqualTo(1);
+				assertThat(account.path("audiences").get(0).asText()).isEqualTo("vault");
+			}, SYNC_TIMEOUT, POLL_INTERVAL);
+
+			assertThat(client.serviceAccounts().inNamespace(TARGET_NAMESPACE).withName("eso-vault-auth").get())
+				.as("Pre-existing Vault authentication service account")
+				.isNotNull();
+		}
+	}
+
+	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-kubernetes")
+	void scopesEsoTokenRequestsToVaultServiceAccount() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			Role role = client.rbac().roles().inNamespace(TARGET_NAMESPACE)
+				.withName("eso-vault-token-request").get();
+			assertThat(role).isNotNull();
+			assertThat(role.getRules()).singleElement().satisfies(rule -> {
+				assertThat(rule.getApiGroups()).containsExactly("");
+				assertThat(rule.getResources()).containsExactly("serviceaccounts/token");
+				assertThat(rule.getResourceNames()).containsExactly("eso-vault-auth");
+				assertThat(rule.getVerbs()).containsExactly("create");
+			});
+
+			RoleBinding binding = client.rbac().roleBindings().inNamespace(TARGET_NAMESPACE)
+				.withName("eso-vault-token-request").get();
+			assertThat(binding).isNotNull();
+			assertThat(binding.getRoleRef().getName()).isEqualTo("eso-vault-token-request");
+			assertThat(binding.getSubjects()).singleElement().satisfies(subject -> {
+				assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+				assertThat(subject.getName()).isEqualTo("external-secrets");
+				assertThat(subject.getNamespace()).isEqualTo(ESO_NAMESPACE);
+			});
 		}
 	}
 
