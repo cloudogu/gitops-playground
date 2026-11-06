@@ -447,8 +447,11 @@ class ExternalSecretsOperatorTest {
 		externalSecrets.getVault().setServer("http://host.k3d.internal:8200");
 		externalSecrets.getVault().setPath("secret");
 		externalSecrets.getVault().setVersion("v2");
-		externalSecrets.getVault().getAuth().getTokenSecretRef().setName("vault-token");
-		externalSecrets.getVault().getAuth().getTokenSecretRef().setKey("token");
+		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
+			new Config.SecretsSchema.ESOSchema.TokenSecretRefSchema();
+		tokenSecretRef.setName("vault-token");
+		tokenSecretRef.setKey("token");
+		externalSecrets.getVault().getAuth().setTokenSecretRef(tokenSecretRef);
 
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema secret =
 			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
