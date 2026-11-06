@@ -16,6 +16,7 @@ VAULT_TOKEN="dev-only-token"
 SECRET_PATH="secret/gop/customer-test"
 SECRET_USERNAME="${EXTERNAL_VAULT_TEST_USERNAME}"
 SECRET_PASSWORD="${EXTERNAL_VAULT_TEST_PASSWORD}"
+CREATE_TOKEN_SECRET=true
 # renovate: depName=hashicorp/vault datasource=docker
 VAULT_IMAGE="hashicorp/vault:2.2.1"
 
@@ -26,6 +27,7 @@ while [[ $# -gt 0 ]]; do
     --namespace=*) NAMESPACE="${1#*=}" ;;
     --vault-token=*) VAULT_TOKEN="${1#*=}" ;;
     --vault-image=*) VAULT_IMAGE="${1#*=}" ;;
+    --skip-token-secret) CREATE_TOKEN_SECRET=false ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
   shift
@@ -78,9 +80,11 @@ docker exec \
     password="${SECRET_PASSWORD}" >/dev/null
 
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-kubectl -n "${NAMESPACE}" create secret generic vault-token \
-  --from-literal=token="${VAULT_TOKEN}" \
-  --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+if [[ "${CREATE_TOKEN_SECRET}" == "true" ]]; then
+  kubectl -n "${NAMESPACE}" create secret generic vault-token \
+    --from-literal=token="${VAULT_TOKEN}" \
+    --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+fi
 
 MAPPED_PORT=$(docker port "${CONTAINER_NAME}" 8200/tcp | head -n 1 | sed 's/.*://')
 printf 'http://host.k3d.internal:%s\n' "${MAPPED_PORT}"
