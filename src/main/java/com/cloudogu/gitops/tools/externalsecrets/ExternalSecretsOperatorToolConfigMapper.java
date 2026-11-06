@@ -49,8 +49,6 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		Config.SecretsSchema.ESOSchema.ExternalVaultSchema vault = externalSecrets.getVault();
 		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider = vault == null ? null : vault.getCaProvider();
 		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth = vault == null ? null : vault.getAuth();
-		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
-			auth == null ? null : auth.getTokenSecretRef();
 		List<String> targetNamespaces = managedSecrets.stream()
 													  .map(ManagedExternalSecretConfig::namespace)
 													  .distinct()
@@ -64,10 +62,39 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 								  .caProvider(caProvider == null ? null : new ExternalVaultConfig.CaProvider(
 									  caProvider.getType(), caProvider.getName(), caProvider.getKey()
 								  ))
-								  .tokenSecretName(tokenSecretRef == null ? null : tokenSecretRef.getName())
-								  .tokenSecretKey(tokenSecretRef == null ? null : tokenSecretRef.getKey())
+								  .auth(vaultAuth(auth))
 								  .targetNamespaces(targetNamespaces)
 								  .build();
+	}
+
+	private static ExternalVaultConfig.VaultAuth vaultAuth(Config.SecretsSchema.ESOSchema.VaultAuthSchema auth) {
+		if (auth == null) {
+			return null;
+		}
+
+		if (auth.getTokenSecretRef() != null) {
+			Config.SecretsSchema.ESOSchema.TokenSecretRefSchema token = auth.getTokenSecretRef();
+			return new ExternalVaultConfig.TokenSecretRef(token.getName(), token.getKey());
+		}
+		if (auth.getAppRole() != null) {
+			Config.SecretsSchema.ESOSchema.AppRoleSchema appRole = auth.getAppRole();
+			Config.SecretsSchema.ESOSchema.AppRoleSecretRefSchema secret = appRole.getSecretRef();
+			return new ExternalVaultConfig.AppRole(
+				appRole.getPath(),
+				appRole.getRoleId(),
+				secret == null ? null : new ExternalVaultConfig.SecretRef(secret.getName(), secret.getKey())
+			);
+		}
+		if (auth.getKubernetes() != null) {
+			Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes = auth.getKubernetes();
+			Config.SecretsSchema.ESOSchema.KubernetesServiceAccountRefSchema account = kubernetes.getServiceAccountRef();
+			return new ExternalVaultConfig.KubernetesAuth(
+				kubernetes.getMountPath(),
+				kubernetes.getRole(),
+				account == null ? null : new ExternalVaultConfig.ServiceAccountRef(account.getName(), account.getAudiences())
+			);
+		}
+		return null;
 	}
 
 	private static List<ManagedExternalSecretConfig> managedSecrets(Config.SecretsSchema.ESOSchema externalSecrets) {
