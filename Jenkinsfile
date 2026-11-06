@@ -467,19 +467,18 @@ pipeline {
                             '''
                         }
                         // Attach to the digest of the pushed image, not to the tag, so the SBOM is bound to exactly the scanned image.
+                        // Signature and checksum describe the SBOM, so they are attached to the SBOM artifact, not to the image.
                         sh '''
+                            oras() {
+                                printf '%s' "$GH_TOKEN" | docker run --rm -i -v "$WORKSPACE:/workspace" -w /workspace "$ORAS_IMAGE" \
+                                    "$@" --username "$GH_USERNAME" --password-stdin
+                            }
+                            asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
                             IMAGE_DIGEST=$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$FULL_IMAGE_TAG" | grep "^$DOCKER_REGISTRY_BASE_URL/$DOCKER_IMAGE_NAME@")
-                            printf '%s' "$GH_TOKEN" | docker run --rm -i \
-                                -v "$WORKSPACE:/workspace" \
-                                -w /workspace \
-                                "$ORAS_IMAGE" attach \
-                                    --username "$GH_USERNAME" \
-                                    --password-stdin \
-                                    --artifact-type application/vnd.cyclonedx+json \
-                                    "$IMAGE_DIGEST" \
-                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
-                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain" \
-                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.asc:application/pgp-signature"
+                            SBOM_REF=$(oras attach --artifact-type application/vnd.cyclonedx+json --format go-template --template '{{.reference}}' \
+                                "$IMAGE_DIGEST" "$asset:application/vnd.cyclonedx+json")
+                            oras attach --artifact-type application/pgp-signature "$SBOM_REF" "${asset}.asc:application/pgp-signature"
+                            oras attach --artifact-type text/plain "$SBOM_REF" "${asset}.sha256:text/plain"
                         '''
                         // Image, SBOM assets and OCI attachment exist: push the signed tag and make the draft release public.
                         withCredentials([usernamePassword(
