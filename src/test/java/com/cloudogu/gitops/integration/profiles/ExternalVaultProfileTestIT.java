@@ -4,6 +4,8 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import com.cloudogu.gitops.utils.YamlUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -30,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Verifies the complete external Vault flow: Vault -> External Secrets Operator -> Kubernetes Secret.
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault|operator-full-external-vault")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault(-approle)?")
 public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 
 	private static final String ESO_NAMESPACE = "secrets";
@@ -107,40 +109,79 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	@Test
 	void createsReadyExternalSecretResources() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			Polling.untilAsserted(() -> {
-				GenericKubernetesResource secretStore = client.genericKubernetesResources(SECRET_STORE_CONTEXT)
-					.inNamespace(TARGET_NAMESPACE)
-					.withName(SECRET_STORE_NAME)
-					.get();
-				GenericKubernetesResource externalSecret = client.genericKubernetesResources(EXTERNAL_SECRET_CONTEXT)
-					.inNamespace(TARGET_NAMESPACE)
-					.withName(EXTERNAL_SECRET_NAME)
-					.get();
+			Polling.untilAsserted(
+				() -> {
+					GenericKubernetesResource secretStore = client.genericKubernetesResources(SECRET_STORE_CONTEXT)
+																  .inNamespace(TARGET_NAMESPACE)
+																  .withName(SECRET_STORE_NAME)
+																  .get();
+					GenericKubernetesResource externalSecret = client.genericKubernetesResources(EXTERNAL_SECRET_CONTEXT)
+																	 .inNamespace(TARGET_NAMESPACE)
+																	 .withName(EXTERNAL_SECRET_NAME)
+																	 .get();
 
-				assertThat(secretStore).as("SecretStore %s/%s", TARGET_NAMESPACE, SECRET_STORE_NAME).isNotNull();
-				assertThat(externalSecret).as("ExternalSecret %s/%s", TARGET_NAMESPACE, EXTERNAL_SECRET_NAME).isNotNull();
+					assertThat(secretStore).as("SecretStore %s/%s", TARGET_NAMESPACE, SECRET_STORE_NAME).isNotNull();
+					assertThat(externalSecret).as(
+						"ExternalSecret %s/%s",
+						TARGET_NAMESPACE,
+						EXTERNAL_SECRET_NAME
+					).isNotNull();
 
-				assertReadyCondition(secretStore, "SecretStore", SECRET_STORE_NAME, "Valid");
-				assertReadyCondition(externalSecret, "ExternalSecret", EXTERNAL_SECRET_NAME, "SecretSynced");
-			}, SYNC_TIMEOUT, POLL_INTERVAL);
+					assertReadyCondition(secretStore, "SecretStore", SECRET_STORE_NAME, "Valid");
+					assertReadyCondition(externalSecret, "ExternalSecret", EXTERNAL_SECRET_NAME, "SecretSynced");
+				}, SYNC_TIMEOUT, POLL_INTERVAL
+			);
+		}
+	}
+
+	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-approle")
+	void usesAppRoleSecretReference() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			Polling.untilAsserted(
+				() -> {
+					GenericKubernetesResource store = client.genericKubernetesResources(SECRET_STORE_CONTEXT)
+															.inNamespace(TARGET_NAMESPACE)
+															.withName(SECRET_STORE_NAME)
+															.get();
+					assertThat(store).isNotNull();
+
+					JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
+													  .path("spec").path("provider").path("vault").path("auth");
+					assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
+					JsonNode appRole = auth.path("appRole");
+					assertThat(appRole.isObject()).isTrue();
+					assertThat(appRole.path("path").asText()).isEqualTo("approle");
+					assertThat(appRole.path("roleId").asText()).isEqualTo("gop-eso-local-test");
+					assertThat(appRole.path("secretRef").path("name").asText()).isEqualTo("vault-approle");
+					assertThat(appRole.path("secretRef").path("key").asText()).isEqualTo("secret-id");
+					assertThat(appRole.has("secretId")).isFalse();
+				}, SYNC_TIMEOUT, POLL_INTERVAL
+			);
+
+			Secret credentials = client.secrets().inNamespace(TARGET_NAMESPACE).withName("vault-approle").get();
+			assertThat(credentials).isNotNull();
+			assertThat(credentials.getData()).containsKey("secret-id");
 		}
 	}
 
 	@Test
 	void synchronizesSecretFromExternalVault() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-			Polling.untilAsserted(() -> {
-				Secret secret = client.secrets().inNamespace(TARGET_NAMESPACE).withName(EXTERNAL_SECRET_NAME).get();
-				assertThat(secret)
-					.as("Secret %s/%s synchronized by ESO", TARGET_NAMESPACE, EXTERNAL_SECRET_NAME)
-					.isNotNull();
-				assertThat(secretValue(secret, "username")).isEqualTo(EXPECTED_USERNAME);
-				assertThat(secretValue(secret, "password")).isEqualTo(EXPECTED_PASSWORD);
-				assertThat(secret.getMetadata().getOwnerReferences()).anySatisfy(ownerReference -> {
-					assertThat(ownerReference.getKind()).isEqualTo("ExternalSecret");
-					assertThat(ownerReference.getName()).isEqualTo(EXTERNAL_SECRET_NAME);
-				});
-			}, SYNC_TIMEOUT, POLL_INTERVAL);
+			Polling.untilAsserted(
+				() -> {
+					Secret secret = client.secrets().inNamespace(TARGET_NAMESPACE).withName(EXTERNAL_SECRET_NAME).get();
+					assertThat(secret)
+						.as("Secret %s/%s synchronized by ESO", TARGET_NAMESPACE, EXTERNAL_SECRET_NAME)
+						.isNotNull();
+					assertThat(secretValue(secret, "username")).isEqualTo(EXPECTED_USERNAME);
+					assertThat(secretValue(secret, "password")).isEqualTo(EXPECTED_PASSWORD);
+					assertThat(secret.getMetadata().getOwnerReferences()).anySatisfy(ownerReference -> {
+						assertThat(ownerReference.getKind()).isEqualTo("ExternalSecret");
+						assertThat(ownerReference.getName()).isEqualTo(EXTERNAL_SECRET_NAME);
+					});
+				}, SYNC_TIMEOUT, POLL_INTERVAL
+			);
 		}
 	}
 
