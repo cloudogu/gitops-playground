@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExternalSecretsOperatorToolConfigMapperTest {
@@ -99,8 +98,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	    .version("v2")
 																	    .caProvider(new ExternalVaultConfig.CaProvider(
 																	        "ConfigMap", "external-vault-ca", "ca.crt"))
-																	    .tokenSecretName("vault-token")
-																	    .tokenSecretKey("token")
+																	    .auth(new ExternalVaultConfig.TokenSecretRef("vault-token", "token"))
 																	    .targetNamespaces(List.of("customer-app"))
 																	    .build())
 																	  .managedSecrets(List.of(ManagedExternalSecretConfig.builder()
@@ -197,7 +195,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 	}
 
 	@Test
-	void acceptsAppRoleAuthentication() {
+	void mapsAppRoleAuthentication() {
 		Config config = configWithExternalSecret();
 		Config.SecretsSchema.ESOSchema.AppRoleSchema appRole =
 			new Config.SecretsSchema.ESOSchema.AppRoleSchema();
@@ -206,12 +204,14 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		appRole.getSecretRef().setKey("secret-id");
 		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setAppRole(appRole);
 
-		assertThatCode(() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()))
-			.doesNotThrowAnyException();
+		ExternalVaultConfig vault = new ExternalSecretsOperatorToolConfigMapper(config).map(context()).externalVault();
+		assertThat(vault.auth()).isEqualTo(new ExternalVaultConfig.AppRole(
+			"approle", "gop-eso-role-id", new ExternalVaultConfig.SecretRef("vault-approle", "secret-id")
+		));
 	}
 
 	@Test
-	void acceptsKubernetesAuthentication() {
+	void mapsKubernetesAuthentication() {
 		Config config = configWithExternalSecret();
 		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
 			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
@@ -220,8 +220,10 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		kubernetes.getServiceAccountRef().setAudiences(List.of("vault"));
 		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setKubernetes(kubernetes);
 
-		assertThatCode(() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()))
-			.doesNotThrowAnyException();
+		ExternalVaultConfig vault = new ExternalSecretsOperatorToolConfigMapper(config).map(context()).externalVault();
+		assertThat(vault.auth()).isEqualTo(new ExternalVaultConfig.KubernetesAuth(
+			"kubernetes", "gop-eso", new ExternalVaultConfig.ServiceAccountRef("eso-vault-auth", List.of("vault"))
+		));
 	}
 
 	@Test

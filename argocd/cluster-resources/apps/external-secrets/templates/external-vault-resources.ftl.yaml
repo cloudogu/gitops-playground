@@ -17,9 +17,30 @@ spec:
         key: "${vault.caProvider.key?json_string}"
 </#if>
       auth:
+<#if vault.auth.tokenSecretRef??>
         tokenSecretRef:
-          name: "${vault.tokenSecretName?json_string}"
-          key: "${vault.tokenSecretKey?json_string}"
+          name: "${vault.auth.tokenSecretRef.name?json_string}"
+          key: "${vault.auth.tokenSecretRef.key?json_string}"
+<#elseif vault.auth.appRole??>
+        appRole:
+          path: "${vault.auth.appRole.path?json_string}"
+          roleId: "${vault.auth.appRole.roleId?json_string}"
+          secretRef:
+            name: "${vault.auth.appRole.secretRef.name?json_string}"
+            key: "${vault.auth.appRole.secretRef.key?json_string}"
+<#elseif vault.auth.kubernetes??>
+        kubernetes:
+          mountPath: "${vault.auth.kubernetes.mountPath?json_string}"
+          role: "${vault.auth.kubernetes.role?json_string}"
+          serviceAccountRef:
+            name: "${vault.auth.kubernetes.serviceAccountRef.name?json_string}"
+<#if vault.auth.kubernetes.serviceAccountRef.audiences??>
+            audiences:
+<#list vault.auth.kubernetes.serviceAccountRef.audiences as audience>
+              - "${audience?json_string}"
+</#list>
+</#if>
+</#if>
 ---
 </#list>
 <#list externalSecrets as secret>
