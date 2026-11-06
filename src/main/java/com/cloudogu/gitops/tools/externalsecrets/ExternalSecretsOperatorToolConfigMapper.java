@@ -24,22 +24,23 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		List<ManagedExternalSecretConfig> managedSecrets = managedSecrets(externalSecrets);
 		ExternalVaultConfig externalVault = externalVault(externalSecrets, managedSecrets);
 		validateExternalVaultConfig(externalVault, managedSecrets);
+		validateVaultAuth(externalSecrets.getVault(), managedSecrets);
 
 		return ExternalSecretsOperatorToolConfig.builder()
-			.active(externalSecrets.getActive())
-			.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
-			.operator(context.isArgoCdOperator())
-			.skipCrds(config.getApplication().getSkipCrds())
-			.netpols(config.getApplication().getNetpols())
-			.helm(ToolConfigMapperSupport.helmChart(
-				externalSecrets.getHelm(),
-				config.getApplication().getLocalHelmChartFolder()
-			))
-			.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
-			.externalVault(externalVault)
-			.managedSecrets(managedSecrets)
-			.templateConfig(templateConfig(config, context))
-			.build();
+												.active(externalSecrets.getActive())
+												.namespace(config.getApplication().getNamePrefix() + secrets.getNamespace())
+												.operator(context.isArgoCdOperator())
+												.skipCrds(config.getApplication().getSkipCrds())
+												.netpols(config.getApplication().getNetpols())
+												.helm(ToolConfigMapperSupport.helmChart(
+													externalSecrets.getHelm(),
+													config.getApplication().getLocalHelmChartFolder()
+												))
+												.imagePullSecret(ToolConfigMapperSupport.imagePullSecret(config.getRegistry()))
+												.externalVault(externalVault)
+												.managedSecrets(managedSecrets)
+												.templateConfig(templateConfig(config, context))
+												.build();
 	}
 
 	private static ExternalVaultConfig externalVault(
@@ -51,22 +52,22 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
 			auth == null ? null : auth.getTokenSecretRef();
 		List<String> targetNamespaces = managedSecrets.stream()
-			.map(ManagedExternalSecretConfig::namespace)
-			.distinct()
-			.toList();
+													  .map(ManagedExternalSecretConfig::namespace)
+													  .distinct()
+													  .toList();
 
 		return ExternalVaultConfig.builder()
-			.storeName(vault == null ? null : vault.getStoreName())
-			.server(vault == null ? null : vault.getServer())
-			.path(vault == null ? null : vault.getPath())
-			.version(vault == null ? null : vault.getVersion())
-			.caProvider(caProvider == null ? null : new ExternalVaultConfig.CaProvider(
-				caProvider.getType(), caProvider.getName(), caProvider.getKey()
-			))
-			.tokenSecretName(tokenSecretRef == null ? null : tokenSecretRef.getName())
-			.tokenSecretKey(tokenSecretRef == null ? null : tokenSecretRef.getKey())
-			.targetNamespaces(targetNamespaces)
-			.build();
+								  .storeName(vault == null ? null : vault.getStoreName())
+								  .server(vault == null ? null : vault.getServer())
+								  .path(vault == null ? null : vault.getPath())
+								  .version(vault == null ? null : vault.getVersion())
+								  .caProvider(caProvider == null ? null : new ExternalVaultConfig.CaProvider(
+									  caProvider.getType(), caProvider.getName(), caProvider.getKey()
+								  ))
+								  .tokenSecretName(tokenSecretRef == null ? null : tokenSecretRef.getName())
+								  .tokenSecretKey(tokenSecretRef == null ? null : tokenSecretRef.getKey())
+								  .targetNamespaces(targetNamespaces)
+								  .build();
 	}
 
 	private static List<ManagedExternalSecretConfig> managedSecrets(Config.SecretsSchema.ESOSchema externalSecrets) {
@@ -75,14 +76,14 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		}
 
 		return externalSecrets.getSecrets().stream()
-			.map(secret -> ManagedExternalSecretConfig.builder()
-				.name(secret.getName())
-				.namespace(secret.getNamespace())
-				.remoteKey(secret.getRemoteKey())
-				.refreshInterval(secret.getRefreshInterval())
-				.data(secret.getData())
-				.build())
-			.toList();
+							  .map(secret -> ManagedExternalSecretConfig.builder()
+																		.name(secret.getName())
+																		.namespace(secret.getNamespace())
+																		.remoteKey(secret.getRemoteKey())
+																		.refreshInterval(secret.getRefreshInterval())
+																		.data(secret.getData())
+																		.build())
+							  .toList();
 	}
 
 	private static void validateExternalVaultConfig(
@@ -96,9 +97,6 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		requireText(vault.server(), "features.secrets.externalSecrets.vault.server");
 		requireText(vault.path(), "features.secrets.externalSecrets.vault.path");
 		requireText(vault.version(), "features.secrets.externalSecrets.vault.version");
-		requireText(vault.tokenSecretName(), "features.secrets.externalSecrets.vault.auth.tokenSecretRef.name");
-		requireText(vault.tokenSecretKey(), "features.secrets.externalSecrets.vault.auth.tokenSecretRef.key");
-
 		if (vault.caProvider() != null) {
 			ExternalVaultConfig.CaProvider caProvider = vault.caProvider();
 			String keyPrefix = "features.secrets.externalSecrets.vault.caProvider.";
@@ -126,17 +124,79 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		}
 	}
 
+	private static void validateVaultAuth(
+		Config.SecretsSchema.ESOSchema.ExternalVaultSchema vault,
+		List<ManagedExternalSecretConfig> managedSecrets) {
+		if (managedSecrets.isEmpty()) {
+			return;
+		}
+
+		String authKey = "features.secrets.externalSecrets.vault.auth";
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			vault == null ? null : vault.getAuth();
+
+		validateExactlyOneAuthMethod(auth, authKey);
+
+		if (auth.getTokenSecretRef() != null) {
+			Config.SecretsSchema.ESOSchema.TokenSecretRefSchema token = auth.getTokenSecretRef();
+			requireText(token.getName(), authKey + ".tokenSecretRef.name");
+			requireText(token.getKey(), authKey + ".tokenSecretRef.key");
+		} else if (auth.getAppRole() != null) {
+			Config.SecretsSchema.ESOSchema.AppRoleSchema appRole = auth.getAppRole();
+			requireText(appRole.getPath(), authKey + ".appRole.path");
+			requireText(appRole.getRoleId(), authKey + ".appRole.roleId");
+			Config.SecretsSchema.ESOSchema.AppRoleSecretRefSchema secretRef = appRole.getSecretRef();
+			requireText(secretRef == null ? null : secretRef.getName(), authKey + ".appRole.secretRef.name");
+			requireText(secretRef == null ? null : secretRef.getKey(), authKey + ".appRole.secretRef.key");
+		} else {
+			Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes = auth.getKubernetes();
+			requireText(kubernetes.getMountPath(), authKey + ".kubernetes.mountPath");
+			requireText(kubernetes.getRole(), authKey + ".kubernetes.role");
+			Config.SecretsSchema.ESOSchema.KubernetesServiceAccountRefSchema account =
+				kubernetes.getServiceAccountRef();
+			requireText(account == null ? null : account.getName(), authKey + ".kubernetes.serviceAccountRef.name");
+			if (account != null && account.getAudiences() != null) {
+				for (String audience : account.getAudiences()) {
+					requireText(audience, authKey + ".kubernetes.serviceAccountRef.audiences[]");
+				}
+			}
+		}
+	}
+
+	private static void validateExactlyOneAuthMethod(
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth,
+		String authKey) {
+
+		int configuredMethods = 0;
+
+		if (auth != null) {
+			if (auth.getTokenSecretRef() != null) {
+				configuredMethods++;
+			}
+			if (auth.getAppRole() != null) {
+				configuredMethods++;
+			}
+			if (auth.getKubernetes() != null) {
+				configuredMethods++;
+			}
+		}
+
+		if (configuredMethods != 1) {
+			throw new IllegalArgumentException(authKey + " must configure exactly one of tokenSecretRef, appRole, or kubernetes");
+		}
+	}
+
 	private static void requireText(String value, String configKey) {
 		if (value == null || value.isBlank()) {
 			throw new IllegalArgumentException(configKey + " must be configured when external Vault secrets are used");
 		}
 	}
 
-	private static Map<String, Object> templateConfig(Config config,  DeploymentContext context) {
+	private static Map<String, Object> templateConfig(Config config, DeploymentContext context) {
 		Config.SecretsSchema.ESOSchema.ESOHelmSchema helm = config.getFeatures()
-			.getSecrets()
-			.getExternalSecrets()
-			.getHelm();
+																  .getSecrets()
+																  .getExternalSecrets()
+																  .getHelm();
 		return new TemplateConfig()
 			.put("application.podResources", config.getApplication().getPodResources())
 			.put("application.skipCrds", config.getApplication().getSkipCrds())

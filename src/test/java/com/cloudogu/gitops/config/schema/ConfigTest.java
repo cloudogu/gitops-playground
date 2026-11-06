@@ -108,6 +108,42 @@ class ConfigTest {
 	}
 
 	@Test
+	void parsesAppRoleAuthWithoutImplicitTokenAuth() {
+		Config config = configWithVaultAuth("appRole", Map.of(
+			"roleId", "role-id",
+			"secretRef", Map.of("name", "vault-approle", "key", "secret-id")
+		));
+
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		assertThat(auth.getTokenSecretRef()).isNull();
+		assertThat(auth.getAppRole().getPath()).isEqualTo("approle");
+		assertThat(auth.getAppRole().getSecretRef().getKey()).isEqualTo("secret-id");
+	}
+
+	@Test
+	void parsesKubernetesAuthWithoutImplicitTokenAuth() {
+		Config config = configWithVaultAuth("kubernetes", Map.of(
+			"role", "gop-eso",
+			"serviceAccountRef", Map.of("name", "eso-vault-auth", "audiences", List.of("vault"))
+		));
+
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		assertThat(auth.getTokenSecretRef()).isNull();
+		assertThat(auth.getKubernetes().getMountPath()).isEqualTo("kubernetes");
+		assertThat(auth.getKubernetes().getServiceAccountRef().getAudiences()).containsExactly("vault");
+	}
+
+	private static Config configWithVaultAuth(String method, Map<String, Object> settings) {
+		return Config.fromMap(Map.of(
+			"features", Map.of("secrets", Map.of("externalSecrets", Map.of("vault", Map.of(
+				"auth", Map.of(method, settings)
+			))))
+		));
+	}
+
+	@Test
 	void parsesLowercaseVaultModeFromCli() {
 		Config config = new Config();
 
