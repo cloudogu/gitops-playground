@@ -713,6 +713,11 @@ docker run --rm \
 
 ### Release
 
+> [!IMPORTANT]
+> Only run one release build at a time, across all branches. Before you start, check in Jenkins that no other build
+> with `performRelease` is running. Concurrent release builds can end up with the same version: the second build
+> deletes the first one's draft release and overwrites its image tag before the tag push fails.
+
 Preferred on `main` branch:
 
 - Open
@@ -727,8 +732,9 @@ Preferred on `main` branch:
 
 On `non main` Branch:
 
-- Open
-  Jenkins https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+- Open Jenkins https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/ and select the non-
+  `main`
+  branch you want to release, then open `Build with Parameters`.
 - Build with Parameters:
     - Check performRelease
     - In the edit box releaseVersion is the current release version. It's guessed on earlier created Tags. Increment
@@ -737,7 +743,11 @@ On `non main` Branch:
     - Hit the green Build button
 - If you are absolutely certain that the integration tests won't fail, you can check the skipIntegrationTests box.
 - Because the release does not run on `main`, the build pauses in the `Resolve tag` stage. Hover over the `Resolve tag`
-  stage in the stage view and click Confirm within 5 minutes, otherwise the build is aborted.
+  stage in the stage view and click `Release from non-main branch` within 5 minutes, otherwise the build is aborted.
+
+![Confirm a release from a non-main branch in the Jenkins stage view](images/jenkins-confirm-release.svg)
+
+Continue with Releasing with [Updating the GOP Helm chart](#updating-the-gop-helm-chart)
 
 ### Releasing old (Deprecated)
 
@@ -757,7 +767,7 @@ For now, please start a Jenkins Build of `main` manually.
 We might introduce tag builds in our Jenkins organization at a later stage.
 
 A GitHub release containing all merged PRs since the last release is created automatically via
-a [GitHub action](../.github/workflows/create-release.yml).
+a [GitHub action](../.github/workflows/create-release.yml).~~
 
 ### Updating the GOP Helm chart
 
