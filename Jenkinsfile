@@ -427,14 +427,26 @@ pipeline {
                             usernameVariable: 'GH_USERNAME',
                             passwordVariable: 'GH_TOKEN'
                     )]) {
+                        // Prepared on the agent, where gpg is available (see signTag). rm -f: files left by an earlier run may be owned by root.
+                        // The key is stored with literal "\n" sequences, printf '%b' expands them
+                        withCredentials([string(credentialsId: 'cesmarvin_signing_gpg_privkey', variable: 'GPG_KEY')]) {
+                            sh '''
+                                asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
+                                rm -f "$asset" "${asset}.sha256" "${asset}.asc"
+                                cp sbom.cdx.json "$asset"
+                                sha256sum "$asset" > "${asset}.sha256"
+                                export GNUPGHOME="$(mktemp -d)"
+                                trap 'gpgconf --kill gpg-agent; rm -rf "$GNUPGHOME"' EXIT
+                                printf '%b' "$GPG_KEY" | gpg --batch --import
+                                gpg --batch --yes --armor --detach-sign --output "${asset}.asc" "$asset"
+                            '''
+                        }
                         docker.image(env.GOLANG_IMAGE).inside("--entrypoint '' -u 0:0") {
                             sh '''
                                 apk add --no-cache github-cli
                                 asset="gitops-playground-${TAG_NAME}.sbom.cdx.json"
-                                cp sbom.cdx.json "$asset"
-                                sha256sum "$asset" > "${asset}.sha256"
                                 # One file at a time with retries: parallel uploads to the draft failed with a transient 404.
-                                for f in "$asset" "${asset}.sha256"; do
+                                for f in "$asset" "${asset}.sha256" "${asset}.asc"; do
                                     for i in 1 2 3; do
                                         gh release upload "$TAG_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber && break
                                         [ "$i" = 3 ] && exit 1
@@ -449,6 +461,7 @@ pipeline {
                                     echo "## SBOM"
                                     echo "- [$asset]($download_url/$asset)"
                                     echo "- [${asset}.sha256]($download_url/${asset}.sha256)"
+                                    echo "- [${asset}.asc]($download_url/${asset}.asc)"
                                 } >> notes.md
                                 gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
                             '''
@@ -465,7 +478,8 @@ pipeline {
                                     --artifact-type application/vnd.cyclonedx+json \
                                     "$IMAGE_DIGEST" \
                                     "gitops-playground-${TAG_NAME}.sbom.cdx.json:application/vnd.cyclonedx+json" \
-                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain"
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.sha256:text/plain" \
+                                    "gitops-playground-${TAG_NAME}.sbom.cdx.json.asc:application/pgp-signature"
                         '''
                         // Image, SBOM assets and OCI attachment exist: push the signed tag and make the draft release public.
                         withCredentials([usernamePassword(
@@ -502,7 +516,7 @@ pipeline {
             script {
                 // The release tag is created locally before packaging. Drop it so it cannot leak into the next build in this workspace.
                 if (params.performRelease && env.TAG_NAME) {
-                    sh "git tag -d '${env.TAG_NAME}' || true"
+                    sh 'git tag -d -- "$TAG_NAME" || true'
                 }
             }
         }
