@@ -11,13 +11,6 @@ application:
   clusterAdmin: true
 jenkins:
   active: false
-scm:
-  scmManager:
-    technicalUser:
-      password: "technical-password"
-    metricsUser:
-      password: "metrics-password"
-
 features:
   monitoring:
     active: true

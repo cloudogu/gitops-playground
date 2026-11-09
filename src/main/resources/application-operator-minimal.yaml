@@ -2,13 +2,6 @@
 application:
   "yes": true
   baseUrl: http://localhost
-scm:
-  scmManager:
-    technicalUser:
-      password: "technical-password"
-    metricsUser:
-      password: "metrics-password"
-
 features:
   argocd:
     active: true

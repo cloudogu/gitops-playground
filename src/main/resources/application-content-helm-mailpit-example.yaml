@@ -3,13 +3,6 @@ application:
   "yes": true
   baseUrl: http://localhost
   insecure: true
-scm:
-  scmManager:
-    technicalUser:
-      password: "technical-password"
-    metricsUser:
-      password: "metrics-password"
-
 features:
   argocd:
     active: true
