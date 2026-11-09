@@ -227,6 +227,16 @@ class JenkinsToolConfigMapperTest {
 	}
 
 	@Test
+	void doesNotCreateTechnicalCredentialsWithoutSecretConfiguration() {
+		Config config = new Config();
+		config.getScm().setScmManager(new ScmTenantSchema.ScmManagerTenantConfig());
+
+		JenkinsToolConfig actual = new JenkinsToolConfigMapper(config).map(context());
+
+		assertThat(actual.scm().technicalCredentials()).isNull();
+	}
+
+	@Test
 	void doesNotExposeANamespaceForAnExternalJenkins() {
 		Config config = new Config();
 		config.getJenkins().setInternal(false);

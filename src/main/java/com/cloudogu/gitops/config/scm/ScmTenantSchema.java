@@ -208,9 +208,6 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 		private Credentials credentials;
 
-		public Credentials getCredentials() {
-			return credentials != null ? credentials : new Credentials(username, password);
-		}
 	}
 	@Getter
 	@Setter

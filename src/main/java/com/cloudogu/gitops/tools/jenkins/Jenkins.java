@@ -453,11 +453,17 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 					toolConfig().scm().technicalPassword(),
 					gitHandler.getTenant().getCredentials().getPassword()
 				);
-			} else {
+			} else if (isTechnicalUserOverrideConfigured()) {
 				technicalCredentials = credentialsResolver.resolveReference(
 					toolConfig().scm().technicalCredentials(),
 					technicalUsername,
 					toolConfig().scm().technicalPassword()
+				);
+			} else {
+				var provisioningCredentials = gitHandler.getTenant().getCredentials();
+				technicalCredentials = new ResolvedCredentials(
+					provisioningCredentials.getUsername(),
+					provisioningCredentials.getPassword()
 				);
 			}
 
@@ -474,7 +480,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			} else {
 				if (isBlank(technicalCredentials.username()) || isBlank(technicalCredentials.password())) {
 					throw new IllegalArgumentException(
-						"External SCM-Manager requires technical user credentials for Jenkins repository access"
+						"External SCM-Manager requires a username and password for Jenkins repository access"
 					);
 				}
 				runtimeScmTechnicalCredentials = technicalCredentials;
@@ -482,6 +488,17 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 
 		return runtimeScmTechnicalCredentials;
+	}
+
+	private boolean isTechnicalUserOverrideConfigured() {
+		var scm = toolConfig().scm();
+		return isProvided(scm.technicalUsername())
+			|| isProvided(scm.technicalPassword())
+			|| scm.technicalCredentials() != null;
+	}
+
+	private static boolean isProvided(String value) {
+		return value != null && !value.isEmpty();
 	}
 
 	private static boolean isBlank(String value) {
