@@ -77,8 +77,8 @@ concepts:
 
 - `scm.scmManager.technicalUser` is defined in `ScmTenantSchema`. For an internal SCM-Manager it configures optional
   credentials for the GOP-managed `<namePrefix>gitops` user. With an external SCM-Manager, Jenkins reuses the existing
-  SCM provisioning credentials (`scmManager.username/password` or the resolved Secret reference); a distinct external
-  technical user is not configured in S2.
+  SCM provisioning credentials (`scmManager.username/password` or the resolved Secret reference); a separate
+  external technical user cannot be configured.
 - `scm.gitlab.technicalUsername` is defined in the GitLab configuration. It identifies an existing GitLab technical user
   that GOP grants WRITE/Developer access to on provisioned repositories. GOP does not create or manage this GitLab
   account.

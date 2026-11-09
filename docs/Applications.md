@@ -211,10 +211,9 @@ configured Secret reference, if provided. Otherwise, GOP uses the already resolv
 
 For an external SCM-Manager, GOP uses the existing SCM account configured through `--scmm-username` and
 `--scmm-password`, or through the resolved `scm.scmManager.credentials` Secret reference, for the job-specific Jenkins
-credential `scm-user`. GOP does not create this external SCM account or change its repository permissions. 
+credential `scm-user`. GOP does not create this external SCM account or change its repository permissions.
 Configuring a separate technical user for an external SCM-Manager is currently not supported.
- If the configured SCM
-account has administrator privileges, the Jenkins jobs also use those privileges for SCM access.
+If the configured SCM account has administrator privileges, the Jenkins jobs also use those privileges for SCM access.
 
 ## Monitoring tools
 
