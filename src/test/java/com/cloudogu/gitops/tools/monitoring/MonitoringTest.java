@@ -460,6 +460,33 @@ class MonitoringTest {
 	}
 
 	@Test
+	void usesProvisioningPasswordForManagedMetrics() throws GitAPIException, IOException {
+		// Given
+		config.getScm().getScmManager().getMetricsUser().setPassword("");
+		config.getScm().getScmManager().setPassword("configured-password");
+		scmManagerMock.setCredentials(new Credentials("scm-admin", "resolved-provisioning-password"));
+
+		// When
+		install(createStack(scmManagerMock));
+
+		// Then
+		verify(k8sClient).createSecret(
+			"generic",
+			"prometheus-metrics-creds-scmm",
+			"foo-monitoring",
+			new Tuple<>("password", "resolved-provisioning-password")
+		);
+
+		Map<String, Object> prometheus = (Map<String, Object>) parseActualYaml().get("prometheus");
+		Map<String, Object> prometheusSpec = (Map<String, Object>) prometheus.get("prometheusSpec");
+		List<Map<String, Object>> additionalScrapeConfigs =
+			(List<Map<String, Object>>) prometheusSpec.get("additionalScrapeConfigs");
+		Map<String, Object> basicAuth = (Map<String, Object>) additionalScrapeConfigs.getFirst().get("basic_auth");
+		assertThat(basicAuth.get("username")).isEqualTo("foo-metrics");
+		assertThat(Files.readString(temporaryYamlFilePrometheus)).doesNotContain("resolved-provisioning-password");
+	}
+
+	@Test
 	void usesDedicatedScmMetricsCredentialsForPrometheus() throws GitAPIException, IOException {
 		config.getScm().getScmManager().getMetricsUser().setUsername("scm-metrics-user");
 		config.getScm().getScmManager().getMetricsUser().setPassword("scm-metrics-password");

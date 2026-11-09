@@ -193,17 +193,24 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 		);
 
 		if (toolConfig().scmProviderType() == ScmProviderType.SCM_MANAGER) {
-			String metricsUsername = toolConfig().gopManagedScmMetricsUser()
-				? toolConfig().namePrefix() + "metrics"
-				: toolConfig().scmMetricsUsername();
-			ResolvedCredentials resolvedMetricsCredentials = credentialsResolver.resolveReference(
-				toolConfig().scmMetricsCredentials(),
-				metricsUsername,
-				toolConfig().scmMetricsPassword()
-			);
-			runtimeScmMetricsCredentials = toolConfig().gopManagedScmMetricsUser()
-				? new ResolvedCredentials(metricsUsername, resolvedMetricsCredentials.password())
-				: resolvedMetricsCredentials;
+			if (toolConfig().gopManagedScmMetricsUser()) {
+				String metricsUsername = toolConfig().namePrefix() + "metrics";
+				ResolvedCredentials resolvedMetricsCredentials = credentialsResolver.resolveGopManagedUser(
+					toolConfig().scmMetricsCredentials(),
+					metricsUsername,
+					toolConfig().scmMetricsPassword(),
+					gitHandler.getResourcesScm().getCredentials().getPassword()
+				);
+				runtimeScmMetricsCredentials = new ResolvedCredentials(
+					metricsUsername, resolvedMetricsCredentials.password()
+				);
+			} else {
+				runtimeScmMetricsCredentials = credentialsResolver.resolveReference(
+					toolConfig().scmMetricsCredentials(),
+					toolConfig().scmMetricsUsername(),
+					toolConfig().scmMetricsPassword()
+				);
+			}
 		}
 
 		if (toolConfig().jenkinsActive()) {
