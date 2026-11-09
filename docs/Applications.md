@@ -161,7 +161,9 @@ The user has to have the following privileges:
 * create jobs
 * restarting
 
-Credentials of an external Jenkins are managed outside GOP. When using the example applications, the external Jenkins must already provide the credential IDs `scm-user` and `registry-user`. If a proxy registry is configured, `registry-proxy-user` must also exist.
+For Jenkins jobs created by GOP with SCM-Manager, GOP creates or updates the job-specific `scm-user` credential even
+when Jenkins is external. Registry credentials on external Jenkins remain externally managed: `registry-user` (and
+`registry-proxy-user` for a proxy registry) must already exist when needed.
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
@@ -206,7 +208,10 @@ GOP-managed technical user if no separate technical password or Secret reference
 configured. The same fallback applies to the metrics user when monitoring is enabled.
 Explicitly configured credentials take precedence. This keeps local deployments working
 without additional parameters; dedicated credentials are recommended for other environments.
-The fallback does not apply to technical users of an external SCM-Manager.
+For an external SCM-Manager, GOP uses the resolved `scmManager.username/password` credentials for the Jenkins
+job-specific `scm-user` credential. No separate `technicalUser` configuration is required or supported for external
+SCM-Manager in S2. If that account has administrator permissions, Jenkins receives those permissions too; separating
+these accounts is a follow-up for least privilege.
 
 ## Monitoring tools
 

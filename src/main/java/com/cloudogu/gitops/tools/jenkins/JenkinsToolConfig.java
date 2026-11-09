@@ -73,7 +73,6 @@ public record JenkinsToolConfig(
 	public record Scm(
 		ScmProviderType providerType,
 		boolean internalScmManager,
-		String technicalUsername,
 		String technicalPassword,
 		CredentialsReference technicalCredentials
 	) {

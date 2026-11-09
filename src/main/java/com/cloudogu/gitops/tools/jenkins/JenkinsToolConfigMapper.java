@@ -50,7 +50,6 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 		JenkinsToolConfig.Scm scmConfig = JenkinsToolConfig.Scm.builder()
 															.providerType(scmProviderType)
 															.internalScmManager(context.isInternalScmManager())
-															.technicalUsername(technicalUser == null ? null : technicalUser.getUsername())
 															.technicalPassword(technicalUser == null ? null : technicalUser.getPassword())
 															.technicalCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
 															.build();

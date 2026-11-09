@@ -81,7 +81,6 @@ class JenkinsToolConfigMapperTest {
 		config.getScm().setScmProviderType(ScmProviderType.SCM_MANAGER);
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
 		scmManager.setPassword("scmm-password");
-		scmManager.getTechnicalUser().setUsername("technical-user");
 		scmManager.getTechnicalUser().setPassword("technical-password");
 		scmManager.getTechnicalUser().setCredentials(
 			new Credentials(null, null, "technical-user-secret", "gop-job", "username", "password")
@@ -141,8 +140,7 @@ class JenkinsToolConfigMapperTest {
 													  .scm(JenkinsToolConfig.Scm.builder()
 																				.providerType(ScmProviderType.SCM_MANAGER)
 																				.internalScmManager(false)
-																				.technicalUsername("technical-user")
-																				.technicalPassword("technical-password")
+																								.technicalPassword("technical-password")
 																				.technicalCredentials(new CredentialsReference(
 																				    "technical-user-secret",
 																				    "gop-job",
@@ -224,16 +222,6 @@ class JenkinsToolConfigMapperTest {
 														  "registry", Map.of("createImagePullSecrets", true)
 													  ))
 													  .build());
-	}
-
-	@Test
-	void doesNotCreateTechnicalCredentialsWithoutSecretConfiguration() {
-		Config config = new Config();
-		config.getScm().setScmManager(new ScmTenantSchema.ScmManagerTenantConfig());
-
-		JenkinsToolConfig actual = new JenkinsToolConfigMapper(config).map(context());
-
-		assertThat(actual.scm().technicalCredentials()).isNull();
 	}
 
 	@Test

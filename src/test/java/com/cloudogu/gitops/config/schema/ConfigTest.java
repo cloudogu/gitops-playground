@@ -182,16 +182,11 @@ class ConfigTest {
 	}
 
 	@Test
-	void parsesScmTechnicalUserFromCli() {
+	void parsesManagedTechnicalUserPasswordFromCli() {
 		Config config = new Config();
 
-		new CommandLine(config).parseArgs(
-			"--scmm-technical-username=existing-jenkins-user",
-			"--scmm-technical-password=technical-password"
-		);
+		new CommandLine(config).parseArgs("--scmm-technical-password=technical-password");
 
-		assertThat(config.getScm().getScmManager().getTechnicalUser().getUsername())
-			.isEqualTo("existing-jenkins-user");
 		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
 			.isEqualTo("technical-password");
 	}

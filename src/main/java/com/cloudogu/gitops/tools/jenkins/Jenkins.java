@@ -439,66 +439,36 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 
 	private ResolvedCredentials scmManagerCredentialsForJenkins() {
 		if (runtimeScmTechnicalCredentials == null) {
-			boolean internalScmManager = toolConfig().scm().internalScmManager();
-			String gopManagedTechnicalUsername = toolConfig().application().namePrefix() + "gitops";
-			String technicalUsername = internalScmManager
-				? gopManagedTechnicalUsername
-				: toolConfig().scm().technicalUsername();
-
-			ResolvedCredentials technicalCredentials;
-			if (internalScmManager) {
-				technicalCredentials = credentialsResolver.resolveGopManagedUser(
+			if (toolConfig().scm().internalScmManager()) {
+				String technicalUsername = toolConfig().application().namePrefix() + "gitops";
+				ResolvedCredentials technicalCredentials = credentialsResolver.resolveGopManagedUser(
 					toolConfig().scm().technicalCredentials(),
 					technicalUsername,
 					toolConfig().scm().technicalPassword(),
 					gitHandler.getTenant().getCredentials().getPassword()
 				);
-			} else if (isTechnicalUserOverrideConfigured()) {
-				technicalCredentials = credentialsResolver.resolveReference(
-					toolConfig().scm().technicalCredentials(),
-					technicalUsername,
-					toolConfig().scm().technicalPassword()
-				);
-			} else {
-				var provisioningCredentials = gitHandler.getTenant().getCredentials();
-				technicalCredentials = new ResolvedCredentials(
-					provisioningCredentials.getUsername(),
-					provisioningCredentials.getPassword()
-				);
-			}
-
-			if (internalScmManager) {
 				if (isBlank(technicalCredentials.password())) {
 					throw new IllegalArgumentException(
 						"Internal SCM-Manager requires a password for the GOP-managed technical user"
 					);
 				}
 				runtimeScmTechnicalCredentials = new ResolvedCredentials(
-					gopManagedTechnicalUsername,
-					technicalCredentials.password()
+					technicalUsername, technicalCredentials.password()
 				);
 			} else {
-				if (isBlank(technicalCredentials.username()) || isBlank(technicalCredentials.password())) {
+				var scmCredentials = gitHandler.getTenant().getCredentials();
+				if (isBlank(scmCredentials.getUsername()) || isBlank(scmCredentials.getPassword())) {
 					throw new IllegalArgumentException(
 						"External SCM-Manager requires a username and password for Jenkins repository access"
 					);
 				}
-				runtimeScmTechnicalCredentials = technicalCredentials;
+				runtimeScmTechnicalCredentials = new ResolvedCredentials(
+					scmCredentials.getUsername(), scmCredentials.getPassword()
+				);
 			}
 		}
 
 		return runtimeScmTechnicalCredentials;
-	}
-
-	private boolean isTechnicalUserOverrideConfigured() {
-		var scm = toolConfig().scm();
-		return isProvided(scm.technicalUsername())
-			|| isProvided(scm.technicalPassword())
-			|| scm.technicalCredentials() != null;
-	}
-
-	private static boolean isProvided(String value) {
-		return value != null && !value.isEmpty();
 	}
 
 	private static boolean isBlank(String value) {

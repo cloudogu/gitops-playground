@@ -1298,15 +1298,11 @@
                 },
                 "password" : {
                   "type" : [ "string", "null" ],
-                  "description" : "Password of the technical SCM-Manager user used to create GOP-managed Jenkins credentials"
-                },
-                "username" : {
-                  "type" : [ "string", "null" ],
-                  "description" : "Username of an existing technical SCM-Manager user used to create Jenkins credentials when SCM-Manager is external and Jenkins is internal. Internal SCM-Manager deployments derive the username from the name prefix"
+                  "description" : "Optional password for the GOP-managed technical SCM-Manager user in internal deployments"
                 }
               },
               "additionalProperties" : false,
-              "description" : "Credentials for the technical SCM-Manager user used by GOP-managed Jenkins credentials. For internal SCM-Manager deployments, GOP derives the username from the name prefix; for external SCM-Manager with internal Jenkins, the configured username is reused unchanged. External Jenkins credentials are managed outside GOP"
+              "description" : "Optional password or Kubernetes Secret for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins"
             },
             "url" : {
               "type" : [ "string", "null" ],
