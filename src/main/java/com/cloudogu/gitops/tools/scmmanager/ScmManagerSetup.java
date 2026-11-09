@@ -398,24 +398,15 @@ public class ScmManagerSetup {
 			config.gopManagedTechnicalUsername(), technicalCredentials.password(), "changeme@test.local"
 		);
 
-		if (config.monitoringActive()) {
-			String metricsUsername = config.namePrefix() + "metrics";
-			ResolvedCredentials metricsCredentials = credentialsResolver.resolveGopManagedUser(
-				config.metricsUserCredentials(),
-				metricsUsername,
-				config.metricsUserPassword(),
-				provisioningPassword
-			);
+		String metricsUsername = config.namePrefix() + "metrics";
+		addUser(metricsUsername, provisioningPassword, "changeme@test.local");
+		grantUserPermissions(metricsUsername, List.of("metrics:read"));
+	}
 
-			if (metricsCredentials.password() == null || metricsCredentials.password().isBlank()) {
-				throw new IllegalArgumentException(
-					"Internal SCM-Manager with monitoring enabled requires a password for the GOP-managed metrics user"
-				);
-			}
-
-			createOrUpdateGopManagedUser(metricsUsername, metricsCredentials.password(), "changeme@test.local");
-			grantUserPermissions(metricsUsername, List.of("metrics:read"));
-		}
+	private void addUser(String username, String password, String email) {
+		ScmManagerUser userRequest = userRequest(username, password, email);
+		ScmManagerApiClient.handleApiResponse(scmManager.getApiClient().usersApi().addUser(userRequest));
+		log.debug("Successfully created SCM-Manager User {}.", username);
 	}
 
 	private void createOrUpdateGopManagedUser(String username, String password, String email) {

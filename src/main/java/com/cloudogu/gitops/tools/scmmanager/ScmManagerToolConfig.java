@@ -20,8 +20,6 @@ public record ScmManagerToolConfig(
 	String gopManagedTechnicalUsername,
 	String technicalUserPassword,
 	CredentialsReference technicalUserCredentials,
-	String metricsUserPassword,
-	CredentialsReference metricsUserCredentials,
 	boolean skipPlugins,
 	boolean skipRestart,
 	boolean netpols,

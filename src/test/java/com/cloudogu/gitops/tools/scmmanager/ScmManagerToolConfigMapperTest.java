@@ -58,10 +58,6 @@ class ScmManagerToolConfigMapperTest {
 		scmManager.getTechnicalUser().setCredentials(
 			new Credentials(null, null, "technical-user-secret", "gop-job", "username", "password")
 		);
-		scmManager.getMetricsUser().setPassword("metrics-password");
-		scmManager.getMetricsUser().setCredentials(
-			new Credentials(null, null, "metrics-user-secret", "gop-job", "username", "password")
-		);
 		scmManager.setSkipPlugins(true);
 		scmManager.setSkipRestart(true);
 		scmManager.setScmmImage("scm-manager:custom");
@@ -88,13 +84,7 @@ class ScmManagerToolConfigMapperTest {
 															 "username",
 															 "password"
 														 ))
-														 .metricsUserPassword("metrics-password")
-														 .metricsUserCredentials(new CredentialsReference(
-															 "metrics-user-secret",
-															 "gop-job",
-															 "username",
-															 "password"
-														 ))
+
 														 .skipPlugins(true)
 														 .skipRestart(true)
 														 .netpols(true)

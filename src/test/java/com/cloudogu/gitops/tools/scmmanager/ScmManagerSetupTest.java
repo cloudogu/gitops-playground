@@ -229,7 +229,7 @@ class ScmManagerSetupTest {
 		invokePrivateAddDefaultUsers(scmManagerSetup);
 
 		ArgumentCaptor<ScmManagerUser> userCaptor = ArgumentCaptor.forClass(ScmManagerUser.class);
-		verify(usersApi).addUser(userCaptor.capture());
+		verify(usersApi, times(2)).addUser(userCaptor.capture());
 		assertThat(userCaptor.getAllValues())
 			.filteredOn(user -> "gitops".equals(user.getName()))
 			.singleElement()
@@ -238,52 +238,9 @@ class ScmManagerSetupTest {
 	}
 
 	@Test
-	void gopManagedMetricsUserUsesDedicatedPassword() throws ReflectiveOperationException, IOException {
-		config.getFeatures().getMonitoring().setActive(true);
-		config.getScm().getScmManager().getMetricsUser().setPassword("metrics-password");
-
-		UsersApi usersApi = mock(UsersApi.class);
-		@SuppressWarnings("unchecked")
-		Call<Void> addUserCall = mock(Call.class);
-		@SuppressWarnings("unchecked")
-		Call<Void> permissionCall = mock(Call.class);
-
-		when(scmManager.getApiClient()).thenReturn(apiClient);
-		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-provisioning-password"));
-		when(apiClient.usersApi()).thenReturn(usersApi);
-		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(addUserCall);
-		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
-		when(addUserCall.execute()).thenReturn(Response.success(null));
-		when(permissionCall.execute()).thenReturn(Response.success(null));
-
-		ScmManagerSetup scmManagerSetup = new ScmManagerSetup(
-			scmManager,
-			deployer,
-			new ContextBuilder(config).build(),
-			new RepositoryWorkspace(clusterResourcesRepo),
-			fileSystemUtils,
-			new ScmManagerToolConfigMapper(config).map(new ContextBuilder(config).build()),
-			k8sClient,
-			credentialsResolver
-		);
-
-		invokePrivateAddDefaultUsers(scmManagerSetup);
-
-		ArgumentCaptor<ScmManagerUser> userCaptor = ArgumentCaptor.forClass(ScmManagerUser.class);
-		verify(usersApi, times(2)).addUser(userCaptor.capture());
-		assertThat(userCaptor.getAllValues())
-			.filteredOn(user -> "testmetrics".equals(user.getName()))
-			.singleElement()
-			.extracting(ScmManagerUser::getPassword)
-			.isEqualTo("metrics-password");
-		verify(usersApi).setPermissionForUser(eq("testmetrics"), anyMap());
-	}
-
-	@Test
 	void gopManagedUsersFallBackToProvisioningPassword() throws ReflectiveOperationException, IOException {
-		config.getFeatures().getMonitoring().setActive(true);
+		config.getFeatures().getMonitoring().setActive(false);
 		config.getScm().getScmManager().getTechnicalUser().setPassword("");
-		config.getScm().getScmManager().getMetricsUser().setPassword("");
 		when(scmManager.getCredentials()).thenReturn(new Credentials("resolved-admin", "runtime-provisioning-password"));
 
 		UsersApi usersApi = mock(UsersApi.class);
@@ -333,7 +290,13 @@ class ScmManagerSetupTest {
 
 		when(scmManager.getApiClient()).thenReturn(apiClient);
 		when(apiClient.usersApi()).thenReturn(usersApi);
-		when(usersApi.addUser(any(ScmManagerUser.class))).thenReturn(existingTechnicalUserCall);
+		@SuppressWarnings("unchecked")
+		Call<Void> metricsUserCall = mock(Call.class);
+		when(usersApi.addUser(any(ScmManagerUser.class))).thenAnswer(invocation -> {
+			ScmManagerUser user = invocation.getArgument(0);
+			return "gitops".equals(user.getName()) ? existingTechnicalUserCall : metricsUserCall;
+		});
+		when(metricsUserCall.execute()).thenReturn(Response.success(null));
 		when(usersApi.overwritePassword(eq("gitops"), anyMap())).thenReturn(overwritePasswordCall);
 		when(usersApi.setPermissionForUser(anyString(), anyMap())).thenReturn(permissionCall);
 		when(existingTechnicalUserCall.execute()).thenReturn(Response.error(

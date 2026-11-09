@@ -63,7 +63,6 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 	private final K8sClient k8sClient;
 	private final CredentialsResolver credentialsResolver;
 	private ResolvedCredentials runtimeApplicationCredentials;
-	private ResolvedCredentials runtimeScmMetricsCredentials;
 	private ResolvedCredentials runtimeJenkinsMetricsCredentials;
 	private ResolvedCredentials runtimeSmtpCredentials;
 
@@ -192,27 +191,6 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 			toolConfig().applicationPassword()
 		);
 
-		if (toolConfig().scmProviderType() == ScmProviderType.SCM_MANAGER) {
-			if (toolConfig().gopManagedScmMetricsUser()) {
-				String metricsUsername = toolConfig().namePrefix() + "metrics";
-				ResolvedCredentials resolvedMetricsCredentials = credentialsResolver.resolveGopManagedUser(
-					toolConfig().scmMetricsCredentials(),
-					metricsUsername,
-					toolConfig().scmMetricsPassword(),
-					gitHandler.getResourcesScm().getCredentials().getPassword()
-				);
-				runtimeScmMetricsCredentials = new ResolvedCredentials(
-					metricsUsername, resolvedMetricsCredentials.password()
-				);
-			} else {
-				runtimeScmMetricsCredentials = credentialsResolver.resolveReference(
-					toolConfig().scmMetricsCredentials(),
-					toolConfig().scmMetricsUsername(),
-					toolConfig().scmMetricsPassword()
-				);
-			}
-		}
-
 		if (toolConfig().jenkinsActive()) {
 			runtimeJenkinsMetricsCredentials = credentialsResolver.resolveReference(
 				toolConfig().jenkinsMetricsCredentials(),
@@ -236,10 +214,9 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 		);
 
 		if (hasScmManagerMetricsEndpoint()) {
-			validateScmMetricsCredentials();
 			k8sClient.createSecret(
 				GENERIC_SECRET_TYPE, "prometheus-metrics-creds-scmm", namespace, new Tuple<>(
-					PASSWORD_KEY, runtimeScmMetricsCredentials.password()
+					PASSWORD_KEY, gitHandler.getResourcesScm().getCredentials().getPassword()
 				)
 			);
 		}
@@ -260,17 +237,6 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 					PASSWORD_KEY, runtimeSmtpCredentials.password()
 				)
 			);
-		}
-	}
-
-	private void validateScmMetricsCredentials() {
-		if (runtimeScmMetricsCredentials == null || runtimeScmMetricsCredentials.password() == null
-			|| runtimeScmMetricsCredentials.password().isBlank()) {
-			throw new IllegalArgumentException("SCM-Manager metrics endpoint requires metrics user credentials");
-		}
-		if (!toolConfig().gopManagedScmMetricsUser()
-			&& (runtimeScmMetricsCredentials.username() == null || runtimeScmMetricsCredentials.username().isBlank())) {
-			throw new IllegalArgumentException("Existing SCM-Manager metrics endpoint requires a metrics username");
 		}
 	}
 
@@ -322,14 +288,7 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 
 	private Map<String, String> scmConfigurationMetrics() {
 		URI uri = this.gitHandler.getResourcesScm().prometheusMetricsEndpoint();
-		Map<String, String> components = new HashMap<>(uriComponents(uri));
-		components.put(
-			"metricsUsername",
-			runtimeScmMetricsCredentials != null && runtimeScmMetricsCredentials.username() != null
-				? runtimeScmMetricsCredentials.username()
-				: ""
-		);
-		return components;
+		return uriComponents(uri);
 	}
 
 	private static Map<String, String> uriComponents(URI uri) {

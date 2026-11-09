@@ -205,9 +205,7 @@ The user on the scm has to have privileges to:
 
 For an internal SCM-Manager, GOP reuses the resolved SCM provisioning password for the
 GOP-managed technical user if no separate technical password or Secret reference is
-configured. The same fallback applies to the metrics user when monitoring is enabled.
-Explicitly configured credentials take precedence. This keeps local deployments working
-without additional parameters; dedicated credentials are recommended for other environments.
+configured. Explicitly configured technical credentials take precedence.
 For an external SCM-Manager, GOP uses the resolved `scmManager.username/password` credentials for the Jenkins
 job-specific `scm-user` credential. No separate `technicalUser` configuration is required or supported for external
 SCM-Manager in S2. If that account has administrator permissions, Jenkins receives those permissions too; separating

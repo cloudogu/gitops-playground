@@ -31,7 +31,6 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 			: namePrefix + baseNamespace;
 		String releaseName = namePrefix.strip().isEmpty() ? "scmm" : namePrefix.strip() + "scmm";
 		var technicalUser = scmManager.getTechnicalUser();
-		var metricsUser = scmManager.getMetricsUser();
 
 		return ScmManagerToolConfig.builder()
 								   .active(context.isInternalScmManager())
@@ -43,8 +42,7 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .gopManagedTechnicalUsername(scmManager.getGopManagedTechnicalUsername())
 								   .technicalUserPassword(technicalUser == null ? null : technicalUser.getPassword())
 								   .technicalUserCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
-								   .metricsUserPassword(metricsUser == null ? null : metricsUser.getPassword())
-								   .metricsUserCredentials(metricsUser == null ? null : CredentialsReference.from(metricsUser.getCredentials()))
+
 								   .skipPlugins(scmManager.getSkipPlugins())
 								   .skipRestart(scmManager.getSkipRestart())
 								   .netpols(config.getApplication().getNetpols())

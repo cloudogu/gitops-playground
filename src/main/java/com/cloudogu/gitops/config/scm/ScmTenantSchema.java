@@ -103,7 +103,6 @@ public class ScmTenantSchema {
 		public static final String SCMM_PASSWORD_DESCRIPTION = "Mandatory when scmm-url is set";
 		public static final String SCMM_NAMESPACE_DESCRIPTION = "Namespace where SCM-Manager should run";
 		public static final String SCMM_IMAGE = "Sets image for SCM-Manager";
-		public static final String SCMM_METRICS_USER_DESCRIPTION = "Credentials of the SCM-Manager metrics user used by Prometheus. Internal SCM-Manager deployments derive the username from the name prefix and GOP manages the account; external deployments use an existing user";
 
 		private Boolean internal = true;
 
@@ -130,10 +129,6 @@ public class ScmTenantSchema {
 		@Mixin
 		private ScmTechnicalUserConfig technicalUser = new ScmTechnicalUserConfig();
 
-		@JsonPropertyDescription(SCMM_METRICS_USER_DESCRIPTION)
-		@Mixin
-		private ScmMetricsUserConfig metricsUser = new ScmMetricsUserConfig();
-
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
 		private Config.HelmConfigWithValues helm;
@@ -155,24 +150,6 @@ public class ScmTenantSchema {
 
 		@JsonPropertyDescription(SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION)
 		private String gopManagedTechnicalUsername = "";
-
-		@Override
-		@JsonIgnore
-		public String getMetricsUsername() {
-			return metricsUser == null ? null : metricsUser.getUsername();
-		}
-
-		@Override
-		@JsonIgnore
-		public String getMetricsPassword() {
-			return metricsUser == null ? null : metricsUser.getPassword();
-		}
-
-		@Override
-		@JsonIgnore
-		public Credentials getMetricsCredentials() {
-			return metricsUser == null ? null : metricsUser.getCredentials();
-		}
 
 		public ScmManagerTenantConfig() {
 			helm = new Config.HelmConfigWithValues();
@@ -204,28 +181,4 @@ public class ScmTenantSchema {
 		private Credentials credentials;
 
 	}
-	@Getter
-	@Setter
-	@NoArgsConstructor
-	public static class ScmMetricsUserConfig {
-
-		public static final String SCMM_METRICS_USERNAME_DESCRIPTION = "Username of an existing SCM-Manager metrics user used by Prometheus when SCM-Manager is external. Internal deployments derive the username from the name prefix";
-		public static final String SCMM_METRICS_PASSWORD_DESCRIPTION = "Password of the SCM-Manager metrics user used by Prometheus";
-
-		@Option(names = {"--scmm-metrics-username"}, description = SCMM_METRICS_USERNAME_DESCRIPTION)
-		@JsonPropertyDescription(SCMM_METRICS_USERNAME_DESCRIPTION)
-		private String username = "";
-
-		@Option(names = {"--scmm-metrics-password"}, description = SCMM_METRICS_PASSWORD_DESCRIPTION)
-		@JsonPropertyDescription(SCMM_METRICS_PASSWORD_DESCRIPTION)
-		private String password = "";
-
-		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
-		private Credentials credentials;
-
-		public Credentials getCredentials() {
-			return credentials != null ? credentials : new Credentials(username, password);
-		}
-	}
-
 }

@@ -4,11 +4,9 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.util.GitlabConfig;
 import com.cloudogu.gitops.config.scm.util.ScmManagerConfig;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.Getter;
 import lombok.Setter;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 import static com.cloudogu.gitops.config.ConfigConstants.KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION;
@@ -86,33 +84,11 @@ public final class ScmCentralSchema {
 		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 		private Credentials credentials;
 
-		@JsonPropertyDescription("Credentials of the existing central SCM-Manager metrics user used by Prometheus")
-		@Mixin
-		private ScmManagerMetricsUserConfig metricsUser = new ScmManagerMetricsUserConfig();
-
 		@Option(names = {"--central-scmm-namespace"}, description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		@JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
 		private String namespace = "scm-manager";
 
 		private String gopManagedTechnicalUsername = "";
-
-		@Override
-		@JsonIgnore
-		public String getMetricsUsername() {
-			return metricsUser == null ? null : metricsUser.getUsername();
-		}
-
-		@Override
-		@JsonIgnore
-		public String getMetricsPassword() {
-			return metricsUser == null ? null : metricsUser.getPassword();
-		}
-
-		@Override
-		@JsonIgnore
-		public Credentials getMetricsCredentials() {
-			return metricsUser == null ? null : metricsUser.getCredentials();
-		}
 
 		@Override
 		public String getIngress() {
@@ -127,26 +103,6 @@ public final class ScmCentralSchema {
 		@Override
 		public Credentials getCredentials() {
 			return credentials != null ? credentials : new Credentials(username, password);
-		}
-
-		@Getter
-		@Setter
-		public static class ScmManagerMetricsUserConfig {
-
-			@Option(names = {"--central-scmm-metrics-username"}, description = "Username of the existing central SCM-Manager metrics user used by Prometheus")
-			@JsonPropertyDescription("Username of the existing central SCM-Manager metrics user used by Prometheus")
-			private String username = "";
-
-			@Option(names = {"--central-scmm-metrics-password"}, description = "Password of the existing central SCM-Manager metrics user used by Prometheus")
-			@JsonPropertyDescription("Password of the existing central SCM-Manager metrics user used by Prometheus")
-			private String password = "";
-
-			@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
-			private Credentials credentials;
-
-			public Credentials getCredentials() {
-				return credentials != null ? credentials : new Credentials(username, password);
-			}
 		}
 	}
 }
