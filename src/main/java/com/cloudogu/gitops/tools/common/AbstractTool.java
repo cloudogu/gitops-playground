@@ -192,7 +192,7 @@ public abstract class AbstractTool {
 			}
 		}
 
-		helmValuesData = MapUtils.deepMerge(helmConfig.values(), helmValuesData);
+		helmValuesData = MapUtils.deepMerge(helmConfig.values(), new HashMap<>(helmValuesData));
 
 		String repoURL = helmConfig.repoURL();
 		String chartOrPath = helmConfig.chart();
