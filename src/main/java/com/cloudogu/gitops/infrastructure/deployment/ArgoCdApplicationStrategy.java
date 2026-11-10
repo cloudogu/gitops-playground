@@ -89,7 +89,12 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		List<Map<String, Object>> sources = new ArrayList<>();
 		sources.add(helmSource);
 
-		if (!bootstrapDeploymentRequired) {
+		if (bootstrapDeploymentRequired) {
+			String gitOpsResourcesPath = toolPath + GIT_PATH_SEPARATOR + "netpols";
+			if (containsFiles(repoRoot, gitOpsResourcesPath)) {
+				sources.add(buildGitDirectorySource(clusterResourcesRepo, gitOpsResourcesPath));
+			}
+		} else {
 			sources.add(buildGitValuesSource(clusterResourcesRepo, toolPath));
 		}
 
@@ -171,6 +176,32 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 			String userValuesPath = toolPath + GIT_PATH_SEPARATOR + toolName + "-user-values.yaml";
 			return new ValuesFilePaths(gopValuesPath, userValuesPath, Path.of(repoRoot, userValuesPath));
 		}
+	}
+
+	private static boolean containsFiles(String repoRoot, String relativePath) {
+		Path directory = Path.of(repoRoot, relativePath);
+		if (!Files.isDirectory(directory)) {
+			return false;
+		}
+
+		try (var paths = Files.walk(directory)) {
+			return paths.anyMatch(Files::isRegularFile);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to inspect GitOps resources in " + directory, e);
+		}
+	}
+
+	private static Map<String, Object> buildGitDirectorySource(
+		GitRepo clusterResourcesRepo,
+		String path) {
+		String toolRepoUrl = clusterResourcesRepo.getGitProvider().repoPrefix() + "argocd/cluster-resources.git";
+
+		Map<String, Object> gitSource = new LinkedHashMap<>();
+		gitSource.put("repoURL", toolRepoUrl);
+		gitSource.put("targetRevision", "main");
+		gitSource.put("path", path);
+		gitSource.put("directory", Map.of("recurse", true));
+		return gitSource;
 	}
 
 	private static Map<String, Object> buildGitValuesSource(GitRepo clusterResourcesRepo, String toolPath) {

@@ -21,6 +21,10 @@ spec:
     path: apps/argocd/${config.features.argocd.operator?string("operator/", "argocd/")}
     repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
+<#if !config.features.argocd.operator>
+    helm:
+      releaseName: ${config.application.namePrefix}${config.features.argocd.namespace}
+</#if>
     # needed to sync the operator/rbac folder
     <#if config.features.argocd.operator>
     directory:

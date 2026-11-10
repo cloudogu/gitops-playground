@@ -1,0 +1,233 @@
+<#if config.application.netpols == true>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  policyTypes:
+    - Ingress
+<#assign hasServerIngress = config.features.ingress.active || config.application.openshift || config.features.monitoring.active>
+<#if hasServerIngress>
+  ingress:
+<#if config.features.ingress.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.ingress.namespace}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: server
+</#if>
+<#if config.application.openshift>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+      ports:
+        - protocol: TCP
+          port: server
+</#if>
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+</#if>
+<#else>
+  ingress: []
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-repo-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+    - Ingress
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation>
+    - Egress
+</#if>
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-application-controller
+<#if config.features.mail.active>
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-notifications-controller
+</#if>
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-applicationset-controller
+      ports:
+        - protocol: TCP
+          port: repo-server
+<#if config.features.monitoring.active>
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+</#if>
+<#if config.application.networkPolicies.argocdRepoServerEgressIsolation>
+  egress:
+    # Repository host names must remain resolvable while egress isolation is active.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # The repo server uses Redis internally. Keep this cluster-local dependency reachable.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+<#list config.application.networkPolicies.argocdRepoServerEgress as connection>
+    # External connection: ${connection.name}
+    - to:
+<#list connection.cidrs as cidr>
+        - ipBlock:
+            cidr: ${cidr}
+</#list>
+      ports:
+<#list connection.ports as port>
+        - protocol: ${port.protocol}
+          port: ${port.port}
+</#list>
+</#list>
+</#if>
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-application-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  policyTypes:
+    - Ingress
+<#if config.features.monitoring.active>
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "${config.application.namePrefix}${config.features.monitoring.namespace}"
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus
+      ports:
+        - protocol: TCP
+          port: metrics
+<#else>
+  ingress: []
+</#if>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-dex-server-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-dex-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+      ports:
+        - protocol: TCP
+          port: http
+        - protocol: TCP
+          port: grpc
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-redis-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-repo-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-application-controller
+      ports:
+        - protocol: TCP
+          port: redis
+---
+# GOP does not expose the ApplicationSet webhook. Keep the controller isolated until
+# an explicit webhook ingress path is configured.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-applicationset-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-applicationset-controller
+  policyTypes:
+    - Ingress
+  ingress: []
+<#if config.features.mail.active>
+---
+# The notifications controller only watches Kubernetes resources and sends outbound
+# notifications. It does not require application ingress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-access-to-argocd-notifications-controller-helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-notifications-controller
+  policyTypes:
+    - Ingress
+  ingress: []
+</#if>
+</#if>

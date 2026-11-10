@@ -334,7 +334,7 @@ class RbacDefinitionTest {
 			"application", Map.of("openshift", config.getApplication().getOpenshift()),
 			"features", Map.of(
 				"monitoring", Map.of("active", config.getFeatures().getMonitoring().getActive()),
-				"secrets", Map.of("active", config.getFeatures().getSecrets().getActive())
+				"secrets", Map.of("externalSecrets", Map.of("active", config.getFeatures().getSecrets().getExternalSecrets().getActive()))
 			)
 		);
 	}

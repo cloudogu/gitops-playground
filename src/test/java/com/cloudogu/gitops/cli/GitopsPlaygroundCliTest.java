@@ -292,7 +292,7 @@ class GitopsPlaygroundCliTest {
 			.isEqualTo("kube-prometheus-stack");
 		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getRepoURL())
 			.isEqualTo("https://prometheus-community.github.io/helm-chartsTEST");
-		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("80.2.2");
+		assertThat(cli.lastSchema.getFeatures().getMonitoring().getHelm().getVersion()).isEqualTo("92.14.1");
 	}
 
 	@Test
@@ -301,8 +301,7 @@ class GitopsPlaygroundCliTest {
 			"jenkins", Map.of("helm", Map.of("version", "5.8.1")),
 			"scm", Map.of(
 				"scmManager", Map.of(
-					"helm", Map.of(
-						"values", Map.of("initialDelaySeconds", 120)
+					"helm", Map.of("values", Map.of("initialDelaySeconds", 120)
 					)
 				)
 			),
@@ -337,7 +336,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getScm().getScmManager().getHelm().getChart()).isEqualTo("scm-manager");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getRepoURL())
 			.isEqualTo("https://packages.scm-manager.org/repository/helm-v2-releases/");
-		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.11.10");
+		assertThat(myConfig.getScm().getScmManager().getHelm().getVersion()).isEqualTo("3.12.2");
 		assertThat(myConfig.getScm().getScmManager().getHelm().getValues().get("initialDelaySeconds"))
 			.isEqualTo(120);
 
@@ -355,7 +354,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getChart()).isEqualTo("my-secrets");
 		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getRepoURL())
 			.isEqualTo("https://charts.external-secrets.io");
-		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getVersion()).isEqualTo("0.9.16");
+		assertThat(myConfig.getFeatures().getSecrets().getExternalSecrets().getHelm().getVersion()).isEqualTo("2.14.0");
 
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getChart()).isEqualTo("vault");
 		assertThat(myConfig.getFeatures().getSecrets().getVault().getHelm().getRepoURL())
@@ -365,7 +364,7 @@ class GitopsPlaygroundCliTest {
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getChart()).isEqualTo("cert-manager");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getRepoURL()).isEqualTo(
 			"https://charts.jetstack.io");
-		assertThat(myConfig.getFeatures().getCertManager().getHelm().getVersion()).isEqualTo("1.19.4");
+		assertThat(myConfig.getFeatures().getCertManager().getHelm().getVersion()).isEqualTo("v1.21.3");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getStartupAPICheckImage()).isEqualTo("");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getWebhookImage()).isEqualTo("");
 		assertThat(myConfig.getFeatures().getCertManager().getHelm().getCainjectorImage()).isEqualTo("");

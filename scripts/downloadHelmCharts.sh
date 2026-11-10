@@ -60,3 +60,7 @@ for chart in "${charts[@]}"; do
   # Do a simple verification
    helm template test "./charts/$chart" > /dev/null
 done
+echo "download CRDs"
+echo "download GatewayApi CRDs which not included included traefik anymore"
+curl -fsSL -o charts/traefik/crds/gateway-api-standard-install.yaml \
+  https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml

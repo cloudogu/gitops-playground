@@ -6,10 +6,11 @@ argo-cd:
 </#if>
   global:
     domain: ${argocd.host}
-<#if config.application.netpols == true>
+    # GOP owns the Argo CD ingress policies. Keep the upstream policies disabled because
+    # several of them contain broad namespaceSelector rules that cannot be narrowed by
+    # additional NetworkPolicies.
     networkPolicy:
-      create: true
-</#if>
+      create: false
   server:
 <#if argocd.host?has_content>
     ingress:

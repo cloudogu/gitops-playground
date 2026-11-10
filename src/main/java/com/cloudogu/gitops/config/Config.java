@@ -91,9 +91,29 @@ import static com.cloudogu.gitops.config.ConfigConstants.CONTENT_VARIABLES_DESCR
 import static com.cloudogu.gitops.config.ConfigConstants.DEBUG_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.DESTROY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.ESO_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.ESO_ENABLE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_DATA_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAMESPACE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_PATH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_SERVER_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_STORE_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_VERSION_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.FEATURES_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.GIT_EMAIL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.GIT_NAME_DESCRIPTION;
@@ -135,6 +155,18 @@ import static com.cloudogu.gitops.config.ConfigConstants.MULTITENANT_DESCRIPTION
 import static com.cloudogu.gitops.config.ConfigConstants.NAMESPACE_ISOLATION_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NAME_PREFIX_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.NETPOLS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EGRESS_ISOLATION_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_CIDRS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_DIRECTION_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORTS_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_PROTOCOL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_EXTERNAL_CONNECTION_TOOL_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OIDC_DESCPRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OPENSHIFT_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.OUTPUT_CONFIG_FILE_DESCRIPTION;
@@ -508,7 +540,7 @@ public class Config {
 			helm.setChart("jenkins");
 			helm.setRepoURL("https://charts.jenkins.io");
 			// renovate: depName=jenkins registryUrl=https://charts.jenkins.io
-			helm.setVersion("5.9.56");
+			helm.setVersion("5.9.68");
 		}
 	}
 
@@ -613,6 +645,9 @@ public class Config {
 		@JsonPropertyDescription(NETPOLS_DESCRIPTION)
 		private Boolean netpols = false;
 
+		@JsonPropertyDescription(NETWORK_POLICIES_DESCRIPTION)
+		private NetworkPoliciesSchema networkPolicies = new NetworkPoliciesSchema();
+
 		@Option(names = {"--cluster-admin"}, description = CLUSTER_ADMIN_DESCRIPTION)
 		@JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
 		private Boolean clusterAdmin = false;
@@ -628,6 +663,54 @@ public class Config {
 		@Option(names = {"-n", "--namespace"}, description = APPLICATION_NAMESPACE)
 		@JsonPropertyDescription(APPLICATION_NAMESPACE)
 		private String namespace = "";
+
+		@Getter
+		@Setter
+		public static class NetworkPoliciesSchema {
+
+			@JsonPropertyDescription(NETWORK_POLICIES_BOOTSTRAP_CIDRS_DESCRIPTION)
+			private List<String> bootstrapCidrs = new ArrayList<>();
+
+			@JsonPropertyDescription(NETWORK_POLICIES_REGISTRY_ACCESS_CIDRS_DESCRIPTION)
+			private List<String> registryAccessCidrs = new ArrayList<>();
+
+			@JsonPropertyDescription(NETWORK_POLICIES_EGRESS_ISOLATION_DESCRIPTION)
+			private boolean egressIsolation = false;
+
+			@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTIONS_DESCRIPTION)
+			private List<ExternalConnectionSchema> externalConnections = new ArrayList<>();
+
+			@Getter
+			@Setter
+			public static class ExternalConnectionSchema {
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_TOOL_DESCRIPTION)
+				private String tool = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_DIRECTION_DESCRIPTION)
+				private String direction = "";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_CIDRS_DESCRIPTION)
+				private List<String> cidrs = new ArrayList<>();
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORTS_DESCRIPTION)
+				private List<ExternalConnectionPortSchema> ports = new ArrayList<>();
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalConnectionPortSchema {
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_PROTOCOL_DESCRIPTION)
+				private String protocol = "TCP";
+
+				@JsonPropertyDescription(NETWORK_POLICIES_EXTERNAL_CONNECTION_PORT_DESCRIPTION)
+				private Integer port;
+			}
+		}
 
 		@Getter
 		@Setter
@@ -785,7 +868,7 @@ public class Config {
 			helm.setChart("kube-prometheus-stack");
 			helm.setRepoURL("https://prometheus-community.github.io/helm-charts");
 			// renovate: depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
-			helm.setVersion("80.2.2");
+			helm.setVersion("92.14.1");
 			helm.setValues(new HashMap<>());
 		}
 
@@ -817,8 +900,6 @@ public class Config {
 	@Getter
 	@Setter
 	public static class SecretsSchema {
-		private Boolean active = false;
-
 		@Mixin
 		@JsonPropertyDescription(ESO_DESCRIPTION)
 		private ESOSchema externalSecrets = new ESOSchema();
@@ -834,6 +915,16 @@ public class Config {
 		@Getter
 		@Setter
 		public static class ESOSchema {
+			@Option(names = {"--external-secrets"}, description = ESO_ENABLE_DESCRIPTION)
+			@JsonPropertyDescription(ESO_ENABLE_DESCRIPTION)
+			private Boolean active = false;
+
+			@JsonPropertyDescription(EXTERNAL_VAULT_DESCRIPTION)
+			private ExternalVaultSchema vault = new ExternalVaultSchema();
+
+			@JsonPropertyDescription(EXTERNAL_SECRET_RESOURCES_DESCRIPTION)
+			private List<ExternalSecretSchema> secrets = new ArrayList<>();
+
 			@Mixin
 			@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 			private ESOHelmSchema helm;
@@ -843,7 +934,78 @@ public class Config {
 				helm.setChart("external-secrets");
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
-				helm.setVersion("0.9.16");
+				helm.setVersion("2.14.0");
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalVaultSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_STORE_NAME_DESCRIPTION)
+				private String storeName = "external-vault";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_SERVER_DESCRIPTION)
+				private String server = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_PATH_DESCRIPTION)
+				private String path = "secret";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_VERSION_DESCRIPTION)
+				private String version = "v2";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION)
+				private CaProviderSchema caProvider;
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_AUTH_DESCRIPTION)
+				private VaultAuthSchema auth = new VaultAuthSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class CaProviderSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION)
+				private String type = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION)
+				private String key = "";
+			}
+
+			@Getter
+			@Setter
+			public static class VaultAuthSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION)
+				private TokenSecretRefSchema tokenSecretRef = new TokenSecretRefSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class TokenSecretRefSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_KEY_DESCRIPTION)
+				private String key = "token";
+			}
+
+			@Getter
+			@Setter
+			public static class ExternalSecretSchema {
+				@JsonPropertyDescription(EXTERNAL_SECRET_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_NAMESPACE_DESCRIPTION)
+				private String namespace = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION)
+				private String remoteKey = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION)
+				private String refreshInterval = "";
+
+				@JsonPropertyDescription(EXTERNAL_SECRET_DATA_DESCRIPTION)
+				private Map<String, String> data = new HashMap<>();
 			}
 
 			@Getter
@@ -958,7 +1120,7 @@ public class Config {
 			helm.setChart("traefik");
 			helm.setRepoURL("https://traefik.github.io/charts");
 			// renovate: depName=traefik registryUrl=https://traefik.github.io/charts
-			helm.setVersion("39.0.9");
+			helm.setVersion("42.3.0");
 		}
 
 		@Getter
@@ -994,7 +1156,7 @@ public class Config {
 			helm.setChart("cert-manager");
 			helm.setRepoURL("https://charts.jetstack.io");
 			// renovate: depName=cert-manager registryUrl=https://charts.jetstack.io
-			helm.setVersion("1.19.4");
+			helm.setVersion("v1.21.3");
 		}
 
 		@Getter

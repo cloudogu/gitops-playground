@@ -16,7 +16,7 @@ import java.util.function.Predicate;
  * Cert-Manager contains own namespace ('cert-manager') which owns and 3 Pods:
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|full-netpols")
 // TODO: why not in ArgoCD Operator? Clarify
 public class CertManagerTestIT extends KubernetesApiTestSetup {
 

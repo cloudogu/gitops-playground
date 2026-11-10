@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">GOP NetworkPolicy communication overview</title>
+  <desc id="desc">Simplified overview of explicitly allowed, CIDR-configured, and blocked communication paths in the GitOps Playground.</desc>
+  <defs>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2e7d32"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef6c00"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c62828"/>
+    </marker>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #17212b; }
+      .subtitle { font: 14px Arial, sans-serif; fill: #52606d; }
+      .zone { fill: #f7f9fb; stroke: #6b7c93; stroke-width: 2; }
+      .zone-title { font: 700 16px Arial, sans-serif; fill: #334e68; }
+      .group { fill: #eef5fb; stroke: #5b8db8; stroke-width: 1.5; }
+      .group-title { font: 700 14px Arial, sans-serif; fill: #24557a; }
+      .node { fill: #ffffff; stroke: #607d8b; stroke-width: 1.4; }
+      .external { fill: #fff8e8; stroke: #b7791f; stroke-width: 1.5; }
+      .customer { fill: #fff3f3; stroke: #b85c5c; stroke-width: 1.5; }
+      .protected { fill: #fff8f8; stroke: #c97b7b; stroke-width: 1.4; }
+      .note { fill: #fffdf5; stroke: #9f8b4c; stroke-width: 1.2; }
+      .node-text { font: 13px Arial, sans-serif; fill: #263238; text-anchor: middle; }
+      .small { font: 12px Arial, sans-serif; fill: #52606d; text-anchor: middle; }
+      .note-text { font: 12px Arial, sans-serif; fill: #5d5130; }
+      .allowed { fill: none; stroke: #2e7d32; stroke-width: 2.5; marker-end: url(#arrow-green); }
+      .conditional { fill: none; stroke: #ef6c00; stroke-width: 2.5; stroke-dasharray: 9 6; marker-end: url(#arrow-orange); }
+      .blocked { fill: none; stroke: #c62828; stroke-width: 2.5; stroke-dasharray: 8 6; marker-end: url(#arrow-red); }
+      .edge-label { font: 12px Arial, sans-serif; fill: #334e68; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+      .conditional-label { font: 12px Arial, sans-serif; fill: #b45309; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+      .blocked-label { font: 700 12px Arial, sans-serif; fill: #c62828; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+      .legend { font: 13px Arial, sans-serif; fill: #334e68; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#ffffff"/>
+  <text x="40" y="42" class="title">GOP NetworkPolicy communication overview</text>
+  <text x="40" y="68" class="subtitle">Simplified overview. See docs/NetworkPolicies.md for ports, selectors, and the complete communication matrix.</text>
+
+  <!-- Outside the cluster -->
+  <rect x="35" y="95" width="1530" height="135" rx="14" class="zone"/>
+  <text x="55" y="122" class="zone-title">Outside the cluster</text>
+
+  <rect x="80" y="145" width="220" height="56" rx="9" class="external"/>
+  <text x="190" y="177" class="node-text">External user / HTTP client</text>
+
+  <rect x="410" y="145" width="220" height="56" rx="9" class="external"/>
+  <text x="520" y="169" class="node-text">GOP runner</text>
+  <text x="520" y="188" class="small">configured bootstrap CIDR</text>
+
+  <rect x="740" y="145" width="220" height="56" rx="9" class="external"/>
+  <text x="850" y="169" class="node-text">Registry client</text>
+  <text x="850" y="188" class="small">configured CIDR</text>
+
+  <rect x="1090" y="138" width="390" height="70" rx="9" class="external"/>
+  <text x="1285" y="165" class="node-text">External SCM / Git / Helm repositories</text>
+  <text x="1285" y="188" class="small">configured CIDRs + ports when egress isolation is enabled</text>
+
+  <!-- Cluster -->
+  <rect x="35" y="265" width="1530" height="535" rx="14" class="zone"/>
+  <text x="55" y="292" class="zone-title">Kubernetes cluster</text>
+
+  <!-- Ingress -->
+  <rect x="65" y="325" width="220" height="155" rx="12" class="group"/>
+  <text x="83" y="349" class="group-title">ingress namespace</text>
+  <rect x="100" y="377" width="150" height="55" rx="8" class="node"/>
+  <text x="175" y="409" class="node-text">Traefik</text>
+
+  <!-- Ingress targets -->
+  <rect x="340" y="325" width="300" height="155" rx="12" class="group"/>
+  <text x="358" y="349" class="group-title">Ingress-enabled GOP services</text>
+  <text x="490" y="382" class="node-text">Argo CD server · Jenkins</text>
+  <text x="490" y="407" class="node-text">SCM-Manager · Grafana · Vault</text>
+  <text x="490" y="444" class="small">only required service ports are allowed</text>
+
+  <!-- Monitoring -->
+  <rect x="700" y="325" width="340" height="155" rx="12" class="group"/>
+  <text x="718" y="349" class="group-title">monitoring namespace</text>
+  <rect x="730" y="374" width="120" height="48" rx="8" class="node"/>
+  <text x="790" y="403" class="node-text">Grafana</text>
+  <rect x="885" y="374" width="125" height="48" rx="8" class="node"/>
+  <text x="947" y="403" class="node-text">Prometheus</text>
+  <rect x="780" y="490" width="220" height="30" rx="7" class="node"/>
+  <text x="890" y="510" class="small">selected GOP metrics endpoints</text>
+
+  <!-- ArgoCD -->
+  <rect x="1100" y="325" width="400" height="155" rx="12" class="group"/>
+  <text x="1118" y="349" class="group-title">argocd namespace</text>
+  <rect x="1130" y="374" width="110" height="48" rx="8" class="node"/>
+  <text x="1185" y="403" class="node-text">Controllers</text>
+  <rect x="1270" y="374" width="110" height="48" rx="8" class="node"/>
+  <text x="1325" y="403" class="node-text">Repo server</text>
+  <rect x="1410" y="374" width="60" height="48" rx="8" class="node"/>
+  <text x="1440" y="403" class="node-text">Redis</text>
+
+  <!-- Build & SCM -->
+  <rect x="65" y="535" width="420" height="135" rx="12" class="group"/>
+  <text x="83" y="559" class="group-title">build &amp; SCM namespaces</text>
+  <rect x="95" y="582" width="115" height="48" rx="8" class="node"/>
+  <text x="152" y="611" class="node-text">Jenkins agent</text>
+  <rect x="230" y="582" width="120" height="48" rx="8" class="node"/>
+  <text x="290" y="603" class="node-text">Jenkins</text>
+  <text x="290" y="619" class="small">controller</text>
+  <rect x="370" y="582" width="90" height="48" rx="8" class="node"/>
+  <text x="415" y="611" class="node-text">SCM</text>
+  <text x="275" y="652" class="small">SCM ingress allows Argo CD repo-server and Jenkins workloads</text>
+
+  <!-- Secrets -->
+  <rect x="545" y="535" width="295" height="135" rx="12" class="group"/>
+  <text x="563" y="559" class="group-title">secrets namespace</text>
+  <rect x="575" y="584" width="105" height="48" rx="8" class="node"/>
+  <text x="627" y="603" class="node-text">External</text>
+  <text x="627" y="619" class="small">Secrets</text>
+  <rect x="715" y="584" width="95" height="48" rx="8" class="node"/>
+  <text x="762" y="611" class="node-text">Vault</text>
+
+  <!-- Registry -->
+  <rect x="900" y="535" width="220" height="135" rx="12" class="group"/>
+  <text x="918" y="559" class="group-title">registry namespace</text>
+  <rect x="935" y="585" width="150" height="48" rx="8" class="node"/>
+  <text x="1010" y="614" class="node-text">Internal registry</text>
+
+  <!-- Webhooks -->
+  <rect x="1180" y="535" width="320" height="135" rx="12" class="group"/>
+  <text x="1198" y="559" class="group-title">Kubernetes API / webhooks</text>
+  <rect x="1205" y="584" width="105" height="48" rx="8" class="node"/>
+  <text x="1257" y="603" class="node-text">Kubernetes</text>
+  <text x="1257" y="619" class="small">API</text>
+  <rect x="1340" y="580" width="130" height="56" rx="8" class="node"/>
+  <text x="1405" y="602" class="node-text">cert-manager /</text>
+  <text x="1405" y="620" class="small">ESO webhooks</text>
+
+  <!-- Customer applications / blocked example -->
+  <rect x="65" y="715" width="495" height="62" rx="12" class="group"/>
+  <text x="83" y="739" class="group-title">application / customer namespace</text>
+  <rect x="310" y="727" width="210" height="38" rx="8" class="customer"/>
+  <text x="415" y="751" class="node-text">Arbitrary application pod</text>
+
+  <rect x="650" y="715" width="330" height="62" rx="12" class="protected"/>
+  <text x="815" y="740" class="node-text">Protected GOP workloads</text>
+  <text x="815" y="760" class="small">Jenkins · Vault · internal SCM-Manager</text>
+
+  <rect x="1040" y="710" width="460" height="72" rx="10" class="note"/>
+  <text x="1058" y="733" class="note-text">No generic Prometheus allow-policy is installed for customer applications.</text>
+  <text x="1058" y="753" class="note-text">Repo-server egress isolation is optional and requires all external destinations.</text>
+  <text x="1058" y="773" class="note-text">Detailed ports and selectors are documented in the communication matrix.</text>
+
+  <!-- Explicitly allowed paths -->
+  <path d="M190 201 L190 377" class="allowed"/>
+  <text x="202" y="252" class="edge-label">HTTP / HTTPS</text>
+
+  <path d="M250 405 L340 405" class="allowed"/>
+  <text x="276" y="392" class="edge-label">ingress</text>
+
+  <path d="M850 398 L885 398" class="allowed"/>
+  <text x="853" y="386" class="edge-label">queries</text>
+
+  <path d="M947 422 L947 490" class="allowed"/>
+  <text x="958" y="466" class="edge-label">scrape</text>
+
+  <path d="M1240 398 L1270 398" class="allowed"/>
+  <text x="1244" y="386" class="edge-label">repo ops</text>
+
+  <path d="M1380 398 L1410 398" class="allowed"/>
+  <text x="1382" y="386" class="edge-label">Redis</text>
+
+  <path d="M210 606 L230 606" class="allowed"/>
+  <path d="M350 606 L370 606" class="allowed"/>
+
+  <path d="M680 608 L715 608" class="allowed"/>
+  <text x="686" y="596" class="edge-label">8200</text>
+
+  <path d="M1310 608 L1340 608" class="allowed"/>
+  <text x="1312" y="596" class="edge-label">10250</text>
+
+  <!-- Configured / conditional paths -->
+  <path d="M520 201 L520 250 L315 250 L315 510 L275 510 L275 535" class="conditional"/>
+  <text x="326" y="500" class="conditional-label">bootstrapCidrs</text>
+
+  <path d="M850 201 L850 250 L1065 250 L1065 510 L1010 510 L1010 535" class="conditional"/>
+  <text x="1075" y="500" class="conditional-label">registryAccessCidrs :5000</text>
+
+  <path d="M1325 374 L1325 270 L1285 270 L1285 208" class="conditional"/>
+  <text x="1338" y="292" class="conditional-label">externalConnections</text>
+  <text x="1338" y="309" class="conditional-label">optional egress isolation</text>
+
+  <!-- Blocked example -->
+  <path d="M520 746 L650 746" class="blocked"/>
+  <text x="565" y="733" class="blocked-label">blocked</text>
+
+  <!-- Legend -->
+  <path d="M55 850 L125 850" class="allowed"/>
+  <text x="140" y="855" class="legend">explicitly allowed</text>
+
+  <path d="M350 850 L420 850" class="conditional"/>
+  <text x="435" y="855" class="legend">configured / conditional CIDR path</text>
+
+  <path d="M745 850 L815 850" class="blocked"/>
+  <text x="830" y="855" class="legend">example traffic blocked by destination policy</text>
+</svg>

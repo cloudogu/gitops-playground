@@ -14,7 +14,7 @@ import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
 import com.cloudogu.gitops.tools.common.ConfigLifecycleHook;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
-import com.cloudogu.gitops.tools.core.Jenkins;
+import com.cloudogu.gitops.tools.jenkins.Jenkins;
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
@@ -313,7 +313,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 	private static boolean referenceHasSecretLocation(Credentials reference) {
 		return reference != null
 			&& ((reference.getSecretName() != null && !reference.getSecretName().isEmpty())
-				|| (reference.getSecretNamespace() != null && !reference.getSecretNamespace().isEmpty()));
+			|| (reference.getSecretNamespace() != null && !reference.getSecretNamespace().isEmpty()));
 	}
 
 	void createContentRepos() throws Exception {
@@ -574,7 +574,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 			}
 
 			if (repoConfig.getRef() != null && !repoConfig.getRef().isEmpty()) {
-				String actualRef = findRef(repoConfig, git.getRepository());
+				String actualRef = findRef(repoConfig, git.getRepository(), credentialsProvider);
 				git.checkout().setName(actualRef).call();
 			}
 		} catch (RuntimeException e) {
@@ -584,7 +584,9 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		}
 	}
 
-	private static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
+	private static String findRef(
+		ContentRepositorySchema repoConfig, Repository gitRepo,
+		UsernamePasswordCredentialsProvider credentialsProvider) {
 		try {
 			if (gitRepo.resolve(repoConfig.getRef()) != null) {
 				return repoConfig.getRef();
@@ -594,6 +596,9 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 											   .setRemote(repoConfig.getUrl())
 											   .setHeads(true)
 											   .setTags(true);
+
+
+			remoteCommand.setCredentialsProvider(credentialsProvider);
 
 			Collection<Ref> refs = remoteCommand.call();
 			String potentialRef = null;

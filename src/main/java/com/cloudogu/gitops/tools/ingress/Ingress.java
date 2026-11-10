@@ -1,0 +1,219 @@
+package com.cloudogu.gitops.tools.ingress;
+
+import com.cloudogu.gitops.application.context.DeploymentContext;
+import com.cloudogu.gitops.application.orchestration.GitHandler;
+import com.cloudogu.gitops.infrastructure.deployment.Deployer;
+import com.cloudogu.gitops.infrastructure.git.GitRepo;
+import com.cloudogu.gitops.infrastructure.helm.HelmClient;
+import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
+import com.cloudogu.gitops.tools.common.AbstractMappedTool;
+import com.cloudogu.gitops.tools.common.CrdBootstrap;
+import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
+import com.cloudogu.gitops.utils.AirGappedUtils;
+import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
+import com.cloudogu.gitops.utils.FileSystemUtils;
+import com.cloudogu.gitops.utils.MapUtils;
+import com.cloudogu.gitops.utils.TemplatingEngine;
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapperBuilder;
+import io.micronaut.core.annotation.Order;
+import jakarta.inject.Singleton;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+@Singleton
+@Order(150)
+@Slf4j
+public class Ingress extends AbstractMappedTool<IngressToolConfig> implements CrdBootstrap {
+
+	public static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/traefik/templates/values.ftl.yaml";
+
+	private static final String CLUSTER_RESOURCES_SOURCE_DIR = "argocd/cluster-resources";
+	private static final String TOOL_NAME = "traefik";
+	private static final String RELEASE_NAME = "traefik";
+	private static final String INGRESS_APP_PATH = "apps/traefik";
+	private static final String NETWORK_POLICY_TEMPLATE =
+		"argocd/cluster-resources/apps/traefik/templates/netpols/allow-required-access-to-traefik.ftl.yaml";
+	private static final String NETWORK_POLICY_PATH =
+		"apps/traefik/netpols/allow-required-access-to-traefik.yaml";
+
+	// Gateway API CRDs are no longer shipped with chart!
+	private static final String GATEWAY_API_CRD_VERSION = "v1.6.1";
+	private static final String GATEWAY_API_CRD = "https://github.com/kubernetes-sigs/gateway-api/releases/download/" + GATEWAY_API_CRD_VERSION + "/standard-install.yaml";
+
+	private static final Pattern CLUSTER_RBAC_KIND = Pattern.compile("(?m)^kind: (ClusterRole|ClusterRoleBinding)\\s*$");
+
+	private final ImagePullSecretCreator imagePullSecretCreator;
+	private final K8sClient k8sClient;
+	private final HelmClient helmClient;
+
+	@Getter
+	@Setter
+	private String namespace;
+
+	public Ingress(
+		FileSystemUtils fileSystemUtils,
+		Deployer deployer,
+		AirGappedUtils airGappedUtils,
+		GitHandler gitHandler,
+		ImagePullSecretCreator imagePullSecretCreator,
+		IngressToolConfigMapper configMapper,
+		K8sClient k8sClient,
+		HelmClient helmClient) {
+		super(configMapper);
+		this.deployer = deployer;
+		this.fileSystemUtils = fileSystemUtils;
+		this.airGappedUtils = airGappedUtils;
+		this.gitHandler = gitHandler;
+		this.imagePullSecretCreator = imagePullSecretCreator;
+		this.k8sClient = k8sClient;
+		this.helmClient = helmClient;
+	}
+
+	@Override
+	protected boolean isEnabled(IngressToolConfig config) {
+		return config.active();
+	}
+
+	@Override
+	protected void preDeploy() {
+		this.namespace = activeNamespace(toolConfig());
+
+		createImagePullSecret();
+		applyClusterRbac();
+		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
+		prepareIngressNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
+	}
+
+	@Override
+	protected void deploy() {
+		addHelmValuesData("config", toolConfig().templateConfig());
+		deployHelmChart(TOOL_NAME, RELEASE_NAME, namespace, toolConfig().helm(), HELM_VALUES_PATH, context);
+	}
+
+	@Override
+	protected void publishChanges() {
+		publishClusterResourcesChanges(TOOL_NAME);
+	}
+
+	@Override
+	protected String activeNamespace(IngressToolConfig config) {
+		return config.namespace();
+	}
+
+	private void createImagePullSecret() {
+		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
+	}
+
+	/**
+	 * In operator mode Argo CD is registered namespaced and cannot sync cluster-scoped resources.
+	 * Without the ClusterRole Traefik cannot watch Ingresses and answers every request with 404.
+	 */
+	private void applyClusterRbac() {
+		if (!toolConfig().operator()) {
+			return;
+		}
+
+		Map<String, Object> templateData = new HashMap<>();
+		templateData.put(
+			"statics",
+			new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+		);
+		templateData.put("config", toolConfig().templateConfig());
+		Map<String, Object> helmValues = new HashMap<>(templateToMap(HELM_VALUES_PATH, templateData));
+		MapUtils.deepMerge(toolConfig().helm().values(), helmValues);
+
+		Map<String, Object> helmArguments = new HashMap<>();
+		helmArguments.put("values", fileSystemUtils.writeTempFile(helmValues).toString());
+		helmArguments.put("namespace", namespace);
+		// helm template has no cluster access; the chart fails rendering its ServiceMonitor without this API
+		helmArguments.put("api-versions", "monitoring.coreos.com/v1");
+		String chartOrPath;
+		if (toolConfig().airgapped()) {
+			chartOrPath = Path.of(toolConfig().helm().localHelmChartFolder(), toolConfig().helm().chart()).toString();
+		} else {
+			helmClient.addRepo(TOOL_NAME, toolConfig().helm().repoURL());
+			chartOrPath = TOOL_NAME + "/" + toolConfig().helm().chart();
+			helmArguments.put("version", toolConfig().helm().version());
+		}
+
+		// Split the YAML stream into documents so each resource can be filtered by kind.
+		String extractFromInlineMultiYamls = "(?m)^---\\s*$";
+		String clusterRbac = Arrays.stream(helmClient.template(RELEASE_NAME, chartOrPath, helmArguments).split(
+									   extractFromInlineMultiYamls))
+								   .filter(document -> CLUSTER_RBAC_KIND.matcher(document).find())
+								   .collect(Collectors.joining("\n---\n"));
+
+		Path rbacFile = fileSystemUtils.createTempFile();
+		try {
+			Files.writeString(rbacFile, clusterRbac);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to write Traefik cluster RBAC to temp file", e);
+		}
+		log.debug("Applying Traefik ClusterRole and ClusterRoleBinding from path {}", rbacFile);
+		k8sClient.applyYaml(rbacFile.toString());
+	}
+
+	private void prepareIngressNetworkPolicy(GitRepo clusterResourcesRepo) {
+		Path networkPolicyPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), NETWORK_POLICY_PATH);
+		if (!toolConfig().netpols()) {
+			FileSystemUtils.deleteFile(networkPolicyPath.toString());
+			return;
+		}
+
+		try {
+			String networkPolicyYaml = new TemplatingEngine().template(
+				new File(NETWORK_POLICY_TEMPLATE),
+				Map.of(
+					"namespace", namespace,
+					"monitoringActive", toolConfig().monitoringActive(),
+					"monitoringNamespace", toolConfig().monitoringNamespace()
+				)
+			);
+			clusterResourcesRepo.writeFile(NETWORK_POLICY_PATH, networkPolicyYaml);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate Traefik NetworkPolicy", e);
+		}
+	}
+
+	private static void prepareIngressApp(GitRepo clusterResourcesRepo) {
+		log.debug("Preparing ingress repository content in {}", clusterResourcesRepo.getRepoTarget());
+
+		clusterResourcesRepo.copyDirectoryContents(
+			CLUSTER_RESOURCES_SOURCE_DIR,
+			ClusterResourcesCopyFilter.forSubDir(CLUSTER_RESOURCES_SOURCE_DIR, INGRESS_APP_PATH)
+		);
+	}
+
+	@Override
+	public void bootstrapCrds(DeploymentContext context) {
+		IngressToolConfig config = mapConfig(context);
+		if (!isEnabled(config) || config.skipCrds()) {
+			return;
+		}
+
+		String crds = GATEWAY_API_CRD;
+		if (config.airgapped()) {
+			crds = Path.of(
+				config.helm().localHelmChartFolder(),
+				config.helm().chart(),
+				"charts/traefik/crds/gateway-api-standard-install.yaml"
+			).toString();
+		}
+
+		log.debug("Applying Gateway API CRDs before tool deployment from path {}", crds);
+		k8sClient.applyYamlAndWaitForCrds(crds);
+	}
+}

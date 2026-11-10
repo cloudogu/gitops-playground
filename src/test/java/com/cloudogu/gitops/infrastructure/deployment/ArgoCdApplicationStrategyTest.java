@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -217,6 +218,47 @@ class ArgoCdApplicationStrategyTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void deploysScmManagerNetworkPoliciesFromClusterResourcesRepository() throws IOException {
+		ArgoCdApplicationStrategy strategy = createStrategy();
+		File valuesYaml = File.createTempFile("values", "yaml");
+		Files.writeString(valuesYaml.toPath(), "fullnameOverride: tenant1-scmm\n");
+		Path networkPolicy = Path.of(
+			localTempDir.getAbsolutePath(),
+			"apps/scm-manager/netpols/allow-required-access-to-scm-manager.yaml"
+		);
+		Files.createDirectories(networkPolicy.getParent());
+		Files.writeString(networkPolicy, "apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\n");
+
+		strategy.deployFeature(
+			"repoURL",
+			"scm-manager",
+			"scm-manager",
+			"3.11.6",
+			"tenant1-scm-manager",
+			"tenant1-scmm",
+			valuesYaml.toPath(),
+			DeploymentStrategy.RepoType.HELM,
+			context,
+			repositoryWorkspace
+		);
+
+		File argoCdApplicationYaml = new File(localTempDir, "apps/argocd/applications/tenant1-scmm.yaml");
+		Map<String, Object> result = YAML_MAPPER.readValue(argoCdApplicationYaml, YAML_MAP_TYPE);
+		Map<String, Object> spec = (Map<String, Object>) result.get("spec");
+		List<Map<String, Object>> sources = (List<Map<String, Object>>) spec.get("sources");
+
+		assertThat(sources).hasSize(2);
+		assertThat(sources.get(1))
+			.containsEntry("repoURL", "http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/cluster-resources.git")
+			.containsEntry("targetRevision", "main")
+			.containsEntry("path", "apps/scm-manager/netpols")
+			.doesNotContainKey("ref");
+		assertThat((Map<String, Object>) sources.get(1).get("directory"))
+			.containsEntry("recurse", true);
+	}
+
+	@Test
 	void deploysScmManagerAsBootstrapApplicationWithoutWritingExternalValueFiles() throws IOException {
 		ArgoCdApplicationStrategy strategy = createStrategy();
 		File valuesYaml = File.createTempFile("values", "yaml");
@@ -323,6 +365,7 @@ class ArgoCdApplicationStrategyTest {
 		config.setScm(scm);
 
 		Config.ArgoCDSchema argoCd = new Config.ArgoCDSchema();
+		argoCd.setActive(true);
 		argoCd.setOperator(argocdOperator);
 		Config.FeaturesSchema features = new Config.FeaturesSchema();
 		features.setArgocd(argoCd);

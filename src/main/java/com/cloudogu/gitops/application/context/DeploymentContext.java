@@ -9,6 +9,7 @@ public class DeploymentContext {
 
 	private final TenantMode tenantMode;
 	private final ScmManagerDeploymentMode scmManagerDeploymentMode;
+	private final ArgoCdDeploymentMode argoCdDeploymentMode;
 	private final boolean airgapped;
 	private final ClusterDistribution clusterDistribution;
 
@@ -28,6 +29,18 @@ public class DeploymentContext {
 		return scmManagerDeploymentMode == ScmManagerDeploymentMode.EXTERNAL;
 	}
 
+	public boolean isArgoCdEnabled() {
+		return argoCdDeploymentMode != ArgoCdDeploymentMode.DISABLED;
+	}
+
+	public boolean isArgoCdOperator() {
+		return argoCdDeploymentMode == ArgoCdDeploymentMode.OPERATOR;
+	}
+
+	public boolean isArgoCdHelm() {
+		return argoCdDeploymentMode == ArgoCdDeploymentMode.HELM;
+	}
+
 	public boolean isOpenshift() {
 		return clusterDistribution == ClusterDistribution.OPENSHIFT;
 	}
@@ -40,6 +53,12 @@ public class DeploymentContext {
 	public enum ScmManagerDeploymentMode {
 		INTERNAL,
 		EXTERNAL,
+		DISABLED
+	}
+
+	public enum ArgoCdDeploymentMode {
+		HELM,
+		OPERATOR,
 		DISABLED
 	}
 

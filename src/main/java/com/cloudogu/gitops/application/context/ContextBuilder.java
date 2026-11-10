@@ -15,6 +15,7 @@ public class ContextBuilder {
 		return new DeploymentContext(
 			tenantMode(),
 			scmManagerDeploymentMode(),
+			argoCdDeploymentMode(),
 			config.getApplication().getMirrorRepos(),
 			clusterDistribution()
 		);
@@ -36,6 +37,17 @@ public class ContextBuilder {
 		return internal
 			? DeploymentContext.ScmManagerDeploymentMode.INTERNAL
 			: DeploymentContext.ScmManagerDeploymentMode.EXTERNAL;
+	}
+
+	private DeploymentContext.ArgoCdDeploymentMode argoCdDeploymentMode() {
+		Config.ArgoCDSchema argoCd = config.getFeatures().getArgocd();
+		if (!Boolean.TRUE.equals(argoCd.getActive())) {
+			return DeploymentContext.ArgoCdDeploymentMode.DISABLED;
+		}
+
+		return Boolean.TRUE.equals(argoCd.getOperator())
+			? DeploymentContext.ArgoCdDeploymentMode.OPERATOR
+			: DeploymentContext.ArgoCdDeploymentMode.HELM;
 	}
 
 	private DeploymentContext.ClusterDistribution clusterDistribution() {

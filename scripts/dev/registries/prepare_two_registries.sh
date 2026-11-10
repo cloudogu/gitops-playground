@@ -1,0 +1,112 @@
+#!/bin/bash
+set -xeu pipefail
+# This script will prepare a cluster so you can test GOP in an "two registries" scenario
+
+
+scripts/init-cluster.sh
+helm repo add harbor https://helm.goharbor.io
+helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values ./scripts/dev/registries/two-registries-values.yaml
+./scripts/dev/registries/mirror_images_to_registry.sh http://localhost:30000 configureHarbor
+
+# Append following lines to the config file file
+cat <<EOF > ./scripts/local/two-registries.yaml
+content:
+  repos:
+    - url: https://github.com/cloudogu/gitops-build-lib
+      target: 3rd-party-dependencies/gitops-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/ces-build-lib
+      target: 3rd-party-dependencies/ces-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-boot-helm-chart
+      target: 3rd-party-dependencies/spring-boot-helm-chart
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-plain
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-helm
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/gitops-examples
+      path: example-apps-via-content-loader/
+      ref: main
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+
+  namespaces:
+    - \${config.application.namePrefix}example-apps-production
+    - \${config.application.namePrefix}example-apps-staging
+  variables:
+    petclinic:
+      baseDomain: "petclinic"
+    images:
+      kubectl: "localhost:30000/proxy/kubectl:latest"
+      helm: "localhost:30000/proxy/helm:latest"
+      kubeval: "localhost:30000/proxy/helm:latest"
+      helmKubeval: "localhost:30000/proxy/helm:latest"
+      yamllint: "localhost:30000/proxy/cytopia/yamllint:latest"
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre"
+      maven: "localhost:30000/proxy/maven:3-eclipse-temurin-17-alpine"
+registry:
+  internalPort: 30000
+  url: "localhost:30000"
+  path: "registry"
+  username: "Registry"
+  password: "Registry12345"
+  proxyUrl: "localhost:30000"
+  proxyUsername: "Proxy"
+  proxyPassword: "Proxy12345"
+  readOnlyUsername: "RegistryRead"
+  readOnlyPassword: "RegistryRead12345"
+  createImagePullSecrets: true
+jenkins:
+  active: true
+  jenkinsImage: "localhost:30000/proxy/jenkins-helm:latest"
+scm:
+  scmManager:
+    scmmImage: "localhost:30000/proxy/scm-manager:latest"
+application:
+  baseUrl: "http://localhost"
+  insecure: true
+  yes: true
+features:
+  argocd:
+    active: true
+  monitoring:
+    active: true
+    helm:
+      grafanaImage: "localhost:30000/proxy/grafana:latest"
+      grafanaSidecarImage: "localhost:30000/proxy/k8s-sidecar:latest"
+      prometheusImage: "localhost:30000/proxy/prometheus:latest"
+      prometheusOperatorImage: "localhost:30000/proxy/prometheus-operator:latest"
+      prometheusConfigReloaderImage: "localhost:30000/proxy/prometheus-config-reloader:latest"
+  ingress:
+    active: true
+    helm:
+      values:
+        image:
+          registry: "localhost:30000"
+          repository: "proxy/traefik"
+          tag: "v3.7.17"
+  secrets:
+    externalSecrets:
+      helm:
+        image: "localhost:30000/proxy/external-secrets:latest"
+    vault:
+      helm:
+        image: "localhost:30000/proxy/vault:latest"
+  certManager:
+    active: true
+    helm:
+      image: "localhost:30000/proxy/cert-manager-controller:latest"
+      webhookImage: "localhost:30000/proxy/cert-manager-webhook:latest"
+      cainjectorImage: "localhost:30000/proxy/cert-manager-cainjector:latest"
+
+EOF

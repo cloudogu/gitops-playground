@@ -1,0 +1,31 @@
+# Copy this file to scripts/dev/network-policies/netpol-local.yaml and replace <K3D_GATEWAY>
+# with the gateway of the local k3d Docker network.
+application:
+  networkPolicies:
+    bootstrapCidrs:
+      - <K3D_GATEWAY>/32
+
+    # Only for the ephemeral local k3d integration-test environment.
+    # Docker/k3d NAT can rewrite the source address of registry pushes.
+    registryAccessCidrs:
+      - 0.0.0.0/0
+
+    # Keep disabled for the normal local full-netpols test. Enabling egress isolation means
+    # that every external destination required by the selected workload must be configured.
+    egressIsolation: false
+
+    # Environment-specific external connections belong in the local override, not in the profile.
+    # The current implementation supports egress connections for the ArgoCD repo server.
+    externalConnections: []
+
+    # Example for testing an external SCM-Manager. Replace <EXTERNAL_SCM_CIDR> with the
+    # resolved, stable CIDR of the SCM endpoint and set egressIsolation to true.
+    # externalConnections:
+    #   - name: external-scm-manager
+    #     tool: argocd-repo-server
+    #     direction: egress
+    #     cidrs:
+    #       - <EXTERNAL_SCM_CIDR>
+    #     ports:
+    #       - protocol: TCP
+    #         port: 443
