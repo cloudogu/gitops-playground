@@ -137,7 +137,26 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-approle")
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault")
+	void usesTokenSecretReference() {
+		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+			Polling.untilAsserted(() -> {
+				GenericKubernetesResource store = client.genericKubernetesResources(SECRET_STORE_CONTEXT)
+					.inNamespace(TARGET_NAMESPACE)
+					.withName(SECRET_STORE_NAME)
+					.get();
+				assertThat(store).isNotNull();
+
+				JsonNode token = vaultAuth(store).path("tokenSecretRef");
+				assertThat(token.isObject()).isTrue();
+				assertThat(token.path("name").asText()).isEqualTo("vault-token");
+				assertThat(token.path("key").asText()).isEqualTo("token");
+			}, SYNC_TIMEOUT, POLL_INTERVAL);
+		}
+	}
+
+	@Test
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault-approle")
 	void usesAppRoleSecretReference() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			Polling.untilAsserted(
@@ -148,9 +167,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 															.get();
 					assertThat(store).isNotNull();
 
-					JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
-													  .path("spec").path("provider").path("vault").path("auth");
-					assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
+					JsonNode auth = vaultAuth(store);
 					JsonNode appRole = auth.path("appRole");
 					assertThat(appRole.isObject()).isTrue();
 					assertThat(appRole.path("path").asText()).isEqualTo("approle");
@@ -168,7 +185,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-kubernetes")
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault-kubernetes")
 	void usesKubernetesServiceAccountAuthentication() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			Polling.untilAsserted(() -> {
@@ -178,9 +195,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 					.get();
 				assertThat(store).isNotNull();
 
-				JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
-					.path("spec").path("provider").path("vault").path("auth");
-				assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
+				JsonNode auth = vaultAuth(store);
 				JsonNode kubernetes = auth.path("kubernetes");
 				assertThat(kubernetes.isObject()).isTrue();
 				assertThat(kubernetes.path("mountPath").asText()).isEqualTo("kubernetes");
@@ -199,7 +214,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	}
 
 	@Test
-	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-external-vault-kubernetes")
+	@EnabledIfSystemProperty(named = "micronaut.environments", matches = "(operator-)?full-external-vault-kubernetes")
 	void scopesEsoTokenRequestsToVaultServiceAccount() {
 		try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 			Role role = client.rbac().roles().inNamespace(TARGET_NAMESPACE)
@@ -268,6 +283,13 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 				.containsEntry("type", "Ready")
 				.containsEntry("status", "True")
 				.containsEntry("reason", expectedReason));
+	}
+
+	private static JsonNode vaultAuth(GenericKubernetesResource store) {
+		JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
+			.path("spec").path("provider").path("vault").path("auth");
+		assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
+		return auth;
 	}
 
 	private static String secretValue(Secret secret, String key) {

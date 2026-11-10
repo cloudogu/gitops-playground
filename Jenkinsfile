@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 // Single source for the chooseProfile choices: used by the parameters block and by refreshParameters().
-@Field List<String> PROFILES = ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+@Field List<String> PROFILES = ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault-approle', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
 
 pipeline {
     agent {
