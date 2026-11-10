@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 310" width="820" height="310" font-family="'Noto Sans','Segoe UI',Helvetica,Arial,sans-serif">
+  <title>Jenkins Stage View: release from a non-main branch must be confirmed in the Resolve tag stage</title>
+  <style>
+    /* One 12s loop; every animation shares it so the percentages line up as a timeline. */
+    .a { animation-duration: 12s; animation-iteration-count: infinite; animation-timing-function: step-end; }
+    .head { fill: #fff; font-size: 15px; font-weight: 700; }
+    .avg { fill: #fff; font-size: 15px; }
+    .cell { fill: #8f9a8f; font-size: 15px; text-anchor: middle; }
+    .small { font-size: 9px; }
+
+    /* Checkout SCM: running, then done */
+    .checkout-run  { animation-name: checkout-run; }
+    .checkout-done { animation-name: checkout-done; }
+    @keyframes checkout-run  { 0% { opacity: 1 } 12% { opacity: 0 } }
+    @keyframes checkout-done { 0% { opacity: 0 } 12% { opacity: 1 } }
+
+    /* Resolve tag: paused until confirmed, then done */
+    .resolve-pause { animation-name: resolve-pause; }
+    .resolve-done  { animation-name: resolve-done; }
+    @keyframes resolve-pause { 0% { opacity: 0 } 14% { opacity: 1 } 64% { opacity: 0 } }
+    @keyframes resolve-done  { 0% { opacity: 0 } 64% { opacity: 1 } }
+
+    /* Build: starts after confirmation */
+    .build-run { animation-name: build-run; }
+    @keyframes build-run { 0% { opacity: 0 } 67% { opacity: 1 } }
+
+    /* Input popup shown on hover, closes on click */
+    .popup { animation-name: popup; }
+    @keyframes popup { 0% { opacity: 0 } 36% { opacity: 1 } 62% { opacity: 0 } }
+
+    /* Button pressed state */
+    .pressed { animation-name: pressed; }
+    @keyframes pressed { 0% { opacity: 0 } 58% { opacity: 1 } 62% { opacity: 0 } }
+
+    /* Mouse pointer path: wait, hover Resolve tag, move to button, click, leave */
+    .cursor { animation: cursor 12s infinite ease-in-out; }
+    @keyframes cursor {
+      0%, 16% { transform: translate(760px, 290px); }
+      32%, 42% { transform: translate(440px, 165px); }
+      54%, 62% { transform: translate(150px, 205px); }
+      80%, 100% { transform: translate(760px, 290px); }
+    }
+
+    /* Progress bar of the running build */
+    .progress { animation: progress 12s infinite linear; }
+    @keyframes progress { 0% { width: 20px } 14%, 64% { width: 250px } 100% { width: 420px } }
+  </style>
+
+  <defs>
+    <pattern id="stripes" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="20" height="20" fill="#3d86c9"/>
+      <rect width="10" height="20" fill="#5a9de0"/>
+      <animateTransform attributeName="patternTransform" type="translate" from="0 0" to="20 0" dur="1s" repeatCount="indefinite" additive="sum"/>
+    </pattern>
+  </defs>
+
+  <rect width="820" height="310" fill="#15161c"/>
+
+  <!-- Stage headers -->
+  <g class="head">
+    <text x="216" y="40">Declarative:</text><text x="216" y="60">Checkout SCM</text>
+    <text x="369" y="50">Resolve tag</text>
+    <text x="522" y="50">Build</text>
+    <text x="675" y="40">Test &amp;</text><text x="675" y="60">SonarScanner</text>
+  </g>
+  <line x1="200" y1="0" x2="200" y2="310" stroke="#2a2b33"/>
+
+  <!-- Average stage times -->
+  <g class="avg">
+    <text x="185" y="96" text-anchor="end">Average stage times:</text>
+    <text x="275" y="96" text-anchor="middle">3s</text>
+    <text x="428" y="96" text-anchor="middle">3s</text>
+    <text x="581" y="96" text-anchor="middle">114ms</text>
+    <text x="734" y="96" text-anchor="middle">1min 57s</text>
+  </g>
+
+  <!-- Build #72: release build on the feature branch -->
+  <rect x="20" y="122" width="34" height="16" rx="8" fill="#7aa2c8"/>
+  <text x="37" y="134" fill="#fff" font-size="11" text-anchor="middle">#72</text>
+  <text x="70" y="160" fill="#fff" font-size="12">Nov 05</text>
+  <text x="70" y="182" fill="#fff" font-size="12">15:10</text>
+
+  <!-- empty cells -->
+  <g fill="#1b1c23">
+    <rect x="203" y="118" width="147" height="88"/>
+    <rect x="356" y="118" width="147" height="88"/>
+    <rect x="509" y="118" width="147" height="88"/>
+    <rect x="662" y="118" width="147" height="88"/>
+  </g>
+
+  <!-- Checkout SCM -->
+  <g class="a checkout-run">
+    <rect x="203" y="118" width="147" height="88" fill="url(#stripes)"/>
+  </g>
+  <g class="a checkout-done">
+    <rect x="203" y="118" width="147" height="88" fill="#12301a"/>
+    <text class="cell" x="276" y="167">1s</text>
+  </g>
+
+  <!-- Resolve tag -->
+  <g class="a resolve-pause">
+    <rect x="357" y="119" width="145" height="86" fill="url(#stripes)" stroke="#fff" stroke-dasharray="3 3"/>
+    <text class="cell" x="429" y="164" fill="#cfe0f2">3s</text>
+    <text class="cell small" x="429" y="184" fill="#cfe0f2">(paused)</text>
+  </g>
+  <g class="a resolve-done">
+    <rect x="356" y="118" width="147" height="88" fill="#12301a"/>
+    <text class="cell" x="429" y="164">27s</text>
+    <text class="cell small" x="429" y="184">(paused for 24s)</text>
+  </g>
+
+  <!-- Build -->
+  <g class="a build-run">
+    <rect x="509" y="118" width="147" height="88" fill="url(#stripes)"/>
+  </g>
+
+  <!-- progress bar -->
+  <rect x="203" y="210" width="606" height="10" fill="#1b1c23"/>
+  <rect class="progress" x="205" y="211" height="8" width="20" fill="url(#stripes)"/>
+
+  <!-- Build #71: previous run -->
+  <rect x="20" y="230" width="34" height="16" rx="8" fill="#7aa2c8"/>
+  <text x="37" y="242" fill="#fff" font-size="11" text-anchor="middle">#71</text>
+  <text x="70" y="268" fill="#fff" font-size="12">Nov 05</text>
+  <text x="70" y="290" fill="#fff" font-size="12">10:42</text>
+  <g fill="#12301a">
+    <rect x="203" y="226" width="147" height="80"/>
+    <rect x="356" y="226" width="147" height="80"/>
+    <rect x="509" y="226" width="147" height="80"/>
+    <rect x="662" y="226" width="147" height="80"/>
+  </g>
+  <text class="cell" x="276" y="272">1s</text>
+  <text class="cell" x="429" y="272">3s</text>
+  <text class="cell" x="581" y="272">94ms</text>
+  <text class="cell" x="734" y="272" font-size="17">3min 14s</text>
+
+  <!-- Input popup -->
+  <g class="a popup">
+    <rect x="10" y="120" width="345" height="112" rx="4" fill="#fcf5dc" stroke="#e8dcb0"/>
+    <text x="340" y="140" fill="#8a6d3b" font-size="16" font-weight="700" text-anchor="end">×</text>
+    <g fill="#8a6d3b" font-size="13" font-weight="700">
+      <text x="24" y="148">WARNING: Release 0.50.6 would be created</text>
+      <text x="24" y="166">from branch 'feature/sbom-generation',</text>
+      <text x="24" y="184">not 'main'. Continue?</text>
+    </g>
+    <rect x="24" y="196" width="208" height="28" rx="3" fill="#337ab7"/>
+    <rect class="a pressed" x="24" y="196" width="208" height="28" rx="3" fill="#1f4f7a"/>
+    <text x="128" y="215" fill="#fff" font-size="12" text-anchor="middle">Release from non-main branch</text>
+    <rect x="240" y="196" width="56" height="28" rx="3" fill="#fff" stroke="#ccc"/>
+    <text x="268" y="215" fill="#333" font-size="12" text-anchor="middle">Abort</text>
+  </g>
+
+  <!-- Mouse pointer -->
+  <g class="cursor">
+    <path d="M0 0 L0 18 L5 13 L9 22 L12 21 L8 12 L15 12 Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+  </g>
+</svg>
