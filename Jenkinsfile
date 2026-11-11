@@ -197,7 +197,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = PROFILES - ['all-profiles', 'full-netpols']
+                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'operator-full-external-vault-approle', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -299,14 +299,17 @@ pipeline {
                                             }
                                         }
 
-                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault') {
+                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault-approle') {
                                             externalVaultContainer = "external-vault-${env.BUILD_ID}"
+                                            def vaultSetupScript = profile == 'operator-full-external-vault-approle'
+                                                    ? 'prepare-test-vault-approle.sh'
+                                                    : 'prepare-test-vault.sh'
                                             def externalVaultServer
                                             docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                                 sh 'apk add --no-cache bash kubectl docker-cli'
                                                 externalVaultServer = sh(
-                                                        script: "./scripts/dev/external-vault/prepare-test-vault.sh --container-name=${externalVaultContainer} --host-port=0",
-                                                        returnStdout: true
+                                                    script: "./scripts/dev/external-vault/${vaultSetupScript} --container-name=${externalVaultContainer} --host-port=0",
+                                                    returnStdout: true
                                                 ).trim()
                                             }
                                             additionalArguments = " --config-file=${createExternalVaultIntegrationConfig(externalVaultServer)}"
@@ -327,7 +330,7 @@ pipeline {
                                         }
                                         docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                             try {
-                                                sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                                sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} -DfailIfNoTests=true"
                                             } finally {
                                                 sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
                                             }
@@ -369,11 +372,11 @@ pipeline {
                             sh '''
                                 apk add --no-cache github-cli
                                 if [ "$(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null)" = "true" ]; then
-                                    gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes
                                 fi
                                 gh release create "$TAG_NAME" \
                                     --repo "$GITHUB_REPOSITORY" \
-                                    --target "$GIT_COMMIT" \
+                                    --target "$GIT_COMMIT"
+                                    gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes\
                                     --title "$TAG_NAME" \
                                     --generate-notes \
                                     --draft

@@ -63,4 +63,4 @@ POLICY
       --from-file=secret-id=/dev/stdin --dry-run=client -o yaml \
   | kubectl apply -f - >/dev/null
 
-printf 'AppRole fixture ready in namespace %s (Secret: vault-approle)\n' "${NAMESPACE}"
+printf 'AppRole fixture ready in namespace %s (Secret: vault-approle)\n' "${NAMESPACE}" >&2
