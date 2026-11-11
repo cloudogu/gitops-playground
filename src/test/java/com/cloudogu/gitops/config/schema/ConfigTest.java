@@ -108,6 +108,20 @@ class ConfigTest {
 	}
 
 	@Test
+	void parsesVaultEnterpriseNamespace() {
+		Config config = Config.fromMap(Map.of(
+			"features", Map.of("secrets", Map.of("externalSecrets", Map.of(
+				"vault", Map.of("namespace", "customer/team")
+			)))
+		));
+
+		assertThat(config.getFeatures().getSecrets().getExternalSecrets().getVault().getNamespace())
+			.isEqualTo("customer/team");
+		assertThat(new Config().getFeatures().getSecrets().getExternalSecrets().getVault().getNamespace())
+			.isEmpty();
+	}
+
+	@Test
 	void parsesAppRoleAuthWithoutImplicitTokenAuth() {
 		Config config = configWithVaultAuth("appRole", Map.of(
 			"roleId", "role-id",

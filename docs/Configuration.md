@@ -277,6 +277,7 @@ Configuration of optional tools supported by gitops-playground.
 | `--external-secrets` | `features.secrets.externalSecrets.active` | Boolean | `false` | Installs the external secrets operator. |
 | - | `features.secrets.externalSecrets.vault.storeName` | String | `external-vault` | Name of the namespaced SecretStore generated for the external Vault |
 | - | `features.secrets.externalSecrets.vault.server` | String | `` | URL of the external HashiCorp Vault |
+| - | `features.secrets.externalSecrets.vault.namespace` | String | `` | Optional Vault Enterprise namespace used to access secrets and, by default, authenticate; leave empty if namespaces are not used |
 | - | `features.secrets.externalSecrets.vault.path` | String | `secret` | Vault KV secrets engine mount path |
 | - | `features.secrets.externalSecrets.vault.version` | String | `v2` | Vault KV secrets engine version |
 | - | `features.secrets.externalSecrets.vault.caProvider.type` | String | `-` | Kubernetes resource type containing the Vault CA certificate: ConfigMap or Secret |

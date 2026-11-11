@@ -249,6 +249,7 @@ class ExternalSecretsOperatorTest {
 			.contains("decodingStrategy: None")
 			.contains("metadataPolicy: None")
 			.doesNotContain("caProvider:");
+		assertThat(renderedVaultProvider(yaml)).doesNotContainKey("namespace");
 	}
 
 	@ParameterizedTest
@@ -272,6 +273,17 @@ class ExternalSecretsOperatorTest {
 				"        name: \"external-vault-ca\"\n" +
 				"        key: \"ca.crt\""
 		);
+	}
+
+	@Test
+	void rendersVaultEnterpriseNamespace() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().setNamespace("customer/team");
+
+		install(createExternalSecretsOperator());
+
+		assertThat(renderedVaultProvider(renderedVaultResources()))
+			.containsEntry("namespace", "customer/team");
 	}
 
 	@Test
@@ -620,11 +632,15 @@ class ExternalSecretsOperatorTest {
 
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> renderedVaultAuth(String yaml) throws IOException {
+		return (Map<String, Object>) renderedVaultProvider(yaml).get("auth");
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> renderedVaultProvider(String yaml) throws IOException {
 		Map<String, Object> store = YAML_MAPPER.readValue(yaml.split("(?m)^---\\s*$", 2)[0], YAML_MAP_TYPE);
 		Map<String, Object> spec = (Map<String, Object>) store.get("spec");
 		Map<String, Object> provider = (Map<String, Object>) spec.get("provider");
-		Map<String, Object> vault = (Map<String, Object>) provider.get("vault");
-		return (Map<String, Object>) vault.get("auth");
+		return (Map<String, Object>) provider.get("vault");
 	}
 
 	private Map<String, Object> parseActualYaml() throws IOException {

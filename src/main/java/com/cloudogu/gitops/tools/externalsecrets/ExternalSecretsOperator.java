@@ -315,6 +315,9 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			"version", vault.version(),
 			"targetNamespaces", vault.targetNamespaces()
 		));
+		if (vault.namespace() != null && !vault.namespace().isBlank()) {
+			vaultTemplateData.put("namespace", vault.namespace());
+		}
 		vaultTemplateData.put("auth", vaultAuthTemplateData(vault.auth()));
 		if (vault.caProvider() != null) {
 			vaultTemplateData.put("caProvider", Map.of(

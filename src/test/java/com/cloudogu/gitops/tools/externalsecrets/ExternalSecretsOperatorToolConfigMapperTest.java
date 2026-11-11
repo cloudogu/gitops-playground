@@ -48,6 +48,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 			config.getFeatures().getSecrets().getExternalSecrets().getVault();
 		externalVault.setStoreName("customer-vault");
 		externalVault.setServer("https://vault.example.org");
+		externalVault.setNamespace("customer/team");
 		externalVault.setPath("customer-secrets");
 		externalVault.setVersion("v2");
 		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
@@ -94,6 +95,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	  .externalVault(ExternalVaultConfig.builder()
 																	    .storeName("customer-vault")
 																	    .server("https://vault.example.org")
+													    .namespace("customer/team")
 																	    .path("customer-secrets")
 																	    .version("v2")
 																	    .caProvider(new ExternalVaultConfig.CaProvider(

@@ -57,6 +57,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 		return ExternalVaultConfig.builder()
 								  .storeName(vault == null ? null : vault.getStoreName())
 								  .server(vault == null ? null : vault.getServer())
+								  .namespace(vault == null ? null : vault.getNamespace())
 								  .path(vault == null ? null : vault.getPath())
 								  .version(vault == null ? null : vault.getVersion())
 								  .caProvider(caProvider == null ? null : new ExternalVaultConfig.CaProvider(

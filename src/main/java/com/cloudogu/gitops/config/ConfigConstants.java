@@ -133,6 +133,7 @@ public final class ConfigConstants {
 	public static final String EXTERNAL_VAULT_DESCRIPTION = "Configures an external HashiCorp Vault as a secret source for the external secrets operator";
 	public static final String EXTERNAL_VAULT_STORE_NAME_DESCRIPTION = "Name of the namespaced SecretStore generated for the external Vault";
 	public static final String EXTERNAL_VAULT_SERVER_DESCRIPTION = "URL of the external HashiCorp Vault";
+	public static final String EXTERNAL_VAULT_NAMESPACE_DESCRIPTION = "Optional Vault Enterprise namespace used to access secrets and, by default, authenticate; leave empty if namespaces are not used";
 	public static final String EXTERNAL_VAULT_PATH_DESCRIPTION = "Vault KV secrets engine mount path";
 	public static final String EXTERNAL_VAULT_VERSION_DESCRIPTION = "Vault KV secrets engine version";
 	public static final String EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION = "Optional reference to an existing ConfigMap or Secret containing the PEM CA certificate for an external Vault; the reference must exist in each target namespace";

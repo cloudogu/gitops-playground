@@ -9,6 +9,7 @@ import java.util.List;
 public record ExternalVaultConfig(
 	String storeName,
 	String server,
+	String namespace,
 	String path,
 	String version,
 	CaProvider caProvider,

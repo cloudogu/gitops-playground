@@ -8,6 +8,9 @@ spec:
   provider:
     vault:
       server: "${vault.server?json_string}"
+<#if vault.namespace??>
+      namespace: "${vault.namespace?json_string}"
+</#if>
       path: "${vault.path?json_string}"
       version: "${vault.version?json_string}"
 <#if vault.caProvider??>

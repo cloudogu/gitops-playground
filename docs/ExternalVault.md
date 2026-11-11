@@ -51,6 +51,24 @@ features:
 
 `refreshInterval` is optional. If omitted, GOP does not render the field and ESO uses its default (one hour). ESO refreshes the Kubernetes Secret when values change in Vault; GOP does not need to be run again.
 
+### Vault Enterprise namespaces (optional)
+
+If the external Vault uses Vault Enterprise namespaces, set `features.secrets.externalSecrets.vault.namespace` to the subnamespace containing the KV secrets engine and the authentication backend:
+
+```yaml
+features:
+  secrets:
+    externalSecrets:
+      vault:
+        namespace: customer/team
+```
+
+GOP then renders `spec.provider.vault.namespace: customer/team` in each namespaced `SecretStore`. This is a **Vault namespace**, not the Kubernetes namespace of the `SecretStore` or target Secret. When the setting is omitted or empty, GOP omits the field and existing non-Enterprise Vault configurations behave as before.
+
+GOP assumes that the Vault authentication method and the KV secrets engine are configured in the same Vault Enterprise namespace. A namespace can contain multiple secrets, which ESO can synchronize through separate `ExternalSecret` resources, provided the Vault policies allow access to their paths. The customer is responsible for provisioning the Vault namespace, authentication method, roles, and policies; GOP only references the existing configuration.
+
+The local Vault development container does not support Vault Enterprise namespaces, so this option is covered by configuration and rendering tests rather than a local Vault end-to-end test.
+
 ### Option 1: Token authentication (`tokenSecretRef`)
 
 ```yaml

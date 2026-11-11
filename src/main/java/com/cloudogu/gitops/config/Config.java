@@ -119,6 +119,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNET
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_ROLE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_REF_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_NAMESPACE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_PATH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_SERVER_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_STORE_NAME_DESCRIPTION;
@@ -957,6 +958,9 @@ public class Config {
 
 				@JsonPropertyDescription(EXTERNAL_VAULT_SERVER_DESCRIPTION)
 				private String server = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_NAMESPACE_DESCRIPTION)
+				private String namespace = "";
 
 				@JsonPropertyDescription(EXTERNAL_VAULT_PATH_DESCRIPTION)
 				private String path = "secret";

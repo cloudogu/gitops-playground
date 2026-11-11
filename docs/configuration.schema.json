@@ -853,6 +853,10 @@
                       "additionalProperties" : false,
                       "description" : "Optional reference to an existing ConfigMap or Secret containing the PEM CA certificate for an external Vault; the reference must exist in each target namespace"
                     },
+                    "namespace" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Optional Vault Enterprise namespace used to access secrets and, by default, authenticate; leave empty if namespaces are not used"
+                    },
                     "path" : {
                       "type" : [ "string", "null" ],
                       "description" : "Vault KV secrets engine mount path"
