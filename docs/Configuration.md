@@ -190,6 +190,13 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `application.networkPolicies.registryAccessCidrs` | List&lt;String&gt; | `[]` | CIDR ranges allowed to access the internal registry through its exposed service. An empty list adds no external registry ingress allowance |
 | - | `application.networkPolicies.egressIsolation` | Boolean | `false` | Explicitly enable Argo CD repo-server egress isolation when supported external egress connections are configured |
 | - | `application.networkPolicies.externalConnections` | List&lt;ExternalConnectionSchema&gt; | `[]` | External network connections for supported GOP workloads. Currently Argo CD repo-server egress is supported |
+| - | `application.networkPolicies.externalConnections[].name` | String | `` | Stable name of the external network connection |
+| - | `application.networkPolicies.externalConnections[].tool` | String | `` | Supported GOP workload identifier. Currently argocd-repo-server is supported |
+| - | `application.networkPolicies.externalConnections[].direction` | String | `` | NetworkPolicy direction of the external connection. Currently egress is supported for argocd-repo-server |
+| - | `application.networkPolicies.externalConnections[].cidrs` | List&lt;String&gt; | `[]` | CIDR ranges allowed for the external connection |
+| - | `application.networkPolicies.externalConnections[].ports` | List&lt;ExternalConnectionPortSchema&gt; | `[]` | Ports allowed for the external connection |
+| - | `application.networkPolicies.externalConnections[].ports[].protocol` | String | `TCP` | Protocol of the allowed port, for example TCP or UDP |
+| - | `application.networkPolicies.externalConnections[].ports[].port` | Integer | `-` | Allowed network port |
 | `--cluster-admin` | `application.clusterAdmin` | Boolean | `false` | Binds ArgoCD controllers to cluster-admin ClusterRole |
 | `-p`, `--profile` | `application.profile` | String | `-` | Use predefined profile (full, only-argocd, operator-mandants aso.) |
 | `--gop-namespace` | `application.gopNamespace` | String | `` | If set, GOP stores specific information in this namespace. |
@@ -201,8 +208,30 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | :--- | :--- | :--- | :--- | :--- |
 | - | `content.namespaces` | List&lt;String&gt; | `[]` | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
 | - | `content.repos` | List&lt;ContentRepositorySchema&gt; | `[]` | ContentLoader repos to push into target environment |
+| - | `content.repos[].url` | String | `` | URL of the content repo. Mandatory for each type. |
+| - | `content.repos[].path` | String | `.` | Path within the content repo to process |
+| - | `content.repos[].ref` | String | `` | Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags! |
+| - | `content.repos[].targetRef` | String | `` | Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref. |
+| - | `content.repos[].credentials.username` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `content.repos[].credentials.secretNamespace` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `content.repos[].credentials.secretName` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `content.repos[].credentials.usernameKey` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `content.repos[].credentials.passwordKey` | String | `-` | Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys. |
+| - | `content.repos[].templating` | Boolean | `false` | When true, template all files ending in .ftl within the repo |
+| - | `content.repos[].type` | ContentRepoType | `MIRROR` | ContentLoader Repos can either be: copied (only the files, starting on ref, starting at path within the repo. Requires target) , mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.) folderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.) |
+| - | `content.repos[].target` | String | `` | Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name. |
+| - | `content.repos[].overwriteMode` | OverwriteMode | `INIT` | This defines, how customer repos will be updated. INIT - push only if repo does not exist. RESET - delete all files after cloning source - files not in content are deleted UPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo. |
+| - | `content.repos[].createJenkinsJob` | Boolean | `false` | If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches. |
 | - | `content.variables` | Map | `{}` | Additional variables to use in custom templates. |
 | - | `content.helmReleases` | List&lt;HelmReleaseSchema&gt; | `[]` | Additional Helm releases to deploy through Argo CD without requiring a content Git repository. |
+| - | `content.helmReleases[].name` | String | `` | Logical name of the Helm release. Used as the feature folder name under 'apps/<name>' and as default for 'releaseName' if not set. |
+| - | `content.helmReleases[].repoURL` | String | `` | Helm repository URL to fetch the chart from. Use an HTTP(S) Helm repo (must provide an index.yaml) or an OCI registry URL (oci://...). |
+| - | `content.helmReleases[].chart` | String | `` | Helm chart name to install. For HTTP(S) repos this is the chart name from the repo index; for OCI this is the chart artifact name. |
+| - | `content.helmReleases[].version` | String | `` | Chart version to deploy. Required for Helm charts in Argo CD. For HTTP(S) Helm repos you may use a SemVer range like '*' to always pick the newest version. For OCI registries, specify an explicit version/tag. |
+| - | `content.helmReleases[].namespace` | String | `` | Kubernetes namespace to deploy the release into. |
+| - | `content.helmReleases[].releaseName` | String | `` | Helm release name. If empty, the value of 'name' is used. |
+| - | `content.helmReleases[].valuesPath` | String | `` | Optional path to a YAML values file to load Helm values from.The file must be accessible locally on the machine running GOP. Inline 'values' will be merged on top (inline overrides file). |
+| - | `content.helmReleases[].values` | Map | `{}` | Optional inline Helm values. These values are merged on top of 'valuesFile' (if set) and override keys from the file. Use this for small overrides without maintaining a separate file. |
 | `--content-whitelist` | `content.useWhitelist` | Boolean | `false` | Enables the whitelist for statics in content templating |
 | - | `content.allowedStaticsWhitelist` | Set&lt;String&gt; | `[com.cloudogu.gitops.utils.DockerImageParser, java.lang.Float, java.lang.Long, java.lang.Double, java.lang.Boolean, java.lang.Math, java.lang.String, java.lang.Integer]` | Whitelist for Statics freemarker is allowing in user templates |
 
@@ -294,6 +323,11 @@ Configuration of optional tools supported by gitops-playground.
 | - | `features.secrets.externalSecrets.vault.auth.kubernetes.serviceAccountRef.name` | String | `-` | ServiceAccount name used by ESO to request an authentication token |
 | - | `features.secrets.externalSecrets.vault.auth.kubernetes.serviceAccountRef.audiences` | List&lt;String&gt; | `-` | Optional audiences for the requested ServiceAccount token; they must match the Vault role configuration |
 | - | `features.secrets.externalSecrets.secrets` | List&lt;ExternalSecretSchema&gt; | `[]` | Secrets to synchronize from the external Vault into Kubernetes |
+| - | `features.secrets.externalSecrets.secrets[].name` | String | `` | Name of the generated ExternalSecret and target Kubernetes Secret |
+| - | `features.secrets.externalSecrets.secrets[].namespace` | String | `` | Target Kubernetes namespace. It must exist when the ExternalSecret is reconciled and can either be provided beforehand or created through content.namespaces |
+| - | `features.secrets.externalSecrets.secrets[].remoteKey` | String | `` | Path of the secret inside the configured Vault KV secrets engine |
+| - | `features.secrets.externalSecrets.secrets[].refreshInterval` | String | `` | Optional interval for ESO to refresh the Kubernetes Secret (for example 15m). If omitted, ESO uses its default interval of 1h |
+| - | `features.secrets.externalSecrets.secrets[].data` | Map | `{}` | Mapping from Kubernetes Secret keys to Vault properties |
 | `--external-secrets-image` | `features.secrets.externalSecrets.helm.image` | String | `` | Sets image for external secrets operator |
 | `--external-secrets-certcontroller-image` | `features.secrets.externalSecrets.helm.certControllerImage` | String | `` | Sets image for external secrets operator's controller |
 | `--external-secrets-webhook-image` | `features.secrets.externalSecrets.helm.webhookImage` | String | `` | Sets image for external secrets operator's webhook |

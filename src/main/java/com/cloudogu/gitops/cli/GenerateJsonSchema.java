@@ -186,6 +186,23 @@ public class GenerateJsonSchema {
 											 .trim()
 		);
 		rows.add(r);
+
+		// List entries are documented separately because the list itself is empty in the default config.
+		if (List.class.isAssignableFrom(field.getType())
+			&& field.getGenericType() instanceof ParameterizedType parameterizedType
+			&& parameterizedType.getActualTypeArguments()[0] instanceof Class<?> elementType
+			&& isSchemaType(elementType)
+			&& !elementType.isEnum()) {
+			rows.addAll(collectRows(newSchemaInstance(elementType), elementType, key + "[]"));
+		}
+	}
+
+	private static Object newSchemaInstance(Class<?> schemaType) {
+		try {
+			return schemaType.getDeclaredConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("Cannot create schema instance for documentation: " + schemaType.getName(), e);
+		}
 	}
 
 	public static List<Field> allFields(Class<?> clazz) {

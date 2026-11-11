@@ -42,6 +42,18 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
+# Do not create test secrets in a customer cluster when the wrong kubeconfig is selected.
+CURRENT_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
+if [[ "${CURRENT_CONTEXT}" != k3d-* ]]; then
+  echo "Refusing external Vault fixture setup: current Kubernetes context is not k3d (${CURRENT_CONTEXT:-none})" >&2
+  exit 1
+fi
+K3D_CLUSTER="${CURRENT_CONTEXT#k3d-}"
+if [[ "$(docker inspect --format '{{.State.Running}}' "k3d-${K3D_CLUSTER}-server-0" 2>/dev/null)" != "true" ]]; then
+  echo "Refusing external Vault fixture setup: k3d cluster ${K3D_CLUSTER} is not running in Docker" >&2
+  exit 1
+fi
+
 # This fixture is intentionally separate from the k3d cluster: GOP must connect to a Vault it did not deploy.
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 

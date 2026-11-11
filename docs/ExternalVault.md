@@ -203,7 +203,7 @@ The Argo CD operator must be installed **before GOP** for `operator-*` profiles.
 
 ## Local k3d test
 
-A running k3d cluster with the correct `kubectl` context is required. The scripts launch an **ephemeral** Vault development container outside the cluster and store sample values at `secret/gop/customer-test`. The expected test values are defined in [`external-vault-test-fixture.properties`](../src/test/resources/external-vault-test-fixture.properties). By default, Vault is accessible from k3d at `http://host.k3d.internal:8200`.
+A running k3d cluster with the correct `kubectl` context is required. The scripts launch an **ephemeral** Vault development container outside the cluster and store sample values at `secret/gop/customer-test`. The expected test values are defined in [`external-vault-test-fixture.properties`](../src/test/resources/external-vault-test-fixture.properties). By default, Vault is accessible from k3d at `http://host.k3d.internal:8200`. The preparation scripts refuse to run unless the selected Kubernetes context belongs to a running k3d cluster; check `kubectl config current-context` before starting them.
 
 | Authentication method | Vault/Kubernetes preparation | GOP profile | Argo CD operator profile |
 | --- | --- | --- | --- |
