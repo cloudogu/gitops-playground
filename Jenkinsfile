@@ -197,7 +197,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = ['minimal', 'full', 'full-secrets', 'full-external-vault', 'operator-full-external-vault-approle', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+                                profiles = PROFILES - ['all-profiles', 'full-netpols', 'operator-full-external-vault']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -299,7 +299,7 @@ pipeline {
                                             }
                                         }
 
-                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault-approle') {
+                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault' || profile == 'operator-full-external-vault-approle') {
                                             externalVaultContainer = "external-vault-${env.BUILD_ID}"
                                             def vaultSetupScript = profile == 'operator-full-external-vault-approle'
                                                     ? 'prepare-test-vault-approle.sh'
@@ -372,11 +372,11 @@ pipeline {
                             sh '''
                                 apk add --no-cache github-cli
                                 if [ "$(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null)" = "true" ]; then
+                                    gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes
                                 fi
                                 gh release create "$TAG_NAME" \
                                     --repo "$GITHUB_REPOSITORY" \
-                                    --target "$GIT_COMMIT"
-                                    gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --yes\
+                                    --target "$GIT_COMMIT" \
                                     --title "$TAG_NAME" \
                                     --generate-notes \
                                     --draft
