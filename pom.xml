@@ -77,7 +77,7 @@
                 <scope>import</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
-            <!-- used for com.github.victools:jsonschema-generator -->
+            <!-- used for io-fabric8 and com.github.victools:jsonschema-generator -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
@@ -85,7 +85,7 @@
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
-            <!-- used for com.github.victools:jsonschema-generator -->
+            <!-- used for io-fabric8 and com.github.victools:jsonschema-generator -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
@@ -93,7 +93,7 @@
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-            <!-- used for io-fabric8, gitlab4j and retrofit -->
+            <!-- used for gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
@@ -102,7 +102,7 @@
             </dependency>
             <!-- Source:
             https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-            <!-- used for io-fabric8, gitlab4j and retrofit -->
+            <!-- used for gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>

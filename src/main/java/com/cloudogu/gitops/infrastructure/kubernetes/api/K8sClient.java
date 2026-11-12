@@ -3,7 +3,6 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.Tuple;
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
@@ -38,6 +37,7 @@ import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
 
 import java.io.File;
 import java.io.IOException;
