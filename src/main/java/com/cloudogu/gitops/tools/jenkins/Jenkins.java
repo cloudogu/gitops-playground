@@ -445,7 +445,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 					toolConfig().scm().technicalPassword(),
 					gitHandler.getTenant().getCredentials().getPassword()
 				);
-				if (isBlank(technicalCredentials.password())) {
+				if (!StringUtils.hasText(technicalCredentials.password())) {
 					throw new IllegalArgumentException(
 						"Internal SCM-Manager requires a password for the GOP-managed technical user"
 					);
@@ -455,7 +455,7 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 				);
 			} else {
 				var scmCredentials = gitHandler.getTenant().getCredentials();
-				if (isBlank(scmCredentials.getUsername()) || isBlank(scmCredentials.getPassword())) {
+				if (!StringUtils.hasText(scmCredentials.getUsername()) || !StringUtils.hasText(scmCredentials.getPassword())) {
 					throw new IllegalArgumentException(
 						"External SCM-Manager requires a username and password for Jenkins repository access"
 					);
@@ -467,10 +467,6 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 		}
 
 		return runtimeScmTechnicalCredentials;
-	}
-
-	private static boolean isBlank(String value) {
-		return value == null || value.isBlank();
 	}
 
 	private ResolvedCredentials registryCredentials() {
