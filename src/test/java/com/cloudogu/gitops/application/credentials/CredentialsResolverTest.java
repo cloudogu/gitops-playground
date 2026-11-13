@@ -79,6 +79,27 @@ class CredentialsResolverTest {
 	}
 
 	@Test
+	void managedUserFallsBackToProvisioningPassword() {
+		ResolvedCredentials resolved = resolver.resolveGopManagedUser(
+			"gitops", "", "provisioning-password"
+		);
+
+		assertThat(resolved.username()).isEqualTo("gitops");
+		assertThat(resolved.password()).isEqualTo("provisioning-password");
+		verifyNoInteractions(k8sClient);
+	}
+
+	@Test
+	void managedUserPrefersDedicatedPassword() {
+		ResolvedCredentials resolved = resolver.resolveGopManagedUser(
+			"gitops", "technical-password", "provisioning-password"
+		);
+
+		assertThat(resolved.password()).isEqualTo("technical-password");
+		verifyNoInteractions(k8sClient);
+	}
+
+	@Test
 	void usesFallbackUsernameWhenSecretDoesNotProvideOne() {
 		Credentials reference = secretReference();
 		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))

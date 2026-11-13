@@ -158,9 +158,15 @@ See [parameters](./Configuration.md) for examples.
 
 The user has to have the following privileges:
 * install plugins
-* set credentials
 * create jobs
+* create and update credentials in the Jenkins jobs/folders managed by GOP
 * restarting
+
+For Jenkins jobs created by GOP with SCM-Manager or GitLab, GOP creates or updates the job-specific `scm-user`
+credential even when Jenkins is external. This credential is written before the job's repository scan. With GitLab,
+GOP uses the configured GitLab access credentials as before. Registry credentials on external Jenkins remain
+externally managed: `registry-user` (and `registry-proxy-user` for a proxy registry) must already be accessible to
+the GOP-created jobs when needed.
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
@@ -199,6 +205,16 @@ The user on the scm has to have privileges to:
 * add / edit repositories
 * add / edit proxy
 * install plugins
+
+For an internal SCM-Manager, GOP creates or updates the technical user `<namePrefix>gitops` and uses that account
+for Jenkins repository access. Its password comes from `scm.scmManager.technicalUser.password`, if provided.
+Otherwise, GOP uses the already resolved SCM provisioning password.
+
+For an external SCM-Manager, GOP uses the existing SCM account configured through `--scmm-username` and
+`--scmm-password`, or through the resolved `scm.scmManager.credentials` Secret reference, for the job-specific Jenkins
+credential `scm-user`. GOP does not create this external SCM account or change its repository permissions.
+Configuring a separate technical user for an external SCM-Manager is currently not supported.
+If the configured SCM account has administrator privileges, the Jenkins jobs also use those privileges for SCM access.
 
 ## Monitoring tools
 

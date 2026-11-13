@@ -71,7 +71,9 @@ public record JenkinsToolConfig(
 
 	@Builder
 	public record Scm(
-		ScmProviderType providerType
+		ScmProviderType providerType,
+		boolean internalScmManager,
+		String technicalPassword
 	) {
 	}
 

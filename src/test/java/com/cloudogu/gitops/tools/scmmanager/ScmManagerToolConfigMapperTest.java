@@ -51,7 +51,8 @@ class ScmManagerToolConfigMapperTest {
 		scmManager.setIngress("scm.example.org");
 		scmManager.setUsername("scm-user");
 		scmManager.setPassword("scm-password");
-		scmManager.setGitOpsUsername("gitops-user");
+		scmManager.setGopManagedTechnicalUsername("gitops-user");
+		scmManager.getTechnicalUser().setPassword("technical-password");
 		scmManager.setSkipPlugins(true);
 		scmManager.setSkipRestart(true);
 		scmManager.setScmmImage("scm-manager:custom");
@@ -70,7 +71,9 @@ class ScmManagerToolConfigMapperTest {
 														 .namespace("test-source-control")
 														 .releaseName("test-scmm")
 														 .ingress("scm.example.org")
-														 .gitOpsUsername("gitops-user")
+														 .gopManagedTechnicalUsername("gitops-user")
+														 .technicalUserPassword("technical-password")
+
 														 .skipPlugins(true)
 														 .skipRestart(true)
 														 .netpols(true)

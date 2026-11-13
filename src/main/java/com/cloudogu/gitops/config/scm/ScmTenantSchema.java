@@ -27,7 +27,9 @@ public class ScmTenantSchema {
 	public static final String GITLAB_CONFIG_DESCRIPTION = "Config for GITLAB";
 	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
-	public static final String GITOPSUSERNAME_DESCRIPTION = "Username for the Gitops User";
+	public static final String GITLAB_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP";
+	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Optional password for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins";
+	public static final String SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION = "Username of the GOP-managed technical SCM-Manager user";
 
 	@Option(names = {"--scm-provider"}, description = SCM_PROVIDER_TYPE_DESCRIPTION, defaultValue = "SCM_MANAGER")
 	@JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
@@ -79,8 +81,8 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
 		private String parentGroupId = "";
 
-		@JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
-		private String gitOpsUsername = "";
+		@JsonPropertyDescription(GITLAB_TECHNICAL_USERNAME_DESCRIPTION)
+		private String technicalUsername = "";
 
 		private String defaultVisibility = "";
 
@@ -123,6 +125,10 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
 		private Credentials credentials;
 
+		@JsonPropertyDescription(SCMM_TECHNICAL_USER_DESCRIPTION)
+		@Mixin
+		private ScmTechnicalUserConfig technicalUser = new ScmTechnicalUserConfig();
+
 		@JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
 		@JsonMerge
 		private Config.HelmConfigWithValues helm;
@@ -142,8 +148,8 @@ public class ScmTenantSchema {
 		@JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
 		private Boolean skipPlugins = false;
 
-		@JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
-		private String gitOpsUsername = "";
+		@JsonPropertyDescription(SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION)
+		private String gopManagedTechnicalUsername = "";
 
 		public ScmManagerTenantConfig() {
 			helm = new Config.HelmConfigWithValues();
@@ -158,5 +164,17 @@ public class ScmTenantSchema {
 		public Credentials getCredentials() {
 			return credentials != null ? credentials : new Credentials(username, password);
 		}
+	}
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	public static class ScmTechnicalUserConfig {
+
+		public static final String SCMM_TECHNICAL_PASSWORD_DESCRIPTION = "Optional password for the GOP-managed technical SCM-Manager user in internal deployments";
+
+		@Option(names = {"--scmm-technical-password"}, description = SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
+		@JsonPropertyDescription(SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
+		private String password = "";
 	}
 }

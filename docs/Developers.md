@@ -18,6 +18,7 @@ version information.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Prerequisites](#prerequisites)
+- [SCM technical users and repository permissions](#scm-technical-users-and-repository-permissions)
 - [Testing](#testing)
     - [Unit-Tests](#unit-tests)
     - [Integration-Tests](#integration-tests)
@@ -68,6 +69,29 @@ are good to go:
 ```bash
 java -version && mvn -version && docker version && k3d version && kubectl version && helm version
 ```
+
+## SCM technical users and repository permissions
+
+The following names belong to different layers of the SCM integration and therefore intentionally describe different
+concepts:
+
+- `scm.scmManager.technicalUser.password` is defined in `ScmTenantSchema`. For an internal SCM-Manager it optionally
+  overrides the password of the GOP-managed `<namePrefix>gitops` user; otherwise the resolved SCM provisioning password
+  is used. With an external SCM-Manager, Jenkins reuses the existing
+  SCM provisioning credentials (`scmManager.username/password` or the resolved Secret reference); a separate
+  external technical user cannot be configured.
+- `scm.gitlab.technicalUsername` is defined in the GitLab configuration. It identifies an existing GitLab technical user
+  that GOP grants WRITE/Developer access to on provisioned repositories. GOP does not create or manage this GitLab
+  account.
+- `gopManagedTechnicalUsername` is an internal SCM-Manager value derived in `GitHandler` as `<namePrefix>gitops`. It
+  marks the technical user whose account and repository permissions are owned by GOP.
+- `GitProvider#getRepositoryPermissionUsername()` is a provider-layer hook used by
+  `GitRepo#createRepositoryAndSetPermission()`. It returns the principal whose repository permissions GOP is allowed to
+  manage; it is not another technical-user configuration value.
+
+The provider behavior reflects this ownership boundary: internal SCM-Manager returns `gopManagedTechnicalUsername`,
+external SCM-Manager returns no permission principal, and GitLab returns `technicalUsername`. Keeping these names
+separate makes it explicit whether a value describes an identity or authorizes GOP to change repository permissions.
 
 ## Testing
 

@@ -16,6 +16,12 @@ class JsonConfigValidatorTest {
 			Arguments.of(
 				"multiple values",
 				Map.of("features", Map.of("argocd", Map.of("url", "http://localhost/argocd")))
+			),
+			Arguments.of(
+				"internal SCM-Manager technical-user password",
+				Map.of("scm", Map.of("scmManager", Map.of(
+					"technicalUser", Map.of("password", "technical-password")
+				)))
 			)
 		);
 	}
@@ -51,6 +57,15 @@ class JsonConfigValidatorTest {
 						"namePrefixForEnvVars", "prefix"
 					)
 				)
+			),
+			Arguments.of(
+				"obsolete internal SCM-Manager technical-user Secret reference",
+				Map.of("scm", Map.of("scmManager", Map.of(
+					"technicalUser", Map.of("credentials", Map.of(
+						"secretName", "scm-technical-user-credentials",
+						"secretNamespace", "gop-job"
+					))
+				)))
 			)
 		);
 	}

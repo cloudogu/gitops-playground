@@ -52,6 +52,19 @@ public class CredentialsResolver {
 		return new ResolvedCredentials(resolved.getUsername(), resolved.getPassword());
 	}
 
+	/**
+	 * Resolve credentials for GOP-managed users of an internal SCM-Manager.
+	 * An explicitly configured password takes precedence; otherwise reuse the
+	 * resolved SCM provisioning password.
+	 */
+	public ResolvedCredentials resolveGopManagedUser(
+		String username,
+		String configuredPassword,
+		String provisioningPassword) {
+		String fallbackPassword = hasText(configuredPassword) ? configuredPassword : provisioningPassword;
+		return new ResolvedCredentials(username, fallbackPassword);
+	}
+
 	private static boolean hasText(String value) {
 		return value != null && !value.isBlank();
 	}

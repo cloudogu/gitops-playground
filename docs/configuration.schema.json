@@ -1040,6 +1040,10 @@
               "type" : [ "string", "null" ],
               "description" : "Password for SCM Manager authentication"
             },
+            "technicalUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
+            },
             "url" : {
               "type" : [ "string", "null" ],
               "description" : "URL for external Gitlab"
@@ -1184,10 +1188,6 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
-              "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
-            },
             "internal" : {
               "type" : [ "boolean", "null" ],
               "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
@@ -1199,6 +1199,10 @@
             "password" : {
               "type" : [ "string", "null" ],
               "description" : "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
+            },
+            "technicalUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP"
             },
             "url" : {
               "type" : [ "string", "null" ],
@@ -1219,9 +1223,9 @@
               "$ref" : "#/$defs/Credentials-nullable",
               "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
             },
-            "gitOpsUsername" : {
+            "gopManagedTechnicalUsername" : {
               "type" : [ "string", "null" ],
-              "description" : "Username for the Gitops User"
+              "description" : "Username of the GOP-managed technical SCM-Manager user"
             },
             "helm" : {
               "$ref" : "#/$defs/HelmConfigWithValues-nullable",
@@ -1246,6 +1250,17 @@
             "skipRestart" : {
               "type" : [ "boolean", "null" ],
               "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
+            },
+            "technicalUser" : {
+              "type" : [ "object", "null" ],
+              "properties" : {
+                "password" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Optional password for the GOP-managed technical SCM-Manager user in internal deployments"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Optional password for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins"
             },
             "url" : {
               "type" : [ "string", "null" ],

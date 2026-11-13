@@ -167,6 +167,44 @@ class ConfigTest {
 	}
 
 	@Test
+	void mapsGitlabTechnicalUsername() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"gitlab", Map.of(
+					"technicalUsername", "existing-gitlab-user"
+				)
+			)
+		));
+
+		assertThat(config.getScm().getGitlab().getTechnicalUsername())
+			.isEqualTo("existing-gitlab-user");
+	}
+
+	@Test
+	void parsesManagedTechnicalUserPasswordFromCli() {
+		Config config = new Config();
+
+		new CommandLine(config).parseArgs("--scmm-technical-password=technical-password");
+
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
+			.isEqualTo("technical-password");
+	}
+
+	@Test
+	void mapsManagedTechnicalUserPasswordFromConfig() {
+		Config config = Config.fromMap(Map.of(
+			"scm", Map.of(
+				"scmManager", Map.of(
+					"technicalUser", Map.of("password", "technical-password")
+				)
+			)
+		));
+
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
+			.isEqualTo("technical-password");
+	}
+
+	@Test
 	void getsTenantNameFromConfig() {
 		testConfig.getApplication().setNamePrefix("testprefix-");
 
