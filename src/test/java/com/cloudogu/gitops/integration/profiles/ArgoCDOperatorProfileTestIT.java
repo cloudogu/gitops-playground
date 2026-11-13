@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.fail;
  *
  * <p>To run locally: add -Dmicronaut.environments=operator-full or operator-full-external-vault to your execute configuration
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-full|operator-full-external-vault|operator-minimal")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-full|operator-full-external-vault(-(approle|kubernetes))?|operator-minimal")
 public class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
 	static String namespaceOperator = "argocd-operator-system";

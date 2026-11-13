@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,6 +9,9 @@ public class MapUtils {
 	private MapUtils() {
 	}
 
+	/**
+	 * Merges into the mutable target map while copying nested maps that may be immutable.
+	 */
 	public static Map<String, Object> deepMerge(Map<String, Object> src, Map<String, Object> target) {
 		if (src == null) {
 			return target;
@@ -15,7 +19,8 @@ public class MapUtils {
 		src.forEach((String key, Object value) -> {
 			Object oldVal = target.containsKey(key) ? target.get(key) : null;
 			if (oldVal instanceof Map && value instanceof Map) {
-				target.put(key, deepMerge(asStringObjectMap(value), asStringObjectMap(oldVal)));
+				Map<String, Object> mutableNestedTarget = new LinkedHashMap<>(asStringObjectMap(oldVal));
+				target.put(key, deepMerge(asStringObjectMap(value), mutableNestedTarget));
 			} else {
 				target.put(key, value);
 			}

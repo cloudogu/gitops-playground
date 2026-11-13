@@ -88,13 +88,14 @@ mvn clean test
 ./mvnw clean test-compile
 
 # first create a fresh new cluster to test on:
-./scripts/init-cluster
+./scripts/init-cluster.sh
 
 # then deploy the gop with a predefined profile:
 ./mvnw exec:java -Dexec.arguments="--profile=<PROFILE>"
 
-# finally run the test
-./mvnw integration-test -Dmicronaut.environments=<PROFILE>
+# run the integration tests and verify their results (avoid a silent "No tests to run")
+./mvnw -B test-compile failsafe:integration-test failsafe:verify \
+  -Dmicronaut.environments=<PROFILE> -DfailIfNoTests=true
 ```
 
 where <PROFILES> can be one of:
@@ -103,15 +104,20 @@ where <PROFILES> can be one of:
 - full-netpols
 - full-secrets
 - full-external-vault
+- full-external-vault-approle
+- full-external-vault-kubernetes
 - full-prefix
 - content-examples
 - operator-full
 - operator-full-external-vault
+- operator-full-external-vault-approle
+- operator-full-external-vault-kubernetes
 - operator-mandants
 
-The `full-external-vault` and `operator-full-external-vault` profiles additionally require an external Vault test
-fixture and the referenced Vault token
-Secret. See [External Vault](ExternalVault.md#local-k3d-test) for the complete local setup.
+The `*-external-vault*` profiles require a prepared external test Vault. Depending on the selected authentication
+method, they require an existing Vault token Secret, an AppRole SecretID stored in a Kubernetes Secret, or a Kubernetes
+ServiceAccount with the appropriate RBAC permissions. See [External Vault](ExternalVault.md#local-k3d-test) for setup
+instructions, operator profiles, and integration test commands.
 
 Note: 'operator-*' profiles requires you to install the argo-cd operator in a fresh cluster _before_ deploying the gop.
 This can be done by running:

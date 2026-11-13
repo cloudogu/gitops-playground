@@ -16,6 +16,7 @@ VAULT_TOKEN="dev-only-token"
 SECRET_PATH="secret/gop/customer-test"
 SECRET_USERNAME="${EXTERNAL_VAULT_TEST_USERNAME}"
 SECRET_PASSWORD="${EXTERNAL_VAULT_TEST_PASSWORD}"
+CREATE_TOKEN_SECRET=true
 # renovate: depName=hashicorp/vault datasource=docker
 VAULT_IMAGE="hashicorp/vault:2.2.1"
 
@@ -26,6 +27,7 @@ while [[ $# -gt 0 ]]; do
     --namespace=*) NAMESPACE="${1#*=}" ;;
     --vault-token=*) VAULT_TOKEN="${1#*=}" ;;
     --vault-image=*) VAULT_IMAGE="${1#*=}" ;;
+    --skip-token-secret) CREATE_TOKEN_SECRET=false ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
   shift
@@ -37,6 +39,18 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 if ! command -v kubectl >/dev/null 2>&1; then
   echo "kubectl is required" >&2
+  exit 1
+fi
+
+# Do not create test secrets in a customer cluster when the wrong kubeconfig is selected.
+CURRENT_CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
+if [[ "${CURRENT_CONTEXT}" != k3d-* ]]; then
+  echo "Refusing external Vault fixture setup: current Kubernetes context is not k3d (${CURRENT_CONTEXT:-none})" >&2
+  exit 1
+fi
+K3D_CLUSTER="${CURRENT_CONTEXT#k3d-}"
+if [[ "$(docker inspect --format '{{.State.Running}}' "k3d-${K3D_CLUSTER}-server-0" 2>/dev/null)" != "true" ]]; then
+  echo "Refusing external Vault fixture setup: k3d cluster ${K3D_CLUSTER} is not running in Docker" >&2
   exit 1
 fi
 
@@ -78,9 +92,11 @@ docker exec \
     password="${SECRET_PASSWORD}" >/dev/null
 
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-kubectl -n "${NAMESPACE}" create secret generic vault-token \
-  --from-literal=token="${VAULT_TOKEN}" \
-  --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+if [[ "${CREATE_TOKEN_SECRET}" == "true" ]]; then
+  kubectl -n "${NAMESPACE}" create secret generic vault-token \
+    --from-literal=token="${VAULT_TOKEN}" \
+    --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+fi
 
 MAPPED_PORT=$(docker port "${CONTAINER_NAME}" 8200/tcp | head -n 1 | sed 's/.*://')
 printf 'http://host.k3d.internal:%s\n' "${MAPPED_PORT}"

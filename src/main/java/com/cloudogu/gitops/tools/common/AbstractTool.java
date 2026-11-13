@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -142,7 +141,7 @@ public abstract class AbstractTool {
 
 			if (hydratedString == null || hydratedString.trim().isEmpty()) {
 				// Otherwise empty array or exception, whereas we expect a Map
-				return Collections.emptyMap();
+				return new HashMap<>();
 			}
 			return yamlMapper.readValue(hydratedString, YAML_MAP_TYPE);
 		} catch (Exception e) {
@@ -193,7 +192,7 @@ public abstract class AbstractTool {
 			}
 		}
 
-		helmValuesData = MapUtils.deepMerge(helmConfig.values(), helmValuesData);
+		helmValuesData = MapUtils.deepMerge(helmConfig.values(), new HashMap<>(helmValuesData));
 
 		String repoURL = helmConfig.repoURL();
 		String chartOrPath = helmConfig.chart();

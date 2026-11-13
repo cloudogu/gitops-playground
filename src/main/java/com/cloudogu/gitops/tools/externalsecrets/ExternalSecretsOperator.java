@@ -274,6 +274,32 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		}
 	}
 
+	private static Map<String, Object> vaultAuthTemplateData(ExternalVaultConfig.VaultAuth auth) {
+		return switch (auth) {
+			case ExternalVaultConfig.TokenSecretRef token -> Map.of(
+				"tokenSecretRef", Map.of("name", token.name(), "key", token.key())
+			);
+			case ExternalVaultConfig.AppRole appRole -> Map.of(
+				"appRole", Map.of(
+					"path", appRole.path(),
+					"roleId", appRole.roleId(),
+					"secretRef", Map.of("name", appRole.secretRef().name(), "key", appRole.secretRef().key())
+				)
+			);
+			case ExternalVaultConfig.KubernetesAuth kubernetes -> {
+				Map<String, Object> account = new HashMap<>(Map.of("name", kubernetes.serviceAccountRef().name()));
+				if (!kubernetes.serviceAccountRef().audiences().isEmpty()) {
+					account.put("audiences", kubernetes.serviceAccountRef().audiences());
+				}
+				yield Map.of("kubernetes", Map.of(
+					"mountPath", kubernetes.mountPath(),
+					"role", kubernetes.role(),
+					"serviceAccountRef", account
+				));
+			}
+		};
+	}
+
 	private void prepareExternalVaultResources(GitRepo clusterResourcesRepo) {
 		Path resourcesPath = Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), EXTERNAL_VAULT_RESOURCES_PATH);
 		if (toolConfig().managedSecrets().isEmpty()) {
@@ -287,10 +313,12 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			"server", vault.server(),
 			"path", vault.path(),
 			"version", vault.version(),
-			"tokenSecretName", vault.tokenSecretName(),
-			"tokenSecretKey", vault.tokenSecretKey(),
 			"targetNamespaces", vault.targetNamespaces()
 		));
+		if (vault.namespace() != null && !vault.namespace().isBlank()) {
+			vaultTemplateData.put("namespace", vault.namespace());
+		}
+		vaultTemplateData.put("auth", vaultAuthTemplateData(vault.auth()));
 		if (vault.caProvider() != null) {
 			vaultTemplateData.put("caProvider", Map.of(
 				"type", vault.caProvider().type(),

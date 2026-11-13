@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 // Single source for the chooseProfile choices: used by the parameters block and by refreshParameters().
-@Field List<String> PROFILES = ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
+@Field List<String> PROFILES = ['full', 'full-netpols', 'full-secrets', 'full-external-vault', 'operator-full-external-vault-approle', 'minimal', 'all-profiles', 'full-prefix', 'content-examples', 'operator-full', 'operator-mandants']
 
 pipeline {
     agent {
@@ -197,7 +197,7 @@ pipeline {
                             if (isTriggeredByTimer()
                                     || params.chooseProfile == 'all-profiles'
                                     || (env.BRANCH_NAME == 'main' && !isTriggeredByUser())) {
-                                profiles = PROFILES - ['all-profiles', 'full-netpols']
+                                profiles = PROFILES - ['all-profiles', 'full-netpols', 'operator-full-external-vault']
                             } else if (env.BRANCH_NAME == 'develop') {
                                 profiles = ['full-prefix', 'operator-mandants', 'operator-full']
                             } else {
@@ -299,14 +299,17 @@ pipeline {
                                             }
                                         }
 
-                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault') {
+                                        if (profile == 'full-external-vault' || profile == 'operator-full-external-vault' || profile == 'operator-full-external-vault-approle') {
                                             externalVaultContainer = "external-vault-${env.BUILD_ID}"
+                                            def vaultSetupScript = profile == 'operator-full-external-vault-approle'
+                                                    ? 'prepare-test-vault-approle.sh'
+                                                    : 'prepare-test-vault.sh'
                                             def externalVaultServer
                                             docker.image("${env.GOLANG_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                                 sh 'apk add --no-cache bash kubectl docker-cli'
                                                 externalVaultServer = sh(
-                                                        script: "./scripts/dev/external-vault/prepare-test-vault.sh --container-name=${externalVaultContainer} --host-port=0",
-                                                        returnStdout: true
+                                                    script: "./scripts/dev/external-vault/${vaultSetupScript} --container-name=${externalVaultContainer} --host-port=0",
+                                                    returnStdout: true
                                                 ).trim()
                                             }
                                             additionalArguments = " --config-file=${createExternalVaultIntegrationConfig(externalVaultServer)}"
@@ -327,7 +330,7 @@ pipeline {
                                         }
                                         docker.image("${env.MAVEN_IMAGE}").inside(env.INTEGRATION_TEST_DOCKER_ARGS) {
                                             try {
-                                                sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+                                                sh "mvn -B failsafe:integration-test failsafe:verify -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile} -DfailIfNoTests=true"
                                             } finally {
                                                 sh '[ ! -e target ] || chown -R $BUILD_USER:$BUILD_GROUP target'
                                             }

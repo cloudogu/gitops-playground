@@ -101,12 +101,25 @@ import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_NAME_DE
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REFRESH_INTERVAL_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_REMOTE_KEY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_SECRET_RESOURCES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_PATH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_ROLE_ID_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_SECRET_KEY_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_SECRET_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_APP_ROLE_SECRET_REF_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_AUTH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_KEY_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_NAME_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_CA_PROVIDER_TYPE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_AUDIENCES_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_AUTH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_MOUNT_PATH_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_ROLE_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_NAME_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_REF_DESCRIPTION;
+import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_NAMESPACE_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_PATH_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_SERVER_DESCRIPTION;
 import static com.cloudogu.gitops.config.ConfigConstants.EXTERNAL_VAULT_STORE_NAME_DESCRIPTION;
@@ -946,6 +959,9 @@ public class Config {
 				@JsonPropertyDescription(EXTERNAL_VAULT_SERVER_DESCRIPTION)
 				private String server = "";
 
+				@JsonPropertyDescription(EXTERNAL_VAULT_NAMESPACE_DESCRIPTION)
+				private String namespace = "";
+
 				@JsonPropertyDescription(EXTERNAL_VAULT_PATH_DESCRIPTION)
 				private String path = "secret";
 
@@ -976,7 +992,59 @@ public class Config {
 			@Setter
 			public static class VaultAuthSchema {
 				@JsonPropertyDescription(EXTERNAL_VAULT_TOKEN_SECRET_REF_DESCRIPTION)
-				private TokenSecretRefSchema tokenSecretRef = new TokenSecretRefSchema();
+				private TokenSecretRefSchema tokenSecretRef;
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_DESCRIPTION)
+				private AppRoleSchema appRole;
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_AUTH_DESCRIPTION)
+				private KubernetesAuthSchema kubernetes;
+			}
+
+			@Getter
+			@Setter
+			public static class AppRoleSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_PATH_DESCRIPTION)
+				private String path = "approle";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_ROLE_ID_DESCRIPTION)
+				private String roleId = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_SECRET_REF_DESCRIPTION)
+				private AppRoleSecretRefSchema secretRef = new AppRoleSecretRefSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class AppRoleSecretRefSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_SECRET_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_APP_ROLE_SECRET_KEY_DESCRIPTION)
+				private String key = "";
+			}
+
+			@Getter
+			@Setter
+			public static class KubernetesAuthSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_MOUNT_PATH_DESCRIPTION)
+				private String mountPath = "kubernetes";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_ROLE_DESCRIPTION)
+				private String role = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_REF_DESCRIPTION)
+				private KubernetesServiceAccountRefSchema serviceAccountRef = new KubernetesServiceAccountRefSchema();
+			}
+
+			@Getter
+			@Setter
+			public static class KubernetesServiceAccountRefSchema {
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_SERVICE_ACCOUNT_NAME_DESCRIPTION)
+				private String name = "";
+
+				@JsonPropertyDescription(EXTERNAL_VAULT_KUBERNETES_AUDIENCES_DESCRIPTION)
+				private List<String> audiences = new ArrayList<>();
 			}
 
 			@Getter

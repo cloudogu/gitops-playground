@@ -752,6 +752,69 @@
                     "auth" : {
                       "type" : [ "object", "null" ],
                       "properties" : {
+                        "appRole" : {
+                          "type" : [ "object", "null" ],
+                          "properties" : {
+                            "path" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Mount path of the AppRole authentication method in Vault"
+                            },
+                            "roleId" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Vault AppRole RoleID (not a secret)"
+                            },
+                            "secretRef" : {
+                              "type" : [ "object", "null" ],
+                              "properties" : {
+                                "key" : {
+                                  "type" : [ "string", "null" ],
+                                  "description" : "Key in the Kubernetes Secret containing the AppRole SecretID"
+                                },
+                                "name" : {
+                                  "type" : [ "string", "null" ],
+                                  "description" : "Name of the Kubernetes Secret containing the AppRole SecretID"
+                                }
+                              },
+                              "additionalProperties" : false,
+                              "description" : "Reference to an existing Kubernetes Secret containing the AppRole SecretID in each target namespace"
+                            }
+                          },
+                          "additionalProperties" : false,
+                          "description" : "AppRole authentication for external Vault"
+                        },
+                        "kubernetes" : {
+                          "type" : [ "object", "null" ],
+                          "properties" : {
+                            "mountPath" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Mount path of the Kubernetes authentication method in Vault"
+                            },
+                            "role" : {
+                              "type" : [ "string", "null" ],
+                              "description" : "Vault Kubernetes authentication role"
+                            },
+                            "serviceAccountRef" : {
+                              "type" : [ "object", "null" ],
+                              "properties" : {
+                                "audiences" : {
+                                  "description" : "Optional audiences for the requested ServiceAccount token; they must match the Vault role configuration",
+                                  "type" : [ "array", "null" ],
+                                  "items" : {
+                                    "type" : "string"
+                                  }
+                                },
+                                "name" : {
+                                  "type" : [ "string", "null" ],
+                                  "description" : "ServiceAccount name used by ESO to request an authentication token"
+                                }
+                              },
+                              "additionalProperties" : false,
+                              "description" : "Reference to an existing ServiceAccount in each target namespace"
+                            }
+                          },
+                          "additionalProperties" : false,
+                          "description" : "Kubernetes ServiceAccount authentication for external Vault"
+                        },
                         "tokenSecretRef" : {
                           "type" : [ "object", "null" ],
                           "properties" : {
@@ -769,7 +832,7 @@
                         }
                       },
                       "additionalProperties" : false,
-                      "description" : "Authentication settings used by the external secrets operator to access the external Vault"
+                      "description" : "Exactly one of tokenSecretRef, appRole, or kubernetes must be configured when external Vault secrets are used"
                     },
                     "caProvider" : {
                       "type" : [ "object", "null" ],
@@ -789,6 +852,10 @@
                       },
                       "additionalProperties" : false,
                       "description" : "Optional reference to an existing ConfigMap or Secret containing the PEM CA certificate for an external Vault; the reference must exist in each target namespace"
+                    },
+                    "namespace" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Optional Vault Enterprise namespace used to access secrets and, by default, authenticate; leave empty if namespaces are not used"
                     },
                     "path" : {
                       "type" : [ "string", "null" ],

@@ -234,6 +234,9 @@ class ExternalSecretsOperatorTest {
 			.contains("namespace: \"customer-app\"")
 			.contains("server: \"http://host.k3d.internal:8200\"")
 			.contains("name: \"vault-token\"")
+			.contains("        tokenSecretRef:")
+			.doesNotContain("        appRole:")
+			.doesNotContain("        kubernetes:")
 			.contains("kind: ExternalSecret")
 			.contains("name: \"customer-credentials\"")
 			.contains("refreshInterval: \"15m\"")
@@ -246,6 +249,7 @@ class ExternalSecretsOperatorTest {
 			.contains("decodingStrategy: None")
 			.contains("metadataPolicy: None")
 			.doesNotContain("caProvider:");
+		assertThat(renderedVaultProvider(yaml)).doesNotContainKey("namespace");
 	}
 
 	@ParameterizedTest
@@ -269,6 +273,99 @@ class ExternalSecretsOperatorTest {
 				"        name: \"external-vault-ca\"\n" +
 				"        key: \"ca.crt\""
 		);
+	}
+
+	@Test
+	void rendersVaultEnterpriseNamespace() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().setNamespace("customer/team");
+
+		install(createExternalSecretsOperator());
+
+		assertThat(renderedVaultProvider(renderedVaultResources()))
+			.containsEntry("namespace", "customer/team");
+	}
+
+	@Test
+	void rendersAppRoleWithSecretReference() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		auth.setTokenSecretRef(null);
+		Config.SecretsSchema.ESOSchema.AppRoleSchema appRole = new Config.SecretsSchema.ESOSchema.AppRoleSchema();
+		appRole.setRoleId("gop-eso-role-id");
+		appRole.getSecretRef().setName("vault-approle");
+		appRole.getSecretRef().setKey("secret-id");
+		auth.setAppRole(appRole);
+
+		install(createExternalSecretsOperator());
+
+		String yaml = renderedVaultResources();
+		assertThat(yaml)
+			.contains("kind: ExternalSecret")
+			.doesNotContain("tokenSecretRef:")
+			.doesNotContain("kubernetes:");
+		assertThat(renderedVaultAuth(yaml)).isEqualTo(Map.of(
+			"appRole", Map.of(
+				"path", "approle",
+				"roleId", "gop-eso-role-id",
+				"secretRef", Map.of("name", "vault-approle", "key", "secret-id")
+			)
+		));
+	}
+
+	@Test
+	void rendersKubernetesAuthenticationWithAudiences() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		auth.setTokenSecretRef(null);
+		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
+			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
+		kubernetes.setRole("gop-eso");
+		kubernetes.getServiceAccountRef().setName("eso-vault-auth");
+		kubernetes.getServiceAccountRef().setAudiences(List.of("vault", "vault-alternative"));
+		auth.setKubernetes(kubernetes);
+
+		install(createExternalSecretsOperator());
+
+		String yaml = renderedVaultResources();
+		assertThat(yaml)
+			.contains("kind: ExternalSecret")
+			.doesNotContain("tokenSecretRef:")
+			.doesNotContain("appRole:");
+		assertThat(renderedVaultAuth(yaml)).isEqualTo(Map.of(
+			"kubernetes", Map.of(
+				"mountPath", "kubernetes",
+				"role", "gop-eso",
+				"serviceAccountRef", Map.of(
+					"name", "eso-vault-auth", "audiences", List.of("vault", "vault-alternative")
+				)
+			)
+		));
+	}
+
+	@Test
+	void omitsKubernetesAudiencesWhenUnconfigured() throws GitAPIException, IOException {
+		configureExternalVaultSecret();
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		auth.setTokenSecretRef(null);
+		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
+			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
+		kubernetes.setRole("gop-eso");
+		kubernetes.getServiceAccountRef().setName("eso-vault-auth");
+		auth.setKubernetes(kubernetes);
+
+		install(createExternalSecretsOperator());
+
+		assertThat(renderedVaultAuth(renderedVaultResources())).isEqualTo(Map.of(
+			"kubernetes", Map.of(
+				"mountPath", "kubernetes",
+				"role", "gop-eso",
+				"serviceAccountRef", Map.of("name", "eso-vault-auth")
+			)
+		));
 	}
 
 	@Test
@@ -447,8 +544,11 @@ class ExternalSecretsOperatorTest {
 		externalSecrets.getVault().setServer("http://host.k3d.internal:8200");
 		externalSecrets.getVault().setPath("secret");
 		externalSecrets.getVault().setVersion("v2");
-		externalSecrets.getVault().getAuth().getTokenSecretRef().setName("vault-token");
-		externalSecrets.getVault().getAuth().getTokenSecretRef().setKey("token");
+		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
+			new Config.SecretsSchema.ESOSchema.TokenSecretRefSchema();
+		tokenSecretRef.setName("vault-token");
+		tokenSecretRef.setKey("token");
+		externalSecrets.getVault().getAuth().setTokenSecretRef(tokenSecretRef);
 
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema secret =
 			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
@@ -522,6 +622,25 @@ class ExternalSecretsOperatorTest {
 	private boolean install(ExternalSecretsOperator operator) {
 		deploymentContext = new ContextBuilder(config).build();
 		return operator.execute(deploymentContext, repositoryWorkspace);
+	}
+
+	private String renderedVaultResources() throws IOException {
+		return Files.readString(clusterResourcesRepoDir.toPath().resolve(
+			"apps/external-secrets/misc/external-vault-resources.yaml"
+		));
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> renderedVaultAuth(String yaml) throws IOException {
+		return (Map<String, Object>) renderedVaultProvider(yaml).get("auth");
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> renderedVaultProvider(String yaml) throws IOException {
+		Map<String, Object> store = YAML_MAPPER.readValue(yaml.split("(?m)^---\\s*$", 2)[0], YAML_MAP_TYPE);
+		Map<String, Object> spec = (Map<String, Object>) store.get("spec");
+		Map<String, Object> provider = (Map<String, Object>) spec.get("provider");
+		return (Map<String, Object>) provider.get("vault");
 	}
 
 	private Map<String, Object> parseActualYaml() throws IOException {

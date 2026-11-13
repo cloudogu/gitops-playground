@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExternalSecretsOperatorToolConfigMapperTest {
 
@@ -47,6 +48,7 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 			config.getFeatures().getSecrets().getExternalSecrets().getVault();
 		externalVault.setStoreName("customer-vault");
 		externalVault.setServer("https://vault.example.org");
+		externalVault.setNamespace("customer/team");
 		externalVault.setPath("customer-secrets");
 		externalVault.setVersion("v2");
 		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
@@ -55,8 +57,11 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		caProvider.setName("external-vault-ca");
 		caProvider.setKey("ca.crt");
 		externalVault.setCaProvider(caProvider);
-		externalVault.getAuth().getTokenSecretRef().setName("vault-token");
-		externalVault.getAuth().getTokenSecretRef().setKey("token");
+		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
+			new Config.SecretsSchema.ESOSchema.TokenSecretRefSchema();
+		tokenSecretRef.setName("vault-token");
+		tokenSecretRef.setKey("token");
+		externalVault.getAuth().setTokenSecretRef(tokenSecretRef);
 		Config.SecretsSchema.ESOSchema.ExternalSecretSchema externalSecret =
 			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
 		externalSecret.setName("customer-credentials");
@@ -90,12 +95,12 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 																	  .externalVault(ExternalVaultConfig.builder()
 																	    .storeName("customer-vault")
 																	    .server("https://vault.example.org")
+													    .namespace("customer/team")
 																	    .path("customer-secrets")
 																	    .version("v2")
 																	    .caProvider(new ExternalVaultConfig.CaProvider(
 																	        "ConfigMap", "external-vault-ca", "ca.crt"))
-																	    .tokenSecretName("vault-token")
-																	    .tokenSecretKey("token")
+																	    .auth(new ExternalVaultConfig.TokenSecretRef("vault-token", "token"))
 																	    .targetNamespaces(List.of("customer-app"))
 																	    .build())
 																	  .managedSecrets(List.of(ManagedExternalSecretConfig.builder()
@@ -165,7 +170,10 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		Config config = new Config();
 		Config.SecretsSchema.ESOSchema externalSecrets = config.getFeatures().getSecrets().getExternalSecrets();
 		externalSecrets.getVault().setServer("https://vault.example.org");
-		externalSecrets.getVault().getAuth().getTokenSecretRef().setName("vault-token");
+		Config.SecretsSchema.ESOSchema.TokenSecretRefSchema tokenSecretRef =
+			new Config.SecretsSchema.ESOSchema.TokenSecretRefSchema();
+		tokenSecretRef.setName("vault-token");
+		externalSecrets.getVault().getAuth().setTokenSecretRef(tokenSecretRef);
 		Config.SecretsSchema.ESOSchema.CaProviderSchema caProvider =
 			new Config.SecretsSchema.ESOSchema.CaProviderSchema();
 		caProvider.setType(type);
@@ -186,6 +194,119 @@ class ExternalSecretsOperatorToolConfigMapperTest {
 		);
 		assertThat(exception.getMessage())
 			.isEqualTo("features.secrets.externalSecrets.vault.caProvider." + expectedError);
+	}
+
+	@Test
+	void mapsAppRoleAuthentication() {
+		Config config = configWithExternalSecret();
+		Config.SecretsSchema.ESOSchema.AppRoleSchema appRole =
+			new Config.SecretsSchema.ESOSchema.AppRoleSchema();
+		appRole.setRoleId("gop-eso-role-id");
+		appRole.getSecretRef().setName("vault-approle");
+		appRole.getSecretRef().setKey("secret-id");
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setAppRole(appRole);
+
+		ExternalVaultConfig vault = new ExternalSecretsOperatorToolConfigMapper(config).map(context()).externalVault();
+		assertThat(vault.auth()).isEqualTo(new ExternalVaultConfig.AppRole(
+			"approle", "gop-eso-role-id", new ExternalVaultConfig.SecretRef("vault-approle", "secret-id")
+		));
+	}
+
+	@Test
+	void mapsKubernetesAuthentication() {
+		Config config = configWithExternalSecret();
+		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
+			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
+		kubernetes.setRole("gop-eso");
+		kubernetes.getServiceAccountRef().setName("eso-vault-auth");
+		kubernetes.getServiceAccountRef().setAudiences(List.of("vault"));
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setKubernetes(kubernetes);
+
+		ExternalVaultConfig vault = new ExternalSecretsOperatorToolConfigMapper(config).map(context()).externalVault();
+		assertThat(vault.auth()).isEqualTo(new ExternalVaultConfig.KubernetesAuth(
+			"kubernetes", "gop-eso", new ExternalVaultConfig.ServiceAccountRef("eso-vault-auth", List.of("vault"))
+		));
+	}
+
+	@Test
+	void requiresExactlyOneVaultAuthMethod() {
+		Config config = configWithExternalSecret();
+		String expectedError = "features.secrets.externalSecrets.vault.auth must configure exactly one of "
+			+ "tokenSecretRef, appRole, or kubernetes";
+
+		IllegalArgumentException missing = assertThrows(IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()));
+		assertThat(missing.getMessage()).isEqualTo(expectedError);
+
+		Config.SecretsSchema.ESOSchema.VaultAuthSchema auth =
+			config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth();
+		auth.setTokenSecretRef(new Config.SecretsSchema.ESOSchema.TokenSecretRefSchema());
+		auth.setAppRole(new Config.SecretsSchema.ESOSchema.AppRoleSchema());
+
+		IllegalArgumentException multiple = assertThrows(IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()));
+		assertThat(multiple.getMessage()).isEqualTo(expectedError);
+	}
+
+	@Test
+	void rejectsAppRoleWithoutSecretIdReference() {
+		Config config = configWithExternalSecret();
+		Config.SecretsSchema.ESOSchema.AppRoleSchema appRole =
+			new Config.SecretsSchema.ESOSchema.AppRoleSchema();
+		appRole.setRoleId("gop-eso-role-id");
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setAppRole(appRole);
+
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()));
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.vault.auth.appRole.secretRef.name "
+				+ "must be configured when external Vault secrets are used");
+	}
+
+	@Test
+	void rejectsKubernetesAuthWithoutServiceAccount() {
+		Config config = configWithExternalSecret();
+		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
+			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
+		kubernetes.setRole("gop-eso");
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setKubernetes(kubernetes);
+
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()));
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.vault.auth.kubernetes.serviceAccountRef.name "
+				+ "must be configured when external Vault secrets are used");
+	}
+
+	@Test
+	void rejectsBlankKubernetesAudience() {
+		Config config = configWithExternalSecret();
+		Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes =
+			new Config.SecretsSchema.ESOSchema.KubernetesAuthSchema();
+		kubernetes.setRole("gop-eso");
+		kubernetes.getServiceAccountRef().setName("eso-vault-auth");
+		kubernetes.getServiceAccountRef().setAudiences(List.of(" "));
+		config.getFeatures().getSecrets().getExternalSecrets().getVault().getAuth().setKubernetes(kubernetes);
+
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+			() -> new ExternalSecretsOperatorToolConfigMapper(config).map(context()));
+		assertThat(exception.getMessage())
+			.isEqualTo("features.secrets.externalSecrets.vault.auth.kubernetes.serviceAccountRef.audiences[] "
+				+ "must be configured when external Vault secrets are used");
+	}
+
+	private static Config configWithExternalSecret() {
+		Config config = new Config();
+		Config.SecretsSchema.ESOSchema externalSecrets = config.getFeatures().getSecrets().getExternalSecrets();
+		externalSecrets.getVault().setServer("https://vault.example.org");
+		Config.SecretsSchema.ESOSchema.ExternalSecretSchema secret =
+			new Config.SecretsSchema.ESOSchema.ExternalSecretSchema();
+		secret.setName("customer-credentials");
+		secret.setNamespace("customer-app");
+		secret.setRemoteKey("gop/customer");
+		secret.setData(Map.of("password", "password"));
+		externalSecrets.setSecrets(List.of(secret));
+		return config;
 	}
 
 	private static DeploymentContext context() {
