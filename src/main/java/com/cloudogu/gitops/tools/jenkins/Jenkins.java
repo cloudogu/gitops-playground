@@ -397,12 +397,6 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			);
 		}
 
-		// Leave GitLab and registry credentials on external Jenkins externally managed.
-		if (!isInternalJenkins()) {
-			jobManager.startJob(jobName);
-			return;
-		}
-
 		if (toolConfig().scm().providerType() == ScmProviderType.GITLAB) {
 			var scmCredentials = gitHandler.getTenant().getCredentials();
 			jobManager.createOrUpdateCredential(
@@ -413,6 +407,13 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 				"credentials for accessing gitlab"
 			);
 		}
+
+		// Leave registry credentials on external Jenkins externally managed.
+		if (!isInternalJenkins()) {
+			jobManager.startJob(jobName);
+			return;
+		}
+
 		ResolvedCredentials registryCredentials = registryCredentials();
 		jobManager.createOrUpdateCredential(
 			jobName,

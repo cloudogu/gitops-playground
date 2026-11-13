@@ -162,10 +162,11 @@ The user has to have the following privileges:
 * create and update credentials in the Jenkins jobs/folders managed by GOP
 * restarting
 
-For Jenkins jobs created by GOP with SCM-Manager, GOP creates or updates the job-specific `scm-user` credential even
-when Jenkins is external. This credential is written before the job's repository scan. Registry credentials on external
-Jenkins remain externally managed: `registry-user` (and `registry-proxy-user` for a proxy registry) must already exist
-when needed.
+For Jenkins jobs created by GOP with SCM-Manager or GitLab, GOP creates or updates the job-specific `scm-user`
+credential even when Jenkins is external. This credential is written before the job's repository scan. With GitLab,
+GOP uses the configured GitLab access credentials as before. Registry credentials on external Jenkins remain
+externally managed: `registry-user` (and `registry-proxy-user` for a proxy registry) must already be accessible to
+the GOP-created jobs when needed.
 To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide

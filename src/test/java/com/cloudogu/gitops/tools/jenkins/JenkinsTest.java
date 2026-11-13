@@ -548,6 +548,32 @@ class JenkinsTest {
 		verifyNoMoreInteractions(jobManger);
 	}
 
+	@Test
+	void updatesGitLabScmCredentialBeforeScanningJobOnExternalJenkins() throws GitAPIException {
+		config.getApplication().setNamePrefix("test-");
+		config.getJenkins().setInternal(false);
+		config.getScm().setScmProviderType(ScmProviderType.GITLAB);
+		config.getRegistry().setTwoRegistries(true);
+		scmManagerMock.setCredentials(new Credentials("gitlab-user", "gitlab-token"));
+
+		Jenkins jenkins = createJenkins();
+		install(jenkins);
+		jenkins.createJenkinsjob("namespace", "repo");
+
+		InOrder order = inOrder(jobManger);
+		order.verify(jobManger).createJob("test-repo", scmManagerMock.getUrl(), "test-namespace", "scm-user");
+		order.verify(jobManger).createOrUpdateCredential(
+			"test-repo",
+			"scm-user",
+			"gitlab-user",
+			"gitlab-token",
+			"credentials for accessing gitlab"
+		);
+		order.verify(jobManger).startJob("test-repo");
+		// Registry credentials must remain customer-managed on external Jenkins.
+		verifyNoMoreInteractions(jobManger);
+	}
+
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	void usesGopManagedTechnicalUserForInternalScmManager(boolean internalJenkins) throws GitAPIException {
