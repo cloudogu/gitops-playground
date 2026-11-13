@@ -312,6 +312,30 @@ class ContentLoaderTest {
 	}
 
 	@Test
+	void skipsReachabilityCheckOnDestroy() {
+		config.getApplication().setDestroy(true);
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl("file://" + new File(tmpDir, "does-not-exist").getAbsolutePath());
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		createContent(config).preConfigInit(config);
+	}
+
+	@Test
+	void skipsReachabilityCheckOnOutputConfigFile() {
+		config.getApplication().setOutputConfigFile(true);
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl("file://" + new File(tmpDir, "does-not-exist").getAbsolutePath());
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		createContent(config).preConfigInit(config);
+	}
+
+	@Test
 	void authenticatesContentRepos() throws Exception {
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));

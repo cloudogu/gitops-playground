@@ -127,7 +127,10 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 		for (ContentRepositorySchema repo : configToSet.getContent().getRepos()) {
 			validateRepo(repo);
-			validateRepoIsReachable(repo);
+
+			if (!configToSet.getApplication().getDestroy() && !configToSet.getApplication().getOutputConfigFile()) {
+				validateRepoIsReachable(repo);
+			}
 		}
 	}
 
