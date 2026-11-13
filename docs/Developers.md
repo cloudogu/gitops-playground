@@ -75,8 +75,9 @@ java -version && mvn -version && docker version && k3d version && kubectl versio
 The following names belong to different layers of the SCM integration and therefore intentionally describe different
 concepts:
 
-- `scm.scmManager.technicalUser` is defined in `ScmTenantSchema`. For an internal SCM-Manager it configures optional
-  credentials for the GOP-managed `<namePrefix>gitops` user. With an external SCM-Manager, Jenkins reuses the existing
+- `scm.scmManager.technicalUser.password` is defined in `ScmTenantSchema`. For an internal SCM-Manager it optionally
+  overrides the password of the GOP-managed `<namePrefix>gitops` user; otherwise the resolved SCM provisioning password
+  is used. With an external SCM-Manager, Jenkins reuses the existing
   SCM provisioning credentials (`scmManager.username/password` or the resolved Secret reference); a separate
   external technical user cannot be configured.
 - `scm.gitlab.technicalUsername` is defined in the GitLab configuration. It identifies an existing GitLab technical user

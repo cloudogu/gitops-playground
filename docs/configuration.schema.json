@@ -1254,17 +1254,13 @@
             "technicalUser" : {
               "type" : [ "object", "null" ],
               "properties" : {
-                "credentials" : {
-                  "$ref" : "#/$defs/Credentials-nullable",
-                  "description" : "Credentials for authentication. They can reference a Kubernetes Secret via secretName and secretNamespace; usernameKey and passwordKey select the Secret data keys."
-                },
                 "password" : {
                   "type" : [ "string", "null" ],
                   "description" : "Optional password for the GOP-managed technical SCM-Manager user in internal deployments"
                 }
               },
               "additionalProperties" : false,
-              "description" : "Optional password or Kubernetes Secret for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins"
+              "description" : "Optional password for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins"
             },
             "url" : {
               "type" : [ "string", "null" ],
