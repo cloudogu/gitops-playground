@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.tools.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.tools.common.TemplateConfig;
@@ -41,7 +40,6 @@ public class ScmManagerToolConfigMapper implements ToolConfigMapper<ScmManagerTo
 								   .ingress(scmManager.getIngress())
 								   .gopManagedTechnicalUsername(scmManager.getGopManagedTechnicalUsername())
 								   .technicalUserPassword(technicalUser == null ? null : technicalUser.getPassword())
-								   .technicalUserCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
 
 								   .skipPlugins(scmManager.getSkipPlugins())
 								   .skipRestart(scmManager.getSkipRestart())

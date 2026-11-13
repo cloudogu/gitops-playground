@@ -442,7 +442,6 @@ public class Jenkins extends AbstractMappedTool<JenkinsToolConfig> {
 			if (toolConfig().scm().internalScmManager()) {
 				String technicalUsername = toolConfig().application().namePrefix() + "gitops";
 				ResolvedCredentials technicalCredentials = credentialsResolver.resolveGopManagedUser(
-					toolConfig().scm().technicalCredentials(),
 					technicalUsername,
 					toolConfig().scm().technicalPassword(),
 					gitHandler.getTenant().getCredentials().getPassword()

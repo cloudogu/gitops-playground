@@ -382,7 +382,6 @@ public class ScmManagerSetup {
 	private void addDefaultUsers() {
 		String provisioningPassword = scmManager.getCredentials().getPassword();
 		ResolvedCredentials technicalCredentials = credentialsResolver.resolveGopManagedUser(
-			config.technicalUserCredentials(),
 			config.gopManagedTechnicalUsername(),
 			config.technicalUserPassword(),
 			provisioningPassword

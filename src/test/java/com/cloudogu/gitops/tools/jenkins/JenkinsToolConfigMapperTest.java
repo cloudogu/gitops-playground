@@ -82,9 +82,6 @@ class JenkinsToolConfigMapperTest {
 		ScmTenantSchema.ScmManagerTenantConfig scmManager = new ScmTenantSchema.ScmManagerTenantConfig();
 		scmManager.setPassword("scmm-password");
 		scmManager.getTechnicalUser().setPassword("technical-password");
-		scmManager.getTechnicalUser().setCredentials(
-			new Credentials(null, null, "technical-user-secret", "gop-job", "username", "password")
-		);
 		config.getScm().setScmManager(scmManager);
 		ScmTenantSchema.GitlabTenantConfig gitlab = new ScmTenantSchema.GitlabTenantConfig();
 		gitlab.setUsername("gitlab-user");
@@ -141,12 +138,6 @@ class JenkinsToolConfigMapperTest {
 																				.providerType(ScmProviderType.SCM_MANAGER)
 																				.internalScmManager(false)
 																								.technicalPassword("technical-password")
-																				.technicalCredentials(new CredentialsReference(
-																				    "technical-user-secret",
-																				    "gop-job",
-																				    "username",
-																				    "password"
-																				))
 																				.build())
 													  .registry(JenkinsToolConfig.Registry.builder()
 																						  .url("registry.example.org")

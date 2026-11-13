@@ -2,7 +2,6 @@ package com.cloudogu.gitops.config.schema;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Config.VaultMode;
-import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.MapUtils;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
@@ -192,23 +191,17 @@ class ConfigTest {
 	}
 
 	@Test
-	void mapsScmTechnicalUserSecretReference() {
+	void mapsManagedTechnicalUserPasswordFromConfig() {
 		Config config = Config.fromMap(Map.of(
 			"scm", Map.of(
 				"scmManager", Map.of(
-					"technicalUser", Map.of(
-						"credentials", Map.of(
-							"secretName", "scm-technical-user",
-							"secretNamespace", "gop-job"
-						)
-					)
+					"technicalUser", Map.of("password", "technical-password")
 				)
 			)
 		));
 
-		Credentials credentials = config.getScm().getScmManager().getTechnicalUser().getCredentials();
-		assertThat(credentials.getSecretName()).isEqualTo("scm-technical-user");
-		assertThat(credentials.getSecretNamespace()).isEqualTo("gop-job");
+		assertThat(config.getScm().getScmManager().getTechnicalUser().getPassword())
+			.isEqualTo("technical-password");
 	}
 
 	@Test

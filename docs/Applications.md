@@ -206,8 +206,8 @@ The user on the scm has to have privileges to:
 * install plugins
 
 For an internal SCM-Manager, GOP creates or updates the technical user `<namePrefix>gitops` and uses that account
-for Jenkins repository access. Its password comes from `scm.scmManager.technicalUser.password` or an explicitly
-configured Secret reference, if provided. Otherwise, GOP uses the already resolved SCM provisioning password.
+for Jenkins repository access. Its password comes from `scm.scmManager.technicalUser.password`, if provided.
+Otherwise, GOP uses the already resolved SCM provisioning password.
 
 For an external SCM-Manager, GOP uses the existing SCM account configured through `--scmm-username` and
 `--scmm-password`, or through the resolved `scm.scmManager.credentials` Secret reference, for the job-specific Jenkins

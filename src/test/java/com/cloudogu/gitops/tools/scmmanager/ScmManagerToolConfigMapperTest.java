@@ -1,9 +1,7 @@
 package com.cloudogu.gitops.tools.scmmanager;
 
 import com.cloudogu.gitops.application.context.DeploymentContext;
-import com.cloudogu.gitops.application.credentials.CredentialsReference;
 import com.cloudogu.gitops.config.Config;
-import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.config.scm.ScmTenantSchema;
 import com.cloudogu.gitops.config.scm.util.ScmProviderType;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
@@ -55,9 +53,6 @@ class ScmManagerToolConfigMapperTest {
 		scmManager.setPassword("scm-password");
 		scmManager.setGopManagedTechnicalUsername("gitops-user");
 		scmManager.getTechnicalUser().setPassword("technical-password");
-		scmManager.getTechnicalUser().setCredentials(
-			new Credentials(null, null, "technical-user-secret", "gop-job", "username", "password")
-		);
 		scmManager.setSkipPlugins(true);
 		scmManager.setSkipRestart(true);
 		scmManager.setScmmImage("scm-manager:custom");
@@ -78,12 +73,6 @@ class ScmManagerToolConfigMapperTest {
 														 .ingress("scm.example.org")
 														 .gopManagedTechnicalUsername("gitops-user")
 														 .technicalUserPassword("technical-password")
-														 .technicalUserCredentials(new CredentialsReference(
-															 "technical-user-secret",
-															 "gop-job",
-															 "username",
-															 "password"
-														 ))
 
 														 .skipPlugins(true)
 														 .skipRestart(true)

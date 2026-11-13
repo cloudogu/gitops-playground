@@ -28,7 +28,7 @@ public class ScmTenantSchema {
 	public static final String SCMM_CONFIG_DESCRIPTION = "Config for SCM-Manager";
 	public static final String SCM_PROVIDER_TYPE_DESCRIPTION = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB";
 	public static final String GITLAB_TECHNICAL_USERNAME_DESCRIPTION = "Username of an existing technical GitLab user that receives write access to repositories provisioned by GOP";
-	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Optional password or Kubernetes Secret for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins";
+	public static final String SCMM_TECHNICAL_USER_DESCRIPTION = "Optional password for the GOP-managed technical user of an internal SCM-Manager. External SCM-Manager deployments reuse the configured SCM credentials for Jenkins";
 	public static final String SCMM_GOP_MANAGED_TECHNICAL_USERNAME_DESCRIPTION = "Username of the GOP-managed technical SCM-Manager user";
 
 	@Option(names = {"--scm-provider"}, description = SCM_PROVIDER_TYPE_DESCRIPTION, defaultValue = "SCM_MANAGER")
@@ -176,9 +176,5 @@ public class ScmTenantSchema {
 		@Option(names = {"--scmm-technical-password"}, description = SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
 		@JsonPropertyDescription(SCMM_TECHNICAL_PASSWORD_DESCRIPTION)
 		private String password = "";
-
-		@JsonPropertyDescription(KUBERNETES_SECRET_CREDENTIALS_DESCRIPTION)
-		private Credentials credentials;
-
 	}
 }

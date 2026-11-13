@@ -81,7 +81,7 @@ class CredentialsResolverTest {
 	@Test
 	void managedUserFallsBackToProvisioningPassword() {
 		ResolvedCredentials resolved = resolver.resolveGopManagedUser(
-			null, "gitops", "", "provisioning-password"
+			"gitops", "", "provisioning-password"
 		);
 
 		assertThat(resolved.username()).isEqualTo("gitops");
@@ -92,28 +92,11 @@ class CredentialsResolverTest {
 	@Test
 	void managedUserPrefersDedicatedPassword() {
 		ResolvedCredentials resolved = resolver.resolveGopManagedUser(
-			null, "gitops", "technical-password", "provisioning-password"
+			"gitops", "technical-password", "provisioning-password"
 		);
 
 		assertThat(resolved.password()).isEqualTo("technical-password");
 		verifyNoInteractions(k8sClient);
-	}
-
-	@Test
-	void managedUserPrefersSecretReference() {
-		when(k8sClient.getCredentialsFromSecret(any(Credentials.class)))
-			.thenReturn(new Credentials("secret-user", "secret-password"));
-
-		ResolvedCredentials resolved = resolver.resolveGopManagedUser(
-			CredentialsReference.from(secretReference()),
-			"gitops",
-			"technical-password",
-			"provisioning-password"
-		);
-
-		assertThat(resolved.username()).isEqualTo("secret-user");
-		assertThat(resolved.password()).isEqualTo("secret-password");
-		verify(k8sClient).getCredentialsFromSecret(any(Credentials.class));
 	}
 
 	@Test

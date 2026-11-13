@@ -51,7 +51,6 @@ public class JenkinsToolConfigMapper implements ToolConfigMapper<JenkinsToolConf
 															.providerType(scmProviderType)
 															.internalScmManager(context.isInternalScmManager())
 															.technicalPassword(technicalUser == null ? null : technicalUser.getPassword())
-															.technicalCredentials(technicalUser == null ? null : CredentialsReference.from(technicalUser.getCredentials()))
 															.build();
 		JenkinsToolConfig.Registry registryConfig = JenkinsToolConfig.Registry.builder()
 																			  .url(config.getRegistry().getUrl())
