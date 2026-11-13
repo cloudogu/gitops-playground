@@ -22,11 +22,15 @@ import com.cloudogu.gitops.tools.argocd.ArgoCD;
 import com.cloudogu.gitops.tools.argocd.ArgoCDToolConfigMapper;
 import com.cloudogu.gitops.tools.argocd.mode.DeploymentModeFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -279,9 +283,10 @@ class ApplicationConfiguratorTest {
 	}
 
 	@Test
-	void allowsCopyContentRepoTargetingClusterResources() {
+	void allowsCopyContentRepoTargetingClusterResources(@TempDir File contentRepo) throws GitAPIException {
+		Git.init().setDirectory(contentRepo).call().close();
 		Config.ContentSchema.ContentRepositorySchema repo = new Config.ContentSchema.ContentRepositorySchema();
-		repo.setUrl("abc");
+		repo.setUrl(contentRepo.getAbsolutePath());
 		repo.setType(Config.ContentRepoType.COPY);
 		repo.setTarget("argocd/cluster-resources");
 		testConfig.getContent().setRepos(List.of(repo));

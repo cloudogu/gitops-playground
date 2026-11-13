@@ -286,6 +286,56 @@ class ContentLoaderTest {
 	}
 
 	@Test
+	void acceptsReachableContentReposBeforeConfigInit() {
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl(createContentRepo("copyRepo1"));
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		createContent(config).preConfigInit(config);
+	}
+
+	@Test
+	void failsIfContentRepoIsNotReachableBeforeConfigInit() {
+		String unreachableRepo = "file://" + new File(tmpDir, "does-not-exist").getAbsolutePath();
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl(unreachableRepo);
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		ContentLoaderForTest content = createContent(config);
+
+		RuntimeException exception = assertThrows(RuntimeException.class, () -> content.preConfigInit(config));
+		assertThat(exception.getMessage()).isEqualTo("Content repo is not reachable: " + unreachableRepo);
+	}
+
+	@Test
+	void skipsReachabilityCheckOnDestroy() {
+		config.getApplication().setDestroy(true);
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl("file://" + new File(tmpDir, "does-not-exist").getAbsolutePath());
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		createContent(config).preConfigInit(config);
+	}
+
+	@Test
+	void skipsReachabilityCheckOnOutputConfigFile() {
+		config.getApplication().setOutputConfigFile(true);
+		config.getContent().setRepos(List.of(repository(repo -> {
+			repo.setUrl("file://" + new File(tmpDir, "does-not-exist").getAbsolutePath());
+			repo.setType(ContentRepoType.COPY);
+			repo.setTarget("common/repo");
+		})));
+
+		createContent(config).preConfigInit(config);
+	}
+
+	@Test
 	void authenticatesContentRepos() throws Exception {
 		config.getContent().setRepos(List.of(repository(repo -> {
 			repo.setUrl(createContentRepo("copyRepo1"));

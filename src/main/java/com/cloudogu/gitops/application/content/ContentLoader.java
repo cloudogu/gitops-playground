@@ -127,6 +127,22 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 
 		for (ContentRepositorySchema repo : configToSet.getContent().getRepos()) {
 			validateRepo(repo);
+
+			if (!configToSet.getApplication().getDestroy() && !configToSet.getApplication().getOutputConfigFile()) {
+				validateRepoIsReachable(repo);
+			}
+		}
+	}
+
+	private void validateRepoIsReachable(ContentRepositorySchema repo) {
+		log.debug("Checking reachability of content repo {}", repo.getUrl());
+		try {
+			Git.lsRemoteRepository()
+			   .setRemote(repo.getUrl())
+			   .setCredentialsProvider(createCredentialsProvider(repo))
+			   .call();
+		} catch (GitAPIException e) {
+			throw new IllegalArgumentException("Content repo is not reachable: " + repo.getUrl(), e);
 		}
 	}
 
@@ -364,28 +380,7 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 			repoConfig.getOverwriteMode()
 		);
 
-		UsernamePasswordCredentialsProvider credentialsProvider = null;
-		if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
-															 .getUsername() != null && repoConfig.getCredentials()
-																								 .getPassword() != null) {
-			credentialsProvider = new UsernamePasswordCredentialsProvider(
-				repoConfig.getCredentials()
-						  .getUsername(), repoConfig.getCredentials()
-													.getPassword()
-			);
-		} else if (repoConfig.getCredentials() != null && repoConfig.getCredentials()
-																	.getSecretName() != null && repoConfig.getCredentials()
-																										  .getSecretNamespace() != null) {
-			Credentials credentials = this.k8sClient.getCredentialsFromSecret(repoConfig.getCredentials());
-			credentialsProvider = new UsernamePasswordCredentialsProvider(
-				credentials.getUsername(),
-				credentials.getPassword()
-			);
-		} else {
-			// no credentials configured for this repo; clone anonymously
-		}
-
-		cloneToLocalFolder(repoConfig, repoTmpDir, credentialsProvider);
+		cloneToLocalFolder(repoConfig, repoTmpDir, createCredentialsProvider(repoConfig));
 
 		File contentRepoDir = new File(repoTmpDir, repoConfig.getPath());
 		applyTemplatingIfApplicable(repoConfig, contentRepoDir);
@@ -549,6 +544,24 @@ public class ContentLoader extends AbstractTool implements ConfigLifecycleHook {
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to replace templates in " + srcPath, e);
 		}
+	}
+
+	private UsernamePasswordCredentialsProvider createCredentialsProvider(ContentRepositorySchema repoConfig) {
+		Credentials credentials = repoConfig.getCredentials();
+		if (credentials == null) {
+			return null;
+		}
+		if (credentials.getUsername() != null && credentials.getPassword() != null) {
+			return new UsernamePasswordCredentialsProvider(credentials.getUsername(), credentials.getPassword());
+		}
+		if (credentials.getSecretName() != null && credentials.getSecretNamespace() != null) {
+			Credentials secretCredentials = this.k8sClient.getCredentialsFromSecret(credentials);
+			return new UsernamePasswordCredentialsProvider(
+				secretCredentials.getUsername(),
+				secretCredentials.getPassword()
+			);
+		}
+		return null;
 	}
 
 	private void cloneToLocalFolder(
