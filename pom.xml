@@ -33,7 +33,7 @@
         <okhttpVersion>5.5.1</okhttpVersion>
         <retrofitVersion>3.0.0</retrofitVersion>
         <jsonschema.version>5.0.0</jsonschema.version>
-        <kubernetes.fabric8.java.version>7.9.0</kubernetes.fabric8.java.version>
+        <kubernetes.fabric8.java.version>8.0.0</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
         <netty.version>4.2.20.Final</netty.version>
     </properties>
@@ -77,7 +77,7 @@
                 <scope>import</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
-            <!-- used for com.github.victools:jsonschema-generator -->
+            <!-- used for io-fabric8 and com.github.victools:jsonschema-generator -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
@@ -85,7 +85,7 @@
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-core -->
-            <!-- used for com.github.victools:jsonschema-generator -->
+            <!-- used for io-fabric8 and com.github.victools:jsonschema-generator -->
             <dependency>
                 <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
@@ -93,7 +93,7 @@
                 <scope>compile</scope>
             </dependency>
             <!-- Source: https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-            <!-- used for io-fabric8, gitlab4j and retrofit -->
+            <!-- used for gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
@@ -102,7 +102,7 @@
             </dependency>
             <!-- Source:
             https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-            <!-- used for io-fabric8, gitlab4j and retrofit -->
+            <!-- used for gitlab4j and retrofit -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
