@@ -31,7 +31,7 @@ features:
         image:
           registry: "<address>"
           repository: "library/traefik"
-          tag: "v3.7.17"
+          tag: "v3.7.19"
   certManager:
     active: true
     helm:
