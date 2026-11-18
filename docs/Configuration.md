@@ -367,7 +367,7 @@ Configuration of optional tools supported by gitops-playground.
 | - | `features.ingress.helm.values` | Map | `{}` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `features.ingress.helm.chart` | String | `traefik` | Name of the Helm chart |
 | - | `features.ingress.helm.repoURL` | String | `https://traefik.github.io/charts` | Repository url from which the Helm chart should be obtained |
-| - | `features.ingress.helm.version` | String | `42.3.0` | The version of the Helm chart to be installed |
+| - | `features.ingress.helm.version` | String | `42.3.2` | The version of the Helm chart to be installed |
 | `--ingress-namespace` | `features.ingress.ingressNamespace` | String | `ingress` | Optional defines the kubernetes namespace for Ingress Controller |
 
 ### Tool: Cert Manager
