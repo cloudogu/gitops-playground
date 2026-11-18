@@ -94,7 +94,7 @@ features:
         image:
           registry: "localhost:30000"
           repository: "proxy/traefik"
-          tag: "v3.7.17"
+          tag: "v3.7.19"
   secrets:
     externalSecrets:
       helm:

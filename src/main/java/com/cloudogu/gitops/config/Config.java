@@ -1188,7 +1188,7 @@ public class Config {
 			helm.setChart("traefik");
 			helm.setRepoURL("https://traefik.github.io/charts");
 			// renovate: depName=traefik registryUrl=https://traefik.github.io/charts
-			helm.setVersion("42.3.2");
+			helm.setVersion("42.4.1");
 		}
 
 		@Getter
