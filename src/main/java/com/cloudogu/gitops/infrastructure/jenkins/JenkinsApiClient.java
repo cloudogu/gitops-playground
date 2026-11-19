@@ -2,8 +2,9 @@ package com.cloudogu.gitops.infrastructure.jenkins;
 
 import com.cloudogu.gitops.application.credentials.ResolvedCredentials;
 import com.cloudogu.gitops.config.Config;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import lombok.AccessLevel;
@@ -24,7 +25,7 @@ import java.util.function.Supplier;
 @Slf4j
 public class JenkinsApiClient {
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 	private static final int HTTP_OK = 200;
 	private static final int HTTP_UNAUTHORIZED = 401;
 	private static final int HTTP_FORBIDDEN = 403;
@@ -109,8 +110,6 @@ public class JenkinsApiClient {
 			}
 
 			return json.get("crumb").asText();
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to retrieve Jenkins crumb", e);
 		}
 	}
 

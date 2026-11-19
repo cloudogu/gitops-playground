@@ -11,8 +11,8 @@ import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
 import com.cloudogu.gitops.testhelper.git.TestScmManagerApiClient;
 import com.cloudogu.gitops.tools.common.HelmChartConfig;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -45,7 +45,7 @@ class AirGappedUtilsTest {
 
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 
 	private Path rootChartsFolder;
 	private Config config;

@@ -3,8 +3,8 @@ package com.cloudogu.gitops.infrastructure.kubernetes.rbac;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -21,7 +21,7 @@ class RbacDefinitionTest {
 
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 
 	private final Config config = Config.fromMap(Map.of(
 		"scm", Map.of(

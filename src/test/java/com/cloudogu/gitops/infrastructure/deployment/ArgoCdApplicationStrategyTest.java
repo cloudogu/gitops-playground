@@ -11,8 +11,8 @@ import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ArgoCdApplicationStrategyTest {
 
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
 

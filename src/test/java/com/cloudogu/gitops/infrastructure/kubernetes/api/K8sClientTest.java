@@ -3,8 +3,9 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.Tuple;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SuppressWarnings("unchecked")
 class K8sClientTest {
 
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().build();
 	private static final TypeReference<Map<String, Object>> JSON_MAP_TYPE = new TypeReference<>() {
 	};
 	private static final TypeReference<List<Map<String, Object>>> JSON_LIST_TYPE = new TypeReference<>() {
@@ -1976,19 +1977,11 @@ class K8sClientTest {
 	}
 
 	private static Map<String, Object> parseJson(String json) {
-		try {
-			return OBJECT_MAPPER.readValue(json, JSON_MAP_TYPE);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return OBJECT_MAPPER.readValue(json, JSON_MAP_TYPE);
 	}
 
 	private static List<Map<String, Object>> parseJsonList(String json) {
-		try {
-			return OBJECT_MAPPER.readValue(json, JSON_LIST_TYPE);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return OBJECT_MAPPER.readValue(json, JSON_LIST_TYPE);
 	}
 
 }

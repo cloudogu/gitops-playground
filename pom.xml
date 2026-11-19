@@ -123,9 +123,9 @@
     <dependencies>
         <!-- Used by production YAML parsing. -->
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.22.4</version>
+            <version>3.2.4</version>
         </dependency>
 
         <dependency>

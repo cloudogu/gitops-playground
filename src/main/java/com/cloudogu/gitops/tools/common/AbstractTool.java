@@ -8,16 +8,13 @@ import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +24,7 @@ import static com.cloudogu.gitops.infrastructure.deployment.DeploymentStrategy.R
 @Slf4j
 public abstract class AbstractTool {
 
-	private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+	private static final YAMLMapper yamlMapper = YAMLMapper.builder().build();
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
 
@@ -206,17 +203,13 @@ public abstract class AbstractTool {
 			repoURL = this.gitHandler.getResourcesScm().repoUrl(repoNamespaceAndName);
 			chartOrPath = ".";
 			repoType = RepoType.GIT;
-			try {
-				Map<String, Object> chartYaml = yamlMapper.readValue(
-					Path.of(
-							helmConfig.localHelmChartFolder(), helmConfig.chart(), "Chart.yaml"
-						)
-						.toFile(), YAML_MAP_TYPE
-				);
-				version = String.valueOf(chartYaml.get("version"));
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to parse Chart.yaml for airgapped version mapping", e);
-			}
+			Map<String, Object> chartYaml = yamlMapper.readValue(
+				Path.of(
+						helmConfig.localHelmChartFolder(), helmConfig.chart(), "Chart.yaml"
+					)
+					.toFile(), YAML_MAP_TYPE
+			);
+			version = String.valueOf(chartYaml.get("version"));
 		}
 
 		log.debug("Starting deployment of feature {} from {}.", featureName, repoURL);

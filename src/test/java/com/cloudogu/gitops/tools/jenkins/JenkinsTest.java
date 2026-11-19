@@ -28,8 +28,8 @@ import com.cloudogu.gitops.utils.CommandExecutorForTest;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.NetworkingUtils;
 import com.cloudogu.gitops.utils.Tuple;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.fabric8.kubernetes.api.model.Pod;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +67,7 @@ import static org.mockito.Mockito.when;
 
 class JenkinsTest {
 
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
 

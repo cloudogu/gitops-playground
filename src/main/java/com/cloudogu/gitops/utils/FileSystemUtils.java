@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -33,7 +32,7 @@ public class FileSystemUtils {
 	};
 	private static final String TEMP_FILE_PREFIX = "gitops-playground-";
 
-	private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
+	private static final YAMLMapper yamlMapper = YAMLMapper.builder().disable(YAMLWriteFeature.WRITE_DOC_START_MARKER).build();
 
 	public static void deleteFile(String path) {
 		try {
@@ -183,11 +182,7 @@ public class FileSystemUtils {
 
 	public Map<String, Object> readYaml(Path path) {
 		if (Files.exists(path)) {
-			try {
-				return yamlMapper.readValue(path.toFile(), YAML_MAP_TYPE);
-			} catch (IOException exception) {
-				throw new UncheckedIOException("Failed to parse YAML file: " + path, exception);
-			}
+			return yamlMapper.readValue(path.toFile(), YAML_MAP_TYPE);
 		}
 
 		String resourceName = normalizeClasspathResource(path);
@@ -230,11 +225,7 @@ public class FileSystemUtils {
 	}
 
 	public void writeYaml(Map<String, ?> yaml, File file) {
-		try {
-			yamlMapper.writeValue(file, yaml);
-		} catch (IOException exception) {
-			throw new UncheckedIOException("Failed to write YAML to file: " + file, exception);
-		}
+		yamlMapper.writeValue(file, yaml);
 	}
 
 	public void deleteFilesExcept(File parentPath, String... fileOrFolderNamesToKeep) {

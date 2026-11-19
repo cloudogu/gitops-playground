@@ -14,9 +14,9 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import io.micronaut.core.annotation.Order;
@@ -60,7 +60,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 	private static final Set<String> OPERATOR_CLUSTER_SCOPED_KINDS = Set.of(
 		"ClusterRole", "ClusterRoleBinding", "ValidatingWebhookConfiguration", "MutatingWebhookConfiguration"
 	);
-	private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
 
@@ -241,7 +241,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			Map<String, Object> parsed = YAML_MAPPER.readValue(yamlDocument, YAML_MAP_TYPE);
 			Object kind = parsed == null ? null : parsed.get("kind");
 			return kind == null ? "" : kind.toString();
-		} catch (IOException exception) {
+		} catch (JacksonException exception) {
 			log.error("Failed to determine Kubernetes resource kind", exception);
 			return "";
 		}

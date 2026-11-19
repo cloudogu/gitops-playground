@@ -18,8 +18,8 @@ import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.CommandExecutorForTest;
 import com.cloudogu.gitops.utils.FileSystemUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -58,7 +58,7 @@ class ExternalSecretsOperatorTest {
 
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 
 	private final Config config = Config.fromMap(Map.of(
 		"application", Map.of("namePrefix", "foo-"),

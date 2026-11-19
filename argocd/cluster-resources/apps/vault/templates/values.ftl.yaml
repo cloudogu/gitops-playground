@@ -95,7 +95,7 @@ server:
   - name: ${dev.vaultPostStartVolume}
     configMap:
       name: ${dev.vaultPostStartConfigMap}
-      defaultMode: 0774
+      defaultMode: 508
   volumeMounts:
   - mountPath: /var/opt/scripts
     name: ${dev.vaultPostStartVolume}
