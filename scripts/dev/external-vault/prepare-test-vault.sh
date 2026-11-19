@@ -18,7 +18,7 @@ SECRET_USERNAME="${EXTERNAL_VAULT_TEST_USERNAME}"
 SECRET_PASSWORD="${EXTERNAL_VAULT_TEST_PASSWORD}"
 CREATE_TOKEN_SECRET=true
 # renovate: depName=hashicorp/vault datasource=docker
-VAULT_IMAGE="hashicorp/vault:2.2.1"
+VAULT_IMAGE="hashicorp/vault:2.2.2"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
