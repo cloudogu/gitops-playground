@@ -4,8 +4,9 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.integration.Polling;
 import com.cloudogu.gitops.integration.TestK8sHelper;
 import com.cloudogu.gitops.utils.YamlUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.rbac.Role;
@@ -286,7 +287,7 @@ public class ExternalVaultProfileTestIT extends ProfileTestSetup {
 	}
 
 	private static JsonNode vaultAuth(GenericKubernetesResource store) {
-		JsonNode auth = new ObjectMapper().valueToTree(store.getAdditionalProperties())
+		JsonNode auth = JsonMapper.builder().build().valueToTree(store.getAdditionalProperties())
 			.path("spec").path("provider").path("vault").path("auth");
 		assertThat(auth.size()).as("Exactly one Vault authentication method").isEqualTo(1);
 		return auth;

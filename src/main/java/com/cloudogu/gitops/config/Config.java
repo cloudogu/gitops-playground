@@ -5,14 +5,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.ValueSerializerModifier;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import jakarta.inject.Singleton;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,8 +24,6 @@ import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -237,7 +237,7 @@ public class Config {
 	public static final int DEFAULT_REGISTRY_PORT = 30000;
 	private static final int GENERATED_PASSWORD_LENGTH = 12;
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = JsonMapper.builder().disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).build();
 
 	@JsonPropertyDescription(REGISTRY_DESCRIPTION)
 	@Mixin
@@ -1307,30 +1307,27 @@ public class Config {
 	}
 
 	public String toYaml(boolean includeInternals) {
-		try {
-			return createYamlMapper(includeInternals).writeValueAsString(this);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to write Config as YAML string", e);
-		}
+		return createYamlMapper(includeInternals).writeValueAsString(this);
 	}
 
 	private static YAMLMapper createYamlMapper(boolean includeInternals) {
 		if (!includeInternals) {
-			YAMLMapper mapper = new YAMLMapper();
-			mapper.registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
-				@Override
-				public List<BeanPropertyWriter> changeProperties(
-					SerializationConfig serializationConfig,
-					BeanDescription beanDesc,
-					List<BeanPropertyWriter> beanProperties) {
-					return beanProperties.stream()
-										 .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
-										 .toList();
-				}
-			}));
-			return mapper;
+			return YAMLMapper.builder()
+							 .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+							 .addModule(new SimpleModule().setSerializerModifier(new ValueSerializerModifier() {
+								 @Override
+								 public List<BeanPropertyWriter> changeProperties(
+									 SerializationConfig serializationConfig,
+									 BeanDescription.Supplier beanDesc,
+									 List<BeanPropertyWriter> beanProperties) {
+									 return beanProperties.stream()
+														  .filter(writer -> writer.getAnnotation(JsonPropertyDescription.class) != null)
+														  .toList();
+								 }
+							 }))
+							 .build();
 		} else {
-			return new YAMLMapper();
+			return YAMLMapper.builder().disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).build();
 		}
 	}
 }

@@ -10,7 +10,7 @@ import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.destroy.Destroyer;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.tools.common.AbstractTool;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.micronaut.context.ApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 @Timeout(value = 10, unit = TimeUnit.SECONDS)
 class GitopsPlaygroundCliTest {
 
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 	private static final String ORIGINAL_LOGGING_PATTERN = getLoggingEncoder().getPattern();
 
 	private final K8sClient k8sClient = mock(K8sClient.class);

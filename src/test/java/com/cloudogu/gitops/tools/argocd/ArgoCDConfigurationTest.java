@@ -7,8 +7,8 @@ import com.cloudogu.gitops.infrastructure.git.GitRepo;
 import com.cloudogu.gitops.infrastructure.kubernetes.api.K8sClient;
 import com.cloudogu.gitops.utils.CommandExecutorForTest;
 import com.cloudogu.gitops.utils.K8sClientForTest;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
@@ -51,7 +51,7 @@ class ArgoCDConfigurationTest {
 	};
 	private static final TypeReference<List<Map<String, Object>>> YAML_MAP_LIST_TYPE = new TypeReference<>() {
 	};
-	private static final YAMLMapper YAML_MAPPER = new YAMLMapper();
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 
 	private final Config config = Config.fromMap(map(
 		"application", map(

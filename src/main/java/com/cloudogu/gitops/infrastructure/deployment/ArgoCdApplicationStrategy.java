@@ -3,9 +3,8 @@ package com.cloudogu.gitops.infrastructure.deployment;
 import com.cloudogu.gitops.application.context.DeploymentContext;
 import com.cloudogu.gitops.application.repository.RepositoryWorkspace;
 import com.cloudogu.gitops.infrastructure.git.GitRepo;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 import jakarta.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -248,12 +247,8 @@ public class ArgoCdApplicationStrategy implements DeploymentStrategy {
 		spec.put("syncPolicy", syncPolicy);
 		application.put("spec", spec);
 
-		YAMLMapper yamlMapper = YAMLMapper.builder().enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE).build();
-		try {
-			return yamlMapper.writeValueAsString(application);
-		} catch (JsonProcessingException e) {
-			throw new UncheckedIOException("Failed to generate YAML for ArgoCD application", e);
-		}
+		YAMLMapper yamlMapper = YAMLMapper.builder().enable(YAMLWriteFeature.LITERAL_BLOCK_STYLE).build();
+		return yamlMapper.writeValueAsString(application);
 	}
 
 	public String chooseKeyChartOrPath(RepoType repoType) {
