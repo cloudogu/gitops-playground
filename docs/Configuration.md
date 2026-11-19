@@ -90,7 +90,7 @@ All options can be set via a [config file](./configuration.schema.json). Most op
 | - | `jenkins.helm.values` | Map | `{}` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
 | - | `jenkins.helm.chart` | String | `jenkins` | Name of the Helm chart |
 | - | `jenkins.helm.repoURL` | String | `https://charts.jenkins.io` | Repository url from which the Helm chart should be obtained |
-| - | `jenkins.helm.version` | String | `5.9.68` | The version of the Helm chart to be installed |
+| - | `jenkins.helm.version` | String | `5.13.3` | The version of the Helm chart to be installed |
 | `--jenkins-namespace` | `jenkins.namespace` | String | `jenkins` | Optional defines the kubernetes namespace for Jenkins. |
 
 ## Multi Tenant
