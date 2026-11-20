@@ -947,7 +947,7 @@ public class Config {
 				helm.setChart("external-secrets");
 				helm.setRepoURL("https://charts.external-secrets.io");
 				// renovate: depName=external-secrets registryUrl=https://charts.external-secrets.io
-				helm.setVersion("2.14.0");
+				helm.setVersion("2.15.0");
 			}
 
 			@Getter
