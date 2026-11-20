@@ -608,12 +608,12 @@ class MonitoringTest {
 		Path crdDirectory = rootChartsFolder.resolve(
 			config.getFeatures().getMonitoring().getHelm().getChart() + "/charts/crds/crds"
 		);
-		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
-		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheuses.yaml").toString());
-		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
-		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-podmonitors.yaml").toString());
-		verify(k8sClient).applyYamlAndWaitForCrds(crdDirectory.resolve("crd-probes.yaml").toString());
-		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient).createMissingCrdsAndWait(crdDirectory.resolve("crd-servicemonitors.yaml").toString());
+		verify(k8sClient).createMissingCrdsAndWait(crdDirectory.resolve("crd-prometheuses.yaml").toString());
+		verify(k8sClient).createMissingCrdsAndWait(crdDirectory.resolve("crd-prometheusrules.yaml").toString());
+		verify(k8sClient).createMissingCrdsAndWait(crdDirectory.resolve("crd-podmonitors.yaml").toString());
+		verify(k8sClient).createMissingCrdsAndWait(crdDirectory.resolve("crd-probes.yaml").toString());
+		verify(k8sClient, times(5)).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test
@@ -628,16 +628,16 @@ class MonitoringTest {
 
 		String crdBaseUrl = "https://raw.githubusercontent.com/prometheus-community/helm-charts/"
 			+ "kube-prometheus-stack-19.2.2/charts/kube-prometheus-stack/charts/crds/crds/";
-		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-servicemonitors.yaml");
-		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheuses.yaml");
-		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-prometheusrules.yaml");
-		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-podmonitors.yaml");
-		verify(k8sClient).applyYamlAndWaitForCrds(crdBaseUrl + "crd-probes.yaml");
-		verify(k8sClient, times(5)).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient).createMissingCrdsAndWait(crdBaseUrl + "crd-servicemonitors.yaml");
+		verify(k8sClient).createMissingCrdsAndWait(crdBaseUrl + "crd-prometheuses.yaml");
+		verify(k8sClient).createMissingCrdsAndWait(crdBaseUrl + "crd-prometheusrules.yaml");
+		verify(k8sClient).createMissingCrdsAndWait(crdBaseUrl + "crd-podmonitors.yaml");
+		verify(k8sClient).createMissingCrdsAndWait(crdBaseUrl + "crd-probes.yaml");
+		verify(k8sClient, times(5)).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test
-	void doesNotApplyMonitoringCrdsWhenMonitoringIsDisabled() throws GitAPIException {
+	void doesNotBootstrapMonitoringCrdsWhenMonitoringIsDisabled() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(false);
 		config.getApplication().setSkipCrds(false);
 		config.getApplication().setMirrorRepos(false);
@@ -646,11 +646,11 @@ class MonitoringTest {
 		deploymentContext = new ContextBuilder(config).build();
 		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test
-	void doesNotApplyMonitoringCrdsWhenCrdsAreSkipped() throws GitAPIException {
+	void doesNotBootstrapMonitoringCrdsWhenCrdsAreSkipped() throws GitAPIException {
 		config.getFeatures().getMonitoring().setActive(true);
 		config.getApplication().setSkipCrds(true);
 
@@ -658,7 +658,7 @@ class MonitoringTest {
 		deploymentContext = new ContextBuilder(config).build();
 		monitoring.bootstrapCrds(deploymentContext);
 
-		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test

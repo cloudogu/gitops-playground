@@ -14,6 +14,10 @@ import com.cloudogu.gitops.utils.ClusterResourcesCopyFilter;
 import com.cloudogu.gitops.utils.FileSystemUtils;
 import com.cloudogu.gitops.utils.MapUtils;
 import com.cloudogu.gitops.utils.TemplatingEngine;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import io.micronaut.core.annotation.Order;
@@ -24,7 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -52,8 +59,13 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 	// Gateway API CRDs are no longer shipped with chart!
 	private static final String GATEWAY_API_CRD_VERSION = "v1.6.1";
 	private static final String GATEWAY_API_CRD = "https://github.com/kubernetes-sigs/gateway-api/releases/download/" + GATEWAY_API_CRD_VERSION + "/standard-install.yaml";
+	private static final String GATEWAY_ADMISSION_API_VERSION = "admissionregistration.k8s.io/v1";
+	private static final String GATEWAY_ADMISSION_NAME = "safe-upgrades.gateway.networking.k8s.io";
+	private static final String POLICY_KIND = "ValidatingAdmissionPolicy";
+	private static final String BINDING_KIND = "ValidatingAdmissionPolicyBinding";
 
 	private static final Pattern CLUSTER_RBAC_KIND = Pattern.compile("(?m)^kind: (ClusterRole|ClusterRoleBinding)\\s*$");
+	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
 
 	private final ImagePullSecretCreator imagePullSecretCreator;
 	private final K8sClient k8sClient;
@@ -92,6 +104,7 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 		this.namespace = activeNamespace(toolConfig());
 
 		createImagePullSecret();
+		applyGatewayApiAdmissionPolicies();
 		applyClusterRbac();
 		prepareIngressApp(repositoryWorkspace.getClusterResourcesRepository());
 		prepareIngressNetworkPolicy(repositoryWorkspace.getClusterResourcesRepository());
@@ -115,6 +128,62 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 
 	private void createImagePullSecret() {
 		imagePullSecretCreator.createIfRequired(toolConfig().imagePullSecret(), namespace);
+	}
+
+	private void applyGatewayApiAdmissionPolicies() {
+		IngressToolConfig config = toolConfig();
+		if (!isEnabled(config) || config.skipCrds()) {
+			return;
+		}
+
+		String source = gatewayApiBundleLocation(config);
+		Map<String, JsonNode> admissionResources = new HashMap<>();
+		Path manifest;
+		try (InputStream stream = openGatewayApiBundle(source, config.airgapped());
+			 MappingIterator<JsonNode> documents = YAML_MAPPER.readerFor(JsonNode.class).readValues(stream)) {
+			while (documents.hasNextValue()) {
+				JsonNode document = documents.nextValue();
+				String kind = document.path("kind").asText();
+				if ((POLICY_KIND.equals(kind) || BINDING_KIND.equals(kind))
+					&& GATEWAY_ADMISSION_API_VERSION.equals(document.path("apiVersion").asText())
+					&& GATEWAY_ADMISSION_NAME.equals(document.path("metadata").path("name").asText())) {
+					admissionResources.put(kind, document);
+				}
+			}
+
+			for (String kind : new String[]{POLICY_KIND, BINDING_KIND}) {
+				if (!admissionResources.containsKey(kind)) {
+					throw new IllegalStateException(
+						"Gateway API bundle %s is missing %s %s named %s"
+							.formatted(source, GATEWAY_ADMISSION_API_VERSION, kind, GATEWAY_ADMISSION_NAME)
+					);
+				}
+			}
+
+			manifest = fileSystemUtils.createTempFile();
+			Files.writeString(
+				manifest,
+				YAML_MAPPER.writeValueAsString(admissionResources.get(POLICY_KIND))
+					+ YAML_MAPPER.writeValueAsString(admissionResources.get(BINDING_KIND))
+			);
+		} catch (JacksonException exception) {
+			throw new IllegalStateException("Failed to parse Gateway API admission policies from " + source, exception);
+		} catch (IOException exception) {
+			throw new UncheckedIOException("Failed to prepare Gateway API admission policies from " + source, exception);
+		}
+
+		log.debug("Applying Gateway API admission policy and binding from path {}", manifest);
+		k8sClient.applyYaml(manifest.toString());
+	}
+
+	private static InputStream openGatewayApiBundle(String source, boolean airgapped) throws IOException {
+		if (airgapped) {
+			return Files.newInputStream(Path.of(source));
+		}
+		URLConnection connection = URI.create(source).toURL().openConnection();
+		connection.setConnectTimeout(10_000);
+		connection.setReadTimeout(60_000);
+		return connection.getInputStream();
 	}
 
 	/**
@@ -204,16 +273,20 @@ public class Ingress extends AbstractMappedTool<IngressToolConfig> implements Cr
 			return;
 		}
 
-		String crds = GATEWAY_API_CRD;
+		String source = gatewayApiBundleLocation(config);
+		log.debug("Bootstrapping Gateway API CRDs before tool deployment from {}", source);
+		k8sClient.createMissingCrdsAndWait(source);
+	}
+
+	String gatewayApiBundleLocation(IngressToolConfig config) {
 		if (config.airgapped()) {
-			crds = Path.of(
+			return Path.of(
 				config.helm().localHelmChartFolder(),
 				config.helm().chart(),
 				"charts/traefik/crds/gateway-api-standard-install.yaml"
 			).toString();
 		}
 
-		log.debug("Applying Gateway API CRDs before tool deployment from path {}", crds);
-		k8sClient.applyYamlAndWaitForCrds(crds);
+		return GATEWAY_API_CRD;
 	}
 }

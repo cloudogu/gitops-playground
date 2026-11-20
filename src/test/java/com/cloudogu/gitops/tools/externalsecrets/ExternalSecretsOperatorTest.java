@@ -151,7 +151,8 @@ class ExternalSecretsOperatorTest {
 		assertThat(bootstrapValues.get("installCRDs")).isEqualTo(true);
 
 		ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
-		verify(k8sClient).applyYamlAndWaitForCrds(pathCaptor.capture());
+		verify(k8sClient).createMissingCrdsAndWait(pathCaptor.capture());
+		verify(k8sClient, never()).applyYaml(anyString());
 		String appliedYaml = Files.readString(Path.of(pathCaptor.getValue()));
 		assertThat(appliedYaml)
 			.contains("kind: CustomResourceDefinition")
@@ -173,7 +174,7 @@ class ExternalSecretsOperatorTest {
 		operator.bootstrapCrds(context);
 
 		verify(helmClient, never()).addRepo(anyString(), anyString());
-		verify(k8sClient).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test
@@ -185,7 +186,22 @@ class ExternalSecretsOperatorTest {
 		operator.bootstrapCrds(context);
 
 		verify(helmClient, never()).template(anyString(), anyString(), any());
-		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
+	}
+
+	@Test
+	void doesNotBootstrapExternalSecretsCrdsWhenExternalSecretsIsDisabled() throws GitAPIException {
+		// Given
+		config.getFeatures().getSecrets().getExternalSecrets().setActive(false);
+		ExternalSecretsOperator operator = createExternalSecretsOperator();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		// When
+		operator.bootstrapCrds(context);
+
+		// Then
+		verify(helmClient, never()).template(anyString(), anyString(), any());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
 	}
 
 	@Test
@@ -199,6 +215,7 @@ class ExternalSecretsOperatorTest {
 
 		ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
 		verify(k8sClient).applyYaml(pathCaptor.capture());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
 		String appliedYaml = Files.readString(Path.of(pathCaptor.getValue()));
 		assertThat(appliedYaml)
 			.contains("kind: ClusterRole")
