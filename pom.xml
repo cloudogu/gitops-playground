@@ -446,6 +446,22 @@
                 <version>3.5.1</version>
             </plugin>
 
+            <!-- Maven 3.10.1 skips Micronaut's jar lifecycle mapping. Bind packaging
+                 explicitly and retain default-shade to inherit the parent's transformers. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-shade</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
