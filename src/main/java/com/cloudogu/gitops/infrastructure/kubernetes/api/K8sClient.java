@@ -25,9 +25,11 @@ import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.NonDeletingOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,9 +58,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -77,6 +79,9 @@ public class K8sClient {
 	private static final String DOCKER_CONFIG_JSON_KEY = ".dockerconfigjson";
 	private static final String NOT_FOUND_IN_NAMESPACE = " not found in namespace ";
 	private static final String APPLIED_PREFIX = "Applied ";
+	private static final Pattern CRD_NAME = Pattern.compile(
+		"[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*"
+	);
 	private static final ResourceDefinitionContext OPENSHIFT_PROJECT_CONTEXT = new ResourceDefinitionContext.Builder()
 		.withGroup("project.openshift.io")
 		.withVersion("v1")
@@ -624,38 +629,173 @@ public class K8sClient {
 	}
 
 	/**
+	 * Creates missing CRDs and reuses existing definitions without modifying them. Waits for each CRD to report
+	 * {@code Established=True}, including CRDs created concurrently by another client.
+	 *
+	 * @param yamlLocation HTTP(S) URL, file or directory containing at least one named {@code apiextensions.k8s.io/v1}
+	 *                     CRD. Other resource kinds are ignored.
+	 */
+	public void createMissingCrdsAndWait(String yamlLocation) {
+		List<CustomResourceDefinition> definitions = loadCrdManifests(yamlLocation);
+		if (definitions.isEmpty()) {
+			throw new IllegalArgumentException("No CRDs found in " + yamlLocation);
+		}
+		for (CustomResourceDefinition definition : definitions) {
+			String name = definition.getMetadata().getName();
+			if (readCrd(name, "check whether it exists") == null) {
+				createCrd(definition, name);
+			}
+			waitForBootstrapCrd(name);
+		}
+	}
+
+	private List<CustomResourceDefinition> loadCrdManifests(String yamlLocation) {
+		try {
+			if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
+				URLConnection connection = URI.create(yamlLocation).toURL().openConnection();
+				connection.setConnectTimeout(FABRIC8_CONNECTION_TIMEOUT_MILLIS);
+				connection.setReadTimeout(FABRIC8_REQUEST_TIMEOUT_MILLIS);
+				return loadCrdManifests(connection.getInputStream(), yamlLocation);
+			}
+
+			File location = new File(yamlLocation);
+			if (location.isDirectory()) {
+				List<CustomResourceDefinition> definitions = new ArrayList<>();
+				for (File file : listYamlFiles(location)) {
+					definitions.addAll(loadCrdManifests(Files.newInputStream(file.toPath()), file.getAbsolutePath()));
+				}
+				return definitions;
+			}
+			return loadCrdManifests(Files.newInputStream(location.toPath()), yamlLocation);
+		} catch (IOException exception) {
+			throw new UncheckedIOException("Failed to load CRD manifests from " + yamlLocation, exception);
+		}
+	}
+
+	private List<CustomResourceDefinition> loadCrdManifests(InputStream stream, String source) {
+		List<HasMetadata> resources = executeWithErrorHandling(
+			"load YAML from " + source,
+			() -> loadYamlItems(stream, source)
+		);
+		List<CustomResourceDefinition> definitions = new ArrayList<>();
+		for (HasMetadata resource : resources) {
+			if (!"CustomResourceDefinition".equals(resource.getKind())) {
+				continue;
+			}
+			if (!(resource instanceof CustomResourceDefinition definition)
+				|| !"apiextensions.k8s.io/v1".equals(resource.getApiVersion())) {
+				throw new IllegalArgumentException(
+					"Expected an apiextensions.k8s.io/v1 CRD in %s, found %s %s".formatted(
+						source, resource.getApiVersion(), resource.getKind()
+					)
+				);
+			}
+			validateCrdName(definition, source);
+			definitions.add(definition);
+		}
+		return definitions;
+	}
+
+	private static void validateCrdName(CustomResourceDefinition definition, String source) {
+		String name = definition.getMetadata() == null ? null : definition.getMetadata().getName();
+		if (name == null || name.length() > 253 || !CRD_NAME.matcher(name).matches()) {
+			throw new IllegalArgumentException("Invalid CRD name '%s' in %s".formatted(name, source));
+		}
+
+		CustomResourceDefinitionSpec spec = definition.getSpec();
+		String plural = spec == null || spec.getNames() == null ? null : spec.getNames().getPlural();
+		String group = spec == null ? null : spec.getGroup();
+		if (plural == null || plural.isBlank() || group == null || group.isBlank()) {
+			throw new IllegalArgumentException(
+				"Cannot validate CRD name '%s' in %s: spec.names.plural and spec.group are required".formatted(name, source)
+			);
+		}
+
+		String expectedName = "%s.%s".formatted(plural, group);
+		if (!name.equals(expectedName)) {
+			throw new IllegalArgumentException(
+				"Invalid CRD name '%s' in %s: expected '%s' from spec.names.plural and spec.group"
+					.formatted(name, source, expectedName)
+			);
+		}
+	}
+
+	private CustomResourceDefinition readCrd(String name, String purpose) {
+		try {
+			return client.apiextensions()
+						 .v1()
+						 .customResourceDefinitions()
+						 .withName(name)
+						 .get();
+		} catch (KubernetesClientException exception) {
+			throw new IllegalStateException(
+				"Failed to read CRD %s to %s: %s".formatted(name, purpose, exception.getMessage()),
+				exception
+			);
+		}
+	}
+
+	private void createCrd(CustomResourceDefinition definition, String name) {
+		try {
+			client.apiextensions()
+				  .v1()
+				  .customResourceDefinitions()
+				  .resource(definition)
+				  .create();
+		} catch (KubernetesClientException exception) {
+			if (exception.getCode() != 409 || exception.getStatus() == null
+				|| !"AlreadyExists".equals(exception.getStatus().getReason())) {
+				throw new IllegalStateException(
+					"Failed to create CRD %s: %s".formatted(name, exception.getMessage()),
+					exception
+				);
+			}
+			if (readCrd(name, "resolve AlreadyExists after CREATE") == null) {
+				throw new IllegalStateException(
+					"CRD %s was not found after CREATE returned AlreadyExists".formatted(name),
+					exception
+				);
+			}
+		}
+	}
+
+	private void waitForBootstrapCrd(String name) {
+		log.debug("Waiting for CRD {} to become Established", name);
+		try {
+			for (int attempt = 1; attempt <= defaultRetries; attempt++) {
+				if (isCrdEstablished(readCrd(name, "check Established=True"))) {
+					return;
+				}
+				if (attempt < defaultRetries) {
+					Thread.sleep(sleepTimeMillis);
+				}
+			}
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(
+				"Interrupted while waiting for CRD %s to become Established".formatted(name),
+				exception
+			);
+		}
+		throw new IllegalStateException(
+			"CRD %s did not become Established after %d checks".formatted(name, defaultRetries)
+		);
+	}
+
+	/**
 	 * Applies YAML resources from a URL, file or directory (recursively).
 	 *
 	 * @param yamlLocation http(s) URL, file path or directory path containing YAML resources
 	 * @return a summary of how many resources were applied
 	 */
 	public String applyYaml(String yamlLocation) {
-		return applyYaml(yamlLocation, false);
-	}
-
-	/**
-	 * Applies YAML resources and waits until every contained CustomResourceDefinition is established.
-	 *
-	 * <p>This is intended for bootstrap paths where consumers may start immediately after the CRDs are applied.
-	 * Returning only after {@code Established=True} prevents consumers such as Argo CD from starting discovery while
-	 * the Kubernetes API server is still registering the newly created APIs.</p>
-	 *
-	 * @param yamlLocation http(s) URL, file path or directory path containing YAML resources
-	 * @return a summary of how many resources were applied
-	 */
-	public String applyYamlAndWaitForCrds(String yamlLocation) {
-		return applyYaml(yamlLocation, true);
-	}
-
-	private String applyYaml(String yamlLocation, boolean waitForCrds) {
 		log.debug("Applying YAML from {}", yamlLocation);
 
 		if (yamlLocation.startsWith("http://") || yamlLocation.startsWith("https://")) {
 			try {
 				int appliedResources = applyYamlStream(
 					URI.create(yamlLocation).toURL().openStream(),
-					yamlLocation,
-					waitForCrds
+					yamlLocation
 				);
 				return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 			} catch (IOException | IllegalArgumentException e) {
@@ -671,24 +811,18 @@ public class K8sClient {
 
 		if (location.isDirectory()) {
 			List<File> yamlFiles;
-			try (Stream<Path> stream = Files.walk(location.toPath())) {
-				yamlFiles = stream.filter(Files::isRegularFile)
-								  .map(Path::toFile)
-								  .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
-								  .collect(Collectors.toCollection(ArrayList::new));
+			try {
+				yamlFiles = listYamlFiles(location);
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to list YAML files in directory: " + yamlLocation, e);
 			}
-
-			yamlFiles.sort(Comparator.comparing(File::getAbsolutePath));
 
 			int appliedResources = 0;
 			for (File file : yamlFiles) {
 				try {
 					appliedResources += applyYamlStream(
 						Files.newInputStream(file.toPath()),
-						file.getAbsolutePath(),
-						waitForCrds
+						file.getAbsolutePath()
 					);
 				} catch (IOException e) {
 					throw new UncheckedIOException("Failed to apply YAML file: " + file.getAbsolutePath(), e);
@@ -701,8 +835,7 @@ public class K8sClient {
 		try {
 			int appliedResources = applyYamlStream(
 				Files.newInputStream(location.toPath()),
-				yamlLocation,
-				waitForCrds
+				yamlLocation
 			);
 			return APPLIED_PREFIX + appliedResources + " resource(s) from " + yamlLocation;
 		} catch (IOException e) {
@@ -710,7 +843,7 @@ public class K8sClient {
 		}
 	}
 
-	private int applyYamlStream(InputStream stream, String sourceDescription, boolean waitForCrds) {
+	private int applyYamlStream(InputStream stream, String sourceDescription) {
 		List<HasMetadata> resources = executeWithErrorHandling(
 			"load YAML from " + sourceDescription,
 			() -> loadYamlItems(stream, sourceDescription)
@@ -725,36 +858,7 @@ public class K8sClient {
 			);
 		}
 
-		if (waitForCrds) {
-			waitForAppliedCrds(resources);
-		}
-
 		return resources.size();
-	}
-
-	/**
-	 * Filters the applied resources down to named CRDs and waits for each CRD until Kubernetes reports
-	 * {@code Established=True}. Non-CRD resources and resources without usable metadata are ignored.
-	 */
-	private void waitForAppliedCrds(List<HasMetadata> resources) {
-		resources.stream()
-			.filter(resource -> "CustomResourceDefinition".equals(resource.getKind()))
-			.map(HasMetadata::getMetadata)
-			.filter(Objects::nonNull)
-			.map(metadata -> metadata.getName())
-			.filter(name -> name != null && !name.isBlank())
-			.forEach(this::waitForCrdEstablished);
-	}
-
-	private void waitForCrdEstablished(String crdName) {
-		log.debug("Waiting for CRD {} to become Established", crdName);
-		waitForResourceWithRetry(
-			"CRD " + crdName + " to become Established",
-			() -> {
-				var crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
-				return isCrdEstablished(crd) ? crd : null;
-			}
-		);
 	}
 
 	private boolean isCrdEstablished(CustomResourceDefinition crd) {
@@ -794,6 +898,16 @@ public class K8sClient {
 		}
 
 		resourceClient.resource(resource).createOr(NonDeletingOperation::update);
+	}
+
+	private List<File> listYamlFiles(File directory) throws IOException {
+		try (Stream<Path> paths = Files.walk(directory.toPath())) {
+			return paths.filter(Files::isRegularFile)
+						.map(Path::toFile)
+						.filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
+						.sorted(Comparator.comparing(File::getAbsolutePath))
+						.toList();
+		}
 	}
 
 	private List<HasMetadata> loadYamlItems(InputStream stream, String sourceDescription) {

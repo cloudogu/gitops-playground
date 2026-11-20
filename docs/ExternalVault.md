@@ -197,7 +197,7 @@ For multiple namespaces, GOP renders the same configured Vault authentication me
 The Argo CD operator must be installed **before GOP** for `operator-*` profiles. Namespaced Argo CD needs permission to manage `SecretStore` and `ExternalSecret` resources and the corresponding resource inclusions. For customer deployments:
 
 - GOP does not receive cluster-admin rights and must not manage Vault authentication backends, Vault policies, token reviewers, or cluster-wide RBAC.
-- With `application.skipCrds: true`, the platform administrator must install all required ESO CRDs (and any other necessary CRDs) **in advance**.
+- With `application.skipCrds: true`, the platform administrator must install all required ESO CRDs (and any other necessary CRDs) **in advance**. See [CRD bootstrap and ESO controller behavior](CRD-Bootstrap.md) for upgrade and webhook considerations.
 - The ESO controller is **not** automatically namespace-scoped just because Argo CD is managed by the operator; ESO's permissions must be assessed separately.
 - The local `operator-*` profiles use the k3d test infrastructure. They do not fully reproduce customer OpenShift SCCs, NetworkPolicies, or restricted project privileges.
 

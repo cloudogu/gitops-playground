@@ -3,6 +3,7 @@ package com.cloudogu.gitops.infrastructure.kubernetes.api;
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.config.Credentials;
 import com.cloudogu.gitops.utils.Tuple;
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,16 +17,22 @@ import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodListBuilder;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
+import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.api.model.StatusBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
+import io.fabric8.mockwebserver.DefaultMockServer;
+import io.fabric8.mockwebserver.http.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +53,18 @@ class K8sClientTest {
 	};
 	private static final TypeReference<List<Map<String, Object>>> JSON_LIST_TYPE = new TypeReference<>() {
 	};
+
+	private static final String CRD_COLLECTION = "/apis/apiextensions.k8s.io/v1/customresourcedefinitions";
+	private static final String WIDGET_CRD = "widgets.example.com";
+	private static final String WIDGET_CRD_PATH = CRD_COLLECTION + "/" + WIDGET_CRD;
+	private static final String GADGET_CRD = "gadgets.example.com";
+	private static final String GADGET_CRD_PATH = CRD_COLLECTION + "/" + GADGET_CRD;
+	private static final String ADMISSION_POLICY = """
+		apiVersion: admissionregistration.k8s.io/v1
+		kind: ValidatingAdmissionPolicy
+		metadata:
+		  name: safe-upgrades.gateway.networking.k8s.io
+		""";
 
 	KubernetesMockServer server;
 	KubernetesClient client;
@@ -97,11 +116,13 @@ class K8sClientTest {
 		server.expect()
 			  .get()
 			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/applications.argoproj.io")
-			  .andReturn(200, Map.of(
-				  "apiVersion", "apiextensions.k8s.io/v1",
-				  "kind", "CustomResourceDefinition",
-				  "metadata", Map.of("name", "applications.argoproj.io")
-			  ))
+			  .andReturn(
+			      200, Map.of(
+					  "apiVersion", "apiextensions.k8s.io/v1",
+					  "kind", "CustomResourceDefinition",
+					  "metadata", Map.of("name", "applications.argoproj.io")
+				  )
+		      )
 			  .once();
 
 		assertThat(k8sApiClient.resourceExists("crd", "applications.argoproj.io", "")).isTrue();
@@ -169,7 +190,6 @@ class K8sClientTest {
 
 	@Test
 	void waitForNodeReturnsFirstNodeName() {
-		// Given
 		var node = new NodeBuilder()
 			.withNewMetadata()
 			.withName("test-node-1")
@@ -182,16 +202,13 @@ class K8sClientTest {
 			  .andReturn(200, new NodeListBuilder().withItems(node).build())
 			  .once();
 
-		// When
 		String nodeName = k8sApiClient.waitForNode();
 
-		// Then
 		assertThat(nodeName).isEqualTo("test-node-1");
 	}
 
 	@Test
 	void waitForNodeRetriesWhenNoNodesAvailable() {
-		// Given
 		server.expect()
 			  .get()
 			  .withPath("/api/v1/nodes")
@@ -210,10 +227,8 @@ class K8sClientTest {
 			  .andReturn(200, new NodeListBuilder().withItems(node).build())
 			  .once();
 
-		// When
 		String nodeName = k8sApiClient.waitForNode();
 
-		// Then
 		assertThat(nodeName).isEqualTo("test-node-1");
 	}
 
@@ -259,16 +274,13 @@ class K8sClientTest {
 			  .andReturn(200, node)
 			  .once();
 
-		// When
 		String ip = k8sApiClient.waitForInternalNodeIp();
 
-		// Then
 		assertThat(ip).isEqualTo("192.168.1.100");
 	}
 
 	@Test
 	void waitForInternalNodeIpIgnoresIPv6Addresses() {
-		// Given
 		var node = new NodeBuilder()
 			.withNewMetadata()
 			.withName("test-node-1")
@@ -297,10 +309,8 @@ class K8sClientTest {
 			  .andReturn(200, node)
 			  .once();
 
-		// When
 		String ip = k8sApiClient.waitForInternalNodeIp();
 
-		// Then
 		assertThat(ip).isEqualTo("192.168.1.100");
 	}
 
@@ -995,121 +1005,397 @@ class K8sClientTest {
 	}
 
 	@Test
-	void applyYamlAndWaitForCrdsWaitsUntilAppliedCrdIsEstablished() throws IOException {
-		Path yamlFile = tempDir.resolve("widgets-crd.yaml");
+	void applyYamlUpdatesAnExistingConfigMap() throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = tempDir.resolve("config-map.yaml");
 		Files.writeString(
 			yamlFile, """
-				apiVersion: apiextensions.k8s.io/v1
-				kind: CustomResourceDefinition
+				apiVersion: v1
+				kind: ConfigMap
 				metadata:
-				  name: widgets.example.com
-				spec:
-				  group: example.com
-				  scope: Namespaced
-				  names:
-				    plural: widgets
-				    singular: widget
-				    kind: Widget
-				  versions:
-				    - name: v1
-				      served: true
-				      storage: true
-				      schema:
-				        openAPIV3Schema:
-				          type: object
+				  name: settings
+				  namespace: test-ns
+				data:
+				  mode: new
 				"""
 		);
 
-		Map<String, Object> crdWithoutEstablishedCondition = Map.of(
-			"apiVersion", "apiextensions.k8s.io/v1",
-			"kind", "CustomResourceDefinition",
-			"metadata", Map.of("name", "widgets.example.com"),
-			"status", Map.of("conditions", List.of())
-		);
-		Map<String, Object> establishedCrd = Map.of(
-			"apiVersion", "apiextensions.k8s.io/v1",
-			"kind", "CustomResourceDefinition",
-			"metadata", Map.of("name", "widgets.example.com"),
-			"status", Map.of(
-				"conditions", List.of(Map.of("type", "Established", "status", "True"))
-			)
-		);
+		ConfigMap existingConfigMap = new ConfigMapBuilder()
+			.withNewMetadata()
+			.withName("settings")
+			.withNamespace("test-ns")
+			.withResourceVersion("42")
+			.endMetadata()
+			.addToData("mode", "old")
+			.build();
+		ConfigMap updatedConfigMap = new ConfigMapBuilder(existingConfigMap).addToData("mode", "new").build();
+		String collectionPath = "/api/v1/namespaces/test-ns/configmaps";
+		String resourcePath = collectionPath + "/settings";
+		server.expect().post().withPath(collectionPath)
+			  .andReturn(409, new StatusBuilder().withCode(409).withReason("AlreadyExists").build()).once();
+		server.expect().get().withPath(resourcePath).andReturn(200, existingConfigMap).once();
+		server.expect().put().withPath(resourcePath).andReturn(200, updatedConfigMap).once();
 
-		server.expect()
-			  .post()
-			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
-			  .andReturn(201, crdWithoutEstablishedCondition)
-			  .once();
-		server.expect()
-			  .get()
-			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
-			  .andReturn(200, crdWithoutEstablishedCondition)
-			  .once();
-		server.expect()
-			  .get()
-			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
-			  .andReturn(200, establishedCrd)
-			  .once();
+		// When
+		String result = k8sApiClient.applyYaml(yamlFile.toString());
 
-		String result = k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString());
-
+		// Then
 		assertThat(result).contains("Applied 1 resource(s)");
+		assertThat(server.getRequestCount()).isEqualTo(3);
+		assertThat(server.takeRequest().getMethod()).isEqualTo("POST");
+		assertThat(server.takeRequest().getMethod()).isEqualTo("GET");
+		assertThat(server.takeRequest()).satisfies(request -> {
+			assertThat(request.getMethod()).isEqualTo("PUT");
+			assertThat(request.getPath()).isEqualTo(resourcePath);
+			assertThat(parseJson(request.getUtf8Body())).containsEntry("data", Map.of("mode", "new"));
+		});
 	}
 
 	@Test
-	void applyYamlAndWaitForCrdsFailsWhenAppliedCrdDoesNotBecomeEstablished() throws IOException {
-		Path yamlFile = tempDir.resolve("widgets-crd-not-established.yaml");
-		Files.writeString(
-			yamlFile, """
-				apiVersion: apiextensions.k8s.io/v1
-				kind: CustomResourceDefinition
-				metadata:
-				  name: widgets.example.com
-				spec:
-				  group: example.com
-				  scope: Namespaced
-				  names:
-				    plural: widgets
-				    singular: widget
-				    kind: Widget
-				  versions:
-				    - name: v1
-				      served: true
-				      storage: true
-				      schema:
-				        openAPIV3Schema:
-				          type: object
-				"""
-		);
+	void createMissingCrdsAndWaitCreatesAnAbsentCrdAndPollsUntilEstablished() throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		Map<String, Object> pending = crdResponse(WIDGET_CRD, "False");
+		expectMissingCrd(WIDGET_CRD_PATH);
+		server.expect().post().withPath(CRD_COLLECTION).andReturn(201, pending).once();
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, pending).once();
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "True")).once();
 
-		Map<String, Object> notEstablishedCrd = Map.of(
-			"apiVersion", "apiextensions.k8s.io/v1",
-			"kind", "CustomResourceDefinition",
-			"metadata", Map.of("name", "widgets.example.com"),
-			"status", Map.of(
-				"conditions", List.of(Map.of("type", "Established", "status", "False"))
-			)
-		);
+		// When
+		k8sApiClient.createMissingCrdsAndWait(yamlFile.toString());
 
+		// Then
+		assertThat(server.getRequestCount()).isEqualTo(4);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		Map<String, Object> createdCrd = parseJson(takeRequest("POST", CRD_COLLECTION).getUtf8Body());
+		assertThat(createdCrd).containsEntry("kind", "CustomResourceDefinition");
+		assertThat((Map<String, Object>) createdCrd.get("metadata")).containsEntry("name", WIDGET_CRD);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", WIDGET_CRD_PATH);
+	}
+
+	@Test
+	void createMissingCrdsAndWaitReusesAnExistingCrdWithDifferentSpecAndMetadata()
+		throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		Map<String, Object> existing = crdResponse(WIDGET_CRD, "False");
+		Map<String, Object> established = crdResponse(WIDGET_CRD, "True");
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, existing).times(2);
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, established).times(3);
+
+		// When
+		k8sApiClient.createMissingCrdsAndWait(yamlFile.toString());
+		k8sApiClient.createMissingCrdsAndWait(yamlFile.toString());
+
+		// Then
+		assertThat(server.getRequestCount()).isEqualTo(5);
+		for (int lookup = 0; lookup < 5; lookup++) {
+			takeRequest("GET", WIDGET_CRD_PATH);
+		}
+	}
+
+	@Test
+	void createMissingCrdsAndWaitCreatesOnlyTheMissingCrdFromMixedRemoteBundle() throws InterruptedException {
+		// Given
+		String bundlePath = "/crd-bundle.yaml";
+		String bundle = String.join("---\n", crdManifest(WIDGET_CRD), ADMISSION_POLICY, crdManifest(GADGET_CRD));
+		DefaultMockServer manifestServer = new DefaultMockServer(false);
+		manifestServer.expect().get().withPath(bundlePath).andReturn(200, bundle).once();
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "True")).times(2);
+		expectMissingCrd(GADGET_CRD_PATH);
+		Map<String, Object> created = crdResponse(GADGET_CRD, "True");
+		server.expect().post().withPath(CRD_COLLECTION).andReturn(201, created).once();
+		server.expect().get().withPath(GADGET_CRD_PATH).andReturn(200, created).once();
+
+		manifestServer.start();
+		try {
+			k8sApiClient.createMissingCrdsAndWait(manifestServer.url(bundlePath));
+		} finally {
+			manifestServer.shutdown();
+		}
+
+		assertThat(manifestServer.getRequestCount()).isEqualTo(1);
+		assertThat(server.getRequestCount()).isEqualTo(5);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", GADGET_CRD_PATH);
+		Map<String, Object> createdCrd = parseJson(takeRequest("POST", CRD_COLLECTION).getUtf8Body());
+		assertThat(createdCrd).containsEntry("kind", "CustomResourceDefinition");
+		assertThat((Map<String, Object>) createdCrd.get("metadata")).containsEntry("name", GADGET_CRD);
+		takeRequest("GET", GADGET_CRD_PATH);
+	}
+
+	@Test
+	void createMissingCrdsAndWaitRereadsAfterAlreadyExistsAndWaitsForEstablished()
+		throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		expectMissingCrd(WIDGET_CRD_PATH);
 		server.expect()
 			  .post()
-			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
-			  .andReturn(201, notEstablishedCrd)
+			  .withPath(CRD_COLLECTION)
+			  .andReturn(409, errorStatus(409, "AlreadyExists"))
 			  .once();
-		server.expect()
-			  .get()
-			  .withPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.com")
-			  .andReturn(200, notEstablishedCrd)
-			  .times(3);
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "False")).times(2);
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "True")).once();
 
-		var exception = assertThrows(
+		// When
+		k8sApiClient.createMissingCrdsAndWait(yamlFile.toString());
+
+		// Then
+		assertThat(server.getRequestCount()).isEqualTo(5);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("POST", CRD_COLLECTION);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", WIDGET_CRD_PATH);
+	}
+
+	@Test
+	void createMissingCrdsAndWaitFailsIfCrdIsStillMissingAfterAlreadyExists() throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		expectMissingCrd(WIDGET_CRD_PATH);
+		server.expect()
+			  .post()
+			  .withPath(CRD_COLLECTION)
+			  .andReturn(409, errorStatus(409, "AlreadyExists"))
+			  .once();
+		expectMissingCrd(WIDGET_CRD_PATH);
+
+		// When / Then
+		IllegalStateException exception = assertThrows(
 			IllegalStateException.class,
-			() -> k8sApiClient.applyYamlAndWaitForCrds(yamlFile.toString())
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception).hasMessageContaining(WIDGET_CRD).hasMessageContaining("not found after CREATE");
+		assertThat(exception.getCause()).isInstanceOfSatisfying(
+			KubernetesClientException.class,
+			cause -> assertThat(cause.getCode()).isEqualTo(409)
+		);
+		assertThat(server.getRequestCount()).isEqualTo(3);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("POST", CRD_COLLECTION);
+		takeRequest("GET", WIDGET_CRD_PATH);
+	}
+
+	@ParameterizedTest
+	@CsvSource({"403, Forbidden", "401, Unauthorized"})
+	void createMissingCrdsAndWaitDoesNotCreateAfterAnAccessError(int code, String reason)
+		throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(code, errorStatus(code, reason)).once();
+
+		// When / Then
+		IllegalStateException exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertCrdApiError(exception, "check whether it exists", code, reason);
+		assertThat(server.getRequestCount()).isEqualTo(1);
+		takeRequest("GET", WIDGET_CRD_PATH);
+	}
+
+	@ParameterizedTest
+	@CsvSource({"409, Conflict", "422, Invalid"})
+	void createMissingCrdsAndWaitFailsWithoutFallbackOnOtherCreateErrors(int code, String reason)
+		throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		expectMissingCrd(WIDGET_CRD_PATH);
+		server.expect().post().withPath(CRD_COLLECTION).andReturn(code, errorStatus(code, reason)).once();
+
+		// When / Then
+		IllegalStateException exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertCrdApiError(exception, "create CRD", code, reason);
+		assertThat(server.getRequestCount()).isEqualTo(2);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("POST", CRD_COLLECTION);
+	}
+
+	@Test
+	void createMissingCrdsAndWaitReportsForbiddenWhilePollingInsteadOfTimingOut()
+		throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "False")).once();
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(403, errorStatus(403, "Forbidden")).once();
+
+		// When / Then
+		IllegalStateException exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertCrdApiError(exception, "check Established=True", 403, "Forbidden");
+		assertThat(server.getRequestCount()).isEqualTo(2);
+		takeRequest("GET", WIDGET_CRD_PATH);
+		takeRequest("GET", WIDGET_CRD_PATH);
+	}
+
+	@Test
+	void createMissingCrdsAndWaitTimesOutWhenEstablishedRemainsFalse() throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("widgets.yaml"), crdManifest(WIDGET_CRD));
+		server.expect().get().withPath(WIDGET_CRD_PATH).andReturn(200, crdResponse(WIDGET_CRD, "False")).times(4);
+
+		// When / Then
+		IllegalStateException exception = assertThrows(
+			IllegalStateException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception).hasMessage("CRD widgets.example.com did not become Established after 3 checks");
+		assertThat(server.getRequestCount()).isEqualTo(4);
+		for (int lookup = 0; lookup < 4; lookup++) {
+			takeRequest("GET", WIDGET_CRD_PATH);
+		}
+	}
+
+	@Test
+	void createMissingCrdsAndWaitValidatesAllDirectoryFilesBeforeCreatingCrds() throws IOException {
+		// Given
+		Files.writeString(tempDir.resolve("01-widgets.yaml"), crdManifest(WIDGET_CRD));
+		Path nested = Files.createDirectory(tempDir.resolve("nested"));
+		String betaCrd = crdManifest(GADGET_CRD).replace("apiextensions.k8s.io/v1", "apiextensions.k8s.io/v1beta1");
+		Path invalidFile = Files.writeString(
+			nested.resolve("02-bundle.yml"),
+			String.join("---\n", ADMISSION_POLICY, betaCrd)
 		);
 
-		assertThat(exception.getMessage())
-			.contains("CRD widgets.example.com to become Established")
-			.contains("after 3 retries");
+		// When / Then
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(tempDir.toString())
+		);
+		assertThat(exception)
+			.hasMessageContaining(invalidFile.toString())
+			.hasMessageContaining("apiextensions.k8s.io/v1beta1 CustomResourceDefinition");
+		assertThat(server.getRequestCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {ADMISSION_POLICY, ""})
+	void createMissingCrdsAndWaitRejectsBundleWithoutCrds(String bundle) throws IOException {
+		// Given
+		Path yamlFile = Files.writeString(tempDir.resolve("bundle.yaml"), bundle);
+
+		// When / Then
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception).hasMessageContaining("No CRDs found").hasMessageContaining(yamlFile.toString());
+		assertThat(server.getRequestCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"", "  ", "widgets/invalid"})
+	void createMissingCrdsAndWaitRejectsInvalidNamesBeforeWritingAnyDocument(String name) throws IOException {
+		// Given
+		Path yamlFile = Files.writeString(
+			tempDir.resolve("bundle.yaml"),
+			crdManifest(WIDGET_CRD) + "---\n" + crdManifest("'" + name + "'")
+		);
+
+		// When / Then
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception).hasMessageContaining("Invalid CRD name").hasMessageContaining(yamlFile.toString());
+		assertThat(server.getRequestCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"different.example.com", "gadgets.other.example"})
+	void createMissingCrdsAndWaitRejectsNameThatDoesNotMatchSpecBeforeWritingAnyDocument(String name)
+		throws IOException {
+		// Given
+		String mismatchedCrd = crdManifest(GADGET_CRD).replace("name: " + GADGET_CRD, "name: " + name);
+		Path yamlFile = Files.writeString(
+			tempDir.resolve("bundle.yaml"),
+			crdManifest(WIDGET_CRD) + "---\n" + mismatchedCrd
+		);
+
+		// When / Then
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception)
+			.hasMessageContaining("Invalid CRD name '" + name + "'")
+			.hasMessageContaining(yamlFile.toString())
+			.hasMessageContaining("expected '" + GADGET_CRD + "' from spec.names.plural and spec.group");
+		assertThat(server.getRequestCount()).isZero();
+	}
+
+	private void expectMissingCrd(String path) {
+		server.expect().get().withPath(path).andReturn(404, errorStatus(404, "NotFound")).once();
+	}
+
+	private static Status errorStatus(int code, String reason) {
+		return new StatusBuilder()
+			.withCode(code)
+			.withReason(reason)
+			.withStatus("Failure")
+			.withMessage(reason)
+			.build();
+	}
+
+	private RecordedRequest takeRequest(String method, String path) throws InterruptedException {
+		RecordedRequest request = server.takeRequest();
+		assertThat(request.getMethod()).isEqualTo(method);
+		assertThat(request.getPath()).isEqualTo(path);
+		return request;
+	}
+
+	private static void assertCrdApiError(IllegalStateException exception, String operation, int code, String reason) {
+		assertThat(exception)
+			.hasMessageContaining(WIDGET_CRD)
+			.hasMessageContaining(operation)
+			.hasMessageContaining(reason);
+		assertThat(exception.getCause()).isInstanceOfSatisfying(
+			KubernetesClientException.class,
+			cause -> assertThat(cause.getCode()).isEqualTo(code)
+		);
+	}
+
+	private static String crdManifest(String name) {
+		return """
+			apiVersion: apiextensions.k8s.io/v1
+			kind: CustomResourceDefinition
+			metadata:
+			  name: %s
+			  labels:
+			    owner: gop
+			spec:
+			  group: example.com
+			  scope: Namespaced
+			  names:
+			    plural: %s
+			    kind: Example
+			  versions:
+			    - name: v1
+			      served: true
+			      storage: true
+			      schema:
+			        openAPIV3Schema:
+			          type: object
+			""".formatted(name, name.split("\\.", 2)[0]);
+	}
+
+	private static Map<String, Object> crdResponse(String name, String established) {
+		return Map.of(
+			"apiVersion", "apiextensions.k8s.io/v1",
+			"kind", "CustomResourceDefinition",
+			"metadata", Map.of("name", name, "labels", Map.of("owner", "platform")),
+			"spec", Map.of("scope", "Cluster"),
+			"status", Map.of("conditions", List.of(Map.of("type", "Established", "status", established)))
+		);
 	}
 
 	@Test
@@ -1128,35 +1414,7 @@ class K8sClientTest {
 				"""
 		);
 
-		server.expect()
-			  .get()
-			  .withPath("/apis")
-			  .andReturn(
-				  200, Map.of(
-					  "groups", List.of(Map.of(
-						  "name", "argoproj.io",
-						  "preferredVersion", Map.of("version", "v1alpha1"),
-						  "versions", List.of(Map.of("version", "v1alpha1"))
-					  ))
-				  )
-			  )
-			  .once();
-
-		server.expect()
-			  .get()
-			  .withPath("/apis/argoproj.io/v1alpha1")
-			  .andReturn(
-				  200, Map.of(
-					  "resources", List.of(Map.of(
-						  "name", "appprojects",
-						  "singularName", "appproject",
-						  "namespaced", true,
-						  "kind", "AppProject",
-						  "shortNames", List.of()
-					  ))
-				  )
-			  )
-			  .once();
+		expectAppProjectDiscovery();
 
 		GenericKubernetesResource appProject = new GenericKubernetesResourceBuilder()
 			.withApiVersion("argoproj.io/v1alpha1")
@@ -1188,6 +1446,93 @@ class K8sClientTest {
 		// Then
 		assertThat(result).contains("Applied 1 resource(s)");
 		assertThat(appProjectWasApplied.get()).isTrue();
+	}
+
+	@Test
+	void applyYamlUpdatesAnExistingAppProjectViaDiscovery() throws IOException, InterruptedException {
+		// Given
+		Path yamlFile = tempDir.resolve("app-project.yaml");
+		Files.writeString(
+			yamlFile, """
+				apiVersion: argoproj.io/v1alpha1
+				kind: AppProject
+				metadata:
+				  name: argocd
+				  namespace: argocd
+				spec:
+				  description: Updated project
+				"""
+		);
+
+		GenericKubernetesResource existingAppProject = new GenericKubernetesResourceBuilder()
+			.withApiVersion("argoproj.io/v1alpha1")
+			.withKind("AppProject")
+			.withNewMetadata()
+			.withName("argocd")
+			.withNamespace("argocd")
+			.withResourceVersion("42")
+			.endMetadata()
+			.addToAdditionalProperties("spec", Map.of("description", "Original project"))
+			.build();
+		GenericKubernetesResource updatedAppProject = new GenericKubernetesResourceBuilder(existingAppProject)
+			.addToAdditionalProperties("spec", Map.of("description", "Updated project"))
+			.build();
+		String collectionPath = "/apis/argoproj.io/v1alpha1/namespaces/argocd/appprojects";
+		String resourcePath = collectionPath + "/argocd";
+		expectAppProjectDiscovery();
+		server.expect().post().withPath(collectionPath)
+			  .andReturn(409, new StatusBuilder().withCode(409).withReason("AlreadyExists").build()).once();
+		server.expect().get().withPath(resourcePath).andReturn(200, existingAppProject).once();
+		server.expect().put().withPath(resourcePath).andReturn(200, updatedAppProject).once();
+
+		// When
+		String result = k8sApiClient.applyYaml(yamlFile.toString());
+
+		// Then
+		assertThat(result).contains("Applied 1 resource(s)");
+		assertThat(server.getRequestCount()).isEqualTo(5);
+		assertThat(server.takeRequest().getPath()).isEqualTo("/apis");
+		assertThat(server.takeRequest().getPath()).isEqualTo("/apis/argoproj.io/v1alpha1");
+		assertThat(server.takeRequest().getMethod()).isEqualTo("POST");
+		assertThat(server.takeRequest().getMethod()).isEqualTo("GET");
+		assertThat(server.takeRequest()).satisfies(request -> {
+			assertThat(request.getMethod()).isEqualTo("PUT");
+			assertThat(request.getPath()).isEqualTo(resourcePath);
+			assertThat(parseJson(request.getUtf8Body()))
+				.containsEntry("spec", Map.of("description", "Updated project"));
+		});
+	}
+
+	private void expectAppProjectDiscovery() {
+		server.expect()
+			  .get()
+			  .withPath("/apis")
+			  .andReturn(
+				  200, Map.of(
+					  "groups", List.of(Map.of(
+						  "name", "argoproj.io",
+						  "preferredVersion", Map.of("version", "v1alpha1"),
+						  "versions", List.of(Map.of("version", "v1alpha1"))
+					  ))
+				  )
+			  )
+			  .once();
+
+		server.expect()
+			  .get()
+			  .withPath("/apis/argoproj.io/v1alpha1")
+			  .andReturn(
+				  200, Map.of(
+					  "resources", List.of(Map.of(
+						  "name", "appprojects",
+						  "singularName", "appproject",
+						  "namespaced", true,
+						  "kind", "AppProject",
+						  "shortNames", List.of()
+					  ))
+				  )
+			  )
+			  .once();
 	}
 
 	@Test
@@ -1506,29 +1851,29 @@ class K8sClientTest {
 			  .once();
 
 		var pod = new PodBuilder().withNewMetadata()
-							  .withName("gid-pod")
-							  .withNamespace("jenkins")
-							  .endMetadata()
-							  .withNewSpec()
-							  .withNodeSelector(Map.of("node", "jenkins"))
-							  .addNewContainer()
-							  .withName("gid-container")
-							  .withImage("bash:42")
-							  .withArgs("cat", "/etc/group")
-							  .addNewVolumeMount()
-							  .withName("group")
-							  .withMountPath("/etc/group")
-							  .withReadOnly(true)
-							  .endVolumeMount()
-							  .endContainer()
-							  .addNewVolume()
-							  .withName("group")
-							  .withNewHostPath()
-							  .withPath("/etc/group")
-							  .endHostPath()
-							  .endVolume()
-							  .endSpec()
-							  .build();
+								  .withName("gid-pod")
+								  .withNamespace("jenkins")
+								  .endMetadata()
+								  .withNewSpec()
+								  .withNodeSelector(Map.of("node", "jenkins"))
+								  .addNewContainer()
+								  .withName("gid-container")
+								  .withImage("bash:42")
+								  .withArgs("cat", "/etc/group")
+								  .addNewVolumeMount()
+								  .withName("group")
+								  .withMountPath("/etc/group")
+								  .withReadOnly(true)
+								  .endVolumeMount()
+								  .endContainer()
+								  .addNewVolume()
+								  .withName("group")
+								  .withNewHostPath()
+								  .withPath("/etc/group")
+								  .endHostPath()
+								  .endVolume()
+								  .endSpec()
+								  .build();
 
 		// When
 		String result = k8sApiClient.runTemporaryPod(pod);

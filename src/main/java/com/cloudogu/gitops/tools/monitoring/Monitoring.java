@@ -315,11 +315,11 @@ public class Monitoring extends AbstractMappedTool<MonitoringToolConfig> impleme
 		for (String crdFile : MONITORING_CRD_FILES) {
 			String crdYaml = monitoringCrdLocation(config, crdFile);
 			log.debug(
-				"Applying monitoring CRD {} before tool deployment from path {}",
+				"Bootstrapping monitoring CRD {} before tool deployment from path {}",
 				crdFile,
 				crdYaml
 			);
-			k8sClient.applyYamlAndWaitForCrds(crdYaml);
+			k8sClient.createMissingCrdsAndWait(crdYaml);
 		}
 	}
 

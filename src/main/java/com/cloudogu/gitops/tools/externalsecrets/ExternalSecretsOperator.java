@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Singleton
@@ -135,17 +136,19 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		}
 
 		String renderedManifests = renderHelmManifests(config, context, true);
-		applyRenderedResources(
+		writeFilteredManifest(
 			renderedManifests,
 			CRD_KINDS,
-			"external-secrets CRDs before tool deployment",
-			true
-		);
+			"external-secrets CRDs before tool deployment"
+		).ifPresent(resourceFile -> {
+			log.debug("Bootstrapping external-secrets CRDs before tool deployment from path {}", resourceFile);
+			k8sClient.createMissingCrdsAndWait(resourceFile.toString());
+		});
 	}
 
 	/**
 	 * Applies cluster-scoped resources that a namespaced Argo CD cluster registration cannot manage.
-	 * CRDs are installed separately during the application bootstrap before Argo CD starts.
+	 * CRDs are created or reused during the application bootstrap before Argo CD starts.
 	 */
 	private void applyClusterScopedResources() {
 		if (!toolConfig().operator()) {
@@ -153,12 +156,14 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		}
 
 		String renderedManifests = renderHelmManifests(toolConfig(), context, false);
-		applyRenderedResources(
+		writeFilteredManifest(
 			renderedManifests,
 			OPERATOR_CLUSTER_SCOPED_KINDS,
-			"external-secrets cluster-scoped RBAC and webhook resources",
-			false
-		);
+			"external-secrets cluster-scoped RBAC and webhook resources"
+		).ifPresent(resourceFile -> {
+			log.debug("Applying external-secrets cluster-scoped RBAC and webhook resources from path {}", resourceFile);
+			k8sClient.applyYaml(resourceFile.toString());
+		});
 	}
 
 	private String renderHelmManifests(
@@ -195,14 +200,13 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 		return helmClient.template(RELEASE_NAME, chartOrPath, helmArguments);
 	}
 
-	private void applyRenderedResources(
+	private Optional<Path> writeFilteredManifest(
 		String renderedManifests,
 		Set<String> resourceKinds,
-		String description,
-		boolean waitForCrds) {
+		String description) {
 		String filteredYaml = filterResources(renderedManifests, resourceKinds);
 		if (filteredYaml.isBlank()) {
-			return;
+			return Optional.empty();
 		}
 
 		Path resourceFile = fileSystemUtils.createTempFile();
@@ -215,12 +219,7 @@ public class ExternalSecretsOperator extends AbstractMappedTool<ExternalSecretsO
 			);
 		}
 
-		log.debug("Applying {} from path {}", description, resourceFile);
-		if (waitForCrds) {
-			k8sClient.applyYamlAndWaitForCrds(resourceFile.toString());
-		} else {
-			k8sClient.applyYaml(resourceFile.toString());
-		}
+		return Optional.of(resourceFile);
 	}
 
 	private static String filterResources(String multiDocYaml, Set<String> resourceKinds) {
