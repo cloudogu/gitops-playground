@@ -2,7 +2,6 @@ package com.cloudogu.gitops.infrastructure.git;
 
 import com.cloudogu.gitops.config.Config;
 import com.cloudogu.gitops.infrastructure.git.providers.AccessRole;
-import com.cloudogu.gitops.infrastructure.git.providers.GitProvider;
 import com.cloudogu.gitops.infrastructure.git.providers.Scope;
 import com.cloudogu.gitops.testhelper.git.ScmManagerProviderMock;
 import com.cloudogu.gitops.testhelper.git.TestGitRepoFactory;
@@ -13,7 +12,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,9 +43,6 @@ class GitRepoTest {
 	));
 
 	private final TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils());
-
-	@Mock
-	GitProvider gitProvider;
 
 	private ScmManagerProviderMock scmManagerMock;
 

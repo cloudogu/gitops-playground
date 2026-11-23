@@ -22,7 +22,7 @@ class FileSystemUtilsTest {
 		Files.writeString(someFile.toPath(), expectedText + System.lineSeparator());
 		Path tmpFile = fileSystemUtils.copyToTempDir(someFile.getAbsolutePath());
 
-		assertThat(tmpFile.toAbsolutePath().toString()).isNotEqualTo(someFile.getAbsoluteFile());
+		assertThat(Files.isSameFile(tmpFile, someFile.toPath())).isFalse();
 		assertThat(Files.readString(tmpFile).trim()).isEqualTo(expectedText);
 	}
 

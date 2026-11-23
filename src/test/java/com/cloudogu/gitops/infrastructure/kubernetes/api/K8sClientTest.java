@@ -1311,6 +1311,22 @@ class K8sClientTest {
 	}
 
 	@ParameterizedTest
+	@ValueSource(strings = {"widgets..example.com", "-widgets.example.com", "widgets-.example.com", "widgets.exa_mple.com"})
+	void createMissingCrdsAndWaitRejectsInvalidDnsNames(String name) throws IOException {
+		Path yamlFile = Files.writeString(
+			tempDir.resolve("invalid-crd.yaml"),
+			crdManifest(WIDGET_CRD).replace("name: " + WIDGET_CRD, "name: " + name)
+		);
+
+		IllegalArgumentException exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+		);
+		assertThat(exception).hasMessage("Invalid CRD name '%s' in %s".formatted(name, yamlFile));
+		assertThat(server.getRequestCount()).isZero();
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = {"different.example.com", "gadgets.other.example"})
 	void createMissingCrdsAndWaitRejectsNameThatDoesNotMatchSpecBeforeWritingAnyDocument(String name)
 		throws IOException {

@@ -79,8 +79,8 @@ public class K8sClient {
 	private static final String DOCKER_CONFIG_JSON_KEY = ".dockerconfigjson";
 	private static final String NOT_FOUND_IN_NAMESPACE = " not found in namespace ";
 	private static final String APPLIED_PREFIX = "Applied ";
-	private static final Pattern CRD_NAME = Pattern.compile(
-		"[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*"
+	private static final Pattern CRD_NAME_LABEL = Pattern.compile(
+		"[a-z0-9](?:[-a-z0-9]*[a-z0-9])?"
 	);
 	private static final ResourceDefinitionContext OPENSHIFT_PROJECT_CONTEXT = new ResourceDefinitionContext.Builder()
 		.withGroup("project.openshift.io")
@@ -698,7 +698,7 @@ public class K8sClient {
 
 	private static void validateCrdName(CustomResourceDefinition definition, String source) {
 		String name = definition.getMetadata() == null ? null : definition.getMetadata().getName();
-		if (name == null || name.length() > 253 || !CRD_NAME.matcher(name).matches()) {
+		if (name == null || name.length() > 253 || !isValidCrdName(name)) {
 			throw new IllegalArgumentException("Invalid CRD name '%s' in %s".formatted(name, source));
 		}
 
@@ -718,6 +718,15 @@ public class K8sClient {
 					.formatted(name, source, expectedName)
 			);
 		}
+	}
+
+	private static boolean isValidCrdName(String name) {
+		for (String label : name.split("\\.", -1)) {
+			if (!CRD_NAME_LABEL.matcher(label).matches()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private CustomResourceDefinition readCrd(String name, String purpose) {
