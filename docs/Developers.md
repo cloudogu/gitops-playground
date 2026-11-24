@@ -41,6 +41,7 @@ version information.
 - [Notifications / E-Mail](#notifications--e-mail)
 - [Troubleshooting](#troubleshooting)
     - [Using ingresses locally](#using-ingresses-locally)
+- [Version info](#version-info)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
     - [Updating the GOP Helm chart](#updating-the-gop-helm-chart)
@@ -714,6 +715,14 @@ Where opening for example http://argocd.localhost in your browser should work.
 
 The `base-domain` parameters lead to URLs in the following schema:  
 `<stage>.<app-name>.<parameter>`, e.g.
+
+## Version info
+
+`gop --version` prints the git tags, the abbreviated commit hash and the build timestamp, followed by the license.
+
+The values are determined by the `git-commit-id-maven-plugin` while building the artifact or Docker image and are
+written into `version-name.txt` (template: `versionName` in `pom.xml`).
+New commits therefore don't change an already built image: it keeps reporting the commit it was built from.
 
 ## Generate schema.json
 
