@@ -1317,13 +1317,19 @@ class K8sClientTest {
 			tempDir.resolve("invalid-crd.yaml"),
 			crdManifest(WIDGET_CRD).replace("name: " + WIDGET_CRD, "name: " + name)
 		);
+		String yamlLocation = yamlFile.toString();
 
 		IllegalArgumentException exception = assertThrows(
 			IllegalArgumentException.class,
-			() -> k8sApiClient.createMissingCrdsAndWait(yamlFile.toString())
+			() -> k8sApiClient.createMissingCrdsAndWait(yamlLocation),
+			"Invalid CRD names must be rejected"
 		);
-		assertThat(exception).hasMessage("Invalid CRD name '%s' in %s".formatted(name, yamlFile));
-		assertThat(server.getRequestCount()).isZero();
+		assertThat(exception)
+			.as("Invalid CRD names should be reported in the error message")
+			.hasMessage("Invalid CRD name '%s' in %s".formatted(name, yamlFile));
+		assertThat(server.getRequestCount())
+			.as("Invalid CRD names must be rejected before calling the Kubernetes API")
+			.isZero();
 	}
 
 	@ParameterizedTest
