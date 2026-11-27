@@ -17,14 +17,22 @@ import com.cloudogu.gitops.tools.common.HelmChartConfig;
 import com.cloudogu.gitops.tools.common.ImagePullSecretCreator;
 import com.cloudogu.gitops.utils.AirGappedUtils;
 import com.cloudogu.gitops.utils.FileSystemUtils;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MappingIterator;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
+import io.fabric8.mockwebserver.DefaultMockServer;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -39,14 +47,19 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,9 +70,16 @@ class IngressTest {
 	private static final TypeReference<Map<String, Object>> YAML_MAP_TYPE = new TypeReference<>() {
 	};
 	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder().build();
+	private static final String POLICY_NAME = "safe-upgrades.gateway.networking.k8s.io";
+	private static final String POLICY_KIND = "ValidatingAdmissionPolicy";
+	private static final String BINDING_KIND = "ValidatingAdmissionPolicyBinding";
+	private static final String ADMISSION_VERSION = "admissionregistration.k8s.io/v1";
 
 	// setting default config values with ingress active
 	private final Config config = new Config();
+
+	@TempDir
+	Path tempDir;
 
 	private Path temporaryYamlFile;
 	private final FileSystemUtils fileSystemUtils = new FileSystemUtils();
@@ -88,6 +108,7 @@ class IngressTest {
 
 	IngressTest() {
 		config.getApplication().setNamePrefix("foo-");
+		config.getApplication().setSkipCrds(true);
 		config.getFeatures().getIngress().setActive(true);
 	}
 
@@ -285,18 +306,21 @@ class IngressTest {
 
 	@Test
 	void bootstrapsGatewayApiCrdsBeforeToolDeployment() throws GitAPIException {
+		config.getApplication().setSkipCrds(false);
 		Ingress ingress = createIngress();
 		DeploymentContext context = new ContextBuilder(config).build();
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient).applyYamlAndWaitForCrds(
+		verify(k8sClient).createMissingCrdsAndWait(
 			"https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml"
 		);
+		verify(k8sClient, never()).applyYaml(anyString());
 	}
 
 	@Test
 	void bootstrapsGatewayApiCrdsFromLocalChartInAirGappedMode() throws GitAPIException, IOException {
+		config.getApplication().setSkipCrds(false);
 		config.getApplication().setMirrorRepos(true);
 		Path localHelmCharts = Files.createTempDirectory(getClass().getSimpleName());
 		config.getApplication().setLocalHelmChartFolder(localHelmCharts.toString());
@@ -305,7 +329,7 @@ class IngressTest {
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient).applyYamlAndWaitForCrds(
+		verify(k8sClient).createMissingCrdsAndWait(
 			localHelmCharts.resolve("traefik/charts/traefik/crds/gateway-api-standard-install.yaml").toString()
 		);
 	}
@@ -318,7 +342,140 @@ class IngressTest {
 
 		ingress.bootstrapCrds(context);
 
-		verify(k8sClient, never()).applyYamlAndWaitForCrds(anyString());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
+	}
+
+	@Test
+	void doesNotBootstrapGatewayApiCrdsWhenIngressIsDisabled() throws GitAPIException {
+		config.getApplication().setSkipCrds(false);
+		config.getFeatures().getIngress().setActive(false);
+		Ingress ingress = createIngress();
+		DeploymentContext context = new ContextBuilder(config).build();
+
+		ingress.bootstrapCrds(context);
+
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
+	}
+
+	@Test
+	void reportsMalformedGatewayAdmissionManifestWithSource() throws Exception {
+		config.getApplication().setSkipCrds(false);
+		Path source = writeAirgapBundle("""
+			apiVersion: admissionregistration.k8s.io/v1
+			kind: ValidatingAdmissionPolicy
+			metadata:
+			  name: [unclosed
+			""");
+		Ingress ingress = createIngress();
+
+		assertThatThrownBy(() -> install(ingress))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Failed to parse Gateway API admission policies from " + source)
+			.hasCauseInstanceOf(JacksonException.class);
+		verifyNoInteractions(k8sClient, deployer);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void appliesOnlyGatewayAdmissionResourcesBeforeDeploy(boolean airgapped) throws Exception {
+		// Given
+		config.getApplication().setSkipCrds(false);
+		config.getFeatures().getArgocd().setActive(airgapped);
+		config.getFeatures().getArgocd().setOperator(airgapped);
+		String policy = admissionResource(POLICY_KIND);
+		String binding = admissionResource(BINDING_KIND);
+		String bundle = String.join(
+			"---\n",
+			binding,
+			policy,
+			admissionResource("ConfigMap"),
+			policy.replace(POLICY_NAME, "another-policy"),
+			policy.replace(ADMISSION_VERSION, "admissionregistration.k8s.io/v1beta1"),
+			"""
+				apiVersion: apiextensions.k8s.io/v1
+				kind: CustomResourceDefinition
+				metadata:
+				  name: gateways.gateway.networking.k8s.io
+				"""
+		);
+		if (airgapped) {
+			writeAirgapBundle(bundle);
+			when(airGappedUtils.mirrorHelmRepoToGit(any(HelmChartConfig.class))).thenReturn("traefik");
+			when(gitHandler.getResourcesScm()).thenReturn(gitProvider);
+			when(gitProvider.repoUrl("traefik")).thenReturn("https://example.test/traefik");
+			when(helmClient.template(eq("traefik"), anyString(), any())).thenReturn("""
+				kind: ClusterRole
+				metadata:
+				  name: traefik-ingress
+				""");
+		}
+		Ingress ingress = spy(createIngress());
+		DefaultMockServer manifestServer = new DefaultMockServer(false);
+
+		// When
+		if (airgapped) {
+			install(ingress);
+		} else {
+			String bundlePath = "/standard-install.yaml";
+			manifestServer.expect().get().withPath(bundlePath).andReturn(200, bundle).once();
+			manifestServer.start();
+			try {
+				doReturn(manifestServer.url(bundlePath)).when(ingress).gatewayApiBundleLocation(any());
+				install(ingress);
+				assertThat(manifestServer.getRequestCount()).isEqualTo(1);
+			} finally {
+				manifestServer.shutdown();
+			}
+		}
+
+		// Then
+		ArgumentCaptor<String> path = ArgumentCaptor.forClass(String.class);
+		int expectedApplies = airgapped ? 2 : 1;
+		InOrder order = inOrder(k8sClient, deployer);
+		order.verify(k8sClient, times(expectedApplies)).applyYaml(path.capture());
+		try (MappingIterator<JsonNode> documents = YAML_MAPPER.readerFor(JsonNode.class)
+			.readValues(Path.of(path.getAllValues().getFirst()).toFile())) {
+			assertThat(documents.readAll()).containsExactly(YAML_MAPPER.readTree(policy), YAML_MAPPER.readTree(binding));
+		}
+		if (airgapped) {
+			assertThat(Files.readString(Path.of(path.getValue()))).contains("kind: ClusterRole");
+		}
+		order.verify(deployer).deployFeature(any(), any(), any(), any(), any(), any(), any(), any(), eq(false),
+			any(), any());
+		verify(k8sClient, never()).createMissingCrdsAndWait(anyString());
+		verify(k8sClient, times(expectedApplies)).applyYaml(anyString());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {POLICY_KIND, BINDING_KIND})
+	void stopsBeforeApplyOrDeploymentWhenAnAdmissionResourceIsMissing(String missingKind) throws Exception {
+		// Given
+		config.getApplication().setSkipCrds(false);
+		String remainingKind = POLICY_KIND.equals(missingKind) ? BINDING_KIND : POLICY_KIND;
+		Path source = writeAirgapBundle(admissionResource(remainingKind));
+		Ingress ingress = createIngress();
+
+		// When / Then
+		assertThatThrownBy(() -> install(ingress))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining(source.toString())
+			.hasMessageContaining(missingKind + " named " + POLICY_NAME);
+		verifyNoInteractions(k8sClient, deployer);
+	}
+
+	@Test
+	void doesNotReadGatewayBundleWhenIngressIsDisabled() throws Exception {
+		// Given
+		config.getApplication().setSkipCrds(false);
+		config.getFeatures().getIngress().setActive(false);
+		Ingress ingress = spy(createIngress());
+
+		// When
+		install(ingress);
+
+		// Then
+		verify(ingress, never()).gatewayApiBundleLocation(any());
+		verifyNoInteractions(k8sClient);
 	}
 
 	@Test
@@ -353,9 +510,11 @@ class IngressTest {
 	}
 
 	@Test
-	void doesNotApplyClusterRbacWithoutOperatorMode() throws Exception {
-		install(createIngress());
+	void skipsGatewayBundleAndClusterRbacWhenCrdsAreSkippedOutsideOperatorMode() throws Exception {
+		Ingress ingress = spy(createIngress());
+		install(ingress);
 
+		verify(ingress, never()).gatewayApiBundleLocation(any());
 		verify(helmClient, never()).template(anyString(), anyString(), any());
 		verify(k8sClient, never()).applyYaml(anyString());
 	}
@@ -404,6 +563,26 @@ class IngressTest {
 			imagePullSecretCreator,
 			new IngressToolConfigMapper(config), k8sClient, helmClient
 		);
+	}
+
+	private Path writeAirgapBundle(String bundle) throws IOException {
+		config.getApplication().setMirrorRepos(true);
+		config.getApplication().setLocalHelmChartFolder(tempDir.toString());
+		Path chart = Files.createDirectories(tempDir.resolve("traefik"));
+		Files.writeString(chart.resolve("Chart.yaml"), "version: 1.2.3\n");
+		Path bundleDir = Files.createDirectories(chart.resolve("charts/traefik/crds"));
+		return Files.writeString(bundleDir.resolve("gateway-api-standard-install.yaml"), bundle);
+	}
+
+	private static String admissionResource(String kind) {
+		return """
+			apiVersion: %s
+			kind: %s
+			metadata:
+			  name: %s
+			spec:
+			  sample: preserved
+			""".formatted(ADMISSION_VERSION, kind, POLICY_NAME);
 	}
 
 	private boolean install(Ingress ingress) {

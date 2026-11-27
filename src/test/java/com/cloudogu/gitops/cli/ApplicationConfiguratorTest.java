@@ -27,7 +27,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -55,7 +54,6 @@ class ApplicationConfiguratorTest {
 	private ArgoCD featureArgoCd;
 	private RepositoryProvisioning repositoryProvisioning;
 
-	@Mock
 	ScmManagerProviderMock scmManagerMock = new ScmManagerProviderMock();
 
 	Config testConfig = Config.fromMap(Map.<String, Object>of(

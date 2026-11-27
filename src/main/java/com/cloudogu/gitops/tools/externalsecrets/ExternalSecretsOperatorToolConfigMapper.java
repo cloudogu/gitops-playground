@@ -175,7 +175,7 @@ public class ExternalSecretsOperatorToolConfigMapper implements ToolConfigMapper
 			requireText(appRole.getRoleId(), authKey + ".appRole.roleId");
 			Config.SecretsSchema.ESOSchema.AppRoleSecretRefSchema secretRef = appRole.getSecretRef();
 			requireText(secretRef == null ? null : secretRef.getName(), authKey + ".appRole.secretRef.name");
-			requireText(secretRef == null ? null : secretRef.getKey(), authKey + ".appRole.secretRef.key");
+			requireText(secretRef.getKey(), authKey + ".appRole.secretRef.key");
 		} else {
 			Config.SecretsSchema.ESOSchema.KubernetesAuthSchema kubernetes = auth.getKubernetes();
 			requireText(kubernetes.getMountPath(), authKey + ".kubernetes.mountPath");
